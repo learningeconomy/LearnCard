@@ -8,7 +8,6 @@ import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
@@ -117,22 +116,9 @@ const AiPathways: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
-                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
-                                <ExperimentalFeatureBox className="shadow-box-bottom" />
-                            </div>
-
-                            {/* DEV BUTTON */}
-                            {/* <button
-                                className="bg-indigo-500 rounded-full text-white px-[15px] py-[7px]"
-                                onClick={handleExplorePathways}
-                            >
-                                Explore Pathways
-                            </button> */}
-
                             <MySkillProfile />
 
                             {emptyPathways ? (

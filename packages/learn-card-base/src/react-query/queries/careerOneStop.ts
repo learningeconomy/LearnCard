@@ -4,12 +4,12 @@ import _ from 'lodash';
 import type { OccupationDetailsResponse } from '../../types/careerOneStop';
 import { useWallet } from 'learn-card-base';
 
-import { LEARNCARD_AI_URL } from 'learn-card-base';
+import { networkStore } from '../../stores/NetworkStore';
 
 const fetchOccupationDetailsForKeyword = async (
     keyword: string
 ): Promise<OccupationDetailsResponse[]> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/occupations`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ const fetchSalariesForKeyword = async ({
     keyword: string;
     locations: string[];
 }) => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/salaries`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/salaries`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
 };
 
 const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/training-programs`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/training-programs`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => 
 };
 
 const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/courses`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/courses`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any
 };
 
 export const fetchCareerOneStopVideo = async (videoCode: string): Promise<any> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/video`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/video`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

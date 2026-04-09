@@ -1,17 +1,20 @@
 import React from 'react';
 import { IonCol, IonContent, IonGrid, IonHeader, IonPage, IonRow } from '@ionic/react';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export const ClaimBoostLoggedOutPrompt: React.FC<{
     handleCloseModal: () => void;
     handleRedirectTo: () => void;
 }> = ({ handleCloseModal, handleRedirectTo }) => {
+    const brandingConfig = useBrandingConfig();
+
     return (
         <IonPage>
             <IonHeader className="ion-no-border ion-no-padding bg-white">
                 <IonRow className="flex flex-col pt-[50px]">
                     <IonCol className="w-full flex items-center justify-center">
                         <h6 className="tracking-[12px] text-base font-bold text-black">
-                            LEARNCARD
+                            {brandingConfig?.name}
                         </h6>
                     </IonCol>
                 </IonRow>

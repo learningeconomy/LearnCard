@@ -19,7 +19,6 @@ import {
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
-import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
@@ -609,8 +608,8 @@ const IssueVerifyStep: React.FC<{
 
     const selectedTemplate = templates.find(t => t.boostUri === selectedTemplateUri) || templates[0];
 
-    // Get the current network URL
-    const networkUrl = LCN_API_URL || networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
+    // Get the current network API URL from the tenant-configured network store
+    const networkUrl = networkStore.get.networkApiUrl();
 
     // Get selected grant name for display
     const selectedGrant = authGrants.find(g => g.id === selectedGrantId);

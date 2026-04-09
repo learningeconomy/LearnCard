@@ -17,6 +17,8 @@ import { BoostSmallCard } from '@learncard/react';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { getDefaultAchievementTypeImage, getDefaultDisplayType } from '../boostHelpers';
@@ -41,6 +43,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
 }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const baseLink = `/boost?boostUserType=${BoostUserTypeEnum.someone}&boostCategoryType=${categoryType}&boostSubCategoryType=${subType}`;
     let link = baseLink;
@@ -91,7 +94,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
         customTitle = (
             <div className="flex flex-col items-center pt-[5px] gap-[5px]">
                 <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px]">
-                    LearnCard Template
+                    {brandingConfig?.name} Template
                 </span>
                 <span
                     className={`text-${textColor} text-center text-[12px] font-[600] uppercase font-notoSans`}
@@ -145,7 +148,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
                             badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                         />
                     }
-                    title="LearnCard Template"
+                    title={brandingConfig?.name + ' Template'}
                 />
             </IonCol>
         </ErrorBoundary>

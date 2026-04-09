@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>776298253175-hgp5ip6oc64m2conr4pgn5bc5bitafni.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.776298253175-hgp5ip6oc64m2conr4pgn5bc5bitafni</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>776298253175-bjlqbr6md0nom4at99ufi8t1akg2e1f8.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDC7A2CwT5_63kVEKUkLCeq_xPh1RXtQqc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>776298253175</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.vetpass.app</string>
+	<key>PROJECT_ID</key>
+	<string>learncard</string>
+	<key>STORAGE_BUCKET</key>
+	<string>learncard.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:776298253175:ios:dc2099a157e43b69a2ef72</string>
+</dict>
+</plist>

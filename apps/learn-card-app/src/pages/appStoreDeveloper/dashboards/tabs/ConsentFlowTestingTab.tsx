@@ -27,6 +27,7 @@ import type { LCNIntegration } from '@learncard/types';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
 import type { CredentialTemplate } from '../types';
+import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 import type { GuideState } from '../../guides/types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
@@ -70,7 +71,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
         if (!contractUri) return '';
         const params = new URLSearchParams({ uri: contractUri });
         if (redirectUrl) params.set('returnTo', redirectUrl);
-        return `https://learncard.app/consent-flow?${params.toString()}`;
+        return `${getAppBaseUrl()}/consent-flow?${params.toString()}`;
     }, [contractUri, redirectUrl]);
 
     // Get sendable templates

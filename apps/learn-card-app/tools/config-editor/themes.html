@@ -1,0 +1,3183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Theme Editor</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        surface: { DEFAULT: '#ffffff', secondary: '#f8fafc', tertiary: '#f1f5f9' },
+                        sidebar: { DEFAULT: '#0f172a', hover: '#1e293b', active: '#334155' },
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; }
+        .fade-in { animation: fadeIn .15s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .swatch { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #e2e8f0; flex-shrink: 0; cursor: pointer; transition: box-shadow .15s; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .swatch:hover { box-shadow: 0 0 0 3px rgba(99,102,241,.3); }
+        .color-grid-cell { width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: transform .1s, box-shadow .1s; position: relative; }
+        .color-grid-cell:hover { transform: scale(1.2); z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+        .tab-btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; border: none; background: transparent; color: #64748b; transition: all .15s; }
+        .tab-btn:hover { background: #f1f5f9; color: #334155; }
+        .tab-btn.active { background: #4f46e5; color: white; }
+        .field-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .field-label { font-size: 12px; font-weight: 500; color: #475569; width: 200px; flex-shrink: 0; }
+        .field-input { flex: 1; padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #1e293b; background: white; outline: none; transition: border-color .15s; }
+        .field-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .field-input.inherited { color: #94a3b8; font-style: italic; background: #f8fafc; }
+        .section-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .section-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+        .badge-inherited { background: #f1f5f9; color: #64748b; }
+        .badge-override { background: #eef2ff; color: #4f46e5; }
+        .accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border-radius: 8px; cursor: pointer; margin-bottom: 4px; transition: background .15s; }
+        .accordion-header:hover { background: #f1f5f9; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all .15s; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; color: white; z-index: 9999; animation: fadeIn .2s ease-out; }
+        .picker-overlay { position: fixed; inset: 0; z-index: 100; }
+        .picker-popup { position: fixed; z-index: 101; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.2); padding: 16px; width: 440px; max-height: 560px; overflow-y: auto; }
+        .channel-tab { padding: 5px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #64748b; transition: all .15s; }
+        .channel-tab:hover { background: #f1f5f9; color: #334155; }
+        .channel-tab.active { border-color: #6366f1; background: #eef2ff; color: #4f46e5; }
+        .channel-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+        .channel-chip button { background: none; border: none; cursor: pointer; color: inherit; opacity: .5; padding: 0; font-size: 12px; line-height: 1; }
+        .channel-chip button:hover { opacity: 1; }
+        .json-editor { width: 100%; min-height: 500px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; resize: vertical; line-height: 1.6; }
+        .json-editor:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
+        .modal { background: white; border-radius: 16px; padding: 28px; width: 480px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.3); animation: fadeIn .2s ease-out; }
+        .reset-btn { background: none; border: none; cursor: pointer; padding: 4px; color: #94a3b8; font-size: 14px; border-radius: 4px; transition: all .15s; }
+        .reset-btn:hover { color: #ef4444; background: #fef2f2; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } = React;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAILWIND COLOR PALETTE DATA
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SHADES = [50,100,200,300,400,500,600,700,800,900,950];
+
+const TW = {
+    slate:   ['#f8fafc','#f1f5f9','#e2e8f0','#cbd5e1','#94a3b8','#64748b','#475569','#334155','#1e293b','#0f172a','#020617'],
+    gray:    ['#f9fafb','#f3f4f6','#e5e7eb','#d1d5db','#9ca3af','#6b7280','#4b5563','#374151','#1f2937','#111827','#030712'],
+    zinc:    ['#fafafa','#f4f4f5','#e4e4e7','#d4d4d8','#a1a1aa','#71717a','#52525b','#3f3f46','#27272a','#18181b','#09090b'],
+    neutral: ['#fafafa','#f5f5f5','#e5e5e5','#d4d4d4','#a3a3a3','#737373','#525252','#404040','#262626','#171717','#0a0a0a'],
+    stone:   ['#fafaf9','#f5f5f4','#e7e5e4','#d6d3d1','#a8a29e','#78716c','#57534e','#44403c','#292524','#1c1917','#0c0a09'],
+    red:     ['#fef2f2','#fee2e2','#fecaca','#fca5a5','#f87171','#ef4444','#dc2626','#b91c1c','#991b1b','#7f1d1d','#450a0a'],
+    orange:  ['#fff7ed','#ffedd5','#fed7aa','#fdba74','#fb923c','#f97316','#ea580c','#c2410c','#9a3412','#7c2d12','#431407'],
+    amber:   ['#fffbeb','#fef3c7','#fde68a','#fcd34d','#fbbf24','#f59e0b','#d97706','#b45309','#92400e','#78350f','#451a03'],
+    yellow:  ['#fefce8','#fef9c3','#fef08a','#fde047','#facc15','#eab308','#ca8a04','#a16207','#854d0e','#713f12','#422006'],
+    lime:    ['#f7fee7','#ecfccb','#d9f99d','#bef264','#a3e635','#84cc16','#65a30d','#4d7c0f','#3f6212','#365314','#1a2e05'],
+    green:   ['#f0fdf4','#dcfce7','#bbf7d0','#86efac','#4ade80','#22c55e','#16a34a','#15803d','#166534','#14532d','#052e16'],
+    emerald: ['#ecfdf5','#d1fae5','#a7f3d0','#6ee7b7','#34d399','#10b981','#059669','#047857','#065f46','#064e3b','#022c22'],
+    teal:    ['#f0fdfa','#ccfbf1','#99f6e4','#5eead4','#2dd4bf','#14b8a6','#0d9488','#0f766e','#115e59','#134e4a','#042f2e'],
+    cyan:    ['#ecfeff','#cffafe','#a5f3fc','#67e8f9','#22d3ee','#06b6d4','#0891b2','#0e7490','#155e75','#164e63','#083344'],
+    sky:     ['#f0f9ff','#e0f2fe','#bae6fd','#7dd3fc','#38bdf8','#0ea5e9','#0284c7','#0369a1','#075985','#0c4a6e','#082f49'],
+    blue:    ['#eff6ff','#dbeafe','#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af','#1e3a8a','#172554'],
+    indigo:  ['#eef2ff','#e0e7ff','#c7d2fe','#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca','#3730a3','#312e81','#1e1b4e'],
+    violet:  ['#f5f3ff','#ede9fe','#ddd6fe','#c4b5fd','#a78bfa','#8b5cf6','#7c3aed','#6d28d9','#5b21b6','#4c1d95','#2e1065'],
+    purple:  ['#faf5ff','#f3e8ff','#e9d5ff','#d8b4fe','#c084fc','#a855f7','#9333ea','#7e22ce','#6b21a8','#581c87','#3b0764'],
+    fuchsia: ['#fdf4ff','#fae8ff','#f5d0fe','#f0abfc','#e879f9','#d946ef','#c026d3','#a21caf','#86198f','#701a75','#4a044e'],
+    pink:    ['#fdf2f8','#fce7f3','#fbcfe8','#f9a8d4','#f472b6','#ec4899','#db2777','#be185d','#9d174d','#831843','#500724'],
+    rose:    ['#fff1f2','#ffe4e6','#fecdd3','#fda4af','#fb7185','#f43f5e','#e11d48','#be123c','#9f1239','#881337','#4c0519'],
+};
+
+const SPECIAL_COLORS = { white: '#ffffff', black: '#000000' };
+
+// Build lookup: "blue-500" -> "#3b82f6"
+const COLOR_LOOKUP = {};
+for (const [family, hexes] of Object.entries(TW)) {
+    SHADES.forEach((shade, i) => { COLOR_LOOKUP[`${family}-${shade}`] = hexes[i]; });
+}
+Object.assign(COLOR_LOOKUP, SPECIAL_COLORS);
+
+const STANDARD_FAMILIES = Object.keys(TW);
+
+// Custom app-specific color families (from tailwind.config.js)
+// These are available in Tailwind but absent from the standard palette grid
+const CUSTOM_TW = {
+    grayscale:      ['#FBFBFC','#EFF0F5','#E2E3E9','#C5C8D3','#A8ACBD','#8B91A7','#6F7590','#52597A','#353E64','#18224E',null],
+    spice:          ['#FFEDE7','#FFDBCF','#FFB7A0','#FF9470','#FF7040','#FF5820','#FF4000','#DF3800','#BF3000','#802000',null],
+    navy:           ['#F0F5F7','#D6E1E8','#BCCDD8','#87A4B8','#537C98','#396888','#1E5378','#184463','#11354E','#0B2232',null],
+    'baltic-blue':  ['#EBF5FF','#CCE7FF','#99CFFF','#66B8FF','#33A0FF','#0089EE','#006DCC','#0055A3','#003D7A','#002551',null],
+    'vp-red':       ['#FEF2F2','#FDE3E4','#FBC6C8','#F7999C','#E45A5E','#C3323C','#A52830','#872025','#69181C','#4B1013',null],
+    'army-green':   ['#F4F5EE','#E4E7D5','#C9CEAB','#ADB682','#929D58','#78852F','#5F6A25','#47501C','#2F3512','#181B09',null],
+    sand:           ['#FAF8F5','#F2EDE6','#E5DBCD','#D8C9B4','#CBB79B','#BEA582','#A08A6A','#7A6A51','#544937','#2E281E',null],
+};
+
+const CUSTOM_FAMILIES = Object.keys(CUSTOM_TW);
+
+// Merge custom into TW and COLOR_LOOKUP
+for (const [family, hexes] of Object.entries(CUSTOM_TW)) {
+    TW[family] = hexes;
+
+    SHADES.forEach((shade, i) => {
+        if (hexes[i]) COLOR_LOOKUP[`${family}-${shade}`] = hexes[i];
+    });
+}
+
+const FAMILIES = [...STANDARD_FAMILIES, ...CUSTOM_FAMILIES];
+
+/** Resolve a single-token theme color string to hex. Returns null for compound (multi-class) values. */
+const resolveColorHex = (val) => {
+    if (!val) return null;
+    if (val.startsWith('#')) return val;
+    // Compound values (e.g. "bg-red-600 text-white") → always render via Tailwind classes
+    if (val.includes(' ')) return null;
+    // Strip common prefixes
+    const stripped = val.replace(/^(!?)(text|bg|border|ring|fill|stroke)-/, '');
+    return COLOR_LOOKUP[stripped] || null;
+};
+
+/** For compound values, extract the first bg-* token and resolve its color for swatch preview. */
+const resolveCompoundBgHex = (val) => {
+    if (!val || !val.includes(' ')) return null;
+    const bgToken = val.split(/\s+/).find(t => /^(!?bg-)/.test(t));
+    if (!bgToken) return null;
+    const stripped = bgToken.replace(/^(!?)(bg)-/, '');
+    return COLOR_LOOKUP[stripped] || null;
+};
+
+/** Check if a value is a compound (multi-class) Tailwind string */
+const isCompound = (val) => val && val.includes(' ');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME GENERATION ENGINE — procedural brand-color palette derivation
+// ═══════════════════════════════════════════════════════════════════════════
+
+const hexToRgb = (hex) => {
+    const h = hex.replace('#', '');
+    return {
+        r: parseInt(h.slice(0, 2), 16) / 255,
+        g: parseInt(h.slice(2, 4), 16) / 255,
+        b: parseInt(h.slice(4, 6), 16) / 255,
+    };
+};
+
+const relativeLuminance = (hex) => {
+    const { r, g, b } = hexToRgb(hex);
+    const lin = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+};
+
+const isLightColor = (hex) => relativeLuminance(hex) > 0.35;
+
+const colorDistSq = (a, b) => {
+    const ra = hexToRgb(a), rb = hexToRgb(b);
+    return (ra.r - rb.r) ** 2 + (ra.g - rb.g) ** 2 + (ra.b - rb.b) ** 2;
+};
+
+const nearestTwToken = (hex) => {
+    let best = null, bestDist = Infinity;
+
+    for (const [token, twHex] of Object.entries(COLOR_LOOKUP)) {
+        if (token === 'white' || token === 'black') continue;
+        const dist = colorDistSq(hex, twHex);
+        if (dist < bestDist) { bestDist = dist; best = token; }
+    }
+
+    return best;
+};
+
+const nearestTwFamily = (hex) => {
+    const token = nearestTwToken(hex);
+    return token ? token.replace(/-\d+$/, '') : 'blue';
+};
+
+// Chromatic TW families sorted by hue angle
+const CHROMATIC_FAMILIES = [
+    'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald',
+    'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple',
+    'fuchsia', 'pink', 'rose',
+];
+
+// 12 well-spaced families for vibrant category assignment
+const VIBRANT_12 = [
+    'blue', 'violet', 'pink', 'red', 'orange', 'amber',
+    'yellow', 'lime', 'emerald', 'teal', 'cyan', 'indigo',
+];
+
+// Category keys in display-prominence order
+const GEN_CATEGORIES = [
+    'achievement', 'socialBadge', 'learningHistory', 'workHistory',
+    'accomplishment', 'accommodation', 'id', 'family',
+    'skill', 'aiTopic', 'aiPathway', 'aiInsight',
+];
+
+const pickComplementary = (family) => {
+    const idx = CHROMATIC_FAMILIES.indexOf(family);
+    if (idx < 0) return 'emerald';
+    return CHROMATIC_FAMILIES[(idx + Math.floor(CHROMATIC_FAMILIES.length / 2)) % CHROMATIC_FAMILIES.length];
+};
+
+const pickThirdColor = (primary, accent) => {
+    const pi = CHROMATIC_FAMILIES.indexOf(primary);
+    if (pi < 0) return 'lime';
+    const third = (pi + Math.floor(CHROMATIC_FAMILIES.length / 3)) % CHROMATIC_FAMILIES.length;
+    const candidate = CHROMATIC_FAMILIES[third];
+    if (candidate === primary || candidate === accent) {
+        return CHROMATIC_FAMILIES[(third + 2) % CHROMATIC_FAMILIES.length];
+    }
+    return candidate;
+};
+
+// Build vibrant category colors for a given TW family
+const genVibrantCategory = (family, accentFamily) => {
+    const hex400 = COLOR_LOOKUP[`${family}-400`];
+    const light = hex400 ? isLightColor(hex400) : false;
+    const textCls = light ? 'text-grayscale-900' : 'text-white';
+
+    return {
+        primaryColor: `${family}-300`,
+        secondaryColor: `${family}-500`,
+        indicatorColor: `${accentFamily}-200`,
+        borderColor: `${family}-300`,
+        statusBarColor: light ? 'light' : `${family}-400`,
+        headerBrandingTextColor: textCls,
+        headerTextColor: textCls,
+        backgroundPrimaryColor: light ? '!bg-white' : `!bg-${family}-400`,
+        backgroundSecondaryColor: light ? 'grayscale-100' : `${family}-200`,
+        tabActiveColor: `bg-${family}-300`,
+    };
+};
+
+// Build uniform category colors (professional / formal feel)
+const genUniformCategory = (primaryFamily) => ({
+    primaryColor: `${primaryFamily}-50`,
+    secondaryColor: 'grayscale-800',
+    indicatorColor: `${primaryFamily}-500`,
+    borderColor: 'grayscale-100',
+    statusBarColor: 'light',
+    headerBrandingTextColor: 'text-grayscale-800',
+    headerTextColor: 'text-grayscale-800',
+    backgroundPrimaryColor: '!bg-white',
+    backgroundSecondaryColor: 'grayscale-100',
+    tabActiveColor: `bg-${primaryFamily}-100`,
+});
+
+const generateThemeFromBrand = ({ primaryHex, accentHex, style }) => {
+    const primaryFamily = nearestTwFamily(primaryHex);
+    const accentFamily = accentHex ? nearestTwFamily(accentHex) : pickComplementary(primaryFamily);
+    const thirdFamily = pickThirdColor(primaryFamily, accentFamily);
+
+    // --- Categories ---
+    const categories = {};
+
+    if (style === 'vibrant') {
+        const pool = [...VIBRANT_12];
+        const pi = pool.indexOf(primaryFamily);
+        if (pi > 0) { pool.splice(pi, 1); pool.unshift(primaryFamily); }
+        else if (pi < 0) { pool[0] = primaryFamily; }
+
+        const ai = pool.indexOf(accentFamily);
+        if (ai > 1) { pool.splice(ai, 1); pool.splice(1, 0, accentFamily); }
+        else if (ai < 0) { pool[1] = accentFamily; }
+
+        GEN_CATEGORIES.forEach((key, i) => {
+            categories[key] = genVibrantCategory(pool[i % pool.length], accentFamily);
+        });
+    } else {
+        GEN_CATEGORIES.forEach(key => {
+            categories[key] = genUniformCategory(primaryFamily);
+        });
+    }
+
+    // --- LaunchPad ---
+    const launchPad = {
+        contacts: { color: `${primaryFamily}-700` },
+        aiSessions: { color: `${accentFamily}-500` },
+        alerts: {
+            color: `${primaryFamily}-600`,
+            indicatorTextColor: `text-${primaryFamily}-600`,
+            indicatorBgColor: 'bg-white',
+        },
+        buttons: {
+            unconnected: `bg-${primaryFamily}-500 text-white`,
+            connected: `bg-grayscale-100 text-${primaryFamily}-500`,
+        },
+    };
+
+    // --- Side Menu ---
+    const sideMenu = {
+        linkActiveColor: 'text-grayscale-900',
+        linkInactiveColor: style === 'vibrant' ? 'text-grayscale-700' : 'text-grayscale-500',
+        linkActiveBackgroundColor: 'bg-grayscale-100/50',
+        linkInactiveBackgroundColor: 'bg-white',
+        primaryButtonColor: `bg-${primaryFamily}-500 text-white`,
+        secondaryButtonColor: `bg-${accentFamily}-500 text-white border-${accentFamily}-500`,
+        indicatorColor: style === 'vibrant' ? 'text-rose-500' : `text-${primaryFamily}-500`,
+        syncingColor: `!text-${primaryFamily}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Navbar ---
+    const navbar = {
+        activeColor: 'text-grayscale-900',
+        inactiveColor: style === 'vibrant' ? 'text-grayscale-600' : 'text-grayscale-500',
+        syncingColor: `!text-${primaryFamily}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Intro Slides ---
+    const introSlides = {
+        firstSlideBackground: `${primaryFamily}-500`,
+        secondSlideBackground: `${accentFamily}-400`,
+        thirdSlideBackground: `${thirdFamily}-500`,
+        textColors: { primary: 'white', secondary: 'white' },
+        pagination: { primary: 'white', secondary: '#E2E3E9' },
+    };
+
+    // --- Defaults ---
+    const colorDefaults = {
+        primaryColor: `${primaryFamily}-500`,
+        primaryColorShade: `${primaryFamily}-200`,
+        loaders: [
+            COLOR_LOOKUP[`${primaryFamily}-500`],
+            COLOR_LOOKUP[`${accentFamily}-500`],
+            COLOR_LOOKUP[`${thirdFamily}-500`],
+            COLOR_LOOKUP[`${primaryFamily}-300`],
+        ].filter(Boolean),
+    };
+
+    // --- Placeholders ---
+    const placeholders = {};
+
+    for (const key of GEN_CATEGORIES) {
+        if (key.startsWith('ai')) continue;
+
+        const cat = categories[key];
+        const family = cat.primaryColor.replace(/-\d+$/, '');
+
+        placeholders[key] = {
+            spilledCup: {
+                backsplash: COLOR_LOOKUP[`${family}-300`] || '#E2E3E9',
+                spill: COLOR_LOOKUP[`${accentFamily}-400`] || '#3B82F6',
+                cupOutline: COLOR_LOOKUP[`${family}-700`] || '#353E64',
+            },
+        };
+    }
+
+    placeholders.defaults = {
+        spilledCup: {
+            backsplash: COLOR_LOOKUP[`${primaryFamily}-200`] || '#E2E3E9',
+            spill: COLOR_LOOKUP[`${accentFamily}-400`] || '#3B82F6',
+            cupOutline: COLOR_LOOKUP[`${primaryFamily}-700`] || '#353E64',
+        },
+    };
+
+    return {
+        defaults: { viewMode: style === 'vibrant' ? 'grid' : 'list' },
+        colors: { categories, launchPad, sideMenu, navbar, introSlides, placeholders, defaults: colorDefaults },
+        styles: {
+            wallet: { cardStyles: 'h-[240px]', iconStyles: 'w-[100px] h-[100px]' },
+            launchPad: {
+                textStyles: 'text-[16px]',
+                iconStyles: 'w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]',
+                indicatorStyles: 'shadow-soft-bottom',
+            },
+            defaults: { tabs: { borderRadius: 'rounded-[5px]' } },
+        },
+    };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PALETTE-FIRST GENERATOR — role-based theme derivation from named ramps
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Semantic roles a color ramp can fill
+const PALETTE_ROLES = [
+    { key: 'primary',  label: 'Primary Dark',   hint: 'Dark headers, backgrounds, primary buttons' },
+    { key: 'action',   label: 'Action / CTA',   hint: 'Links, active states, interactive elements' },
+    { key: 'accent',   label: 'Accent',          hint: 'Highlights, indicators, secondary decoration' },
+    { key: 'danger',   label: 'Danger / Alert',  hint: 'Error states, warnings, destructive actions' },
+    { key: 'neutral',  label: 'Neutral',         hint: 'Text, borders, subtle backgrounds' },
+    { key: 'warm',     label: 'Warm / Earthy',   hint: 'Optional warm tone for softer backgrounds' },
+];
+
+// Pre-built palette presets
+const PALETTE_PRESETS = {
+    vetpass: {
+        label: 'VetPass',
+        desc: 'Navy, Baltic Blue, Red, Army Green, Sand',
+        ramps: {
+            primary: 'navy',
+            action: 'baltic-blue',
+            accent: 'army-green',
+            danger: 'vp-red',
+            neutral: 'grayscale',
+            warm: 'sand',
+        },
+    },
+    learncard: {
+        label: 'LearnCard',
+        desc: 'Indigo, Emerald, Cyan, Rose, Slate',
+        ramps: {
+            primary: 'indigo',
+            action: 'emerald',
+            accent: 'cyan',
+            danger: 'rose',
+            neutral: 'slate',
+            warm: 'amber',
+        },
+    },
+    ocean: {
+        label: 'Ocean',
+        desc: 'Blue, Teal, Sky, Orange, Stone',
+        ramps: {
+            primary: 'blue',
+            action: 'teal',
+            accent: 'sky',
+            danger: 'orange',
+            neutral: 'stone',
+            warm: 'amber',
+        },
+    },
+    forest: {
+        label: 'Forest',
+        desc: 'Emerald, Lime, Teal, Red, Neutral',
+        ramps: {
+            primary: 'emerald',
+            action: 'lime',
+            accent: 'teal',
+            danger: 'red',
+            neutral: 'neutral',
+            warm: 'amber',
+        },
+    },
+    sunset: {
+        label: 'Sunset',
+        desc: 'Purple, Orange, Amber, Rose, Zinc',
+        ramps: {
+            primary: 'purple',
+            action: 'orange',
+            accent: 'amber',
+            danger: 'rose',
+            neutral: 'zinc',
+            warm: 'amber',
+        },
+    },
+};
+
+// Vibrant category color pools — assign each category a distinct family
+const PALETTE_VIBRANT_CATEGORY_MAP = [
+    // [category, roleKey, shade-primaryColor, shade-secondary, shade-bgPrimary, shade-bgSecondary]
+    { cat: 'achievement',     role: 'action',  altRole: 'accent' },
+    { cat: 'socialBadge',     role: 'primary', altRole: 'action' },
+    { cat: 'learningHistory', role: 'accent',  altRole: 'primary' },
+    { cat: 'workHistory',     role: 'warm',    altRole: 'action' },
+    { cat: 'accomplishment',  role: 'danger',  altRole: 'accent' },
+    { cat: 'accommodation',   role: 'action',  altRole: 'danger' },
+    { cat: 'id',              role: 'primary', altRole: 'accent' },
+    { cat: 'family',          role: 'warm',    altRole: 'primary' },
+    { cat: 'skill',           role: 'accent',  altRole: 'action' },
+    { cat: 'aiTopic',         role: 'action',  altRole: 'accent' },
+    { cat: 'aiPathway',       role: 'accent',  altRole: 'primary' },
+    { cat: 'aiInsight',       role: 'primary', altRole: 'action' },
+];
+
+const generateThemeFromPalette = ({ roles, style }) => {
+    // roles: { primary: 'navy', action: 'baltic-blue', accent: 'army-green', ... }
+    const r = {
+        primary: roles.primary || 'indigo',
+        action: roles.action || 'emerald',
+        accent: roles.accent || 'cyan',
+        danger: roles.danger || 'rose',
+        neutral: roles.neutral || 'slate',
+        warm: roles.warm || 'amber',
+    };
+
+    // Helper to build a vibrant category from a role family
+    const buildVibrantCat = (family, accentFamily) => {
+        const hex400 = COLOR_LOOKUP[`${family}-400`];
+        const light = hex400 ? isLightColor(hex400) : false;
+        const textCls = light ? 'text-grayscale-900' : 'text-white';
+
+        return {
+            primaryColor: `${family}-300`,
+            secondaryColor: `${family}-500`,
+            indicatorColor: `${accentFamily}-200`,
+            borderColor: `${family}-300`,
+            statusBarColor: light ? 'light' : `${family}-400`,
+            headerBrandingTextColor: textCls,
+            headerTextColor: textCls,
+            backgroundPrimaryColor: light ? '!bg-white' : `!bg-${family}-400`,
+            backgroundSecondaryColor: light ? `${r.neutral}-100` : `${family}-200`,
+            tabActiveColor: `bg-${family}-300`,
+        };
+    };
+
+    const buildUniformCat = (family) => ({
+        primaryColor: `${family}-50`,
+        secondaryColor: `${r.neutral}-800`,
+        indicatorColor: `${family}-500`,
+        borderColor: `${r.neutral}-100`,
+        statusBarColor: 'light',
+        headerBrandingTextColor: `text-${r.neutral}-800`,
+        headerTextColor: `text-${r.neutral}-800`,
+        backgroundPrimaryColor: '!bg-white',
+        backgroundSecondaryColor: `${r.neutral}-100`,
+        tabActiveColor: `bg-${family}-100`,
+    });
+
+    // --- Categories ---
+    const categories = {};
+
+    if (style === 'vibrant') {
+        for (const mapping of PALETTE_VIBRANT_CATEGORY_MAP) {
+            const family = r[mapping.role] || r.action;
+            const altFamily = r[mapping.altRole] || r.accent;
+            categories[mapping.cat] = buildVibrantCat(family, altFamily);
+        }
+    } else {
+        for (const mapping of PALETTE_VIBRANT_CATEGORY_MAP) {
+            categories[mapping.cat] = buildUniformCat(r[mapping.role] || r.primary);
+        }
+    }
+
+    // --- LaunchPad ---
+    const launchPad = {
+        contacts: { color: `${r.primary}-700` },
+        aiSessions: { color: `${r.action}-500` },
+        alerts: {
+            color: `${r.primary}-600`,
+            indicatorTextColor: `text-${r.danger}-600`,
+            indicatorBgColor: 'bg-white',
+        },
+        buttons: {
+            unconnected: `bg-${r.action}-500 text-white`,
+            connected: `bg-${r.neutral}-100 text-${r.action}-500`,
+        },
+    };
+
+    // --- Side Menu ---
+    const sideMenu = {
+        linkActiveColor: `text-${r.neutral}-900`,
+        linkInactiveColor: style === 'vibrant' ? `text-${r.neutral}-700` : `text-${r.neutral}-500`,
+        linkActiveBackgroundColor: `bg-${r.neutral}-100/50`,
+        linkInactiveBackgroundColor: 'bg-white',
+        primaryButtonColor: `bg-${r.action}-500 text-white`,
+        secondaryButtonColor: `bg-${r.accent}-500 text-white border-${r.accent}-500`,
+        indicatorColor: style === 'vibrant' ? `text-${r.danger}-500` : `text-${r.action}-500`,
+        syncingColor: `!text-${r.action}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Navbar ---
+    const navbar = {
+        activeColor: `text-${r.neutral}-900`,
+        inactiveColor: style === 'vibrant' ? `text-${r.neutral}-600` : `text-${r.neutral}-500`,
+        syncingColor: `!text-${r.action}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Intro Slides ---
+    const introSlides = {
+        firstSlideBackground: `${r.primary}-500`,
+        secondSlideBackground: `${r.action}-400`,
+        thirdSlideBackground: `${r.accent}-500`,
+        textColors: { primary: 'white', secondary: 'white' },
+        pagination: { primary: 'white', secondary: '#E2E3E9' },
+    };
+
+    // --- Defaults ---
+    const colorDefaults = {
+        primaryColor: `${r.action}-500`,
+        primaryColorShade: `${r.action}-200`,
+        loaders: [
+            COLOR_LOOKUP[`${r.action}-500`],
+            COLOR_LOOKUP[`${r.accent}-500`],
+            COLOR_LOOKUP[`${r.primary}-500`],
+            COLOR_LOOKUP[`${r.action}-300`],
+        ].filter(Boolean),
+    };
+
+    // --- Placeholders ---
+    const placeholders = {};
+
+    for (const mapping of PALETTE_VIBRANT_CATEGORY_MAP) {
+        if (mapping.cat.startsWith('ai')) continue;
+
+        const family = r[mapping.role] || r.action;
+
+        placeholders[mapping.cat] = {
+            spilledCup: {
+                backsplash: COLOR_LOOKUP[`${family}-300`] || '#E2E3E9',
+                spill: COLOR_LOOKUP[`${r.action}-400`] || '#3B82F6',
+                cupOutline: COLOR_LOOKUP[`${family}-700`] || '#353E64',
+            },
+        };
+    }
+
+    placeholders.defaults = {
+        spilledCup: {
+            backsplash: COLOR_LOOKUP[`${r.primary}-200`] || '#E2E3E9',
+            spill: COLOR_LOOKUP[`${r.action}-400`] || '#3B82F6',
+            cupOutline: COLOR_LOOKUP[`${r.primary}-700`] || '#353E64',
+        },
+    };
+
+    return {
+        defaults: { viewMode: style === 'vibrant' ? 'grid' : 'list' },
+        colors: { categories, launchPad, sideMenu, navbar, introSlides, placeholders, defaults: colorDefaults },
+        styles: {
+            wallet: { cardStyles: 'h-[240px]', iconStyles: 'w-[100px] h-[100px]' },
+            launchPad: {
+                textStyles: 'text-[16px]',
+                iconStyles: 'w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]',
+                indicatorStyles: 'shadow-soft-bottom',
+            },
+            defaults: { tabs: { borderRadius: 'rounded-[5px]' } },
+        },
+    };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME SCHEMA DEFINITIONS — documents what fields exist and their purpose
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CATEGORY_COLOR_FIELDS = [
+    { key: 'primaryColor', label: 'Primary', hint: 'Wallet card fill — the main bg color of the category tile on the home grid/list', type: 'tailwind' },
+    { key: 'secondaryColor', label: 'Secondary', hint: 'Count badge pill inside the wallet card (grid view)', type: 'tailwind' },
+    { key: 'indicatorColor', label: 'Indicator', hint: '"New" notification dot color and "X New" text on category pages', type: 'tailwind' },
+    { key: 'borderColor', label: 'Border', hint: 'Ring around the notification dot on wallet cards', type: 'tailwind' },
+    { key: 'statusBarColor', label: 'Status Bar', hint: 'Mobile device status bar tint when viewing this category', type: 'tailwind' },
+    { key: 'headerBrandingTextColor', label: 'Header Brand Text', hint: 'Back arrow & branding logo color in the category page header', type: 'tailwind' },
+    { key: 'headerTextColor', label: 'Header Text', hint: 'Category icon & "New Boost" button text in the subheader', type: 'tailwind' },
+    { key: 'backgroundPrimaryColor', label: 'Background Primary', hint: 'Curved header background on the category detail page', type: 'tailwind' },
+    { key: 'backgroundSecondaryColor', label: 'Background Secondary', hint: 'Content area background below the header curve', type: 'tailwind' },
+    { key: 'tabActiveColor', label: 'Tab Active', hint: 'Earned/Managed tab highlight, search input bg, and view toggle bg', type: 'tailwind' },
+];
+
+const CATEGORY_KEYS = [
+    'socialBadge','achievement','accomplishment','accommodation','workHistory',
+    'learningHistory','skill','family','id','aiTopic','aiPathway','aiInsight',
+];
+
+const CATEGORY_LABELS = {
+    socialBadge: 'Social Badge', achievement: 'Achievement', accomplishment: 'Accomplishment',
+    accommodation: 'Accommodation', workHistory: 'Work History', learningHistory: 'Learning History',
+    skill: 'Skill', family: 'Family', id: 'ID', aiTopic: 'AI Topic', aiPathway: 'AI Pathway', aiInsight: 'AI Insight',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const api = {
+    async listThemes() { return (await fetch('/api/themes')).json(); },
+    async getTheme(id) { return (await fetch(`/api/themes/${id}`)).json(); },
+    async saveTheme(id, config) {
+        const resp = await fetch(`/api/themes/${id}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            const err = new Error(data.error || 'Save failed');
+            err.validation = data.validation;
+            throw err;
+        }
+
+        return data;
+    },
+    async deleteTheme(id) {
+        return (await fetch(`/api/themes/${id}`, { method: 'DELETE' })).json();
+    },
+    async createTheme(id, config) {
+        return (await fetch(`/api/themes/${id}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...config }),
+        })).json();
+    },
+    async validateTheme(config) {
+        return (await fetch('/api/validate-theme', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config),
+        })).json();
+    },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILITY — deep get/set/delete on nested objects by dot path
+// ═══════════════════════════════════════════════════════════════════════════
+
+const deepGet = (obj, path) => {
+    const keys = path.split('.');
+    let cur = obj;
+    for (const k of keys) {
+        if (cur == null || typeof cur !== 'object') return undefined;
+        cur = cur[k];
+    }
+    return cur;
+};
+
+const deepSet = (obj, path, value) => {
+    const clone = JSON.parse(JSON.stringify(obj));
+    const keys = path.split('.');
+    let cur = clone;
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (cur[keys[i]] == null || typeof cur[keys[i]] !== 'object') cur[keys[i]] = {};
+        cur = cur[keys[i]];
+    }
+    cur[keys[keys.length - 1]] = value;
+    return clone;
+};
+
+const deepDelete = (obj, path) => {
+    const clone = JSON.parse(JSON.stringify(obj));
+    const keys = path.split('.');
+    let cur = clone;
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (cur[keys[i]] == null) return clone;
+        cur = cur[keys[i]];
+    }
+    delete cur[keys[keys.length - 1]];
+    // Clean up empty parent objects
+    return cleanEmpty(clone);
+};
+
+const cleanEmpty = (obj) => {
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return obj;
+    const result = {};
+    for (const [k, v] of Object.entries(obj)) {
+        const cleaned = cleanEmpty(v);
+        if (typeof cleaned === 'object' && cleaned !== null && !Array.isArray(cleaned) && Object.keys(cleaned).length === 0) continue;
+        result[k] = cleaned;
+    }
+    return result;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOAST CONTEXT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ToastContext = createContext(null);
+
+const ToastProvider = ({ children }) => {
+    const [toast, setToast] = useState(null);
+    const timerRef = useRef(null);
+
+    const show = useCallback((message, type = 'success') => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        setToast({ message, type });
+        timerRef.current = setTimeout(() => setToast(null), 3000);
+    }, []);
+
+    return (
+        <ToastContext.Provider value={show}>
+            {children}
+            {toast && (
+                <div className="toast" style={{ background: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#3b82f6' }}>
+                    {toast.message}
+                </div>
+            )}
+        </ToastContext.Provider>
+    );
+};
+
+const useToast = () => useContext(ToastContext);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COLOR PICKER POPUP
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Compound value helpers ──────────────────────────────────────────────────
+
+const CHANNELS = [
+    { key: 'color', label: 'Color', prefix: '' },
+    { key: 'bg', label: 'BG', prefix: 'bg-' },
+    { key: 'text', label: 'Text', prefix: 'text-' },
+    { key: 'border', label: 'Border', prefix: 'border-' },
+];
+
+const parseChannels = (val) => {
+    const ch = { color: '', bg: '', text: '', border: '', imp: false };
+    if (!val) return ch;
+
+    for (const token of val.split(/\s+/)) {
+        const imp = token.startsWith('!');
+        const clean = imp ? token.slice(1) : token;
+
+        if (clean.startsWith('bg-'))          { ch.bg = clean.slice(3); if (imp) ch.imp = true; }
+        else if (clean.startsWith('text-'))    { ch.text = clean.slice(5); }
+        else if (clean.startsWith('border-'))  { ch.border = clean.slice(7); }
+        else                                   { ch.color = clean; }
+    }
+
+    return ch;
+};
+
+const composeChannels = (ch) => {
+    const parts = [];
+
+    if (ch.color)  parts.push(ch.color);
+    if (ch.bg)     parts.push(`${ch.imp ? '!' : ''}bg-${ch.bg}`);
+    if (ch.text)   parts.push(`text-${ch.text}`);
+    if (ch.border) parts.push(`border-${ch.border}`);
+
+    return parts.join(' ');
+};
+
+const CHANNEL_COLORS = { color: '#6366f1', bg: '#4f46e5', text: '#059669', border: '#d97706' };
+
+// ─── Color Picker ────────────────────────────────────────────────────────────
+
+const ColorPicker = ({ value, onSelect, onClose, position }) => {
+    const [search, setSearch] = useState('');
+    const [hexInput, setHexInput] = useState('');
+    const [activeChannel, setActiveChannel] = useState(() => {
+        const parsed = parseChannels(value);
+        if (parsed.color) return 'color';
+        if (parsed.bg) return 'bg';
+        if (parsed.text) return 'text';
+        if (parsed.border) return 'border';
+        return 'color';
+    });
+    const [channels, setChannels] = useState(() => parseChannels(value));
+    const ref = useRef(null);
+
+    const filteredStandard = search
+        ? STANDARD_FAMILIES.filter(f => f.includes(search.toLowerCase()))
+        : STANDARD_FAMILIES;
+
+    const filteredCustom = search
+        ? CUSTOM_FAMILIES.filter(f => f.includes(search.toLowerCase()))
+        : CUSTOM_FAMILIES;
+
+    const style = useMemo(() => {
+        if (!position) return { top: 100, left: 100 };
+        const top = Math.min(position.y, window.innerHeight - 560);
+        const left = Math.min(position.x, window.innerWidth - 460);
+        return { top: Math.max(8, top), left: Math.max(8, left) };
+    }, [position]);
+
+    // When channels change, emit the composed value
+    const updateChannel = (key, colorToken) => {
+        setChannels(prev => {
+            const next = { ...prev, [key]: colorToken };
+            onSelect(composeChannels(next));
+            return next;
+        });
+    };
+
+    const clearChannel = (key) => {
+        setChannels(prev => {
+            const next = { ...prev, [key]: '' };
+            if (key === 'bg') next.imp = false;
+            onSelect(composeChannels(next));
+            return next;
+        });
+    };
+
+    const toggleImportant = () => {
+        setChannels(prev => {
+            const next = { ...prev, imp: !prev.imp };
+            onSelect(composeChannels(next));
+            return next;
+        });
+    };
+
+    const handleColorClick = (colorToken) => {
+        updateChannel(activeChannel, colorToken);
+    };
+
+    const composed = composeChannels(channels);
+    const activeColor = channels[activeChannel];
+
+    return (
+        <>
+            <div className="picker-overlay" onClick={onClose} />
+            <div className="picker-popup fade-in" style={style} ref={ref}>
+
+                {/* Channel tabs */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+                    {CHANNELS.map(ch => (
+                        <button key={ch.key}
+                            className={`channel-tab ${activeChannel === ch.key ? 'active' : ''}`}
+                            style={activeChannel === ch.key ? { borderColor: CHANNEL_COLORS[ch.key], background: CHANNEL_COLORS[ch.key] + '14', color: CHANNEL_COLORS[ch.key] } : {}}
+                            onClick={() => setActiveChannel(ch.key)}
+                        >
+                            {ch.label}
+                            {channels[ch.key] && <span style={{ marginLeft: 4, opacity: .6 }}>{channels[ch.key]}</span>}
+                        </button>
+                    ))}
+
+                    {activeChannel === 'bg' && (
+                        <button
+                            className={`channel-tab ${channels.imp ? 'active' : ''}`}
+                            style={channels.imp ? { borderColor: '#ef4444', background: '#fef2f2', color: '#ef4444', fontWeight: 700 } : { fontWeight: 700 }}
+                            onClick={toggleImportant}
+                            title="Toggle !important prefix"
+                        >!</button>
+                    )}
+
+                    <div style={{ flex: 1 }} />
+                    <button className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 11 }} onClick={onClose}>Done</button>
+                </div>
+
+                {/* Search + hex */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                    <input
+                        type="text"
+                        placeholder="Search colors..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="field-input"
+                        style={{ flex: 1, fontSize: 12 }}
+                        autoFocus
+                    />
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <input
+                            type="color"
+                            value={hexInput || '#000000'}
+                            onChange={e => setHexInput(e.target.value)}
+                            style={{ width: 28, height: 28, border: 'none', padding: 0, cursor: 'pointer', borderRadius: 6 }}
+                        />
+                        <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: 10 }}
+                            onClick={() => { if (hexInput) handleColorClick(hexInput); }}>
+                            Hex
+                        </button>
+                    </div>
+                </div>
+
+                {/* Special colors */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                    {[['white','#ffffff'],['black','#000000']].map(([name, hex]) => (
+                        <div key={name} className="color-grid-cell"
+                            style={{ background: hex, border: name === 'white' ? '1px solid #e2e8f0' : 'none' }}
+                            title={name}
+                            onClick={() => handleColorClick(name)}
+                        >
+                            {activeColor === name && (
+                                <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
+                                    <path d="M5 10l3.5 3.5L15 7" stroke={name === 'white' ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Grid header */}
+                <div style={{ display: 'flex', gap: 2, marginBottom: 4, paddingLeft: 60 }}>
+                    {SHADES.map(s => (
+                        <div key={s} style={{ width: 32, textAlign: 'center', fontSize: 9, color: '#94a3b8', fontWeight: 500 }}>{s}</div>
+                    ))}
+                </div>
+
+                {/* Color grid — standard families */}
+                {filteredStandard.map(family => (
+                    <div key={family} style={{ display: 'flex', gap: 2, marginBottom: 2, alignItems: 'center' }}>
+                        <div style={{ width: 56, fontSize: 11, color: '#64748b', fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>
+                            {family}
+                        </div>
+                        {TW[family].map((hex, i) => {
+                            const token = `${family}-${SHADES[i]}`;
+                            return (
+                                <div key={i} className="color-grid-cell"
+                                    style={{ background: hex }}
+                                    title={token}
+                                    onClick={() => handleColorClick(token)}
+                                >
+                                    {activeColor === token && (
+                                        <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
+                                            <path d="M5 10l3.5 3.5L15 7" stroke={SHADES[i] < 400 ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))}
+
+                {/* Separator + custom app palette families */}
+                {filteredCustom.length > 0 && (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0 6px', paddingLeft: 60 }}>
+                            <div style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>App Palette</span>
+                            <div style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
+                        </div>
+                        {filteredCustom.map(family => (
+                            <div key={family} style={{ display: 'flex', gap: 2, marginBottom: 2, alignItems: 'center' }}>
+                                <div style={{ width: 56, fontSize: 11, color: '#6366f1', fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>
+                                    {family}
+                                </div>
+                                {TW[family].map((hex, i) => {
+                                    if (!hex) return <div key={i} style={{ width: 32, height: 32 }} />;
+                                    const token = `${family}-${SHADES[i]}`;
+                                    return (
+                                        <div key={i} className="color-grid-cell"
+                                            style={{ background: hex }}
+                                            title={token}
+                                            onClick={() => handleColorClick(token)}
+                                        >
+                                            {activeColor === token && (
+                                                <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
+                                                    <path d="M5 10l3.5 3.5L15 7" stroke={SHADES[i] < 400 ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </>
+                )}
+
+                {/* Live preview */}
+                {composed && (
+                    <div style={{ marginTop: 12, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                            <div className={`swatch ${composed}`}
+                                style={{ width: 32, height: 32, borderRadius: 6, border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>Aa</span>
+                            </div>
+                            <code style={{ color: '#475569', flex: 1, fontSize: 11, wordBreak: 'break-all' }}>{composed}</code>
+                            <button className="reset-btn" onClick={() => { setChannels({ color: '', bg: '', text: '', border: '', imp: false }); onSelect(''); }} title="Clear all">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                            </button>
+                        </div>
+
+                        {/* Channel chips */}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {CHANNELS.map(ch => channels[ch.key] ? (
+                                <span key={ch.key} className="channel-chip" style={{ background: CHANNEL_COLORS[ch.key] + '18', color: CHANNEL_COLORS[ch.key] }}>
+                                    {ch.prefix}{channels[ch.key]}
+                                    <button onClick={() => clearChannel(ch.key)} title={`Clear ${ch.label}`}>&times;</button>
+                                </span>
+                            ) : null)}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FIELD COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) => {
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const swatchRef = useRef(null);
+    const displayValue = value ?? inheritedValue ?? '';
+    const isInherited = value === undefined && inheritedValue !== undefined;
+    const hex = resolveColorHex(displayValue);
+    const compoundHex = !hex ? resolveCompoundBgHex(displayValue) : null;
+    const swatchBg = hex || compoundHex;
+
+    const openPicker = () => {
+        const rect = swatchRef.current?.getBoundingClientRect();
+        setPickerOpen(rect ? { x: rect.right + 8, y: rect.top } : { x: 300, y: 200 });
+    };
+
+    return (
+        <div className="field-group">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                    {value !== undefined && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
+                </div>
+                {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
+            </div>
+            <div ref={swatchRef}
+                className={`swatch ${!swatchBg && displayValue ? displayValue : ''}`}
+                style={{ background: swatchBg || (!displayValue ? 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' : undefined) }}
+                onClick={openPicker}
+                title={displayValue || 'Click to pick color'}
+            >
+                {!swatchBg && displayValue && <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{isCompound(displayValue) ? 'Aa' : ''}</span>}
+                {compoundHex && <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: 'white', textShadow: '0 1px 2px rgba(0,0,0,.4)' }}>Aa</span>}
+            </div>
+            <input
+                type="text"
+                className={`field-input ${isInherited ? 'inherited' : ''}`}
+                value={displayValue}
+                placeholder={inheritedValue || hint || 'e.g. blue-500'}
+                onChange={e => onChange(e.target.value)}
+            />
+            {value !== undefined && onClear && (
+                <button className="reset-btn" onClick={onClear} title="Reset to inherited">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm10.49-.117a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H.985a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-1.45-.388z" clipRule="evenodd"/></svg>
+                </button>
+            )}
+            {typeof pickerOpen === 'object' && (
+                <ColorPicker
+                    value={displayValue}
+                    position={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    onSelect={(v) => { onChange(v); }}
+                />
+            )}
+        </div>
+    );
+};
+
+const TextField = ({ label, value, inheritedValue, onChange, onClear, hint, placeholder }) => {
+    const displayValue = value ?? inheritedValue ?? '';
+    const isInherited = value === undefined && inheritedValue !== undefined;
+
+    return (
+        <div className="field-group">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                </div>
+                {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
+            </div>
+            <input
+                type="text"
+                className={`field-input ${isInherited ? 'inherited' : ''}`}
+                value={displayValue}
+                placeholder={placeholder || inheritedValue || hint || ''}
+                onChange={e => onChange(e.target.value)}
+            />
+            {value !== undefined && onClear && (
+                <button className="reset-btn" onClick={onClear} title="Reset to inherited">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm10.49-.117a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H.985a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-1.45-.388z" clipRule="evenodd"/></svg>
+                </button>
+            )}
+        </div>
+    );
+};
+
+const SelectField = ({ label, value, options, onChange, hint }) => (
+    <div className="field-group">
+        <div className="field-label" title={hint}>{label}</div>
+        <select className="field-input" value={value || ''} onChange={e => onChange(e.target.value)} style={{ cursor: 'pointer' }}>
+            {options.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+        </select>
+    </div>
+);
+
+const HexColorField = ({ label, value, inheritedValue, onChange, onClear, hint, fallback }) => {
+    const displayValue = value ?? inheritedValue ?? '';
+    const isInherited = value === undefined && inheritedValue !== undefined;
+    const isFallback = !value && !inheritedValue && !!fallback;
+    const swatchValue = displayValue || fallback || '';
+    const hasColor = swatchValue && /^#[0-9a-fA-F]{3,8}$/.test(swatchValue);
+    const pickerHex = hasColor ? swatchValue : '#ffffff';
+
+    return (
+        <div className="field-group">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                    {value !== undefined && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
+                </div>
+                {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
+            </div>
+            {hasColor ? (
+                <input
+                    type="color"
+                    value={pickerHex}
+                    onChange={e => onChange(e.target.value)}
+                    style={{ width: 32, height: 32, border: '2px solid #e2e8f0', borderRadius: 6, padding: 0, cursor: 'pointer', opacity: (isInherited || isFallback) ? 0.45 : 1 }}
+                />
+            ) : (
+                <div
+                    onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'color';
+                        input.value = pickerHex;
+                        input.addEventListener('input', e => onChange(e.target.value));
+                        input.click();
+                    }}
+                    style={{ width: 32, height: 32, border: '2px solid #e2e8f0', borderRadius: 6, cursor: 'pointer',
+                        background: 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' }}
+                    title="Click to pick color"
+                />
+            )}
+            <input
+                type="text"
+                className={`field-input ${isInherited ? 'inherited' : ''}`}
+                value={displayValue}
+                placeholder={inheritedValue || fallback || 'e.g. #FFFFFF'}
+                onChange={e => onChange(e.target.value)}
+            />
+            {value !== undefined && onClear && (
+                <button className="reset-btn" onClick={onClear} title="Reset to inherited">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm10.49-.117a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H.985a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-1.45-.388z" clipRule="evenodd"/></svg>
+                </button>
+            )}
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: General Settings
+// ═══════════════════════════════════════════════════════════════════════════
+
+const GeneralSection = ({ config, parentConfig, themes, onChange }) => (
+    <div className="section-card">
+        <div className="section-title">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}>
+                <path fillRule="evenodd" d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd"/>
+            </svg>
+            General Settings
+        </div>
+        <TextField label="Theme ID" value={config.id} onChange={(v) => onChange('id', v)} hint="Unique identifier (folder name)" />
+        <TextField label="Display Name" value={config.displayName} onChange={(v) => onChange('displayName', v)} hint="Shown in the theme selector" />
+        <SelectField label="Icon Set" value={config.iconSet || ''} hint="Which icon set to use"
+            options={[{ value: '', label: '— inherit from parent —' }, { value: 'colorful', label: 'Colorful' }, { value: 'formal', label: 'Formal' }]}
+            onChange={(v) => onChange('iconSet', v || undefined)} />
+        <SelectField label="Extends" value={config.extends || ''} hint="Parent theme to inherit from"
+            options={[{ value: '', label: '— none (standalone) —' }, ...themes.filter(t => t.id !== config.id).map(t => ({ value: t.id, label: t.displayName }))]}
+            onChange={(v) => onChange('extends', v || undefined)} />
+        <SelectField label="View Mode" value={config.defaults?.viewMode || ''} hint="Default credential list layout"
+            options={[{ value: '', label: '— inherit —' }, { value: 'grid', label: 'Grid' }, { value: 'list', label: 'List' }]}
+            onChange={(v) => {
+                if (v) onChange('defaults', { ...config.defaults, viewMode: v });
+                else {
+                    const d = { ...config.defaults };
+                    delete d.viewMode;
+                    onChange('defaults', Object.keys(d).length ? d : undefined);
+                }
+            }} />
+    </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: Category Colors
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CategoryColorEditor = ({ fields, path, config, parentConfig, setConfig }) => {
+    const parentValues = parentConfig ? deepGet(parentConfig, path) : undefined;
+
+    return (
+        <div>
+            {CATEGORY_COLOR_FIELDS.map(f => {
+                const fullPath = `${path}.${f.key}`;
+                const localValue = deepGet(config, fullPath);
+                const inheritedValue = parentValues?.[f.key];
+
+                const FieldComponent = FIELD_TYPE_COMPONENTS[f.type] || ColorField;
+
+                return (
+                    <FieldComponent
+                        key={f.key}
+                        label={<>{f.label}<FieldTypeBadge type={f.type || 'tailwind'} /></>}
+                        hint={f.hint}
+                        value={localValue}
+                        inheritedValue={inheritedValue}
+                        onChange={(v) => setConfig(deepSet(config, fullPath, v))}
+                        onClear={localValue !== undefined ? () => setConfig(deepDelete(config, fullPath)) : undefined}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+const CategoriesSection = ({ config, parentConfig, setConfig }) => {
+    const [expanded, setExpanded] = useState(null);
+    const hasCategories = !!config.colors?.categories;
+    const hasCategoryBase = !!config.colors?.categoryBase;
+
+    return (
+        <>
+            {/* Category Base (uniform) */}
+            <div className="section-card">
+                <div className="section-title">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}>
+                        <path d="M3.505 2.365A41.369 41.369 0 019 2c1.863 0 3.697.124 5.495.365 1.247.167 2.18 1.108 2.435 2.268a4.45 4.45 0 00-.577-.069 43.141 43.141 0 00-4.706 0C9.229 4.696 7.5 6.727 7.5 8.998v2.24c0 1.413.67 2.735 1.76 3.562l-2.98 2.98A.75.75 0 015 17.25v-3.443c-.501-.078-1-.199-1.488-.358-1.168-.36-2.066-1.252-2.291-2.48A41.748 41.748 0 011 8c0-2.684.18-5.27.505-7.635zM11.647 17.5c-.413 0-.79-.237-.961-.619L9 13.534v-4.536c0-1.476 1.117-2.72 2.6-2.866a41.744 41.744 0 014.8 0c1.483.146 2.6 1.39 2.6 2.866v1.397c0 1.477-1.117 2.72-2.6 2.866a41.718 41.718 0 01-2.453.095L11.647 17.5z"/>
+                    </svg>
+                    Uniform Category Base
+                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>— applied to all categories</span>
+                </div>
+                <CategoryColorEditor
+                    path="colors.categoryBase"
+                    config={config}
+                    parentConfig={parentConfig}
+                    setConfig={setConfig}
+                />
+            </div>
+
+            {/* Per-Category Overrides */}
+            <div className="section-card">
+                <div className="section-title">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#ec4899' }}>
+                        <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z"/>
+                    </svg>
+                    Per-Category Overrides
+                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>— override specific categories</span>
+                </div>
+
+                {CATEGORY_KEYS.map(cat => {
+                    const isExpanded = expanded === cat;
+                    const localCat = config.colors?.categories?.[cat];
+                    const overrideCount = localCat ? Object.keys(localCat).length : 0;
+                    const previewColors = localCat
+                        ? [localCat.primaryColor, localCat.secondaryColor, localCat.backgroundPrimaryColor].filter(Boolean)
+                        : [];
+
+                    return (
+                        <div key={cat}>
+                            <div className="accordion-header" onClick={() => setExpanded(isExpanded ? null : cat)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {/* Color preview dots */}
+                                    <div style={{ display: 'flex', gap: 2 }}>
+                                        {previewColors.map((c, i) => (
+                                            <div key={i} className={!resolveColorHex(c) && !resolveCompoundBgHex(c) ? c : ''} style={{ width: 12, height: 12, borderRadius: '50%', background: resolveColorHex(c) || resolveCompoundBgHex(c) || undefined, border: '1px solid rgba(0,0,0,.1)' }} />
+                                        ))}
+                                        {previewColors.length === 0 && <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#e2e8f0' }} />}
+                                    </div>
+                                    <span style={{ fontSize: 13, fontWeight: 500, color: '#334155' }}>{CATEGORY_LABELS[cat] || cat}</span>
+                                    {overrideCount > 0 && <span className="badge badge-override">{overrideCount} override{overrideCount > 1 ? 's' : ''}</span>}
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="#94a3b8" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+                                </svg>
+                            </div>
+                            {isExpanded && (
+                                <div className="fade-in" style={{ padding: '12px 14px' }}>
+                                    <CategoryColorEditor
+                                        path={`colors.categories.${cat}`}
+                                        config={config}
+                                        parentConfig={parentConfig}
+                                        setConfig={setConfig}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: UI Colors (launchPad, sideMenu, navbar, introSlides, defaults)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const FIELD_TYPE_COMPONENTS = { tailwind: ColorField, hex: HexColorField, class: TextField };
+const FIELD_TYPE_BADGES = {
+    tailwind: { text: 'tw', bg: '#dbeafe', color: '#1d4ed8', title: 'Tailwind color token (e.g. blue-500)' },
+    hex:      { text: 'hex', bg: '#fef3c7', color: '#92400e', title: 'Hex color value (e.g. #3B82F6)' },
+    class:    { text: 'class', bg: '#f3e8ff', color: '#7c3aed', title: 'Tailwind utility classes (e.g. bg-blue-500 text-white)' },
+};
+
+const FieldTypeBadge = ({ type }) => {
+    const badge = FIELD_TYPE_BADGES[type];
+    if (!badge) return null;
+    return (
+        <span title={badge.title} style={{
+            fontSize: 9, fontWeight: 600, lineHeight: 1, padding: '2px 4px',
+            borderRadius: 4, background: badge.bg, color: badge.color,
+            marginLeft: 4, whiteSpace: 'nowrap', letterSpacing: 0.3,
+        }}>{badge.text}</span>
+    );
+};
+
+const ObjectColorEditor = ({ title, icon, path, fields, config, parentConfig, setConfig, useHex, after }) => {
+    return (
+        <div className="section-card">
+            <div className="section-title">{icon}{title}</div>
+            {fields.map(f => {
+                const fieldType = f.type || (useHex ? 'hex' : 'tailwind');
+                const FieldComponent = FIELD_TYPE_COMPONENTS[fieldType] || ColorField;
+                const fullPath = `${path}.${f.key}`;
+                const localValue = deepGet(config, fullPath);
+                const inheritedValue = parentConfig ? deepGet(parentConfig, fullPath) : undefined;
+
+                return (
+                    <FieldComponent
+                        key={f.key}
+                        label={<>{f.label}<FieldTypeBadge type={fieldType} /></>}
+                        hint={f.hint}
+                        value={localValue}
+                        inheritedValue={inheritedValue}
+                        fallback={f.fallback}
+                        onChange={(v) => setConfig(deepSet(config, fullPath, v))}
+                        onClear={localValue !== undefined ? () => setConfig(deepDelete(config, fullPath)) : undefined}
+                    />
+                );
+            })}
+            {after}
+        </div>
+    );
+};
+
+// ── Array Color Editor: for editing ordered arrays of colors ──
+const ArrayColorEditor = ({ label, hint, path, config, parentConfig, setConfig }) => {
+    const [pickerIdx, setPickerIdx] = useState(null);
+    const [pickerPos, setPickerPos] = useState(null);
+    const swatchRefs = useRef({});
+
+    const localValue = deepGet(config, path);
+    const inheritedValue = parentConfig ? deepGet(parentConfig, path) : undefined;
+    const colors = localValue ?? inheritedValue ?? [];
+    const isInherited = localValue === undefined && inheritedValue !== undefined;
+    const hasLocal = localValue !== undefined;
+
+    const update = (newArr) => setConfig(deepSet(config, path, newArr));
+    const clear = () => setConfig(deepDelete(config, path));
+
+    const setColor = (idx, val) => {
+        const arr = [...(localValue ?? inheritedValue ?? [])];
+        arr[idx] = val;
+        update(arr);
+    };
+
+    const addColor = () => update([...(localValue ?? inheritedValue ?? []), '#888888']);
+
+    const removeColor = (idx) => {
+        const arr = [...(localValue ?? inheritedValue ?? [])];
+        arr.splice(idx, 1);
+        update(arr);
+    };
+
+    const moveColor = (idx, dir) => {
+        const arr = [...(localValue ?? inheritedValue ?? [])];
+        const target = idx + dir;
+        if (target < 0 || target >= arr.length) return;
+        [arr[idx], arr[target]] = [arr[target], arr[idx]];
+        update(arr);
+    };
+
+    const openPicker = (idx) => {
+        const el = swatchRefs.current[idx];
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        setPickerIdx(idx);
+        setPickerPos({ x: rect.right + 8, y: rect.top });
+    };
+
+    return (
+        <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                    {hasLocal && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
+                </div>
+                {hasLocal && inheritedValue !== undefined && (
+                    <button className="reset-btn" onClick={clear} title="Reset to inherited" style={{ marginLeft: 'auto' }}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm10.49-.117a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H.985a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-1.45-.388z" clipRule="evenodd"/></svg>
+                    </button>
+                )}
+            </div>
+            {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, marginBottom: 8 }}>{hint}</div>}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {colors.map((color, idx) => {
+                    const hex = resolveColorHex(color);
+                    return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 10, color: '#94a3b8', width: 16, textAlign: 'right', flexShrink: 0 }}>{idx + 1}</span>
+                            <div
+                                ref={el => swatchRefs.current[idx] = el}
+                                className="swatch"
+                                style={{ background: hex || color, width: 28, height: 28, flexShrink: 0, cursor: 'pointer' }}
+                                onClick={() => openPicker(idx)}
+                                title={color}
+                            />
+                            <input
+                                type="text"
+                                className={`field-input ${isInherited && !hasLocal ? 'inherited' : ''}`}
+                                value={color}
+                                style={{ flex: 1, fontSize: 12 }}
+                                onChange={e => setColor(idx, e.target.value)}
+                            />
+                            <button onClick={() => moveColor(idx, -1)} disabled={idx === 0}
+                                style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.25 : 0.6, padding: 2 }}
+                                title="Move up">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clipRule="evenodd"/></svg>
+                            </button>
+                            <button onClick={() => moveColor(idx, 1)} disabled={idx === colors.length - 1}
+                                style={{ background: 'none', border: 'none', cursor: idx === colors.length - 1 ? 'default' : 'pointer', opacity: idx === colors.length - 1 ? 0.25 : 0.6, padding: 2 }}
+                                title="Move down">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/></svg>
+                            </button>
+                            <button onClick={() => removeColor(idx)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5, padding: 2, color: '#ef4444' }}
+                                title="Remove">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd"/></svg>
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <button onClick={addColor}
+                style={{ marginTop: 8, fontSize: 11, color: '#6366f1', background: 'none', border: '1px dashed #c7d2fe', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/></svg>
+                Add Color
+            </button>
+
+            {pickerIdx !== null && pickerPos && (
+                <ColorPicker
+                    value={colors[pickerIdx] || ''}
+                    position={pickerPos}
+                    onClose={() => { setPickerIdx(null); setPickerPos(null); }}
+                    onSelect={(v) => setColor(pickerIdx, v)}
+                />
+            )}
+        </div>
+    );
+};
+
+// ── Brand Colors: foundational colors that define the theme's identity ──
+const BrandColorsSection = ({ config, parentConfig, setConfig }) => (
+    <>
+        <ObjectColorEditor title="Primary & Accent" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#3b82f6' }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 13.535a.75.75 0 011.06 1.061l-1.06 1.06a.75.75 0 11-1.061-1.06l1.06-1.06zM5.404 6.464a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 11-1.06 1.061l-1.06-1.06z"/></svg>}
+            fields={[
+                { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights', type: 'tailwind' },
+                { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds', type: 'tailwind' },
+            ]}
+            after={
+                <ArrayColorEditor
+                    label="Loader / Splash Colors"
+                    hint="Hex colors for loading screens and splash gradients (also used as login background fallback)"
+                    path="colors.defaults.loaders"
+                    config={config} parentConfig={parentConfig} setConfig={setConfig}
+                />
+            } />
+
+        <ObjectColorEditor title="Login Screen" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}><path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd"/><path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'loginBgColor', label: 'Login Background', hint: 'Hex color for the login page background (optional — falls back to loaders[0])', type: 'hex' },
+                { key: 'loginButtonBgColor', label: 'Login Button Background', hint: 'Hex color for the login page submit button background (optional — falls back to grayscale-900)', type: 'hex', fallback: '#18224E' },
+                { key: 'loginButtonTextColor', label: 'Login Button Text', hint: 'Hex color for the login page submit button text (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+            ]} />
+
+        <ObjectColorEditor title="Passport Page" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#0ea5e9' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'passportBgColor', label: 'Passport Background', hint: 'Hex color for the Passport page background (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'passportTextColor', label: 'Passport Text', hint: 'Tailwind text class for Passport heading text, e.g. "text-white" (optional — falls back to text-grayscale-900)', type: 'class' },
+                { key: 'passportCardBgColor', label: 'Passport Card Background', hint: 'Hex color for category card backgrounds on the Passport page (optional — falls back to category primaryColor class)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'passportCardTextColor', label: 'Passport Card Text', hint: 'Tailwind text class for category card labels, e.g. "text-white" (optional — falls back to text-grayscale-900)', type: 'class' },
+                { key: 'featuredCardBgColor', label: 'Featured Card Background', hint: 'Hex color for Build My LC / Resume Builder card backgrounds (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'featuredCardTextColor', label: 'Featured Card Text', hint: 'Tailwind text class for featured card text, e.g. "text-white" (optional — falls back to text-grayscale-900)', type: 'class' },
+            ]} />
+
+        <ObjectColorEditor title="Action Modal" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'actionModalCardBgColor', label: 'Action Modal Card Bg', hint: 'Hex color for the "What would you like to do?" modal card background (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'actionModalCardTextColor', label: 'Action Modal Card Text', hint: 'Hex color for the action modal card heading text (optional — falls back to grayscale-900)', type: 'hex', fallback: '#18224E' },
+                { key: 'actionModalTextColor', label: 'Action Modal Button Text', hint: 'Hex color for action modal button text (optional — falls back to grayscale-900)', type: 'hex', fallback: '#18224E' },
+                { key: 'actionModalButtonBorderColor', label: 'Action Modal Button Border', hint: 'Hex color for action modal button borders (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+            ]}
+            after={
+                <ArrayColorEditor
+                    label="Button Colors"
+                    hint="Ordered list of background colors for each action modal button (top → bottom)"
+                    path="colors.defaults.actionModalButtonColors"
+                    config={config} parentConfig={parentConfig} setConfig={setConfig}
+                />
+            } />
+    </>
+);
+
+// ── UI Components: navigation, menus, and screen-specific colors ──
+const UIComponentsSection = ({ config, parentConfig, setConfig }) => (
+    <>
+        <ObjectColorEditor title="Navbar" path="colors.navbar" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#10b981' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'activeColor', label: 'Active', hint: 'Icon & text color for the selected tab in the bottom nav bar', type: 'tailwind' },
+                { key: 'inactiveColor', label: 'Inactive', hint: 'Icon & text color for unselected tabs in the bottom nav bar', type: 'tailwind' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Passport tab icon/spinner color while wallet is syncing', type: 'tailwind' },
+                { key: 'completedColor', label: 'Completed', hint: 'Passport tab icon color after sync completes', type: 'tailwind' },
+            ]} />
+
+        <ObjectColorEditor title="Side Menu" path="colors.sideMenu" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#06b6d4' }}><path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'linkActiveColor', label: 'Link Active', hint: 'Text & icon color for the currently selected side menu link', type: 'class' },
+                { key: 'linkInactiveColor', label: 'Link Inactive', hint: 'Text & icon color for unselected side menu links', type: 'class' },
+                { key: 'linkActiveBackgroundColor', label: 'Link Active BG', hint: 'Background highlight on the selected side menu link row', type: 'class' },
+                { key: 'linkInactiveBackgroundColor', label: 'Link Inactive BG', hint: 'Background of unselected side menu link rows', type: 'class' },
+                { key: 'primaryButtonColor', label: 'Primary Button', hint: '"New AI Session" button in the side menu (bg + text classes)', type: 'class' },
+                { key: 'secondaryButtonColor', label: 'Secondary Button', hint: 'Secondary action button in the side menu (bg + text + border)', type: 'class' },
+                { key: 'indicatorColor', label: 'Indicator', hint: 'Notification dot color next to side menu items with updates', type: 'tailwind' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Text/spinner color for the "Passport" link while wallet is syncing', type: 'tailwind' },
+                { key: 'completedColor', label: 'Completed', hint: 'Text color for the "Passport" link after sync completes', type: 'tailwind' },
+            ]} />
+
+        <ObjectColorEditor title="LaunchPad" path="colors.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
+            fields={[
+                { key: 'contacts.color', label: 'Contacts Color', hint: 'Text color for the "Contacts" link on the LaunchPad home header', type: 'tailwind' },
+                { key: 'aiSessions.color', label: 'AI Sessions Color', hint: 'Text color for the "AI Sessions" link on the LaunchPad header', type: 'tailwind' },
+                { key: 'alerts.color', label: 'Alerts Color', hint: 'Text color for the "Alerts" link on the LaunchPad header', type: 'tailwind' },
+                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text', hint: 'Text color for the unread alerts count badge', type: 'tailwind' },
+                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG', hint: 'Background color for the unread alerts count badge', type: 'tailwind' },
+                { key: 'buttons.unconnected', label: 'Button (Unconnected)', hint: 'Style for "Connect" buttons on unconnected LaunchPad apps', type: 'class' },
+                { key: 'buttons.connected', label: 'Button (Connected)', hint: 'Style for "View" buttons on already-connected LaunchPad apps', type: 'class' },
+                { key: 'quickActionBgColor', label: 'Quick Action BG', hint: 'Hex background for the "What would you like to do?" button (optional — falls back to #DCEAFE)', type: 'hex', fallback: '#DCEAFE' },
+                { key: 'quickActionTextColor', label: 'Quick Action Text', hint: 'Hex text color for the "What would you like to do?" button (optional — falls back to #273B72)', type: 'hex', fallback: '#273B72' },
+            ]} />
+
+        <ObjectColorEditor title="Intro Slides" path="colors.introSlides" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}><path d="M2 10a8 8 0 1116 0 8 8 0 01-16 0z"/></svg>}
+            fields={[
+                { key: 'firstSlideBackground', label: 'Slide 1 Background', hint: 'Background color of the first onboarding intro slide', type: 'tailwind' },
+                { key: 'secondSlideBackground', label: 'Slide 2 Background', hint: 'Background color of the second onboarding intro slide', type: 'tailwind' },
+                { key: 'thirdSlideBackground', label: 'Slide 3 Background', hint: 'Background color of the third onboarding intro slide', type: 'tailwind' },
+                { key: 'textColors.primary', label: 'Text Primary', hint: 'Headline text color on intro slides', type: 'tailwind' },
+                { key: 'textColors.secondary', label: 'Text Secondary', hint: 'Body/subtitle text color on intro slides', type: 'tailwind' },
+                { key: 'pagination.primary', label: 'Pagination Primary', hint: 'Active pagination dot on intro slides', type: 'tailwind' },
+                { key: 'pagination.secondary', label: 'Pagination Secondary', hint: 'Inactive pagination dots on intro slides', type: 'tailwind' },
+            ]} />
+    </>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: Placeholders
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SPILLED_CUP_FIELDS = [
+    { key: 'spilledCup.backsplash', label: 'Backsplash', hint: 'Background splash color behind the empty-state cup illustration', type: 'hex' },
+    { key: 'spilledCup.spill', label: 'Spill', hint: 'Liquid spill color in the empty-state cup illustration', type: 'hex' },
+    { key: 'spilledCup.cupOutline', label: 'Cup Outline', hint: 'Outline/stroke color of the cup in the empty-state illustration', type: 'hex' },
+];
+
+const PlaceholdersSection = ({ config, parentConfig, setConfig }) => {
+    const hasPlaceholderBase = !!config.colors?.placeholderBase;
+    const hasPlaceholders = !!config.colors?.placeholders;
+    const [expanded, setExpanded] = useState(null);
+
+    return (
+        <>
+            {/* Placeholder Base (uniform) */}
+            <ObjectColorEditor
+                title="Uniform Placeholder Base"
+                path="colors.placeholderBase"
+                config={config}
+                parentConfig={parentConfig}
+                setConfig={setConfig}
+                useHex
+                icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#ec4899' }}><path d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-2.033l.31.31A7 7 0 0016.76 11.202a.75.75 0 10-1.448-.378zM4.688 8.576a5.5 5.5 0 019.201-2.466l.312.311h-2.433a.75.75 0 000 1.5h3.634a.75.75 0 00.75-.75V3.537a.75.75 0 00-1.5 0v2.033l-.31-.31A7 7 0 003.24 8.798a.75.75 0 001.448.378z"/></svg>}
+                fields={SPILLED_CUP_FIELDS}
+            />
+
+            {/* Per-Category Placeholders */}
+            <div className="section-card">
+                <div className="section-title">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}>
+                        <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z"/>
+                    </svg>
+                    Per-Category Placeholders
+                </div>
+
+                {[...CATEGORY_KEYS, 'defaults'].map(cat => {
+                    const isExpanded = expanded === cat;
+                    const catData = config.colors?.placeholders?.[cat];
+                    const hasData = !!catData;
+
+                    return (
+                        <div key={cat}>
+                            <div className="accordion-header" onClick={() => setExpanded(isExpanded ? null : cat)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {/* Preview dots from spilledCup colors */}
+                                    <div style={{ display: 'flex', gap: 2 }}>
+                                        {catData?.spilledCup ? Object.values(catData.spilledCup).map((c, i) => (
+                                            <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: c, border: '1px solid rgba(0,0,0,.1)' }} />
+                                        )) : <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#e2e8f0' }} />}
+                                    </div>
+                                    <span style={{ fontSize: 13, fontWeight: 500, color: '#334155' }}>
+                                        {cat === 'defaults' ? 'Defaults' : (CATEGORY_LABELS[cat] || cat)}
+                                    </span>
+                                    {hasData && <span className="badge badge-override">set</span>}
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="#94a3b8" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+                                </svg>
+                            </div>
+                            {isExpanded && (
+                                <div className="fade-in" style={{ padding: '12px 14px' }}>
+                                    {SPILLED_CUP_FIELDS.map(f => {
+                                        const fullPath = `colors.placeholders.${cat}.${f.key}`;
+                                        const localValue = deepGet(config, fullPath);
+                                        const inheritedValue = parentConfig ? deepGet(parentConfig, fullPath) : undefined;
+
+                                        return (
+                                            <HexColorField
+                                                key={f.key}
+                                                label={<>{f.label}<FieldTypeBadge type="hex" /></>}
+                                                value={localValue}
+                                                inheritedValue={inheritedValue}
+                                                onChange={(v) => setConfig(deepSet(config, fullPath, v))}
+                                                onClear={localValue !== undefined ? () => setConfig(deepDelete(config, fullPath)) : undefined}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: Icon Palettes
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ICON_PALETTE_KEYS = [
+    'AiSessions', 'AiPathways', 'AiInsights',
+    'Skills', 'Boosts', 'Achievements', 'Studies',
+    'Portfolio', 'Assistance', 'Experiences', 'Families', 'IDs',
+    'AllBoosts',
+];
+
+const ICON_PALETTE_FIELDS = [
+    { key: 'primary', label: 'Primary', hint: 'Main fill color (shape background)', type: 'hex' },
+    { key: 'primaryLight', label: 'Primary Light', hint: 'Lighter variant (WithLightShape backgrounds)', type: 'hex' },
+    { key: 'accent', label: 'Accent', hint: 'Secondary decorative fill color', type: 'hex' },
+    { key: 'stroke', label: 'Stroke', hint: 'Outline / stroke color', type: 'hex' },
+];
+
+// Fetch and cache icon defaults from the server
+let iconDefaultsCache = null;
+
+const getIconDefaults = async () => {
+    if (iconDefaultsCache) return iconDefaultsCache;
+
+    try {
+        const resp = await fetch('/api/icon-defaults');
+        iconDefaultsCache = await resp.json();
+    } catch {
+        iconDefaultsCache = {};
+    }
+
+    return iconDefaultsCache;
+};
+
+/** Build a preview URL for an icon with only explicit overrides as query params. */
+const buildIconPreviewUrl = (iconKey, palette, variant = 'colorful') => {
+    const params = new URLSearchParams();
+
+    if (palette.primary) params.set('primary', palette.primary);
+    if (palette.primaryLight) params.set('primaryLight', palette.primaryLight);
+    if (palette.accent) params.set('accent', palette.accent);
+    if (palette.stroke) params.set('stroke', palette.stroke);
+    if (variant === 'formal') params.set('variant', 'formal');
+
+    return `/api/icon-preview/${iconKey}?${params.toString()}`;
+};
+
+/** Live icon SVG preview that updates when palette changes. */
+const IconPreview = ({ iconKey, palette, size = 80, variant = 'colorful' }) => {
+    const [svgHtml, setSvgHtml] = useState('');
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        const url = buildIconPreviewUrl(iconKey, palette || {}, variant);
+
+        let cancelled = false;
+
+        fetch(url)
+            .then(r => {
+                if (!r.ok) throw new Error(r.statusText);
+                return r.text();
+            })
+            .then(svg => { if (!cancelled) { setSvgHtml(svg); setError(false); } })
+            .catch(() => { if (!cancelled) setError(true); });
+
+        return () => { cancelled = true; };
+    }, [iconKey, variant, palette?.primary, palette?.primaryLight, palette?.accent, palette?.stroke]);
+
+    if (error) {
+        return (
+            <div style={{
+                width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#f8fafc', borderRadius: 8, border: '1px dashed #e2e8f0', color: '#94a3b8', fontSize: 10,
+            }}>
+                No preview
+            </div>
+        );
+    }
+
+    if (!svgHtml) {
+        return (
+            <div style={{
+                width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0',
+            }}>
+                <span style={{ width: 16, height: 16, border: '2px solid #e2e8f0', borderTopColor: '#94a3b8', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            </div>
+        );
+    }
+
+    return (
+        <div
+            style={{ width: size, height: size, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            dangerouslySetInnerHTML={{ __html: svgHtml.replace(/width="[^"]*"/, `width="${size - 8}"`).replace(/height="[^"]*"/, `height="${size - 8}"`) }}
+        />
+    );
+};
+
+const IconPalettesSection = ({ config, parentConfig, setConfig }) => {
+    const [expanded, setExpanded] = useState(null);
+    const [serverDefaults, setServerDefaults] = useState({});
+
+    useEffect(() => {
+        getIconDefaults().then(d => setServerDefaults(d || {}));
+    }, []);
+
+    const iconSet = deepGet(config, 'iconSet') || (parentConfig ? deepGet(parentConfig, 'iconSet') : undefined) || 'colorful';
+
+    return (
+        <div className="section-card">
+            <div className="section-title">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}>
+                    <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clipRule="evenodd"/>
+                </svg>
+                Icon Palettes
+                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>— per-category SVG icon colors</span>
+            </div>
+
+            {ICON_PALETTE_KEYS.map(iconKey => {
+                const isExpanded = expanded === iconKey;
+                const palettePath = `iconPalettes.${iconKey}`;
+                const localPalette = deepGet(config, palettePath);
+                const parentPalette = parentConfig ? deepGet(parentConfig, palettePath) : undefined;
+                const overrideCount = localPalette ? Object.keys(localPalette).length : 0;
+
+                const effectivePalette = { ...parentPalette, ...localPalette };
+                const iconDefaults = serverDefaults[iconKey] || {};
+
+                return (
+                    <div key={iconKey}>
+                        <div className="accordion-header" onClick={() => setExpanded(isExpanded ? null : iconKey)}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <IconPreview iconKey={iconKey} palette={effectivePalette} size={36} variant={iconSet} />
+                                <span style={{ fontSize: 13, fontWeight: 500, color: '#334155' }}>{iconKey}</span>
+                                {overrideCount > 0 && <span className="badge badge-override">{overrideCount} override{overrideCount > 1 ? 's' : ''}</span>}
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="#94a3b8" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
+                                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+                            </svg>
+                        </div>
+                        {isExpanded && (
+                            <div className="fade-in" style={{ padding: '12px 14px', display: 'flex', gap: 20 }}>
+                                <div style={{ flex: 1 }}>
+                                    {ICON_PALETTE_FIELDS.map(f => {
+                                        const fullPath = `${palettePath}.${f.key}`;
+                                        const localValue = deepGet(config, fullPath);
+                                        const parentValue = parentConfig ? deepGet(parentConfig, fullPath) : undefined;
+                                        const fallbackDefault = iconDefaults[f.key];
+                                        const inheritedValue = parentValue ?? fallbackDefault;
+
+                                        return (
+                                            <HexColorField
+                                                key={f.key}
+                                                label={<>{f.label}<FieldTypeBadge type="hex" /></>}
+                                                hint={f.hint}
+                                                value={localValue}
+                                                inheritedValue={inheritedValue}
+                                                onChange={(v) => setConfig(deepSet(config, fullPath, v))}
+                                                onClear={localValue !== undefined ? () => setConfig(deepDelete(config, fullPath)) : undefined}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 4 }}>
+                                    <IconPreview iconKey={iconKey} palette={effectivePalette} size={100} variant={iconSet} />
+                                    <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>Preview</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: Styles
+// ═══════════════════════════════════════════════════════════════════════════
+
+const StylesSection = ({ config, parentConfig, setConfig }) => (
+    <>
+        <ObjectColorEditor title="Wallet Styles" path="styles.wallet" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}><path d="M1 4.25a3.733 3.733 0 012.25-.75h13.5c.844 0 1.623.279 2.25.75A2.25 2.25 0 0016.75 2H3.25A2.25 2.25 0 001 4.25zM1 7.25a3.733 3.733 0 012.25-.75h13.5c.844 0 1.623.279 2.25.75A2.25 2.25 0 0016.75 5H3.25A2.25 2.25 0 001 7.25zM7 8a1 1 0 000 2h6a1 1 0 100-2H7z"/></svg>}
+            fields={[
+                { key: 'cardStyles', label: 'Card Styles', hint: 'Tailwind utility classes for wallet card sizing (e.g. h-[240px])', type: 'class' },
+                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size classes for the category icon inside wallet cards (e.g. w-[100px] h-[100px])', type: 'class' },
+            ]} />
+
+        <ObjectColorEditor title="LaunchPad Styles" path="styles.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
+            fields={[
+                { key: 'textStyles', label: 'Text Styles', hint: 'Text size for LaunchPad header link labels (e.g. text-[16px])', type: 'class' },
+                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size of Contacts/AI/Alerts icons on the LaunchPad header (e.g. w-[75px] h-auto)', type: 'class' },
+                { key: 'indicatorStyles', label: 'Indicator Styles', hint: 'Extra styles for LaunchPad indicator elements (e.g. shadow-soft-bottom)', type: 'class' },
+            ]} />
+
+        <ObjectColorEditor title="Default Styles" path="styles.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#64748b' }}><path fillRule="evenodd" d="M4.5 2A2.5 2.5 0 002 4.5v3.879a2.5 2.5 0 00.732 1.767l7.5 7.5a2.5 2.5 0 003.536 0l3.878-3.878a2.5 2.5 0 000-3.536l-7.5-7.5A2.5 2.5 0 008.38 2H4.5zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'tabs.borderRadius', label: 'Tab Border Radius', hint: 'Corner rounding for Earned/Managed tabs (e.g. rounded-[5px])', type: 'class' },
+            ]} />
+    </>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION: JSON View
+// ═══════════════════════════════════════════════════════════════════════════
+
+const JSONSection = ({ config, setConfig }) => {
+    const [text, setText] = useState('');
+    const [parseError, setParseError] = useState(null);
+    const [validation, setValidation] = useState(null); // { valid, errors, warnings }
+    const [validating, setValidating] = useState(false);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        setText(JSON.stringify(config, null, 4));
+        setParseError(null);
+        setValidation(null);
+    }, [config]);
+
+    // Debounced validation on text change
+    const runValidation = useCallback((jsonText) => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+
+        timerRef.current = setTimeout(async () => {
+            let parsed;
+
+            try {
+                parsed = JSON.parse(jsonText);
+            } catch {
+                return; // parse error shown separately
+            }
+
+            setValidating(true);
+
+            try {
+                const result = await api.validateTheme(parsed);
+                setValidation(result);
+            } catch {
+                // validation endpoint unreachable, ignore
+            } finally {
+                setValidating(false);
+            }
+        }, 500);
+    }, []);
+
+    const handleTextChange = (e) => {
+        const val = e.target.value;
+        setText(val);
+
+        // Quick parse check
+        try {
+            JSON.parse(val);
+            setParseError(null);
+            runValidation(val);
+        } catch (err) {
+            setParseError(err.message);
+            setValidation(null);
+        }
+    };
+
+    const apply = () => {
+        try {
+            const parsed = JSON.parse(text);
+
+            if (validation && !validation.valid) {
+                if (!confirm(`There are ${validation.errors.length} validation error(s). Apply anyway?`)) return;
+            }
+
+            setConfig(parsed);
+            setParseError(null);
+        } catch (e) {
+            setParseError(e.message);
+        }
+    };
+
+    const errorCount = validation?.errors?.length || 0;
+    const warnCount = validation?.warnings?.length || 0;
+
+    return (
+        <div className="section-card">
+            <div className="section-title" style={{ justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#475569' }}>
+                        <path fillRule="evenodd" d="M6.28 5.22a.75.75 0 010 1.06L2.56 10l3.72 3.72a.75.75 0 01-1.06 1.06L.97 10.53a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0zm7.44 0a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L17.44 10l-3.72-3.72a.75.75 0 010-1.06zM11.377 2.011a.75.75 0 01.612.867l-2.5 14.5a.75.75 0 01-1.478-.255l2.5-14.5a.75.75 0 01.866-.612z" clipRule="evenodd"/>
+                    </svg>
+                    Raw JSON
+
+                    {/* Validation status badge */}
+                    {validating && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>validating...</span>}
+                    {!validating && validation && validation.valid && errorCount === 0 && (
+                        <span style={{ fontSize: 10, color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/></svg>
+                            Valid
+                        </span>
+                    )}
+                    {!validating && errorCount > 0 && (
+                        <span style={{ fontSize: 10, color: '#dc2626', fontWeight: 600 }}>{errorCount} error{errorCount > 1 ? 's' : ''}</span>
+                    )}
+                    {!validating && warnCount > 0 && (
+                        <span style={{ fontSize: 10, color: '#d97706', fontWeight: 600 }}>{warnCount} warning{warnCount > 1 ? 's' : ''}</span>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-secondary" onClick={() => { try { setText(JSON.stringify(JSON.parse(text), null, 4)); } catch {} }} style={{ fontSize: 11, padding: '4px 10px' }}>
+                        Format
+                    </button>
+                    <button className="btn btn-primary" onClick={apply} style={{ fontSize: 11, padding: '4px 10px' }}>
+                        Apply Changes
+                    </button>
+                </div>
+            </div>
+
+            {/* Parse error */}
+            {parseError && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 8, fontSize: 12, color: '#dc2626' }}>
+                    <strong>JSON Parse Error:</strong> {parseError}
+                </div>
+            )}
+
+            {/* Zod validation errors */}
+            {!parseError && errorCount > 0 && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 8, fontSize: 12, color: '#dc2626' }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Validation Errors</div>
+                    {validation.errors.map((e, i) => (
+                        <div key={i} style={{ marginBottom: 2 }}>
+                            <code style={{ color: '#991b1b', fontSize: 11 }}>{e.path || '(root)'}</code>: {e.message}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Warnings */}
+            {!parseError && warnCount > 0 && (
+                <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 8, fontSize: 12, color: '#92400e' }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Warnings</div>
+                    {validation.warnings.map((w, i) => (
+                        <div key={i} style={{ marginBottom: 2 }}>
+                            <code style={{ color: '#78350f', fontSize: 11 }}>{w.path}</code>: {w.message}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <textarea className="json-editor" value={text} onChange={handleTextChange} spellCheck={false} />
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LAYER 3: MINI VISUAL PREVIEW MOCKUP
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PREVIEW_CATEGORIES = ['achievement', 'socialBadge', 'learningHistory', 'workHistory', 'id', 'skill'];
+
+const ThemePreviewMockup = ({ preview }) => {
+    if (!preview) return null;
+
+    const cats = preview.colors?.categories || {};
+    const sideMenu = preview.colors?.sideMenu || {};
+    const navbar = preview.colors?.navbar || {};
+    const introSlides = preview.colors?.introSlides || {};
+
+    // Resolve a token to a hex value, supporting compound classes
+    const r = (token) => {
+        if (!token) return '#e2e8f0';
+
+        const stripped = token.replace(/^(!?)(bg-|text-|border-)/, '');
+
+        return resolveColorHex(stripped) || '#e2e8f0';
+    };
+
+    return (
+        <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>UI Mockup</div>
+
+            <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', borderRadius: 10, padding: 8, overflow: 'hidden' }}>
+
+                {/* ── Side Menu mockup ── */}
+                <div style={{
+                    width: 80, minHeight: 180, borderRadius: 8, background: 'white',
+                    display: 'flex', flexDirection: 'column', padding: '8px 6px', gap: 3,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)', flexShrink: 0,
+                }}>
+                    {/* Logo placeholder */}
+                    <div style={{ height: 14, borderRadius: 3, background: '#e2e8f0', marginBottom: 4 }} />
+
+                    {/* Nav items */}
+                    {['Home', 'Wallet', 'AI', 'Settings'].map((label, i) => {
+                        const isActive = i === 1;
+                        const activeBg = r(sideMenu.linkActiveBackgroundColor);
+                        const activeText = r(sideMenu.linkActiveColor);
+                        const inactiveText = r(sideMenu.linkInactiveColor);
+
+                        return (
+                            <div key={label} style={{
+                                padding: '3px 5px', borderRadius: 4, fontSize: 8, fontWeight: 500,
+                                background: isActive ? activeBg : 'transparent',
+                                color: isActive ? activeText : inactiveText,
+                                transition: 'all 0.15s',
+                            }}>
+                                {label}
+                            </div>
+                        );
+                    })}
+
+                    <div style={{ flex: 1 }} />
+
+                    {/* Primary button */}
+                    <div style={{
+                        padding: '3px 5px', borderRadius: 4, fontSize: 7, fontWeight: 600,
+                        background: r(sideMenu.primaryButtonColor), color: 'white',
+                        textAlign: 'center',
+                    }}>
+                        Connect
+                    </div>
+                </div>
+
+                {/* ── Main content area ── */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+                    {/* Category header mockup */}
+                    <div style={{
+                        height: 28, borderRadius: 6,
+                        background: r(cats.achievement?.backgroundPrimaryColor),
+                        display: 'flex', alignItems: 'center', padding: '0 8px', gap: 4,
+                    }}>
+                        <div style={{ fontSize: 9, fontWeight: 600, color: r(cats.achievement?.headerTextColor) }}>
+                            Achievements
+                        </div>
+                        <div style={{ flex: 1 }} />
+                        <div style={{
+                            width: 12, height: 12, borderRadius: '50%',
+                            background: r(cats.achievement?.indicatorColor),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <span style={{ fontSize: 6, fontWeight: 700, color: 'white' }}>3</span>
+                        </div>
+                    </div>
+
+                    {/* Passport grid mockup — 2x3 mini cards */}
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4,
+                    }}>
+                        {PREVIEW_CATEGORIES.map(key => {
+                            const cat = cats[key];
+                            if (!cat) return <div key={key} style={{ height: 48, borderRadius: 5, background: '#e2e8f0' }} />;
+
+                            const bgHex = r(cat.backgroundPrimaryColor);
+                            const primaryHex = r(cat.primaryColor);
+                            const secondaryHex = r(cat.secondaryColor);
+                            const borderHex = r(cat.borderColor);
+
+                            return (
+                                <div key={key} style={{
+                                    height: 48, borderRadius: 5, background: bgHex,
+                                    border: `1px solid ${borderHex}`,
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    gap: 2, position: 'relative', overflow: 'hidden',
+                                }}>
+                                    {/* Icon circle */}
+                                    <div style={{
+                                        width: 16, height: 16, borderRadius: '50%',
+                                        background: primaryHex, opacity: 0.8,
+                                    }} />
+
+                                    {/* Label */}
+                                    <div style={{ fontSize: 6, fontWeight: 500, color: secondaryHex, textAlign: 'center', lineHeight: 1 }}>
+                                        {(CATEGORY_LABELS[key] || key).slice(0, 8)}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Navbar mockup */}
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+                        background: 'white', borderRadius: 6, padding: '4px 0',
+                        boxShadow: '0 -1px 3px rgba(0,0,0,0.04)',
+                    }}>
+                        {['Home', 'Wallet', 'AI', 'More'].map((label, i) => (
+                            <div key={label} style={{
+                                fontSize: 7, fontWeight: 500, textAlign: 'center',
+                                color: i === 0 ? r(navbar.activeColor) : r(navbar.inactiveColor),
+                            }}>
+                                <div style={{
+                                    width: 10, height: 10, borderRadius: 2, margin: '0 auto 1px',
+                                    background: i === 0 ? r(navbar.activeColor) : r(navbar.inactiveColor),
+                                    opacity: 0.3,
+                                }} />
+                                {label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ── Intro slides mini strip ── */}
+                <div style={{
+                    width: 32, display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0,
+                }}>
+                    <div style={{ fontSize: 7, fontWeight: 600, color: '#94a3b8', textAlign: 'center', marginBottom: 2 }}>Intro</div>
+                    {[introSlides.firstSlideBackground, introSlides.secondSlideBackground, introSlides.thirdSlideBackground].map((token, i) => (
+                        <div key={i} style={{
+                            height: 48, borderRadius: 4, background: r(token),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <span style={{ fontSize: 7, fontWeight: 600, color: 'white', opacity: 0.7 }}>{i + 1}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREATE THEME MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Reusable: Inline ramp swatch strip ─────────────────────────────────────
+
+const RampStrip = ({ family, size = 18, onClick, selected }) => {
+    const hexes = TW[family];
+
+    if (!hexes) return null;
+
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                display: 'flex', gap: 1, borderRadius: 4, overflow: 'hidden', cursor: onClick ? 'pointer' : 'default',
+                outline: selected ? '2px solid #6366f1' : '2px solid transparent',
+                outlineOffset: 2, transition: 'outline-color 0.15s',
+            }}
+        >
+            {hexes.map((hex, i) => hex ? (
+                <div key={i} style={{ width: size, height: size, background: hex }} title={`${family}-${SHADES[i]}`} />
+            ) : null)}
+        </div>
+    );
+};
+
+// ─── Palette Role Selector (dropdown of all families) ────────────────────────
+
+const RoleSelector = ({ role, value, onChange }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <div style={{ width: 110, flexShrink: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{role.label}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3 }}>{role.hint}</div>
+        </div>
+
+        <select
+            className="field-input"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            style={{ width: 140, fontSize: 12 }}
+        >
+            <optgroup label="App Palette">
+                {CUSTOM_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+            </optgroup>
+            <optgroup label="Standard">
+                {STANDARD_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+            </optgroup>
+        </select>
+
+        <RampStrip family={value} size={16} />
+    </div>
+);
+
+const CreateThemeModal = ({ themes, onClose, onCreate }) => {
+    const [mode, setMode] = useState('palette');
+    const [id, setId] = useState('');
+    const [displayName, setDisplayName] = useState('');
+    const [baseTheme, setBaseTheme] = useState(themes[0]?.id || '');
+
+    // Legacy generate mode state
+    const [primaryHex, setPrimaryHex] = useState('#4F46E5');
+    const [accentHex, setAccentHex] = useState('#10B981');
+    const [autoAccent, setAutoAccent] = useState(true);
+    const [genStyle, setGenStyle] = useState('vibrant');
+
+    // Palette wizard state
+    const [palettePreset, setPalettePreset] = useState('learncard');
+    const [roles, setRoles] = useState({ ...PALETTE_PRESETS.learncard.ramps });
+    const [paletteStyle, setPaletteStyle] = useState('vibrant');
+
+    const [creating, setCreating] = useState(false);
+    const toast = useToast();
+
+    const sanitizedId = id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+    // Legacy generate preview
+    const effectiveAccent = autoAccent ? null : accentHex;
+    const resolvedAccentFamily = autoAccent ? pickComplementary(nearestTwFamily(primaryHex)) : nearestTwFamily(accentHex);
+
+    const legacyPreview = useMemo(() => {
+        if (mode !== 'generate') return null;
+        try { return generateThemeFromBrand({ primaryHex, accentHex: effectiveAccent, style: genStyle }); }
+        catch { return null; }
+    }, [mode, primaryHex, effectiveAccent, genStyle]);
+
+    // Palette wizard preview
+    const palettePreview = useMemo(() => {
+        if (mode !== 'palette') return null;
+        try { return generateThemeFromPalette({ roles, style: paletteStyle }); }
+        catch { return null; }
+    }, [mode, roles, paletteStyle]);
+
+    const activePreview = mode === 'palette' ? palettePreview : legacyPreview;
+
+    const applyPreset = (key) => {
+        const preset = PALETTE_PRESETS[key];
+        if (!preset) return;
+        setPalettePreset(key);
+        setRoles({ ...preset.ramps });
+    };
+
+    const updateRole = (key, family) => {
+        setRoles(prev => ({ ...prev, [key]: family }));
+        setPalettePreset('custom');
+    };
+
+    const handleCreate = async () => {
+        if (!sanitizedId || !displayName.trim()) return;
+        setCreating(true);
+
+        try {
+            if (mode === 'extend') {
+                await api.saveTheme(sanitizedId, {
+                    id: sanitizedId,
+                    displayName: displayName.trim(),
+                    ...(baseTheme ? { extends: baseTheme } : {}),
+                });
+            } else if (mode === 'palette') {
+                const generated = generateThemeFromPalette({ roles, style: paletteStyle });
+
+                await api.saveTheme(sanitizedId, {
+                    id: sanitizedId,
+                    displayName: displayName.trim(),
+                    iconSet: paletteStyle === 'vibrant' ? 'colorful' : 'formal',
+                    ...generated,
+                });
+            } else {
+                const generated = generateThemeFromBrand({ primaryHex, accentHex: effectiveAccent, style: genStyle });
+
+                await api.saveTheme(sanitizedId, {
+                    id: sanitizedId,
+                    displayName: displayName.trim(),
+                    iconSet: genStyle === 'vibrant' ? 'colorful' : 'formal',
+                    ...generated,
+                });
+            }
+
+            toast(`Theme "${displayName}" created!`);
+            onCreate(sanitizedId);
+            onClose();
+        } catch (e) {
+            toast('Failed to create theme: ' + e.message, 'error');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const lblStyle = { display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 };
+    const fldStyle = { marginBottom: 16 };
+
+    const tabStyle = (active) => ({
+        flex: 1, padding: '8px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+        fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
+        background: active ? 'white' : 'transparent',
+        color: active ? '#1e293b' : '#64748b',
+        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+    });
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 620, maxHeight: '92vh', overflowY: 'auto' }}>
+                <h2 style={{ margin: '0 0 4px 0', fontSize: 18, fontWeight: 600, color: '#1e293b' }}>Create New Theme</h2>
+                <p style={{ margin: '0 0 16px 0', fontSize: 13, color: '#64748b' }}>Build from a palette, generate from brand colors, or extend an existing theme.</p>
+
+                {/* Mode tabs */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#f1f5f9', borderRadius: 8, padding: 3 }}>
+                    <button onClick={() => setMode('palette')} style={tabStyle(mode === 'palette')}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path fillRule="evenodd" d="M4.5 2A2.5 2.5 0 002 4.5v3.879a2.5 2.5 0 00.732 1.767l7.5 7.5a2.5 2.5 0 003.536 0l3.878-3.878a2.5 2.5 0 000-3.536l-7.5-7.5A2.5 2.5 0 008.38 2H4.5zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>
+                        Palette Wizard
+                    </button>
+                    <button onClick={() => setMode('generate')} style={tabStyle(mode === 'generate')}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6z"/></svg>
+                        Brand Colors
+                    </button>
+                    <button onClick={() => setMode('extend')} style={tabStyle(mode === 'extend')}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.44A1.5 1.5 0 008.378 6H4.5z"/></svg>
+                        Extend
+                    </button>
+                </div>
+
+                {/* Common fields */}
+                <div style={fldStyle}>
+                    <label style={lblStyle}>Theme ID</label>
+                    <input className="field-input" value={id} onChange={e => setId(e.target.value)}
+                        placeholder="e.g. my-brand" style={{ width: '100%' }} />
+                    {sanitizedId && sanitizedId !== id && (
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Will be saved as: <code>{sanitizedId}</code></div>
+                    )}
+                </div>
+
+                <div style={fldStyle}>
+                    <label style={lblStyle}>Display Name</label>
+                    <input className="field-input" value={displayName} onChange={e => setDisplayName(e.target.value)}
+                        placeholder="e.g. My Brand Theme" style={{ width: '100%' }} />
+                </div>
+
+                {/* ── Palette Wizard mode ── */}
+                {mode === 'palette' && (
+                    <>
+                        {/* Preset selector */}
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Start from a Preset</label>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {Object.entries(PALETTE_PRESETS).map(([key, preset]) => (
+                                    <button key={key} onClick={() => applyPreset(key)}
+                                        style={{
+                                            padding: '8px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                                            border: palettePreset === key ? '2px solid #6366f1' : '2px solid #e2e8f0',
+                                            background: palettePreset === key ? '#eef2ff' : 'white',
+                                            transition: 'all 0.15s', minWidth: 100,
+                                        }}
+                                    >
+                                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{preset.label}</div>
+                                        <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{preset.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Role assignments */}
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Assign Color Roles</label>
+                            <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                                {PALETTE_ROLES.map(role => (
+                                    <RoleSelector
+                                        key={role.key}
+                                        role={role}
+                                        value={roles[role.key] || 'slate'}
+                                        onChange={(family) => updateRole(role.key, family)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Style toggle */}
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Style</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {[{ value: 'vibrant', label: 'Vibrant', desc: 'Unique color per category' },
+                                  { value: 'uniform', label: 'Uniform', desc: 'Professional, single palette' }]
+                                .map(opt => (
+                                    <button key={opt.value} onClick={() => setPaletteStyle(opt.value)}
+                                        style={{
+                                            flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                                            border: paletteStyle === opt.value ? '2px solid #6366f1' : '2px solid #e2e8f0',
+                                            background: paletteStyle === opt.value ? '#eef2ff' : 'white',
+                                            textAlign: 'left', transition: 'all 0.15s',
+                                        }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{opt.label}</div>
+                                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{opt.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* ── Extend mode ── */}
+                {mode === 'extend' && (
+                    <div style={{ marginBottom: 24 }}>
+                        <label style={lblStyle}>Extend From</label>
+                        <select className="field-input" value={baseTheme} onChange={e => setBaseTheme(e.target.value)} style={{ width: '100%' }}>
+                            <option value="">No parent (standalone)</option>
+                            {themes.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
+                        </select>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                            Inherited values show as placeholders. Override only what you need.
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Legacy generate mode ── */}
+                {mode === 'generate' && (
+                    <>
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Primary Brand Color</label>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input type="color" value={primaryHex} onChange={e => setPrimaryHex(e.target.value)}
+                                    style={{ width: 40, height: 40, border: '2px solid #e2e8f0', borderRadius: 8, padding: 0, cursor: 'pointer' }} />
+                                <input className="field-input" value={primaryHex} onChange={e => setPrimaryHex(e.target.value)}
+                                    placeholder="#4F46E5" style={{ flex: 1, fontFamily: 'monospace' }} />
+                                <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 55, textAlign: 'right' }}>
+                                    {nearestTwFamily(primaryHex)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={fldStyle}>
+                            <label style={{ ...lblStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span>Accent Color</span>
+                                <label style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <input type="checkbox" checked={autoAccent} onChange={e => setAutoAccent(e.target.checked)} />
+                                    Auto (complementary)
+                                </label>
+                            </label>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', opacity: autoAccent ? 0.4 : 1, pointerEvents: autoAccent ? 'none' : 'auto', transition: 'opacity 0.15s' }}>
+                                <input type="color" value={autoAccent ? (COLOR_LOOKUP[`${resolvedAccentFamily}-500`] || '#10B981') : accentHex}
+                                    onChange={e => setAccentHex(e.target.value)}
+                                    style={{ width: 40, height: 40, border: '2px solid #e2e8f0', borderRadius: 8, padding: 0, cursor: 'pointer' }} />
+                                <input className="field-input"
+                                    value={autoAccent ? `auto: ${resolvedAccentFamily}` : accentHex}
+                                    onChange={e => setAccentHex(e.target.value)}
+                                    placeholder="#10B981" style={{ flex: 1, fontFamily: 'monospace' }} />
+                                <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 55, textAlign: 'right' }}>
+                                    {resolvedAccentFamily}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Style</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {[{ value: 'vibrant', label: 'Vibrant', desc: 'Unique color per category' },
+                                  { value: 'uniform', label: 'Uniform', desc: 'Professional, single palette' }]
+                                .map(opt => (
+                                    <button key={opt.value} onClick={() => setGenStyle(opt.value)}
+                                        style={{
+                                            flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                                            border: genStyle === opt.value ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                                            background: genStyle === opt.value ? '#eff6ff' : 'white',
+                                            textAlign: 'left', transition: 'all 0.15s',
+                                        }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{opt.label}</div>
+                                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{opt.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* ── Live preview (shared by palette + generate) ── */}
+                {activePreview && (mode === 'palette' || mode === 'generate') && (
+                    <div style={{ marginBottom: 20, background: '#f8fafc', borderRadius: 10, padding: 14 }}>
+                        <label style={{ ...lblStyle, marginBottom: 8 }}>Live Preview</label>
+
+                        {/* Category color strip */}
+                        <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Categories</div>
+                            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                {(mode === 'palette' ? PALETTE_VIBRANT_CATEGORY_MAP.map(m => m.cat) : GEN_CATEGORIES).map(key => {
+                                    const cat = activePreview.colors.categories[key];
+                                    if (!cat) return null;
+                                    const hex = resolveColorHex(cat.primaryColor);
+                                    return (
+                                        <div key={key} title={`${CATEGORY_LABELS[key] || key}: ${cat.primaryColor}`} style={{
+                                            width: 30, height: 30, borderRadius: 6,
+                                            background: hex || '#e2e8f0',
+                                            border: '2px solid white',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                        }} />
+                                    );
+                                })}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
+                                {(mode === 'palette' ? PALETTE_VIBRANT_CATEGORY_MAP.map(m => m.cat) : GEN_CATEGORIES)
+                                    .map(k => CATEGORY_LABELS[k] || k).join(' \u00b7 ')}
+                            </div>
+                        </div>
+
+                        {/* UI color chips */}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                            {[
+                                { label: 'Primary', token: activePreview.colors.defaults.primaryColor },
+                                { label: 'Action', token: activePreview.colors.launchPad.aiSessions.color },
+                                { label: 'Slide 1', token: activePreview.colors.introSlides.firstSlideBackground },
+                                { label: 'Slide 2', token: activePreview.colors.introSlides.secondSlideBackground },
+                                { label: 'Slide 3', token: activePreview.colors.introSlides.thirdSlideBackground },
+                            ].map(({ label, token }) => (
+                                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <div style={{
+                                        width: 14, height: 14, borderRadius: 3,
+                                        background: resolveColorHex(token) || '#ccc',
+                                        border: '1px solid rgba(0,0,0,0.1)',
+                                    }} />
+                                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{label}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Mini passport grid mockup (Layer 3) */}
+                        <ThemePreviewMockup preview={activePreview} />
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                    <button className="btn btn-primary" onClick={handleCreate}
+                        disabled={!sanitizedId || !displayName.trim() || creating}>
+                        {creating ? 'Creating...' : mode === 'palette' ? 'Generate & Create' : mode === 'generate' ? 'Generate & Create' : 'Create Theme'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════════
+
+const Sidebar = ({ themes, selectedId, onSelect, onCreateClick }) => (
+    <div style={{ width: 260, background: '#0f172a', color: 'white', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0 }}>
+        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="#818cf8">
+                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd"/>
+                </svg>
+                <div>
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>Theme Editor</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>JSON-based themes</div>
+                </div>
+            </div>
+            <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b', textDecoration: 'none', marginTop: 10, transition: 'color .15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#e2e8f0'}
+                onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd"/></svg>
+                Back to Home
+            </a>
+        </div>
+
+        <div style={{ padding: '12px 8px', flex: 1, overflowY: 'auto' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 8px 8px' }}>
+                Themes ({themes.length})
+            </div>
+
+            {themes.map(t => (
+                <div key={t.id}
+                    onClick={() => onSelect(t.id)}
+                    style={{
+                        padding: '10px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
+                        background: selectedId === t.id ? '#334155' : 'transparent',
+                        transition: 'background .15s',
+                    }}
+                    onMouseEnter={e => { if (selectedId !== t.id) e.currentTarget.style.background = '#1e293b'; }}
+                    onMouseLeave={e => { if (selectedId !== t.id) e.currentTarget.style.background = 'transparent'; }}
+                >
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{t.displayName}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                        {t.id}
+                        {t.extends && <span style={{ color: '#818cf8' }}> extends {t.extends}</span>}
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,.08)' }}>
+            <button className="btn" onClick={onCreateClick}
+                style={{ width: '100%', background: '#4f46e5', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/></svg>
+                New Theme
+            </button>
+        </div>
+    </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME EDITOR (main content area)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TABS = [
+    { id: 'preview', label: 'Preview' },
+    { id: 'general', label: 'General' },
+    { id: 'brand', label: 'Brand Colors' },
+    { id: 'categories', label: 'Categories' },
+    { id: 'ui', label: 'UI Components' },
+    { id: 'visuals', label: 'Visuals' },
+    { id: 'styles', label: 'Styles' },
+    { id: 'json', label: 'JSON' },
+];
+
+// Build a preview-compatible object from a raw theme config (merging parent)
+const buildPreviewFromConfig = (config, parentConfig) => {
+    const merged = parentConfig
+        ? JSON.parse(JSON.stringify(parentConfig))
+        : {};
+
+    // Deep merge config over parent
+    const deepMergeObj = (target, source) => {
+        for (const key of Object.keys(source)) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key] && typeof target[key] === 'object') {
+                deepMergeObj(target[key], source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        }
+
+        return target;
+    };
+
+    deepMergeObj(merged, config);
+
+    return {
+        colors: {
+            categories: merged.colors?.categories || {},
+            sideMenu: merged.colors?.sideMenu || {},
+            navbar: merged.colors?.navbar || {},
+            introSlides: merged.colors?.introSlides || {},
+            launchPad: merged.colors?.launchPad || {},
+            defaults: merged.colors?.defaults || {},
+        },
+    };
+};
+
+// Full preview tab for the editor showing the mockup + palette ramp summary
+const PreviewTab = ({ config, parentConfig }) => {
+    const preview = useMemo(
+        () => buildPreviewFromConfig(config, parentConfig),
+        [config, parentConfig],
+    );
+
+    const allCatKeys = Object.keys(preview.colors.categories);
+
+    return (
+        <div className="section-card">
+            <div className="section-title">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}>
+                    <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                    <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+                Live Theme Preview
+            </div>
+
+            <ThemePreviewMockup preview={preview} />
+
+            {/* Category color summary */}
+            <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Category Palette</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {allCatKeys.map(key => {
+                        const cat = preview.colors.categories[key];
+                        const hex = resolveColorHex(cat?.primaryColor);
+
+                        return (
+                            <div key={key} title={`${CATEGORY_LABELS[key] || key}: ${cat?.primaryColor || 'none'}`}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                                }}>
+                                <div style={{
+                                    width: 32, height: 32, borderRadius: 6,
+                                    background: hex || '#e2e8f0',
+                                    border: '2px solid white',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                }} />
+                                <span style={{ fontSize: 8, color: '#94a3b8', maxWidth: 40, textAlign: 'center', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {(CATEGORY_LABELS[key] || key).slice(0, 6)}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* UI color summary chips */}
+            <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 8 }}>UI Colors</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {[
+                        { label: 'Primary', token: preview.colors.defaults?.primaryColor },
+                        { label: 'Primary Shade', token: preview.colors.defaults?.primaryColorShade },
+                        { label: 'Nav Active', token: preview.colors.navbar?.activeColor },
+                        { label: 'Nav Inactive', token: preview.colors.navbar?.inactiveColor },
+                        { label: 'Menu Active', token: preview.colors.sideMenu?.linkActiveColor },
+                        { label: 'Menu Btn', token: preview.colors.sideMenu?.primaryButtonColor },
+                        { label: 'Slide 1', token: preview.colors.introSlides?.firstSlideBackground },
+                        { label: 'Slide 2', token: preview.colors.introSlides?.secondSlideBackground },
+                        { label: 'Slide 3', token: preview.colors.introSlides?.thirdSlideBackground },
+                    ].filter(c => c.token).map(({ label, token }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: '#f1f5f9', borderRadius: 6 }}>
+                            <div style={{
+                                width: 14, height: 14, borderRadius: 3,
+                                background: resolveColorHex(token?.replace(/^(!?)(bg-|text-|border-)/, '')) || '#ccc',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                            }} />
+                            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>{label}</span>
+                            <code style={{ fontSize: 9, color: '#94a3b8' }}>{token}</code>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Read theme ID and tab from URL hash: #themeId or #themeId/tabId
+const parseHash = () => {
+    const hash = window.location.hash.replace(/^#/, '');
+    const [themeId, tabId] = hash.split('/');
+    return { themeId: themeId || null, tabId: tabId || null };
+};
+
+const updateHash = (themeId, tabId) => {
+    const hash = themeId ? (tabId ? `${themeId}/${tabId}` : themeId) : '';
+    if (window.location.hash.replace(/^#/, '') !== hash) {
+        window.history.replaceState(null, '', hash ? `#${hash}` : window.location.pathname);
+    }
+};
+
+const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
+    const [config, setConfig] = useState(null);
+    const [originalJson, setOriginalJson] = useState('');
+    const [parentConfig, setParentConfig] = useState(null);
+    const initialTab = parseHash().tabId;
+    const [activeTab, setActiveTabRaw] = useState(
+        initialTab && TABS.some(t => t.id === initialTab) ? initialTab : 'general'
+    );
+
+    const setActiveTab = (tabId) => {
+        setActiveTabRaw(tabId);
+        updateHash(themeId, tabId);
+    };
+    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const toast = useToast();
+
+    // Load theme config
+    useEffect(() => {
+        setLoading(true);
+        setConfig(null);
+        setParentConfig(null);
+        setConfirmDelete(false);
+
+        api.getTheme(themeId).then(data => {
+            setConfig(data);
+            setOriginalJson(JSON.stringify(data));
+
+            // Load parent if extends
+            if (data.extends) {
+                api.getTheme(data.extends).then(p => setParentConfig(p)).catch(() => {});
+            }
+
+            setLoading(false);
+        }).catch(err => {
+            toast('Failed to load theme: ' + err.message, 'error');
+            setLoading(false);
+        });
+    }, [themeId]);
+
+    // Also reload parent when extends changes
+    useEffect(() => {
+        if (config?.extends) {
+            api.getTheme(config.extends).then(p => setParentConfig(p)).catch(() => setParentConfig(null));
+        } else {
+            setParentConfig(null);
+        }
+    }, [config?.extends]);
+
+    const isDirty = config && JSON.stringify(config) !== originalJson;
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const result = await api.saveTheme(themeId, config);
+            setOriginalJson(JSON.stringify(result.config || config));
+
+            const warnCount = result.validation?.warnings?.length || 0;
+            toast(warnCount > 0 ? `Theme saved with ${warnCount} warning(s)` : 'Theme saved!');
+
+            onSaved?.();
+        } catch (e) {
+            if (e.validation?.errors?.length) {
+                const msgs = e.validation.errors.map(err => `${err.path || '(root)'}: ${err.message}`);
+                toast('Validation failed:\n' + msgs.join('\n'), 'error');
+            } else {
+                toast('Failed to save: ' + e.message, 'error');
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        try {
+            await api.deleteTheme(themeId);
+            toast('Theme deleted');
+            onDeleted?.();
+        } catch (e) {
+            toast('Failed to delete: ' + e.message, 'error');
+        }
+    };
+
+    const handleFieldChange = (key, value) => {
+        if (value === undefined || value === '') {
+            const next = { ...config };
+            delete next[key];
+            setConfig(next);
+        } else {
+            setConfig({ ...config, [key]: value });
+        }
+    };
+
+    if (loading) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                Loading theme...
+            </div>
+        );
+    }
+
+    if (!config) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                Failed to load theme
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div>
+                    <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#1e293b' }}>{config.displayName || config.id}</h1>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                        schemas/{config.id}/theme.json
+                        {config.extends && <span> &middot; extends <code style={{ color: '#6366f1' }}>{config.extends}</code></span>}
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {isDirty && <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 500 }}>Unsaved changes</span>}
+                    {confirmDelete ? (
+                        <>
+                            <span style={{ fontSize: 12, color: '#ef4444' }}>Delete this theme?</span>
+                            <button className="btn btn-danger" onClick={handleDelete} style={{ fontSize: 12 }}>Yes, Delete</button>
+                            <button className="btn btn-secondary" onClick={() => setConfirmDelete(false)} style={{ fontSize: 12 }}>Cancel</button>
+                        </>
+                    ) : (
+                        <>
+                            <button className="btn btn-secondary" onClick={() => setConfirmDelete(true)} style={{ fontSize: 12, color: '#ef4444' }}>Delete</button>
+                            <button className="btn btn-primary" onClick={handleSave} disabled={!isDirty || saving} style={{ fontSize: 12 }}>
+                                {saving ? 'Saving...' : 'Save'}
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Tab bar */}
+            <div style={{ padding: '8px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 4, flexShrink: 0 }}>
+                {TABS.map(tab => (
+                    <button key={tab.id} className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                        onClick={() => setActiveTab(tab.id)}>
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#f8fafc' }}>
+                <div style={{ maxWidth: 800 }}>
+                    {activeTab === 'preview' && (
+                        <PreviewTab config={config} parentConfig={parentConfig} />
+                    )}
+                    {activeTab === 'general' && (
+                        <GeneralSection config={config} parentConfig={parentConfig} themes={themes} onChange={handleFieldChange} />
+                    )}
+                    {activeTab === 'brand' && (
+                        <BrandColorsSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                    )}
+                    {activeTab === 'categories' && (
+                        <CategoriesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                    )}
+                    {activeTab === 'ui' && (
+                        <UIComponentsSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                    )}
+                    {activeTab === 'visuals' && (
+                        <>
+                            <IconPalettesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                            <PlaceholdersSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                        </>
+                    )}
+                    {activeTab === 'styles' && (
+                        <StylesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                    )}
+                    {activeTab === 'json' && (
+                        <JSONSection config={config} setConfig={setConfig} />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// APP ROOT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const App = () => {
+    const [themes, setThemes] = useState([]);
+    const initial = parseHash();
+    const [selectedId, setSelectedId] = useState(initial.themeId);
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Sync hash → state on back/forward navigation
+    useEffect(() => {
+        const onHashChange = () => {
+            const { themeId } = parseHash();
+            if (themeId) setSelectedId(themeId);
+        };
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
+
+    // Sync state → hash when selected theme changes
+    useEffect(() => {
+        if (selectedId) {
+            const { tabId } = parseHash();
+            updateHash(selectedId, tabId);
+        }
+    }, [selectedId]);
+
+    const loadThemes = async () => {
+        try {
+            const data = await api.listThemes();
+            setThemes(data);
+
+            // Only default to first theme if no hash-based selection and nothing selected
+            if (!selectedId) {
+                const { themeId: hashId } = parseHash();
+                const match = hashId && data.find(t => t.id === hashId);
+                setSelectedId(match ? match.id : data.length > 0 ? data[0].id : null);
+            }
+        } catch (e) {
+            console.error('Failed to load themes:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { loadThemes(); }, []);
+
+    const handleCreated = (newId) => {
+        loadThemes();
+        setSelectedId(newId);
+    };
+
+    const handleDeleted = () => {
+        setSelectedId(null);
+        loadThemes();
+    };
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#94a3b8', fontSize: 15 }}>
+                Loading themes...
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ display: 'flex', height: '100vh' }}>
+            <Sidebar
+                themes={themes}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onCreateClick={() => setCreateModalOpen(true)}
+            />
+
+            {selectedId ? (
+                <ThemeEditor
+                    key={selectedId}
+                    themeId={selectedId}
+                    themes={themes}
+                    onDeleted={handleDeleted}
+                    onSaved={loadThemes}
+                />
+            ) : (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: '#94a3b8' }}>
+                    <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" style={{ opacity: 0.3 }}>
+                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd"/>
+                    </svg>
+                    <div style={{ fontSize: 15 }}>Select a theme to edit</div>
+                    <button className="btn btn-primary" onClick={() => setCreateModalOpen(true)}>
+                        Create New Theme
+                    </button>
+                </div>
+            )}
+
+            {createModalOpen && (
+                <CreateThemeModal
+                    themes={themes}
+                    onClose={() => setCreateModalOpen(false)}
+                    onCreate={handleCreated}
+                />
+            )}
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOUNT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+    <ToastProvider>
+        <App />
+    </ToastProvider>
+);
+    </script>
+</body>
+</html>

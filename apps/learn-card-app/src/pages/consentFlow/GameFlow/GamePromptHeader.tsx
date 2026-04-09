@@ -1,6 +1,6 @@
 import React from 'react';
 
-import LearnCardAppIcon from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import Plus from 'learn-card-base/svgs/Plus';
 import X from 'apps/learn-card-app/src/components/svgs/X';
@@ -22,6 +22,8 @@ export const GamePromptHeader: React.FC<GamePromptHeaderProps> = ({
     showX = false,
     showCheckmark = false,
 }) => {
+    const { appIcon } = useTenantBrandingAssets();
+
     return (
         <div className="w-full flex items-center justify-center">
             <div className="flex items-center justify-center relative">
@@ -57,8 +59,8 @@ export const GamePromptHeader: React.FC<GamePromptHeaderProps> = ({
                 ) : (
                     <div className="w-[50px] h-[50px] rounded-[10px] overflow-hidden border-b-solid border-white border-[2px] absolute bottom-0 right-[-40px] drop-shadow-bottom bg-white">
                         <img
-                            src={LearnCardAppIcon}
-                            alt="LearnCard App Icon"
+                            src={appIcon}
+                            alt="App Icon"
                             className="h-full w-full object-contain"
                         />
                     </div>

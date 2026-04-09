@@ -10,6 +10,7 @@ import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import AddressBookQRCode from '../addressBook-qrcode/AddressBookQRCode';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import ScannerPermissionsPrompt from 'apps/learn-card-app/src/components/scanner-permissions-prompt/ScannerPermissionsPrompt';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import Search from 'apps/learn-card-app/src/components/svgs/Search';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 
@@ -84,7 +85,7 @@ const AddressBookContactOptions: React.FC<{
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://learncard.app/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
             presentToast('Contact link copied to clipboard', {
                 type: ToastTypeEnum.Success,
@@ -103,7 +104,7 @@ const AddressBookContactOptions: React.FC<{
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://learncard.app/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {

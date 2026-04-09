@@ -1,2 +1,4 @@
 .env
 .env.*
+report.xml
+service-account.json

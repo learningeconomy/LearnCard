@@ -3,29 +3,45 @@ import React, { createContext, useContext, useEffect, useState, useMemo, useCall
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
+import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 
 /**
- * Lazily load and instantiate the appropriate analytics provider based on env config.
+ * Lazily load and instantiate the appropriate analytics provider.
+ *
+ * Reads from TenantConfig.observability first, falling back to VITE_* env vars
+ * for backward compatibility during migration.
  */
 async function loadProvider(): Promise<AnalyticsProvider> {
-    const providerName = (
-        import.meta.env.VITE_ANALYTICS_PROVIDER || 'noop'
-    ) as AnalyticsProviderName;
+    let providerName: AnalyticsProviderName = 'noop';
+    let posthogKey: string | undefined;
+    let posthogHost: string | undefined;
+
+    try {
+        const config = getResolvedTenantConfig();
+        providerName = config.observability.analyticsProvider ?? 'noop';
+        posthogKey = config.observability.posthogKey;
+        posthogHost = config.observability.posthogHost;
+    } catch {
+        // TenantConfig not yet resolved — fall back to env vars
+        providerName = (import.meta.env.VITE_ANALYTICS_PROVIDER || 'noop') as AnalyticsProviderName;
+        posthogKey = import.meta.env.VITE_POSTHOG_KEY;
+        posthogHost = import.meta.env.VITE_POSTHOG_HOST;
+    }
 
     switch (providerName) {
         case 'posthog': {
-            const apiKey = import.meta.env.VITE_POSTHOG_KEY;
-
-            if (!apiKey) {
-                console.warn('[Analytics] PostHog selected but VITE_POSTHOG_KEY not set, falling back to noop');
+            if (!posthogKey) {
+                console.warn(
+                    '[Analytics] PostHog selected but no posthogKey configured, falling back to noop'
+                );
                 return new NoopProvider();
             }
 
             const { PostHogProvider } = await import('./providers/posthog');
 
             return new PostHogProvider({
-                apiKey,
-                apiHost: import.meta.env.VITE_POSTHOG_HOST,
+                apiKey: posthogKey,
+                apiHost: posthogHost,
             });
         }
 
@@ -46,7 +62,22 @@ interface AnalyticsContextValue {
     isReady: boolean;
 }
 
-const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
+const ANALYTICS_CONTEXT_KEY = '__learncardAnalyticsContext__';
+
+const getAnalyticsContext = (): React.Context<AnalyticsContextValue | null> => {
+    const globalScope = globalThis as typeof globalThis & {
+        [ANALYTICS_CONTEXT_KEY]?: React.Context<AnalyticsContextValue | null>;
+    };
+
+    if (!globalScope[ANALYTICS_CONTEXT_KEY]) {
+        globalScope[ANALYTICS_CONTEXT_KEY] = createContext<AnalyticsContextValue | null>(null);
+        globalScope[ANALYTICS_CONTEXT_KEY].displayName = 'AnalyticsContext';
+    }
+
+    return globalScope[ANALYTICS_CONTEXT_KEY];
+};
+
+const AnalyticsContext = getAnalyticsContext();
 
 interface AnalyticsProviderProps {
     children: React.ReactNode;

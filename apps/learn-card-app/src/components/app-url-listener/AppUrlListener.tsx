@@ -2,22 +2,26 @@ import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { PluginListenerHandle } from '@capacitor/core';
+import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
 
     const deepLinkDomains = useMemo(
-        () => ({
-            // HTTPS domains for universal links / app links
-            httpsDomains: [
-                'https://learncard.app',
-                'https://learncardapp.netlify.app',
-                'https://learncardapp.netlify.com',
-                'https://lcw.app', // Added for the new https://lcw.app/request.html
-            ],
-            // Custom schemes for deep linking
-            customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
-        }),
+        () => {
+            const config = getResolvedTenantConfig();
+            const nativeConfig = config.native;
+
+            const domains = (nativeConfig?.deepLinkDomains ?? ['learncard.app'])
+                .map(d => `https://${d}`);
+
+            const schemes = nativeConfig?.customSchemes ?? ['dccrequest', 'msprequest', 'asuprequest'];
+
+            return {
+                httpsDomains: domains,
+                customSchemes: schemes,
+            };
+        },
         []
     );
 

@@ -5,6 +5,7 @@ import { IonPage, IonCol, IonRow } from '@ionic/react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
 import { redirectStore } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { FromDashboardMetadata } from './ClaimFromDashboard';
 
@@ -16,6 +17,7 @@ export type ClaimFromDashboardLoggedOutProps = {
 
 const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = ({ metadata }) => {
     const currentUser = useCurrentUser();
+    const brandingConfig = useBrandingConfig();
 
     const history = useHistory();
     const location = useLocation();
@@ -51,7 +53,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                             onClick={redirectToLogin}
                             className="bg-emerald-700 text-grayscale-50 text-[18px] leading-[28px] tracking-[0.75px] font-poppins normal w-full py-[12px] rounded-[40px] shadow-bottom"
                         >
-                            Sign up for LearnCard
+                            Sign up for {brandingConfig?.name}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
                             Have an account?{' '}
@@ -68,7 +70,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
 
                 <div className="pt-[20px] border-solid border-t-[1px] border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
                     <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
-                        LearnCard
+                        {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">
                         Universal Learning & Work Portfolio

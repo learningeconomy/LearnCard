@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth, LEARNCARD_AI_URL } from 'learn-card-base';
+import { useDeviceTypeByWidth } from 'learn-card-base';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
@@ -31,7 +32,7 @@ import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 
-export const BACKEND_URL = LEARNCARD_AI_URL;
+export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
 type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
@@ -145,7 +146,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                             form.append('threadId', threadId);
                             form.append('event', 'hidden');
                             navigator.sendBeacon(
-                                `${BACKEND_URL}/threads/visibility?did=${did}`,
+                                `${getBackendUrl()}/threads/visibility?did=${did}`,
                                 form
                             );
                             console.debug('sent beacon after 5min hidden');
@@ -164,7 +165,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     form.append('did', did);
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
-                    navigator.sendBeacon(`${BACKEND_URL}/threads/visibility?did=${did}`, form);
+                    navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
                     console.debug('sent beacon visible');
                 }
             }

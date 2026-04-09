@@ -12,6 +12,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 
 import { useWallet } from 'learn-card-base';
 
@@ -245,7 +246,7 @@ if (result.valid) {
                 snippets={{
                     typescript: verifyCode,
                     curl: `# Verify via API
-curl -X POST https://api.learncard.com/credentials/verify \\
+curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/credentials/verify \\
   -H "Content-Type: application/json" \\
   -d '{
     "credential": {
