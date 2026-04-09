@@ -12,7 +12,6 @@ import { AiSessionsTabsEnum } from '../aiSessions.helpers';
 import { aiPassportApps, AiPassportAppsEnum } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { useGetCredentialList, useGetEnrichedTopicsList } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
-import ExperimentalFeatureBox from '../../generic/ExperimentalFeatureBox';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
 type AiSessionTopicsProps = {
@@ -173,7 +172,6 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                 className="h-full w-full overflow-y-scroll scrollbar-hide relative"
             >
                 <ul className="ion-padding pt-1 pb-[200px] mt-[10px] mb-[20px]">
-                    {isMobile && !isFetching && !isLoading && <ExperimentalFeatureBox />}
                     {searchInput.length > 0 && displayTopics ? (
                         <>
                             {displayTopics.map((t, index) => {

@@ -57,7 +57,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const sheetModal = useRef<HTMLIonModalElement>(null);
     const centerModal = useRef<HTMLIonModalElement>(null);
 
-    const { iconPadding, helperText, helperTextClickable } = SubheaderContentType[subheaderType];
+    const { iconPadding, helperText, helperTextClickable, showBetaLabel } =
+        SubheaderContentType[subheaderType];
 
     const handleCloseShareModal = () => {
         setShareCredsIsOpen(false);
@@ -109,6 +110,11 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                             />
                         )}{' '}
                         {titleDisplay}
+                        {showBetaLabel && (
+                            <span className="ml-[6px] text-[15px] font-normal text-grayscale-400 leading-[100%]">
+                                beta
+                            </span>
+                        )}
                         {newCredsCountDisplay}
                     </span>
                     <span className="font-poppins text-[12px]">
