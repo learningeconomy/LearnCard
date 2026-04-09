@@ -30,7 +30,7 @@ export const AccountApproved: React.FC<AccountApprovedProps> = ({
             <Text style={heading}>Your {branding.brandName} account has been approved!</Text>
 
             <Text style={paragraph}>
-                Hello,
+                Hello {name},
             </Text>
 
             <Text style={paragraph}>
