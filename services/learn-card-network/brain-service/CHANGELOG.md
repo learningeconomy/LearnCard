@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.13.5
+
+### Patch Changes
+
+-   [#1139](https://github.com/learningeconomy/LearnCard/pull/1139) [`4599f016afc31f6e34b713c85af56d0355a71e67`](https://github.com/learningeconomy/LearnCard/commit/4599f016afc31f6e34b713c85af56d0355a71e67) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1726] First-class CLR 2.0 support in CredentialBuilder
+
 ## 3.13.4
 
 ### Patch Changes
