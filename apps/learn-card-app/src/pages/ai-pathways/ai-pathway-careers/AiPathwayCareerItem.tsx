@@ -89,15 +89,15 @@ export const AiPathwayCareerItem: React.FC<{
                             </p>
                         )}
                         <div className="w-full flex items-center gap-2 flex-wrap">
-                            <div className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-3 py-2">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-2">
                                 {firstSkillIcon && firstSkillIcon}
-                                <p className="text-grayscale-800 text-sm font-semibold line-clamp-1">
+                                <p className="text-grayscale-900 text-xs font-semibold line-clamp-1">
                                     {firstSkill.statement}
                                 </p>
                             </div>
                             {remainingSkillsCount > 0 && (
-                                <div className="inline-flex items-center rounded-full bg-purple-100 px-3 py-2">
-                                    <p className="text-grayscale-800 text-sm font-semibold">
+                                <div className="inline-flex items-center rounded-full bg-violet-50 px-3 py-2">
+                                    <p className="text-grayscale-900 text-xs font-semibold">
                                         + {remainingSkillsCount} more
                                     </p>
                                 </div>
