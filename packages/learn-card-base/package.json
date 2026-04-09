@@ -1,6 +1,6 @@
 {
     "name": "learn-card-base",
-    "version": "0.1.26",
+    "version": "0.1.27",
     "private": true,
     "description": "LearnCard Apps shared components",
     "main": "src/index.ts",

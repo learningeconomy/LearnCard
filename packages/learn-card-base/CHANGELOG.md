@@ -1,5 +1,11 @@
 # learn-card-base
 
+## 0.1.27
+
+### Patch Changes
+
+-   [#1157](https://github.com/learningeconomy/LearnCard/pull/1157) [`3f61574ac55e6034042f991ec19701bc2cb84edf`](https://github.com/learningeconomy/LearnCard/commit/3f61574ac55e6034042f991ec19701bc2cb84edf) Thanks [@Custard7](https://github.com/Custard7)! - fix: "Already Connected" Error on Android Resume
+
 ## 0.1.26
 
 ### Patch Changes
