@@ -336,10 +336,12 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     code: 'UNKNOWN_ERROR',
                     message: error instanceof Error ? error.message : 'Unknown error occurred',
                 });
-                // Hide activity indicator on error
+            } finally {
+                // Always hide the activity indicator when the handler completes.
+                // Some handlers call endActivity() early (before showing a modal);
+                // the store already guards against going below 0 via Math.max().
                 sdkActivityStore.set.endActivity();
             }
-            // Note: endActivity() is called by handlers when they show their UI
         },
         [trustedOrigins, debug]
     );
