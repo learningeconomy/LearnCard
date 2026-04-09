@@ -3,10 +3,9 @@ import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import useAiSession from '../../hooks/useAiSession';
-import sideMenuStore from 'learn-card-base/stores/sideMenuStore';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
-import { useGetCredentialList, useIsCollapsed } from 'learn-card-base';
+import { useGetCredentialList } from 'learn-card-base';
 
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
@@ -41,7 +40,6 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const startNewSession: boolean = _startNewSession === 'true';
     const shortCircuitStep: NewAiSessionStepEnum = _shortCircuitStep as NewAiSessionStepEnum;
 
-    const isCollapsed = useIsCollapsed();
     const [isMobileModalOpen, setIsMobileModalOpen] = useState<boolean>(false);
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
@@ -83,12 +81,6 @@ export const AiSessionTopicsContainer: React.FC = () => {
             handleSetChatBotSelected(shortCircuitStep);
         }
     }, [shortCircuitStep]);
-
-    useEffect(() => {
-        if (!isCollapsed) {
-            sideMenuStore.set.isCollapsed(true);
-        }
-    }, []);
 
     useEffect(() => {
         newCredsStore.set.clearNewCreds('AI Topic');
