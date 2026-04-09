@@ -17,7 +17,6 @@ import AiInsightsLearningSnapshots from './AiInsightsLearningSnapshots';
 import RequestInsightsCard from './request-insights/RequestInsightsCard';
 import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
@@ -118,9 +117,6 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
-                <ExperimentalFeatureBox />
-            </div>
             <div className="flex items-center justify-center w-full my-4">
                 {flags?.showGenerateAiInsightsButton && (
                     <button

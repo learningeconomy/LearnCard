@@ -69,7 +69,7 @@ export const roleSlideContent: Partial<Record<LearnCardRolesEnum, RoleSlideConfi
                 boldText: 'Learn',
                 regularText: 'about your Skills & Experiences',
                 image: learnerSlide3,
-                imageAlt: 'AI Insights Hub',
+                imageAlt: 'AI Insights',
             },
             {
                 boldText: 'Level up',
@@ -119,7 +119,7 @@ export const roleSlideContent: Partial<Record<LearnCardRolesEnum, RoleSlideConfi
                 boldText: 'Organize all your students & learning data',
                 regularText: 'in one dashboard',
                 image: teacherSlide1,
-                imageAlt: 'AI Insights Hub for teachers',
+                imageAlt: 'AI Insights for teachers',
             },
             {
                 boldText: 'Create and manage',

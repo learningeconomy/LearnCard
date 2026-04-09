@@ -3,7 +3,6 @@ import React from 'react';
 import RevisitIcon from 'learn-card-base/svgs/RevisitIcon';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import ExperimentalFeatureBox from '../../generic/ExperimentalFeatureBox';
-
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import { useHistory } from 'react-router-dom';
