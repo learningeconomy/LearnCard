@@ -3,14 +3,26 @@ import React from 'react';
 import AiPathwayCareerItem from './AiPathwayCareerItem';
 import AiPathwayCareerItemSkeletonLoader from './AiPathwayCareerItemSkeletonLoader';
 
+import useTheme from '../../../theme/hooks/useTheme';
+
+import { CredentialCategoryEnum } from 'learn-card-base';
+
 const AiPathwayCareers: React.FC<{
     careerKeywords?: string[];
     occupations?: any[];
     isLoading?: boolean;
 }> = ({ careerKeywords = [], occupations = [], isLoading = false }) => {
+    const { getThemedCategoryIcons } = useTheme();
+    const { IconWithShape } = getThemedCategoryIcons(CredentialCategoryEnum.workHistory);
+
     const titleEl = (
-        <div className="w-full flex items-center justify-start">
-            <h2 className="text-xl text-grayscale-800 font-notoSans">Explore Careers</h2>
+        <div className="w-full flex justify-start flex-col items-start gap-1">
+            <h2 className="text-xl text-grayscale-800 font-notoSans font-semibold flex items-center gap-2">
+                {IconWithShape && <IconWithShape className="w-[50px] h-[50px]" />} Explore Roles
+            </h2>
+            <p className="text-sm text-grayscale-600 font-notoSans">
+                Use your current skills to start new opportunities.
+            </p>
         </div>
     );
 

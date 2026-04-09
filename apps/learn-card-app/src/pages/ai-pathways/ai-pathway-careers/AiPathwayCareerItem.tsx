@@ -10,7 +10,8 @@ import { getYearlyWages } from './ai-pathway-careers.helpers';
 
 export const AiPathwayCareerItem: React.FC<{
     occupation: OccupationDetailsResponse;
-}> = ({ occupation }) => {
+    showDescription?: boolean;
+}> = ({ occupation, showDescription = false }) => {
     const { newModal } = useModal();
 
     const openCareerDetailsModal = () => {
@@ -26,7 +27,7 @@ export const AiPathwayCareerItem: React.FC<{
     return (
         <div
             role="button"
-            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
+            className="w-full flex flex-col items-start justify-start pt-2 pb-4 gap-1 border-solid border-b-[1px] border-grayscale-200 last:border-b-0"
             onClick={openCareerDetailsModal}
         >
             <div className="w-full flex flex-col items-start justify-start gap-1">
@@ -40,16 +41,18 @@ export const AiPathwayCareerItem: React.FC<{
                     </div>
                 </div>
                 <div className="w-full flex flex-col items-start justify-start">
-                    <p className="text-grayscale-600 text-xs text-left font-semibold">
+                    <p className="text-grayscale-600 text-[13px] text-left font-semibold">
                         AVG. ANNUAL SALARY
                     </p>
-                    <p className="text-indigo-400 text-sm text-left font-semibold">
+                    <p className="text-indigo-400 text-xl font-semibold text-left">
                         ${numeral(medianSalary).format('0,0')}
                     </p>
                 </div>
-                <p className="text-grayscale-600 line-clamp-2 text-sm text-left">
-                    {occupation?.OnetDescription}
-                </p>
+                {showDescription && (
+                    <p className="text-grayscale-600 line-clamp-2 text-sm text-left">
+                        {occupation?.OnetDescription}
+                    </p>
+                )}
             </div>
         </div>
     );
