@@ -69,6 +69,11 @@ const CategoryDescriptorModal: React.FC<{
                 category = CredentialCategoryEnum.aiInsight;
                 break;
 
+            case 'AI Pathways':
+                imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
+                category = 'aiPathway' as CredentialCategoryEnum;
+                break;
+
             default:
                 throw new Error('Invalid title provided');
         }

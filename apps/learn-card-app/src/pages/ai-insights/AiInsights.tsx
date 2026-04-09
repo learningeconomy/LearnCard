@@ -134,12 +134,15 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
-            {/* <AiInsightsLearningPathwaysCard /> */}
-            <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+            <AiInsightsPromptBoxContainer />
+            {!flags?.hideAiPathways && (
+                <div className="w-full flex gap-3 mt-4">
+                    <AiInsightsLearningPathwaysCard />
+                    <AiInsightsSkillsCardSimple />
+                </div>
+            )}
         </>
     );
 

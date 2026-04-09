@@ -2,7 +2,6 @@ import React from 'react';
 
 import RevisitIcon from 'learn-card-base/svgs/RevisitIcon';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
-import ExperimentalFeatureBox from '../../generic/ExperimentalFeatureBox';
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import { useHistory } from 'react-router-dom';
@@ -41,7 +40,6 @@ export const AiSessionTypeSelector: React.FC<{
 
     return (
         <div className="w-full flex flex-col gap-[20px] items-center justify-center bg-white ion-padding !py-[30px] px-[20px]">
-            <ExperimentalFeatureBox className="mb-[10px] max-w-[375px]" />
             <button
                 className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px]`}
                 onClick={() => {

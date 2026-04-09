@@ -64,6 +64,7 @@ export const SubheaderContentType: Record<
         bgColor: string;
         helperText?: string;
         helperTextClickable?: string;
+        showBetaLabel?: boolean;
     }
 > = {
     [SubheaderTypeEnum.Learning]: {
@@ -123,6 +124,7 @@ export const SubheaderContentType: Record<
         bgColor: 'bg-white',
         helperText: 'Explore',
         helperTextClickable: 'your progress',
+        showBetaLabel: true,
     },
     [SubheaderTypeEnum.AiPathways]: {
         title: 'AI Pathways',
@@ -131,7 +133,8 @@ export const SubheaderContentType: Record<
         textColor: 'text-white',
         bgColor: 'bg-white',
         helperText: 'Your',
-        helperTextClickable: 'Lessons and careers.',
+        helperTextClickable: 'Lessons and Careers',
+        showBetaLabel: true,
     },
     [SubheaderTypeEnum.Job]: {
         title: 'Experiences',
