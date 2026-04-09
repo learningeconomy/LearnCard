@@ -21,6 +21,7 @@ import {
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { FamilyCMSAppearance } from '../../familyCMSState';
 import { LearnCardIDCMSTabsEnum } from '../../../learncardID-CMS/LearnCardIDCMSTabs';
@@ -280,7 +281,8 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                         className="w-full text-grayscale-900 text-xl font-poppins flex items-center justify-between px-2 mt-4"
                     >
                         <div className="flex">
-                            <LearnCardIconOutline className="mr-2" /> Edit LearnCard
+                            <LearnCardIconOutline className="mr-2" /> Edit{' '}
+                            {brandingConfig?.name || 'LearnCard'}
                         </div>
 
                         <SlimCaretRight className="text-grayscale-400 w-[22px] h-auto" />

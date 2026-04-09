@@ -18,6 +18,7 @@ import {
     useGetCredentialsFromContract,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',
@@ -42,6 +43,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
     const confirm = useConfirmation();
     const { closeModal, closeAllModals } = useModal();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
     const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
@@ -216,7 +218,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                     >
                         <h4 className="text-white text-xl tracking-normal w-full text-left mb-4 font-medium font-poppins">
-                            Share Data in Your LearnCard
+                            Share Data in Your {brandingConfig?.name}
                         </h4>
 
                         {contractReadDataExists && (
@@ -255,7 +257,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         )}
                         {!contractReadDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not reading any data from your LearnCard
+                                This contract is not reading any data from your {brandingConfig?.name}
                             </p>
                         )}
                     </IonCol>
@@ -283,7 +285,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                     >
                         <h4 className="text-white text-xl tracking-normal w-full text-left mb-4 font-medium font-poppins">
-                            Allow Data to be Added to Your LearnCard
+                            Allow Data to be Added to Your {brandingConfig?.name}
                         </h4>
 
                         {contractWriteDataExists && (
@@ -316,7 +318,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         )}
                         {!contractWriteDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not writing any data to your LearnCard
+                                This contract is not writing any data to your {brandingConfig?.name}
                             </p>
                         )}
                     </IonCol>

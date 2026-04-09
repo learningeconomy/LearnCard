@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useWallet, useGetDid, useCurrentUser } from 'learn-card-base';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 const XAPI_CONTRACT_URI_EXTENSION = 'https://learncard.com/xapi/extensions/contractUri';
 
@@ -78,12 +79,7 @@ export const useXApiStatementsForContract = (contractUri: string) => {
             const params = new URLSearchParams({
                 agent: JSON.stringify(actor),
             });
-            const baseUrl =
-                typeof LEARN_CLOUD_XAPI_URL === 'string'
-                    ? LEARN_CLOUD_XAPI_URL
-                    : typeof CLOUD_URL === 'string'
-                    ? CLOUD_URL.replace(/\/trpc\/?$/, '/xapi')
-                    : 'https://cloud.learncard.com/xapi';
+            const baseUrl = networkStore.get.xapiUrl() || 'https://cloud.learncard.com/xapi';
 
             const url = pageParam || `${baseUrl}/statements?${params}`;
 

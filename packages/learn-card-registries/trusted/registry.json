@@ -219,10 +219,15 @@
             "location": "Washington, DC, USA",
             "url": "https://laiser.gwu.edu"
         },
-"did:web:network.learncard.com:users:laiser-gwu": {
+        "did:web:network.learncard.com:users:laiser-gwu": {
             "name": "LAiSER",
             "location": "Washington, DC, USA",
             "url": "https://laiser.gwu.edu"
+        },
+        "did:web:network.learncard.com:users:lefasugsv": {
+            "name": "LEF @ ASU-GSV",
+            "location": "Washington, DC, USA",
+            "url": "https://learningeconomy.io/"
         }
     }
 }

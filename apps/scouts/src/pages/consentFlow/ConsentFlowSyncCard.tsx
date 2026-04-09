@@ -23,6 +23,7 @@ import {
     ModalTypes,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowEditAccess from './ConsentFlowEditAccess';
 
 export type ConsentFlowWriteAccessType = {
@@ -59,6 +60,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
 }) => {
     const { newModal, closeAllModals } = useModal();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const { initWallet } = useWallet();
 
@@ -322,7 +324,9 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
         <section className="disable-scrollbars safe-area-top-margin w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[400px]">
             <div className="flex flex-col pt-8 w-full">
                 <div className="w-full flex items-center justify-center pt-2">
-                    <h6 className="tracking-[12px] text-base font-bold text-black">LEARNCARD</h6>
+                    <h6 className="tracking-[12px] text-base font-bold text-black">
+                        {brandingConfig?.name}
+                    </h6>
                 </div>
 
                 <div className="w-full flex flex-col items-center justify-center mt-8 px-4">

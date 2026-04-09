@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
 
@@ -20,6 +21,7 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -56,7 +58,7 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
                 <IonToolbar color="#fffff">
                     <IonRow className="flex flex-col pb-4">
                         <IonCol className="w-full flex items-center justify-center">
-                            <h6 className="tracking-[12px] font-bold">LEARNCARD</h6>
+                            <h6 className="tracking-[12px] font-bold">{brandingConfig?.name}</h6>
                         </IonCol>
                     </IonRow>
                 </IonToolbar>

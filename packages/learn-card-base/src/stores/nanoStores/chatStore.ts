@@ -7,7 +7,7 @@ import { resetArtifactsStore } from './artifactsStore';
 import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
-import { LEARNCARD_AI_URL } from '../../constants/Networks';
+import { networkStore } from '../NetworkStore';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
@@ -50,7 +50,10 @@ export const planSections = atom({
     roadmap: [] as any[],
 });
 
-export const BACKEND_URL = LEARNCARD_AI_URL;
+export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
+
+/** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
+export const BACKEND_URL = 'https://api.learncloud.ai';
 
 /**
  * Reset all chat-related stores to their initial values.
@@ -116,7 +119,7 @@ export async function loadThreads() {
     if (!did) return;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/threads?did=${did}`);
+        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`);
         if (!response.ok) throw new Error('Failed to load threads');
 
         const threadList = await response.json();
@@ -132,7 +135,7 @@ export async function loadThread(threadId: string) {
     if (!did) return;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/messages?did=${did}&threadId=${threadId}`);
+        const response = await fetch(`${getBackendUrl()}/messages?did=${did}&threadId=${threadId}`);
         if (!response.ok) throw new Error('Failed to load messages');
 
         const threadMessages = await response.json();
@@ -161,7 +164,7 @@ export async function loadThread(threadId: string) {
 
         // Load thread credentials
         const credsResponse = await fetch(
-            `${BACKEND_URL}/thread_credentials?did=${did}&threadId=${threadId}`
+            `${getBackendUrl()}/thread_credentials?did=${did}&threadId=${threadId}`
         );
         if (!credsResponse.ok) {
             console.error('Failed to load thread credentials');
@@ -181,7 +184,7 @@ export async function createThread() {
     if (!did) return;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/threads?did=${did}`, {
+        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`, {
             method: 'POST',
         });
 
@@ -206,7 +209,7 @@ export async function deleteThread(threadId: string) {
     if (!did) return;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/threads?did=${did}&threadId=${threadId}`, {
+        const response = await fetch(`${getBackendUrl()}/threads?did=${did}&threadId=${threadId}`, {
             method: 'DELETE',
         });
 
@@ -234,7 +237,7 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
 
     try {
         const response = await fetch(
-            `${BACKEND_URL}/learning-pathways?did=${encodeURIComponent(
+            `${getBackendUrl()}/learning-pathways?did=${encodeURIComponent(
                 did
             )}&threadId=${encodeURIComponent(threadId)}`
         );
@@ -261,7 +264,7 @@ export function connectWebSocket() {
 
     shouldReconnect = true;
 
-    const wsUrl = BACKEND_URL.replace(/^http/, 'ws');
+    const wsUrl = getBackendUrl().replace(/^http/, 'ws');
     const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
 
     ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}`);
@@ -874,7 +877,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
 
     try {
         const activeSessionRes = await fetch(
-            `${BACKEND_URL}/api/chat/active-session-status?did=${did}`
+            `${getBackendUrl()}/api/chat/active-session-status?did=${did}`
         );
         if (!activeSessionRes.ok) {
             console.error('Failed to check active session status:', activeSessionRes.statusText);
@@ -911,7 +914,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             //         return;
             //     } else {
             //         // User confirmed to end the old session and start a new one
-            //         fetch(`${BACKEND_URL}/threads/finish?did=${did}`, {
+            //         fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
             //             method: 'POST',
             //             headers: {
             //                 'Content-Type': 'application/json',
@@ -925,7 +928,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             //     }
             // }
 
-            fetch(`${BACKEND_URL}/threads/finish?did=${did}`, {
+            fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1079,7 +1082,7 @@ export async function finishSession(onSuccess?: () => void) {
         ]);
         sessionEnded.set(true);
 
-        const res = await fetch(`${BACKEND_URL}/threads/finish?did=${did}`, {
+        const res = await fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
             method: 'POST',
             body: JSON.stringify({ threadId, did }),
         });

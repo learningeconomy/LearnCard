@@ -13,12 +13,14 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import { useFeatureConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
 import { ColorSetEnum } from '../../../theme/colors';
 import { StyleSetEnum } from '../../../theme/styles';
 
 const LaunchPadHeaderLinks: React.FC = () => {
+    const { launchPadQuickActions } = useFeatureConfig();
     const { getIconSet, getColorSet, getStyleSet, theme } = useTheme();
     const {
         contacts: ContactsIcon,
@@ -38,6 +40,8 @@ const LaunchPadHeaderLinks: React.FC = () => {
     const unreadCount = unreadNotifications?.notifications?.length;
 
     const enableLaunchPadUpdates = flags?.enableLaunchPadUpdates;
+
+    if (!launchPadQuickActions) return null;
 
     return (
         <div className="w-full flex items-center justify-center px-2 bg-white mb-9 relative z-10">

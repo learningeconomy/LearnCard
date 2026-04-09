@@ -1,5 +1,6 @@
 import React from 'react';
 import { useModal } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonSpinner } from '@ionic/react';
 import GamePromptHeader from './GamePromptHeader';
@@ -22,6 +23,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
     isPreview,
 }) => {
     const { closeModal, closeAllModals } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const gameTitle = contractDetails?.name ?? '...';
     const gameImage = contractDetails?.image ?? '';
@@ -47,7 +49,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
                             {gameTitle}
                         </span>{' '}
                         <span>
-                            to <span className="font-[600]">LearnCard</span>
+                            to <span className="font-[600]">{brandingConfig?.name}</span>
                         </span>
                     </div>
                 </div>

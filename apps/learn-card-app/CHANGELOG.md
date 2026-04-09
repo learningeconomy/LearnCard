@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.95.5
+
+### Patch Changes
+
+-   [#1137](https://github.com/learningeconomy/LearnCard/pull/1137) [`73e56c14d03c7117ab509c025170c88f5a0cc989`](https://github.com/learningeconomy/LearnCard/commit/73e56c14d03c7117ab509c025170c88f5a0cc989) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1727] Update @capgo/capacitor-updater from 8.41.12 to 8.45.0
+
+-   [#1139](https://github.com/learningeconomy/LearnCard/pull/1139) [`4599f016afc31f6e34b713c85af56d0355a71e67`](https://github.com/learningeconomy/LearnCard/commit/4599f016afc31f6e34b713c85af56d0355a71e67) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1726] First-class CLR 2.0 support in CredentialBuilder
+
+-   [#1162](https://github.com/learningeconomy/LearnCard/pull/1162) [`a94c36b46f63bd750063fb34f03665ffadc1006b`](https://github.com/learningeconomy/LearnCard/commit/a94c36b46f63bd750063fb34f03665ffadc1006b) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1740] Misc small UI updates/polishes
+
+-   [#1160](https://github.com/learningeconomy/LearnCard/pull/1160) [`c4049c51704ddf88cf02bf44b58656f85f4fe050`](https://github.com/learningeconomy/LearnCard/commit/c4049c51704ddf88cf02bf44b58656f85f4fe050) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Auto Consent to LearnCard.AI post onboarding if aiEnabled is truthy
+
 ## 1.95.4
 
 ### Patch Changes

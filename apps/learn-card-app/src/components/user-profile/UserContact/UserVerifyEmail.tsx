@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import LearnCardAppIcon from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { usePathQuery, useVerifyContactMethod } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
 const UserVerifyEmail: React.FC = () => {
+    const { appIcon } = useTenantBrandingAssets();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -41,7 +42,7 @@ const UserVerifyEmail: React.FC = () => {
         <div className="bg-white flex items-center justify-center h-full w-full">
             <div className="w-full flex flex-col items-center justify-center max-w-[600px] ion-padding rounded-[16px] p-6 mx-4">
                 <div className="flex items-center justify-center rounded-[12px] overflow-hidden w-[60px] h-[60px] mb-4">
-                    <img src={LearnCardAppIcon} className="w-full h-full object-cover" />
+                    <img src={appIcon} className="w-full h-full object-cover" />
                 </div>
 
                 {(isVerified === null || verifyEmailLoading) && (

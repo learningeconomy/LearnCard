@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
-import { QrLoginRequester, getAuthConfig } from 'learn-card-base';
+import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
@@ -346,7 +346,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     </div>
 
                     <QrLoginRequester
-                        serverUrl={getAuthConfig().serverUrl}
+                        serverUrl={getSSSConfig().serverUrl}
                         hideHeader
                         onApproved={async (deviceShare, _approverDid, _hint, version) => {
                             setLoading(true);

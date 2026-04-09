@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { IonList, IonItem } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useModal, ModalTypes } from 'learn-card-base';
-import LearnCardBrandmark from '../../components/svgs/LearnCardBrandmark';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 
 // Simple wallet option type
@@ -71,7 +71,7 @@ const InteractWithWallet: React.FC<{
                 urlTemplate: url =>
                     `https://learncard.app/request?vc_request_url=${encodeURIComponent(url)}`,
 
-                icon: <LearnCardBrandmark className="rounded-2xl h-10 w-10" />,
+                icon: <img src={useTenantBrandingAssets().brandMark} alt="Brand mark" className="rounded-2xl h-10 w-10" />,
             },
             {
                 name: 'Learner Credential Wallet',
@@ -109,7 +109,7 @@ const InteractWithWallet: React.FC<{
             <div className="max-w-lg w-full bg-white">
                 <div className="flex flex-col items-center text-center">
                     <div className="mb-4 mt-[20px]">
-                        <LearnCardBrandmark className="rounded-2xl h-16 w-16" />
+                        <img src={useTenantBrandingAssets().brandMark} alt="Brand mark" className="rounded-2xl h-16 w-16" />
                     </div>
 
                     <h1 className="text-2xl font-bold mb-2">{headingText}</h1>
