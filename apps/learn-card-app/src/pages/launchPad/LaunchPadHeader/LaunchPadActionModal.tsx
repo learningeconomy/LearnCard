@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ProfilePicture } from 'learn-card-base';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
@@ -162,14 +163,18 @@ const getIconForActionButton = (
 const ActionButton: React.FC<{
     label: string;
     bg: string;
+    bgHex?: string;
+    textColor?: string;
+    borderColor?: string;
     to?: string;
     onClick?: () => void;
     role?: string;
-}> = ({ label, bg, to, onClick, role }) => {
+}> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
     const { theme, getIconSet } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
@@ -387,13 +392,18 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold text-grayscale-900 rounded-[20px] text-center border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${!bgHex ? bg : ''} w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${!textColor ? 'text-grayscale-900' : ''} rounded-[20px] text-center border-solid border-[3px] ${!borderColor ? 'border-white' : ''} shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            style={{
+                ...(bgHex ? { backgroundColor: bgHex } : {}),
+                ...(textColor ? { color: textColor } : {}),
+                ...(borderColor ? { borderColor } : {}),
+            }}
         >
             <div className="flex flex-col items-center justify-center">
                 <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
-                {label}
+                {label === 'Build My LearnCard' ? `Build My ${brandingConfig.name}` : label}
             </div>
         </button>
     );
@@ -403,6 +413,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { newModal, closeModal } = useModal();
     const history = useHistory();
     const { initWallet } = useWallet();
+    const { colors: themeColors } = useTheme();
+    const actionModalButtonColors = themeColors?.defaults?.actionModalButtonColors;
+    const actionModalTextColor = themeColors?.defaults?.actionModalTextColor;
+    const actionModalCardBgColor = themeColors?.defaults?.actionModalCardBgColor;
+    const actionModalCardTextColor = themeColors?.defaults?.actionModalCardTextColor;
+    const actionModalButtonBorderColor = themeColors?.defaults?.actionModalButtonBorderColor;
     const { data: lcNetworkProfile } = useGetProfile();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: contractsData, refetch: refetchContracts } = useGetContracts();
@@ -770,15 +786,19 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px]">
-            <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] mt-[40px]">
-                <button
-                    type="button"
-                    aria-label="Close modal"
-                    onClick={closeModal}
-                    className="ml-auto h-[20px] w-[20px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
-                >
-                    <X className="w-[20px] h-[20px]" />
-                </button>
+            <button
+                type="button"
+                aria-label="Close modal"
+                onClick={closeModal}
+                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent flex items-center justify-center"
+                style={{ color: actionModalCardTextColor ?? '#2A2F55' }}
+            >
+                <X className="w-[20px] h-[20px]" />
+            </button>
+            <div
+                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${!actionModalCardBgColor ? 'bg-white' : ''}`}
+                style={actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined}
+            >
                 <div className="w-full flex items-center justify-center mb-[5px]">
                     <ProfilePicture
                         customContainerClass="flex justify-center items-center h-[35px] w-[35px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[35px] min-h-[35px]"
@@ -787,7 +807,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     />
                 </div>
                 <div className="flex flex-col items-center justify-center mb-[15px]">
-                    <p className="text-center text-[16px] text-grayscale-800 font-poppins font-normal mb-[5px]">
+                    <p
+                        className={`text-center text-[16px] font-poppins font-normal mb-[5px] ${!actionModalCardTextColor ? 'text-grayscale-800' : ''}`}
+                        style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
+                    >
                         {roleDescriptions[activeRole]}
                     </p>
                     <svg
@@ -811,12 +834,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     onScroll={handleScroll}
                     className="w-full flex items-center gap-[10px] overflow-x-auto scrollbar-hide px-[20px] py-[10px]"
                 >
-                    {/* Render 3 sets: clone, main (with refs), clone for infinite scroll effect */}
                     {[0, 1, 2].map(setIndex =>
                         visibleRoles.map(roleItem => {
                             const isSelected = activeRole === roleItem.type;
                             const roleIcon = roleIcons[roleItem.type];
-                            // Only assign ref to the middle set (setIndex === 1)
                             const shouldAssignRef = setIndex === 1 && isSelected;
 
                             return (
@@ -884,12 +905,22 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 </div>
             </div>
 
+            <h3
+                className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${!actionModalCardTextColor ? 'text-grayscale-900' : ''}`}
+                style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
+            >
+                What would you like to do?
+            </h3>
+
             <div className="mt-1 flex flex-wrap justify-center gap-4">
                 {actions.map((label, i) => (
                     <ActionButton
                         key={`${label}-${i}`}
                         label={label}
-                        bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
+                        bg={!actionModalButtonColors ? (colorByLabel[label] ?? bgColors[i % bgColors.length]) : ''}
+                        bgHex={actionModalButtonColors ? actionModalButtonColors[i % actionModalButtonColors.length] : undefined}
+                        textColor={actionModalTextColor}
+                        borderColor={actionModalButtonBorderColor}
                         role={activeRole}
                         onClick={
                             label === 'View Family' && familyUri

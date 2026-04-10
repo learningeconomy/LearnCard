@@ -5,6 +5,7 @@ import { BoostCMSState, BoostCMSStepsEnum } from '../../boost';
 import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../boost-options/boostOptions';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base';
 
 type BoostCMSConfirmationPromptProps = {
     state: BoostCMSState;
@@ -27,6 +28,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const { closeModal } = useModal();
     const history = useHistory();
@@ -60,7 +62,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                     <div className="flex flex-col">
                         <div className="w-full flex items-center justify-center">
                             <h6 className="tracking-[12px] text-base font-bold text-black">
-                                LEARNCARD
+                                {brandingConfig?.name || 'LEARNCARD'}
                             </h6>
                         </div>
                     </div>

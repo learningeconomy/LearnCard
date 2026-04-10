@@ -37,7 +37,7 @@ export const FamilyBoostPreviewBackFace: React.FC<{
                         Updated on {issueDate} at 00:00 AM PST
                     </p>
                     <button className="text-[#0094B4] font-semibold font-poppins text-sm mt-1">
-                        View LearnCard
+                        View Portfolio
                     </button>
                 </div>
 
@@ -46,7 +46,7 @@ export const FamilyBoostPreviewBackFace: React.FC<{
                         Updated on {issueDate} at 00:00 AM PST
                     </p>
                     <button className="text-[#0094B4] font-semibold font-poppins text-sm mt-1">
-                        View LearnCard
+                        View Portfolio
                     </button>
                 </div>
             </section> */}

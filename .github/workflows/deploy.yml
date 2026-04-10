@@ -674,6 +674,22 @@ jobs:
                   CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
+            # Prepare tenant config for learn-card-app builds.
+            # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
+            # Scouts app does not use the tenant config system yet — skip for non-LCA projects.
+            - name: Prepare tenant config
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: |
+                  TENANT="${{ vars.TENANT || 'learncard' }}"
+                  STAGE="${{ vars.STAGE || '' }}"
+                  STAGE_FLAG=""
+                  if [[ -n "$STAGE" ]]; then
+                    STAGE_FLAG="--stage $STAGE"
+                  fi
+                  echo "Preparing tenant config: $TENANT $STAGE_FLAG"
+                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+
             - name: Build App
               run: pnpm exec nx build ${{ steps.vars.outputs.project_name }}
               env:
@@ -716,6 +732,93 @@ jobs:
                     -b ${{ steps.app-version.outputs.version }} \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
+
+    # ============================================================================
+    # JIRA RELEASE TAGGING (production only, non-blocking)
+    # ============================================================================
+    tag-jira-release:
+        name: Tag Jira Release
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        continue-on-error: true
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                needs.determine-affected.outputs.is_release == 'true' ||
+                (needs.determine-affected.outputs.is_manual == 'true' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
+            ) &&
+            (
+                needs.deploy-brain-service.result == 'success' ||
+                needs.deploy-learn-cloud.result == 'success' ||
+                needs.deploy-lca-api.result == 'success' ||
+                needs.deploy-frontend.result == 'success'
+            )
+        runs-on: ubuntu-latest
+        steps:
+            - name: Generate release name
+              id: release-info
+              run: |
+                  SHORT_SHA="${GITHUB_SHA::7}"
+                  RELEASE_DATE=$(date -u +%Y-%m-%d)
+                  RELEASE_NAME="${RELEASE_DATE}-${SHORT_SHA}"
+                  echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+                  echo "Release name: $RELEASE_NAME"
+
+            - name: Create Jira release
+              env:
+                  JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+                  JIRA_USER_EMAIL: ${{ vars.JIRA_USER_EMAIL }}
+                  JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+                  JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+              run: |
+                  RELEASE_NAME="${{ steps.release-info.outputs.release_name }}"
+
+                  echo "Creating Jira release: $RELEASE_NAME"
+                  echo "Project: $JIRA_PROJECT_KEY"
+                  echo "Jira URL: $JIRA_BASE_URL"
+
+                  # Build the Basic auth header per Atlassian docs:
+                  # Base64-encode "email:api_token" and pass as Authorization header
+                  AUTH_HEADER="Authorization: Basic $(echo -n "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" | base64)"
+
+                  # Look up the Jira project ID from the project key
+                  PROJECT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    "${JIRA_BASE_URL}/rest/api/3/project/${JIRA_PROJECT_KEY}")
+
+                  HTTP_CODE=$(echo "$PROJECT_RESPONSE" | tail -n1)
+                  PROJECT_BODY=$(echo "$PROJECT_RESPONSE" | sed '$d')
+
+                  if [[ "$HTTP_CODE" -ne 200 ]]; then
+                    echo "::warning::Failed to fetch Jira project (HTTP $HTTP_CODE): $PROJECT_BODY"
+                    exit 0
+                  fi
+
+                  PROJECT_ID=$(echo "$PROJECT_BODY" | jq -r '.id')
+
+                  # Create the release version
+                  RESPONSE=$(curl -s -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    -X POST "${JIRA_BASE_URL}/rest/api/3/version" \
+                    -d "{
+                      \"name\": \"${RELEASE_NAME}\",
+                      \"projectId\": ${PROJECT_ID},
+                      \"released\": true,
+                      \"releaseDate\": \"$(date -u +%Y-%m-%d)\",
+                      \"description\": \"Deployed from commit ${GITHUB_SHA} via GitHub Actions\"
+                    }")
+
+                  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+                  BODY=$(echo "$RESPONSE" | sed '$d')
+
+                  if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
+                    echo "Jira release created successfully"
+                    echo "$BODY" | jq .
+                  else
+                    echo "::warning::Failed to create Jira release (HTTP $HTTP_CODE): $BODY"
+                  fi
 
     # ============================================================================
     # DOCKER IMAGES

@@ -2,6 +2,8 @@ import { useHistory } from 'react-router';
 import { AuthProvider, TAuthConfig } from 'react-oauth2-code-pkce';
 import { createStore } from '@udecode/zustood';
 
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+
 export type PostLoginReducerArgs =
     | { action: 'redirect'; data: { path: string; params?: string } }
     | { action: 'none' };
@@ -11,14 +13,11 @@ export const oauth2ReducerArgStore = createStore('oauth2-reducer')<{ args: PostL
     { persist: { name: 'oauth2-reducer', enabled: true } }
 );
 
-const authConfig: TAuthConfig = {
+const BASE_AUTH_CONFIG: Omit<TAuthConfig, 'redirectUri'> = {
     clientId: 'metaversity',
     authorizationEndpoint:
         'https://auth.le-int-svcs.com/realms/Motlow/protocol/openid-connect/auth',
     tokenEndpoint: 'https://auth.le-int-svcs.com/realms/Motlow/protocol/openid-connect/token',
-    redirectUri: IS_PRODUCTION
-        ? 'https://learncard.app/sync-my-school/success'
-        : 'http://localhost:3000/sync-my-school/success',
     scope: 'openid profile',
     autoLogin: false,
 };
@@ -28,6 +27,11 @@ const ExternalAuthServiceProvider: React.FC<{
 }> = ({ children }) => {
     const history = useHistory();
     const reducerArgs = oauth2ReducerArgStore.use.args();
+
+    const authConfig: TAuthConfig = {
+        ...BASE_AUTH_CONFIG,
+        redirectUri: `${getAppBaseUrl()}/sync-my-school/success`,
+    };
 
     return (
         <AuthProvider

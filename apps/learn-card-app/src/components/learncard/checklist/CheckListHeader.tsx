@@ -1,11 +1,13 @@
 import React from 'react';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export const ChecklistHeader: React.FC = () => {
     const { theme, colors } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl px-6 py-4 mt-4 rounded-[15px]">
@@ -16,7 +18,7 @@ export const ChecklistHeader: React.FC = () => {
                 <h2 className="text-[22px] text-grayscale-800 font-notoSans text-center">
                     Build My
                     <br />
-                    <span className={`font-semibold text-${primaryColor}`}>LearnCard</span>
+                    <span className={`font-semibold text-${primaryColor}`}>{brandingConfig.name}</span>
                 </h2>
             </div>
         </div>

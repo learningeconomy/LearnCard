@@ -4,6 +4,7 @@ import './DemoSchoolBox.css';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { useQueryClient } from '@tanstack/react-query';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { switchedProfileStore, useCurrentUser, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useConsentFlowByUri } from 'apps/learn-card-app/src/pages/consentFlow/useConsentFlow';
 import useJoinLCNetworkModal from '../../network-prompts/hooks/useJoinLCNetworkModal';
@@ -33,6 +34,7 @@ type DemoSchoolBoxProps = {};
 
 const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { colors } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const flags = useFlags();
@@ -154,8 +156,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                     {hasConsented && <CircleCheckmark className="h-[32px] w-[32px] ml-auto" />}
                 </h2>
                 <p className="text-grayscale-600 font-notoSans text-[14px]">
-                    Connect to a sample school, sync demo badges and credentials, and explore how
-                    LearnCard works.
+                    Connect to a sample school, sync demo badges and credentials, and explore how{' '}
+                    {brandingConfig?.name} works.
                 </p>
             </div>
 

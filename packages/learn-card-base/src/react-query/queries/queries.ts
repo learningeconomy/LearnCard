@@ -12,7 +12,6 @@ import {
     CredentialCategoryEnum,
     useWallet,
     switchedProfileStore,
-    LEARNCARD_NETWORK_API_URL,
 } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
@@ -821,7 +820,7 @@ export const useGetProfile = (
             if (profileId) {
                 try {
                     const response = await fetch(
-                        `${LEARNCARD_NETWORK_API_URL}/profile/${profileId}`
+                        `${networkStore.get.networkApiUrl()}/profile/${profileId}`
                     );
                     if (!response.ok) throw new Error('Failed to fetch profile');
                     const data = await response.json();
@@ -859,7 +858,7 @@ export const useGetAppStoreListingBySlug = (
                 }
             }
 
-            const networkUrl = networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
+            const networkUrl = networkStore.get.networkApiUrl();
 
             try {
                 const response = await fetch(`${networkUrl}/app-store/public/listing/slug/${slug}`);
