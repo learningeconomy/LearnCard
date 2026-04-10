@@ -212,6 +212,7 @@ export * from './constants/gdprAgeLimits';
 export * from './filestack/useFilestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
+export * from './types/careerOneStop';
 
 export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
@@ -229,6 +230,7 @@ export * from './react-query/mutations/user-contact';
 export * from './react-query/mutations/firebase';
 export * from './react-query/mutations/preferences';
 export * from './react-query/queries/preferences';
+export * from './react-query/queries/careerOneStop';
 export * from './react-query/mutations/syncAllCredentials';
 
 export * from './svgs/SideNav/SideNavIcons';

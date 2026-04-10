@@ -7,11 +7,11 @@ import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
+import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
-import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
-import ExplorePathwaysModal from './ExplorePathwaysModal';
+import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -24,10 +24,10 @@ import {
 import {
     useAiInsightCredential,
     useAiPathways,
-    useModal,
-    ModalTypes,
     CredentialCategoryEnum,
 } from 'learn-card-base';
+
+import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 
 import {
     getFirstAvailableKeywords,
@@ -40,8 +40,8 @@ import {
 } from './ai-pathway-courses/ai-pathway-courses.helpers';
 
 const AiPathways: React.FC = () => {
-    const { newModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
+    const { percentage } = useSkillProfileCompletion();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -72,7 +72,6 @@ const AiPathways: React.FC = () => {
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
         useTrainingProgramsByKeyword({
             keywords: allKeywords as string[],
-            fieldOfStudy,
         });
 
     const schoolPrograms = useMemo(() => {
@@ -101,13 +100,6 @@ const AiPathways: React.FC = () => {
         schoolPrograms.length === 0 &&
         learningPathwaysData?.length === 0;
 
-    const handleExplorePathways = () => {
-        newModal(<ExplorePathwaysModal />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
-    };
-
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
@@ -120,7 +112,15 @@ const AiPathways: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
+                            {percentage > 0 && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard />
+                            )}
+
                             <MySkillProfile />
+
+                            {percentage === 0 && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard />
+                            )}
 
                             {emptyPathways ? (
                                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
