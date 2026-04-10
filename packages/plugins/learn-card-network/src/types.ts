@@ -611,10 +611,13 @@ export type LearnCardNetworkPluginMethods = {
         credentialName?: string;
         createdAt: string;
         expiresAt: string;
+        canApproveInApp: boolean;
     }>;
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
     approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
+    rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
