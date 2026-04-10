@@ -38,6 +38,11 @@ import type {
     TemplateRecipientsResponse,
     RequestLearnerContextOptions,
     LearnerContextResponse,
+    AppNotificationInput,
+    AppNotificationResponse,
+    IncrementCounterResponse,
+    GetCounterResponse,
+    GetCountersResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -80,11 +85,18 @@ export class PartnerConnect {
     /**
      * Configure the active host origin using the following hierarchy:
      * 1. Check for `lc_host_override` query parameter (for staging/testing)
-     * 2. Fall back to first configured origin
-     * 3. Fall back to DEFAULT_HOST_ORIGIN
+     * 2. Check sessionStorage for a previously stored override (survives in-app navigation)
+     * 3. Fall back to first configured origin
+     * 4. Fall back to DEFAULT_HOST_ORIGIN
+     *
+     * When a valid override is found in the query parameter, it is persisted to
+     * sessionStorage so that subsequent page navigations within the same tab
+     * automatically use the same override without requiring it in every URL.
      *
      * This origin will be used for all outgoing messages and incoming message validation.
      */
+    private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
     private configureActiveOrigin(): void {
         if (typeof window === 'undefined') {
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
@@ -109,12 +121,47 @@ export class PartnerConnect {
                         this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
                 } else {
                     this.activeHostOrigin = hostOverride;
+
+                    // Persist to sessionStorage so subsequent page navigations
+                    // within this tab automatically use the same override.
+                    try {
+                        sessionStorage.setItem(
+                            PartnerConnect.SESSION_STORAGE_KEY,
+                            hostOverride
+                        );
+                    } catch {
+                        // sessionStorage may be unavailable (e.g. sandboxed iframes)
+                    }
+
                     console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
                 }
             } else {
-                // Use first configured origin or default
-                this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+                // Fall back to a previously stored override from this session
+                let storedOverride: string | null = null;
+
+                try {
+                    storedOverride = sessionStorage.getItem(
+                        PartnerConnect.SESSION_STORAGE_KEY
+                    );
+                } catch {
+                    // sessionStorage may be unavailable
+                }
+
+                if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
+                    this.activeHostOrigin = storedOverride;
+                    console.log(
+                        '[LearnCard SDK] Using stored lc_host_override:',
+                        storedOverride
+                    );
+                } else {
+                    // Use first configured origin or default
+                    this.activeHostOrigin =
+                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+                    console.log(
+                        '[LearnCard SDK] Using configured origin:',
+                        this.activeHostOrigin
+                    );
+                }
             }
         } catch (error) {
             console.error('[LearnCard SDK] Error configuring active origin:', error);
@@ -606,6 +653,102 @@ export class PartnerConnect {
      */
     public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
         return this.sendMessage<T>('APP_EVENT', event);
+    }
+
+    /**
+     * Send a notification to the current user from this app.
+     * The notification appears in the user's LearnCard notification inbox.
+     *
+     * @param input - Notification content (title, body, actionPath, category, priority)
+     * @returns Promise resolving to `{ sent: true }` on success
+     *
+     * @example
+     * ```typescript
+     * await learnCard.sendNotification({
+     *   title: 'Sprint Bonus!',
+     *   body: '+10 coins from Sprint 42',
+     *   actionPath: '/',
+     *   category: 'reward',
+     * });
+     * ```
+     */
+    public sendNotification(input: AppNotificationInput): Promise<AppNotificationResponse> {
+        return this.sendAppEvent<AppNotificationResponse>({
+            type: 'send-notification',
+            ...input,
+        });
+    }
+
+    /**
+     * Increment or decrement an app-scoped counter for the current user.
+     *
+     * Counters are scoped to (user, app, key). If the counter does not exist,
+     * it is created with the given amount as its initial value.
+     *
+     * @param key - Counter name (alphanumeric, underscore, hyphen; max 64 chars)
+     * @param amount - Value to add (negative to decrement)
+     * @returns Promise resolving to `{ key, previousValue, newValue }`
+     *
+     * @example
+     * ```typescript
+     * const result = await learnCard.incrementCounter('coins', 10);
+     * console.log(result.newValue); // e.g. 110
+     *
+     * // Decrement
+     * await learnCard.incrementCounter('coins', -5);
+     * ```
+     */
+    public incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse> {
+        return this.sendAppEvent<IncrementCounterResponse>({
+            type: 'increment-counter',
+            key,
+            amount,
+        });
+    }
+
+    /**
+     * Read the current value of an app-scoped counter for the current user.
+     *
+     * Returns `{ value: 0 }` if the counter does not exist.
+     *
+     * @param key - Counter name
+     * @returns Promise resolving to `{ key, value, updatedAt }`
+     *
+     * @example
+     * ```typescript
+     * const { value } = await learnCard.getCounter('coins');
+     * console.log('Balance:', value);
+     * ```
+     */
+    public getCounter(key: string): Promise<GetCounterResponse> {
+        return this.sendAppEvent<GetCounterResponse>({
+            type: 'get-counter',
+            key,
+        });
+    }
+
+    /**
+     * Read multiple app-scoped counters at once for the current user.
+     *
+     * If `keys` is omitted, returns all counters for this app.
+     *
+     * @param keys - Optional array of counter names to fetch (max 50)
+     * @returns Promise resolving to `{ counters: CounterResponse[] }`
+     *
+     * @example
+     * ```typescript
+     * const { counters } = await learnCard.getCounters(['coins', 'spins', 'streak']);
+     * counters.forEach(c => console.log(c.key, c.value));
+     *
+     * // Get all counters
+     * const all = await learnCard.getCounters();
+     * ```
+     */
+    public getCounters(keys?: string[]): Promise<GetCountersResponse> {
+        return this.sendAppEvent<GetCountersResponse>({
+            type: 'get-counters',
+            ...(keys ? { keys } : {}),
+        });
     }
 
     /**

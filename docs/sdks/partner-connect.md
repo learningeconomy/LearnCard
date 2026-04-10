@@ -489,6 +489,38 @@ try {
 }
 ```
 
+### Notifications & Counters
+
+#### `sendNotification(input)`
+
+Send a notification to the current user from your app. The notification appears in the user's LearnCard notification inbox and triggers a real-time toast overlay while the app is open.
+
+**Parameters:**
+- `input` (`AppNotificationInput`): Notification content
+
+**Returns:** `Promise<AppNotificationResponse>`
+
+```typescript
+await learnCard.sendNotification({
+  title: 'Achievement Unlocked!',
+  body: 'You earned the Gold Star badge',
+  actionPath: '/achievements',  // Deep link path within your app
+  category: 'reward',            // Grouping label
+  priority: 'normal',            // 'normal' | 'high'
+});
+```
+
+**Input Type:**
+```typescript
+interface AppNotificationInput {
+  title?: string;                // At least title or body required
+  body?: string;
+  actionPath?: string;           // Deep link path (e.g. '/prizes')
+  category?: string;             // Grouping (e.g. 'reward', 'announcement')
+  priority?: 'normal' | 'high'; // Default: 'normal'
+}
+```
+
 {% hint style="info" %}
 **Prerequisites for Learner Context:**
 
@@ -498,6 +530,98 @@ try {
 
 Use `requestConsent()` before calling `requestLearnerContext()` if the user hasn't consented yet.
 {% endhint %}
+
+{% hint style="info" %}
+**Rate limit:** Max 10 notifications per user per app per hour. High-priority notifications display with an orange toast instead of the default blue.
+{% endhint %}
+
+{% hint style="info" %}
+**Deep linking:** When a user taps a notification with an `actionPath`, the embedded app's iframe navigates to that path. Use this to direct users to specific content.
+{% endhint %}
+
+#### `incrementCounter(key, amount)`
+
+Atomically increment or decrement an app-scoped counter for the current user. Counters are scoped to (user, app, key). If the counter does not exist, it is created with the given amount as its initial value.
+
+**Parameters:**
+- `key` (`string`): Counter name (alphanumeric, underscore, hyphen; max 64 chars)
+- `amount` (`number`): Value to add (use negative numbers to decrement)
+
+**Returns:** `Promise<IncrementCounterResponse>`
+
+```typescript
+// Increment
+const result = await learnCard.incrementCounter('coins', 10);
+console.log(result.previousValue); // 0
+console.log(result.newValue);      // 10
+
+// Decrement
+const result2 = await learnCard.incrementCounter('coins', -5);
+console.log(result2.newValue);     // 5
+```
+
+**Response Type:**
+```typescript
+interface IncrementCounterResponse {
+  key: string;
+  previousValue: number;
+  newValue: number;
+}
+```
+
+{% hint style="info" %}
+**Limits:** Max 50 counter keys per user per app. Max 100 counter writes per user per app per minute.
+{% endhint %}
+
+#### `getCounter(key)`
+
+Read the current value of an app-scoped counter for the current user. Returns `{ value: 0 }` if the counter does not exist.
+
+**Parameters:**
+- `key` (`string`): Counter name
+
+**Returns:** `Promise<GetCounterResponse>`
+
+```typescript
+const { value, updatedAt } = await learnCard.getCounter('coins');
+console.log('Balance:', value);        // e.g. 42
+console.log('Last updated:', updatedAt); // e.g. '2025-03-15T10:30:00.000Z'
+```
+
+**Response Type:**
+```typescript
+interface GetCounterResponse {
+  key: string;
+  value: number;
+  updatedAt: string | null;
+}
+```
+
+#### `getCounters(keys?)`
+
+Read multiple app-scoped counters at once for the current user. If `keys` is omitted, returns all counters for this app.
+
+**Parameters:**
+- `keys` (`string[]`, optional): Counter names to fetch (max 50). Omit to get all.
+
+**Returns:** `Promise<GetCountersResponse>`
+
+```typescript
+// Get specific counters
+const { counters } = await learnCard.getCounters(['coins', 'streak', 'level']);
+counters.forEach(c => console.log(c.key, c.value));
+
+// Get all counters for this app
+const all = await learnCard.getCounters();
+console.log(`${all.counters.length} counters`);
+```
+
+**Response Type:**
+```typescript
+interface GetCountersResponse {
+  counters: GetCounterResponse[];
+}
+```
 
 #### `destroy()`
 
@@ -868,6 +992,13 @@ import type {
     ConsentResponse,
     RequestConsentOptions,
 
+    // Notifications & Counters
+    AppNotificationInput,
+    AppNotificationResponse,
+    IncrementCounterResponse,
+    GetCounterResponse,
+    GetCountersResponse,
+
     // Credential queries
     VerifiablePresentationRequest,
     VPRQuery,
@@ -944,6 +1075,14 @@ interface LearnCardError {
     message: string;
 }
 ```
+
+## Rate Limits Summary
+
+| Scope | Limit | Window |
+|---|---|---|
+| Notifications (per user per app) | 10 | 1 hour |
+| Counter writes (per user per app) | 100 | 1 minute |
+| Counter keys (per user per app) | 50 | — |
 
 ## Related Documentation
 

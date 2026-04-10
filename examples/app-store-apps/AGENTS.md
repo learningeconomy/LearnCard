@@ -227,6 +227,83 @@ const createBoostTemplate = async (learnCard, badgeDefinition) => {
 };
 ```
 
+#### 4. App Notifications
+
+Apps can send notifications to users via the Partner Connect SDK (self-notification while the user has the app open) or via a server-to-server brain-service route (primary path for async notifications).
+
+**SDK self-notification** (user has app open):
+
+```typescript
+// Notify the current user from within the app
+await learnCard.sendNotification({
+    title: 'Achievement Unlocked!',
+    body: 'You earned the Gold Star badge',
+    actionPath: '/achievements',
+    category: 'reward',
+    priority: 'normal',
+});
+```
+
+**Server-to-server notification** (app backend → brain-service):
+
+```typescript
+// From your app's backend, send a notification to any user who has the app installed
+const response = await fetch(`${brainServiceUrl}/app-store/listing/${listingId}/notify`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${didAuthJwt}`,
+    },
+    body: JSON.stringify({
+        listingId: 'my-app-listing-id',
+        recipient: 'user123', // profileId or DID
+        title: 'New content available!',
+        body: 'Check out the latest challenge',
+        actionPath: '/challenges',
+        category: 'announcement',
+    }),
+});
+```
+
+**Key points:**
+
+-   The server route requires listing ownership (caller must own the integration)
+-   Recipient must have the app installed
+-   Rate limits: 10/hr per user (SDK path), 60/hr per listing (server path)
+-   Notifications appear in the user's LearnCard notification inbox as `APP_NOTIFICATION` type
+-   Filter notifications by app using `data.metadata.listingId` in lca-api queries
+
+#### 5. App Counters
+
+Apps can store per-user, per-app counters (e.g. coins, streaks, levels) via the Partner Connect SDK. Counters are stored server-side in Neo4j and are scoped to (user, app, key).
+
+**SDK usage:**
+
+```typescript
+// Increment (creates counter if it doesn't exist)
+const result = await learnCard.incrementCounter('coins', 10);
+console.log(result.previousValue, '→', result.newValue); // 0 → 10
+
+// Decrement
+await learnCard.incrementCounter('coins', -5);
+
+// Read single counter
+const { value } = await learnCard.getCounter('coins');
+
+// Read all counters for this app
+const { counters } = await learnCard.getCounters();
+counters.forEach(c => console.log(c.key, c.value));
+```
+
+**Key points:**
+
+-   Counters are atomic
+-   Counter keys: alphanumeric + `_` / `-`, max 64 chars
+-   Max 50 counter keys per user per app
+-   Max 100 counter writes per user per app per minute
+-   If the counter doesn't exist, `getCounter` returns `{ value: 0 }`
+-   `getCounters()` with no args returns all counters; pass an array of keys to fetch specific ones (max 50)
+
 ### Deployment Considerations
 
 #### Environment Variables
