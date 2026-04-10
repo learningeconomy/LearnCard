@@ -146,7 +146,8 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     };
 
     const hasReadCategories = Object.keys(contract.contract.read.credentials.categories).length > 0;
-    const hasWriteCategories = Object.keys(contract.contract.write.credentials.categories).length > 0;
+    const hasWriteCategories =
+        Object.keys(contract.contract.write.credentials.categories).length > 0;
 
     return (
         <div className="w-full max-w-lg mx-auto">
@@ -262,6 +263,37 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         setContract={setContract as any}
                         mode="read"
                     />
+
+                    {/* Anonymize Toggle */}
+                    <div className="flex items-center justify-between py-2 border-t border-gray-200 mt-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600">
+                                Anonymize Data
+                            </label>
+
+                            <p className="text-xs text-gray-400">
+                                Request data without identifying information
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                updateRead('anonymize', !contract.contract.read.anonymize)
+                            }
+                            className={`relative w-12 h-7 rounded-full transition-colors ${
+                                contract.contract.read.anonymize ? 'bg-cyan-500' : 'bg-gray-200'
+                            }`}
+                        >
+                            <span
+                                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                                    contract.contract.read.anonymize
+                                        ? 'translate-x-5'
+                                        : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
 
                     {/* Personal Data Fields */}
                     <div className="mt-4 pt-4 border-t border-gray-200">
