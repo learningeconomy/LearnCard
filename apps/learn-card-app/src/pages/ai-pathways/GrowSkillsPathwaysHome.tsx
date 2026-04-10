@@ -27,6 +27,7 @@ import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
 import GrowSkillsModal from './GrowSkillsModal';
+import GrowSkillsAiSessionItem from './GrowSkillsAiSessionItem';
 
 type GrowSkillsPathwaysHomeProps = {};
 
@@ -101,6 +102,24 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
         });
     };
 
+    const _testLearningPathwaysData = [
+        {
+            id: '1',
+            title: 'Test Session 1',
+            description: 'Test description 1',
+        },
+        {
+            id: '2',
+            title: 'Test Session 2 With Two Line Title',
+            description: 'Test description 2',
+        },
+        {
+            id: '3',
+            title: 'Test Session 3',
+            description: 'Test description 3',
+        },
+    ];
+
     return (
         <>
             <div className="bg-grayscale-50 px-[15px] py-[20px] rounded-[15px] flex flex-col gap-[30px] w-full shadow-bottom-4-4 max-w-[568px] overflow-hidden">
@@ -116,6 +135,14 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 </div>
 
                 <GrowSkillsCarouselSection
+                    title="AI Learning Sessions"
+                    items={_testLearningPathwaysData || learningPathwaysData || []}
+                    onViewAll={handleExplorePathways}
+                    renderItem={item => <GrowSkillsAiSessionItem data={item as any} />}
+                    getItemKey={(_item, index) => `ai-session-${index}`}
+                />
+
+                <GrowSkillsCarouselSection
                     title="Courses"
                     items={schoolPrograms}
                     onViewAll={handleExplorePathways}
@@ -127,8 +154,10 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     title="Media"
                     items={occupations || []}
                     onViewAll={handleExplorePathways}
-                    renderItem={occupation => <GrowSkillsMediaItem occupation={occupation} />}
-                    getItemKey={occupation => occupation.OnetTitle || ''}
+                    renderItem={occupation => (
+                        <GrowSkillsMediaItem occupation={occupation as any} />
+                    )}
+                    getItemKey={(_occupation, index) => `media-${index}`}
                 />
 
                 <button
