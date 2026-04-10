@@ -1,6 +1,7 @@
 import type { UnsignedVC, VC } from '@learncard/types';
 
 import type { CredentialFixture, FixtureFilter } from './types';
+import { ALL_FIXTURES } from './fixtures';
 
 // ---------------------------------------------------------------------------
 // Internal store — fixtures register themselves here via `registerFixture`
@@ -9,6 +10,28 @@ import type { CredentialFixture, FixtureFilter } from './types';
 const fixtures: CredentialFixture[] = [];
 
 const fixtureIndex = new Map<string, CredentialFixture>();
+
+// ---------------------------------------------------------------------------
+// Lazy initialization — populate the registry on first query so consumers
+// don't need to rely on import side effects (keeps `sideEffects: false`
+// truthful). The ALL_FIXTURES import above is pure data — no mutation
+// happens until ensureInitialized() is called.
+// ---------------------------------------------------------------------------
+
+let initialized = false;
+
+const ensureInitialized = (): void => {
+    if (initialized) return;
+
+    initialized = true;
+
+    for (const fixture of ALL_FIXTURES) {
+        if (!fixtureIndex.has(fixture.id)) {
+            fixtures.push(fixture);
+            fixtureIndex.set(fixture.id, fixture);
+        }
+    }
+};
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -36,6 +59,7 @@ export const registerFixtures = (batch: CredentialFixture[]): void => {
 export const resetRegistry = (): void => {
     fixtures.length = 0;
     fixtureIndex.clear();
+    initialized = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -98,9 +122,15 @@ const matchesFilter = (fixture: CredentialFixture, filter: FixtureFilter): boole
 // Public query API
 // ---------------------------------------------------------------------------
 
-export const getAllFixtures = (): readonly CredentialFixture[] => fixtures;
+export const getAllFixtures = (): readonly CredentialFixture[] => {
+    ensureInitialized();
+
+    return fixtures;
+};
 
 export const getFixture = (id: string): CredentialFixture => {
+    ensureInitialized();
+
     const fixture = fixtureIndex.get(id);
 
     if (!fixture) {
@@ -112,10 +142,17 @@ export const getFixture = (id: string): CredentialFixture => {
     return fixture;
 };
 
-export const findFixture = (id: string): CredentialFixture | undefined => fixtureIndex.get(id);
+export const findFixture = (id: string): CredentialFixture | undefined => {
+    ensureInitialized();
 
-export const getFixtures = (filter: FixtureFilter): CredentialFixture[] =>
-    fixtures.filter(f => matchesFilter(f, filter));
+    return fixtureIndex.get(id);
+};
+
+export const getFixtures = (filter: FixtureFilter): CredentialFixture[] => {
+    ensureInitialized();
+
+    return fixtures.filter(f => matchesFilter(f, filter));
+};
 
 export const getUnsignedFixtures = (
     filter?: FixtureFilter
@@ -145,6 +182,8 @@ export interface RegistryStats {
 }
 
 export const getStats = (): RegistryStats => {
+    ensureInitialized();
+
     const stats: RegistryStats = {
         total: fixtures.length,
         bySpec: {},

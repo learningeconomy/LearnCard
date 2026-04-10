@@ -1,5 +1,3 @@
-import { registerFixtures } from '../registry';
-
 import type { CredentialFixture } from '../types';
 
 // VC v1
@@ -111,9 +109,6 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     vcV2LicenseCredential,
     clrGreatPlainsFull,
 ];
-
-// Register all fixtures on import
-registerFixtures(ALL_FIXTURES);
 
 // Re-export individual fixtures for direct import
 export {

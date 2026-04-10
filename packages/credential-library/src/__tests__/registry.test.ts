@@ -375,18 +375,14 @@ describe('prepareFixtureById', () => {
 // ---------------------------------------------------------------------------
 
 describe('resetRegistry', () => {
-    it('clears and re-populates the registry', () => {
+    it('clears and lazily re-populates the registry', () => {
         const countBefore = getAllFixtures().length;
 
         expect(countBefore).toBeGreaterThan(0);
 
         resetRegistry();
 
-        expect(getAllFixtures().length).toBe(0);
-
-        // Re-register so subsequent tests still work
-        registerFixtures(ALL_FIXTURES);
-
+        // After reset, getAllFixtures() lazily re-initializes from ALL_FIXTURES
         expect(getAllFixtures().length).toBe(countBefore);
     });
 });
