@@ -75,6 +75,7 @@ const TENANT_EMAIL_BRANDING: Record<string, Partial<TenantBranding>> = {
 
     vetpass: {
         brandName: 'VetPass',
+        logoUrl: 'https://vetpass.app/assets/icon/icon.png',
         logoAlt: 'VetPass',
         primaryColor: '#1B5E20',
         primaryTextColor: '#ffffff',

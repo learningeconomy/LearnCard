@@ -129,7 +129,7 @@ export const credentialsRouter = t.router({
             })
         )
         .output(z.boolean())
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { email, shareLink, issuer, credential, message } = input;
 
             if (!shareLink || !email) {
@@ -153,6 +153,7 @@ export const credentialsRouter = t.router({
                         credential,
                     },
                     from: getFrom({ mailbox: 'endorsement' }),
+                    branding: ctx.tenant.emailBranding,
                 });
                 return true;
             } catch (error) {

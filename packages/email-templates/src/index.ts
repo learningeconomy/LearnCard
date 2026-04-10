@@ -43,5 +43,8 @@ export type { SmsTemplateId, SmsTemplateDataMap, SmsInboxClaimData, SmsVerificat
 export { resolveTenantFromRequest, registerOriginMapping, registerTenantBranding } from './tenant-registry';
 export type { ResolvedTenant, RequestHeaders } from './tenant-registry';
 
-// Template components (for direct use / testing / preview)
-export * from './templates';
+// Template components are intentionally NOT re-exported from the barrel.
+// They contain JSX (.tsx) and would force every transitive consumer to
+// configure `jsx` in their tsconfig. Use renderEmail() / renderSms() instead.
+// For direct component access (testing / preview), import from
+// '@learncard/email-templates/src/templates' explicitly.

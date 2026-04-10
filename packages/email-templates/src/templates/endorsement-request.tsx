@@ -98,13 +98,6 @@ export const getEndorsementRequestSubject = (
 // Styles
 // ---------------------------------------------------------------------------
 
-const heading: React.CSSProperties = {
-    fontSize: 24,
-    fontWeight: 600,
-    color: '#111827',
-    margin: '0 0 24px',
-};
-
 const paragraph: React.CSSProperties = {
     fontSize: 16,
     color: '#374151',

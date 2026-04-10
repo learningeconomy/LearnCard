@@ -14,7 +14,6 @@ import {
     Img,
     Text,
     Link,
-    Hr,
     Preview,
 } from '@react-email/components';
 import * as React from 'react';
@@ -64,21 +63,25 @@ export const Layout: React.FC<LayoutProps> = ({ branding, preview, children, sho
                 <Section style={showHeaderLogo ? contentAfterLogo : content}>
                     {children}
                 </Section>
+            </Container>
 
-                <Hr style={divider} />
+            {/* Footer — sits below the white card in the gray area */}
+            <Container style={footerContainer}>
+                <Text style={footerDisclaimer}>
+                    You received this email because someone requested to add this email
+                    to their {branding.brandName} account. Please ignore this email if
+                    this was not you.
+                </Text>
 
-                {/* Footer */}
-                <Section style={footer}>
-                    <Text style={footerText}>
-                        &copy; {new Date().getFullYear()} {branding.copyrightHolder}. All rights reserved.
-                    </Text>
+                <Text style={footerCopyright}>
+                    {branding.copyrightHolder} &copy; {new Date().getFullYear()}
+                </Text>
 
-                    <Text style={footerText}>
-                        <Link href={branding.websiteUrl} style={footerLink}>{branding.websiteUrl}</Link>
-                        {' · '}
-                        <Link href={`mailto:${branding.supportEmail}`} style={footerLink}>{branding.supportEmail}</Link>
-                    </Text>
-                </Section>
+                <Text style={footerLinks}>
+                    <Link href={`mailto:${branding.supportEmail}`} style={footerLink}>
+                        Contact Support
+                    </Link>
+                </Text>
             </Container>
         </Body>
     </Html>
@@ -118,15 +121,10 @@ const wordmarkLink: React.CSSProperties = {
 const container: React.CSSProperties = {
     backgroundColor: '#ffffff',
     borderRadius: 4,
-    margin: '0 auto 40px',
+    margin: '0 auto',
     maxWidth: 600,
     padding: 0,
     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-};
-
-const divider: React.CSSProperties = {
-    borderColor: '#e5e7eb',
-    margin: '24px 48px',
 };
 
 const headerLogo: React.CSSProperties = {
@@ -140,23 +138,42 @@ const logoImg: React.CSSProperties = {
 };
 
 const content: React.CSSProperties = {
-    padding: '48px 48px 0',
+    padding: '48px 48px 48px',
 };
 
 const contentAfterLogo: React.CSSProperties = {
-    padding: '24px 48px 0',
+    padding: '24px 48px 48px',
 };
 
-const footer: React.CSSProperties = {
-    padding: '0 48px 32px',
+const footerContainer: React.CSSProperties = {
+    maxWidth: 560,
+    margin: '0 auto',
+    padding: '32px 40px 40px',
     textAlign: 'center' as const,
 };
 
-const footerText: React.CSSProperties = {
+const footerDisclaimer: React.CSSProperties = {
     fontSize: 12,
     color: '#6b7280',
-    margin: '4px 0',
     lineHeight: '18px',
+    margin: '0 0 16px',
+    textAlign: 'center' as const,
+};
+
+const footerCopyright: React.CSSProperties = {
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: '18px',
+    margin: '0 0 8px',
+    textAlign: 'center' as const,
+};
+
+const footerLinks: React.CSSProperties = {
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: '18px',
+    margin: 0,
+    textAlign: 'center' as const,
 };
 
 const footerLink: React.CSSProperties = {

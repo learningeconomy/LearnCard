@@ -28,6 +28,8 @@ export class PostmarkAdapter implements DeliveryService {
 
         // If we can render locally, do so — fully branded, git-managed templates
         if (localTemplateId) {
+            let rendered: { html: string; text: string; subject: string } | undefined;
+
             try {
                 const branding = resolveBranding(notification.branding);
 
@@ -36,27 +38,36 @@ export class PostmarkAdapter implements DeliveryService {
                     notification.templateModel,
                 );
 
-                const { html, text, subject } = await renderEmail(
+                rendered = await renderEmail(
                     localTemplateId,
                     branding,
                     templateData,
                 );
-
-                await this.client.sendEmail({
-                    From: from,
-                    To: notification.contactMethod.value,
-                    Subject: subject,
-                    HtmlBody: html,
-                    TextBody: text,
-                    MessageStream: notification.messageStream,
-                });
-
-                return;
             } catch (renderError) {
                 console.error(
-                    `[PostmarkAdapter] Local render failed for "${notification.templateId}", falling back to Postmark template:`,
+                    `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
                     renderError,
                 );
+            }
+
+            if (rendered) {
+                try {
+                    await this.client.sendEmail({
+                        From: from,
+                        To: notification.contactMethod.value,
+                        Subject: rendered.subject,
+                        HtmlBody: rendered.html,
+                        TextBody: rendered.text,
+                        MessageStream: notification.messageStream,
+                    });
+
+                    return;
+                } catch (sendError) {
+                    console.error(
+                        `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
+                        sendError,
+                    );
+                }
             }
         }
 
@@ -70,8 +81,11 @@ export class PostmarkAdapter implements DeliveryService {
                 MessageStream: notification.messageStream,
             });
         } catch (error) {
-            console.error('Postmark API Error:', error);
-            throw new Error('Failed to send email via Postmark.');
+            const detail = error instanceof Error ? error.message : String(error);
+
+            console.error(`[PostmarkAdapter] Fallback sendEmailWithTemplate also failed for "${notification.templateId}":`, error);
+
+            throw new Error(`Failed to send email via Postmark: ${detail}`);
         }
     }
 

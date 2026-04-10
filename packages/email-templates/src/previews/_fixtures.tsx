@@ -16,6 +16,7 @@ export const LEARNCARD_BRANDING = DEFAULT_BRANDING;
 
 export const VETPASS_BRANDING: TenantBranding = resolveBranding({
     brandName: 'VetPass',
+    logoUrl: 'https://vetpass.app/assets/icon/icon.png',
     logoAlt: 'VetPass',
     primaryColor: '#1B5E20',
     primaryTextColor: '#ffffff',
