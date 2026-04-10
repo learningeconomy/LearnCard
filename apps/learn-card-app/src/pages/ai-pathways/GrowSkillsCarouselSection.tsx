@@ -2,9 +2,6 @@ import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
-import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
-import SlimCaretRight from '../../components/svgs/SlimCaretRight';
-
 type GrowSkillsCarouselSectionProps<T> = {
     title: ReactNode;
     items?: T[];
@@ -27,21 +24,6 @@ const GrowSkillsCarouselSection = <T,>({
     slideClassName = 'flex !h-auto overflow-visible',
 }: GrowSkillsCarouselSectionProps<T>) => {
     const carouselItems = items ?? [];
-    const swiperRef = useRef<any>(null);
-    const [atBeginning, setAtBeginning] = useState(true);
-    const [atEnd, setAtEnd] = useState(false);
-
-    const handleSwiperUpdate = (swiper: any) => {
-        setAtBeginning(swiper.isBeginning);
-        setAtEnd(swiper.isEnd);
-    };
-
-    useEffect(() => {
-        if (!swiperRef.current) return;
-
-        swiperRef.current.update();
-        handleSwiperUpdate(swiperRef.current);
-    }, [carouselItems.length]);
 
     if (carouselItems.length === 0) return null;
 
@@ -64,20 +46,6 @@ const GrowSkillsCarouselSection = <T,>({
 
             <div className="relative w-full overflow-visible">
                 <Swiper
-                    onSwiper={swiper => {
-                        swiperRef.current = swiper;
-                        handleSwiperUpdate(swiper);
-                    }}
-                    onResize={handleSwiperUpdate}
-                    onSlideChange={handleSwiperUpdate}
-                    onReachBeginning={() => setAtBeginning(true)}
-                    onFromEdge={() => {
-                        if (swiperRef.current) {
-                            setAtBeginning(swiperRef.current.isBeginning);
-                            setAtEnd(swiperRef.current.isEnd);
-                        }
-                    }}
-                    onReachEnd={() => setAtEnd(true)}
                     spaceBetween={12}
                     slidesPerView={'auto'}
                     grabCursor={true}
@@ -89,33 +57,12 @@ const GrowSkillsCarouselSection = <T,>({
                         <SwiperSlide
                             key={getItemKey?.(item, index) ?? index}
                             className={slideClassName}
+                            style={{ width: '350px' }}
                         >
                             {renderItem(item, index)}
                         </SwiperSlide>
                     ))}
                 </Swiper>
-
-                {!atBeginning && (
-                    <button
-                        type="button"
-                        onClick={() => swiperRef.current?.slidePrev()}
-                        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-grayscale-900 p-2 rounded-full z-50 shadow-md hover:bg-grayscale-100 transition-all duration-200"
-                        style={{ opacity: 0.8 }}
-                    >
-                        <SlimCaretLeft className="w-5 h-auto" />
-                    </button>
-                )}
-
-                {!atEnd && (
-                    <button
-                        type="button"
-                        onClick={() => swiperRef.current?.slideNext()}
-                        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-grayscale-900 p-2 rounded-full z-50 shadow-md hover:bg-grayscale-100 transition-all duration-200"
-                        style={{ opacity: 0.8 }}
-                    >
-                        <SlimCaretRight className="w-5 h-auto" />
-                    </button>
-                )}
             </div>
         </div>
     );
