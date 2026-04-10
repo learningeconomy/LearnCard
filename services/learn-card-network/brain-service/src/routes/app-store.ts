@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
+import type { ProfileType } from 'types/profile';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
@@ -11,6 +12,10 @@ import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
+import {
+    getContractUriFromLaunchConfig,
+    getContractUriFromGuideState,
+} from '@helpers/integrations.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -50,6 +55,7 @@ import {
     countCredentialsSentByListingToProfile,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
+import { IntegrationValidator } from 'types/integration';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     getPrimarySigningAuthorityForListing,
@@ -77,6 +83,10 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
+import {
+    getContractTermsForProfile,
+    getContractDetailsByUri,
+} from '@accesslayer/consentflowcontract/relationships/read';
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
@@ -451,13 +461,13 @@ const verifyIntegrationOwnership = async (integrationId: string, profileId: stri
 
 // Helper to verify listing ownership via integration
 const verifyListingOwnership = async (listingId: string, profileId: string) => {
-    const listing = await readAppStoreListingById(listingId);
+    const listing = await readAppStoreListingByIdOrSlug(listingId);
 
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
 
-    const integration = await getIntegrationForListing(listingId);
+    const integration = await getIntegrationForListing(listing.listing_id);
 
     if (!integration) {
         throw new TRPCError({
@@ -997,6 +1007,77 @@ const handleGetTemplateRecipientsEvent = async (
     };
 };
 
+const handleRequestLearnerContextEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>,
+    listing?: { launch_config_json?: string }
+): Promise<Record<string, unknown>> => {
+    const { instructions, detailLevel = 'compact' } = event as {
+        instructions?: string;
+        detailLevel?: string;
+    };
+
+    const credentialUris: string[] = [];
+    let personalData: Record<string, string> = {};
+
+    const sentCredentials = await getCredentialsSentByListingToProfile(
+        listingId,
+        profile.profileId,
+        { limit: 100 }
+    );
+
+    for (const sentCred of sentCredentials) {
+        const credentialUri = getCredentialUri(sentCred.credentialId, ctx.domain);
+        credentialUris.push(credentialUri);
+    }
+
+    // Resolve contractUri from launch_config_json or guideState
+    let contractUri = getContractUriFromLaunchConfig(listing);
+
+    if (!contractUri) {
+        const integration = await getIntegrationForListing(listingId);
+        contractUri = getContractUriFromGuideState(integration);
+    }
+
+    if (contractUri) {
+        try {
+            const contractDetails = await getContractDetailsByUri(contractUri);
+
+            if (contractDetails?.contract) {
+                const terms = await getContractTermsForProfile(
+                    profile,
+                    contractDetails.contract
+                );
+
+                if (event.includeCredentials && terms?.terms?.read?.credentials) {
+                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
+                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
+                    );
+
+                    credentialUris.push(...uris);
+                }
+
+                if (event.includePersonalData && terms?.terms?.read?.personal) {
+                    personalData = terms.terms.read.personal;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching contract credentials:', error);
+        }
+    }
+
+    return {
+        credentialUris,
+        personalData,
+        instructions,
+        detailLevel,
+        maxCredentials: credentialUris.length,
+        did: `did:web:${ctx.domain}:${profile.profileId}`,
+    };
+};
+
 // Helper to handle send-notification app event
 const handleSendNotificationEvent = async (
     ctx: { domain: string },
@@ -1340,6 +1421,24 @@ export const appStoreRouter = t.router({
                 did: primarySa.relationship.did,
                 isPrimary: primarySa.relationship.isPrimary ?? true,
             };
+        }),
+
+    getIntegrationForListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/integration',
+                tags: ['App Store'],
+                summary: 'Get Integration for Listing',
+                description: 'Get the integration associated with an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(IntegrationValidator.optional())
+        .query(async ({ input }) => {
+            return (await getIntegrationForListing(input.listingId)) ?? undefined;
         }),
 
     submitForReview: profileRoute
@@ -2164,6 +2263,10 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'get-template-recipients') {
                 return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'request-learner-context') {
+                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event, listing);
             }
 
             if (eventType === 'send-notification') {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
 import { curriedStateSlice } from '@learncard/helpers';
-import { Eye, Upload, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Eye, Upload, X, ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from 'lucide-react';
 
 import {
     ModalTypes,
@@ -67,6 +67,32 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     const updateWrite = curriedStateSlice(updateContract('write'));
     const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
 
+    const [customFieldName, setCustomFieldName] = useState('');
+
+    const COMMON_PERSONAL_FIELDS = ['name', 'email'] as const;
+
+    const addPersonalField = (field: string, required = false) => {
+        setContract(draft => {
+            draft.contract.read.personal[field] = { required, defaultEnabled: true };
+        });
+    };
+
+    const removePersonalField = (field: string) => {
+        setContract(draft => {
+            delete draft.contract.read.personal[field];
+        });
+    };
+
+    const togglePersonalFieldRequired = (field: string) => {
+        setContract(draft => {
+            const existing = draft.contract.read.personal[field];
+
+            if (existing) {
+                existing.required = !existing.required;
+            }
+        });
+    };
+
     const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
@@ -120,7 +146,8 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     };
 
     const hasReadCategories = Object.keys(contract.contract.read.credentials.categories).length > 0;
-    const hasWriteCategories = Object.keys(contract.contract.write.credentials.categories).length > 0;
+    const hasWriteCategories =
+        Object.keys(contract.contract.write.credentials.categories).length > 0;
 
     return (
         <div className="w-full max-w-lg mx-auto">
@@ -236,6 +263,143 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         setContract={setContract as any}
                         mode="read"
                     />
+
+                    {/* Anonymize Toggle */}
+                    <div className="flex items-center justify-between py-2 border-t border-gray-200 mt-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600">
+                                Anonymize Data
+                            </label>
+
+                            <p className="text-xs text-gray-400">
+                                Request data without identifying information
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                updateRead('anonymize', !contract.contract.read.anonymize)
+                            }
+                            className={`relative w-12 h-7 rounded-full transition-colors ${
+                                contract.contract.read.anonymize ? 'bg-cyan-500' : 'bg-gray-200'
+                            }`}
+                        >
+                            <span
+                                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                                    contract.contract.read.anonymize
+                                        ? 'translate-x-5'
+                                        : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
+
+                    {/* Personal Data Fields */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 mb-3">
+                            Which personal data fields do you want to request from users?
+                        </p>
+
+                        {/* Quick-add common fields */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                            {COMMON_PERSONAL_FIELDS.filter(
+                                f => !(f in contract.contract.read.personal)
+                            ).map(field => (
+                                <button
+                                    key={field}
+                                    type="button"
+                                    onClick={() => addPersonalField(field)}
+                                    className="px-2.5 py-1 text-xs rounded-lg bg-white border border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-600 transition-colors"
+                                >
+                                    + {field}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Active personal fields */}
+                        {Object.entries(contract.contract.read.personal).length > 0 && (
+                            <div className="space-y-2 mb-3">
+                                {Object.entries(contract.contract.read.personal).map(
+                                    ([field, config]) => (
+                                        <div
+                                            key={field}
+                                            className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200"
+                                        >
+                                            <span className="text-sm text-gray-700 font-medium">
+                                                {field}
+                                            </span>
+
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        togglePersonalFieldRequired(field)
+                                                    }
+                                                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+                                                        config.required
+                                                            ? 'bg-red-50 border-red-200 text-red-600'
+                                                            : 'bg-gray-50 border-gray-200 text-gray-400'
+                                                    }`}
+                                                >
+                                                    {config.required ? 'required' : 'optional'}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removePersonalField(field)}
+                                                    className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+
+                        {/* Add custom field */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={customFieldName}
+                                onChange={e => setCustomFieldName(e.target.value)}
+                                onKeyDown={e => {
+                                    if (
+                                        e.key === 'Enter' &&
+                                        customFieldName.trim() &&
+                                        !(customFieldName.trim() in contract.contract.read.personal)
+                                    ) {
+                                        addPersonalField(customFieldName.trim());
+                                        setCustomFieldName('');
+                                    }
+                                }}
+                                placeholder="Custom field name..."
+                                className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (
+                                        customFieldName.trim() &&
+                                        !(customFieldName.trim() in contract.contract.read.personal)
+                                    ) {
+                                        addPersonalField(customFieldName.trim());
+                                        setCustomFieldName('');
+                                    }
+                                }}
+                                disabled={
+                                    !customFieldName.trim() ||
+                                    customFieldName.trim() in contract.contract.read.personal
+                                }
+                                className="px-3 py-2 bg-cyan-500 text-white rounded-lg text-xs font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Write Terms */}

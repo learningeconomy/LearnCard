@@ -187,6 +187,18 @@ export interface RequestConsentOptions {
 }
 
 /**
+ * Payload for REQUEST_CONSENT action
+ */
+export interface RequestConsentPayload {
+    /**
+     * URI of the consent contract. If not provided, the system will attempt
+     * to use the contract configured for the current app listing.
+     */
+    contractUri?: string;
+    redirect?: boolean;
+}
+
+/**
  * Response from REQUEST_CONSENT action
  */
 export interface ConsentResponse {
@@ -265,6 +277,70 @@ export interface TemplateRecipientsResponse {
     hasMore: boolean;
     cursor?: string;
     total?: number;
+}
+
+/**
+ * Options for REQUEST_LEARNER_CONTEXT action
+ */
+export interface RequestLearnerContextOptions {
+    /**
+     * Whether to include credentials in the context
+     * @default true
+     */
+    includeCredentials?: boolean;
+
+    /**
+     * Whether to include personal data (name, bio, etc.) in the context
+     * @default false
+     */
+    includePersonalData?: boolean;
+
+    /**
+     * Format of the response
+     * - 'prompt': Returns LLM-ready formatted text
+     * - 'structured': Returns structured data object
+     * @default 'prompt'
+     */
+    format?: 'prompt' | 'structured';
+
+    /**
+     * Optional instructions to guide the LLM prompt generation
+     */
+    instructions?: string;
+
+    /**
+     * Level of detail in the generated prompt
+     * @default 'compact'
+     */
+    detailLevel?: 'compact' | 'expanded';
+}
+
+/**
+ * Raw data included in learner context response (when format is 'structured')
+ */
+export interface LearnerContextRawData {
+    /** Array of Verifiable Credentials */
+    credentials: unknown[];
+
+    /** Personal data if requested and available (name, bio, etc.) */
+    personalData?: Record<string, unknown>;
+}
+
+/**
+ * Response from REQUEST_LEARNER_CONTEXT action
+ */
+export interface LearnerContextResponse {
+    /** LLM-ready formatted prompt text */
+    prompt: string;
+
+    /** Raw structured data (only included when format is 'structured') */
+    raw?: LearnerContextRawData;
+
+    /** User's DID */
+    did: string;
+
+    /** User's display name if available */
+    displayName?: string;
 }
 
 /**
