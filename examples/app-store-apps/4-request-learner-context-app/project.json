@@ -1,0 +1,21 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "4-request-learner-context-app",
+    "sourceRoot": "examples/app-store-apps/4-request-learner-context-app/src",
+    "projectType": "application",
+    "root": "examples/app-store-apps/4-request-learner-context-app",
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "build"
+            }
+        },
+        "dev": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "dev"
+            }
+        }
+    }
+}
