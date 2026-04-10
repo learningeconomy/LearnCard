@@ -1,5 +1,5 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
-import { InboxCredential, ContactMethod, InboxCredentialInstance } from '@models';
+import { InboxCredential, ContactMethod } from '@models';
 import { InboxCredentialType, InboxCredentialQuery, ContactMethodType } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
@@ -8,8 +8,19 @@ import {
     buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 
-export const getInboxCredentialById = async (id: string): Promise<InboxCredentialInstance | null> => {
-    return InboxCredential.findOne({ where: { id } });
+export const getInboxCredentialById = async (
+    id: string
+): Promise<InboxCredentialType | null> => {
+    const result = await new QueryBuilder(new BindParam({ id }))
+        .match({ model: InboxCredential, identifier: 'ic' })
+        .where('ic.id = $id')
+        .return('ic')
+        .limit(1)
+        .run();
+
+    const credential = result.records[0]?.get('ic')?.properties;
+    if (!credential) return null;
+    return inflateObject<InboxCredentialType>(credential as any);
 };
 
 export const getPendingInboxCredentialsForContactMethod = async (
