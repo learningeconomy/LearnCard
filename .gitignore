@@ -43,8 +43,8 @@ docs/superpowers/specs/
 docs/superpowers
 .github/copilot-instructions.md
 .worktrees/
- CLAUDE.local.md
- 
+CLAUDE.local.md
+
 # Local Netlify folder
 .netlify
 # Local environment configuration
