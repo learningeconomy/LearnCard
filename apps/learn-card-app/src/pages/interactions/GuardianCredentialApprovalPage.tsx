@@ -16,6 +16,7 @@ type CredentialInfo = {
     credentialName?: string;
     createdAt: string;
     expiresAt: string;
+    canApproveInApp: boolean;
 };
 
 type PageState =
@@ -35,6 +36,8 @@ type LCNOpenInvoke = {
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
     approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
+    rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
 };
 
 const toErrorMessage = (err: unknown): string =>
@@ -59,6 +62,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
     const [error, setError] = useState<string>('');
     const [resultMessage, setResultMessage] = useState<string>('');
     const [otpCode, setOtpCode] = useState<string>('');
+    const [canSkipOtp, setCanSkipOtp] = useState<boolean>(false);
 
 
     // Initialize wallet once
@@ -83,6 +87,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
 
                 const info = await invokeRef.current.getGuardianPendingCredential(token);
                 setCredentialInfo(info);
+                setCanSkipOtp(info.canApproveInApp);
 
                 if (info.guardianStatus === 'GUARDIAN_APPROVED') {
                     setResultMessage('You have already approved this credential.');
@@ -140,6 +145,32 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         }
     };
 
+    const handleApproveInApp = async () => {
+        if (!invokeRef.current || !credentialInfo?.inboxCredentialId) return;
+        setState('approving');
+        try {
+            await invokeRef.current.approveGuardianCredentialInApp(credentialInfo.inboxCredentialId);
+            setResultMessage('Credential approved.');
+            setState('approved');
+        } catch (e: unknown) {
+            setError(toErrorMessage(e));
+            setState('error');
+        }
+    };
+
+    const handleRejectInApp = async () => {
+        if (!invokeRef.current || !credentialInfo?.inboxCredentialId) return;
+        setState('rejecting');
+        try {
+            await invokeRef.current.rejectGuardianCredentialInApp(credentialInfo.inboxCredentialId);
+            setResultMessage('Credential rejected.');
+            setState('rejected');
+        } catch (e: unknown) {
+            setError(toErrorMessage(e));
+            setState('error');
+        }
+    };
+
     const isProcessing = state === 'approving' || state === 'rejecting' || state === 'sending_code';
 
     return (
@@ -183,10 +214,15 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {state === 'ready' && (
+                            {state === 'ready' && !canSkipOtp && (
                                 <div className="w-full max-w-sm">
                                     <p className="text-emerald-100 text-sm mb-4">
                                         To approve or reject, we'll send a verification code to your email.
+                                    </p>
+                                    <p className="text-emerald-200 text-xs mb-4 leading-relaxed">
+                                        By approving, your account will be linked with the student's account
+                                        and you'll be able to manage their future credential approvals directly
+                                        from your notifications.
                                     </p>
                                     <IonButton
                                         expand="block"
@@ -195,6 +231,33 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                         disabled={isProcessing}
                                     >
                                         Send Verification Code
+                                    </IonButton>
+                                </div>
+                            )}
+
+                            {state === 'ready' && canSkipOtp && (
+                                <div className="w-full max-w-sm">
+                                    <p className="text-emerald-100 text-sm mb-4">
+                                        You have a guardian relationship with this student.
+                                        You can approve or reject this credential directly.
+                                    </p>
+                                    <IonButton
+                                        expand="block"
+                                        color="light"
+                                        onClick={handleApproveInApp}
+                                        disabled={isProcessing}
+                                    >
+                                        Approve
+                                    </IonButton>
+                                    <IonButton
+                                        expand="block"
+                                        fill="outline"
+                                        color="light"
+                                        onClick={handleRejectInApp}
+                                        disabled={isProcessing}
+                                        className="mt-2"
+                                    >
+                                        Reject
                                     </IonButton>
                                 </div>
                             )}
