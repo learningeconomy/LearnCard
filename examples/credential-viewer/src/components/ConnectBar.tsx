@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 
 import {
     useWallet,
@@ -95,6 +95,224 @@ const EnvSelector: React.FC = () => {
     );
 };
 
+const ProfileSection: React.FC = () => {
+    const { profile, profileLoading, profileError, createProfile } = useWallet();
+
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [displayName, setDisplayName] = useState('');
+    const [profileId, setProfileId] = useState('');
+    const [creating, setCreating] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
+
+    const handleCreate = useCallback(async () => {
+        if (!displayName.trim() || !profileId.trim()) return;
+
+        setCreating(true);
+        setLocalError(null);
+
+        try {
+            await createProfile({
+                displayName: displayName.trim(),
+                profileId: profileId.trim(),
+            });
+
+            setShowCreateForm(false);
+            setDisplayName('');
+            setProfileId('');
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+
+            setLocalError(msg);
+        } finally {
+            setCreating(false);
+        }
+    }, [displayName, profileId, createProfile]);
+
+    if (profileLoading) {
+        return (
+            <div className="flex items-center gap-2 px-2.5 py-1 bg-gray-800/50 rounded-lg">
+                <svg className="w-3 h-3 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+
+                <span className="text-[11px] text-gray-500">Loading profile...</span>
+            </div>
+        );
+    }
+
+    if (profile) {
+        return (
+            <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-900/20 border border-blue-800/40 rounded-lg">
+                {profile.image ? (
+                    <img
+                        src={profile.image}
+                        alt=""
+                        className="w-4 h-4 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                        <span className="text-[8px] text-white font-bold">
+                            {profile.displayName.charAt(0).toUpperCase()}
+                        </span>
+                    </div>
+                )}
+
+                <span className="text-[11px] text-blue-300 font-medium" title={`Profile: ${profile.profileId}`}>
+                    {profile.displayName}
+                </span>
+
+                <span className="text-[10px] text-gray-500 font-mono">
+                    @{profile.profileId}
+                </span>
+            </div>
+        );
+    }
+
+    // No profile — show create prompt or form
+    if (!showCreateForm) {
+        return (
+            <button
+                onClick={() => setShowCreateForm(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-amber-400 bg-amber-900/20 border border-amber-800/40 rounded-lg hover:bg-amber-900/30 transition-colors cursor-pointer"
+            >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                No LCN Profile — Create One
+            </button>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-2">
+            <input
+                type="text"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="Display Name"
+                className="w-32 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                autoFocus
+            />
+
+            <input
+                type="text"
+                value={profileId}
+                onChange={e => setProfileId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
+                placeholder="profile-id"
+                className="w-28 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+            />
+
+            <button
+                onClick={handleCreate}
+                disabled={!displayName.trim() || !profileId.trim() || creating}
+                className="px-2.5 py-1 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1"
+            >
+                {creating ? (
+                    <>
+                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Creating...
+                    </>
+                ) : 'Create'}
+            </button>
+
+            <button
+                onClick={() => { setShowCreateForm(false); setLocalError(null); }}
+                className="px-1.5 py-1 text-[11px] text-gray-500 hover:text-gray-300 cursor-pointer"
+            >
+                Cancel
+            </button>
+
+            {(localError || profileError) && (
+                <span className="text-[10px] text-red-400 max-w-[180px] truncate" title={localError || profileError || ''}>
+                    {localError || profileError}
+                </span>
+            )}
+        </div>
+    );
+};
+
+const SigningAuthoritySection: React.FC = () => {
+    const { profile, signingAuthority, saLoading, saError, ensureSigningAuthority } = useWallet();
+
+    const [setting, setSetting] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
+
+    const handleSetup = useCallback(async () => {
+        setSetting(true);
+        setLocalError(null);
+
+        try {
+            await ensureSigningAuthority();
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+
+            setLocalError(msg);
+        } finally {
+            setSetting(false);
+        }
+    }, [ensureSigningAuthority]);
+
+    // Only show if profile exists (SA requires a profile)
+    if (!profile) return null;
+
+    if (saLoading || setting) {
+        return (
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-lg">
+                <svg className="w-3 h-3 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+
+                <span className="text-[10px] text-gray-500">
+                    {setting ? 'Setting up...' : 'Checking SA...'}
+                </span>
+            </div>
+        );
+    }
+
+    if (signingAuthority) {
+        return (
+            <div
+                className="flex items-center gap-1.5 px-2 py-1 bg-emerald-900/20 border border-emerald-800/40 rounded-lg"
+                title={`SA: ${signingAuthority.name}\nEndpoint: ${signingAuthority.endpoint}\nDID: ${signingAuthority.did}`}
+            >
+                <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+
+                <span className="text-[10px] text-emerald-400 font-medium">
+                    SA: {signingAuthority.name}
+                </span>
+            </div>
+        );
+    }
+
+    // No SA — show setup button
+    return (
+        <div className="flex items-center gap-1.5">
+            <button
+                onClick={handleSetup}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] text-amber-400 bg-amber-900/20 border border-amber-800/40 rounded-lg hover:bg-amber-900/30 transition-colors cursor-pointer"
+            >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Set Up Signing Authority
+            </button>
+
+            {(localError || saError) && (
+                <span className="text-[10px] text-red-400 max-w-[160px] truncate" title={localError || saError || ''}>
+                    {localError || saError}
+                </span>
+            )}
+        </div>
+    );
+};
+
 export const ConnectBar: React.FC = () => {
     const { did, status, error, connect, disconnect, generateSeed, seed, envConfig } = useWallet();
     const [inputSeed, setInputSeed] = useState('');
@@ -126,6 +344,10 @@ export const ConnectBar: React.FC = () => {
 
                         <span className="text-xs text-green-400 font-medium">Connected</span>
                     </div>
+
+                    <ProfileSection />
+
+                    <SigningAuthoritySection />
 
                     <div className="text-xs text-gray-500 font-mono max-w-[200px] truncate" title={did}>
                         {did}

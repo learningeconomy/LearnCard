@@ -11,6 +11,19 @@ type WalletInstance = any;
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+export interface LCNProfileInfo {
+    did: string;
+    profileId: string;
+    displayName: string;
+    image?: string;
+}
+
+export interface SigningAuthorityInfo {
+    name: string;
+    endpoint: string;
+    did: string;
+}
+
 export type NetworkEnvKey = 'production' | 'staging' | 'local' | 'custom';
 
 export interface NetworkEnvConfig {
@@ -46,10 +59,22 @@ interface WalletContextValue {
     envKey: NetworkEnvKey;
     envConfig: NetworkEnvConfig;
 
+    profile: LCNProfileInfo | null;
+    profileLoading: boolean;
+    profileError: string | null;
+
+    signingAuthority: SigningAuthorityInfo | null;
+    saLoading: boolean;
+    saError: string | null;
+
     setEnv: (key: NetworkEnvKey, custom?: NetworkEnvConfig) => void;
     connect: (seed: string) => Promise<void>;
     disconnect: () => void;
     generateSeed: () => string;
+
+    fetchProfile: () => Promise<void>;
+    createProfile: (input: { displayName: string; profileId: string }) => Promise<void>;
+    ensureSigningAuthority: () => Promise<void>;
 
     issueAndStore: (unsigned: Record<string, unknown>, categoryOverride?: string) => Promise<{ uri: string; signed: VC }>;
 
@@ -112,6 +137,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
     const [error, setError] = useState<string | null>(null);
 
+    const [profile, setProfile] = useState<LCNProfileInfo | null>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileError, setProfileError] = useState<string | null>(null);
+
+    const [signingAuthority, setSigningAuthority] = useState<SigningAuthorityInfo | null>(null);
+    const [saLoading, setSaLoading] = useState(false);
+    const [saError, setSaError] = useState<string | null>(null);
+
     const envConfigRef = useRef(envConfig);
     envConfigRef.current = envConfig;
 
@@ -132,9 +165,126 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     }, []);
 
+    const DEFAULT_SA_NAME = 'viewer-sa';
+
+    const doEnsureSigningAuthority = useCallback(async () => {
+        const lc = walletRef.current;
+
+        if (!lc?.invoke?.getRegisteredSigningAuthorities) {
+            throw new Error('Wallet missing network plugin');
+        }
+
+        setSaLoading(true);
+        setSaError(null);
+
+        try {
+            // 1. Check if any signing authorities already registered
+            const existing = await lc.invoke.getRegisteredSigningAuthorities();
+
+            if (existing && existing.length > 0) {
+                // Already have at least one — check if primary is set
+                const primary = await lc.invoke.getPrimaryRegisteredSigningAuthority();
+
+                if (primary?.signingAuthority?.endpoint) {
+                    setSigningAuthority({
+                        name: primary.relationship?.name ?? DEFAULT_SA_NAME,
+                        endpoint: primary.signingAuthority.endpoint,
+                        did: primary.relationship?.did ?? '',
+                    });
+                    return;
+                }
+
+                // Has registered SAs but no primary — set first one as primary
+                const first = existing[0];
+
+                await lc.invoke.setPrimaryRegisteredSigningAuthority(
+                    first.signingAuthority.endpoint,
+                    first.relationship.name,
+                );
+
+                setSigningAuthority({
+                    name: first.relationship.name,
+                    endpoint: first.signingAuthority.endpoint,
+                    did: first.relationship.did ?? '',
+                });
+
+                return;
+            }
+
+            // 2. No registered SAs — check managed SAs or create one
+            let sa: { name: string; endpoint: string; did: string } | undefined;
+
+            if (lc.invoke.getSigningAuthorities) {
+                const managed = await lc.invoke.getSigningAuthorities();
+
+                sa = managed?.find((s: { name: string }) => s?.name === DEFAULT_SA_NAME);
+            }
+
+            if (!sa && lc.invoke.createSigningAuthority) {
+                sa = await lc.invoke.createSigningAuthority(DEFAULT_SA_NAME);
+            }
+
+            if (!sa || !sa.endpoint) {
+                throw new Error('Could not create signing authority');
+            }
+
+            // 3. Register it
+            await lc.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+
+            // 4. Set as primary
+            await lc.invoke.setPrimaryRegisteredSigningAuthority(sa.endpoint, sa.name);
+
+            setSigningAuthority({
+                name: sa.name,
+                endpoint: sa.endpoint,
+                did: sa.did,
+            });
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+
+            setSaError(msg);
+            throw err;
+        } finally {
+            setSaLoading(false);
+        }
+    }, []);
+
+    const doFetchProfile = useCallback(async () => {
+        const lc = walletRef.current;
+
+        if (!lc?.invoke?.getProfile) return;
+
+        setProfileLoading(true);
+        setProfileError(null);
+
+        try {
+            const existing = await lc.invoke.getProfile();
+
+            if (existing && 'profileId' in existing && existing.profileId) {
+                setProfile({
+                    did: 'did' in existing ? (existing.did as string) : '',
+                    profileId: existing.profileId as string,
+                    displayName: ('displayName' in existing ? existing.displayName as string : undefined) ?? (existing.profileId as string),
+                    image: 'image' in existing ? (existing.image as string | undefined) : undefined,
+                });
+            } else {
+                setProfile(null);
+            }
+        } catch {
+            // No profile exists yet — that's fine
+            setProfile(null);
+        } finally {
+            setProfileLoading(false);
+        }
+    }, []);
+
     const connect = useCallback(async (inputSeed: string) => {
         setStatus('connecting');
         setError(null);
+        setProfile(null);
+        setProfileError(null);
+        setSigningAuthority(null);
+        setSaError(null);
 
         const cfg = envConfigRef.current;
 
@@ -156,6 +306,45 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setStatus('connected');
 
             localStorage.setItem(SEED_STORAGE_KEY, inputSeed);
+
+            // Auto-fetch existing LCN profile after connection
+            setProfileLoading(true);
+
+            try {
+                const existing = await lc.invoke.getProfile();
+
+                if (existing && 'profileId' in existing && existing.profileId) {
+                    setProfile({
+                        did: 'did' in existing ? (existing.did as string) : walletDid,
+                        profileId: existing.profileId as string,
+                        displayName: ('displayName' in existing ? existing.displayName as string : undefined) ?? (existing.profileId as string),
+                        image: 'image' in existing ? (existing.image as string | undefined) : undefined,
+                    });
+
+                    // Auto-check signing authority when profile exists
+                    try {
+                        setSaLoading(true);
+
+                        const primary = await lc.invoke.getPrimaryRegisteredSigningAuthority?.();
+
+                        if (primary?.signingAuthority?.endpoint) {
+                            setSigningAuthority({
+                                name: primary.relationship?.name ?? 'viewer-sa',
+                                endpoint: primary.signingAuthority.endpoint,
+                                did: primary.relationship?.did ?? '',
+                            });
+                        }
+                    } catch {
+                        // No SA yet — user can set up later
+                    } finally {
+                        setSaLoading(false);
+                    }
+                }
+            } catch {
+                // No profile — user can create one
+            } finally {
+                setProfileLoading(false);
+            }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
 
@@ -174,6 +363,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSeed(null);
         setStatus('disconnected');
         setError(null);
+        setProfile(null);
+        setProfileError(null);
+        setSigningAuthority(null);
+        setSaError(null);
 
         localStorage.removeItem(SEED_STORAGE_KEY);
         // Keep env prefs across disconnects
@@ -181,6 +374,43 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const generateSeed = useCallback((): string => {
         return generateHexSeed();
+    }, []);
+
+    const handleCreateProfile = useCallback(async (input: { displayName: string; profileId: string }) => {
+        const lc = walletRef.current;
+
+        if (!lc?.invoke?.createProfile) {
+            throw new Error('Wallet not connected or missing network plugin');
+        }
+
+        setProfileLoading(true);
+        setProfileError(null);
+
+        try {
+            await lc.invoke.createProfile({
+                displayName: input.displayName,
+                profileId: input.profileId,
+            });
+
+            // Re-fetch the full profile after creation
+            const created = await lc.invoke.getProfile();
+
+            if (created && 'profileId' in created && created.profileId) {
+                setProfile({
+                    did: 'did' in created ? (created.did as string) : '',
+                    profileId: created.profileId as string,
+                    displayName: ('displayName' in created ? created.displayName as string : undefined) ?? (created.profileId as string),
+                    image: 'image' in created ? (created.image as string | undefined) : undefined,
+                });
+            }
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+
+            setProfileError(msg);
+            throw err;
+        } finally {
+            setProfileLoading(false);
+        }
     }, []);
 
     const issueAndStore = useCallback(async (
@@ -245,10 +475,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         error,
         envKey,
         envConfig,
+        profile,
+        profileLoading,
+        profileError,
         setEnv,
         connect,
         disconnect,
         generateSeed,
+        signingAuthority,
+        saLoading,
+        saError,
+        fetchProfile: doFetchProfile,
+        createProfile: handleCreateProfile,
+        ensureSigningAuthority: doEnsureSigningAuthority,
         issueAndStore,
         send,
     };
