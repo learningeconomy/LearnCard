@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Play } from 'lucide-react';
-import { ModalTypes, VideoMetadata, getVideoMetadata, useModal } from 'learn-card-base';
-import { useCareerOneStopVideo } from 'learn-card-base/react-query/queries/careerOneStop';
+import {
+    ModalTypes,
+    VideoMetadata,
+    getVideoMetadata,
+    useModal,
+    useCareerOneStopVideo,
+} from 'learn-card-base';
 import AiPathwayContentPreview from './ai-pathway-explore-content/AiPathwayContentPreview';
 import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
 
 type GrowSkillsOccupation = {
+    OnetCode?: string;
     OnetTitle?: string;
+    OnetDescription?: string;
     COSVideoURL?: string | null;
     Video?: Array<{
         VideoCode?: string;
@@ -19,6 +26,10 @@ type GrowSkillsMediaItemProps = {
 
 const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation }) => {
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
+    const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+    const hasDraggedRef = useRef(false);
+
+    const dragThreshold = 8;
 
     const title = occupation?.OnetTitle || 'Video';
     const videoCode = occupation?.Video?.[0]?.VideoCode?.replace(/[^0-9]/g, '') || '';
@@ -35,9 +46,12 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
 
     const handleViewCourse = () => {
         const contentUrl = video?.youtubeUrl || fallbackUrl;
+        const contentId = occupation?.OnetCode
+            ? Number.parseInt(occupation.OnetCode, 10)
+            : undefined;
 
         const content = {
-            id: occupation?.OnetCode,
+            id: Number.isNaN(contentId as number) ? undefined : contentId,
             title: occupation?.OnetTitle,
             description: occupation?.OnetDescription,
             videoCode: videoCode,
@@ -51,6 +65,37 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
         });
     };
 
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        pointerStartRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+        };
+        hasDraggedRef.current = false;
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!pointerStartRef.current) return;
+
+        const deltaX = Math.abs(event.clientX - pointerStartRef.current.x);
+        const deltaY = Math.abs(event.clientY - pointerStartRef.current.y);
+
+        if (deltaX > dragThreshold || deltaY > dragThreshold) {
+            hasDraggedRef.current = true;
+        }
+    };
+
+    const handlePointerUp = () => {
+        pointerStartRef.current = null;
+    };
+
+    const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!hasDraggedRef.current) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        hasDraggedRef.current = false;
+    };
+
     useEffect(() => {
         if (!video?.youtubeUrl && !fallbackUrl) {
             setMetaData(null);
@@ -61,7 +106,14 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
     }, [fallbackUrl, video?.youtubeUrl]);
 
     return (
-        <div className="flex flex-col rounded-[10px] overflow-hidden w-full h-full shadow-bottom-4-4 text-left">
+        <div
+            className="flex flex-col rounded-[10px] overflow-hidden w-full h-full shadow-bottom-4-4 text-left"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onClickCapture={handleClickCapture}
+        >
             <div className="relative h-[162px] overflow-hidden flex-shrink-0 bg-grayscale-200">
                 {metaData?.thumbnailUrl && (
                     <div

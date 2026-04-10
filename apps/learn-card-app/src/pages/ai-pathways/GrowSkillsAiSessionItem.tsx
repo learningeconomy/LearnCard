@@ -1,9 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronRight, Play } from 'lucide-react';
-import { ModalTypes, VideoMetadata, getVideoMetadata, useModal } from 'learn-card-base';
-import { useCareerOneStopVideo } from 'learn-card-base/react-query/queries/careerOneStop';
-import AiPathwayContentPreview from './ai-pathway-explore-content/AiPathwayContentPreview';
-import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
+import React, { useRef } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { useHistory } from 'react-router-dom';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
 type GrowSkillsAiSessionData = {
@@ -19,19 +16,64 @@ type GrowSkillsAiSessionItemProps = {
 };
 
 const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data }) => {
-    const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
+    const history = useHistory();
+    const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+    const hasDraggedRef = useRef(false);
+
+    const dragThreshold = 8;
 
     const { title, description, skills, topicUri, pathwayUri } = data;
+
+    const handleStart = () => {
+        if (!topicUri || !pathwayUri) return;
+
+        history.push(
+            `/chats?topicUri=${encodeURIComponent(topicUri)}&pathwayUri=${encodeURIComponent(
+                pathwayUri
+            )}`
+        );
+    };
+
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        pointerStartRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+        };
+        hasDraggedRef.current = false;
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!pointerStartRef.current) return;
+
+        const deltaX = Math.abs(event.clientX - pointerStartRef.current.x);
+        const deltaY = Math.abs(event.clientY - pointerStartRef.current.y);
+
+        if (deltaX > dragThreshold || deltaY > dragThreshold) {
+            hasDraggedRef.current = true;
+        }
+    };
+
+    const handlePointerUp = () => {
+        pointerStartRef.current = null;
+    };
+
+    const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!hasDraggedRef.current) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        hasDraggedRef.current = false;
+    };
 
     return (
         <div
             role="button"
-            // onPointerDown={handlePointerDown}
-            // onPointerMove={handlePointerMove}
-            // onPointerUp={handlePointerUp}
-            // onPointerCancel={handlePointerUp}
-            // onClickCapture={handleClickCapture}
-            // onClick={openCourseDetailsModal}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onClickCapture={handleClickCapture}
+            onClick={handleStart}
             className="w-full h-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-cyan-400 text-left"
         >
             <div className="px-[15px] py-[20px] flex flex-col gap-[5px]">

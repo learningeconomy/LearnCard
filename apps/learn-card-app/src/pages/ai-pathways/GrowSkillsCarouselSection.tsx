@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { ReactNode } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
@@ -49,8 +49,8 @@ const GrowSkillsCarouselSection = <T,>({
                     spaceBetween={12}
                     slidesPerView={'auto'}
                     grabCursor={true}
-                    preventClicks={false}
-                    preventClicksPropagation={false}
+                    preventClicks={true}
+                    preventClicksPropagation={true}
                     style={{ overflow: 'visible' }}
                 >
                     {carouselItems.map((item, index) => (
