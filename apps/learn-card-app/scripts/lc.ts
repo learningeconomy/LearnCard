@@ -36,9 +36,11 @@ import { networkInterfaces } from 'os';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
+const MONOREPO_ROOT = resolve(APP_ROOT, '../..');
 const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
 const THEME_SCHEMAS_DIR = resolve(APP_ROOT, 'src/theme/schemas');
 const FASTLANE_ROOT = resolve(APP_ROOT, '../../tools/fastlane');
+const BRAIN_SERVICE_ROOT = resolve(MONOREPO_ROOT, 'services/learn-card-network/brain-service');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -126,7 +128,7 @@ const getTenantBundleId = (tenantId: string): string => {
     }
 };
 
-const runCommand = (cmd: string, label: string, shortcut?: string): void => {
+const runCommand = (cmd: string, label: string, shortcut?: string, cwd?: string): void => {
     console.log('');
     console.log(green(`▶ ${label}`));
     console.log(dim(`  $ ${cmd}`));
@@ -141,12 +143,104 @@ const runCommand = (cmd: string, label: string, shortcut?: string): void => {
     rl.close();
 
     const child = spawn('sh', ['-c', cmd], {
-        cwd: APP_ROOT,
+        cwd: cwd ?? APP_ROOT,
         stdio: 'inherit',
         env: { ...process.env },
     });
 
     child.on('exit', code => process.exit(code ?? 0));
+};
+
+// ---------------------------------------------------------------------------
+// Credential Viewer & Seed Data
+// ---------------------------------------------------------------------------
+
+const launchCredentialViewer = () => {
+    runCommand(
+        'pnpm nx dev credential-viewer',
+        'Launching Credential Viewer',
+        'pnpm lc viewer',
+        MONOREPO_ROOT,
+    );
+};
+
+const seedAppStoreListing = async () => {
+    const seedScript = resolve(BRAIN_SERVICE_ROOT, 'scripts/seed-dev-app.ts');
+
+    if (!existsSync(seedScript)) {
+        console.error(`\n❌ Seed script not found at ${seedScript}`);
+        rl.close();
+        process.exit(1);
+    }
+
+    console.log('');
+    console.log(bold('🌱 Seed App Store Listing'));
+    console.log(dim('   Creates a dev partner app, profile, and listing in your local DB.'));
+    console.log(dim('   Requires Neo4j + Redis + MongoDB running (e.g. pnpm lc dev ... full).'));
+    console.log('');
+    console.log(dim('   Press Enter on any field to accept the default.'));
+    console.log('');
+
+    const fields: Array<{ flag: string; label: string; defaultVal: string; hint?: string }> = [
+        { flag: '--app-name', label: 'App name', defaultVal: 'Dev Partner App' },
+        { flag: '--app-url', label: 'App URL', defaultVal: 'http://localhost:4321' },
+        { flag: '--profile', label: 'Owner profile ID', defaultVal: 'dev-owner' },
+        { flag: '--install-for', label: 'Install for profile', defaultVal: '', hint: 'skip to not auto-install' },
+        { flag: '--app-image', label: 'App image URL', defaultVal: '', hint: 'skip for no image' },
+        { flag: '--promotion', label: 'Promotion level', defaultVal: 'FEATURED_CAROUSEL', hint: 'FEATURED_CAROUSEL | CURATED_LIST | NONE' },
+        { flag: '--sa-endpoint', label: 'Signing authority endpoint', defaultVal: 'http://localhost:5100/api' },
+        { flag: '--template-alias', label: 'Template alias', defaultVal: 'default' },
+    ];
+
+    const flagParts: string[] = [];
+
+    for (const field of fields) {
+        const defaultHint = field.defaultVal || (field.hint ?? 'none');
+        const val = await ask(`  ${field.label} ${dim(`(${defaultHint})`)}: `);
+
+        if (val && val !== field.defaultVal) {
+            flagParts.push(`${field.flag} ${val}`);
+        }
+    }
+
+    const resetLimits = await ask(`  Reset rate limits? ${dim('(y/N)')}: `);
+
+    if (resetLimits.toLowerCase() === 'y') {
+        flagParts.push('--reset-rate-limits');
+    }
+
+    const flagStr = flagParts.join(' ');
+    const cmd = `npx tsx scripts/seed-dev-app.ts${flagStr ? ` ${flagStr}` : ''}`;
+
+    runCommand(
+        cmd,
+        'Seeding app store listing into local database',
+        `pnpm lc seed app${flagStr ? ` ${flagStr}` : ''}`,
+        BRAIN_SERVICE_ROOT,
+    );
+};
+
+const seedTestData = async () => {
+    console.log('');
+    console.log(bold('  🌱 Seed Test Data'));
+    console.log(dim('   Populate your local database with dev data.'));
+    console.log('');
+    console.log(`  ${cyan('a')}  ${bold('App store listing')}       ${dim('— dev partner app + profile + listing')}`);
+    console.log('');
+    console.log(dim('  Press Enter to go back'));
+    console.log('');
+
+    const sub = await ask('Pick [a]: ');
+
+    switch (sub) {
+        case 'a':
+            await seedAppStoreListing();
+            break;
+
+        default:
+            await main();
+            break;
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -1396,6 +1490,32 @@ const handleShortcuts = async (): Promise<boolean> => {
             runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme');
             return true;
 
+        case 'viewer':
+            launchCredentialViewer();
+            return true;
+
+        case 'seed': {
+            // pnpm lc seed app [flags...]
+            if (arg === 'app') {
+                const passthrough = args.slice(2).join(' ');
+
+                runCommand(
+                    `npx tsx scripts/seed-dev-app.ts${passthrough ? ` ${passthrough}` : ''}`,
+                    'Seeding app store listing into local database',
+                    undefined,
+                    BRAIN_SERVICE_ROOT,
+                );
+            } else if (arg) {
+                console.log(yellow(`Unknown seed subcommand: ${arg}`));
+                console.log(dim('  Available: app'));
+                rl.close();
+            } else {
+                await seedTestData();
+            }
+
+            return true;
+        }
+
         case 'tenants':
             console.log('');
             console.log(bold('Available tenants:'));
@@ -1440,7 +1560,7 @@ const printHelp = () => {
     console.log('');
     console.log(bold('🃏 LearnCard CLI — Quick Reference'));
     console.log('');
-    console.log(bold('  ⚡ Golden paths'));
+    console.log(bold('  ⚡ Start'));
     console.log('');
     console.log(`  ${cyan('pnpm lc dev <tenant> [stage] [mode]')}  ${dim('Web dev server (mode: full|app|services)')}`);
     console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}        ${dim('Cap sync + tenant config patching')}`);
@@ -1453,21 +1573,23 @@ const printHelp = () => {
     console.log(dim('    pnpm lc sync vetpass alpha'));
     console.log(dim('    pnpm lc open vetpass ios'));
     console.log('');
-    console.log(bold('  📋 Config & inspection'));
+    console.log(bold('  \ud83d\udee0 Tools'));
     console.log('');
-    console.log(`  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`);
-    console.log(`  ${cyan('pnpm lc tenants')}                    ${dim('List all tenants, stages, and themes')}`);
-    console.log(`  ${cyan('pnpm lc validate')}                   ${dim('Run all config + theme validators')}`);
+    console.log(`  ${cyan('pnpm lc viewer')}                     ${dim('Launch the Credential Viewer')}`);
+    console.log(`  ${cyan('pnpm lc seed app [flags]')}           ${dim('Seed app store listing into local DB')}`);
+    console.log(`  ${cyan('pnpm lc native')}                     ${dim('Full native menu (dev, run, build)')}`);
     console.log('');
-    console.log(bold('  🔧 Other commands'));
+    console.log(bold('  🔧 Setup'));
     console.log('');
-    console.log(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
-    console.log(`  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`);
     console.log(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
     console.log(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
     console.log(`  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim('Generate icons/splash from a logo')}`);
+    console.log(`  ${cyan('pnpm lc validate')}                   ${dim('Run all config + theme validators')}`);
+    console.log(`  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`);
     console.log(`  ${cyan('pnpm lc editor')}                     ${dim('Visual config editor on :4400')}`);
-    console.log(`  ${cyan('pnpm lc native')}                     ${dim('Full native menu (dev, run, build)')}`);
+    console.log(`  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`);
+    console.log(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
+    console.log(`  ${cyan('pnpm lc tenants')}                    ${dim('List all tenants, stages, and themes')}`);
     console.log('');
     console.log(dim(`  Available tenants: ${tenants.join(', ')}`));
     console.log('');
@@ -1479,6 +1601,68 @@ const printHelp = () => {
 // Interactive menu
 // ---------------------------------------------------------------------------
 
+const configAndScaffoldingMenu = async () => {
+    console.log('');
+    console.log(bold('  🔧 Config & Scaffolding'));
+    console.log('');
+    console.log(`  ${cyan('a')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`);
+    console.log(`  ${cyan('b')}  ${bold('Create a new theme')}      ${dim('— interactive theme scaffolding')}`);
+    console.log(`  ${cyan('c')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
+    console.log(`  ${cyan('d')}  ${bold('Validate configs')}        ${dim('— run all config + theme validators')}`);
+    console.log(`  ${cyan('e')}  ${bold('Switch tenant config')}    ${dim('— prepare config without starting')}`);
+    console.log(`  ${cyan('f')}  ${bold('Config editor')}           ${dim('— visual config editor on :4400')}`);
+    console.log(`  ${cyan('g')}  ${bold('Resolve config')}          ${dim('— print final merged config')}`);
+    console.log('');
+    console.log(dim('  Press Enter to go back'));
+    console.log('');
+
+    const sub = await ask('Pick [a-g]: ');
+
+    switch (sub) {
+        case 'a':
+            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant', 'pnpm lc create');
+            break;
+
+        case 'b':
+            runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme', 'pnpm lc create-theme');
+            break;
+
+        case 'c':
+            await generateAssets();
+            break;
+
+        case 'd':
+            runValidators();
+            break;
+
+        case 'e':
+            await pickTenantAndPrepare();
+            break;
+
+        case 'f':
+            runCommand('npx tsx scripts/config-editor.ts', 'Config editor', 'pnpm lc editor');
+            break;
+
+        case 'g': {
+            const tenant = await pickTenant();
+            const stage = await pickStage(tenant);
+            const stageFlag = stage === 'local' ? '' : ` --stage ${stage}`;
+
+            runCommand(
+                `npx tsx scripts/resolve-tenant-config.ts ${tenant}${stageFlag}`,
+                `Resolving final config for ${tenant}${stage !== 'local' ? ` (${stage})` : ''}`,
+                `pnpm lc resolve ${tenant}${stage !== 'local' ? ` ${stage}` : ''}`,
+            );
+            break;
+        }
+
+        default:
+            // Enter or unknown — go back to main menu
+            await main();
+            break;
+    }
+};
+
 const main = async () => {
     if (await handleShortcuts()) return;
 
@@ -1489,24 +1673,23 @@ const main = async () => {
     console.log(bold('🃏 LearnCard Developer Tools'));
     console.log(dim(`   ${tenants.length} tenant(s): ${tenants.join(', ')}  •  ${themes.length} theme(s): ${themes.join(', ')}`));
     console.log('');
-    console.log(bold('  ⚡ Quick Start'));
-    console.log(`  ${cyan('1')}  ${bold('Web dev server')}          ${dim('— pnpm lc dev <tenant> [stage] [full|app|services]')}`);
-    console.log(`  ${cyan('2')}  ${bold('Native sync')}             ${dim('— pnpm lc sync <tenant> [stage]')}`);
-    console.log(`  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— pnpm lc open <tenant> [ios|android]')}`);
+    console.log(bold('  ⚡ Start'));
+    console.log(`  ${cyan('1')}  ${bold('Dev server')}              ${dim('— web dev for a tenant')}`);
+    console.log(`  ${cyan('2')}  ${bold('Native sync')}             ${dim('— sync + patch tenant config')}`);
+    console.log(`  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— Xcode / Android Studio')}`);
     console.log('');
-    console.log(bold('  🔧 More Tools'));
-    console.log(`  ${cyan('4')}  ${bold('Switch tenant config')}    ${dim('— prepare config without starting')}`);
-    console.log(`  ${cyan('5')}  ${bold('Validate everything')}     ${dim('— run all config + theme validators')}`);
-    console.log(`  ${cyan('6')}  ${bold('Native / Capacitor')}      ${dim('— full native menu (dev, run, build)')}`);
-    console.log(`  ${cyan('7')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`);
-    console.log(`  ${cyan('8')}  ${bold('Create a new theme')}      ${dim('— interactive theme scaffolding')}`);
-    console.log(`  ${cyan('9')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
-    console.log(`  ${cyan('0')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
+    console.log(bold('  � Tools'));
+    console.log(`  ${cyan('4')}  ${bold('Credential Viewer')}       ${dim('— browse & test credential fixtures')}`);
+    console.log(`  ${cyan('5')}  ${bold('Seed test data')}          ${dim('— populate local DB with dev app + profiles')}`);
+    console.log(`  ${cyan('6')}  ${bold('Native menu')}             ${dim('— full Capacitor menu (dev, run, build, ship)')}`);
     console.log('');
-    console.log(dim('  Tip: run pnpm lc help for a full cheat sheet of shortcuts'));
+    console.log(bold('  🔧 Setup'));
+    console.log(`  ${cyan('7')}  ${bold('Config & scaffolding')}    ${dim('— create, validate, edit, generate...')}`);
+    console.log('');
+    console.log(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
     console.log('');
 
-    const choice = await ask('Pick an option [0-9]: ');
+    const choice = await ask('Pick an option [1-7, h]: ');
 
     switch (choice) {
         case '1':
@@ -1522,11 +1705,11 @@ const main = async () => {
             break;
 
         case '4':
-            await pickTenantAndPrepare();
+            launchCredentialViewer();
             break;
 
         case '5':
-            runValidators();
+            await seedTestData();
             break;
 
         case '6':
@@ -1534,23 +1717,17 @@ const main = async () => {
             break;
 
         case '7':
-            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant', 'pnpm lc create');
+            await configAndScaffoldingMenu();
             break;
 
-        case '8':
-            runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme', 'pnpm lc create-theme');
-            break;
-
-        case '9':
-            await generateAssets();
-            break;
-
-        case '0':
-            runCommand('npx tsx scripts/config-editor.ts', 'Config editor', 'pnpm lc editor');
+        case 'h':
+        case 'H':
+        case 'help':
+            printHelp();
             break;
 
         default:
-            console.log(yellow('Unknown option. Try 0-9.'));
+            console.log(yellow('Unknown option. Try 1-7 or h.'));
             rl.close();
             break;
     }

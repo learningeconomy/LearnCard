@@ -1,14 +1,8 @@
+import { LCNIntegration } from '@learncard/types';
 import {
     ActionHandler,
     ActionHandlers,
-    ActionContext,
-    RequestIdentityPayload,
-    RequestConsentPayload,
-    SendCredentialPayload,
-    AskCredentialSpecificPayload,
-    AskCredentialSearchPayload,
     VerifiablePresentationRequest,
-    LaunchFeaturePayload,
     AppEvent,
 } from './useLearnCardPostMessage';
 
@@ -98,22 +92,29 @@ export const createRequestConsentHandler = (dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getContractUri?: () => string | undefined;
+    getIntegrationContractUri?: () => Promise<string | undefined>;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
-        const { showConsentModal } = dependencies;
+        const { showConsentModal, getContractUri, getIntegrationContractUri } = dependencies;
 
-        if (!payload.contractUri) {
+        // Use payload contractUri first, then launch config, then guideState fallback
+        const contractUri =
+            payload.contractUri || getContractUri?.() || (await getIntegrationContractUri?.());
+
+        if (!contractUri) {
             return {
                 success: false,
                 error: {
                     code: 'INVALID_PAYLOAD',
-                    message: 'Contract URI is required',
+                    message:
+                        'No contract URI provided and no contract configured for this app listing',
                 },
             };
         }
 
         try {
-            const result = await showConsentModal(payload.contractUri, {
+            const result = await showConsentModal(contractUri, {
                 redirect: payload.redirect,
             });
 
@@ -490,6 +491,54 @@ export const createAppEventHandler = (dependencies: {
 };
 
 /**
+ * REQUEST_LEARNER_CONTEXT Handler
+ * Partner requests comprehensive learner context for AI tutoring.
+ */
+export const createRequestLearnerContextHandler = (dependencies: {
+    requestLearnerContext: (options: {
+        includeCredentials?: boolean;
+        includePersonalData?: boolean;
+        format?: string;
+        instructions?: string;
+        detailLevel?: string;
+    }) => Promise<{
+        prompt: string;
+        raw?: {
+            credentials: unknown[];
+            preferences?: Record<string, unknown>;
+            recentActivity?: unknown[];
+        };
+        did: string;
+        displayName?: string;
+    }>;
+}): ActionHandler<'REQUEST_LEARNER_CONTEXT'> => {
+    return async ({ payload }) => {
+        const { requestLearnerContext } = dependencies;
+
+        try {
+            const context = await requestLearnerContext({
+                includeCredentials: payload.includeCredentials,
+                includePersonalData: payload.includePersonalData,
+                format: payload.format,
+                instructions: payload.instructions,
+                detailLevel: payload.detailLevel,
+            });
+
+            return { success: true, data: context };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'UNKNOWN_ERROR',
+                    message:
+                        error instanceof Error ? error.message : 'Failed to get learner context',
+                },
+            };
+        }
+    };
+};
+
+/**
  * Factory function to create all handlers with dependencies
  */
 export function createActionHandlers(dependencies: {
@@ -504,6 +553,9 @@ export function createActionHandlers(dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getContractUri?: () => string | undefined;
+    getIntegrationContractUri?: () => Promise<string | undefined>;
+    getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
 
     // Credentials
     showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;
@@ -524,6 +576,23 @@ export function createActionHandlers(dependencies: {
     // App events
     sendAppEvent?: (listingId: string, event: AppEvent) => Promise<Record<string, unknown>>;
     getAppListingId?: () => string | undefined;
+
+    // Learner context
+    requestLearnerContext?: (options: {
+        include?: string[];
+        format?: string;
+        instructions?: string;
+        detailLevel?: string;
+    }) => Promise<{
+        prompt: string;
+        raw?: {
+            credentials: unknown[];
+            preferences?: Record<string, unknown>;
+            recentActivity?: unknown[];
+        };
+        did: string;
+        displayName?: string;
+    }>;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),
@@ -540,6 +609,13 @@ export function createActionHandlers(dependencies: {
         handlers.APP_EVENT = createAppEventHandler({
             sendAppEvent: dependencies.sendAppEvent,
             getAppListingId: dependencies.getAppListingId,
+        });
+    }
+
+    // Add REQUEST_LEARNER_CONTEXT handler if dependency is provided
+    if (dependencies.requestLearnerContext) {
+        handlers.REQUEST_LEARNER_CONTEXT = createRequestLearnerContextHandler({
+            requestLearnerContext: dependencies.requestLearnerContext,
         });
     }
 

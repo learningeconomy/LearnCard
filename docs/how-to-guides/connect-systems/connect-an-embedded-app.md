@@ -286,16 +286,38 @@ async function sendThankYouBadge() {
 Peer badges are sent **from the user** to another person, not from your app. This is ideal for recognition, gratitude, or social features within your app.
 {% endhint %}
 
-### `requestConsent(contractUri, options?)`
+### `requestConsent(contractUri?, options?)`
 
 Request user consent for a ConsentFlow contract. This is useful when your app needs explicit user permission for data sharing, terms acceptance, or other consent-based flows.
 
+{% hint style="info" %}
+**App Store Apps with Configured Contracts**
+
+If your app is installed from the LearnCard App Store and has a consent contract configured in its integration settings, you can omit the `contractUri` parameter. The SDK will automatically resolve the configured contract from your listing's integration.
+
+**Before (explicit contract URI):**
+
+```typescript
+const result = await learnCard.requestConsent(
+    'lc:network:network.learncard.com/trpc:contract:abc123'
+);
+```
+
+**After (using configured contract):**
+
+```typescript
+const result = await learnCard.requestConsent();
+```
+
+This simplifies your code and ensures users always consent to the correct contract for your app.
+{% endhint %}
+
 **Parameters:**
 
-| Parameter     | Type                    | Required | Description                             |
-| ------------- | ----------------------- | -------- | --------------------------------------- |
-| `contractUri` | `string`                | Yes      | The URI of the ConsentFlow contract     |
-| `options`     | `RequestConsentOptions` | No       | Additional options for the consent flow |
+| Parameter     | Type                    | Required | Description                                                                                       |
+| ------------- | ----------------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `contractUri` | `string`                | No       | The URI of the ConsentFlow contract. Can be omitted for App Store apps with configured contracts. |
+| `options`     | `RequestConsentOptions` | No       | Additional options for the consent flow                                                           |
 
 **Options:**
 
@@ -311,11 +333,11 @@ interface ConsentResponse {
 }
 ```
 
-**Basic Example:**
+**Basic Example (App Store app with configured contract):**
 
 ```typescript
-// Request consent for a data sharing agreement
-const result = await learnCard.requestConsent('urn:lc:contract:my-data-agreement');
+// Request consent using the contract configured in your listing
+const result = await learnCard.requestConsent();
 
 if (result.granted) {
     console.log('User granted consent!');
@@ -325,11 +347,24 @@ if (result.granted) {
 }
 ```
 
+**With Explicit Contract URI:**
+
+```typescript
+// Request consent for a specific data sharing agreement
+const result = await learnCard.requestConsent('urn:lc:contract:my-data-agreement');
+
+if (result.granted) {
+    console.log('User granted consent!');
+} else {
+    console.log('User declined consent');
+}
+```
+
 **With Redirect:**
 
 ```typescript
 // Request consent and redirect to your callback URL after approval
-const result = await learnCard.requestConsent('urn:lc:contract:my-agreement', {
+const result = await learnCard.requestConsent(undefined, {
     redirect: true,
 });
 
@@ -348,15 +383,16 @@ When `redirect: true` is set and the user grants consent:
 4. Your server can verify the VP to confirm consent
 
 The redirect URL will include:
-- `did` - The user's DID
-- `vp` - A signed Verifiable Presentation (JWT format)
+
+-   `did` - The user's DID
+-   `vp` - A signed Verifiable Presentation (JWT format)
 
 **Use Cases:**
 
-- **Terms of Service** - Require users to accept terms before accessing features
-- **Data Sharing Agreements** - Get explicit consent before sharing data with third parties
-- **Privacy Policies** - Track user acknowledgment of privacy policies
-- **OAuth-like Flows** - Use redirect mode for server-side consent verification
+-   **Terms of Service** - Require users to accept terms before accessing features
+-   **Data Sharing Agreements** - Get explicit consent before sharing data with third parties
+-   **Privacy Policies** - Track user acknowledgment of privacy policies
+-   **OAuth-like Flows** - Use redirect mode for server-side consent verification
 
 {% hint style="info" %}
 If the user has already consented to a contract, calling `requestConsent` will return `{ granted: true }` immediately without showing the consent modal again.
@@ -391,6 +427,145 @@ When your app issues a credential:
 │         [Dismiss]                │
 └──────────────────────────────────┘
 ```
+
+---
+
+## Requesting Learner Context for AI
+
+Embedded apps can request comprehensive learner context to power AI-driven experiences. This retrieves the user's credentials and personal data (with consent) and formats it for AI consumption.
+
+### When to Use Learner Context
+
+-   **AI Tutors** - Adapt explanations based on learner's existing skills
+-   **Personalized Recommendations** - Suggest content based on credential history
+-   **Smart Assessments** - Adjust difficulty based on demonstrated competencies
+-   **Learning Pathways** - Build custom paths from existing achievements
+
+### Prerequisites
+
+1. **App Store Installation** - Your app must be installed from the LearnCard App Store
+2. **Consent Contract** - Must have a consent contract configured in your listing's integration
+3. **User Consent** - User must have consented to share their data
+
+### Basic AI Tutor Integration
+
+```typescript
+import { createPartnerConnect } from '@learncard/partner-connect';
+
+const learnCard = createPartnerConnect();
+
+async function initializeAITutor() {
+    // Step 1: Ensure user has consented (uses configured contract)
+    const consent = await learnCard.requestConsent();
+
+    if (!consent.granted) {
+        showMessage('Please consent to share your learning data for personalization');
+        return;
+    }
+
+    // Step 2: Request learner context
+    const context = await learnCard.requestLearnerContext({
+        includeCredentials: true, // Include user's credentials
+        includePersonalData: true, // Include name, bio, etc.
+        format: 'prompt', // Get LLM-ready text
+        detailLevel: 'expanded', // Detailed information
+        instructions: 'Focus on technical skills and certifications',
+    });
+
+    // Step 3: Use context in your AI system prompt
+    const systemPrompt = `You are a helpful tutor assisting ${context.displayName || 'a learner'}.
+
+${context.prompt}
+
+Adapt your teaching style and recommendations based on the learner's background above.`;
+
+    // Step 4: Send to your AI service
+    const aiResponse = await fetch('/api/ai-tutor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            systemPrompt,
+            userMessage: 'How do I learn advanced TypeScript?',
+        }),
+    });
+
+    const result = await aiResponse.json();
+    displayAIResponse(result.message);
+}
+```
+
+### Using Structured Data
+
+For custom AI integrations or when you need direct access to credentials:
+
+```typescript
+async function analyzeLearnerSkills() {
+    // Request structured data instead of prompt
+    const context = await learnCard.requestLearnerContext({
+        includeCredentials: true,
+        includePersonalData: false,
+        format: 'structured', // Returns raw data
+    });
+
+    // Access credentials directly
+    const credentials = context.raw?.credentials || [];
+
+    // Build custom skill analysis
+    const skillCategories = credentials.reduce((acc, cred) => {
+        const category = cred.achievementType || 'other';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+    }, {});
+
+    // Generate custom prompt
+    const customPrompt = `Learner has ${credentials.length} credentials:
+${Object.entries(skillCategories)
+    .map(([cat, count]) => `- ${cat}: ${count}`)
+    .join('\n')}`;
+
+    return customPrompt;
+}
+```
+
+### Error Handling
+
+```typescript
+try {
+    const context = await learnCard.requestLearnerContext({
+        includeCredentials: true,
+        format: 'prompt',
+    });
+
+    // Use context in AI system
+} catch (error) {
+    switch (error.code) {
+        case 'LC_UNAUTHENTICATED':
+            showLoginPrompt('Please log in to LearnCard');
+            break;
+        case 'USER_REJECTED':
+            showMessage('User declined to share their learning data');
+            break;
+        case 'UNAUTHORIZED':
+            showMessage('App not properly configured. Please check your App Store listing.');
+            break;
+        default:
+            console.error('Failed to get learner context:', error.message);
+    }
+}
+```
+
+### Configuration Checklist
+
+To use learner context in your app:
+
+1. **Create a Consent Contract** in LearnCard that defines what data your app needs
+2. **Configure the Contract** in your App Store listing's integration settings
+3. **Request Consent** using `requestConsent()` (without contractUri)
+4. **Request Context** using `requestLearnerContext()` after consent is granted
+
+{% hint style="info" %}
+The learner context feature respects user privacy. Users must explicitly consent to share their data, and they can revoke consent at any time through their LearnCard settings.
+{% endhint %}
 
 ## Complete Example
 

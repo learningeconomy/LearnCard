@@ -1,6 +1,14 @@
 import React, { useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
-import { useIsLoggedIn, useWallet, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useIsLoggedIn,
+    useWallet,
+    useModal,
+    ModalTypes,
+    LEARNCARD_AI_URL,
+    getOrFetchIntegrationForListing,
+} from 'learn-card-base';
 import { UnsignedVP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
@@ -8,6 +16,8 @@ import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
+
+import { useGetIntegrationForListing } from 'learn-card-base';
 
 interface LaunchConfig {
     url?: string;
@@ -45,6 +55,7 @@ export function useLearnCardMessageHandlers({
     const history = useHistory();
     const { newModal, closeModal } = useModal();
     const { data: consentedContracts } = useConsentedContracts();
+    const queryClient = useQueryClient();
 
     // Debug logging helper
     const log = useCallback(
@@ -203,6 +214,14 @@ export function useLearnCardMessageHandlers({
         [initWallet, newModal, closeModal, consentedContracts, log, logError, generateVpAndRedirect]
     );
 
+    const getIntegrationForListing = async (_listingId: string) => {
+        if (!appId) return undefined;
+
+        const wallet = await initWallet();
+
+        return getOrFetchIntegrationForListing(queryClient, wallet, appId);
+    };
+
     const handlers = useMemo(
         () =>
             createActionHandlers({
@@ -327,6 +346,30 @@ export function useLearnCardMessageHandlers({
                 showConsentModal: async (contractUri: string, options?: { redirect?: boolean }) => {
                     log('Consent requested for contract:', contractUri, options);
                     return showConsentFlow(contractUri, options);
+                },
+                getContractUri: () => launchConfig?.contractUri as string | undefined,
+                getIntegrationContractUri: async () => {
+                    if (!appId) return undefined;
+
+                    const integration = await getIntegrationForListing(appId);
+                    const guideState = integration?.guideState as
+                        | {
+                              config?: {
+                                  consentFlowConfig?: { contractUri?: string };
+                                  embedAppConfig?: {
+                                      featureConfig?: {
+                                          'request-data-consent'?: { contractUri?: string };
+                                      };
+                                  };
+                              };
+                          }
+                        | undefined;
+
+                    return (
+                        guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
+                            ?.contractUri ||
+                        guideState?.config?.consentFlowConfig?.contractUri
+                    );
                 },
 
                 // Credential handlers
@@ -853,50 +896,154 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                          const learnCard = await initWallet();
+                        const learnCard = await initWallet();
 
-                          if (!learnCard) {
-                              sdkActivityStore.set.endActivity();
-                              throw new Error('Wallet not initialized');
-                          }
+                        if (!learnCard) {
+                            sdkActivityStore.set.endActivity();
+                            throw new Error('Wallet not initialized');
+                        }
 
-                          if (!learnCard.invoke.sendAppEvent) {
-                              sdkActivityStore.set.endActivity();
-                              throw new Error('sendAppEvent not available - rebuild types');
-                          }
+                        if (!learnCard.invoke.sendAppEvent) {
+                            sdkActivityStore.set.endActivity();
+                            throw new Error('sendAppEvent not available - rebuild types');
+                        }
 
-                          const result = await learnCard.invoke.sendAppEvent(listingId, event);
+                        const result = await learnCard.invoke.sendAppEvent(listingId, event);
 
-                          // If a credential was issued via send-credential event, notify the parent component
-                          // Note: check-credential also returns credentialUri but should NOT trigger the modal
-                          if (
-                              event.type === 'send-credential' &&
-                              result.credentialUri &&
-                              !result.alreadyClaimed &&
-                              onCredentialIssued
-                          ) {
-                              onCredentialIssued(
-                                  result.credentialUri as string,
-                                  result.boostUri as string | undefined
-                              );
-                          }
+                        // If a credential was issued via send-credential event, notify the parent component
+                        // Note: check-credential also returns credentialUri but should NOT trigger the modal
+                        if (
+                            event.type === 'send-credential' &&
+                            result.credentialUri &&
+                            !result.alreadyClaimed &&
+                            onCredentialIssued
+                        ) {
+                            onCredentialIssued(
+                                result.credentialUri as string,
+                                result.boostUri as string | undefined
+                            );
+                        }
 
-                          // If a notification was sent, trigger the toast overlay
-                          if (event.type === 'send-notification' && result.sent && onAppNotification) {
-                              onAppNotification({
-                                  title: (event as Record<string, unknown>).title as string | undefined,
-                                  body: (event as Record<string, unknown>).body as string | undefined,
-                                  actionPath: (event as Record<string, unknown>).actionPath as string | undefined,
-                                  category: (event as Record<string, unknown>).category as string | undefined,
-                                  priority: (event as Record<string, unknown>).priority as string | undefined,
-                              });
-                          }
+                        // If a notification was sent, trigger the toast overlay
+                        if (event.type === 'send-notification' && result.sent && onAppNotification) {
+                            onAppNotification({
+                                title: (event as Record<string, unknown>).title as string | undefined,
+                                body: (event as Record<string, unknown>).body as string | undefined,
+                                actionPath: (event as Record<string, unknown>).actionPath as string | undefined,
+                                category: (event as Record<string, unknown>).category as string | undefined,
+                                priority: (event as Record<string, unknown>).priority as string | undefined,
+                            });
+                        }
 
-                          sdkActivityStore.set.endActivity();
-                          return result;
-                      }
+                        sdkActivityStore.set.endActivity();
+                        return result;
+                    }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
+                getIntegrationForListing: getIntegrationForListing,
+
+                // Learner context - only available when appId is provided
+                requestLearnerContext: appId
+                    ? async (options: {
+                        includeCredentials?: boolean;
+                        includePersonalData?: boolean;
+                        format?: string;
+                        instructions?: string;
+                        detailLevel?: string;
+                    }) => {
+                        const learnCard = await initWallet();
+
+                        if (!learnCard) {
+                            throw new Error('Wallet not initialized');
+                        }
+
+                        if (!learnCard.invoke.sendAppEvent) {
+                            throw new Error('sendAppEvent not available - rebuild types');
+                        }
+
+                        const result = await learnCard.invoke.sendAppEvent(appId, {
+                            type: 'request-learner-context',
+                            includeCredentials: options.includeCredentials,
+                            includePersonalData: options.includePersonalData,
+                            instructions: options.instructions,
+                            detailLevel: options.detailLevel,
+                        });
+
+                        // Only fetch and include credentials if requested
+                        let validCredentials: unknown[] = [];
+                        if (options.includeCredentials !== false) {
+                            const credentialUris = (result.credentialUris as string[]) || [];
+
+                            const credentials = await Promise.all(
+                                credentialUris.map(async uri => {
+                                    try {
+                                        return await learnCard.read.get(uri);
+                                    } catch (error) {
+                                        console.error(
+                                            `Failed to resolve credential ${uri}:`,
+                                            error
+                                        );
+                                        return null;
+                                    }
+                                })
+                            );
+
+                            validCredentials = credentials.filter((c: unknown) => c !== null);
+                        }
+
+                        // Only include personal data if requested
+                        let personalData: Record<string, string> | undefined;
+                        if (options.includePersonalData) {
+                            personalData = (result.personalData as Record<string, string>) || {};
+                        }
+
+                        let prompt = '';
+                        if (options.format === 'prompt') {
+                            try {
+                                const promptizerResponse = await fetch(
+                                    `${LEARNCARD_AI_URL}/ai/learner-context/format`,
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            credentials: validCredentials,
+                                            personalData,
+                                            instructions: options.instructions,
+                                            detailLevel: options.detailLevel,
+                                            includeStructuredContext: true,
+                                            maxCredentials: validCredentials.length,
+                                        }),
+                                    }
+                                );
+
+                                if (promptizerResponse.ok) {
+                                    const promptizerData = await promptizerResponse.json();
+                                    prompt = promptizerData.prompt || '';
+                                } else {
+                                    prompt = `User has ${validCredentials.length} credentials.`;
+                                }
+                            } catch (error) {
+                                console.error('Failed to call promptizer:', error);
+                                prompt = `User has ${validCredentials.length} credentials.`;
+                            }
+                        }
+
+                        return {
+                            prompt,
+                            raw:
+                                options.format === 'structured'
+                                    ? {
+                                        credentials: validCredentials,
+                                        personalData,
+                                    }
+                                    : undefined,
+                            did: (result.did as string) || '',
+                            displayName:
+                                personalData?.name ||
+                                (result.personalData as { displayName?: string })?.displayName,
+                        };
+                    }
+                    : undefined,
             }),
         [
             isLoggedIn,
@@ -913,6 +1060,8 @@ export function useLearnCardMessageHandlers({
             onAppNotification,
             log,
             logError,
+            launchConfig,
+            getIntegrationForListing,
         ]
     );
 
