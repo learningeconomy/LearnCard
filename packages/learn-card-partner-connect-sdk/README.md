@@ -305,6 +305,102 @@ if (recipients.hasMore) {
 
 **Returns:** `{ records: TemplateRecipientRecord[], hasMore: boolean, cursor?: string, total?: number }`
 
+### `sendNotification(input)`
+
+Send a notification to the current user from this app. The notification appears in the user's LearnCard notification inbox, even after they leave the app.
+
+```typescript
+await learnCard.sendNotification({
+    title: 'Sprint Bonus!',
+    body: '+10 coins from Sprint 42',
+    actionPath: '/',
+    category: 'reward',
+});
+```
+
+**Parameters:**
+
+-   `title` _(optional)_: Notification title
+-   `body` _(optional)_: Notification body text
+-   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
+-   `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
+-   `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
+
+At least one of `title` or `body` is required.
+
+**Returns:** `{ sent: boolean }`
+
+> **Note:** This method sends a notification to the _current_ user (self-notification) via the `send-notification` app event. For server-to-server notifications to arbitrary users, use the `POST /app-store/listing/{listingId}/notify` brain-service route directly from your app backend.
+
+---
+
+### `incrementCounter(key, amount)`
+
+Increment or decrement an app-scoped counter for the current user. Counters are scoped to (user, app, key). If the counter does not exist, it is created with the given amount as its initial value.
+
+```typescript
+// Add 10 coins
+const result = await learnCard.incrementCounter('coins', 10);
+console.log(result.newValue); // 10
+
+// Spend 5 coins
+const spent = await learnCard.incrementCounter('coins', -5);
+console.log(spent.newValue); // 5
+```
+
+**Parameters:**
+
+-   `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
+-   `amount` _(required)_: Integer value to add. Use a negative integer to decrement.
+
+**Returns:** `{ key: string, previousValue: number, newValue: number }`
+
+**Limits:**
+
+-   Max 50 distinct counter keys per user per app
+-   Max 100 writes per user per app per minute
+-   Amount must be a finite integer
+
+---
+
+### `getCounter(key)`
+
+Read the current value of an app-scoped counter. Returns `{ value: 0 }` if the counter does not exist.
+
+```typescript
+const { value } = await learnCard.getCounter('coins');
+console.log('Balance:', value);
+```
+
+**Parameters:**
+
+-   `key` _(required)_: Counter name (same format as `incrementCounter`)
+
+**Returns:** `{ key: string, value: number, updatedAt: string | null }`
+
+---
+
+### `getCounters(keys?)`
+
+Read multiple app-scoped counters at once. If `keys` is omitted, returns all counters for this app.
+
+```typescript
+// Specific keys
+const { counters } = await learnCard.getCounters(['coins', 'spins', 'streak']);
+counters.forEach(c => console.log(c.key, c.value));
+
+// All counters
+const all = await learnCard.getCounters();
+```
+
+**Parameters:**
+
+-   `keys` _(optional)_: Array of counter names to fetch (max 50). Omit to return all.
+
+**Returns:** `{ counters: Array<{ key: string, value: number, updatedAt: string | null }> }`
+
+---
+
 ### `launchFeature(featurePath, initialPrompt?)`
 
 Launch a feature in the LearnCard host application.
