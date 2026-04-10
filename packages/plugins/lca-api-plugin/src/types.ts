@@ -181,6 +181,7 @@ export const NotificationQueryInputValidator = z
         'from.profileId': z.string().optional(),
         'data.vcUris': z.union([z.string(), z.array(z.string())]).optional(),
         'data.vpUris': z.union([z.string(), z.array(z.string())]).optional(),
+        'data.metadata.listingId': z.string().optional(),
         read: z.boolean().optional(),
         archived: z.boolean().optional(),
         actionStatus: NotificationActionStatusEnumValidator.optional(),

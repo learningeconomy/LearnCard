@@ -862,6 +862,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_REJECTED',
     'APP_LISTING_WITHDRAWN',
     'DEVICE_LINK_REQUEST',
+    'APP_NOTIFICATION',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -1900,12 +1901,55 @@ export const GetTemplateRecipientsEventValidator = z
 
 export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEventValidator>;
 
+export const SendNotificationEventValidator = z.object({
+    type: z.literal('send-notification'),
+    title: z.string().optional(),
+    body: z.string().optional(),
+    actionPath: z.string().optional(),
+    category: z.string().optional(),
+    priority: z.enum(['normal', 'high']).optional(),
+});
+
+export type SendNotificationEvent = z.infer<typeof SendNotificationEventValidator>;
+
+const counterKeyValidator = z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Key must be alphanumeric with _ or -');
+
+export const IncrementCounterEventValidator = z.object({
+    type: z.literal('increment-counter'),
+    key: counterKeyValidator,
+    amount: z.number().int().finite(),
+});
+
+export type IncrementCounterEvent = z.infer<typeof IncrementCounterEventValidator>;
+
+export const GetCounterEventValidator = z.object({
+    type: z.literal('get-counter'),
+    key: counterKeyValidator,
+});
+
+export type GetCounterEvent = z.infer<typeof GetCounterEventValidator>;
+
+export const GetCountersEventValidator = z.object({
+    type: z.literal('get-counters'),
+    keys: z.array(counterKeyValidator).min(1).max(50).optional(),
+});
+
+export type GetCountersEvent = z.infer<typeof GetCountersEventValidator>;
+
 // Add new event types here as the union grows
 export const AppEventValidator = z.discriminatedUnion('type', [
     SendCredentialEventValidator,
     CheckCredentialEventValidator,
     CheckIssuanceStatusEventValidator,
     GetTemplateRecipientsEventValidator,
+    SendNotificationEventValidator,
+    IncrementCounterEventValidator,
+    GetCounterEventValidator,
+    GetCountersEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;
