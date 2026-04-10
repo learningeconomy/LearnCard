@@ -18,5 +18,5 @@ export const APP_STORE_ADMIN_PROFILE_IDS: string[] = (
  * Check if a profile has App Store admin privileges
  */
 export const isAppStoreAdmin = (profileId: string): boolean => {
-    return APP_STORE_ADMIN_PROFILE_IDS.includes(profileId) || profileId === 'demo';
+    return APP_STORE_ADMIN_PROFILE_IDS.includes(profileId);
 };
