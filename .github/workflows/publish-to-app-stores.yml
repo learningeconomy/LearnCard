@@ -1,8 +1,6 @@
 name: Publish to App Stores
 
 on:
-    schedule:
-        - cron: "0 18 30 * WED" # Every wednesday at 6pm UTC
     workflow_dispatch:
 
 jobs:
