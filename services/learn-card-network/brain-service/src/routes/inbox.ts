@@ -32,6 +32,7 @@ import {
     getInboxCredentialByIdAndGuardianEmail,
     getContactMethodForInboxCredential,
     getApprovedInboxCredentialsByGuardianEmail,
+    getInboxCredentialById,
 } from '@accesslayer/inbox-credential/read';
 import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
@@ -65,6 +66,7 @@ import { getProfileByProfileId, getProfileByDid } from '@accesslayer/profile/rea
 import { createProfileManager } from '@accesslayer/profile-manager/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import { doesProfileManageProfile } from '@accesslayer/profile-manager/relationships/read';
 import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
 
@@ -767,9 +769,10 @@ export const inboxRouter = t.router({
                 credentialName: z.string().optional(),
                 createdAt: z.string(),
                 expiresAt: z.string(),
+                canApproveInApp: z.boolean(),
             })
         )
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
             const { token } = input;
 
             const validation = await validateGuardianApprovalTokenDetailed(token);
@@ -801,6 +804,27 @@ export const inboxRouter = t.router({
                 credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
             } catch {}
 
+            // Best-effort check: if the caller has an authenticated profile,
+            // check MANAGES relationship for OTP-skip eligibility
+            let canApproveInApp = false;
+            try {
+                // openRoute may have ctx.user.did if auth headers are present,
+                // but ctx.user.profile is only set by didRoute. Resolve manually.
+                const callerDid = ctx?.user?.did;
+                if (callerDid) {
+                    const callerProfile = await getProfileByDid(callerDid);
+                    const childProfile = await getProfileForInboxCredential(inboxCredential.id);
+                    if (callerProfile?.profileId && childProfile) {
+                        canApproveInApp = await doesProfileManageProfile(
+                            callerProfile.profileId,
+                            childProfile.profileId
+                        );
+                    }
+                }
+            } catch {
+                // Non-critical — default to false (OTP flow)
+            }
+
             return {
                 inboxCredentialId: inboxCredential.id,
                 guardianStatus: inboxCredential.guardianStatus ?? 'AWAITING_GUARDIAN',
@@ -811,6 +835,7 @@ export const inboxRouter = t.router({
                 credentialName,
                 createdAt: inboxCredential.createdAt,
                 expiresAt: inboxCredential.expiresAt,
+                canApproveInApp,
             };
         }),
 
@@ -1156,6 +1181,197 @@ export const inboxRouter = t.router({
             }
 
             return results;
+        }),
+
+    // Authenticated route: guardian approves a credential in-app (no OTP needed)
+    approveGuardianCredentialInApp: profileRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/inbox/guardian-credential-approval/in-app/approve',
+                tags: ['Universal Inbox'],
+                summary: 'Approve Guardian Credential In-App',
+                description:
+                    'Authenticated guardian approves a pending credential. Requires MANAGES relationship with the child. No OTP needed.',
+            },
+        })
+        .input(z.object({ inboxCredentialId: z.string() }))
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+            const { inboxCredentialId } = input;
+            const guardianProfile = ctx.user.profile;
+
+            const inboxCredential = await getInboxCredentialById(inboxCredentialId);
+            if (!inboxCredential) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found.' });
+            }
+
+            if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
+                });
+            }
+
+            const childProfile = await getProfileForInboxCredential(inboxCredentialId);
+            if (!childProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Child profile not found for this credential.' });
+            }
+
+            const manages = await doesProfileManageProfile(guardianProfile.profileId, childProfile.profileId);
+            if (!manages) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You do not have a guardian relationship with this child.',
+                });
+            }
+
+            await updateInboxCredential(inboxCredentialId, {
+                guardianStatus: 'GUARDIAN_APPROVED',
+                isAccepted: true,
+                guardianApprovedAt: new Date().toISOString(),
+                guardianApprovedByDid: guardianProfile.did,
+            });
+
+            // Notify the student via email
+            try {
+                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                if (studentContactMethod) {
+                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    const deliveryService = getDeliveryService(studentContactMethod);
+                    await deliveryService.send({
+                        contactMethod: studentContactMethod,
+                        templateId: 'guardian-approved-claim',
+                        templateModel: {
+                            issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
+                        },
+                        messageStream: 'universal-inbox',
+                    });
+                }
+            } catch (err) {
+                console.error('[approveGuardianCredentialInApp] Failed to send student email:', err);
+            }
+
+            // Notify the student via in-app notification
+            try {
+                const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
+                if (studentProfile) {
+                    let credentialName: string | undefined;
+                    try {
+                        const parsed = JSON.parse(inboxCredential.credential);
+                        credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
+                    } catch {}
+
+                    await addNotificationToQueue({
+                        type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVED,
+                        to: studentProfile,
+                        from: guardianProfile,
+                        message: {
+                            title: 'Credential Approved',
+                            body: `Your guardian approved "${credentialName ?? 'a credential'}" for you.`,
+                        },
+                        data: { inboxCredentialId, credentialName },
+                    });
+                }
+            } catch (err) {
+                console.error('[approveGuardianCredentialInApp] Failed to send student notification:', err);
+            }
+
+            return { success: true };
+        }),
+
+    // Authenticated route: guardian rejects a credential in-app (no OTP needed)
+    rejectGuardianCredentialInApp: profileRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/inbox/guardian-credential-approval/in-app/reject',
+                tags: ['Universal Inbox'],
+                summary: 'Reject Guardian Credential In-App',
+                description:
+                    'Authenticated guardian rejects a pending credential. Requires MANAGES relationship with the child. No OTP needed.',
+            },
+        })
+        .input(z.object({ inboxCredentialId: z.string() }))
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+            const { inboxCredentialId } = input;
+            const guardianProfile = ctx.user.profile;
+
+            const inboxCredential = await getInboxCredentialById(inboxCredentialId);
+            if (!inboxCredential) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found.' });
+            }
+
+            if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
+                });
+            }
+
+            const childProfile = await getProfileForInboxCredential(inboxCredentialId);
+            if (!childProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Child profile not found for this credential.' });
+            }
+
+            const manages = await doesProfileManageProfile(guardianProfile.profileId, childProfile.profileId);
+            if (!manages) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You do not have a guardian relationship with this child.',
+                });
+            }
+
+            await updateInboxCredential(inboxCredentialId, {
+                guardianStatus: 'GUARDIAN_REJECTED',
+            });
+
+            // Notify the student via email
+            try {
+                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                if (studentContactMethod) {
+                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    const deliveryService = getDeliveryService(studentContactMethod);
+                    await deliveryService.send({
+                        contactMethod: studentContactMethod,
+                        templateId: 'guardian-rejected-credential',
+                        templateModel: {
+                            issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
+                        },
+                        messageStream: 'universal-inbox',
+                    });
+                }
+            } catch (err) {
+                console.error('[rejectGuardianCredentialInApp] Failed to send student email:', err);
+            }
+
+            // Notify the student via in-app notification
+            try {
+                const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
+                if (studentProfile) {
+                    let credentialName: string | undefined;
+                    try {
+                        const parsed = JSON.parse(inboxCredential.credential);
+                        credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
+                    } catch {}
+
+                    await addNotificationToQueue({
+                        type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_REJECTED,
+                        to: studentProfile,
+                        from: guardianProfile,
+                        message: {
+                            title: 'Credential Rejected',
+                            body: `Your guardian did not approve "${credentialName ?? 'a credential'}".`,
+                        },
+                        data: { inboxCredentialId, credentialName },
+                    });
+                }
+            } catch (err) {
+                console.error('[rejectGuardianCredentialInApp] Failed to send student notification:', err);
+            }
+
+            return { success: true };
         }),
 });
 
