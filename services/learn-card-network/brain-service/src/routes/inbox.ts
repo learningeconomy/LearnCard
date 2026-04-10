@@ -748,6 +748,12 @@ export const inboxRouter = t.router({
             return inboxCredential;
         }),
 
+    // ─── Guardian Credential Approval Routes ─────────────────────────────────────
+    // NOTE: LC-1729/1730/1731 guardian features are not feature complete. The guardian
+    // child account model creates a MANAGES relationship but guardian children are full
+    // independent accounts — not the same as family child accounts. Part of a larger
+    // effort to make child accounts independent of parent accounts.
+
     // Open route: get pending credential details for a guardian to review
     getGuardianPendingCredential: openRoute
         .meta({
