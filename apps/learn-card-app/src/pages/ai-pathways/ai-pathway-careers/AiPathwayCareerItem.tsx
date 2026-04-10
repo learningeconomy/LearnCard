@@ -25,7 +25,8 @@ type SemanticSkillRecord = {
 export const AiPathwayCareerItem: React.FC<{
     occupation: OccupationDetailsResponse;
     showDescription?: boolean;
-}> = ({ occupation, showDescription = false }) => {
+    variant?: 'list' | 'card';
+}> = ({ occupation, showDescription = false, variant = 'list' }) => {
     const { newModal } = useModal();
     const { getIconSet } = useTheme();
     const flags = useFlags();
@@ -44,6 +45,7 @@ export const AiPathwayCareerItem: React.FC<{
     const firstSkillIcon = firstSkill?.icon;
     const totalSkillsCount = matchingSkills.length;
     const remainingSkillsCount = Math.max(totalSkillsCount - 1, 0);
+    const isCardVariant = variant === 'card';
 
     const openCareerDetailsModal = () => {
         newModal(<AiPathwayCareerDetails occupation={occupation} />, undefined, {
@@ -58,12 +60,22 @@ export const AiPathwayCareerItem: React.FC<{
     return (
         <div
             role="button"
-            className="w-full flex flex-col items-start justify-start pt-2 pb-4 gap-1 border-solid border-b-[1px] border-grayscale-200 last:border-b-0"
+            className={
+                isCardVariant
+                    ? 'w-full flex flex-col items-start justify-start p-4 gap-2 border-solid border-[1px] border-grayscale-200 border-b-[3px] border-b-cyan-501 rounded-[20px] bg-white shadow-bottom-1-5'
+                    : 'w-full flex flex-col items-start justify-start pt-2 pb-4 gap-1 border-solid border-b-[1px] border-grayscale-200 last:border-b-0'
+            }
             onClick={openCareerDetailsModal}
         >
             <div className="w-full flex flex-col items-start justify-start gap-1">
                 <div className="flex items-center justify-between w-full">
-                    <h4 className="pr-1 text-grayscale-800 font-semibold text-[17px] text-left line-clamp-1">
+                    <h4
+                        className={`pr-1 text-left line-clamp-1 ${
+                            isCardVariant
+                                ? 'text-grayscale-900 font-semibold text-[17px] leading-[36px]'
+                                : 'text-grayscale-800 font-semibold text-[17px]'
+                        }`}
+                    >
                         {occupation?.OnetTitle}
                     </h4>
 
@@ -90,7 +102,9 @@ export const AiPathwayCareerItem: React.FC<{
                         )}
                         <div className="w-full flex items-center gap-2 flex-wrap">
                             <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-2">
-                                {firstSkillIcon && firstSkillIcon}
+                                {firstSkillIcon || (
+                                    <SkillDecoration className="w-4 h-4 text-grayscale-700" />
+                                )}
                                 <p className="text-grayscale-900 text-xs font-semibold line-clamp-1">
                                     {firstSkill.statement}
                                 </p>

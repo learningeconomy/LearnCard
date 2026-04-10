@@ -6,6 +6,7 @@ import ExplorePathwaysActionButton from '../ExplorePathwaysActionButton';
 import AiPathwayCareerItemSkeletonLoader from './AiPathwayCareerItemSkeletonLoader';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from '../ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
@@ -18,6 +19,7 @@ const AiPathwayCareers: React.FC<{
     const { newModal } = useModal();
     const { getThemedCategoryIcons } = useTheme();
     const { IconWithShape } = getThemedCategoryIcons(CredentialCategoryEnum.workHistory);
+    const ResolvedIconWithShape = IconWithShape ?? ExperiencesIconWithShape;
 
     const handleExplorePathways = () => {
         newModal(
@@ -33,7 +35,7 @@ const AiPathwayCareers: React.FC<{
     const titleEl = (
         <div className="w-full flex justify-start flex-col items-start gap-1">
             <h2 className="text-xl text-grayscale-800 font-notoSans font-semibold flex items-center gap-2">
-                {IconWithShape && <IconWithShape className="w-[50px] h-[50px]" />} Explore Roles
+                <ResolvedIconWithShape className="w-[50px] h-[50px]" /> Explore Roles
             </h2>
             <p className="text-sm text-grayscale-600 font-notoSans">
                 Use your current skills to start new opportunities.
@@ -74,7 +76,7 @@ const AiPathwayCareers: React.FC<{
                     onClick={handleExplorePathways}
                     className="bg-cyan-501 !mt-4"
                     icon={
-                        IconWithShape ? <IconWithShape className="w-[30px] h-[30px]" /> : undefined
+                        <ResolvedIconWithShape className="w-[30px] h-[30px]" />
                     }
                     label="Explore Roles"
                 />
