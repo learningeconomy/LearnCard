@@ -1,21 +1,43 @@
 import React, { useRef } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { CalendarClock, ChevronRight } from 'lucide-react';
 
 import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
 import AiPathwaySchoolProgramDetails from './ai-pathway-courses/AiPathwaySchoolProgramDetails';
 
-import { useModal, ModalTypes } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useSemanticSearchSkills,
+    conditionalPluralize,
+} from 'learn-card-base';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import { getProgramLengthDisplay } from './ai-pathway-courses/ai-pathway-courses.helpers';
 import { ThickStudiesIconWithShape } from 'learn-card-base/svgs/wallet/StudiesIcon';
+import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 
 type GrowSkillsCourseItemProps = {
     program: TrainingProgram;
 };
 
 const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) => {
+    const flags = useFlags();
     const { newModal } = useModal();
+
     const programLengthDisplay = getProgramLengthDisplay(program);
+
+    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
+    const searchQuery = program?.ProgramName;
+    const { data: semanticSearchSkillsData } = useSemanticSearchSkills(searchQuery, frameworkId, {
+        limit: 25,
+    });
+
+    const skills = semanticSearchSkillsData?.records || [];
+
+    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+    console.log('semanticSearchSkillsData:', semanticSearchSkillsData);
+    console.log('skills:', skills);
+
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
     const hasDraggedRef = useRef(false);
 
@@ -73,7 +95,7 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
             onClick={openCourseDetailsModal}
             className="w-full h-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-emerald-500 text-left"
         >
-            <div className="px-[15px] py-[20px] flex flex-col gap-[5px]">
+            <div className="px-[15px] py-[20px] flex flex-col gap-[5px] h-full">
                 <div className="flex items-start gap-[10px]">
                     <ThickStudiesIconWithShape className="w-[35px] h-[35px] flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -106,9 +128,25 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
                     />
                 </div>
 
-                <div className="pt-[10px]">
-                    <p className="text-[13px] text-grayscale-500 italic text-left">Skills TODO</p>
-                </div>
+                {skills.length > 0 && (
+                    <div className="pt-[10px] mt-auto flex flex-col gap-[5px]">
+                        <p className="text-[14px] text-grayscale-600 font-bold leading-[14px] tracking-[0.32px]">
+                            {conditionalPluralize(skills.length, 'Skill')}
+                        </p>
+
+                        <div className="flex gap-[5px] min-w-0">
+                            <span className="min-w-0 w-fit max-w-full text-[13px] px-[10px] py-[5px] text-grayscale-900 font-poppins bg-violet-50 rounded-[40px] inline-flex gap-[5px] items-center leading-[130%] font-bold overflow-hidden">
+                                <CompetencyIcon icon={skills[0]?.icon} size="x-small" />
+                                <span className="min-w-0 truncate">{skills[0]?.statement}</span>
+                            </span>
+                            {skills.length > 1 && (
+                                <span className="text-[13px] px-[10px] py-[5px] text-grayscale-900 font-poppins bg-violet-50 rounded-[40px] flex gap-[5px] items-center leading-[130%] font-bold shrink-0">
+                                    +{skills.length - 1}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
