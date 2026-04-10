@@ -57,6 +57,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         What would you like to do?
                     </IonLabel>
                     <PathwaySearchInput
+                        variant="simple"
                         value={searchQuery}
                         onValueChange={setSearchQuery}
                         onSearchSubmit={query => openExplorePathwaysModal({ query })}
