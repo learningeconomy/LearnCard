@@ -15,7 +15,7 @@ const fetchOccupationDetailsForKeyword = async ({
     limit?: number;
     topNDetails?: number;
 }): Promise<OccupationDetailsResponse[]> => {
-    const res = await fetch(`http://localhost:3001/insights/occupations`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
