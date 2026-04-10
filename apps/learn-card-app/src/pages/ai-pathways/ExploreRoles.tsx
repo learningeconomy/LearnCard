@@ -70,7 +70,9 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
     ]);
 
     const { data: occupationsData, isLoading: occupationsLoading } = useOccupationDetailsForKeyword(
-        submittedSearchQuery.trim()
+        submittedSearchQuery.trim(),
+        20,
+        12
     );
     const occupations = (occupationsData ?? []) as OccupationDetailsResponse[];
 
