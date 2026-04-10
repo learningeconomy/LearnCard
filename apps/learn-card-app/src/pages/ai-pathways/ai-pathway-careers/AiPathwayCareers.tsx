@@ -9,7 +9,7 @@ import useTheme from '../../../theme/hooks/useTheme';
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
-import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from '../ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
+import ExploreRoles from '../ExploreRoles';
 
 const AiPathwayCareers: React.FC<{
     careerKeywords?: string[];
@@ -22,14 +22,10 @@ const AiPathwayCareers: React.FC<{
     const ResolvedIconWithShape = IconWithShape ?? ExperiencesIconWithShape;
 
     const handleExplorePathways = () => {
-        newModal(
-            <ExplorePathwaysModal option={AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles} />,
-            undefined,
-            {
-                desktop: ModalTypes.Right,
-                mobile: ModalTypes.Right,
-            }
-        );
+        newModal(<ExploreRoles />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
     };
 
     const titleEl = (
@@ -75,9 +71,7 @@ const AiPathwayCareers: React.FC<{
                 <ExplorePathwaysActionButton
                     onClick={handleExplorePathways}
                     className="bg-cyan-501 !mt-4"
-                    icon={
-                        <ResolvedIconWithShape className="w-[30px] h-[30px]" />
-                    }
+                    icon={<ResolvedIconWithShape className="w-[30px] h-[30px]" />}
                     label="Explore Roles"
                 />
             </div>

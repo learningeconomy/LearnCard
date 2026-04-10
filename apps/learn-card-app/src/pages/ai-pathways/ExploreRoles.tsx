@@ -53,15 +53,25 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
     const RolesIcon = IconWithShape ?? ExperiencesIconWithShape;
 
     useEffect(() => {
-        if (!hasAppliedDefaultSearch && !searchQuery.trim() && defaultRoleQuery) {
-            setSearchQuery(defaultRoleQuery);
+        if (
+            !hasAppliedDefaultSearch &&
+            !initialSearchQuery.trim() &&
+            !submittedSearchQuery.trim() &&
+            defaultRoleQuery
+        ) {
             setSubmittedSearchQuery(defaultRoleQuery);
             setHasAppliedDefaultSearch(true);
         }
-    }, [defaultRoleQuery, hasAppliedDefaultSearch, searchQuery]);
+    }, [
+        defaultRoleQuery,
+        hasAppliedDefaultSearch,
+        initialSearchQuery,
+        submittedSearchQuery,
+    ]);
 
-    const { data: occupationsData, isLoading: occupationsLoading } =
-        useOccupationDetailsForKeyword(submittedSearchQuery.trim());
+    const { data: occupationsData, isLoading: occupationsLoading } = useOccupationDetailsForKeyword(
+        submittedSearchQuery.trim()
+    );
     const occupations = (occupationsData ?? []) as OccupationDetailsResponse[];
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
