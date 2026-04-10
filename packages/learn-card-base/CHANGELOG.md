@@ -1,5 +1,28 @@
 # learn-card-base
 
+## 0.1.27
+
+### Patch Changes
+
+-   [#1157](https://github.com/learningeconomy/LearnCard/pull/1157) [`3f61574ac55e6034042f991ec19701bc2cb84edf`](https://github.com/learningeconomy/LearnCard/commit/3f61574ac55e6034042f991ec19701bc2cb84edf) Thanks [@Custard7](https://github.com/Custard7)! - fix: "Already Connected" Error on Android Resume
+
+## 0.1.26
+
+### Patch Changes
+
+-   [#1154](https://github.com/learningeconomy/LearnCard/pull/1154) [`c66315c41224b0eb92f5a6a030dda732d7827b25`](https://github.com/learningeconomy/LearnCard/commit/c66315c41224b0eb92f5a6a030dda732d7827b25) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Explore Pathways modal with Skill + Goal editing
+
+-   [#1148](https://github.com/learningeconomy/LearnCard/pull/1148) [`5e55b5b46b73a0b77585c71c3edba7f25c0edb9a`](https://github.com/learningeconomy/LearnCard/commit/5e55b5b46b73a0b77585c71c3edba7f25c0edb9a) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1738] Stale Auth Error on Android Resume
+
+-   [#1146](https://github.com/learningeconomy/LearnCard/pull/1146) [`741e391412998677162a858eb96cec931c21de1c`](https://github.com/learningeconomy/LearnCard/commit/741e391412998677162a858eb96cec931c21de1c) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1695] Mobile header and footer polishes
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/types@5.13.4
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/ler-rs-plugin@0.1.5
+    -   @learncard/sss-key-manager@0.1.4
+
 ## 0.1.25
 
 ### Patch Changes

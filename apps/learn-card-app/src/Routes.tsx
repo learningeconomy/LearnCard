@@ -162,6 +162,9 @@ const LearnCardAiChatBot = lazyWithRetry(
     () => import('./components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot')
 );
 
+const TermsOfServicePage = lazyWithRetry(() => import('./pages/legal/TermsOfServicePage'));
+const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/legal/PrivacyPolicyPage'));
+
 // Create Custom Sentry Route component
 // https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/#react-router-v4v5
 const SentryRoute = Sentry.withSentryRouting(Route);
@@ -192,6 +195,8 @@ export const Routes: React.FC = () => {
                     <Switch location={background || location}>
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute exact path="/__/auth/action" component={LoginPage} />
+                        <SentryRoute exact path="/legal/terms" component={TermsOfServicePage} />
+                        <SentryRoute exact path="/legal/privacy" component={PrivacyPolicyPage} />
                         <SentryRoute
                             exact
                             path="/share-creds/:uri/:seed"

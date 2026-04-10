@@ -6,7 +6,9 @@ import {
     useGetCurrentLCNUser,
     walletStore,
 } from 'learn-card-base';
-import LearnCardBrandmark from '../svgs/LearnCardBrandmark';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 import { getIdBackgroundStyles } from '../learncardID-CMS/learncard-cms.helpers';
 import { LCNProfile } from '@learncard/types';
 
@@ -15,6 +17,7 @@ type LearnCardIdViewProps = {
 };
 
 const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
+    const brandingConfig = useBrandingConfig();
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
@@ -30,6 +33,7 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
     const backgroundStyles = getIdBackgroundStyles(user?.display ?? currentLCNUser?.display);
 
     const displayStyles = user?.display ?? currentLCNUser?.display;
+
     return (
         <div className="rounded-[15px] flex flex-col overflow-hidden relative shadow-bottom-4-4 min-w-[305px]">
             <div
@@ -71,7 +75,7 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                                 credential={credential}
                                 iconClassName="!h-[17px] !w-[17px]"
                             /> */}
-                    LearnCard
+                    {brandingConfig?.name}
                 </span>
             </div>
 
@@ -79,7 +83,11 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                 className="rounded-full h-[54px] w-[54px] absolute right-[10px] bottom-[10px] flex items-center justify-center bg-white"
                 // style={{ backgroundColor: credential?.boostID?.accentColor }}
             >
-                <LearnCardBrandmark className="rounded-full h-[50px] w-[50px]" />
+                <img
+                    src={useTenantBrandingAssets().brandMark}
+                    alt="Brand mark"
+                    className="rounded-full h-[50px] w-[50px]"
+                />
             </div>
         </div>
     );

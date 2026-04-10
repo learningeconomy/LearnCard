@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.90.5
+
+### Patch Changes
+
+-   [#1137](https://github.com/learningeconomy/LearnCard/pull/1137) [`73e56c14d03c7117ab509c025170c88f5a0cc989`](https://github.com/learningeconomy/LearnCard/commit/73e56c14d03c7117ab509c025170c88f5a0cc989) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1727] Update @capgo/capacitor-updater from 8.41.12 to 8.45.0
+
+## 1.90.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/react@2.9.21
+    -   @learncard/sss-key-manager@0.1.4
+
 ## 1.90.3
 
 ### Patch Changes

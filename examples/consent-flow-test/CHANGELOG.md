@@ -1,5 +1,20 @@
 # consent-flow-test
 
+## 1.0.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.27
+
+## 1.0.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.12
+    -   @learncard/network-brain-client@2.5.26
+
 ## 1.0.1
 
 ### Patch Changes

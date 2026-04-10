@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { useModal, ModalTypes, useDeviceTypeByWidth, ThemeEnum, useWallet } from 'learn-card-base';
+import { useModal, ModalTypes, useDeviceTypeByWidth, useWallet } from 'learn-card-base';
 
 import { IonPopover, IonSpinner } from '@ionic/react';
 import { Checkmark } from '@learncard/react';
@@ -149,7 +149,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                 onDidDismiss={() => setShowSortPopover(false)}
                 reference="trigger"
                 trigger="trigger-button"
-                className={theme.id === ThemeEnum.Formal ? 'launchpad-formal' : 'launchpad-popover'}
+                className={theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'}
                 style={{ '--min-width': '300px' } as React.CSSProperties}
             >
                 <div className="p-[15px] rounded-[20px] bg-white">

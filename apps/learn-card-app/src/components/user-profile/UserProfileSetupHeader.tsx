@@ -1,9 +1,5 @@
 import React from 'react';
-
-import { useGetCurrentLCNUser } from 'learn-card-base';
-import { useIonModal } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
-import MyData from '../my-data/MyData';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -16,12 +12,6 @@ const UserProfileSetupHeader: React.FC<{
     handleNetworkPrompt = () => {},
     handleNotificationsPrompt = () => {},
 }) => {
-    const { currentLCNUser } = useGetCurrentLCNUser();
-
-    const [presentMyDataModal, dismissMyDataModal] = useIonModal(MyData, {
-        handleCloseModal: () => dismissMyDataModal(),
-    });
-
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 

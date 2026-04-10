@@ -1,4 +1,3 @@
-import ModalLayout from '../../../layout/ModalLayout';
 import JoinNetworkPrompt from '../JoinNetworkPrompt';
 
 import { ModalTypes, useIsCurrentUserLCNUser, useIsLoggedIn, useModal } from 'learn-card-base';
@@ -10,12 +9,10 @@ export const JoinNetworkModalWrapper: React.FC<{
     showNotificationsModal: boolean;
 }> = ({ handleCloseModal, showNotificationsModal }) => {
     return (
-        <ModalLayout handleOnClick={handleCloseModal} allowScroll>
-            <JoinNetworkPrompt
-                handleCloseModal={handleCloseModal}
-                showNotificationsModal={showNotificationsModal}
-            />
-        </ModalLayout>
+        <JoinNetworkPrompt
+            handleCloseModal={handleCloseModal}
+            showNotificationsModal={showNotificationsModal}
+        />
     );
 };
 
@@ -37,15 +34,6 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
             }
         );
     };
-
-    // const [_presentNetworkModal, dismissNetworkModal] = useIonModal(NewJoinNetworkPrompt, {
-    //     handleCloseModal: () => {
-    //         dismissNetworkModal();
-    //         //Sometiems it doesn't close it completely, leaves backdrop for some reason...
-    //         closeAll?.();
-    //     },
-    //     showNotificationsModal: showNotificationsModal,
-    // });
 
     const handlePresentJoinNetworkModal = async (onSuccess?: () => void) => {
         const deletingAccount = deletingAccountStore.get.deletingAccount();

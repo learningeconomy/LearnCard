@@ -35,6 +35,7 @@ type MainHeaderProps = {
     category?: CredentialCategoryEnum;
     branding?: BrandingEnum;
     customClassName?: string;
+    style?: React.CSSProperties;
     children?: React.ReactNode;
     showBackButton?: boolean;
     subheaderType?: SubheaderTypeEnum;
@@ -46,11 +47,13 @@ type MainHeaderProps = {
     hidePlusBtn?: boolean;
     count?: number;
     countLoading?: boolean;
+    notificationColorOverride?: string;
 };
 
 export const MainHeader: React.FC<MainHeaderProps> = ({
     category,
     customClassName,
+    style,
     children = null,
     subheaderType,
     showBackButton = false,
@@ -63,6 +66,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     hidePlusBtn = false,
     count,
     countLoading,
+    notificationColorOverride,
 }) => {
     const { getThemedCategoryColors } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
@@ -112,7 +116,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                 }`}
             />
             <IonToolbar className="ion-no-border" color={statusBarColor}>
-                <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`}>
+                <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
                     <IonRow>
                         <IonCol size="2" className="flex justify-start items-center">
                             {showBackButton && (
@@ -137,7 +141,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                         <IonCol size="10" className="flex justify-end items-center">
                             {isLoggedIn ? (
                                 <>
-                                    <NotificationButton />
+                                    <NotificationButton colorOverride={notificationColorOverride} />
                                     <QRCodeScannerButton branding={branding} />
                                 </>
                             ) : (

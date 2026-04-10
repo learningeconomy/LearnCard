@@ -63,7 +63,7 @@ export const isSupportedPersonalField = (field: string) => {
 
 export const getMinimumTermsForContract = (
     contract: ConsentFlowContract,
-    user: CurrentUser
+    user?: CurrentUser | null
 ): ConsentFlowTerms => {
     const terms: ConsentFlowTerms = {
         read: {
@@ -109,6 +109,51 @@ export const getMinimumTermsForContract = (
     contractCategoryWriteEntries.forEach(([key, value]) => {
         // Use defaultEnabled flag to determine if category should be enabled by default
         terms.write.credentials.categories[key] = value.required || (value.defaultEnabled ?? false);
+    });
+
+    return terms;
+};
+
+export const getFullTermsForContract = (
+    contract: ConsentFlowContract,
+    user?: CurrentUser | null
+): ConsentFlowTerms => {
+    const terms: ConsentFlowTerms = {
+        read: {
+            anonymize: false,
+            credentials: { shareAll: true, sharing: true, categories: {} },
+            personal: {},
+        },
+        write: {
+            credentials: { categories: {} },
+            personal: {},
+        },
+    };
+
+    const contractPersonalReadEntries = Object.entries(contract.read?.personal ?? {});
+    const contractPersonalWriteEntries = Object.entries(contract.write?.personal ?? {});
+    const contractCategoryReadEntries = Object.entries(
+        contract.read?.credentials?.categories ?? {}
+    );
+    const contractCategoryWriteEntries = Object.entries(
+        contract.write?.credentials?.categories ?? {}
+    );
+
+    contractPersonalReadEntries.forEach(([key]) => {
+        terms.read.personal[key] = getPersonalEntry(key, user, false);
+    });
+    contractPersonalWriteEntries.forEach(([key]) => {
+        terms.write.personal[key] = true;
+    });
+    contractCategoryReadEntries.forEach(([key]) => {
+        terms.read.credentials.categories[key] = {
+            shareAll: true,
+            sharing: true,
+            shared: [],
+        };
+    });
+    contractCategoryWriteEntries.forEach(([key]) => {
+        terms.write.credentials.categories[key] = true;
     });
 
     return terms;
