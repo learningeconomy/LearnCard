@@ -106,7 +106,7 @@ export const roleSlideContent: Partial<Record<LearnCardRolesEnum, RoleSlideConfi
                 boldText: 'Gain insights',
                 regularText: "into your child's learning journey",
                 image: guardianSlide4,
-                imageAlt: 'AI insights hub',
+                imageAlt: 'AI insights',
             },
         ],
     },

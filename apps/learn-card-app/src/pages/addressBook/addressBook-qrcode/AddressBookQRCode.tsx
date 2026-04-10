@@ -11,6 +11,7 @@ import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -37,7 +38,7 @@ const AddressBookQRCode: React.FC<{
 
         try {
             await Clipboard.write({
-                string: `https://learncard.app/connect?did=${wallet?.id?.did()}`,
+                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
             presentToast('Contact link copied to clipboard', {
                 type: ToastTypeEnum.Success,
@@ -58,7 +59,7 @@ const AddressBookQRCode: React.FC<{
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://learncard.app/connect?did=${wallet?.id?.did()}`,
+                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',
             });
         } else {

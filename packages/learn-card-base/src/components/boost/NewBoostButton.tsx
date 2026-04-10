@@ -9,12 +9,15 @@ import {
 } from '../earned-and-managed-tabs/EarnedAndManagedTabs';
 import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
+import type { TenantBrandingConfig } from '../../config/tenantConfig';
+import { getCategoryLabel, getCategoryColor } from '../../config/brandingHelpers';
 
 type NewBoostButtonProps = {
     credentialType: CredentialCategory;
     onClick: () => void;
     viewMode?: BoostPageViewModeType;
     branding?: BrandingEnum;
+    tenantBranding?: TenantBrandingConfig;
 };
 
 const NewBoostButton: React.FC<NewBoostButtonProps> = ({
@@ -22,13 +25,21 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
     onClick,
     viewMode = BoostPageViewMode.Card,
     branding = BrandingEnum.learncard,
+    tenantBranding,
 }) => {
     let { color } = categoryMetadata[credentialType];
     let typeName: string = credentialType;
 
     const isId = credentialType === CredentialCategoryEnum.id;
 
-    if (branding === BrandingEnum.learncard) {
+    // Data-driven path: use tenant config for labels and colors
+    if (tenantBranding) {
+        typeName = getCategoryLabel(tenantBranding, credentialType);
+
+        const colorOverride = getCategoryColor(tenantBranding, credentialType);
+
+        if (colorOverride) color = colorOverride;
+    } else if (branding === BrandingEnum.learncard) {
         switch (credentialType) {
             case CredentialCategoryEnum.learningHistory:
                 typeName = 'Study';

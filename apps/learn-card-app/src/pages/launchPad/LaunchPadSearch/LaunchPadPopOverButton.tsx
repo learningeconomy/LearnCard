@@ -15,7 +15,6 @@ import {
 import LaunchPadFilterSortingOptionsModal from './LaunchPadFilterSortingOptionsModal';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { ThemeEnum } from '../../../theme/helpers/theme-helpers';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
 
@@ -90,7 +89,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                 reference="trigger"
                 trigger="trigger-button"
                 className={` ${
-                    theme.id === ThemeEnum.Formal ? 'launchpad-formal' : 'launchpad-popover'
+                    theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'
                 }`}
             >
                 <IonList>

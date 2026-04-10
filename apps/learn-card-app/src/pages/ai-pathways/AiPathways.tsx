@@ -12,9 +12,7 @@ import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
-import AiPathwaysWhatWouldYouLikeToDoCard, {
-    AiPathwaysWhatWouldYouLikeToDoCardOptions,
-} from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
+import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -24,13 +22,7 @@ import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
-import {
-    useAiInsightCredential,
-    useAiPathways,
-    useModal,
-    ModalTypes,
-    CredentialCategoryEnum,
-} from 'learn-card-base';
+import { useAiInsightCredential, useAiPathways, CredentialCategoryEnum } from 'learn-card-base';
 
 import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 
@@ -45,7 +37,6 @@ import {
 } from './ai-pathway-courses/ai-pathway-courses.helpers';
 
 const AiPathways: React.FC = () => {
-    const { newModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
     const { percentage } = useSkillProfileCompletion();
 
@@ -106,13 +97,6 @@ const AiPathways: React.FC = () => {
         schoolPrograms.length === 0 &&
         learningPathwaysData?.length === 0;
 
-    const handleExplorePathways = (option?: AiPathwaysWhatWouldYouLikeToDoCardOptions) => {
-        newModal(<ExplorePathwaysModal option={option} />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
-    };
-
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
@@ -122,23 +106,14 @@ const AiPathways: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
-                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            {percentage > 0 && (
-                                <AiPathwaysWhatWouldYouLikeToDoCard
-                                    handleExplorePathways={handleExplorePathways}
-                                />
-                            )}
+                            {percentage > 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
                             <MySkillProfile />
 
-                            {percentage === 0 && (
-                                <AiPathwaysWhatWouldYouLikeToDoCard
-                                    handleExplorePathways={handleExplorePathways}
-                                />
-                            )}
+                            {percentage === 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
                             {emptyPathways ? (
                                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IonLabel } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -13,16 +13,11 @@ export enum AiPathwaysWhatWouldYouLikeToDoCardOptions {
     FindRoles = 'find-roles',
 }
 
-const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
-    handleExplorePathways: (option?: AiPathwaysWhatWouldYouLikeToDoCardOptions) => void;
-    variant?: AiPathwaysWhatWouldYouLikeToDoCardOptions;
-}> = ({
-    handleExplorePathways,
-    variant = AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills,
-}) => {
+const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
     const { newModal } = useModal();
     const flags = useFlags();
     const { getThemedCategoryIcons } = useTheme();
+    const [searchQuery, setSearchQuery] = useState('');
 
     const enableExplorePathways = flags?.enableExplorePathways ?? false;
 
@@ -31,19 +26,21 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
     );
     const { IconWithShape: SkillsIcon } = getThemedCategoryIcons(CredentialCategoryEnum.skill);
 
-    const handleGrowSkills = () => {
-        handleExplorePathways(AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills);
-    };
-
-    const handleFindRoles = () => {
-        handleExplorePathways(AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles);
-    };
-
-    const handleSearchSubmit = (query: string) => {
-        newModal(<ExplorePathwaysModal initialSearchQuery={query} />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
+    const openExplorePathwaysModal = ({
+        query,
+        option,
+    }: {
+        query?: string;
+        option?: AiPathwaysWhatWouldYouLikeToDoCardOptions;
+    }) => {
+        newModal(
+            <ExplorePathwaysModal initialSearchQuery={query?.trim()} option={option} />,
+            undefined,
+            {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            }
+        );
     };
 
     if (!enableExplorePathways) return null;
@@ -55,19 +52,28 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
                     <IonLabel className="text-grayscale-900 font-poppins text-xl">
                         What would you like to do?
                     </IonLabel>
-                    <PathwaySearchInput onSearchSubmit={handleSearchSubmit} />
+                    <PathwaySearchInput
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                        onSearchSubmit={query => openExplorePathwaysModal({ query })}
+                    />
                 </div>
 
                 <button
-                    onClick={() => handleExplorePathways()}
-                    className="p-[11px] bg-teal-400 font-semibold rounded-full text-white border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
+                    onClick={() => openExplorePathwaysModal({ query: searchQuery })}
+                    className="p-[11px] bg-teal-400 font-semibold rounded-full text-white flex-1 font-poppins text-[17px]"
                 >
                     Explore Pathways
                 </button>
 
                 <div className="flex gap-2">
                     <button
-                        onClick={handleGrowSkills}
+                        onClick={() =>
+                            openExplorePathwaysModal({
+                                query: searchQuery,
+                                option: AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills,
+                            })
+                        }
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
                         <SkillsIcon className="w-[50px] h-[50px]" />
@@ -75,7 +81,12 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
                     </button>
 
                     <button
-                        onClick={handleFindRoles}
+                        onClick={() =>
+                            openExplorePathwaysModal({
+                                query: searchQuery,
+                                option: AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles,
+                            })
+                        }
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
                         <PathwaysIcon className="w-[50px] h-[50px]" />

@@ -8,6 +8,7 @@ import {
 } from 'learn-card-base';
 
 import { IonSpinner } from '@ionic/react';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowHeader from './ConsentFlowHeader';
 
@@ -27,6 +28,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
     app,
 }) => {
     const { closeModal } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const parentUser = currentUserStore.use.parentUser();
     const { name: parentName } = parentUser || {};
@@ -48,7 +50,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
 
                     <div className="flex flex-col">
                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
-                            Add to LearnCard.
+                            Add to {brandingConfig.name}.
                         </div>
                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
                             Save your progress and skills.

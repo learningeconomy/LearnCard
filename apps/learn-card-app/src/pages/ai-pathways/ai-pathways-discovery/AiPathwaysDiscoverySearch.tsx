@@ -1,5 +1,6 @@
 import React from 'react';
 import { IonLabel, IonInput } from '@ionic/react';
+import useTheme from '../../../theme/hooks/useTheme';
 
 const AiPathwaysDiscoverySearch: React.FC<{
     keywordInput: string;
@@ -7,6 +8,9 @@ const AiPathwaysDiscoverySearch: React.FC<{
     setSearchKeyword: (value: string) => void;
     searchKeyword: string;
 }> = ({ keywordInput, setKeywordInput, searchKeyword, setSearchKeyword }) => {
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
+
     const handleSearch = () => {
         if (keywordInput.trim()) {
             setSearchKeyword(keywordInput.trim());
@@ -46,7 +50,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
                     <button
                         onClick={handleSearch}
                         disabled={!keywordInput.trim()}
-                        className="p-[11px] bg-emerald-700 rounded-full text-white flex-1 font-poppins text-[17px] font-semibold"
+                        className={`p-[11px] bg-${primaryColor} rounded-full text-white flex-1 font-poppins text-[17px] font-semibold`}
                     >
                         Search
                     </button>

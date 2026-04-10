@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { BrandingEnum, ProfilePicture, useModal } from 'learn-card-base';
+import { ProfilePicture, useModal } from 'learn-card-base';
 
 import useLogout from '../../../../hooks/useLogout';
 
@@ -19,14 +19,14 @@ export const ForgotPinConfirmation: React.FC<{}> = () => {
                 Forgot PIN?
             </h4>
             <p className="text-sm font-poppins text-grayscale-900 text-center mt-2">
-                Forgot your PIN? To update it, please ensure you’ve logged in recently to keep your
+                Forgot your PIN? To update it, please ensure you've logged in recently to keep your
                 account secure.
             </p>
 
             <button
                 onClick={() => {
                     closeAllModals();
-                    handleLogout(BrandingEnum.learncard);
+                    handleLogout();
                 }}
                 className="text-mv_blue-700 font-bold mt-2"
             >

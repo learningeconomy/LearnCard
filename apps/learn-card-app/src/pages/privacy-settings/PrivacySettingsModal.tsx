@@ -13,6 +13,7 @@ import {
     useModal,
     useToast,
     useWallet,
+    useBrandingConfig,
 } from 'learn-card-base';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
@@ -27,6 +28,7 @@ const PrivacySettingsModal: React.FC = () => {
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const { name: brandName } = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
 
@@ -160,7 +162,7 @@ const PrivacySettingsModal: React.FC = () => {
                             Profile Privacy
                         </p>
                         <p className="text-sm text-grayscale-500 mt-0.5">
-                            Control how your LearnCard profile appears to others in the network.
+                            Control how your {brandName} profile appears to others in the network.
                         </p>
                     </div>
 
@@ -252,7 +254,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 Analytics & Insights
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                Help improve LearnCard with anonymous usage data
+                                Help improve {brandName} with anonymous usage data
                             </p>
                         </div>
                         <IonToggle

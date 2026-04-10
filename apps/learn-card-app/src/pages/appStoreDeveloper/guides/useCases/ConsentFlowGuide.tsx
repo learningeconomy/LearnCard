@@ -27,6 +27,7 @@ import { ConsentFlowContractSelector } from '../../components/ConsentFlowContrac
 import { TemplateListManager } from '../../components/TemplateListManager';
 import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import type { GuideProps } from '../GuidePage';
+import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 
 type AuthGrant = {
     id: string;
@@ -208,7 +209,7 @@ const RedirectHandlerStep: React.FC<{
 const contractUri = '${contractUri || 'YOUR_CONTRACT_URI'}';
 const returnTo = '${redirectUrl || 'https://your-app.com/api/learncard/callback'}';
 
-const consentUrl = \`https://learncard.app/consent-flow?uri=\${encodeURIComponent(contractUri)}&returnTo=\${encodeURIComponent(returnTo)}\`;
+const consentUrl = \`${getAppBaseUrl()}/consent-flow?uri=\${encodeURIComponent(contractUri)}&returnTo=\${encodeURIComponent(returnTo)}\`;
 
 // Redirect the user
 window.location.href = consentUrl;`,
@@ -758,7 +759,7 @@ const TestStep: React.FC<{
     const templateUri = selectedTemplate?.boostUri || 'YOUR_TEMPLATE_URI';
 
     const consentUrl = contractUri && redirectUrl
-        ? `https://learncard.app/consent-flow?uri=${encodeURIComponent(contractUri)}&returnTo=${encodeURIComponent(redirectUrl)}`
+        ? `${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(contractUri)}&returnTo=${encodeURIComponent(redirectUrl)}`
         : '';
 
     return (

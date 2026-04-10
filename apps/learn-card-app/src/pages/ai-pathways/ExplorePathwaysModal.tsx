@@ -37,7 +37,6 @@ import { SkillFrameworkNode } from '../../components/boost/boost';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
-import ExplorePathwaysActionButton from './ExplorePathwaysActionButton';
 
 type SemanticSkillRecord = {
     id: string;
@@ -599,26 +598,23 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
             <footer className="w-full flex justify-center bg-opacity-70 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white">
                 <div className="w-full flex flex-col items-center justify-center gap-[10px] max-w-[600px]">
                     {(showAllOptions || showGrowSkillsButton) && (
-                        <ExplorePathwaysActionButton
+                        <button
                             onClick={closeModal}
-                            className="bg-violet-500"
-                            icon={<PuzzlePiece className="w-[30px] h-[30px]" version="filled" />}
-                            label="Grow Skills"
-                        />
+                            className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
+                        >
+                            <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
+                            Grow Skills
+                        </button>
                     )}
 
                     {(showAllOptions || showExploreRolesButton) && (
-                        <ExplorePathwaysActionButton
+                        <button
                             onClick={closeModal}
-                            className="bg-cyan-501"
-                            icon={
-                                <ExperiencesIconSolid
-                                    inverseColors
-                                    className="w-[30px] h-[30px]"
-                                />
-                            }
-                            label="Explore Roles"
-                        />
+                            className="w-full bg-cyan-501 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
+                        >
+                            <ExperiencesIconSolid inverseColors className="w-[30px] h-[30px]" />
+                            Explore Roles
+                        </button>
                     )}
                 </div>
             </footer>
