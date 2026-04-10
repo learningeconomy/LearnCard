@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useHistory } from 'react-router-dom';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
+import GrowSkillsSkillChips from './GrowSkillsSkillChips';
 
 type GrowSkillsAiSessionData = {
     title: string | undefined;
@@ -76,7 +77,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
             onClick={handleStart}
             className="w-full h-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-cyan-401 text-left"
         >
-            <div className="px-[15px] py-[20px] flex flex-col gap-[5px]">
+            <div className="px-[15px] py-[20px] flex flex-col gap-[5px] h-full">
                 <div className="flex items-start gap-[10px]">
                     <AiSessionsIconWithShape className="w-[35px] h-[35px] flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -91,9 +92,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
                     {description}
                 </p>
 
-                <div className="pt-[10px]">
-                    <p className="text-[13px] text-grayscale-500 italic text-left">Skills TODO</p>
-                </div>
+                <GrowSkillsSkillChips searchQuery={title} />
             </div>
         </div>
     );

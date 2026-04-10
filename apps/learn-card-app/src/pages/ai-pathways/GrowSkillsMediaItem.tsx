@@ -9,6 +9,7 @@ import {
 } from 'learn-card-base';
 import AiPathwayContentPreview from './ai-pathway-explore-content/AiPathwayContentPreview';
 import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
+import GrowSkillsSkillChips from './GrowSkillsSkillChips';
 
 type GrowSkillsOccupation = {
     OnetCode?: string;
@@ -134,7 +135,7 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
                 </button>
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
             </div>
-            <div className="p-[10px] flex flex-col gap-[10px]">
+            <div className="p-[10px] flex flex-col gap-[10px] h-full">
                 <div className="flex gap-[10px] items-start">
                     <img
                         src={careerOneStopLogo}
@@ -148,9 +149,7 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
                         </p>
                     </div>
                 </div>
-                <p className="mt-auto text-[13px] text-grayscale-500 italic text-left">
-                    Skills TODO
-                </p>
+                <GrowSkillsSkillChips searchQuery={title} />
             </div>
         </div>
     );
