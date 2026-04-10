@@ -1,12 +1,13 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
@@ -74,11 +75,16 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
+import {
+    handleIncrementCounterEvent,
+    handleGetCounterEvent,
+    handleGetCountersEvent,
+} from '@helpers/app-counter.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -989,6 +995,85 @@ const handleGetTemplateRecipientsEvent = async (
         cursor: nextCursor,
         total: formattedRecords.length,
     };
+};
+
+// Helper to handle send-notification app event
+const handleSendNotificationEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string; notificationsWebhook?: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const parsed = SendNotificationEventValidator.safeParse(event);
+
+    if (!parsed.success) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Invalid notification event: ${parsed.error.message}`,
+        });
+    }
+
+    const { title, body, actionPath, category, priority = 'normal' } = parsed.data;
+
+    if (!title && !body) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+    }
+
+    // Rate limit: max 10 notifications per user per app per hour (atomic increment)
+    const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
+    const count = await cache.incr(rateLimitKey, 3600);
+
+    if (count === undefined) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Rate limiting service unavailable',
+        });
+    }
+
+    if (count > 10) {
+        // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+        // while keeping the semantic code in the message for clients.
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
+        });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+    }
+
+    const profileDid = getDidWeb(ctx.domain, profile.profileId);
+
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+        to: {
+            did: profileDid,
+            profileId: profile.profileId,
+            ...(profile.notificationsWebhook && {
+                notificationsWebhook: profile.notificationsWebhook,
+            }),
+        },
+        from: {
+            did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+            profileId: listing.slug ?? listingId,
+            displayName: listing.display_name,
+        },
+        message: { title, body },
+        data: {
+            metadata: {
+                listingId,
+                listingSlug: listing.slug,
+                actionPath,
+                category,
+                priority,
+            },
+        },
+    });
+
+    return { sent: true };
 };
 
 export const appStoreRouter = t.router({
@@ -1904,6 +1989,117 @@ export const appStoreRouter = t.router({
             return getBoostsForListing(input.listingId, ctx.domain);
         }),
 
+    // ==================== App Notification Route ====================
+
+    sendAppNotification: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/notify',
+                tags: ['App Store'],
+                summary: 'Send App Notification',
+                description:
+                    'Send a notification to a user on behalf of an app. Caller must own the listing. Recipient must have the app installed.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipient: z.string(),
+                title: z.string().optional(),
+                body: z.string().optional(),
+                actionPath: z.string().optional(),
+                category: z.string().optional(),
+                priority: z.enum(['normal', 'high']).default('normal'),
+            })
+        )
+        .output(z.object({ sent: z.boolean() }))
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, recipient, title, body, actionPath, category, priority } = input;
+
+            if (!title && !body) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+            }
+
+            // Verify caller owns the listing
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            // Resolve recipient to profileId (accepts profileId or DID)
+            const recipientProfileId = await getProfileIdFromString(recipient, ctx.domain);
+
+            if (!recipientProfileId) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not resolve recipient to a profile',
+                });
+            }
+
+            // Verify recipient has the app installed
+            const isInstalled = await hasProfileInstalledApp(recipientProfileId, listingId);
+
+            if (!isInstalled) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Recipient does not have this app installed',
+                });
+            }
+
+            // Rate limit: max 60 notifications per listing per hour (atomic increment)
+            const rateLimitKey = `app-notif-server-rate:${listingId}`;
+            const count = await cache.incr(rateLimitKey, 3600);
+
+            if (count === undefined) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Rate limiting service unavailable',
+                });
+            }
+
+            if (count > 60) {
+                // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+                // while keeping the semantic code in the message for clients.
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    message: 'Rate limit exceeded: max 60 notifications per app per hour',
+                });
+            }
+
+            const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
+
+            // Look up recipient profile to get notificationsWebhook for delivery
+            const recipientProfile = await getProfileByProfileId(recipientProfileId);
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+                to: {
+                    did: recipientDid,
+                    profileId: recipientProfileId,
+                    ...(recipientProfile?.notificationsWebhook && {
+                        notificationsWebhook: recipientProfile.notificationsWebhook,
+                    }),
+                },
+                from: {
+                    did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+                    profileId: listing.slug ?? listingId,
+                    displayName: listing.display_name,
+                },
+                message: { title, body },
+                data: {
+                    metadata: {
+                        listingId,
+                        listingSlug: listing.slug,
+                        actionPath,
+                        category,
+                        priority,
+                    },
+                },
+            });
+
+            return { sent: true };
+        }),
+
     // ==================== Generic App Event Route ====================
 
     appEvent: profileRoute
@@ -1968,6 +2164,22 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'get-template-recipients') {
                 return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'send-notification') {
+                return handleSendNotificationEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'increment-counter') {
+                return handleIncrementCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counter') {
+                return handleGetCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counters') {
+                return handleGetCountersEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
