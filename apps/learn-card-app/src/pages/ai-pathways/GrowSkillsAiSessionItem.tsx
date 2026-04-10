@@ -74,7 +74,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
             onPointerCancel={handlePointerUp}
             onClickCapture={handleClickCapture}
             onClick={handleStart}
-            className="w-full h-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-cyan-400 text-left"
+            className="w-full h-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-cyan-401 text-left"
         >
             <div className="px-[15px] py-[20px] flex flex-col gap-[5px]">
                 <div className="flex items-start gap-[10px]">
