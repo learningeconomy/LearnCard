@@ -30,6 +30,7 @@ export interface NetworkEnvConfig {
     label: string;
     network: string;
     cloud: string;
+    signingAuthority?: string;
 }
 
 export const NETWORK_PRESETS: Record<Exclude<NetworkEnvKey, 'custom'>, NetworkEnvConfig> = {
@@ -37,16 +38,19 @@ export const NETWORK_PRESETS: Record<Exclude<NetworkEnvKey, 'custom'>, NetworkEn
         label: 'Production',
         network: 'https://network.learncard.com/trpc',
         cloud: 'https://cloud.learncard.com/trpc',
+        signingAuthority: 'https://api.learncard.app/trpc',
     },
     staging: {
         label: 'Staging',
         network: 'https://staging.network.learncard.com/trpc',
         cloud: 'https://staging.cloud.learncard.com/trpc',
+        signingAuthority: 'https://staging.api.learncard.app/trpc',
     },
     local: {
         label: 'Local',
         network: 'http://localhost:4000/trpc',
         cloud: 'http://localhost:4100/trpc',
+        signingAuthority: 'http://localhost:5100/trpc'
     },
 };
 
@@ -225,7 +229,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
 
             if (!sa || !sa.endpoint) {
-                throw new Error('Could not create signing authority');
+                const hasPlugin = !!lc.invoke.createSigningAuthority;
+
+                throw new Error(
+                    hasPlugin
+                        ? 'Signing authority was created but has no endpoint. Is the signing authority service running?'
+                        : 'No signing authority plugin available. Make sure the environment has a signingAuthority URL configured.'
+                );
             }
 
             // 3. Register it
@@ -291,12 +301,27 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
             const { initLearnCard } = await import('@learncard/init');
 
-            const lc = await initLearnCard({
+            let lc = await initLearnCard({
                 seed: inputSeed,
                 network: cfg.network,
                 cloud: { url: cfg.cloud },
                 allowRemoteContexts: true,
             });
+
+            // Add Simple Signing plugin if a signing authority URL is configured
+            if (cfg.signingAuthority) {
+                try {
+                    const { getSimpleSigningPlugin } = await import('@learncard/simple-signing-plugin');
+
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    lc = await (lc as any).addPlugin(
+                        await getSimpleSigningPlugin(lc as any, cfg.signingAuthority)
+                    );
+                } catch (err) {
+                    console.warn('Could not load Simple Signing plugin:', err);
+                }
+            }
+
             const walletDid = lc.id.did();
 
             walletRef.current = lc;
