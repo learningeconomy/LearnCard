@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -19,6 +19,7 @@ import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProf
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { percentage } = useSkillProfileCompletion();
+    const [isInitialPercentageAboveZero] = useState(() => percentage > 0);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -35,11 +36,13 @@ const AiPathways: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            {percentage > 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
+                            {isInitialPercentageAboveZero && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
                             <MySkillProfile />
 
-                            {percentage === 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
+                            {!isInitialPercentageAboveZero && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard />
+                            )}
 
                             <GrowSkillsPathwaysHome />
                         </div>
