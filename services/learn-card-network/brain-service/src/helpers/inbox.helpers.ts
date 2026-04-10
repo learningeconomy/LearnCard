@@ -13,6 +13,9 @@ import {
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
+import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
+import { doesProfileManageProfile } from '@accesslayer/profile-manager/relationships/read';
+import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
 import { sendCredential } from '@helpers/credential.helpers';
 import { sendBoost } from '@helpers/boost.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
@@ -411,6 +414,52 @@ export const issueToInbox = async (
                 },
                 messageStream: 'universal-inbox',
             });
+
+            // Check if guardian already has an account with MANAGES relationship
+            // If so, also send an in-app notification for faster approval
+            try {
+                const guardianContactMethod = await getContactMethodByValue('email', guardianEmail);
+                if (guardianContactMethod) {
+                    const guardianProfile = await getProfileByContactMethod(guardianContactMethod.id);
+                    if (guardianProfile) {
+                        const childProfile = await getProfileForInboxCredential(inboxCredential.id);
+                        if (childProfile) {
+                            const manages = await doesProfileManageProfile(
+                                guardianProfile.profileId,
+                                childProfile.profileId
+                            );
+                            if (manages) {
+                                // Parse credential name for the notification
+                                let credentialName: string | undefined;
+                                try {
+                                    credentialName = (credential as any)?.name
+                                        ?? (credential as any)?.credentialSubject?.achievement?.name;
+                                } catch {}
+
+                                await addNotificationToQueue({
+                                    type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVAL_PENDING,
+                                    to: guardianProfile,
+                                    from: issuerProfile,
+                                    message: {
+                                        title: 'Credential Approval Request',
+                                        body: `${credentialName ?? 'A credential'} for ${childProfile.displayName ?? 'your student'} from ${issuerProfile.displayName}`,
+                                    },
+                                    data: {
+                                        inboxCredentialId: inboxCredential.id,
+                                        childProfileId: childProfile.profileId,
+                                        childDisplayName: childProfile.displayName ?? '',
+                                        credentialName: credentialName ?? '',
+                                        issuerDisplayName: issuerProfile.displayName,
+                                    },
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('[issueToInbox] Failed to send guardian in-app notification:', err);
+                // Non-critical — email path is always available as fallback
+            }
         } else if (!delivery?.suppress) {
             const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);
             const emailClaimUrl = generateClaimUrl(emailClaimToken);
