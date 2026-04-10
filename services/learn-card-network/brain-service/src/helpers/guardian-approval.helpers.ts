@@ -1,3 +1,8 @@
+// NOTE: Guardian credential approval (LC-1729/1730/1731) is not feature complete.
+// Current implementation creates a MANAGES relationship but guardian child accounts
+// are full independent accounts with a guardian — not the same as family child accounts.
+// This is part of a larger goal of making child accounts independent of parent accounts.
+
 import { v4 as uuid } from 'uuid';
 import cache from '@cache';
 

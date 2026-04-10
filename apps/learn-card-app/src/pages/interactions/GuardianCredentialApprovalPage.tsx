@@ -1,3 +1,8 @@
+// NOTE: Guardian credential approval (LC-1729/1730/1731) is not feature complete.
+// Guardian child accounts are full independent accounts with a guardian — not the same
+// as family child accounts. Part of a larger goal of making child accounts independent
+// of parent accounts.
+
 import React, { useEffect, useRef, useState } from 'react';
 import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
 import ReactCodeInput from 'react-code-input';
