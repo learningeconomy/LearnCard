@@ -183,7 +183,14 @@ export default function fixtureWriterPlugin(): Plugin {
                             return;
                         }
 
-                        const folderPath = path.join(FIXTURES_ROOT, folder);
+                        const folderPath = path.resolve(FIXTURES_ROOT, folder);
+
+                        if (!folderPath.startsWith(path.resolve(FIXTURES_ROOT))) {
+                            res.statusCode = 400;
+                            res.end(JSON.stringify({ error: 'Invalid folder path' }));
+
+                            return;
+                        }
 
                         if (!fs.existsSync(folderPath)) {
                             fs.mkdirSync(folderPath, { recursive: true });

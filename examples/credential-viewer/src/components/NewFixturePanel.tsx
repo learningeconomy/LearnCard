@@ -206,8 +206,6 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
             if (toIssue.credentialSubject?.id === 'did:example:subject') {
                 toIssue.credentialSubject = { ...toIssue.credentialSubject, id: did };
             }
-            console.log('toIssue', toIssue, did);
-
             const signed = await wallet!.invoke.issueCredential(toIssue);
 
             if (signed && (signed as Record<string, unknown>).proof) {
