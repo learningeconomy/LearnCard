@@ -1,19 +1,11 @@
 import React, { useMemo, useState } from 'react';
 
-import {
-    useOccupationDetailsForKeyword,
-    useTrainingProgramsByKeyword,
-} from 'learn-card-base/react-query/queries/careerOneStop';
-import { OccupationDetailsResponse, TrainingProgram } from 'learn-card-base/types/careerOneStop';
-import { normalizeSchoolPrograms } from './ai-pathway-courses/ai-pathway-courses.helpers';
-
 import { IonSpinner } from '@ionic/react';
 import { X } from 'lucide-react';
 import {
     ModalTypes,
     SearchInput,
     conditionalPluralize,
-    useAiPathways,
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
     useModal,
@@ -26,83 +18,26 @@ import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
-import AiPathwaysCarouselSection from './GrowSkillsCarouselSection';
+import GrowSkillsAiSessionItem from './GrowSkillsAiSessionItem';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
+import { useGrowSkillsContent } from './useGrowSkillsContent';
 
-type GrowSkillsModalProps = {};
+export type GrowSkillsModalProps = {
+    initialActiveTab?: GrowSkillsTab;
+};
 
 const growSkillsTabs = ['All', 'AI Sessions', 'Courses', 'Media'] as const;
 
-type GrowSkillsTab = (typeof growSkillsTabs)[number];
+export type GrowSkillsTab = (typeof growSkillsTabs)[number];
 
-type GrowSkillsCard =
-    | {
-          type: 'ai-session';
-          pathway: any;
-      }
-    | {
-          type: 'course';
-          program: TrainingProgram;
-      }
-    | {
-          type: 'media';
-          occupation: OccupationDetailsResponse;
-      };
-
-type GrowSkillsMediaCard = Extract<GrowSkillsCard, { type: 'media' }>;
-
-const interleaveGrowSkillsCards = ({
-    aiSessions,
-    courses,
-    media,
-}: {
-    aiSessions: any[];
-    courses: TrainingProgram[];
-    media: OccupationDetailsResponse[];
-}) => {
-    const mixedCards: GrowSkillsCard[] = [];
-
-    const maxCourseMediaLength = Math.max(courses.length, media.length);
-
-    for (let index = 0; index < maxCourseMediaLength; index += 1) {
-        const course = courses[index];
-        if (course) {
-            mixedCards.push({
-                type: 'course',
-                program: course,
-            });
-        }
-
-        const mediaItem = media[index];
-        if (mediaItem) {
-            mixedCards.push({
-                type: 'media',
-                occupation: mediaItem,
-            });
-        }
-    }
-
-    aiSessions.forEach(aiSession => {
-        mixedCards.push({
-            type: 'ai-session',
-            pathway: aiSession,
-        });
-    });
-
-    return mixedCards;
-};
-
-const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
+const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'All' }) => {
     const { newModal, closeModal } = useModal();
     const [search, setSearch] = useState('');
-    const [activeTab, setActiveTab] = useState<GrowSkillsTab>('All');
+    const [activeTab, setActiveTab] = useState<GrowSkillsTab>(initialActiveTab);
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
-        sasBoostData?.uri
-    );
-    const skillNames = sasBoostSkills?.map(s => s.statement) ?? [];
+    const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
     const openSelfAssignSkillsModal = () => {
         newModal(<SelfAssignSkillsModal />, undefined, {
@@ -111,13 +46,10 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         });
     };
 
-    const { data: goalsData, isLoading: goalsLoading } = useVerifiableData<SkillProfileGoalsData>(
-        SKILL_PROFILE_GOALS_KEY,
-        {
-            name: 'Career Goals',
-            description: 'Self-reported career goals and aspirations',
-        }
-    );
+    const { data: goalsData } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY, {
+        name: 'Career Goals',
+        description: 'Self-reported career goals and aspirations',
+    });
     const goals = goalsData?.goals ?? [];
 
     const openEditGoalsModal = () => {
@@ -131,44 +63,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         );
     };
 
-    // const keywords = [search, ...goals, ...skillNames];
-    const keywords = [search];
-
-    const { data: trainingPrograms } = useTrainingProgramsByKeyword({
-        keywords,
-    });
-
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    console.log('trainingPrograms:', trainingPrograms);
-
-    const schoolPrograms = useMemo(() => {
-        return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
-    }, [trainingPrograms]);
-
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    console.log('schoolPrograms:', schoolPrograms);
-
-    // const courses = useMemo(() => {
-    //     return schoolPrograms?.length
-    //         ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
-    //         : [];
-    // }, [schoolPrograms, fieldOfStudy]);
-
-    const { data: occupations } = useOccupationDetailsForKeyword(search);
-    // See: AiPathwayExploreContent.tsx
-
-    const { data: learningPathwaysData } = useAiPathways();
-    // See: AiPathwaySessions.tsx
-
-    const cards = useMemo(
-        () =>
-            interleaveGrowSkillsCards({
-                aiSessions: learningPathwaysData || [],
-                courses: schoolPrograms || [],
-                media: occupations || [],
-            }),
-        [learningPathwaysData, occupations, schoolPrograms]
-    );
+    const { cards, isLoading } = useGrowSkillsContent({ searchQuery: search });
 
     const visibleCards = useMemo(() => {
         if (activeTab === 'All') return cards;
@@ -181,13 +76,6 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
             return false;
         });
     }, [activeTab, cards]);
-
-    const visibleMediaCards = useMemo(
-        () => visibleCards.filter((card): card is GrowSkillsMediaCard => card.type === 'media'),
-        [visibleCards]
-    );
-
-    // console.log('occupations:', occupations);
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
@@ -259,41 +147,21 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     value={search}
                     onChange={setSearch}
                 />
-                {/* <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
-                    Selected tab: {activeTab}
-                </div> */}
-                {/* <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700 mb-[20px]">
-                    Keywords: {keywords.join(', ')}
-                    <br />
-                    Field of study: {search}
-                    <br />
-                    <br />
-                    Training programs: {trainingPrograms?.length || 0}
-                    <br />
-                    School programs: {schoolPrograms?.length || 0}
-                    <br />
-                    Courses: {courses?.length || 0}
-                    <br />
-                    Occupations: {occupations?.length || 0}
-                </div> */}
-
-                {activeTab === 'Media' && visibleMediaCards.length > 0 ? (
-                    <AiPathwaysCarouselSection
-                        title="Media"
-                        items={visibleMediaCards}
-                        getItemKey={card => card.occupation.OnetCode || card.occupation.OnetTitle}
-                        renderItem={card => <GrowSkillsMediaItem occupation={card.occupation} />}
-                    />
+                {isLoading && visibleCards.length === 0 ? (
+                    <div className="flex items-center justify-center py-[40px]">
+                        <IonSpinner color="dark" name="crescent" />
+                    </div>
                 ) : visibleCards.length > 0 ? (
                     <div className="flex flex-col gap-[15px]">
                         {visibleCards.map((card, index) => {
                             if (card.type === 'ai-session') {
                                 return (
-                                    <div
-                                        key={card.pathway?.id || card.pathway?.pathwayUri || index}
-                                    >
-                                        TODO...
-                                    </div>
+                                    <GrowSkillsAiSessionItem
+                                        key={
+                                            card.pathway?.pathwayUri || card.pathway?.title || index
+                                        }
+                                        data={card.pathway}
+                                    />
                                 );
                             }
 
@@ -323,18 +191,6 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                         })}
                     </div>
                 ) : null}
-                {/* <div className="pt-[20px]">
-                    <AiPathwayCourses
-                        courses={courses}
-                        schoolPrograms={schoolPrograms}
-                        keywords={keywords}
-                        isLoading={fetchTrainingProgramsLoading}
-                    />
-                    <AiPathwayExploreContent
-                        occupations={occupations}
-                        isLoading={fetchOccupationsLoading}
-                    />
-                </div> */}
             </section>
         </div>
     );

@@ -2,18 +2,12 @@ import React, { useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useHistory } from 'react-router-dom';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
+
+import { type GrowSkillsPathway } from './useGrowSkillsContent';
 import GrowSkillsSkillChips from './GrowSkillsSkillChips';
 
-type GrowSkillsAiSessionData = {
-    title: string | undefined;
-    description: string | undefined;
-    skills: Array<{ title: string; description?: string }> | undefined;
-    topicUri: string | undefined;
-    pathwayUri: string | undefined;
-};
-
 type GrowSkillsAiSessionItemProps = {
-    data: GrowSkillsAiSessionData;
+    data: GrowSkillsPathway;
 };
 
 const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data }) => {
@@ -23,7 +17,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
 
     const dragThreshold = 8;
 
-    const { title, description, skills, topicUri, pathwayUri } = data;
+    const { title, description, topicUri, pathwayUri } = data;
 
     const handleStart = () => {
         if (!topicUri || !pathwayUri) return;
