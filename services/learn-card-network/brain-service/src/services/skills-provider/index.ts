@@ -2,6 +2,7 @@ import type { SkillsProvider, ProviderId, Options, Framework, Skill, Obv3Alignme
 import { createDummyProvider, seedFramework, seedSkills } from './providers/dummy';
 import { createNeo4jProvider } from './providers/neo4j';
 import { createOpenSaltProvider } from './providers/opensalt';
+import { createOpenSaltStagingProvider } from './providers/opensalt-staging';
 
 let currentProvider: SkillsProvider | null = null;
 
@@ -24,8 +25,24 @@ const isOpenSaltRef = (value?: string): boolean => {
     return false;
 };
 
+const isOpenSaltStagingRef = (value?: string): boolean => {
+    if (!value) return false;
+
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return false;
+
+    if (normalized.includes('staging.opensalt.')) return true;
+
+    return false;
+};
+
 const getOpenSaltOptions = (): Options => ({
     baseUrl: process.env.OPENSALT_BASE_URL || 'https://opensalt.net',
+    apiKey: process.env.SKILLS_PROVIDER_API_KEY,
+});
+
+const getOpenSaltStagingOptions = (): Options => ({
+    baseUrl: process.env.OPENSALT_STAGING_BASE_URL || 'https://staging.opensalt.net',
     apiKey: process.env.SKILLS_PROVIDER_API_KEY,
 });
 
@@ -45,6 +62,9 @@ export function getSkillsProvider(config?: SkillsProviderConfig): SkillsProvider
             case 'opensalt':
                 currentProvider = createOpenSaltProvider(options);
                 break;
+            case 'opensalt-staging':
+                currentProvider = createOpenSaltStagingProvider(options);
+                break;
             default:
                 currentProvider = createDummyProvider(options);
                 break;
@@ -62,6 +82,11 @@ export function getSkillsProviderForFramework(
     frameworkRef: string,
     sourceURI?: string
 ): SkillsProvider {
+    // Check for staging URLs first (more specific)
+    if (isOpenSaltStagingRef(sourceURI) || isOpenSaltStagingRef(frameworkRef)) {
+        return createOpenSaltStagingProvider(getOpenSaltStagingOptions());
+    }
+
     if (isOpenSaltRef(sourceURI) || isOpenSaltRef(frameworkRef)) {
         return createOpenSaltProvider(getOpenSaltOptions());
     }

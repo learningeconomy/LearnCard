@@ -1,7 +1,7 @@
 {
   "name": "@learncard/app-store-demo-lore-card",
   "type": "module",
-  "version": "0.0.14",
+  "version": "0.0.18",
   "private": true,
   "description": "LoreCard - Social-Emotional Learning Badges for Tabletop RPG Players",
   "scripts": {

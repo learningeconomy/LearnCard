@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
 import {
     useGetSkillFrameworkById,
     useSearchFrameworkSkills,
@@ -9,11 +11,20 @@ import {
     useGetProfile,
     useToast,
     ToastTypeEnum,
+    conditionalPluralize,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
+import Plus from '../../components/svgs/Plus';
 import Search from 'learn-card-base/svgs/Search';
-import SelfAssignedSkillRow from './SelfAssignedSkillRow';
+import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
+import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
+import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
+import AddSkillModal from './AddSkillModal';
+import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
@@ -22,63 +33,53 @@ import {
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode } from '../../components/boost/boost';
-import { SkillLevel } from './SkillProficiencyBar';
+import { SkillLevel } from './skillTypes';
+import type { SelectedSkill } from './skillTypes';
 
-export type SelectedSkill = {
-    id: string;
-    proficiency: SkillLevel;
-};
+type SemanticSkillRecord = ApiSkillNode & { score?: number };
 
-export type SkillSearchSelectorProps = {
+type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
-    mode?: 'add' | 'review';
-    shouldCollapseOptions?: boolean;
     showSuggestSkill?: boolean;
+    showSearchInput?: boolean;
+    showSelectedSkills?: boolean;
+    searchQuery?: string;
+    onSearchQueryChange?: (searchQuery: string) => void;
+    isSavingSkills?: boolean;
+    onAddSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    onEditSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
+    onRemoveSkill?: (skillId: string) => void;
     className?: string;
-};
-
-export const useSkillSearchSelectorData = () => {
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
-    const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
-
-    const { data: selfAssignedSkillFramework, isLoading: selfAssignedSkillFrameworkLoading } =
-        useGetSkillFrameworkById(frameworkId);
-
-    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
-
-    const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
-
-    return {
-        frameworkId,
-        initialSkillIds,
-        selfAssignedSkillFramework,
-        selfAssignedSkillFrameworkLoading,
-        sasBoostSkills,
-        skillsLoading,
-        errorLoadingFramework,
-    };
+    initialSearchQuery?: string;
 };
 
 const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     selectedSkills,
     onSelectedSkillsChange,
-    mode = 'add',
-    shouldCollapseOptions = false,
     showSuggestSkill = true,
+    showSearchInput = true,
+    showSelectedSkills = true,
+    searchQuery,
+    onSearchQueryChange,
+    isSavingSkills = false,
+    onAddSkill,
+    onEditSkill,
+    onRemoveSkill,
     className = '',
+    initialSearchQuery,
 }) => {
     const flags = useFlags();
+    const { newModal } = useModal();
     const { presentToast } = useToast();
     const { data: lcNetworkProfile } = useGetProfile();
 
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
-    const [searchInput, setSearchInput] = useState('');
-    const [selectedSkillNodesCache, setSelectedSkillNodesCache] = useState<
-        Map<string, SkillFrameworkNode>
-    >(new Map());
+    const [internalSearchInput, setInternalSearchInput] = useState(initialSearchQuery || '');
+    const selectedSkillsSwiperRef = useRef<any>(null);
+    const [selectedSkillsAtBeginning, setSelectedSkillsAtBeginning] = useState(true);
+    const [selectedSkillsAtEnd, setSelectedSkillsAtEnd] = useState(false);
+    const [selectedSkillsExpanded, setSelectedSkillsExpanded] = useState(false);
 
     const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
@@ -92,6 +93,18 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         { enabled: !!initialSkillIds?.length }
     );
 
+    const isControlledSearch = searchQuery !== undefined;
+    const searchInput = isControlledSearch ? searchQuery : internalSearchInput;
+
+    const setSearchInput = (nextSearchQuery: string) => {
+        if (isControlledSearch) {
+            onSearchQueryChange?.(nextSearchQuery);
+            return;
+        }
+
+        setInternalSearchInput(nextSearchQuery);
+    };
+
     const { data: semanticResultsApiData, isLoading: semanticLoading } = useSemanticSearchSkills(
         searchInput,
         frameworkId,
@@ -103,6 +116,24 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const hasSearchQuery = Boolean(searchInput?.trim());
     const searchLoading = hasSearchQuery ? semanticLoading : initialSkillsLoading;
+
+    const selectedSkillsBySemanticScore = useMemo(() => {
+        if (!hasSearchQuery) {
+            return selectedSkills;
+        }
+
+        const scoreBySkillId = new Map<string, number>(
+            semanticResultsApiData?.records?.map((skill: SemanticSkillRecord) => [
+                skill.id,
+                skill.score ?? 0,
+            ]) ?? []
+        );
+
+        return [...selectedSkills].sort(
+            (left, right) =>
+                (scoreBySkillId.get(right.id) ?? 0) - (scoreBySkillId.get(left.id) ?? 0)
+        );
+    }, [hasSearchQuery, selectedSkills, semanticResultsApiData?.records]);
 
     const initialSkills: SkillFrameworkNode[] =
         (initialSkillsData as any)?.records?.map((record: ApiSkillNode) =>
@@ -130,21 +161,78 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         ) ?? [];
 
     const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
+    const suggestedSkillsToShow = suggestedSkills.filter(
+        skill => !selectedSkills.find(selected => selected.id === skill.id)
+    );
+    const addSkillsTitle = hasSearchQuery
+        ? `${suggestedSkillsToShow.length} More skills for ${searchInput?.trim() ?? ''}`
+        : 'Add Skills';
 
-    const handleToggleSelect = (skillId: string, skillNode?: SkillFrameworkNode) => {
+    const handleToggleSelect = (skillId: string, proficiencyLevel?: SkillLevel) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
         if (isAlreadySelected) {
             onSelectedSkillsChange(selectedSkills.filter(s => s.id !== skillId));
         } else {
             onSelectedSkillsChange([
                 ...selectedSkills,
-                { id: skillId, proficiency: SkillLevel.Hidden },
+                { id: skillId, proficiency: proficiencyLevel ?? SkillLevel.Hidden },
             ]);
-            if (skillNode) {
-                setSelectedSkillNodesCache(prev => new Map(prev).set(skillId, skillNode));
-            }
         }
     };
+
+    const handleChangeProficiency = (skillId: string, proficiencyLevel: SkillLevel) => {
+        onSelectedSkillsChange(
+            selectedSkills.map(s =>
+                s.id === skillId ? { ...s, proficiency: proficiencyLevel } : s
+            )
+        );
+    };
+
+    const handleAddSkillToSelection = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
+        if (onAddSkill) {
+            onAddSkill(skill, proficiencyLevel);
+            return;
+        }
+
+        handleToggleSelect(skill.id!, proficiencyLevel);
+    };
+
+    const handleEditSkillInSelection = (skillId: string, proficiencyLevel: SkillLevel) => {
+        if (onEditSkill) {
+            onEditSkill(skillId, proficiencyLevel);
+            return;
+        }
+
+        handleChangeProficiency(skillId, proficiencyLevel);
+    };
+
+    const handleRemoveSkillFromSelection = (skillId: string) => {
+        if (onRemoveSkill) {
+            onRemoveSkill(skillId);
+            return;
+        }
+
+        handleToggleSelect(skillId);
+    };
+
+    const handleSwiperUpdate = (swiper: any, setAtBeginning: any, setAtEnd: any) => {
+        setAtBeginning(swiper.isBeginning);
+        setAtEnd(swiper.isEnd);
+    };
+
+    useEffect(() => {
+        if (selectedSkillsSwiperRef.current) {
+            selectedSkillsSwiperRef.current.update();
+            handleSwiperUpdate(
+                selectedSkillsSwiperRef.current,
+                setSelectedSkillsAtBeginning,
+                setSelectedSkillsAtEnd
+            );
+        }
+    }, [selectedSkills.length]);
+
+    const showSelectedSkillsViewToggle =
+        selectedSkillsExpanded || !selectedSkillsAtBeginning || !selectedSkillsAtEnd;
 
     const handleSubmitSkillSuggestion = async () => {
         if (isSubmittingSkillSuggestion) return;
@@ -184,9 +272,23 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         }
     };
 
-    const isAdd = mode === 'add';
-    const isReview = mode === 'review';
-    const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
+    const openAddSkillModal = (skill: SkillFrameworkNode) => {
+        newModal(
+            <AddSkillModal
+                frameworkId={frameworkId}
+                skill={skill}
+                handleAdd={handleAddSkillToSelection}
+                selectedSkills={selectedSkills}
+                handleAddRelatedSkill={handleAddSkillToSelection}
+                handleEditRelatedSkill={handleEditSkillInSelection}
+                handleRemoveRelatedSkill={handleRemoveSkillFromSelection}
+            />,
+            undefined,
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    const noResults = !!searchInput && suggestedSkillsToShow.length === 0 && !searchLoading;
     const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
     return (
@@ -195,147 +297,254 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
             {!errorLoadingFramework && (
                 <>
-                    <div className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                            <Search className="text-grayscale-900 w-[24px] h-[24px]" />
-                        </div>
-                        <IonInput
-                            type="text"
-                            value={searchInput}
-                            placeholder={
-                                isAdd ? 'Search by skill or occupation...' : 'Search skills...'
-                            }
-                            onIonInput={e => setSearchInput(e.detail.value)}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
-                        />
-                        {searchInput && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSearchInput('');
-                                }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-800 transition-colors z-10"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
-
-                    {!noResults && (
-                        <>
-                            {isAdd
-                                ? hasSearchQuery && (
-                                      <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                                          Suggested Skills
-                                      </p>
-                                  )
-                                : null}
-                        </>
-                    )}
-                    {noResults && (
-                        <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                            No results or suggestions
-                        </p>
-                    )}
-
-                    {searchLoading ? (
-                        <div className="flex-1 flex justify-center pt-[30px]">
-                            <IonSpinner color="dark" name="crescent" />
-                        </div>
-                    ) : isReview ? (
-                        <>
-                            {selectedSkills.map(selected => {
-                                const savedSkill = sasBoostSkills?.find(
-                                    (s: { id: string }) => s.id === selected.id
-                                );
-                                const cachedSkill = selectedSkillNodesCache.get(selected.id);
-                                const suggestedSkill = suggestedSkills.find(
-                                    (s: SkillFrameworkNode) => s.id === selected.id
-                                );
-
-                                const skill = savedSkill
-                                    ? convertApiSkillNodeToSkillTreeNode(savedSkill as any)
-                                    : cachedSkill ?? suggestedSkill;
-
-                                if (!skill) return null;
-
-                                return (
-                                    <SelfAssignedSkillRow
-                                        key={selected.id}
-                                        skill={skill}
-                                        framework={selfAssignedSkillFramework}
-                                        handleToggleSelect={() => handleToggleSelect(selected.id)}
-                                        isNodeSelected={true}
-                                        shouldCollapseOptions={shouldCollapseOptions}
-                                        proficiencyLevel={selected.proficiency}
-                                        onChangeProficiency={level =>
-                                            onSelectedSkillsChange(
-                                                selectedSkills.map(s =>
-                                                    s.id === selected.id
-                                                        ? { ...s, proficiency: level }
-                                                        : s
-                                                )
-                                            )
-                                        }
-                                    />
-                                );
-                            })}
-                        </>
-                    ) : (
-                        <>
-                            {suggestedSkills.map(skill => {
-                                const selected = selectedSkills.find(s => s.id === skill.id);
-
-                                return (
-                                    <SelfAssignedSkillRow
-                                        key={skill.id}
-                                        skill={skill}
-                                        framework={selfAssignedSkillFramework}
-                                        handleToggleSelect={() =>
-                                            handleToggleSelect(skill.id!, skill)
-                                        }
-                                        isNodeSelected={!!selected}
-                                        shouldCollapseOptions={shouldCollapseOptions}
-                                        proficiencyLevel={
-                                            selected?.proficiency ?? SkillLevel.Hidden
-                                        }
-                                        onChangeProficiency={level =>
-                                            onSelectedSkillsChange(
-                                                selectedSkills.map(s =>
-                                                    s.id === skill.id
-                                                        ? { ...s, proficiency: level }
-                                                        : s
-                                                )
-                                            )
-                                        }
-                                    />
-                                );
-                            })}
-                        </>
-                    )}
-
-                    {showSuggestSkill && searchInput && !searchLoading && (
-                        <div className="flex flex-col gap-[20px] w-full pt-[20px] border-t-[1px] border-grayscale-200 border-solid">
-                            <div className="flex flex-col items-start gap-[10px] pb-[10px]">
-                                <p className="text-grayscale-900 text-[17px] font-[600] font-poppins">
-                                    Didn't find what you're looking for?
-                                </p>
-                                <p className="font-poppins text-[17px] text-grayscale-700">
-                                    We are always adding new skills and your suggestions help!
-                                </p>
+                    {showSearchInput && (
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                                <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                             </div>
+                            <IonInput
+                                type="text"
+                                value={searchInput}
+                                placeholder={'Search by skill, goal, or job...'}
+                                onIonInput={e => setSearchInput(e.detail.value ?? '')}
+                                className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
+                            />
+                            {searchInput && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchInput('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-800 transition-colors z-10"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
+                    )}
 
-                            <p className="text-grayscale-900 font-poppins text-[17px] font-[600] italic text-center">
-                                {searchInput}
-                            </p>
+                    {showSelectedSkills && selectedSkills.length > 0 && (
+                        <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                            <h4 className="flex gap-[5px] items-center text-grayscale-900 font-poppins text-[14px] font-bold">
+                                <VerifiedBadgeIcon />
+                                {conditionalPluralize(selectedSkills.length, 'Self Assigned Skill')}
 
-                            <button
-                                className="px-[20px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] disabled:bg-grayscale-200"
-                                onClick={handleSubmitSkillSuggestion}
-                                disabled={isSubmittingSkillSuggestion}
-                            >
-                                Suggest Skill
-                            </button>
+                                <div className="ml-auto flex items-center gap-[10px]">
+                                    {showSelectedSkillsViewToggle && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedSkillsExpanded(prev => !prev)}
+                                            className="text-grayscale-600 text-[14px] font-bold"
+                                        >
+                                            {selectedSkillsExpanded ? 'View Less' : 'View All'}
+                                        </button>
+                                    )}
+                                </div>
+                            </h4>
+
+                            <div className="relative w-full overflow-hidden transition-all duration-300 ease-in-out">
+                                {!selectedSkillsExpanded ? (
+                                    <>
+                                        <Swiper
+                                            onSwiper={swiper => {
+                                                selectedSkillsSwiperRef.current = swiper;
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSelectedSkillsAtBeginning,
+                                                    setSelectedSkillsAtEnd
+                                                );
+                                            }}
+                                            onResize={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSelectedSkillsAtBeginning,
+                                                    setSelectedSkillsAtEnd
+                                                )
+                                            }
+                                            onSlideChange={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSelectedSkillsAtBeginning,
+                                                    setSelectedSkillsAtEnd
+                                                )
+                                            }
+                                            onReachBeginning={() =>
+                                                setSelectedSkillsAtBeginning(true)
+                                            }
+                                            onFromEdge={() => {
+                                                if (selectedSkillsSwiperRef.current) {
+                                                    setSelectedSkillsAtBeginning(
+                                                        selectedSkillsSwiperRef.current.isBeginning
+                                                    );
+                                                    setSelectedSkillsAtEnd(
+                                                        selectedSkillsSwiperRef.current.isEnd
+                                                    );
+                                                }
+                                            }}
+                                            onReachEnd={() => setSelectedSkillsAtEnd(true)}
+                                            spaceBetween={12}
+                                            slidesPerView={'auto'}
+                                            grabCursor={true}
+                                        >
+                                            {selectedSkillsBySemanticScore.map(skill => (
+                                                <SwiperSlide
+                                                    key={skill.id}
+                                                    style={{ width: 'auto' }}
+                                                >
+                                                    <SkillTag
+                                                        skillId={skill.id}
+                                                        frameworkId={frameworkId}
+                                                        proficiencyLevel={skill.proficiency}
+                                                        handleRemoveSkill={() =>
+                                                            handleRemoveSkillFromSelection(skill.id)
+                                                        }
+                                                        handleEditSkill={proficiencyLevel =>
+                                                            handleEditSkillInSelection(
+                                                                skill.id,
+                                                                proficiencyLevel
+                                                            )
+                                                        }
+                                                        disabled={isSavingSkills}
+                                                        selectedSkills={
+                                                            selectedSkillsBySemanticScore
+                                                        }
+                                                        handleAddRelatedSkill={
+                                                            handleAddSkillToSelection
+                                                        }
+                                                        handleEditRelatedSkill={
+                                                            handleEditSkillInSelection
+                                                        }
+                                                        handleRemoveRelatedSkill={
+                                                            handleRemoveSkillFromSelection
+                                                        }
+                                                    />
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
+
+                                        {!selectedSkillsAtBeginning && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    selectedSkillsSwiperRef.current?.slidePrev();
+                                                }}
+                                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                                disabled={isSavingSkills}
+                                            >
+                                                <SlimCaretLeft className="w-5 h-auto" />
+                                            </button>
+                                        )}
+
+                                        {!selectedSkillsAtEnd && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    selectedSkillsSwiperRef.current?.slideNext();
+                                                }}
+                                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                                disabled={isSavingSkills}
+                                            >
+                                                <SlimCaretRight className="w-5 h-auto" />
+                                            </button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex flex-row flex-wrap gap-[10px]">
+                                        {selectedSkillsBySemanticScore.map(skill => (
+                                            <SkillTag
+                                                key={skill.id}
+                                                skillId={skill.id}
+                                                frameworkId={frameworkId}
+                                                proficiencyLevel={skill.proficiency}
+                                                handleRemoveSkill={() =>
+                                                    handleRemoveSkillFromSelection(skill.id)
+                                                }
+                                                handleEditSkill={proficiencyLevel =>
+                                                    handleEditSkillInSelection(
+                                                        skill.id,
+                                                        proficiencyLevel
+                                                    )
+                                                }
+                                                disabled={isSavingSkills}
+                                                selectedSkills={selectedSkills}
+                                                handleAddRelatedSkill={handleAddSkillToSelection}
+                                                handleEditRelatedSkill={handleEditSkillInSelection}
+                                                handleRemoveRelatedSkill={
+                                                    handleRemoveSkillFromSelection
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {showSuggestSkill && (
+                        <div className="relative py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                            {isSavingSkills && (
+                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 rounded-[10px]">
+                                    <IonSpinner color="dark" name="crescent" />
+                                </div>
+                            )}
+
+                            <h4 className="text-grayscale-900 font-poppins text-[14px] font-bold">
+                                {addSkillsTitle}
+                            </h4>
+
+                            {searchLoading && (
+                                <div className="flex-1 flex justify-center pt-[30px]">
+                                    <IonSpinner color="dark" name="crescent" />
+                                </div>
+                            )}
+
+                            {!searchLoading &&
+                                suggestedSkillsToShow.map(skill => (
+                                    <button
+                                        key={skill.id}
+                                        onClick={() => openAddSkillModal(skill)}
+                                        disabled={isSavingSkills}
+                                        className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <CompetencyIcon icon={skill.icon!} />
+                                        <span className="text-grayscale-900 font-poppins text-[17px] line-clamp-2 text-left">
+                                            {skill?.targetName}
+                                        </span>
+                                        <Plus
+                                            className="h-[25px] w-[25px] text-grayscale-700 ml-auto"
+                                            strokeWidth="2"
+                                        />
+                                    </button>
+                                ))}
+
+                            {noResults && (
+                                <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
+                                    No results or suggestions
+                                </p>
+                            )}
+
+                            {searchInput && !searchLoading && (
+                                <div className="flex flex-col gap-[10px] pb-[10px] pt-[10px] border-t border-grayscale-200 border-solid">
+                                    <p className="text-grayscale-900 text-[17px] font-[600] font-poppins">
+                                        Didn&apos;t find what you&apos;re looking for?
+                                    </p>
+                                    <p className="font-poppins text-[17px] text-grayscale-700">
+                                        We are always adding new skills and your suggestions help!
+                                    </p>
+
+                                    <p className="text-grayscale-900 font-poppins text-[17px] font-[600] italic text-center">
+                                        {searchInput}
+                                    </p>
+
+                                    <button
+                                        className="px-[20px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] disabled:bg-grayscale-200"
+                                        onClick={handleSubmitSkillSuggestion}
+                                        disabled={isSubmittingSkillSuggestion}
+                                    >
+                                        Suggest Skill
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>

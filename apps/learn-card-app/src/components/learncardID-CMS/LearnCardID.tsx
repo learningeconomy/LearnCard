@@ -2,6 +2,8 @@ import React from 'react';
 
 import { VerifiedBadgeWhiteBackground } from 'learn-card-base/svgs/VerifiedBadge';
 
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 import { getIdBackgroundStyles } from './learncard-cms.helpers';
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { UserProfilePicture } from 'learn-card-base';
@@ -14,6 +16,8 @@ const LearnCardID: React.FC<{
     const userName = user?.name ?? '';
     const userHandle = user?.profileId ?? '';
     const image = user?.image ?? '';
+
+    const brandingConfig = useBrandingConfig();
 
     const backgroundStyles = getIdBackgroundStyles(learnCardID);
 
@@ -56,7 +60,7 @@ const LearnCardID: React.FC<{
                     style={{ color: learnCardID?.accentFontColor }}
                 >
                     <VerifiedBadgeWhiteBackground />
-                    LearnCard
+                    {brandingConfig?.name}
                 </span>
             </div>
 

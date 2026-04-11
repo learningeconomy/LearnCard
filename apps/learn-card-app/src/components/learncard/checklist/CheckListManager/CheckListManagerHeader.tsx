@@ -3,9 +3,11 @@ import { IonHeader, IonToolbar } from '@ionic/react';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
 import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
 import { useGetCheckListStatus, checklistItems } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export const CheckListManagerHeader: React.FC<{}> = ({}) => {
     const { completedItems } = useGetCheckListStatus();
+    const brandingConfig = useBrandingConfig();
 
     return (
         <IonHeader
@@ -20,7 +22,7 @@ export const CheckListManagerHeader: React.FC<{}> = ({}) => {
                         </div>
                         <div className="flex flex-col items-start justify-center">
                             <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins">
-                                Build My LearnCard
+                                Build My {brandingConfig.name}
                             </h5>
                             <p className="text-[17px] text-grayscale-900 font-notoSans leading-[24px] tracking-[0.25px]">
                                 <span className="font-semibold">{completedItems}</span> of{' '}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -21,7 +23,8 @@ import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
 
 import LocationIcon from '../../svgs/LocationIcon';
-import LearnCardLogo from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -59,6 +62,7 @@ import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
+import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -102,6 +106,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     skipRoleSlides,
     pendingInstall,
 }) => {
+    const brandingConfig = useBrandingConfig();
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
@@ -117,6 +122,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { name, dob, country, photo, usMinorConsent, profileId } = formData;
 
     const handleNameChange = (value: string) => {
@@ -286,6 +292,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 setIsLoading(true);
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
+
+                // Get Firebase ID token for server-side email auto-verification
+                let authToken: string | undefined;
+                try {
+                    if (Capacitor.isNativePlatform()) {
+                        const res = await FirebaseAuthentication.getIdToken({
+                            forceRefresh: false,
+                        });
+                        authToken = res?.token;
+                    } else {
+                        const user = auth()?.currentUser;
+                        authToken = user ? await user.getIdToken(false) : undefined;
+                    }
+                } catch (e) {
+                    console.warn('Could not get Firebase ID token (non-fatal):', e);
+                }
+
                 const didWeb = await wallet.invoke.createProfile({
                     profileId: profileId as string,
                     displayName: name ?? '',
@@ -296,6 +319,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     role: role ?? '',
                     dob: dob ?? '',
                     country: country ?? '',
+                    authToken,
                 });
 
                 if (didWeb) {
@@ -304,16 +328,26 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     const limit = getMinorAgeThreshold(country);
                     const isMinorUser = age !== null && !isNaN(age) && age < limit;
 
+                    const aiEnabled = !isMinorUser;
+                    let preferencesInitialized = false;
+
                     await updatePreferences({
-                        aiEnabled: !isMinorUser,
+                        aiEnabled,
                         aiAutoDisabled: isMinorUser,
-                        analyticsEnabled: !isMinorUser,
+                        analyticsEnabled: aiEnabled,
                         analyticsAutoDisabled: isMinorUser,
-                        bugReportsEnabled: !isMinorUser,
+                        bugReportsEnabled: aiEnabled,
                         isMinor: isMinorUser,
-                    }).catch(err => {
-                        console.error('Failed to initialize preferences (non-blocking):', err);
-                    });
+                    })
+                        .then(() => {
+                            preferencesInitialized = true;
+                        })
+                        .catch(err => {
+                            console.error(
+                                'Failed to initialize preferences (non-blocking):',
+                                err
+                            );
+                        });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
@@ -326,6 +360,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleCloseModal();
                     setIsLoading(false);
                     setIsCreateLoading(false);
+
+                    window.setTimeout(async () => {
+                        try {
+                            await autoConsentLearnCardAi({
+                                enabled: aiEnabled && preferencesInitialized,
+                                userOverrides: {
+                                    name: name ?? currentUser?.name ?? '',
+                                    profileImage: photo ?? currentUser?.profileImage ?? '',
+                                },
+                            });
+                        } catch (err) {
+                            console.error(
+                                'Failed to auto-consent LearnCard AI after onboarding:',
+                                err
+                            );
+                        }
+                    }, 0);
 
                     setTimeout(async () => {
                         await onSuccess?.();
@@ -446,8 +497,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
                             <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
                                 <img
-                                    src={LearnCardLogo}
-                                    alt="LearnCard logo"
+                                    src={useTenantBrandingAssets().appIcon}
+                                    alt="App logo"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -459,7 +510,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             </div>
                         </div>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Add Your Child to LearnCard!
+                            Add Your Child to {brandingConfig?.name}!
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                             Log in or sign up to create your profile inside a family account.
@@ -503,7 +554,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
-                                    handleLogout(BrandingEnum.learncard, {
+                                    handleLogout({
                                         overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
                                             '/families?createFamily=true'
                                         )}`,

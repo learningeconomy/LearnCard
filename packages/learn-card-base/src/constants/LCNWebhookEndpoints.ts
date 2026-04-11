@@ -7,7 +7,7 @@ export const DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT =
     'https://api.scoutnetwork.org/api/notifications/send';
 
 export const getNotificationsEndpoint = (): string => {
-    const apiEndpoint = API_URL || networkStore.get.apiEndpoint();
+    const apiEndpoint = networkStore.get.apiEndpoint();
     if (!apiEndpoint || apiEndpoint === LCA_API_ENDPOINT) return DEFAULT_LCA_NOTIFICATIONS_ENDPOINT;
     if (apiEndpoint === SCOUTPASS_API_ENDPOINT) return DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT;
 

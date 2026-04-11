@@ -2,6 +2,7 @@ import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
     LCNProfile,
+    LCNVisibleProfile,
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
@@ -60,6 +61,16 @@ const renderTemplateJson = (jsonString: string, templateData: Record<string, unk
 
     return Mustache.render(unescapedTemplate, preparedData);
 };
+
+const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
+    return (
+        !!profile &&
+        'did' in profile &&
+        typeof profile.did === 'string' &&
+        profile.did.length > 0
+    );
+};
+
 export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
@@ -528,6 +539,7 @@ export async function getLearnCardNetworkPlugin(
                 const target = await _learnCard.invoke.getProfile(profileId);
 
                 if (!target) throw new Error('Could not find target account');
+                if (!hasDid(target)) throw new Error('Could not find target DID');
 
                 const credential = await _learnCard.invoke.createDagJwe(vc, [
                     _learnCard.id.did(),
@@ -584,6 +596,7 @@ export async function getLearnCardNetworkPlugin(
                 const target = await _learnCard.invoke.getProfile(profileId);
 
                 if (!target) throw new Error('Could not find target account');
+                if (!hasDid(target)) throw new Error('Could not find target DID');
 
                 const presentation = await _learnCard.invoke.createDagJwe(vp, [
                     _learnCard.id.did(),
@@ -948,6 +961,7 @@ export async function getLearnCardNetworkPlugin(
                 const targetProfile = await _learnCard.invoke.getProfile(profileId);
 
                 if (!targetProfile) throw new Error('Target profile not found');
+                if (!hasDid(targetProfile)) throw new Error('Target profile has no DID');
 
                 let boost = data.data;
 
@@ -1103,7 +1117,8 @@ export async function getLearnCardNetworkPlugin(
                             } else {
                                 const targetProfile = await _learnCard.invoke.getProfile(recipient);
 
-                                if (!targetProfile) return client.boost.send.mutate(input);
+                                if (!hasDid(targetProfile))
+                                    return client.boost.send.mutate(input);
 
                                 targetDid = targetProfile.did;
                             }
@@ -1367,6 +1382,14 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.getAllContractRequestsForProfile.query({
+                    targetProfileId,
+                });
+            },
+
+            getSharedInsightsRequestsForProfile: async (_learnCard, targetProfileId) => {
+                await ensureUser();
+
+                return (client.contracts as any).getSharedInsightsRequestsForProfile.query({
                     targetProfileId,
                 });
             },
@@ -1786,6 +1809,11 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.getListingSigningAuthority.query({ listingId });
+            },
+            getIntegrationForListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.getIntegrationForListing.query({ listingId });
             },
 
             getAppStoreListing: async (_learnCard, listingId) => {

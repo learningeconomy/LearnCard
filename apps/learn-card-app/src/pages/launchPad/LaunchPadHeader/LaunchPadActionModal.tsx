@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ProfilePicture } from 'learn-card-base';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
@@ -13,6 +14,7 @@ import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/qui
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
 import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
@@ -39,11 +41,10 @@ import { RequestInsightsModal } from '../../ai-insights/request-insights/Request
 import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
-import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
-import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
-import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
-import AdminIcon from '../../../assets/images/quicknavroles/adminshieldicon.png';
-import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienicon.png';
+import {
+    roleIcons,
+    iconBgColors,
+} from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
 import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
@@ -162,14 +163,18 @@ const getIconForActionButton = (
 const ActionButton: React.FC<{
     label: string;
     bg: string;
+    bgHex?: string;
+    textColor?: string;
+    borderColor?: string;
     to?: string;
     onClick?: () => void;
     role?: string;
-}> = ({ label, bg, to, onClick, role }) => {
+}> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
     const { theme, getIconSet } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
@@ -387,13 +392,18 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-full text-left flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${!bgHex ? bg : ''} w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${!textColor ? 'text-grayscale-900' : ''} rounded-[20px] text-center border-solid border-[3px] ${!borderColor ? 'border-white' : ''} shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            style={{
+                ...(bgHex ? { backgroundColor: bgHex } : {}),
+                ...(textColor ? { color: textColor } : {}),
+                ...(borderColor ? { borderColor } : {}),
+            }}
         >
-            <div className="flex items-center justify-center">
-                <span className="mr-2">
+            <div className="flex flex-col items-center justify-center">
+                <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
-                {label}
+                {label === 'Build My LearnCard' ? `Build My ${brandingConfig.name}` : label}
             </div>
         </button>
     );
@@ -403,6 +413,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { newModal, closeModal } = useModal();
     const history = useHistory();
     const { initWallet } = useWallet();
+    const { colors: themeColors } = useTheme();
+    const actionModalButtonColors = themeColors?.defaults?.actionModalButtonColors;
+    const actionModalTextColor = themeColors?.defaults?.actionModalTextColor;
+    const actionModalCardBgColor = themeColors?.defaults?.actionModalCardBgColor;
+    const actionModalCardTextColor = themeColors?.defaults?.actionModalCardTextColor;
+    const actionModalButtonBorderColor = themeColors?.defaults?.actionModalButtonBorderColor;
     const { data: lcNetworkProfile } = useGetProfile();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: contractsData, refetch: refetchContracts } = useGetContracts();
@@ -419,6 +435,92 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
+
+    const roleScrollRef = useRef<HTMLDivElement>(null);
+    const selectedRoleRef = useRef<HTMLButtonElement>(null);
+    const isCenteringRef = useRef(false);
+
+    // Filter out counselor for the visible roles list
+    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
+
+    // Handle infinite scroll - jump to middle set when reaching edges
+    const handleScroll = () => {
+        // Skip jump logic while centering to avoid conflicts
+        if (isCenteringRef.current) return;
+        if (!roleScrollRef.current) return;
+        const container = roleScrollRef.current;
+        const scrollLeft = container.scrollLeft;
+        const scrollWidth = container.scrollWidth;
+        const clientWidth = container.clientWidth;
+        const oneSetWidth = (scrollWidth - clientWidth) / 2;
+
+        // If scrolled to the left clone set, jump to middle
+        if (scrollLeft < oneSetWidth * 0.1) {
+            container.scrollLeft = scrollLeft + oneSetWidth;
+        }
+        // If scrolled to the right clone set, jump to middle
+        else if (scrollLeft > oneSetWidth * 1.9) {
+            container.scrollLeft = scrollLeft - oneSetWidth;
+        }
+    };
+
+    const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
+        setRole(newRole);
+        setOptimisticRole(newRole);
+        try {
+            const wallet = await initWallet();
+            await wallet?.invoke?.updateProfile({
+                role: newRole,
+            });
+            presentToast('Role updated', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+        } catch (e) {
+            setOptimisticRole(null);
+            setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
+            presentToast('Unable to update role', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
+    // Center the selected role in the scroll container (in the middle set)
+    const centerRole = (smooth = true) => {
+        if (selectedRoleRef.current && roleScrollRef.current) {
+            isCenteringRef.current = true;
+            const container = roleScrollRef.current;
+            const selectedElement = selectedRoleRef.current;
+            const containerWidth = container.offsetWidth;
+            const elementLeft = selectedElement.offsetLeft;
+            const elementWidth = selectedElement.offsetWidth;
+            const scrollPosition = elementLeft - containerWidth / 2 + elementWidth / 2;
+            container.scrollTo({
+                left: scrollPosition,
+                behavior: smooth ? 'smooth' : 'instant',
+            });
+            // Re-enable infinite scroll after animation completes
+            setTimeout(
+                () => {
+                    isCenteringRef.current = false;
+                },
+                smooth ? 400 : 50
+            );
+        }
+    };
+
+    // Center on role change
+    useEffect(() => {
+        const timer = setTimeout(() => centerRole(true), 50);
+        return () => clearTimeout(timer);
+    }, [role]);
+
+    // Center on initial mount (instant, longer delay for layout)
+    useEffect(() => {
+        const timer = setTimeout(() => centerRole(false), 150);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
@@ -437,28 +539,73 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const isChildProfile = profileType === 'child';
     const { isAiEnabled } = useAiFeatureGate();
 
+    const roleDescriptions: Record<LearnCardRolesEnum, React.ReactNode> = {
+        [LearnCardRolesEnum.learner]: (
+            <>
+                <span className="font-semibold">I'm a student</span> building my profile and
+                tracking my progress.
+            </>
+        ),
+        [LearnCardRolesEnum.teacher]: (
+            <>
+                <span className="font-semibold">I'm an educator</span> working directly with
+                learners.
+            </>
+        ),
+        [LearnCardRolesEnum.guardian]: (
+            <>
+                <span className="font-semibold">I'm a parent or guardian</span> supporting a
+                learner.
+            </>
+        ),
+        [LearnCardRolesEnum.admin]: (
+            <>
+                <span className="font-semibold">I manage</span> an organization or institution.
+            </>
+        ),
+        [LearnCardRolesEnum.counselor]: (
+            <>
+                <span className="font-semibold">I provide</span> guidance and support.
+            </>
+        ),
+        [LearnCardRolesEnum.developer]: (
+            <>
+                <span className="font-semibold">I manage</span> systems, data, and technology for my
+                organization.
+            </>
+        ),
+    };
+
+    const lineColor = {
+        [LearnCardRolesEnum.learner]: '#2DD4BF',
+        [LearnCardRolesEnum.guardian]: '#8B5CF6',
+        [LearnCardRolesEnum.teacher]: '#FACC15',
+        [LearnCardRolesEnum.admin]: '#06B6D4',
+        [LearnCardRolesEnum.counselor]: '#8B5CF6',
+        [LearnCardRolesEnum.developer]: '#84CC16',
+    };
+
+    const selectedBorderColor: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: '#5EEAD4',
+        [LearnCardRolesEnum.guardian]: '#C4B5FD',
+        [LearnCardRolesEnum.teacher]: '#FDE047',
+        [LearnCardRolesEnum.admin]: '#67E8F9',
+        [LearnCardRolesEnum.counselor]: '#C4B5FD',
+        [LearnCardRolesEnum.developer]: '#BEF264',
+    };
+
+    const selectedBgColor: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: '#CCFBF1',
+        [LearnCardRolesEnum.guardian]: '#EDE9FE',
+        [LearnCardRolesEnum.teacher]: '#FEF9C3',
+        [LearnCardRolesEnum.admin]: '#CFFAFE',
+        [LearnCardRolesEnum.counselor]: '#EDE9FE',
+        [LearnCardRolesEnum.developer]: '#ECFCCB',
+    };
+
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
-    const roleIcons: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: LearnerIcon,
-        [LearnCardRolesEnum.guardian]: GuardianIcon,
-        [LearnCardRolesEnum.teacher]: TeacherIcon,
-        [LearnCardRolesEnum.admin]: AdminIcon,
-        [LearnCardRolesEnum.counselor]: TeacherIcon,
-        [LearnCardRolesEnum.developer]: DeveloperIcon,
-    };
-    const iconBgColors: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
-        [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
-        [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
-        [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
-    };
-    const roleIconSrc = roleIcons[activeRole];
-    const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
@@ -643,97 +790,137 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 type="button"
                 aria-label="Close modal"
                 onClick={closeModal}
-                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
+                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent flex items-center justify-center"
+                style={{ color: actionModalCardTextColor ?? '#2A2F55' }}
             >
                 <X className="w-[20px] h-[20px]" />
             </button>
-            <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px]">
-                <div className="w-full flex items-center justify-center">
+            <div
+                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${!actionModalCardBgColor ? 'bg-white' : ''}`}
+                style={actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined}
+            >
+                <div className="w-full flex items-center justify-center mb-[5px]">
                     <ProfilePicture
-                        customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
-                        customImageClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[48px] min-h-[48px]"
+                        customContainerClass="flex justify-center items-center h-[35px] w-[35px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[35px] min-h-[35px]"
+                        customImageClass="flex justify-center items-center h-[35px] w-[35px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[35px] min-h-[35px]"
                         customSize={120}
                     />
                 </div>
-
-                <div className="w-full flex items-center justify-center">
-                    <button
-                        type="button"
-                        disabled={isChildProfile}
-                        onClick={
-                            isChildProfile
-                                ? undefined
-                                : () =>
-                                      newModal(
-                                          <LaunchPadRoleSelector
-                                              role={role}
-                                              setRole={newRole => {
-                                                  setRole(newRole);
-                                                  setOptimisticRole(newRole);
-                                                  (async () => {
-                                                      try {
-                                                          const wallet = await initWallet();
-                                                          await wallet?.invoke?.updateProfile({
-                                                              role: newRole,
-                                                          });
-                                                          presentToast('Role updated', {
-                                                              type: ToastTypeEnum.Success,
-                                                              hasDismissButton: true,
-                                                          });
-                                                      } catch (e) {
-                                                          setOptimisticRole(null);
-                                                          setRole(
-                                                              (lcNetworkProfile?.role as LearnCardRolesEnum) ??
-                                                                  LearnCardRolesEnum.learner
-                                                          );
-                                                          presentToast('Unable to update role', {
-                                                              type: ToastTypeEnum.Error,
-                                                              hasDismissButton: true,
-                                                          });
-                                                      }
-                                                  })();
-                                              }}
-                                          />,
-                                          {
-                                              sectionClassName:
-                                                  '!max-w-[600px] !mx-auto !max-h-[100%]',
-                                          },
-                                          {
-                                              mobile: ModalTypes.Freeform,
-                                              desktop: ModalTypes.Freeform,
-                                          }
-                                      )
-                        }
-                        className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
+                <div className="flex flex-col items-center justify-center mb-[15px]">
+                    <p
+                        className={`text-center text-[16px] font-poppins font-normal mb-[5px] ${!actionModalCardTextColor ? 'text-grayscale-800' : ''}`}
+                        style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
                     >
-                        <span className="p-[3px] flex items-center justify-center gap-2">
-                            <span
-                                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
-                                style={roleIconBgStyle}
-                            >
-                                <img
-                                    src={roleIconSrc}
-                                    alt={`${roleLabel} icon`}
-                                    className="h-[20px] w-[20px] object-contain"
-                                />
-                            </span>
-                            <span>{roleLabel}</span>
-                            {!isChildProfile && <CaretDown className="ml-[5px]" />}
-                        </span>
-                    </button>
+                        {roleDescriptions[activeRole]}
+                    </p>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="46"
+                        height="4"
+                        viewBox="0 0 46 4"
+                        fill="none"
+                    >
+                        <path
+                            d="M2 2H44"
+                            stroke={lineColor[activeRole]}
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                        />
+                    </svg>
                 </div>
 
-                <h3 className="text-center text-[22px] font-poppins font-semibold text-grayscale-900 mt-[12px]">
-                    What would you like to do?
-                </h3>
+                <div
+                    ref={roleScrollRef}
+                    onScroll={handleScroll}
+                    className="w-full flex items-center gap-[10px] overflow-x-auto scrollbar-hide px-[20px] py-[10px]"
+                >
+                    {[0, 1, 2].map(setIndex =>
+                        visibleRoles.map(roleItem => {
+                            const isSelected = activeRole === roleItem.type;
+                            const roleIcon = roleIcons[roleItem.type];
+                            const shouldAssignRef = setIndex === 1 && isSelected;
+
+                            return (
+                                <button
+                                    key={`${setIndex}-${roleItem.type}`}
+                                    ref={shouldAssignRef ? selectedRoleRef : null}
+                                    type="button"
+                                    disabled={isChildProfile}
+                                    onClick={
+                                        isChildProfile
+                                            ? undefined
+                                            : () => handleRoleChange(roleItem.type)
+                                    }
+                                    className={`flex-shrink-0 rounded-[43px] border border-solid transition-all ${
+                                        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
+                                    }`}
+                                    style={
+                                        isSelected
+                                            ? {
+                                                  borderColor: selectedBorderColor[roleItem.type],
+                                                  backgroundColor: selectedBgColor[roleItem.type],
+                                              }
+                                            : {
+                                                  borderColor: '#E2E3E9',
+                                                  backgroundColor: 'white',
+                                                  opacity: 0.6,
+                                              }
+                                    }
+                                >
+                                    <span className="py-[5px] pl-[10px] pr-[5px] flex items-center gap-[15px]">
+                                        <span className="flex items-center gap-2">
+                                            <img
+                                                src={roleIcon}
+                                                alt={`${roleItem.title} icon`}
+                                                className="h-[22px] w-[22px] object-contain"
+                                            />
+                                            <span
+                                                className={`${
+                                                    isSelected
+                                                        ? 'text-grayscale-900'
+                                                        : 'text-grayscale-600'
+                                                } text-[14px] font-poppins font-semibold`}
+                                            >
+                                                {roleItem.title}
+                                            </span>
+                                        </span>
+                                        {isSelected ? (
+                                            <span
+                                                className="flex items-center justify-center h-[24px] w-[24px] rounded-full"
+                                                style={{ backgroundColor: 'white' }}
+                                            >
+                                                <Checkmark
+                                                    version="no-padding"
+                                                    className="h-[15px] w-[15px] text-[#18224E]"
+                                                />
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center justify-center h-[24px] w-[24px] rounded-full bg-grayscale-200" />
+                                        )}
+                                    </span>
+                                </button>
+                            );
+                        })
+                    )}
+                </div>
             </div>
 
-            <div className="mt-1 flex flex-col gap-3">
+            <h3
+                className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${!actionModalCardTextColor ? 'text-grayscale-900' : ''}`}
+                style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
+            >
+                What would you like to do?
+            </h3>
+
+            <div className="mt-1 flex flex-wrap justify-center gap-4">
                 {actions.map((label, i) => (
                     <ActionButton
                         key={`${label}-${i}`}
                         label={label}
-                        bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
+                        bg={!actionModalButtonColors ? (colorByLabel[label] ?? bgColors[i % bgColors.length]) : ''}
+                        bgHex={actionModalButtonColors ? actionModalButtonColors[i % actionModalButtonColors.length] : undefined}
+                        textColor={actionModalTextColor}
+                        borderColor={actionModalButtonBorderColor}
                         role={activeRole}
                         onClick={
                             label === 'View Family' && familyUri

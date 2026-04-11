@@ -8,10 +8,8 @@ import {
     openToS,
     openPP,
     openLCwebsite,
-    TOS_LINK,
-    PP_LINK,
-    LEARNCARD_WEBSITE,
 } from '../../helpers/externalLinkHelpers';
+import { useTenantLinks } from 'learn-card-base/config/TenantConfigProvider';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -19,6 +17,8 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     hideSelfCustodialLogin = false,
 }) => {
     const history = useHistory();
+    const links = useTenantLinks();
+
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.FullScreen,
@@ -31,45 +31,45 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     };
 
     return (
-        <div className="w-full flex items-center justify-center bg-emerald-700 pb-[20px]">
+        <div className="w-full flex items-center justify-center pb-[20px]">
             <div className="w-full flex items-center justify-center flex-col max-w-[400px]">
                 <IonCol
                     size="12"
                     className="w-full flex items-center justify-center p-0 mt-2 gap-[15px]"
                 >
                     <a
-                        href={TOS_LINK}
+                        href={links.termsOfServiceUrl}
                         onClick={e => {
                             if (Capacitor?.isNativePlatform()) {
                                 e.preventDefault();
                                 openToS();
                             }
                         }}
-                        className="flex items-center justify-center text-emerald-100 font-bold text-xs hover:underline"
+                        className="flex items-center justify-center text-white/80 font-bold text-xs hover:underline"
                     >
                         Terms
                     </a>
                     <a
-                        href={PP_LINK}
+                        href={links.privacyPolicyUrl}
                         onClick={e => {
                             if (Capacitor?.isNativePlatform()) {
                                 e.preventDefault();
                                 openPP();
                             }
                         }}
-                        className="flex items-center text-emerald-100 font-bold text-xs hover:underline"
+                        className="flex items-center text-white/80 font-bold text-xs hover:underline"
                     >
                         Privacy
                     </a>
                     <a
-                        href={LEARNCARD_WEBSITE}
+                        href={links.websiteUrl}
                         onClick={e => {
                             if (Capacitor?.isNativePlatform()) {
                                 e.preventDefault();
                                 openLCwebsite();
                             }
                         }}
-                        className="flex items-center text-emerald-100 font-bold text-xs hover:underline min-w-[69px]"
+                        className="flex items-center text-white/80 font-bold text-xs hover:underline min-w-[69px]"
                     >
                         Learn More
                     </a>
@@ -78,7 +78,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                             e.preventDefault();
                             history.push('/ai/pathways/discovery');
                         }}
-                        className="flex items-center text-emerald-100 font-bold text-xs hover:underline"
+                        className="flex items-center text-white/80 font-bold text-xs hover:underline"
                     >
                         Explore Pathways
                     </button>
@@ -88,10 +88,10 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         size="12"
                         className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-[4px] "
                     >
-                        <p className="text-emerald-100 font-medium text-base">
+                        <p className="text-white/80 font-medium text-base">
                             Self-custodial login.
                         </p>
-                        <p className="text-emerald-100 text-sm">
+                        <p className="text-white/80 text-sm">
                             Have your own{' '}
                             <button
                                 onClick={e => {
@@ -99,7 +99,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                     e.stopPropagation();
                                     openSeedPhraseModal();
                                 }}
-                                className="font-bold underline text-sm text-emerald-100"
+                                className="font-bold underline text-sm text-white/80"
                             >
                                 seed phrase
                             </button>

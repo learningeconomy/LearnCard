@@ -79,6 +79,11 @@ export * from './auth-adapters';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
+export * from './config/tenantConfig';
+export * from './config/tenantDefaults';
+export * from './config/resolveTenantConfig';
+export * from './config/TenantConfigProvider';
+export * from './config/brandingHelpers';
 export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
@@ -113,6 +118,9 @@ export * from './components/qr-login';
 export * from './hooks/usePrivacyGate';
 export * from './hooks/useAiFeatureGate';
 export * from './hooks/useVerifiableData';
+export * from './hooks/useSkillIconAnnotation';
+export * from './helpers/skillIconHelpers';
+export * from './hooks/useSharedUrisInTerms';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -205,6 +213,7 @@ export * from './constants/gdprAgeLimits';
 export * from './filestack/useFilestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
+export * from './types/careerOneStop';
 
 export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
@@ -222,6 +231,7 @@ export * from './react-query/mutations/user-contact';
 export * from './react-query/mutations/firebase';
 export * from './react-query/mutations/preferences';
 export * from './react-query/queries/preferences';
+export * from './react-query/queries/careerOneStop';
 export * from './react-query/mutations/syncAllCredentials';
 
 export * from './svgs/SideNav/SideNavIcons';

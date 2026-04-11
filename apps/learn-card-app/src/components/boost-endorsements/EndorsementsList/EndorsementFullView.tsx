@@ -311,7 +311,7 @@ export const EndorsementFullView: React.FC<{
                     "{endorsement?.qualification || endorsementComment}"
                 </p>
             </div>
-            attachments
+
             {attachments.length > 0 && (
                 <div
                     className={`flex flex-col items-start justify-start w-full gap-1 px-4 ${hiddenStyles}`}

@@ -2,64 +2,133 @@
  * Auth Configuration
  *
  * Environment-driven configuration for the auth coordinator.
- * Reads from environment variables with sensible defaults.
+ * Uses a **split-precedence model** based on the category of setting:
  *
- * For each key the lookup order is: VITE_ prefix → REACT_APP_ prefix → default.
+ * Provider / strategy selection (what auth system to use):
+ *   tenant config → ENV var → default
+ *   Config wins so tenant identity can't be accidentally overridden by a stale .env.
+ *
+ * Operational values (infrastructure URLs, keys, feature flags):
+ *   ENV var → tenant config → default
+ *   ENV wins so deployments can customize infra (local dev, staging, prod) without
+ *   touching config files. Self-hosters get standard 12-factor compliance.
  *
  * Environment Variables:
- *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                   — 'firebase' (default)
- *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER        — 'sss' (default)
- *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                 — 'http://localhost:5100/api' (default)
- *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE — 'true' (default)
- *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — 'true' (default)
- *   VITE_WEB3AUTH_CLIENT_ID                                                 — Web3Auth client ID from dashboard
- *   VITE_WEB3AUTH_NETWORK                                                   — Web3Auth network (e.g. 'testnet', 'cyan', 'sapphire_mainnet')
- *   VITE_WEB3AUTH_VERIFIER_ID                                               — Web3Auth verifier name (e.g. 'learncardapp-firebase')
- *   VITE_WEB3AUTH_RPC_TARGET                                                — Ethereum RPC URL for Web3Auth (e.g. Infura endpoint)
+ *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                             — 'firebase' (default) [config wins]
+ *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER                  — 'sss' (default)      [config wins]
+ *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                           — providerConfig.sss.serverUrl               [ENV wins]
+ *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE     — providerConfig.sss.enableEmailBackupShare   [ENV wins]
+ *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — providerConfig.sss.requireEmailForPhoneUsers [ENV wins]
+ *   VITE_WEB3AUTH_CLIENT_ID / VITE_WEB3AUTH_NETWORK / VITE_WEB3AUTH_VERIFIER_ID / VITE_WEB3AUTH_RPC_TARGET
+ *     — providerConfig.web3Auth.*  [ENV wins]
  *
  * For self-hosting, set these in your .env file or deployment environment.
  */
 
 import type { AuthProviderType } from '../auth-coordinator/types';
-
-export type KeyDerivationProviderType = 'sss' | 'web3auth';
+import type { TenantConfig } from './tenantConfig';
 
 export interface AuthConfig {
-    /** Which auth provider to use */
+    /** Which auth provider to use (open string matching providerRegistry factories) */
     authProvider: AuthProviderType;
 
-    /** Which key derivation provider to use */
-    keyDerivation: KeyDerivationProviderType;
-
-    /** Server URL for key share operations */
-    serverUrl: string;
-
-    /** Whether to automatically send a backup share to the user's email during key setup */
-    enableEmailBackupShare: boolean;
+    /** Which key derivation strategy to use (open string matching providerRegistry factories) */
+    keyDerivation: string;
 
     /**
-     * Whether phone-only users are required to link an email before proceeding.
-     * When true (default), users who authenticate via phone number will see a
-     * blocking overlay prompting them to add an email address. This ensures
-     * email-based recovery (backup share) is available.
+     * Provider- and strategy-specific config blocks from the tenant config.
      *
-     * Set to false if your deployment intentionally supports phone-only accounts
-     * or uses a key derivation strategy that doesn't need email for recovery.
+     * Each key is a provider/strategy name (e.g. 'firebase', 'sss', 'web3Auth', 'keycloak').
+     * Factory functions in providerRegistry read their own block.
+     * This keeps AuthConfig fully agnostic — adding a new provider or strategy
+     * doesn't require changing this interface.
+     *
+     * Use the typed helpers (`getSSSConfig()`, etc.) for ergonomic access.
      */
-    requireEmailForPhoneUsers: boolean;
-
-    /** Web3Auth client ID from the Web3Auth dashboard */
-    web3AuthClientId: string;
-
-    /** Web3Auth network (e.g. 'testnet', 'cyan', 'sapphire_mainnet') */
-    web3AuthNetwork: string;
-
-    /** Web3Auth verifier ID (e.g., 'learncardapp-firebase'). Used for migration and Web3Auth strategy. */
-    web3AuthVerifierId: string;
-
-    /** Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint) */
-    web3AuthRpcTarget: string;
+    providerConfig: Record<string, Record<string, unknown>>;
 }
+
+/**
+ * Typed SSS key-derivation strategy config.
+ * Extracted from `providerConfig.sss` via `getSSSConfig()`.
+ */
+export interface SSSConfig {
+    serverUrl: string;
+    enableEmailBackupShare: boolean;
+    requireEmailForPhoneUsers: boolean;
+}
+
+// -----------------------------------------------------------------
+// TenantConfig override bridge
+// -----------------------------------------------------------------
+
+let _authConfigOverrides: Partial<AuthConfig> | null = null;
+
+/**
+ * Populate auth config from a TenantConfig.
+ *
+ * Call this once at app boot, before the auth coordinator initializes.
+ *
+ * Provider/strategy selection from the tenant config takes priority over
+ * environment variables. Operational values (URLs, keys) are overridable
+ * by environment variables — see the split-precedence model in the module
+ * header for details.
+ */
+export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
+    // Build providerConfig from the tenant's provider- and strategy-specific blocks.
+    // Each named block (firebase, sss, web3Auth, keycloak, etc.) is passed through.
+    const providerConfig: Record<string, Record<string, unknown>> = {};
+
+    // Explicitly typed blocks
+    if (tenant.auth.firebase) {
+        providerConfig.firebase = tenant.auth.firebase as Record<string, unknown>;
+    }
+
+    if (tenant.auth.sss) {
+        providerConfig.sss = tenant.auth.sss as Record<string, unknown>;
+    }
+
+    if (tenant.auth.web3Auth) {
+        providerConfig.web3Auth = tenant.auth.web3Auth as Record<string, unknown>;
+    }
+
+    // Forward any other provider blocks that arrived via .passthrough()
+    const knownKeys = new Set([
+        'provider', 'keyDerivation',
+        'firebase', 'sss', 'web3Auth',
+    ]);
+
+    for (const [key, value] of Object.entries(tenant.auth)) {
+        if (!knownKeys.has(key) && value && typeof value === 'object' && !Array.isArray(value)) {
+            providerConfig[key] = value as Record<string, unknown>;
+        }
+    }
+
+    _authConfigOverrides = {
+        authProvider: tenant.auth.provider as AuthProviderType,
+        keyDerivation: tenant.auth.keyDerivation,
+        providerConfig,
+    };
+};
+
+/**
+ * Set arbitrary partial overrides on the auth config.
+ * Values set here take priority over environment variables.
+ */
+export const setAuthConfigOverrides = (overrides: Partial<AuthConfig>): void => {
+    _authConfigOverrides = { ...(_authConfigOverrides ?? {}), ...overrides };
+};
+
+/**
+ * Clear any overrides — useful for tests.
+ */
+export const clearAuthConfigOverrides = (): void => {
+    _authConfigOverrides = null;
+};
+
+// -----------------------------------------------------------------
+// Environment variable helpers
+// -----------------------------------------------------------------
 
 const getEnvVar = (key: string): string | undefined => {
     // Vite exposes VITE_* env vars from .env files via import.meta.env
@@ -102,54 +171,95 @@ const readEnv = (suffix: string, legacySuffix?: string): string | undefined => {
 };
 
 /**
- * Get the auth configuration from environment variables.
+ * Get the auth configuration from environment variables and tenant overrides.
  * 
  * @example
  * ```ts
  * const config = getAuthConfig();
- * console.log(config.authProvider); // 'firebase'
- * console.log(config.serverUrl);   // 'http://localhost:5100/api'
+ * console.log(config.authProvider);   // 'firebase'
+ * console.log(config.keyDerivation);  // 'sss'
+ *
+ * const sss = getSSSConfig();
+ * console.log(sss.serverUrl);         // 'http://localhost:5100/api'
  * ```
  */
 export const getAuthConfig = (): AuthConfig => {
     const authProvider: AuthProviderType =
-        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') || 'firebase';
+        _authConfigOverrides?.authProvider ??
+        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') ?? 'firebase';
 
-    const keyDerivationEnv =
-        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') || 'sss';
+    const keyDerivation: string =
+        _authConfigOverrides?.keyDerivation ??
+        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ?? 'sss';
 
-    const keyDerivation: KeyDerivationProviderType =
-        keyDerivationEnv === 'web3auth' ? 'web3auth' : 'sss';
+    // Build providerConfig — start with tenant config, then overlay ENV vars.
+    //
+    // Split-precedence: ENV vars override operational values (URLs, keys,
+    // booleans) within each provider block so that deployments can customise
+    // infra without touching config files. Provider/strategy *selection*
+    // (authProvider, keyDerivation) is handled above and still config-wins.
+    const providerConfig: Record<string, Record<string, unknown>> =
+        _authConfigOverrides?.providerConfig
+            ? { ..._authConfigOverrides.providerConfig }
+            : {};
 
-    const serverUrl =
-        readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') || 'http://localhost:5100/api';
+    // SSS — ENV wins over tenant config for each operational value
+    {
+        const tenantSss = (providerConfig.sss ?? {}) as Record<string, unknown>;
 
-    const enableEmailBackupShare = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') !== 'false';
+        const serverUrl =
+            readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') ??
+            (tenantSss.serverUrl as string | undefined) ??
+            'http://localhost:5100/api';
 
-    const requireEmailForPhoneUsers = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS') !== 'false';
+        const enableEmailBackupShareEnv = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE');
+        const enableEmailBackupShare = enableEmailBackupShareEnv !== undefined
+            ? enableEmailBackupShareEnv !== 'false'
+            : (tenantSss.enableEmailBackupShare as boolean | undefined) ?? true;
 
-    const web3AuthClientId =
-        readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') || '';
+        const requireEmailEnv = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS');
+        const requireEmailForPhoneUsers = requireEmailEnv !== undefined
+            ? requireEmailEnv !== 'false'
+            : (tenantSss.requireEmailForPhoneUsers as boolean | undefined) ?? true;
 
-    const web3AuthNetwork =
-        readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') || '';
+        providerConfig.sss = { ...tenantSss, serverUrl, enableEmailBackupShare, requireEmailForPhoneUsers };
+    }
 
-    const web3AuthVerifierId =
-        readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') || '';
+    // Web3Auth — ENV wins over tenant config for each operational value
+    {
+        const tenantW3A = (providerConfig.web3Auth ?? {}) as Record<string, unknown>;
 
-    const web3AuthRpcTarget =
-        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') || 'https://cloudflare-eth.com';
+        const clientId = readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ?? (tenantW3A.clientId as string | undefined) ?? '';
+        const network = readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ?? (tenantW3A.network as string | undefined) ?? '';
+        const verifierId = readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ?? (tenantW3A.verifierId as string | undefined) ?? '';
+        const rpcTarget = readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ?? (tenantW3A.rpcTarget as string | undefined) ?? 'https://cloudflare-eth.com';
+
+        if (clientId || network || verifierId || Object.keys(tenantW3A).length > 0) {
+            providerConfig.web3Auth = { ...tenantW3A, clientId, network, verifierId, rpcTarget };
+        }
+    }
 
     return {
         authProvider,
         keyDerivation,
-        serverUrl,
-        enableEmailBackupShare,
-        requireEmailForPhoneUsers,
-        web3AuthClientId,
-        web3AuthNetwork,
-        web3AuthVerifierId,
-        web3AuthRpcTarget,
+        providerConfig,
+    };
+};
+
+/**
+ * Get the SSS key-derivation strategy config with proper types.
+ *
+ * Reads from `providerConfig.sss`, falling back to sensible defaults.
+ * This is the ergonomic way to access SSS-specific config in consumers.
+ */
+export const getSSSConfig = (): SSSConfig => {
+    const { providerConfig } = getAuthConfig();
+    const sss = providerConfig.sss ?? {};
+
+    return {
+        serverUrl: (sss.serverUrl as string) ?? 'http://localhost:5100/api',
+        enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
+        requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
 };
 
@@ -193,7 +303,7 @@ export const getConfigCapabilities = (): import('@learncard/types').KeyDerivatio
  * Check if the email backup share feature is enabled.
  */
 export const isEmailBackupShareEnabled = (): boolean => {
-    return getAuthConfig().enableEmailBackupShare;
+    return getSSSConfig().enableEmailBackupShare;
 };
 
 export default getAuthConfig;

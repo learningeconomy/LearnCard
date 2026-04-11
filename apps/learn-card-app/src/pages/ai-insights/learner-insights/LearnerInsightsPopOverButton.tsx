@@ -14,7 +14,6 @@ import {
 } from './learner-insights.helpers';
 import LaunchPadFilterSortingOptionsModal from './LearnerInsightsFilterSortingOptionsModal';
 
-import { ThemeEnum } from '../../../theme/helpers/theme-helpers';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
 
@@ -86,7 +85,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                 reference="trigger"
                 trigger="trigger-button"
                 className={` ${
-                    theme.id === ThemeEnum.Formal ? 'launchpad-formal' : 'launchpad-popover'
+                    theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'
                 }`}
             >
                 <IonList>

@@ -41,6 +41,8 @@ export const AppStoreListingValidator = z.object({
     hero_background_color: z.string().optional(),
     min_age: z.number().int().min(0).max(18).optional(),
     age_rating: AgeRating.optional(),
+    submitted_at: z.string().optional(),
+    contact_email: z.string().email().optional(),
 });
 export type AppStoreListingType = z.infer<typeof AppStoreListingValidator>;
 

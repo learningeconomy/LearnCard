@@ -88,6 +88,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
 
     const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
+    const shouldDisableRedirect =
+        disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
     const shouldGetAnAdult = isSwitchedProfile && !isPreview && !insightsProfile;
@@ -95,6 +97,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const [step, setStep] = useState<ConsentFlowStep>(
         shouldGetAnAdult ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation
     );
+    const [isPostConsentLocal, setIsPostConsentLocal] = useState(false);
 
     // Guardian gate for child profiles - replaces fragmented usePin logic
     const { guardedAction, isChildProfile } = useGuardianGate({
@@ -142,13 +145,16 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             // Sync any auto-boost credentials (if any). No need to wait.
             fetchNewContractCredentials();
 
-            if (successCallback) {
-                successCallback?.();
-            } else {
+            successCallback?.();
+
+            if (isInlineInsightsRequest) {
+                setIsPostConsentLocal(true);
+                setStep(ConsentFlowStep.confirmation);
+            } else if (!successCallback || shouldDisableRedirect) {
                 closeAllModals();
             }
 
-            if (!disableRedirect) {
+            if (!shouldDisableRedirect) {
                 if (redirectUrl) {
                     // If the consentToContract call returned a specific redirect url, use it over everything else
                     window.location.href = redirectUrl;
@@ -215,8 +221,29 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 }, 301);
             }
         } catch (e) {
+            const err = e as any;
+            const isAlreadyConsented =
+                err?.data?.code === 'CONFLICT' || err?.message?.includes('already consented');
+
+            if (isAlreadyConsented) {
+                successCallback?.();
+
+                if (isInlineInsightsRequest) {
+                    setIsPostConsentLocal(true);
+                    setStep(ConsentFlowStep.confirmation);
+                } else if (!successCallback || shouldDisableRedirect) {
+                    closeAllModals();
+                }
+
+                if (childInsightsProfile && isSwitchedProfile) {
+                    await handleSwitchBackToParentAccount();
+                }
+
+                return;
+            }
+
             console.error(e);
-            presentToast(`Failed to accept contract: ${e.message}`, {
+            presentToast(`Failed to accept contract: ${err.message}`, {
                 type: ToastTypeEnum.Error,
             });
             setStep(ConsentFlowStep.confirmation);
@@ -248,7 +275,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 app={app}
                 handleAccept={handleAccept}
                 isPreview={isPreview}
-                isPostConsent={isPostConsent}
+                isPostConsent={isPostConsent || isPostConsentLocal}
                 hideProfileButton={hideProfileButton}
                 insightsProfile={
                     typeof insightsProfile === 'string' ? _insightsProfile : insightsProfile

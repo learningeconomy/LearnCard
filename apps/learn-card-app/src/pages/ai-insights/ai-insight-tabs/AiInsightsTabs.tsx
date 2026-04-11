@@ -38,12 +38,10 @@ export const AiInsightsTabs: React.FC<{
 
     const currentUserRole = useGetCurrentUserRole();
 
-    if (currentUserRole === LearnCardRolesEnum.learner) {
-        return null;
-    }
-
     return (
-        <div className={`${className} flex items-center gap-[10px]`}>
+        <div
+            className={`${className} flex items-center gap-[10px] overflow-x-auto scrollbar-hide flex-nowrap`}
+        >
             {aiInsightsTabs.map(tab => {
                 if (
                     tab.value === AiInsightsTabsEnum.LearnerInsights &&
@@ -63,7 +61,7 @@ export const AiInsightsTabs: React.FC<{
                     <button
                         key={tab.value}
                         onClick={() => handleSetSelectedTab(tab.value)}
-                        className={`text-sm font-medium flex items-center justify-center gap-[5px] px-[14px] py-[7px] rounded-[5px]  ${
+                        className={`text-sm font-medium flex items-center justify-center gap-[5px] px-[14px] py-[7px] rounded-[5px] whitespace-nowrap ${
                             isSelectedTab(tab.value)
                                 ? 'bg-white text-grayscale-900'
                                 : 'text-grayscale-600'

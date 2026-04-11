@@ -7,18 +7,11 @@ import * as Sentry from '@sentry/react';
 import IntroSlides from './components/intro-slides/IntroSlides';
 import { IonApp, setupIonicReact } from '@ionic/react';
 
-import {
-    LEARNCARD_NETWORK_URL,
-    networkStore,
-    LCA_API_ENDPOINT,
-    LEARNCLOUD_URL,
-} from 'learn-card-base';
+import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';
 import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
 import { Capacitor } from '@capacitor/core';
-
-import { useIsLoggedIn } from 'learn-card-base';
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
 
@@ -46,8 +39,6 @@ import './index.scss';
 // base styles of swiper js
 import 'swiper/swiper.min.css';
 import '@ionic/react/css/ionic-swiper.css';
-import { lazyWithRetry } from 'learn-card-base';
-
 const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
@@ -55,14 +46,6 @@ const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
 setupIonicReact({ swipeBackEnabled: false });
-
-const currentNetworkUrl = networkStore.get.networkUrl();
-const currentCloudUrl = networkStore.get.cloudUrl();
-const currentApiEndpoint = networkStore.get.apiEndpoint();
-
-if (!currentNetworkUrl) networkStore.set.networkUrl(LEARNCARD_NETWORK_URL);
-if (!currentCloudUrl) networkStore.set.cloudUrl(LEARNCLOUD_URL);
-if (!currentApiEndpoint) networkStore.set.apiEndpoint(LCA_API_ENDPOINT);
 
 // Dynamically import the component
 const LazyFullApp = lazyWithRetry(() => import('./FullApp'));

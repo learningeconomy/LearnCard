@@ -23,42 +23,63 @@ interface AiInsightsLearningSnapshot {
     type: AiInsightsLearningSnapshotType;
 }
 
-const AiInsightsLearningSnapshots: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
-    const { data: aiInsightCredential, isLoading: aiInsightCredentialLoading } =
+const AiInsightsLearningSnapshots: React.FC<{
+    isLoading: boolean;
+    aiInsightCredential?: any;
+    isSharedView?: boolean;
+}> = ({ isLoading, aiInsightCredential, isSharedView = false }) => {
+    const { data: currentUserAiInsightCredential, isLoading: aiInsightCredentialLoading } =
         useAiInsightCredential();
+
+    const resolvedAiInsightCredential = aiInsightCredential ?? currentUserAiInsightCredential;
+
+    const shouldLoadCurrentUserCredential = aiInsightCredential === undefined;
+    const hasSnapshotContent = [
+        resolvedAiInsightCredential?.insights?.strongestArea?.title,
+        resolvedAiInsightCredential?.insights?.strongestArea?.summary,
+        resolvedAiInsightCredential?.insights?.weakestArea?.title,
+        resolvedAiInsightCredential?.insights?.weakestArea?.summary,
+        resolvedAiInsightCredential?.insights?.roomForGrowth?.title,
+        resolvedAiInsightCredential?.insights?.roomForGrowth?.summary,
+    ].some(value => {
+        if (typeof value === 'string') return value.trim().length > 0;
+        return Boolean(value);
+    });
 
     const insights: AiInsightsLearningSnapshot[] = [
         {
             label: 'Strongest Area',
-            title: aiInsightCredential?.insights?.strongestArea.title,
-            description: aiInsightCredential?.insights?.strongestArea.summary,
+            title: resolvedAiInsightCredential?.insights?.strongestArea?.title,
+            description: resolvedAiInsightCredential?.insights?.strongestArea?.summary,
             type: AiInsightsLearningSnapshotType.StrongestArea,
             icon: <Trophy className="w-[25px] h-[25px] text-emerald-700" />,
         },
         {
             label: 'Weakness',
-            title: aiInsightCredential?.insights?.weakestArea.title,
-            description: aiInsightCredential?.insights?.weakestArea.summary,
+            title: resolvedAiInsightCredential?.insights?.weakestArea?.title,
+            description: resolvedAiInsightCredential?.insights?.weakestArea?.summary,
             type: AiInsightsLearningSnapshotType.Weakness,
             icon: <WrenchIcon className="w-[25px] h-[25px] text-orange-600" />,
         },
         {
             label: 'Room for Growth',
-            title: aiInsightCredential?.insights?.roomForGrowth.title,
-            description: aiInsightCredential?.insights?.roomForGrowth.summary,
+            title: resolvedAiInsightCredential?.insights?.roomForGrowth?.title,
+            description: resolvedAiInsightCredential?.insights?.roomForGrowth?.summary,
             type: AiInsightsLearningSnapshotType.RoomForGrowth,
             icon: <SproutIcon className="w-[25px] h-[25px] text-blue-500" />,
         },
     ];
 
-    if (isLoading || aiInsightCredentialLoading) {
+    if (isLoading || (shouldLoadCurrentUserCredential && aiInsightCredentialLoading)) {
         return <AiInsightsLearningSnapshotsSkeletonLoader />;
     }
 
-    if (!aiInsightCredential) return <AiInsightsEmptyPlaceholder />;
+    if (!resolvedAiInsightCredential || !hasSnapshotContent) {
+        return <AiInsightsEmptyPlaceholder isSharedView={isSharedView} />;
+    }
 
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] mb-4">
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] mt-4">
             <div className="w-full flex items-center justify-start">
                 <AiPathwaysIconWithShape className="w-auto h-[40px]" />
                 <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>

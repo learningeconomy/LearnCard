@@ -1,5 +1,60 @@
 # learn-card-core
 
+## 2.10.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.27
+
+## 2.10.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.14
+    -   @learncard/helpers@1.2.14
+    -   @learncard/network-brain-client@2.5.26
+
+## 2.10.13
+
+### Patch Changes
+
+-   [#1122](https://github.com/learningeconomy/LearnCard/pull/1122) [`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1663] Streamline Auto-verify email
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.25
+    -   @learncard/core@9.4.13
+    -   @learncard/helpers@1.2.13
+
+## 2.10.12
+
+### Patch Changes
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.24
+    -   @learncard/core@9.4.12
+    -   @learncard/helpers@1.2.12
+
+## 2.10.11
+
+### Patch Changes
+
+-   [#1089](https://github.com/learningeconomy/LearnCard/pull/1089) [`2e9ca79c1e8fb375ca0cc5f3cba0afcdd40d8915`](https://github.com/learningeconomy/LearnCard/commit/2e9ca79c1e8fb375ca0cc5f3cba0afcdd40d8915) Thanks [@smurflo2](https://github.com/smurflo2)! - Add My Skills Profile (version 1) to AI Pathways
+
+-   [#1102](https://github.com/learningeconomy/LearnCard/pull/1102) [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add "Unsubmit" feature for app store listings
+
+    Developers can now withdraw their pending app submissions by clicking "Unsubmit" on listings in PENDING_REVIEW status. The listing returns to DRAFT status and the APP_LISTING_SUBMITTED notification is automatically deleted from admin inboxes (via a new APP_LISTING_WITHDRAWN notification type that triggers notification cleanup in LCA-API).
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.23
+    -   @learncard/core@9.4.11
+    -   @learncard/helpers@1.2.11
+
 ## 2.10.10
 
 ### Patch Changes

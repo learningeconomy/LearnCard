@@ -20,8 +20,9 @@ import { VP, UnsignedVP } from '@learncard/types';
 import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
-export const baseUrl = process.env.NODE_ENV === 'production' ? 'learncard.app' : 'localhost:3000';
+export const baseUrl = getAppBaseUrl().replace(/^https?:\/\//, '');
 
 const ShareBoostsBundleModal = ({
     onDismiss,

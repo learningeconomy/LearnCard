@@ -36,3 +36,100 @@ demoState.json
 /tests/states/*
 
 .env
+
+# ---------------------------------------------------------------------------
+# Platform assets populated by: npx tsx scripts/prepare-native-config.ts
+# Source of truth lives in environments/<tenant>/assets/ (git-tracked).
+# Run `prepare-native-config.ts learncard` to restore defaults.
+# ---------------------------------------------------------------------------
+
+# iOS — generated from .template files by prepare-native-config.ts
+ios/App/App/App.entitlements
+ios/App/App/AppRelease.entitlements
+ios/App/App.xcodeproj/project.pbxproj
+ios/App/Podfile.lock
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png
+ios/App/App/capacitor.config.json
+ios/App/App/tenant-deep-link-domains.json
+
+# Android — icons
+android/app/src/main/res/mipmap-hdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-mdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-xhdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher*.webp
+android/app/src/main/res/drawable/ic_launcher_background.xml
+android/app/src/main/res/values/ic_launcher_background.xml
+
+# Android — notification icons
+android/app/src/main/res/drawable/ic_notification.png
+android/app/src/main/res/drawable/ic_stat_name.png
+android/app/src/main/res/drawable-mdpi/ic_stat_name.png
+android/app/src/main/res/drawable-mdpi/ic_action_name.png
+android/app/src/main/res/drawable-hdpi/ic_stat_name.png
+android/app/src/main/res/drawable-hdpi/ic_action_name.png
+android/app/src/main/res/drawable-xhdpi/ic_stat_name.png
+android/app/src/main/res/drawable-xhdpi/ic_action_name.png
+android/app/src/main/res/drawable-xxhdpi/ic_stat_name.png
+android/app/src/main/res/drawable-xxhdpi/ic_action_name.png
+android/app/src/main/res/drawable-xxxhdpi/ic_stat_name.png
+android/app/src/main/res/drawable-xxxhdpi/ic_action_name.png
+
+# Android — splash screens
+android/app/src/main/res/drawable/splash.9.png
+android/app/src/main/res/drawable-hdpi/splash.9.png
+android/app/src/main/res/drawable-ldpi/splash.9.png
+android/app/src/main/res/drawable-mdpi/splash.9.png
+android/app/src/main/res/drawable-xhdpi/splash.9.png
+android/app/src/main/res/drawable-xxhdpi/splash.9.png
+android/app/src/main/res/drawable-xxxhdpi/splash.9.png
+android/app/src/main/res/drawable-land-hdpi/splash.9.png
+android/app/src/main/res/drawable-land-ldpi/splash.9.png
+android/app/src/main/res/drawable-land-mdpi/splash.9.png
+android/app/src/main/res/drawable-land-xhdpi/splash.9.png
+android/app/src/main/res/drawable-land-xxhdpi/splash.9.png
+android/app/src/main/res/drawable-land-xxxhdpi/splash.9.png
+android/app/src/main/res/drawable-port-hdpi/splash.9.png
+android/app/src/main/res/drawable-port-ldpi/splash.9.png
+android/app/src/main/res/drawable-port-mdpi/splash.9.png
+android/app/src/main/res/drawable-port-xhdpi/splash.9.png
+android/app/src/main/res/drawable-port-xxhdpi/splash.9.png
+android/app/src/main/res/drawable-port-xxxhdpi/splash.9.png
+
+# Android — build.gradle patched with tenant bundle ID
+android/app/build.gradle
+
+# Android — AndroidManifest.xml patched with tenant deep links + custom schemes
+android/app/src/main/AndroidManifest.xml
+
+# Android — strings.xml patched with tenant display name + bundle ID
+android/app/src/main/res/values/strings.xml
+
+# Android — capacitor config
+android/app/src/main/assets/capacitor.config.json
+
+# iOS — Info.plist patched with tenant display name
+ios/App/App/Info.plist
+
+# Firebase config files (tenant-specific)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+
+# Web — generated from index.template.html by prepare-native-config.ts
+index.html
+
+# Web — icons, manifests, tenant config, branding
+public/assets/icon/favicon.png
+public/assets/icon/icon.png
+public/assets/icon/icon-192.png
+public/assets/icon/apple-touch-icon.png
+public/manifest.json
+public/manifest.webmanifest
+public/tenant-config.json
+public/branding/
+
+# Edge function — generated tenant config bundle (scripts/generate-edge-tenant-configs.ts)
+netlify/edge-functions/shared/resolved-tenant-configs.generated.json
