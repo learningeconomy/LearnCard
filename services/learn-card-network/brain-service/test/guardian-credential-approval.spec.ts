@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vites
 import { getUser } from './helpers/getClient';
 import { testUnsignedBoost } from './helpers/send';
 import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost, ProfileManager } from '@models';
+import { updateInboxCredential } from '../src/accesslayer/inbox-credential/update';
 import { sendSpy } from './helpers/spies';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
@@ -279,7 +280,7 @@ describe('Guardian-Gated Credential Issuance', () => {
 
     describe('claimPendingGuardianLinks', () => {
         it('should return empty array when caller has no verified email contact method', async () => {
-            const result = await userA.clients.fullAuth.inbox.claimPendingGuardianLinks();
+            const result = await userA.clients.fullAuth.inbox.claimPendingGuardianLinks({});
             expect(result).toEqual([]);
         });
 
@@ -298,7 +299,7 @@ describe('Guardian-Gated Credential Issuance', () => {
 
             const credentials = await InboxCredential.findMany({ where: {} });
             const inboxCred = credentials[0]!;
-            await inboxCred.update({ guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
+            await updateInboxCredential(inboxCred.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
 
             const guardianUser = await getUser('b'.repeat(64));
             await guardianUser.clients.fullAuth.profile.createProfile({
@@ -318,7 +319,7 @@ describe('Guardian-Gated Credential Issuance', () => {
             });
             await createProfileContactMethodRelationship('guardian1', cm.id);
 
-            const result = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks();
+            const result = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks({});
 
             expect(result).toHaveLength(1);
             expect(result[0]!.childDisplayName).toBeTruthy();
@@ -344,7 +345,7 @@ describe('Guardian-Gated Credential Issuance', () => {
                 options: { guardianEmail: 'guardian2@home.com' },
             });
             const credentials = await InboxCredential.findMany({ where: {} });
-            await credentials[0]!.update({ guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
+            await updateInboxCredential(credentials[0]!.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
 
             const guardianUser = await getUser('c'.repeat(64));
             await guardianUser.clients.fullAuth.profile.createProfile({
@@ -363,8 +364,8 @@ describe('Guardian-Gated Credential Issuance', () => {
             });
             await createProfileContactMethodRelationship('guardian2', cm.id);
 
-            const first = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks();
-            const second = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks();
+            const first = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks({});
+            const second = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks({});
 
             expect(first).toHaveLength(1);
             expect(first[0]!.managerId).toBeTruthy();
