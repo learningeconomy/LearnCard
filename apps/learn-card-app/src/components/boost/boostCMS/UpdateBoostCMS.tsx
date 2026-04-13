@@ -46,12 +46,14 @@ import {
     getDefaultDisplayType,
     sendBoostCredential,
     updateBoost,
+    updateBoostStatus,
 } from '../boostHelpers';
 import {
     getExistingAttachmentsOrEvidence,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
@@ -84,6 +86,7 @@ const UpdateBoostCMS: React.FC = () => {
     const query = usePathQuery();
 
     const { track } = useAnalytics();
+    const flags = useFlags();
 
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
@@ -126,6 +129,7 @@ const UpdateBoostCMS: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isPublishLoading, setIsPublishLoading] = useState<boolean>(false);
     const [isSaveLoading, setIsSaveLoading] = useState<boolean>(false);
+    const [skippedPublishStep, setSkippedPublishStep] = useState<boolean>(false);
     const [admin, setAdmin] = useState<BoostCMSAdmin[]>([]);
 
     useEffect(() => {
@@ -353,16 +357,28 @@ const UpdateBoostCMS: React.FC = () => {
         );
     };
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         dissmissModal();
         if (currentStep === BoostCMSStepsEnum.create) {
-            setCurrentStep(BoostCMSStepsEnum.publish);
-            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                timestamp: Date.now(),
-                action: 'publish',
-                boostType: state?.basicInfo?.achievementType,
-                category: state?.basicInfo?.type,
-            });
+            // When skipPublishStep flag is enabled, skip directly to issueTo without updating the boost yet
+            if (flags?.skipPublishStep) {
+                setSkippedPublishStep(true);
+                setCurrentStep(BoostCMSStepsEnum.issueTo);
+                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
+                    timestamp: Date.now(),
+                    action: 'issue_to',
+                    boostType: state?.basicInfo?.achievementType,
+                    category: state?.basicInfo?.type,
+                });
+            } else {
+                setCurrentStep(BoostCMSStepsEnum.publish);
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
+                    timestamp: Date.now(),
+                    action: 'publish',
+                    boostType: state?.basicInfo?.achievementType,
+                    category: state?.basicInfo?.type,
+                });
+            }
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
@@ -557,6 +573,10 @@ const UpdateBoostCMS: React.FC = () => {
                 );
 
                 if (uris.length > 0) {
+                    // If we skipped the publish step, update the boost to LIVE now that it's been issued
+                    if (skippedPublishStep && _boostUri) {
+                        await updateBoostStatus(wallet, _boostUri, LCNBoostStatusEnum.live);
+                    }
                     setIsLoading(false);
                     presentToast(`Boost issued successfully`, {
                         duration: 3000,
@@ -658,6 +678,7 @@ const UpdateBoostCMS: React.FC = () => {
                 currentStep={currentStep}
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
+                skippedPublishStep={skippedPublishStep}
             />,
             { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -804,7 +825,7 @@ const UpdateBoostCMS: React.FC = () => {
     } else if (isLoading) {
         loadingText = 'Issuing boost...';
     } else if (isPublishLoading) {
-        loadingText = 'Publishing boost...';
+        loadingText = skippedPublishStep ? 'Creating boost...' : 'Publishing boost...';
     } else if (isSaveLoading) {
         loadingText = 'Saving boost...';
     }
