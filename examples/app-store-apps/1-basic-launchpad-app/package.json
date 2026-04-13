@@ -11,10 +11,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/netlify": "7.0.3",
+    "@astrojs/netlify": "^6.6.5",
     "@learncard/init": "workspace:*",
     "@learncard/partner-connect": "workspace:*",
-    "astro": "6.0.6"
+    "astro": "^5.0.0"
   },
   "devDependencies": {
     "@astrojs/tailwind": "^6.0.2",

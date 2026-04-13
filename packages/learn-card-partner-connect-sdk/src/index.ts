@@ -36,6 +36,13 @@ import type {
     TemplateIssuanceStatusResponse,
     GetTemplateRecipientsInput,
     TemplateRecipientsResponse,
+    RequestLearnerContextOptions,
+    LearnerContextResponse,
+    AppNotificationInput,
+    AppNotificationResponse,
+    IncrementCounterResponse,
+    GetCounterResponse,
+    GetCountersResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -78,11 +85,18 @@ export class PartnerConnect {
     /**
      * Configure the active host origin using the following hierarchy:
      * 1. Check for `lc_host_override` query parameter (for staging/testing)
-     * 2. Fall back to first configured origin
-     * 3. Fall back to DEFAULT_HOST_ORIGIN
+     * 2. Check sessionStorage for a previously stored override (survives in-app navigation)
+     * 3. Fall back to first configured origin
+     * 4. Fall back to DEFAULT_HOST_ORIGIN
+     *
+     * When a valid override is found in the query parameter, it is persisted to
+     * sessionStorage so that subsequent page navigations within the same tab
+     * automatically use the same override without requiring it in every URL.
      *
      * This origin will be used for all outgoing messages and incoming message validation.
      */
+    private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
     private configureActiveOrigin(): void {
         if (typeof window === 'undefined') {
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
@@ -107,12 +121,47 @@ export class PartnerConnect {
                         this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
                 } else {
                     this.activeHostOrigin = hostOverride;
+
+                    // Persist to sessionStorage so subsequent page navigations
+                    // within this tab automatically use the same override.
+                    try {
+                        sessionStorage.setItem(
+                            PartnerConnect.SESSION_STORAGE_KEY,
+                            hostOverride
+                        );
+                    } catch {
+                        // sessionStorage may be unavailable (e.g. sandboxed iframes)
+                    }
+
                     console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
                 }
             } else {
-                // Use first configured origin or default
-                this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+                // Fall back to a previously stored override from this session
+                let storedOverride: string | null = null;
+
+                try {
+                    storedOverride = sessionStorage.getItem(
+                        PartnerConnect.SESSION_STORAGE_KEY
+                    );
+                } catch {
+                    // sessionStorage may be unavailable
+                }
+
+                if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
+                    this.activeHostOrigin = storedOverride;
+                    console.log(
+                        '[LearnCard SDK] Using stored lc_host_override:',
+                        storedOverride
+                    );
+                } else {
+                    // Use first configured origin or default
+                    this.activeHostOrigin =
+                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+                    console.log(
+                        '[LearnCard SDK] Using configured origin:',
+                        this.activeHostOrigin
+                    );
+                }
             }
         } catch (error) {
             console.error('[LearnCard SDK] Error configuring active origin:', error);
@@ -476,26 +525,31 @@ export class PartnerConnect {
     /**
      * Request user consent for permissions
      *
-     * @param contractUri - URI of the consent contract
+     * @param contractUri - URI of the consent contract (optional for App Store apps with configured contracts)
+     * @param options - Additional options including redirect behavior
      * @returns Promise resolving to consent response
      *
      * @example
      * ```typescript
-     * // Without redirect (default) - returns VP in response if app owns the contract
+     * // With explicit contract URI (for external/non-app store integrations)
      * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123');
      * if (response.granted) {
      *   console.log('User granted consent');
-     *   if (response.vp) {
-     *     console.log('VP:', response.vp);
-     *   }
+     * }
+     *
+     * // Without contract URI (uses app's configured contract from integration)
+     * // This works for App Store apps that have configured a contract in their integration
+     * const response = await learnCard.requestConsent();
+     * if (response.granted) {
+     *   console.log('User granted consent using listing contract');
      * }
      *
      * // With redirect - redirects to contract's redirectUrl with VP in URL params
-     * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123', { redirect: true });
+     * const response = await learnCard.requestConsent(undefined, { redirect: true });
      * ```
      */
     public requestConsent(
-        contractUri: string,
+        contractUri?: string,
         options: RequestConsentOptions = {}
     ): Promise<ConsentResponse> {
         const { redirect = false } = options;
@@ -536,6 +590,47 @@ export class PartnerConnect {
     }
 
     /**
+     * Request comprehensive learner context for AI tutoring systems.
+     *
+     * This method retrieves the user's credentials and personal data,
+     * then formats them into an LLM-ready prompt that can be injected directly into
+     * an AI system prompt.
+     *
+     * @param options - Configuration options for what data to include and how to format it
+     * @returns Promise resolving to learner context with prompt and optional raw data
+     *
+     * @example
+     * ```typescript
+     * // Get LLM-ready prompt with credentials and personal data
+     * const context = await learnCard.requestLearnerContext({
+     *   includeCredentials: true,
+     *   includePersonalData: true,
+     *   format: 'prompt',
+     *   instructions: 'Focus on technical skills and certifications',
+     *   detailLevel: 'expanded'
+     * });
+     *
+     * // Use in AI system prompt
+     * const systemPrompt = `You are a helpful tutor. ${context.prompt}`;
+     *
+     * // Access structured data if needed
+     * console.log('User DID:', context.did);
+     * console.log('Credentials count:', context.raw?.credentials.length);
+     * ```
+     */
+    public requestLearnerContext(
+        options?: RequestLearnerContextOptions
+    ): Promise<LearnerContextResponse> {
+        return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+            includeCredentials: options?.includeCredentials ?? true,
+            includePersonalData: options?.includePersonalData ?? false,
+            format: options?.format ?? 'prompt',
+            instructions: options?.instructions,
+            detailLevel: options?.detailLevel ?? 'compact',
+        });
+    }
+
+    /**
      * Send a generic event to be processed by the brain service on behalf of this app.
      * This is used for backend-like operations such as issuing credentials.
      *
@@ -558,6 +653,102 @@ export class PartnerConnect {
      */
     public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
         return this.sendMessage<T>('APP_EVENT', event);
+    }
+
+    /**
+     * Send a notification to the current user from this app.
+     * The notification appears in the user's LearnCard notification inbox.
+     *
+     * @param input - Notification content (title, body, actionPath, category, priority)
+     * @returns Promise resolving to `{ sent: true }` on success
+     *
+     * @example
+     * ```typescript
+     * await learnCard.sendNotification({
+     *   title: 'Sprint Bonus!',
+     *   body: '+10 coins from Sprint 42',
+     *   actionPath: '/',
+     *   category: 'reward',
+     * });
+     * ```
+     */
+    public sendNotification(input: AppNotificationInput): Promise<AppNotificationResponse> {
+        return this.sendAppEvent<AppNotificationResponse>({
+            type: 'send-notification',
+            ...input,
+        });
+    }
+
+    /**
+     * Increment or decrement an app-scoped counter for the current user.
+     *
+     * Counters are scoped to (user, app, key). If the counter does not exist,
+     * it is created with the given amount as its initial value.
+     *
+     * @param key - Counter name (alphanumeric, underscore, hyphen; max 64 chars)
+     * @param amount - Value to add (negative to decrement)
+     * @returns Promise resolving to `{ key, previousValue, newValue }`
+     *
+     * @example
+     * ```typescript
+     * const result = await learnCard.incrementCounter('coins', 10);
+     * console.log(result.newValue); // e.g. 110
+     *
+     * // Decrement
+     * await learnCard.incrementCounter('coins', -5);
+     * ```
+     */
+    public incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse> {
+        return this.sendAppEvent<IncrementCounterResponse>({
+            type: 'increment-counter',
+            key,
+            amount,
+        });
+    }
+
+    /**
+     * Read the current value of an app-scoped counter for the current user.
+     *
+     * Returns `{ value: 0 }` if the counter does not exist.
+     *
+     * @param key - Counter name
+     * @returns Promise resolving to `{ key, value, updatedAt }`
+     *
+     * @example
+     * ```typescript
+     * const { value } = await learnCard.getCounter('coins');
+     * console.log('Balance:', value);
+     * ```
+     */
+    public getCounter(key: string): Promise<GetCounterResponse> {
+        return this.sendAppEvent<GetCounterResponse>({
+            type: 'get-counter',
+            key,
+        });
+    }
+
+    /**
+     * Read multiple app-scoped counters at once for the current user.
+     *
+     * If `keys` is omitted, returns all counters for this app.
+     *
+     * @param keys - Optional array of counter names to fetch (max 50)
+     * @returns Promise resolving to `{ counters: CounterResponse[] }`
+     *
+     * @example
+     * ```typescript
+     * const { counters } = await learnCard.getCounters(['coins', 'spins', 'streak']);
+     * counters.forEach(c => console.log(c.key, c.value));
+     *
+     * // Get all counters
+     * const all = await learnCard.getCounters();
+     * ```
+     */
+    public getCounters(keys?: string[]): Promise<GetCountersResponse> {
+        return this.sendAppEvent<GetCountersResponse>({
+            type: 'get-counters',
+            ...(keys ? { keys } : {}),
+        });
     }
 
     /**

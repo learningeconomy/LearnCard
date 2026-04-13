@@ -42,6 +42,11 @@ on:
                 required: false
                 default: false
                 type: boolean
+            publish-app-stores:
+                description: 'Publish Native Apps to App Stores (iOS + Android)'
+                required: false
+                default: false
+                type: boolean
             push-docker:
                 description: 'Push Docker Images'
                 required: false
@@ -819,6 +824,31 @@ jobs:
                   else
                     echo "::warning::Failed to create Jira release (HTTP $HTTP_CODE): $BODY"
                   fi
+
+    # ============================================================================
+    # NATIVE APP STORE PUBLISHING
+    # Triggers:
+    #   - Release: Publish if lca_app_changed
+    #   - Manual: Publish if publish-app-stores selected
+    # ============================================================================
+    publish-native-apps:
+        name: Publish Native Apps to App Stores
+        needs: [determine-affected, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-app-stores == 'true') ||
+                (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
+            ) &&
+            !contains(needs.deploy-frontend.result, 'failure')
+        uses: ./.github/workflows/fastlane-deploy-native-apps.yml
+        with:
+            environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
+            googlePlayReleaseTrack: "production"
+            submitToAppStore: true
+            releaseNotes: "- Critical Bug Fixes and Security Patches"
+        secrets: inherit
 
     # ============================================================================
     # DOCKER IMAGES

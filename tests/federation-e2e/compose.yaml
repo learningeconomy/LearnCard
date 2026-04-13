@@ -1,0 +1,153 @@
+services:
+    # Brain Service Instance A (e.g., LearnCard app)
+    brain-a:
+        image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
+
+        expose:
+            - 4000
+        ports:
+            - '4000:4000'
+
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+
+        depends_on:
+            neo4j:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            elasticmq:
+                condition: service_started
+
+        networks:
+            - learn-card
+
+        extra_hosts:
+            - 'localhost:host-gateway'
+
+        volumes:
+            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+
+        environment:
+            PORT: 4000
+            SEED: a
+            IS_OFFLINE: true
+            IS_E2E_TEST: true
+            SKIP_DIDKIT_NAPI: '1'
+            DOMAIN_NAME: localhost%3A4000
+            # Trust brain-b for federation
+            TRUSTED_BRAIN_SERVICES: 'did:web:localhost%3A4001'
+            NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+            NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+            NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
+            REDIS_HOST: ${REDIS_HOST:-redis}
+            REDIS_PORT: ${REDIS_PORT:-6379}
+            AWS_REGION: ${AWS_REGION:-us-east-1}
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-notARealKey}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
+            NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
+            NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+
+    # Brain Service Instance B (e.g., Scouts app)
+    brain-b:
+        image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
+
+        expose:
+            - 4001
+        ports:
+            - '4001:4001'
+
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+
+        depends_on:
+            neo4j:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            elasticmq:
+                condition: service_started
+
+        networks:
+            - learn-card
+
+        extra_hosts:
+            - 'localhost:host-gateway'
+
+        volumes:
+            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+
+        environment:
+            PORT: 4001
+            SEED: b
+            IS_OFFLINE: true
+            IS_E2E_TEST: true
+            SKIP_DIDKIT_NAPI: '1'
+            DOMAIN_NAME: localhost%3A4001
+            # Trust brain-a for federation
+            TRUSTED_BRAIN_SERVICES: 'did:web:localhost%3A4000'
+            NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+            NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+            NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
+            REDIS_HOST: ${REDIS_HOST:-redis}
+            REDIS_PORT: ${REDIS_PORT:-6379}
+            AWS_REGION: ${AWS_REGION:-us-east-1}
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-notARealKey}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
+            NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
+            NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+
+    # Shared infrastructure (both brain services share these)
+    neo4j:
+        image: neo4j:latest
+        ports:
+            - '7687:7687'
+            - '7474:7474'
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        environment:
+            NEO4J_AUTH: none
+            NEO4J_server_jvm_additional: --add-modules=jdk.incubator.vector
+        networks:
+            - learn-card
+
+    redis:
+        image: redis:alpine
+        environment:
+            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+        ports:
+            - '6379:${REDIS_PORT:-6379}'
+        networks:
+            - learn-card
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 2s
+            timeout: 3s
+            retries: 10
+            start_period: 5s
+
+    elasticmq:
+        image: softwaremill/elasticmq-native
+        expose:
+            - 9324
+        ports:
+            - '9324:9324'
+        networks:
+            - learn-card
+
+networks:
+    learn-card:
+        driver: bridge

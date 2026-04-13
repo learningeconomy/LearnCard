@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
+import ExplorePathwaysModal from './ExplorePathwaysModal';
 import MainHeader from '../../components/main-header/MainHeader';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';

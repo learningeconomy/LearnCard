@@ -35,7 +35,11 @@ export async function setup() {
     if (MANAGE_DOCKER) {
         console.log('Starting docker...');
         await execa`docker compose up -d --build`;
-        console.log('Docker started in', ((performance.now() - start) / 1000).toFixed(2), 'seconds');
+        console.log(
+            'Docker started in',
+            ((performance.now() - start) / 1000).toFixed(2),
+            'seconds'
+        );
     } else {
         console.log('Skipping docker compose up (set E2E_MANAGE_DOCKER=true to enable)');
     }

@@ -15,15 +15,22 @@ export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsR
     const { data } = useSalariesForKeyword({
         keyword: occupation.OnetTitle,
     });
-    const topPaidLocations: { location: string; salary: number }[] =
-        data?.LocationsList?.map((l: CareerOneStopLocationResult) => {
+
+    type LocationSalary = { location: string; salary: number };
+
+    const topPaidLocations: LocationSalary[] = (
+        (data?.LocationsList ?? []) as CareerOneStopLocationResult[]
+    )
+        .map((l): LocationSalary => {
             const yearly = getYearlyWages(l.OccupationList?.[0]?.WageInfo || []);
 
             return {
                 location: l.LocationName,
-                salary: yearly?.Pct90,
+                salary: Number(yearly?.Pct90) || 0,
             };
-        }) || [];
+        })
+        .filter((l): l is LocationSalary => l.salary > 0)
+        .sort((a, b) => b.salary - a.salary);
 
     return (
         <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-4">
