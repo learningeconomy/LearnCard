@@ -23,9 +23,13 @@ type GrowSkillsOccupation = {
 
 type GrowSkillsMediaItemProps = {
     occupation: GrowSkillsOccupation;
+    className?: string;
 };
 
-const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation }) => {
+const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
+    occupation,
+    className = '',
+}) => {
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
     const hasDraggedRef = useRef(false);
@@ -108,7 +112,7 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
 
     return (
         <div
-            className="flex flex-col rounded-[10px] overflow-hidden w-full h-full shadow-bottom-4-4 text-left"
+            className={`flex shrink-0 flex-col rounded-[10px] overflow-hidden w-full shadow-bottom-4-4 text-left ${className}`.trim()}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -135,7 +139,7 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation })
                 </button>
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
             </div>
-            <div className="p-[10px] flex flex-col gap-[10px] h-full min-h-[92px]">
+            <div className="p-[10px] flex flex-col h-full gap-[10px] min-h-[92px]">
                 <div className="flex gap-[10px] items-start">
                     <img
                         src={careerOneStopLogo}

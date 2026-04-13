@@ -73,7 +73,9 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     title="Media"
                     items={occupations || []}
                     onViewAll={() => openGrowSkillsModal('Media')}
-                    renderItem={occupation => <GrowSkillsMediaItem occupation={occupation} />}
+                    renderItem={occupation => (
+                        <GrowSkillsMediaItem occupation={occupation} className="h-full" />
+                    )}
                     getItemKey={occupation => occupation.OnetCode || occupation.OnetTitle || ''}
                 />
 
