@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, openRoute } from '@routes';
+import { t, openRoute, didRoute } from '@routes';
 import { VCValidator, JWEValidator } from '@learncard/types';
 import {
     isServiceTrusted,
@@ -16,7 +16,7 @@ import { getOrCreateFederatedProfile } from '@helpers/profile.helpers';
 import { sendCredential } from '@helpers/credential.helpers';
 
 export const federationRouter = t.router({
-    receive: openRoute
+    receive: didRoute
         .meta({
             openapi: {
                 method: 'POST',
@@ -52,16 +52,10 @@ export const federationRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { recipientDid, credential, issuerDid, issuerDisplayName, configuration } = input;
 
-            if (!ctx.user?.did) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Missing or invalid DID Auth token',
-                });
-            }
-
             const senderDid = ctx.user.did;
 
             const isTrusted = await isServiceTrusted(senderDid, ctx.domain);
+
             if (!isTrusted) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
@@ -70,6 +64,7 @@ export const federationRouter = t.router({
             }
 
             const profileId = getProfileIdFromDid(recipientDid);
+
             if (!profileId) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
