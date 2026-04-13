@@ -5,23 +5,10 @@ import { ErrorBoundary } from '@sentry/react';
 import { UserProfilePicture } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
-import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { clearFinalizeCache } from '../../../hooks/useFinalizeInboxCredentials';
 import autoVerifyStore from '../../../stores/autoVerifyStore';
-
-const CATEGORY_DISPLAY_TO_ROUTE: Record<string, string> = {
-    'Achievement': '/achievements',
-    'Social Badge': '/socialBadges',
-    'Learning History': '/learninghistory',
-    'Accomplishment': '/accomplishments',
-    'Accommodation': '/accommodations',
-    'Work History': '/workhistory',
-    'Family': '/families',
-    'ID': '/ids',
-    'Skill': '/skills',
-    'Membership': '/memberships',
-};
+import { getCategoryRouteForAchievementType } from '../../../helpers/categoryRoutes';
 
 type NotificationGuardianOutcomeCardProps = {
     notification: NotificationType;
@@ -52,8 +39,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
 
             // Navigate to the credential's category page if we know the type, otherwise wallet
             const achievementType = notification?.data?.achievementType as string | undefined;
-            const categoryName = achievementType ? CATEGORY_MAP[achievementType] : undefined;
-            const route = categoryName ? CATEGORY_DISPLAY_TO_ROUTE[categoryName] : undefined;
+            const route = getCategoryRouteForAchievementType(achievementType);
             history.push(route ?? '/wallet');
         }
     };

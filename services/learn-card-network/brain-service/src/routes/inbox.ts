@@ -74,6 +74,7 @@ import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { finalizeInboxCredentialsForProfile } from '@helpers/finalize-inbox.helpers';
+import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -796,12 +797,7 @@ export const inboxRouter = t.router({
 
             const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
 
-            // Parse credential name safely
-            let credentialName: string | undefined;
-            try {
-                const parsed = JSON.parse(inboxCredential.credential);
-                credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
-            } catch {}
+            const { credentialName } = parseCredentialMeta(inboxCredential.credential);
 
             // Best-effort check: if the caller has an authenticated profile,
             // check MANAGES relationship for OTP-skip eligibility
@@ -1255,16 +1251,7 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    let credentialName: string | undefined;
-                    let achievementType: string | undefined;
-                    try {
-                        const parsed = JSON.parse(inboxCredential.credential);
-                        credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
-                        const subject = Array.isArray(parsed?.credentialSubject)
-                            ? parsed.credentialSubject[0]
-                            : parsed?.credentialSubject;
-                        achievementType = subject?.achievement?.achievementType;
-                    } catch {}
+                    const { credentialName, achievementType } = parseCredentialMeta(inboxCredential.credential);
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVED,
@@ -1354,11 +1341,7 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    let credentialName: string | undefined;
-                    try {
-                        const parsed = JSON.parse(inboxCredential.credential);
-                        credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
-                    } catch {}
+                    const { credentialName, achievementType } = parseCredentialMeta(inboxCredential.credential);
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_REJECTED,
@@ -1368,7 +1351,7 @@ export const inboxRouter = t.router({
                             title: 'Credential Rejected',
                             body: `Your guardian did not approve "${credentialName ?? 'a credential'}".`,
                         },
-                        data: { inboxCredentialId, credentialName },
+                        data: { inboxCredentialId, credentialName, achievementType },
                     });
                 }
             } catch (err) {
