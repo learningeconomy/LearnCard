@@ -2,12 +2,7 @@ import React from 'react';
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
-import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
-import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
-import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
-import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 import GrowSkillsCarouselSection from './GrowSkillsCarouselSection';
-import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
@@ -21,16 +16,8 @@ type GrowSkillsPathwaysHomeProps = {};
 const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
     const { newModal } = useModal();
 
-    const {
-        allKeywords,
-        careerKeywords,
-        courses,
-        emptyPathways,
-        isLoading,
-        learningPathwaysData,
-        occupations,
-        schoolPrograms,
-    } = useGrowSkillsContent();
+    const { emptyPathways, learningPathwaysData, occupations, schoolPrograms } =
+        useGrowSkillsContent();
 
     const openGrowSkillsModal = (initialActiveTab: GrowSkillsTab = 'All') => {
         newModal(<GrowSkillsModal initialActiveTab={initialActiveTab} />, undefined, {
@@ -88,31 +75,10 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 </button>
             </div>
 
-            {emptyPathways ? (
+            {emptyPathways && (
                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
                     <AiPathwaysEmptyPlaceholder />
                 </div>
-            ) : (
-                <>
-                    {/* IGNORE THESE - OBSOLETE COMPONENTS */}
-                    <AiPathwayCourses
-                        courses={courses}
-                        schoolPrograms={schoolPrograms}
-                        keywords={allKeywords ?? undefined}
-                        isLoading={isLoading}
-                    />
-                    <AiPathwaySessions
-                        learningPathwaysData={learningPathwaysData}
-                        isLoading={isLoading}
-                    />
-                    <AiPathwayCareers
-                        careerKeywords={careerKeywords ?? undefined}
-                        occupations={occupations}
-                        isLoading={isLoading}
-                    />
-                    <AiPathwayExploreContent occupations={occupations} isLoading={isLoading} />
-                    <ExploreAiInsightsButton />
-                </>
             )}
         </>
     );
