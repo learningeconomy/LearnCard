@@ -8,6 +8,7 @@ import { IonFooter } from '@ionic/react';
 
 import { useModal, VideoMetadata, getVideoMetadata, getVideoSource } from 'learn-card-base';
 
+import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
 import { AiPathwayContent } from './ai-pathway-content.helpers';
 
 const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ content }) => {
@@ -56,11 +57,13 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                         {/* header */}
                         <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
                             <div className="w-full h-[195px] rounded-[20px] overflow-hidden relative">
-                                <img
-                                    src={metaData?.thumbnailUrl || ''}
-                                    alt={content.title}
-                                    className="w-full h-full object-cover"
-                                />
+                                {metaData?.thumbnailUrl && (
+                                    <img
+                                        src={metaData?.thumbnailUrl || ''}
+                                        alt={content.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                )}
 
                                 <div
                                     className="absolute bottom-0 left-0 w-full h-1/2"
@@ -105,6 +108,12 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                                 </div>
                             </>
                         )}
+
+                        <GrowSkillsSkillChips
+                            searchQuery={content.title || ''}
+                            layout="wrap"
+                            className="border-t-[1px] border-grayscale-200 py-[20px] px-[20px]"
+                        />
                     </section>
                 </div>
             </div>

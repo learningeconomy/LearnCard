@@ -11,6 +11,7 @@ import { useModal } from 'learn-card-base';
 
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import { getProgramLengthDisplay } from './ai-pathway-courses.helpers';
+import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
 
 const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { closeModal } = useModal();
@@ -93,6 +94,12 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                                 </div>
                             </>
                         )}
+
+                        <GrowSkillsSkillChips
+                            searchQuery={program?.ProgramName || ''}
+                            layout="wrap"
+                            className="border-t-[1px] border-grayscale-200 py-[20px] px-[20px]"
+                        />
                     </section>
                 </div>
             </div>
