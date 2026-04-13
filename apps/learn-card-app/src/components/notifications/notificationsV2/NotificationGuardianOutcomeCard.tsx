@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
 import { UserProfilePicture } from 'learn-card-base';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
+import X from 'learn-card-base/svgs/X';
 import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { clearFinalizeCache } from '../../../hooks/useFinalizeInboxCredentials';
@@ -36,7 +38,6 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
-    const bgColor = variant === 'approved' ? 'bg-emerald-50' : 'bg-red-50';
     const accentColor = variant === 'approved' ? 'text-emerald-600' : 'text-red-500';
     const statusText = variant === 'approved' ? 'Approved' : 'Not Approved';
 
@@ -60,43 +61,58 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     return (
         <ErrorBoundary
             fallback={
-                <div className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full rounded-3xl py-[10px] px-[10px] bg-blue-50 my-[15px]">
+                <div className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]">
                     Unable to load notification
                 </div>
             }
         >
             <div
                 onClick={handleClick}
-                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[10px] px-[10px] ${bgColor} my-[15px] cursor-pointer`}
+                className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px] cursor-pointer"
             >
                 <div className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0">
-                    <UserProfilePicture
-                        user={notification.from}
-                        customContainerClass="h-[60px] w-[60px] rounded-full text-white"
-                        customImageClass="h-[60px] w-[60px]"
-                        customSize={120}
-                    />
+                    <div className="overflow-hidden cursor-pointer w-[90px] h-[90px] flex items-start notification-card-thumbnail">
+                        <UserProfilePicture
+                            user={notification.from}
+                            customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-4xl p-[6px]"
+                            customImageClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden object-cover"
+                            customSize={90}
+                        />
+                    </div>
                 </div>
 
-                <div className="text-left flex flex-col gap-[10px] items-start justify-start w-full">
-                    <h4
-                        className="cursor-pointer font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
-                        data-testid="notification-title"
-                    >
-                        {notification.message?.title}
-                    </h4>
-                    <p
-                        className="font-semibold p-0 leading-none tracking-wide text-[12px] text-grayscale-500"
-                        data-testid="notification-type"
-                    >
-                        <span className={accentColor}>{statusText}</span>{' '}
-                        {transactionDate && (
-                            <span className="text-grayscale-600 normal-case font-normal text-[12px]">
-                                • {formattedDate}
-                            </span>
-                        )}
-                    </p>
-                    <p className="text-[13px] text-grayscale-700">{notification.message?.body}</p>
+                <div className="flex flex-col justify-center items-start relative w-full">
+                    <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
+                        <h4
+                            className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
+                            data-testid="notification-title"
+                        >
+                            {notification.message?.body}
+                        </h4>
+                        <p
+                            className={`font-bold p-0 mt-[10px] leading-none tracking-wide text-[12px] ${accentColor} notification-card-type-text`}
+                            data-testid="notification-type"
+                        >
+                            {statusText}{' '}
+                            {transactionDate && (
+                                <span className="text-grayscale-600 normal-case font-normal text-[12px]">
+                                    • {formattedDate}
+                                </span>
+                            )}
+                        </p>
+
+                        <div className="relative flex items-center mt-3 w-full">
+                            {variant === 'approved' ? (
+                                <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-emerald-600 text-emerald-600 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
+                                    View Credential <Checkmark className="h-[24px] p-0 m-0" />
+                                </div>
+                            ) : (
+                                <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-grayscale-300 text-grayscale-500 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
+                                    Rejected <X className="h-[14px] w-[14px] ml-1" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </ErrorBoundary>
