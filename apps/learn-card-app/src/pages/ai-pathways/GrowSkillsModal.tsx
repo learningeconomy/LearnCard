@@ -22,6 +22,7 @@ import GrowSkillsAiSessionItem from './GrowSkillsAiSessionItem';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
+import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 
 export type GrowSkillsModalProps = {
     initialActiveTab?: GrowSkillsTab;
@@ -34,6 +35,7 @@ export type GrowSkillsTab = (typeof growSkillsTabs)[number];
 const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'All' }) => {
     const { newModal, closeModal } = useModal();
     const [search, setSearch] = useState('');
+    const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
     const [filter, setFilter] = useState('');
     const [activeTab, setActiveTab] = useState<GrowSkillsTab>(initialActiveTab);
 
@@ -64,7 +66,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'A
         );
     };
 
-    const { cards, isLoading } = useGrowSkillsContent({ searchQuery: search });
+    const { cards, isLoading } = useGrowSkillsContent({
+        searchQuery: submittedSearchQuery,
+    });
 
     const filterText = filter.trim().toLowerCase();
 
@@ -117,11 +121,14 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'A
                     </h5>
                 </div>
 
-                {/* TODO pathways search input */}
-                <SearchInput
+                <PathwaySearchInput
                     placeholder="Skill, goal, or job..."
                     value={search}
-                    onChange={setSearch}
+                    onValueChange={setSearch}
+                    onSearchSubmit={query => {
+                        setSearch(query);
+                        setSubmittedSearchQuery(query);
+                    }}
                 />
 
                 <button onClick={closeModal} className="absolute top-[20px] right-[20px]">
@@ -152,8 +159,8 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'A
                                 className={`rounded-[10px] px-[15px] py-[7px] text-[13px] font-[600] font-poppins leading-[18px] tracking-[0.75px] transition-colors flex-1 ${
                                     isActive
                                         ? 'border-[2px] border-violet-500 border-solid bg-violet-50 text-violet-600'
-                                        : 'border-[2px] border-transparent bg-grayscale-100 text-grayscale-700'
-                                }`}
+                                        : 'border-[2px] border-transparent border-solid bg-grayscale-100 text-grayscale-700'
+                                } ${tab === 'AI Sessions' ? 'min-w-[120px]' : ''}`}
                             >
                                 {tab}
                             </button>
