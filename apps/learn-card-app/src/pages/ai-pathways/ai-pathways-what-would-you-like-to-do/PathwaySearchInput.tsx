@@ -129,7 +129,7 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
         <div className="relative flex flex-col">
             <div className={`flex items-center ${isSimpleVariant ? '' : 'gap-3'}`}>
                 <div className="relative flex-1">
-                    <PathwayDecoration className="absolute left-3 w-[24px] h-[24px] text-teal-100 pointer-events-none z-10 top-1/2 -translate-y-1/2" />
+                    <PathwayDecoration className="absolute left-[10px] w-[35px] h-[35px] text-teal-100 pointer-events-none z-10 top-1/2 -translate-y-1/2" />
                     <IonInput
                         value={searchValue}
                         onIonInput={(e: any) => {
@@ -144,11 +144,15 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                             if (e.key === 'Escape') setShowSuggestions(false);
                         }}
                         autocapitalize="off"
-                        className="w-full bg-grayscale-100 text-grayscale-800 rounded-[20px] ion-padding font-medium text-sm"
-                        style={{
-                            '--padding-start': '44px',
-                            '--padding-end': isSimpleVariant ? '44px' : '16px',
-                        } as any}
+                        className={`w-full text-grayscale-800 rounded-[20px] !px-[10px] !py-0 font-medium text-[16px] leading-[18px] ${
+                            showClearAction ? 'bg-violet-50' : 'bg-grayscale-100'
+                        }`}
+                        style={
+                            {
+                                '--padding-start': '45px',
+                                '--padding-end': isSimpleVariant ? '44px' : '16px',
+                            } as React.CSSProperties
+                        }
                         placeholder={placeholder}
                         type="text"
                     />
@@ -217,12 +221,20 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                             setCommittedQuery(trimmedSearchValue);
                             submitSearch(trimmedSearchValue);
                         }}
-                        className="h-[48px] min-w-[48px] px-6 bg-grayscale-100 rounded-full text-grayscale-600 hover:text-grayscale-800 transition-colors flex items-center justify-center"
+                        className={`px-[20px] py-[10px] rounded-full text-grayscale-600 hover:text-grayscale-800 transition-colors flex items-center justify-center ${
+                            showClearAction || !trimmedSearchValue
+                                ? 'bg-grayscale-100'
+                                : 'bg-[linear-gradient(90deg,#14B8A6_0%,#2DD4BF_98.7%)]'
+                        }`}
                     >
                         {showClearAction ? (
-                            <X className="w-[20px] h-[20px]" />
+                            <X className="w-[24px] h-[24px]" />
                         ) : (
-                            <ArrowRight className="w-[20px] h-[20px] text-grayscale-400" />
+                            <ArrowRight
+                                className={`w-[24px] h-[24px] ${
+                                    !trimmedSearchValue ? 'text-grayscale-400' : 'text-white'
+                                }`}
+                            />
                         )}
                     </button>
                 )}
