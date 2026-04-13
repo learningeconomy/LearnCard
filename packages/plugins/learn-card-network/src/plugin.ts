@@ -1842,6 +1842,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.appStore.getListingSigningAuthority.query({ listingId });
             },
+            getIntegrationForListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.getIntegrationForListing.query({ listingId });
+            },
 
             getAppStoreListing: async (_learnCard, listingId) => {
                 await ensureUser();
