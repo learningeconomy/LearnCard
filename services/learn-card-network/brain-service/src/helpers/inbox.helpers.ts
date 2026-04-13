@@ -10,7 +10,7 @@ import {
     createDeliveredRelationship,
     createEmailSentRelationship,
 } from '@accesslayer/inbox-credential/relationships/create';
-import { getContactMethodByValue } from '@accesslayer/contact-method/read';
+import { getContactMethodByValue, getContactMethodsForProfile } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
@@ -469,8 +469,7 @@ export const issueToInbox = async (
                 // Non-critical — email path is always available as fallback
             }
         } else if (!guardianEmail && recipientIsManaged) {
-            // Auto-detected managed child: send in-app notifications to all guardians
-            // No email OTP flow needed — guardians approve in-app via MANAGES relationship
+            // Auto-detected managed child: look up guardian email(s) and send approval emails + in-app notifications
             try {
                 const childProfile = await getProfileForInboxCredential(inboxCredential.id);
 
@@ -481,6 +480,48 @@ export const issueToInbox = async (
                 } catch {}
 
                 for (const guardianProfile of recipientManagers) {
+                    // Look up guardian's verified email to send approval email
+                    const guardianContactMethods = await getContactMethodsForProfile(guardianProfile.did);
+                    const guardianVerifiedEmail = guardianContactMethods.find(
+                        cm => cm.type === 'email' && cm.isVerified
+                    );
+
+                    if (guardianVerifiedEmail) {
+                        // Send approval email to guardian (same flow as explicit guardianEmail)
+                        const approvalToken = await generateGuardianCredentialApprovalToken(
+                            inboxCredential.id,
+                            guardianVerifiedEmail.value
+                        );
+                        const approvalUrl = generateGuardianCredentialApprovalUrl(approvalToken);
+
+                        const guardianDeliveryService = getDeliveryService({
+                            type: 'email',
+                            value: guardianVerifiedEmail.value,
+                        });
+                        await guardianDeliveryService.send({
+                            contactMethod: { type: 'email', value: guardianVerifiedEmail.value },
+                            templateId: 'guardian-credential-approval',
+                            templateModel: {
+                                approvalUrl,
+                                approvalToken,
+                                issuer: {
+                                    name: issuerProfile.displayName,
+                                    ...(delivery?.template?.model?.issuer ?? {}),
+                                },
+                                credential: {
+                                    name: (credential as any)?.name,
+                                    ...(delivery?.template?.model?.credential ?? {}),
+                                },
+                                recipient: {
+                                    ...(delivery?.template?.model?.recipient ?? {}),
+                                    ...(recipient.type === 'email' ? { email: recipient.value } : {}),
+                                },
+                            },
+                            messageStream: 'universal-inbox',
+                        });
+                    }
+
+                    // Also send in-app notification
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVAL_PENDING,
                         to: guardianProfile,
@@ -499,7 +540,7 @@ export const issueToInbox = async (
                     });
                 }
             } catch (err) {
-                console.error('[issueToInbox] Failed to send guardian in-app notifications for managed child:', err);
+                console.error('[issueToInbox] Failed to send guardian notifications for managed child:', err);
             }
 
             // Still send the normal claim email to the child so they know a credential arrived
