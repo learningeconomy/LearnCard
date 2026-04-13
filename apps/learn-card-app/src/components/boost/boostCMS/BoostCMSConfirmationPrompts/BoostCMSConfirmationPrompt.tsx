@@ -14,6 +14,7 @@ type BoostCMSConfirmationPromptProps = {
     isSaveLoading: boolean;
     clearLocalSave?: () => void;
     onIntentionalNavigation?: () => void;
+    skippedPublishStep?: boolean;
 };
 
 export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProps> = ({
@@ -24,6 +25,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     isSaveLoading,
     clearLocalSave,
     onIntentionalNavigation,
+    skippedPublishStep = false,
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -45,7 +47,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
 
     let promptText = null;
 
-    if (currentStep === BoostCMSStepsEnum.issueTo) {
+    if (currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep) {
         promptText =
             'Your boost is published and no more edits can be made. You can return to issuing or quit to start over.';
     }
