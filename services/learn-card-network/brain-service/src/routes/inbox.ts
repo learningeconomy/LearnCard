@@ -75,6 +75,7 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { finalizeInboxCredentialsForProfile } from '@helpers/finalize-inbox.helpers';
 import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
+import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -1121,61 +1122,7 @@ export const inboxRouter = t.router({
             )
         )
         .mutation(async ({ ctx }) => {
-            const { profile } = ctx.user;
-
-            const contactMethods = await getContactMethodsForProfile(profile.did);
-            const verifiedEmail = contactMethods.find(
-                cm => cm.type === 'email' && cm.isVerified
-            );
-            if (!verifiedEmail) return [];
-
-            const approvedCredentials = await getApprovedInboxCredentialsByGuardianEmail(
-                verifiedEmail.value
-            );
-            if (approvedCredentials.length === 0) return [];
-
-            const results: Array<{
-                childProfileId: string;
-                childDisplayName: string;
-                managerId: string | null;
-            }> = [];
-
-            for (const inboxCredential of approvedCredentials) {
-                try {
-                    const childProfile = await getProfileForInboxCredential(inboxCredential.id);
-                    if (!childProfile) continue;
-
-                    const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
-                    const alreadyManages = existingManagers.some(m => m.profileId === profile.profileId);
-
-                    let managerId: string | null = null;
-
-                    if (!alreadyManages) {
-                        const manager = await createProfileManager({
-                            displayName: profile.displayName ?? 'Guardian',
-                            managerType: 'guardian',
-                        });
-                        await Promise.all([
-                            createManagesRelationship(manager.id, childProfile.profileId),
-                            manager.relateTo({
-                                alias: 'administratedBy',
-                                where: { profileId: profile.profileId },
-                            }),
-                        ]);
-                        managerId = manager.id;
-                    }
-
-                    results.push({
-                        childProfileId: childProfile.profileId,
-                        childDisplayName: childProfile.displayName ?? childProfile.profileId,
-                        managerId,
-                    });
-                } catch (err) {
-                    console.error('[claimPendingGuardianLinks] Failed to process credential:', inboxCredential.id, err);
-                }
-            }
-
-            return results;
+            return claimPendingGuardianLinksForProfile(ctx.user.profile);
         }),
 
     // Authenticated route: guardian approves a credential in-app (no OTP needed)
