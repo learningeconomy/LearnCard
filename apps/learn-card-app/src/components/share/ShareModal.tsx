@@ -10,6 +10,7 @@ import Select from 'learn-card-base/components/generic/Select';
 import CopyStack from '../svgs/CopyStack';
 
 import { useWallet, ToastTypeEnum, useToast } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 type ShareModalProps = {
     contractUri?: string;
@@ -36,7 +37,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                 profileId: string;
                 expiresIn: number | null;
             } = await wallet?.invoke?.generateInvite(challenge, expiration);
-            const _inviteLink = `https://learncard.app/invite?challenge=${generatedInvite?.challenge}&profileId=${generatedInvite?.profileId}`;
+            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${generatedInvite?.challenge}&profileId=${generatedInvite?.profileId}`;
             setInviteLink(_inviteLink);
             // Treat null as 0 for "never expire"
             setExpiresIn(generatedInvite?.expiresIn === null ? 0 : generatedInvite?.expiresIn);
@@ -68,12 +69,10 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
     const handleShare = async () => {
         const wallet = await initWallet();
 
-        let link = `learncard.app/connect?connect=true&did=${wallet?.id?.did()}`;
+        let link = `${getAppBaseUrl()}/connect?connect=true&did=${wallet?.id?.did()}`;
 
         if (contractUri) {
-            link = `${
-                IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-            }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+            link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
         }
 
         if (overrideShareLink) {

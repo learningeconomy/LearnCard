@@ -7,6 +7,7 @@ import { CodeBlock } from './CodeBlock';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import type { AppPermission } from '../types';
+import { getAppBaseUrl, getResolvedTenantConfig } from '../../../config/bootstrapTenantConfig';
 
 type AuthGrant = {
     id: string;
@@ -512,7 +513,7 @@ Access-Control-Allow-Headers: Content-Type`}
 
 // Initialize the SDK
 const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
+    hostOrigin: '${getAppBaseUrl()}'
 });
 
 // Request user identity (SSO)
@@ -1063,7 +1064,7 @@ app.post('/webhooks/learncard', (req, res) => {
             </p>
 
             <CodeBlock
-                code={`curl -X POST https://api.learncard.com/api/inbox/issue \\
+                code={`curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/api/inbox/issue \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{

@@ -714,6 +714,7 @@ export type LearnCardNetworkPluginMethods = {
           }
         | undefined
     >;
+    getIntegrationForListing: (listingId: string) => Promise<LCNIntegration | undefined>;
 
     // App Store
     createAppStoreListing: (

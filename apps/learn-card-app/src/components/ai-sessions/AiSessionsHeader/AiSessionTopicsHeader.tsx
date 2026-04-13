@@ -24,7 +24,10 @@ export const AiSessionTopicsHeader: React.FC<{
 
     const title = isShowAll ? (
         <p className={`text-[25px] font-semibold text-${primaryColor} font-poppins ml-4`}>
-            Ai Sessions
+            AI Sessions
+            <span className="ml-[6px] text-[15px] font-normal text-grayscale-400 leading-[100%]">
+                beta
+            </span>
         </p>
     ) : (
         <p className="text-[25px] font-semibold text-grayscale-900 font-poppins ml-4">

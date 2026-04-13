@@ -7,22 +7,27 @@ import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
+import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
-import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
+import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
-import { useAiInsightCredential, useAiPathways } from 'learn-card-base';
+import {
+    useAiInsightCredential,
+    useAiPathways,
+    CredentialCategoryEnum,
+} from 'learn-card-base';
+
+import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 
 import {
     getFirstAvailableKeywords,
@@ -36,6 +41,7 @@ import {
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
+    const { percentage } = useSkillProfileCompletion();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -66,7 +72,6 @@ const AiPathways: React.FC = () => {
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
         useTrainingProgramsByKeyword({
             keywords: allKeywords as string[],
-            fieldOfStudy,
         });
 
     const schoolPrograms = useMemo(() => {
@@ -107,11 +112,15 @@ const AiPathways: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
-                                <ExperimentalFeatureBox className="shadow-box-bottom" />
-                            </div>
+                            {percentage > 0 && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard />
+                            )}
 
                             <MySkillProfile />
+
+                            {percentage === 0 && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard />
+                            )}
 
                             {emptyPathways ? (
                                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">

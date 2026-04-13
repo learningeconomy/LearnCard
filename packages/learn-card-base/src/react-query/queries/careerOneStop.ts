@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import _ from 'lodash';
 
-import type { OccupationDetailsResponse } from '../../types/careerOneStop';
+import type { CareerOneStopOccupation, OccupationDetailsResponse } from '../../types/careerOneStop';
 import { useWallet } from 'learn-card-base';
 
-import { LEARNCARD_AI_URL } from 'learn-card-base';
+import { networkStore } from '../../stores/NetworkStore';
 
 const fetchOccupationDetailsForKeyword = async (
     keyword: string
 ): Promise<OccupationDetailsResponse[]> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/occupations`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -23,6 +23,17 @@ const fetchOccupationDetailsForKeyword = async (
     }
 
     return res.json();
+};
+
+export const useOccupationSuggestionsForKeyword = (keyword: string) => {
+    return useQuery({
+        queryKey: ['occupation-suggestions', keyword],
+        queryFn: async () => {
+            return fetchOccupationDetailsForKeyword(keyword);
+        },
+        enabled: keyword.length >= 2,
+        staleTime: 1000 * 60 * 5,
+    });
 };
 
 export const useOccupationDetailsForKeyword = (keyword: string) => {
@@ -42,7 +53,7 @@ const fetchSalariesForKeyword = async ({
     keyword: string;
     locations: string[];
 }) => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/salaries`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/salaries`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -87,7 +98,7 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
 };
 
 const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/training-programs`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/training-programs`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -104,7 +115,7 @@ const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => 
 };
 
 const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/courses`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/courses`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -121,7 +132,7 @@ const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any
 };
 
 export const fetchCareerOneStopVideo = async (videoCode: string): Promise<any> => {
-    const res = await fetch(`${LEARNCARD_AI_URL}/insights/video`, {
+    const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/video`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -154,17 +165,15 @@ export const useCareerOneStopVideo = (videoCode: string | null) => {
  * Hook for fetching and enriching training programs data
  *
  * Data Flow:
- * 1. Takes an array of keywords and optional fieldOfStudy
+ * 1. Takes an array of keywords
  * 2. Fetches occupation details for each keyword (Career One Stop API)
  * 3. Extracts ONET titles from occupation results
  * 4. Fetches training programs for first 3 ONET titles (Career One Stop API)
  * 5. Extracts unique school names from training programs
  * 6. Fetches syllabus courses for each unique school (Open Syllabus API)
- * 7. Filters syllabus courses by fieldOfStudy
- * 8. Combines training programs with filtered syllabus courses
+ * 7. Combines training programs with syllabus courses
  *
  * @param keywords - Array of keywords to search for
- * @param fieldOfStudy - Optional field of study to filter syllabus courses
  * @returns Enriched training programs with syllabus courses
  */
 export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] | null }) => {
@@ -217,7 +226,7 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
             // Add error handling for syllabus fetch
             const syllabusResults = await Promise.allSettled(syllabusPromises);
 
-            // Step 8: Combine training programs with syllabus courses filtered by fieldOfStudy
+            // Step 8: Combine training programs with syllabus courses
             return combinedResults
                 .map((result: any, index: number) => ({
                     ...result,

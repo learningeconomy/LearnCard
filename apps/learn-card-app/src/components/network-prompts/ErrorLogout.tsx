@@ -1,12 +1,11 @@
 import useLogout from '../../hooks/useLogout';
 import { IonLoading, IonRow } from '@ionic/react';
-import { BrandingEnum } from 'learn-card-base';
 
 const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();
 
     const _handleLogout = () => {
-        handleLogout(BrandingEnum.learncard);
+        handleLogout();
     };
 
     return (

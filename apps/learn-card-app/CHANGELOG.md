@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.95.5
+
+### Patch Changes
+
+-   [#1137](https://github.com/learningeconomy/LearnCard/pull/1137) [`73e56c14d03c7117ab509c025170c88f5a0cc989`](https://github.com/learningeconomy/LearnCard/commit/73e56c14d03c7117ab509c025170c88f5a0cc989) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1727] Update @capgo/capacitor-updater from 8.41.12 to 8.45.0
+
+-   [#1139](https://github.com/learningeconomy/LearnCard/pull/1139) [`4599f016afc31f6e34b713c85af56d0355a71e67`](https://github.com/learningeconomy/LearnCard/commit/4599f016afc31f6e34b713c85af56d0355a71e67) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1726] First-class CLR 2.0 support in CredentialBuilder
+
+-   [#1162](https://github.com/learningeconomy/LearnCard/pull/1162) [`a94c36b46f63bd750063fb34f03665ffadc1006b`](https://github.com/learningeconomy/LearnCard/commit/a94c36b46f63bd750063fb34f03665ffadc1006b) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1740] Misc small UI updates/polishes
+
+-   [#1160](https://github.com/learningeconomy/LearnCard/pull/1160) [`c4049c51704ddf88cf02bf44b58656f85f4fe050`](https://github.com/learningeconomy/LearnCard/commit/c4049c51704ddf88cf02bf44b58656f85f4fe050) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Auto Consent to LearnCard.AI post onboarding if aiEnabled is truthy
+
+## 1.95.4
+
+### Patch Changes
+
+-   [#1153](https://github.com/learningeconomy/LearnCard/pull/1153) [`822d1b8e6bb16634881f513fbb4598fb263d6cb5`](https://github.com/learningeconomy/LearnCard/commit/822d1b8e6bb16634881f513fbb4598fb263d6cb5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC 1699] Apps Page and LaunchPadActionModal Updates
+
+-   [#1154](https://github.com/learningeconomy/LearnCard/pull/1154) [`c66315c41224b0eb92f5a6a030dda732d7827b25`](https://github.com/learningeconomy/LearnCard/commit/c66315c41224b0eb92f5a6a030dda732d7827b25) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Explore Pathways modal with Skill + Goal editing
+
+-   [#1146](https://github.com/learningeconomy/LearnCard/pull/1146) [`741e391412998677162a858eb96cec931c21de1c`](https://github.com/learningeconomy/LearnCard/commit/741e391412998677162a858eb96cec931c21de1c) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1695] Mobile header and footer polishes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/ler-rs-plugin@0.1.5
+    -   @learncard/open-badge-v2-plugin@1.1.15
+    -   @learncard/react@2.9.21
+    -   @learncard/sss-key-manager@0.1.4
+
+## 1.95.3
+
+### Patch Changes
+
+-   [#1076](https://github.com/learningeconomy/LearnCard/pull/1076) [`bde802446845370cca024dda6b7e13e615d72a8c`](https://github.com/learningeconomy/LearnCard/commit/bde802446845370cca024dda6b7e13e615d72a8c) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1637] Update Connect Website Guide
+
+-   [#1134](https://github.com/learningeconomy/LearnCard/pull/1134) [`4baedfa4755593e43d64d0e773367d830dd8a161`](https://github.com/learningeconomy/LearnCard/commit/4baedfa4755593e43d64d0e773367d830dd8a161) Thanks [@smurflo2](https://github.com/smurflo2)! - Self-Assigned Skills UI updates
+
+-   [#1143](https://github.com/learningeconomy/LearnCard/pull/1143) [`a290fd16ef3c2ec81281a0bc3b7ffebbccb9f6b5`](https://github.com/learningeconomy/LearnCard/commit/a290fd16ef3c2ec81281a0bc3b7ffebbccb9f6b5) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1652] Endorsement link doesn't deep link correctly into native apps
+
+-   [#1145](https://github.com/learningeconomy/LearnCard/pull/1145) [`85f43a3a299b3429599bb9c13c4f95c975bd8baf`](https://github.com/learningeconomy/LearnCard/commit/85f43a3a299b3429599bb9c13c4f95c975bd8baf) Thanks [@Custard7](https://github.com/Custard7)! - fix: Stale chunk error crashing the app (Sentry LEARN-CARD-APP-26)
+
+-   [#1122](https://github.com/learningeconomy/LearnCard/pull/1122) [`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1663] Streamline Auto-verify email
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/lca-api-plugin@1.2.3
+    -   @learncard/helpers@1.2.13
+    -   @learncard/ler-rs-plugin@0.1.4
+    -   @learncard/open-badge-v2-plugin@1.1.14
+    -   @learncard/react@2.9.20
+    -   @learncard/sss-key-manager@0.1.3
+
 ## 1.95.2
 
 ### Patch Changes

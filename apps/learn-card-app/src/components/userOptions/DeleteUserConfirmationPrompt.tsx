@@ -4,6 +4,7 @@ import { auth } from '../../firebase/firebase';
 import useFirebase from '../../hooks/useFirebase';
 import { useWallet } from 'learn-card-base';
 import { useCurrentUser, useModal } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
@@ -28,6 +29,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
     const { newModal } = useModal();
     const authToken = getAuthToken();
     const currentFirebaseUser = firebaseAuth.currentUser;
+    const brandingConfig = useBrandingConfig();
 
     const [phrase, setPhrase] = useState<string>(
         currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
@@ -122,8 +124,9 @@ const DeleteUserConfirmationPrompt: React.FC<{
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
-                    Deleting your account will permanently delete your identity on LearnCard and all
-                    of your credentials. <b>Warning, this action cannot be undone!</b>
+                    Deleting your account will permanently delete your identity on{' '}
+                    {brandingConfig?.name} and all of your credentials.{' '}
+                    <b>Warning, this action cannot be undone!</b>
                 </p>
                 <h2 className="ion-text-center text-lg font-semibold text-2x mt-4">
                     Confirm by typing

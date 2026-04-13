@@ -10,6 +10,7 @@ import {
     ToastTypeEnum,
     UserProfilePicture,
 } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 const QrCodeUserCardBasicInfo: React.FC<{
     walletDid: string;
@@ -24,12 +25,10 @@ const QrCodeUserCardBasicInfo: React.FC<{
 
     const copyToClipBoard = async () => {
         try {
-            let link = `learncard.app/connect?connect=true&did=${walletDid}`;
+            let link = `${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`;
 
             if (contractUri) {
-                link = `${
-                    IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-                }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+                link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
             }
 
             if (overrideShareLink) {
@@ -89,7 +88,7 @@ const QrCodeUserCardBasicInfo: React.FC<{
                         onClick={copyToClipBoard}
                         className={`text-base flex items-center text-center font-medium text-grayscale-900`}
                     >
-                        <ChainLink className="h-[20px]" /> {`learncard.app/...${profileId}`}
+                        <ChainLink className="h-[20px]" /> {`${getAppBaseUrl().replace(/^https?:\/\//, '')}/...${profileId}`}
                     </button>
                 )}
             </div>

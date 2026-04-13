@@ -7,11 +7,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
  * production-only data such as contracts, AI passport apps, etc.
  */
 export const isProductionNetwork = (): boolean => {
-    const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
-
-    const storedNetworkUrl = networkStore.get.networkUrl();
-
-    const effectiveNetworkUrl = overriddenNetworkUrl?.trim() ? overriddenNetworkUrl : storedNetworkUrl;
+    const effectiveNetworkUrl = networkStore.get.networkUrl();
 
     return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
 };

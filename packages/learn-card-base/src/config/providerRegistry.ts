@@ -17,9 +17,10 @@
  * registerAuthProviderFactory('firebase', (config) =>
  *     createFirebaseAuthProvider({ getAuth: () => auth(), user: firebaseUser })
  * );
- * registerKeyDerivationFactory('sss', (config) =>
- *     createSSSStrategy({ serverUrl: config.serverUrl })
- * );
+ * registerKeyDerivationFactory('sss', () => {
+ *     const sss = getSSSConfig();
+ *     return createSSSStrategy({ serverUrl: sss.serverUrl });
+ * });
  *
  * // Later — resolve by env var (or explicit override)
  * const authProvider = resolveAuthProvider(config);
