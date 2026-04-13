@@ -118,49 +118,49 @@ const interleaveGrowSkillsCards = ({
     return mixedCards;
 };
 
-const dummyLearningPathwaysData: GrowSkillsPathway[] = [
-    {
-        title: 'Adding & Subtracting Fractions',
-        description:
-            'Learn how to add and subtract fractions with like and unlike denominators through guided practice.',
-        skills: ['Fraction Calculation', 'Equivalent Fractions', 'Number Sense'],
-        topicUri: 'dummy-topic-fractions',
-        pathwayUri: 'dummy-pathway-fractions',
-        keywords: {
-            occupations: ['elementary school teacher', 'math tutor', 'education assistant'],
-            jobs: ['fractions', 'arithmetic', 'math practice'],
-            careers: ['math instruction', 'basic mathematics'],
-            fieldOfStudy: 'Mathematics',
-        },
-    },
-    {
-        title: 'Introduction to Digital Literacy',
-        description:
-            'Build confidence using common tools, organizing files, and staying safe online.',
-        skills: ['Computer Basics', 'File Management', 'Online Safety'],
-        topicUri: 'dummy-topic-digital-literacy',
-        pathwayUri: 'dummy-pathway-digital-literacy',
-        keywords: {
-            occupations: ['office assistant', 'administrative assistant', 'customer support'],
-            jobs: ['digital literacy', 'computer skills', 'technology basics'],
-            careers: ['technology skills', 'workplace productivity'],
-            fieldOfStudy: 'Information Technology',
-        },
-    },
-    {
-        title: 'Getting Started with Financial Planning',
-        description: 'Learn simple ways to budget, save, and make smart everyday money decisions.',
-        skills: ['Budgeting', 'Saving', 'Goal Setting'],
-        topicUri: 'dummy-topic-financial-planning',
-        pathwayUri: 'dummy-pathway-financial-planning',
-        keywords: {
-            occupations: ['bank teller', 'bookkeeper', 'financial counselor'],
-            jobs: ['budgeting', 'personal finance', 'money management'],
-            careers: ['financial literacy', 'consumer math'],
-            fieldOfStudy: 'Business',
-        },
-    },
-];
+// const dummyLearningPathwaysData: GrowSkillsPathway[] = [
+//     {
+//         title: 'Adding & Subtracting Fractions',
+//         description:
+//             'Learn how to add and subtract fractions with like and unlike denominators through guided practice.',
+//         skills: ['Fraction Calculation', 'Equivalent Fractions', 'Number Sense'],
+//         topicUri: 'dummy-topic-fractions',
+//         pathwayUri: 'dummy-pathway-fractions',
+//         keywords: {
+//             occupations: ['elementary school teacher', 'math tutor', 'education assistant'],
+//             jobs: ['fractions', 'arithmetic', 'math practice'],
+//             careers: ['math instruction', 'basic mathematics'],
+//             fieldOfStudy: 'Mathematics',
+//         },
+//     },
+//     {
+//         title: 'Introduction to Digital Literacy',
+//         description:
+//             'Build confidence using common tools, organizing files, and staying safe online.',
+//         skills: ['Computer Basics', 'File Management', 'Online Safety'],
+//         topicUri: 'dummy-topic-digital-literacy',
+//         pathwayUri: 'dummy-pathway-digital-literacy',
+//         keywords: {
+//             occupations: ['office assistant', 'administrative assistant', 'customer support'],
+//             jobs: ['digital literacy', 'computer skills', 'technology basics'],
+//             careers: ['technology skills', 'workplace productivity'],
+//             fieldOfStudy: 'Information Technology',
+//         },
+//     },
+//     {
+//         title: 'Getting Started with Financial Planning',
+//         description: 'Learn simple ways to budget, save, and make smart everyday money decisions.',
+//         skills: ['Budgeting', 'Saving', 'Goal Setting'],
+//         topicUri: 'dummy-topic-financial-planning',
+//         pathwayUri: 'dummy-pathway-financial-planning',
+//         keywords: {
+//             occupations: ['bank teller', 'bookkeeper', 'financial counselor'],
+//             jobs: ['budgeting', 'personal finance', 'money management'],
+//             careers: ['financial literacy', 'consumer math'],
+//             fieldOfStudy: 'Business',
+//         },
+//     },
+// ];
 
 export const useGrowSkillsContent = ({
     searchQuery = '',
@@ -169,11 +169,11 @@ export const useGrowSkillsContent = ({
 
     const { data: aiInsightCredential, isLoading: fetchAiInsightCredentialLoading } =
         useAiInsightCredential();
-    const { data: learningPathwaysData, isLoading: fetchPathwaysLoading } = useAiPathways();
-    const resolvedLearningPathwaysData =
-        learningPathwaysData && learningPathwaysData.length > 0
-            ? learningPathwaysData
-            : dummyLearningPathwaysData;
+    const { data: learningPathwaysData = [], isLoading: fetchPathwaysLoading } = useAiPathways();
+    // const resolvedLearningPathwaysData =
+    //     learningPathwaysData && learningPathwaysData.length > 0
+    //         ? learningPathwaysData
+    //         : dummyLearningPathwaysData;
 
     const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
 
@@ -185,32 +185,32 @@ export const useGrowSkillsContent = ({
             keywords = insightKeywords;
         }
 
-        if (resolvedLearningPathwaysData && resolvedLearningPathwaysData.length > 0) {
-            keywords = keywords || getFirstAvailableKeywords(resolvedLearningPathwaysData || []);
+        if (learningPathwaysData && learningPathwaysData.length > 0) {
+            keywords = keywords || getFirstAvailableKeywords(learningPathwaysData || []);
         }
 
         return keywords;
-    }, [resolvedLearningPathwaysData, strongestAreaInterest]);
+    }, [learningPathwaysData, strongestAreaInterest]);
 
     const fieldOfStudy = useMemo<string>(() => {
         const insightFieldOfStudy = strongestAreaInterest?.keywords?.fieldOfStudy;
 
         if (insightFieldOfStudy) return insightFieldOfStudy;
 
-        if (resolvedLearningPathwaysData && resolvedLearningPathwaysData.length > 0) {
-            return getFirstAvailableFieldOfStudy(resolvedLearningPathwaysData || []);
+        if (learningPathwaysData && learningPathwaysData.length > 0) {
+            return getFirstAvailableFieldOfStudy(learningPathwaysData || []);
         }
 
         return '';
-    }, [resolvedLearningPathwaysData, strongestAreaInterest]);
+    }, [learningPathwaysData, strongestAreaInterest]);
 
     const allKeywords = useMemo<string[] | null>(() => {
-        const pathwayKeywords = getAllKeywords(resolvedLearningPathwaysData || []);
+        const pathwayKeywords = getAllKeywords(learningPathwaysData || []);
 
         if (pathwayKeywords.length > 0) return pathwayKeywords;
 
         return careerKeywords;
-    }, [careerKeywords, resolvedLearningPathwaysData]);
+    }, [careerKeywords, learningPathwaysData]);
 
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
         useTrainingProgramsByKeyword({
@@ -233,11 +233,11 @@ export const useGrowSkillsContent = ({
     const defaultCards = useMemo<GrowSkillsCard[]>(
         () =>
             interleaveGrowSkillsCards({
-                aiSessions: resolvedLearningPathwaysData || [],
+                aiSessions: learningPathwaysData || [],
                 courses: schoolPrograms || [],
                 media: occupations || [],
             }),
-        [occupations, resolvedLearningPathwaysData, schoolPrograms]
+        [occupations, learningPathwaysData, schoolPrograms]
     );
 
     const searchKeywords = trimmedSearchQuery ? [trimmedSearchQuery] : null;
@@ -258,11 +258,11 @@ export const useGrowSkillsContent = ({
     const searchCards = useMemo<GrowSkillsCard[]>(
         () =>
             interleaveGrowSkillsCards({
-                aiSessions: resolvedLearningPathwaysData || [],
+                aiSessions: learningPathwaysData || [],
                 courses: searchSchoolPrograms || [],
                 media: searchOccupations || [],
             }),
-        [resolvedLearningPathwaysData, searchOccupations, searchSchoolPrograms]
+        [learningPathwaysData, searchOccupations, searchSchoolPrograms]
     );
 
     const cards = trimmedSearchQuery ? searchCards : defaultCards;
@@ -280,7 +280,7 @@ export const useGrowSkillsContent = ({
         !occupations &&
         courses?.length === 0 &&
         schoolPrograms.length === 0 &&
-        resolvedLearningPathwaysData.length === 0;
+        learningPathwaysData.length === 0;
 
     return {
         isLoading,
@@ -288,7 +288,7 @@ export const useGrowSkillsContent = ({
         careerKeywords,
         fieldOfStudy,
         allKeywords,
-        learningPathwaysData: resolvedLearningPathwaysData || [],
+        learningPathwaysData: learningPathwaysData || [],
         schoolPrograms,
         courses,
         occupations,
