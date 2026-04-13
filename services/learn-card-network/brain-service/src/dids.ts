@@ -26,6 +26,7 @@ import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationship
 import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
 import { getDidMetadataForProfile } from '@accesslayer/did-metadata/relationships/read';
 import { mergeWith, omit } from 'lodash';
+import { getServerDidWebDID } from '@helpers/federation.helpers';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -147,6 +148,19 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
+        // Add UniversalInboxService endpoint for federation
+        const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+        const baseUrl = `${protocol}${domain.replace(/%3A/g, ':')}`;
+        finalDoc.service = [
+            ...(finalDoc.service || []),
+            {
+                id: `${did}#universal-inbox`,
+                type: 'UniversalInboxService',
+                serviceEndpoint: `${baseUrl}/api/inbox/receive`,
+                serviceDid: getServerDidWebDID(domain),
+            },
+        ];
+
         // Ensure the primary keyAgreement uses 2019 suite format for backwards compatibility
         try {
             const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};
@@ -173,7 +187,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         if (saDocs) {
             saDocs.map(sa => {
-                (finalDoc.verificationMethod = [
+                ((finalDoc.verificationMethod = [
                     ...(finalDoc.verificationMethod || []),
                     ...sa.verificationMethod,
                 ]),
@@ -188,7 +202,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     (finalDoc.keyAgreement = [
                         ...(finalDoc.keyAgreement || []),
                         ...(sa.keyAgreement || []),
-                    ]);
+                    ]));
             });
         }
 
