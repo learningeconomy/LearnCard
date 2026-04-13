@@ -108,8 +108,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                             className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
                             data-testid="notification-title"
                         >
-                            <strong>{credentialName}</strong> for <strong>{childDisplayName}</strong>{' '}
-                            from {issuerDisplayName}
+                            {credentialName} for {childDisplayName} from {issuerDisplayName}
                         </h4>
                         <p
                             className="font-bold p-0 mt-[10px] leading-none tracking-wide text-[12px] text-indigo-600 notification-card-type-text"
