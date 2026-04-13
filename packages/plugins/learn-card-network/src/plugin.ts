@@ -64,10 +64,7 @@ const renderTemplateJson = (jsonString: string, templateData: Record<string, unk
 
 const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
     return (
-        !!profile &&
-        'did' in profile &&
-        typeof profile.did === 'string' &&
-        profile.did.length > 0
+        !!profile && 'did' in profile && typeof profile.did === 'string' && profile.did.length > 0
     );
 };
 
@@ -115,19 +112,19 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
         : await getClient(
-              url,
-              async challenge => {
-                  const jwt = await learnCard.invoke.getDidAuthVp({
-                      proofFormat: 'jwt',
-                      challenge,
-                  });
+            url,
+            async challenge => {
+                const jwt = await learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge,
+                });
 
-                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                  return jwt;
-              },
-              guardianApprovalGetter
-          );
+                return jwt;
+            },
+            guardianApprovalGetter
+        );
 
     let userData: LCNProfile | undefined;
 
@@ -188,6 +185,68 @@ export async function getLearnCardNetworkPlugin(
             );
             return _learnCard.invoke.resolveFromLCN(boostUri);
         }
+    };
+
+    const getInboxEndpointForDid = async (
+        _learnCard: any,
+        recipientDid: string
+    ): Promise<string> => {
+        const serviceUrl = new URL(url);
+        const serviceDomain = `${serviceUrl.hostname}${
+            serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+        }`;
+        const localServiceDid = `did:web:${serviceDomain}`;
+
+        const getInferredServiceDid = (did: string): string | null => {
+            if (!did.startsWith('did:web:')) return null;
+
+            const parts = did.split(':');
+            if (parts.length < 3) return null;
+
+            const pathMarkerIndex = parts.findIndex((part, index) => {
+                if (index < 3) return false;
+                return part === 'users' || part === 'app' || part === 'manager';
+            });
+
+            if (pathMarkerIndex === -1) {
+                return did;
+            }
+
+            return `did:web:${parts.slice(2, pathMarkerIndex).join(':')}`;
+        };
+
+        const getInboxService = (didDoc: {
+            service?: Array<{
+                type: string | string[];
+                serviceEndpoint?: string;
+                serviceDid?: string;
+            }>;
+        }) =>
+            didDoc.service?.find(service => {
+                const type = Array.isArray(service.type) ? service.type[0] : service.type;
+                return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+            });
+
+        const inferredServiceDid = getInferredServiceDid(recipientDid);
+
+        if (inferredServiceDid === localServiceDid) {
+            return `${serviceUrl.origin}/api/inbox/receive`;
+        }
+
+        const didDoc = await _learnCard.invoke.resolveDid(recipientDid);
+        const inboxService = getInboxService(didDoc);
+
+        if ((inboxService?.serviceDid || inferredServiceDid) === localServiceDid) {
+            return `${serviceUrl.origin}/api/inbox/receive`;
+        }
+
+        if (!inboxService?.serviceEndpoint) {
+            throw new Error(
+                `Recipient DID ${recipientDid} does not have a UniversalInboxService endpoint in its DID document`
+            );
+        }
+
+        return inboxService.serviceEndpoint;
     };
 
     return {
@@ -266,6 +325,11 @@ export async function getLearnCardNetworkPlugin(
                 const jwe = await _learnCard.invoke.createDagJwe(credential, recipientsList);
 
                 return client.storage.store.mutate({ item: jwe });
+            },
+            delete: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.credential.deleteCredential.mutate({ uri });
             },
         },
         methods: {
@@ -383,7 +447,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -522,6 +586,58 @@ export async function getLearnCardNetworkPlugin(
 
             sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
+
+                if (profileId.startsWith('did:web:')) {
+                    const inboxEndpoint = await getInboxEndpointForDid(_learnCard, profileId);
+
+                    // Handle metadata parameter
+                    let metadata: Record<string, unknown> | undefined;
+                    if (typeof metadataOrEncrypt === 'object') {
+                        metadata = metadataOrEncrypt;
+                    }
+
+                    const myProfile = await client.profile.getProfile.query();
+                    const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
+                    const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
+                    const signedCredential = await _learnCard.invoke.issueCredential(vc);
+                    const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
+                        proofFormat: 'jwt',
+                        challenge: `inbox-federation-${crypto.randomUUID()}`,
+                    });
+
+                    let receiveUrl = inboxEndpoint;
+
+                    if (receiveUrl.includes('localhost')) {
+                        receiveUrl = receiveUrl.replace('https://', 'http://');
+                    }
+
+                    const response = await fetch(receiveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${didAuthJwt}`,
+                        },
+                        body: JSON.stringify({
+                            recipientDid: profileId,
+                            credential: signedCredential,
+                            issuerDid,
+                            issuerDisplayName,
+                            configuration: {
+                                ...metadata,
+                                federatedFrom: issuerDid,
+                            },
+                        }),
+                        signal: AbortSignal.timeout(30000),
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Federation failed: ${error}`);
+                    }
+
+                    const result = await response.json();
+                    return result.issuanceId;
+                }
 
                 // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
                 let metadata: Record<string, unknown> | undefined;
@@ -1004,10 +1120,9 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${
-                                error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1104,9 +1219,69 @@ export async function getLearnCardNetworkPlugin(
                     const isDid = recipient.startsWith('did:');
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
+                    const serviceUrl = new URL(url);
+                    const serviceDomain = `${serviceUrl.hostname}${
+                        serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+                    }`;
+                    const recipientDomain = recipient.startsWith('did:web:')
+                        ? recipient.split(':')[2]
+                        : undefined;
+                    const isRemoteDidWebRecipient =
+                        recipient.startsWith('did:web:') && recipientDomain !== serviceDomain;
 
-                    // For DID/profileId recipients with local signing capability, sign client-side
-                    // This optimization reduces round trips by signing locally before sending
+                    if (isRemoteDidWebRecipient && input.templateUri) {
+                        const boostRecord = await _learnCard.invoke.getBoost(input.templateUri);
+                        let boost = boostRecord.boost;
+
+                        if (input.templateData && Object.keys(input.templateData).length > 0) {
+                            const boostString = JSON.stringify(boost);
+                            const rendered = renderTemplateJson(boostString, input.templateData);
+                            boost = JSON.parse(rendered);
+                        }
+
+                        if (isVC2Format(boost)) {
+                            boost.validFrom = new Date().toISOString();
+                        } else {
+                            boost.issuanceDate = new Date().toISOString();
+                        }
+
+                        boost.issuer = _learnCard.id.did();
+
+                        if (Array.isArray(boost.credentialSubject)) {
+                            boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                ...subject,
+                                id: recipient,
+                            }));
+                        } else {
+                            boost.credentialSubject = {
+                                ...boost.credentialSubject,
+                                id: recipient,
+                            };
+                        }
+
+                        if (boost.type?.includes('BoostCredential')) {
+                            boost.boostId = input.templateUri;
+                        }
+
+                        const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                        const credentialUri = await _learnCard.invoke.sendCredential(
+                            recipient,
+                            signedCredential,
+                            {
+                                boostUri: input.templateUri,
+                                templateData: input.templateData,
+                                integrationId: input.integrationId,
+                            }
+                        );
+
+                        return {
+                            type: 'boost' as const,
+                            credentialUri,
+                            uri: input.templateUri,
+                            activityId: '',
+                        };
+                    }
+
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
                     const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
@@ -1125,8 +1300,7 @@ export async function getLearnCardNetworkPlugin(
                             } else {
                                 const targetProfile = await _learnCard.invoke.getProfile(recipient);
 
-                                if (!hasDid(targetProfile))
-                                    return client.boost.send.mutate(input);
+                                if (!hasDid(targetProfile)) return client.boost.send.mutate(input);
 
                                 targetDid = targetProfile.did;
                             }
@@ -1144,8 +1318,7 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${
-                                            error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1175,6 +1348,25 @@ export async function getLearnCardNetworkPlugin(
                                 boost.boostId = input.templateUri;
 
                             const signedCredential = await _learnCard.invoke.issueCredential(boost);
+
+                            if (isDid && recipient.startsWith('did:web:')) {
+                                const credentialUri = await _learnCard.invoke.sendCredential(
+                                    recipient,
+                                    signedCredential,
+                                    {
+                                        boostUri: input.templateUri,
+                                        templateData: input.templateData,
+                                        integrationId: input.integrationId,
+                                    }
+                                );
+
+                                return {
+                                    type: 'boost' as const,
+                                    credentialUri,
+                                    uri: input.templateUri,
+                                    activityId: '',
+                                };
+                            }
 
                             return client.boost.send.mutate({
                                 ...input,
@@ -2039,6 +2231,15 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.activity.getActivityChain.query(options);
             },
+
+            isServiceTrusted: async (_learnCard, serviceDid) => {
+                const trustedServices = await client.federation.getTrustedServices.query({});
+                return trustedServices.some(s => s.did === serviceDid);
+            },
+
+            getTrustedServices: async () => {
+                return client.federation.getTrustedServices.query({});
+            },
         },
     };
 }
@@ -2102,9 +2303,8 @@ export const getVerifyBoostPlugin = async (
                 const boostCredential = credential?.boostCredential;
                 try {
                     if (boostCredential) {
-                        const verifyBoostCredential = await learnCard.invoke.verifyCredential(
-                            boostCredential
-                        );
+                        const verifyBoostCredential =
+                            await learnCard.invoke.verifyCredential(boostCredential);
                         if (!boostCredential?.boostId && !credential?.boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'

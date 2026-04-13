@@ -19,9 +19,17 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
     }
 };
 
-const healthCheck = async (): Promise<boolean> => {
+const healthCheckBrainA = async (): Promise<boolean> => {
     try {
         return (await fetchWithTimeout('http://localhost:4000/api/health-check'))?.status === 200;
+    } catch (error) {
+        return false;
+    }
+};
+
+const healthCheckBrainB = async (): Promise<boolean> => {
+    try {
+        return (await fetchWithTimeout('http://localhost:4001/api/health-check'))?.status === 200;
     } catch (error) {
         return false;
     }
@@ -33,7 +41,7 @@ export async function setup() {
     let start = performance.now();
 
     if (MANAGE_DOCKER) {
-        console.log('Starting docker...');
+        console.log('Starting federation docker environment...');
         await execa`docker compose up -d --build`;
         console.log(
             'Docker started in',
@@ -46,14 +54,20 @@ export async function setup() {
 
     start = performance.now();
 
-    console.log('Waiting for health check...');
-
+    console.log('Waiting for brain-a health check...');
     do {
         await new Promise(resolve => setTimeout(resolve, 2000));
-    } while (!(await healthCheck()));
+    } while (!(await healthCheckBrainA()));
+    console.log('Brain-a health check passed');
+
+    console.log('Waiting for brain-b health check...');
+    do {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    } while (!(await healthCheckBrainB()));
+    console.log('Brain-b health check passed');
 
     console.log(
-        'Health check passed in',
+        'Both services healthy in',
         ((performance.now() - start) / 1000).toFixed(2),
         'seconds'
     );

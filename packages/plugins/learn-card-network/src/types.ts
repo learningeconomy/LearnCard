@@ -121,6 +121,7 @@ export type LearnCardNetworkPluginDependentMethods = {
     clearDidWebCache?: () => Promise<void>;
     createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
     decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
+    resolveDid: (did: string) => Promise<DidDocument>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -831,6 +832,18 @@ export type LearnCardNetworkPluginMethods = {
     getActivity: (options: { activityId: string }) => Promise<CredentialActivityRecord | null>;
 
     getActivityChain: (options: { activityId: string }) => Promise<CredentialActivityRecord[]>;
+
+    // Federation
+
+    isServiceTrusted: (serviceDid: string) => Promise<boolean>;
+
+    getTrustedServices: () => Promise<
+        Array<{
+            did: string;
+            name: string;
+            endpoint: string;
+        }>
+    >;
 };
 
 /** @group LearnCardNetwork Plugin */
