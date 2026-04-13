@@ -14,6 +14,7 @@
 import type { Context } from 'https://edge.netlify.com';
 
 import { resolveTenantConfig } from './shared/tenant-resolver.ts';
+import { buildCorsHeaders } from './shared/cors.ts';
 
 // ---------------------------------------------------------------------------
 // Edge function handler
@@ -30,7 +31,7 @@ export default async (request: Request, _context: Context) => {
         headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
-            'Access-Control-Allow-Origin': '*',
+            ...buildCorsHeaders(request),
         },
     });
 };

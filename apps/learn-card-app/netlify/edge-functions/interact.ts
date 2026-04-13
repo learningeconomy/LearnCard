@@ -1,9 +1,9 @@
 import type { Config, Context } from "@netlify/edge-functions";
 
 import { resolveTenantConfig, getTenantOrigin } from './shared/tenant-resolver.ts';
+import { buildCorsHeaders } from './shared/cors.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const baseCorsHeaders = {
   "Access-Control-Allow-Methods": "GET",
   "Access-Control-Allow-Headers": "Content-Type",
 };
@@ -59,7 +59,7 @@ export default async (request: Request, context: Context) => {
   if (!parsedData) {
     return new Response("Invalid interaction URL format.", { 
         status: 400,
-        headers: { "Content-Type": "text/plain", ...corsHeaders },
+        headers: { "Content-Type": "text/plain", ...buildCorsHeaders(request, baseCorsHeaders) },
     });
   }
 
@@ -77,7 +77,7 @@ export default async (request: Request, context: Context) => {
       }
     };
     return new Response(JSON.stringify(protocols), {
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { "Content-Type": "application/json", ...buildCorsHeaders(request, baseCorsHeaders) },
     });
   }
 
