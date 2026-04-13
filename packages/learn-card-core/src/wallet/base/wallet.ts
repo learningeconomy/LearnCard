@@ -158,6 +158,19 @@ const addCachingToStorePlane = <
             },
         }
         : {}),
+    ...('delete' in plane
+        ? {
+            delete: async (_learnCard, uri, { cache = 'cache-first' } = {}) => {
+                const result = await plane.delete?.(_learnCard, uri);
+
+                if (result && cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                    await _learnCard.cache.setVc(uri, undefined);
+                }
+
+                return result;
+            },
+        }
+        : {}),
 });
 
 const generateStorePlane = <
