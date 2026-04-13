@@ -186,7 +186,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
     const openGrowSkillsModal = () => {
         closeModal();
-        newModal(<GrowSkillsModal />, undefined, {
+        newModal(<GrowSkillsModal initialSearchQuery={search.trim()} />, undefined, {
             desktop: ModalTypes.Right,
             mobile: ModalTypes.Right,
         });

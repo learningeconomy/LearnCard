@@ -26,16 +26,20 @@ import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwayS
 
 export type GrowSkillsModalProps = {
     initialActiveTab?: GrowSkillsTab;
+    initialSearchQuery?: string;
 };
 
 const growSkillsTabs = ['All', 'AI Sessions', 'Courses', 'Media'] as const;
 
 export type GrowSkillsTab = (typeof growSkillsTabs)[number];
 
-const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'All' }) => {
+const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
+    initialActiveTab = 'All',
+    initialSearchQuery = '',
+}) => {
     const { newModal, closeModal } = useModal();
-    const [search, setSearch] = useState('');
-    const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
+    const [search, setSearch] = useState(initialSearchQuery);
+    const [submittedSearchQuery, setSubmittedSearchQuery] = useState(initialSearchQuery);
     const [filter, setFilter] = useState('');
     const [activeTab, setActiveTab] = useState<GrowSkillsTab>(initialActiveTab);
 
