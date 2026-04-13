@@ -650,9 +650,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         if (currentStep === BoostCMSStepsEnum.publish) {
             setCurrentStep(BoostCMSStepsEnum.create);
         } else if (currentStep === BoostCMSStepsEnum.issueTo) {
-            // When skipPublishStep flag is enabled, go back shows confirmation modal
+            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
             if (flags?.skipPublishStep) {
-                handleConfirmationModal();
+                setCurrentStep(BoostCMSStepsEnum.create);
             } else {
                 handleConfirmationModal();
             }
