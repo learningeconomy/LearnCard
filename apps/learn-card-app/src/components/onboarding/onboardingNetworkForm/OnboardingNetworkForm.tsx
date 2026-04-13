@@ -23,7 +23,8 @@ import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
 
 import LocationIcon from '../../svgs/LocationIcon';
-import LearnCardLogo from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -105,6 +106,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     skipRoleSlides,
     pendingInstall,
 }) => {
+    const brandingConfig = useBrandingConfig();
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
@@ -495,8 +497,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
                             <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
                                 <img
-                                    src={LearnCardLogo}
-                                    alt="LearnCard logo"
+                                    src={useTenantBrandingAssets().appIcon}
+                                    alt="App logo"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -508,7 +510,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             </div>
                         </div>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Add Your Child to LearnCard!
+                            Add Your Child to {brandingConfig?.name}!
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                             Log in or sign up to create your profile inside a family account.
@@ -552,7 +554,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
-                                    handleLogout(BrandingEnum.learncard, {
+                                    handleLogout({
                                         overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
                                             '/families?createFamily=true'
                                         )}`,

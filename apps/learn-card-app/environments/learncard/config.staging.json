@@ -1,0 +1,25 @@
+{
+    "_comment": "Staging overrides for LearnCard. Merged on top of config.json via deepMerge.",
+    "domain": "staging.learncard.ai",
+    "apis": {
+        "brainService": "https://staging.network.learncard.com/trpc",
+        "brainServiceApi": "https://staging.network.learncard.com/api",
+        "cloudService": "https://staging.cloud.learncard.com/trpc",
+        "lcaApi": "https://staging.api.learncard.app/trpc",
+        "xapi": "https://staging.network.learncard.com/xapi"
+    },
+    "features": {
+        "analytics": false
+    },
+    "observability": {
+        "sentryEnv": "staging",
+        "launchDarklyClientId": "63dabf3082caed12cac3e55b",
+        "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
+    },
+    "auth": {
+        "keyDerivation": "sss",
+        "sss": {
+            "serverUrl": "https://staging.api.learncard.app/api"
+        }
+    }
+}

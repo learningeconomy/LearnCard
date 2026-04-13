@@ -73,6 +73,13 @@ export type Cache = {
 
     /** Gets TTL of a key **/
     ttl: (key: RedisKey) => Promise<number | undefined>;
+
+    /**
+     * Atomically increments a key by 1 and returns the new value.
+     * If the key does not exist it is created with value 1.
+     * When ttl is provided and this is the first increment (result === 1), EXPIRE is set.
+     */
+    incr: (key: RedisKey, ttl?: number) => Promise<number | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -187,6 +194,25 @@ export const getCache = (): Cache => {
                 if (cache?.node) return await cache.node.ttl(key);
             } catch (e) {
                 // logger.error('Cache get error', e);
+            }
+
+            return undefined;
+        },
+        incr: async (key, ttl) => {
+            try {
+                const redis = cache?.redis ?? cache?.node;
+                if (!redis) return undefined;
+
+                const newVal = await redis.incr(key);
+
+                // Set TTL on first increment so the window auto-expires
+                if (newVal === 1 && ttl) {
+                    await redis.expire(key, ttl);
+                }
+
+                return newVal;
+            } catch (e) {
+                console.error('Cache incr error', e);
             }
 
             return undefined;

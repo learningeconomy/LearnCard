@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImmer, Updater } from 'use-immer';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
     ModalTypes,
     useToast,
     ToastTypeEnum,
+    getOrCreateSharedUriForWallet,
 } from 'learn-card-base';
 import { checkAppInstallEligibility } from '@learncard/helpers';
 
@@ -135,27 +136,95 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         contractDetails?.owner?.did ?? ''
     );
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
+    const queryClient = useQueryClient();
+
+    /**
+     * Generates consent terms with shared URIs for existing credentials in enabled categories.
+     * This ensures that when a user installs an app with a contract, their existing credentials
+     * are properly shared with the app owner, similar to the network signup flow.
+     */
+    const generateTermsWithSharedUris = async (
+        baseTerms: ConsentFlowTerms,
+        contract: ConsentFlowContractDetails
+    ): Promise<ConsentFlowTerms> => {
+        const wallet = await initWallet();
+        const ownerDid = contract.owner.did;
+
+        const updatedTerms = JSON.parse(JSON.stringify(baseTerms)) as ConsentFlowTerms;
+
+        const enabledCategories = Object.entries(updatedTerms.read.credentials.categories).filter(
+            ([_, config]) => {
+                if (typeof config === 'boolean') return config;
+                return config.sharing !== false && config.shareAll !== false;
+            }
+        );
+
+        for (const [categoryName, categoryConfig] of enabledCategories) {
+            const categoryInfo = contractCategoryNameToCategoryMetadata(categoryName);
+            const credentialCategory = categoryInfo?.credentialType;
+
+            if (!credentialCategory) continue;
+
+            try {
+                const credentials = await wallet.index.LearnCloud.get({
+                    category: credentialCategory,
+                });
+
+                const sharedUris: string[] = [];
+                for (const credential of credentials) {
+                    try {
+                        const sharedUri = await getOrCreateSharedUriForWallet(
+                            wallet,
+                            ownerDid,
+                            queryClient,
+                            credential.uri,
+                            credentialCategory
+                        );
+                        if (sharedUri) {
+                            sharedUris.push(sharedUri);
+                        }
+                    } catch (error) {
+                        console.error(
+                            `Failed to generate shared URI for credential ${credential.uri}:`,
+                            error
+                        );
+                    }
+                }
+
+                if (typeof categoryConfig === 'object') {
+                    categoryConfig.shared = sharedUris;
+                }
+            } catch (error) {
+                console.error(
+                    `Failed to fetch credentials for category ${credentialCategory}:`,
+                    error
+                );
+            }
+        }
+
+        return updatedTerms;
+    };
 
     // Contract permissions display - show what the user has actually accepted in their terms
     // Filter to only show categories where sharing is enabled
     const acceptedReadCategories = terms?.read?.credentials?.categories
         ? Object.entries(terms.read.credentials.categories)
-              .filter(([_, config]) => {
-                  const cfg = config as { sharing?: boolean };
-                  return cfg.sharing !== false;
-              })
-              .map(([category]) => category)
+            .filter(([_, config]) => {
+                const cfg = config as { sharing?: boolean };
+                return cfg.sharing !== false;
+            })
+            .map(([category]) => category)
         : [];
 
     const acceptedWriteCategories = terms?.write?.credentials?.categories
         ? Object.entries(terms.write.credentials.categories)
-              .filter(([_, config]) => {
-                  // Write categories can be boolean or object with sharing property
-                  if (typeof config === 'boolean') return config;
-                  const cfg = config as { sharing?: boolean };
-                  return cfg.sharing !== false;
-              })
-              .map(([category]) => category)
+            .filter(([_, config]) => {
+                // Write categories can be boolean or object with sharing property
+                if (typeof config === 'boolean') return config;
+                const cfg = config as { sharing?: boolean };
+                return cfg.sharing !== false;
+            })
+            .map(([category]) => category)
         : [];
 
     const hasReadCategories = acceptedReadCategories.length > 0;
@@ -200,8 +269,14 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             setIsConsenting(true);
 
             try {
-                await consentToContract({
+                // Generate shared URIs for existing credentials in enabled categories
+                const termsWithSharedUris = await generateTermsWithSharedUris(
                     terms,
+                    contractDetails
+                );
+
+                await consentToContract({
+                    terms: termsWithSharedUris,
                     expiresAt: undefined,
                     oneTime: false,
                 });
@@ -548,11 +623,10 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 <button
                     onClick={handleInstall}
                     disabled={isPreview || isConsenting || (!!contractUri && isLoadingContract)}
-                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${
-                        isPreview
+                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${isPreview
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-indigo-600 hover:bg-indigo-700'
-                    }`}
+                        }`}
                     title={isPreview ? 'Install is disabled in preview mode' : undefined}
                 >
                     {isConsenting && <Loader2 className="w-5 h-5 animate-spin" />}

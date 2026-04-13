@@ -16,6 +16,7 @@ import {
     currentUserStore,
     QrLoginRequester,
     getAuthConfig,
+    getSSSConfig,
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -172,7 +173,7 @@ const LoginPage: React.FC = () => {
                         <IonRow className="w-full flex items-center justify-center p-4">
                             <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl">
                                 <QrLoginRequester
-                                    serverUrl={authConfig.serverUrl}
+                                    serverUrl={getSSSConfig().serverUrl}
                                     onApproved={(deviceShare, _approverDid, hint, version) => {
                                         window.sessionStorage.setItem('qr_login_device_share', deviceShare);
 

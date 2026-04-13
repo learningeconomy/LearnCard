@@ -1,5 +1,9 @@
 import React from 'react';
+
 import { QRCodeSVG } from 'qrcode.react';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
+
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 export const QR_CODE_LOGO = 'https://cdn.filestackcontent.com/UDCRoOl7TyKkQOGWjApF';
 
@@ -9,12 +13,12 @@ export const UserQRCode: React.FC<{
     contractUri?: string;
     overrideShareLink?: string;
 }> = ({ profileId, walletDid, contractUri, overrideShareLink }) => {
-    let link = `learncard.app/connect?connect=true&did=${walletDid}`;
+    let link = `${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`;
+
+    const brandingAssets = useTenantBrandingAssets();
 
     if (contractUri) {
-        link = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+        link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
     }
 
     if (overrideShareLink) {
@@ -22,7 +26,7 @@ export const UserQRCode: React.FC<{
     }
 
     return (
-        <div className="w-full flex justify-center items-center">
+        <div className="w-full flex justify-center items-center px-6">
             <div className="w-full max-w-[400px] phone:max-w-[90%] bg-grayscale-100 px-8 pt-8 pb-6 rounded-[15px]">
                 <QRCodeSVG
                     className="h-full w-full"
@@ -30,7 +34,7 @@ export const UserQRCode: React.FC<{
                     data-testid="qrcode-card"
                     bgColor="transparent"
                     imageSettings={{
-                        src: QR_CODE_LOGO,
+                        src: brandingAssets.brandMark,
                         height: 35,
                         width: 35,
                         excavate: false,

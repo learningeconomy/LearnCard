@@ -5,6 +5,7 @@ import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
 import { useModal, ModalTypes } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { LCNProfile, LCNProfileManager } from '@learncard/types';
 
@@ -24,9 +25,7 @@ export const ShareChildInsightsWithAnyoneController: React.FC<{
     );
 
     const handleUserQRCodeCard = () => {
-        const overrideShareLink = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?shareInsights=true&learnerProfileId=${childProfile?.profileId}`;
+        const overrideShareLink = `${getAppBaseUrl()}/passport?shareInsights=true&learnerProfileId=${childProfile?.profileId}`;
 
         newModal(
             <ChildQRCodeUserCard

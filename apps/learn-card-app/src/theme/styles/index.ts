@@ -1,4 +1,3 @@
-import { ThemeEnum } from '../helpers/theme-helpers';
 import type { ThemeStyles } from '../validators/styles.validators';
 
 export type WalletCardStyles = {
@@ -37,36 +36,3 @@ export type StyleSetMap = {
     [StyleSetEnum.defaults]: ThemeStyles['defaults'];
 };
 
-export const styles = {
-    [ThemeEnum.Colorful]: {
-        wallet: {
-            cardStyles: 'h-[240px]',
-            iconStyles: 'w-[100px] h-[100px]',
-        },
-        launchPad: {
-            textStyles: 'text-[16px]',
-            iconStyles: 'w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]',
-            indicatorStyles: 'shadow-soft-bottom',
-        },
-        defaults: {
-            tabs: {
-                borderRadius: 'rounded-[5px]',
-            },
-        },
-    },
-    [ThemeEnum.Formal]: {
-        wallet: {
-            cardStyles: 'h-[200px]',
-            iconStyles: 'w-[60px] h-[60px]',
-        },
-        launchPad: {
-            textStyles: 'text-[14px]',
-            iconStyles: 'w-[55px] h-auto xxs:w-[55px] xxs:h-[55px] mb-2',
-        },
-        defaults: {
-            tabs: {
-                borderRadius: 'rounded-[5px]',
-            },
-        },
-    },
-} as const satisfies Record<ThemeEnum, ThemeStylesPerTheme>;

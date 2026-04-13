@@ -8,7 +8,8 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors/index';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
-import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import SlimCaretRight from '../svgs/SlimCaretRight';
 import './IntroSlides.scss';
@@ -78,6 +79,11 @@ const IntroSlides: React.FC = () => {
 
     const isNativePlatform = Capacitor?.isNativePlatform();
 
+    //! hot fix - colors are not being applied correctly
+    const firstSlideBackgroundClass = `${firstSlideBackground}`;
+    const secondSlideBackgroundClass = `${secondSlideBackground}`;
+    const thirdSlideBackgroundClass = `${thirdSlideBackground}`;
+
     return (
         <>
             <style>{paginationStyles}</style>
@@ -95,28 +101,28 @@ const IntroSlides: React.FC = () => {
                             onSwiper={swiper => setSlidesRef(swiper)}
                             onSlideChange={handleSlideChange}
                         >
-                            <SwiperSlide className={`bg-${firstSlideBackground}`}>
+                            <SwiperSlide className={firstSlideBackgroundClass}>
                                 <LearnCardSlide1
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
                                     showDesktopNav={!isNativePlatform}
                                 />
                             </SwiperSlide>
-                            <SwiperSlide className={`bg-${secondSlideBackground}`}>
+                            <SwiperSlide className={secondSlideBackgroundClass}>
                                 <LearnCardSlide2
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
                                     showDesktopNav={!isNativePlatform}
                                 />
                             </SwiperSlide>
-                            <SwiperSlide className={`bg-${thirdSlideBackground}`}>
+                            <SwiperSlide className={thirdSlideBackgroundClass}>
                                 <LearnCardSlide3
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
                                     showDesktopNav={!isNativePlatform}
                                 />
                             </SwiperSlide>
-                            <SwiperSlide className={`bg-${firstSlideBackground}`}>
+                            <SwiperSlide className={firstSlideBackgroundClass}>
                                 <LearnCardSlide4
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
@@ -185,7 +191,7 @@ const LearnCardSlide1: React.FC<LearnCardSlideProps> = ({
     return (
         <>
             <section className="base-gradient flex flex-col items-center justify-center">
-                <img src={LearnCardTextLogo} alt="LearnCard text logo" className="mt-4" />
+                <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="mt-4" />
             </section>
             <section className="absolute bottom-[50px]">
                 {showDesktopNav && (
@@ -252,6 +258,7 @@ const LearnCardSlide3: React.FC<LearnCardSlideProps> = ({
     showDesktopNav,
 }) => {
     const { getColorSet } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const { textColors } = getColorSet(ColorSetEnum.introSlides);
 
     return (
@@ -260,13 +267,13 @@ const LearnCardSlide3: React.FC<LearnCardSlideProps> = ({
                 <h1
                     className={`text-3xl font-normal font-poppins mt-[10px] text-${textColors.primary}`}
                 >
-                    You Own Your LearnCard
+                    You Own Your {brandingConfig?.name}
                 </h1>
                 <p
                     className={`text-small font-montserrat mt-[15px] px-[20px] text-${textColors.primary}`}
                 >
-                    LearnCard is your lifelong learning and work portfolio. You own your data and
-                    decide how to share it.
+                    {brandingConfig?.name} is your lifelong learning and work portfolio. You own
+                    your data and decide how to share it.
                 </p>
             </section>
             <section className="absolute bottom-[50px]">
@@ -290,7 +297,7 @@ const LearnCardSlide4: React.FC<LearnCardSlideProps> = ({ handleNextSlide, handl
     return (
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center base-gradient">
-                <img src={LearnCardTextLogo} alt="LearnCard text logo" className="mt-4" />
+                <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="mt-4" />
                 <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
             </section>
         </>

@@ -13,6 +13,7 @@ import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { ToastTypeEnum, useDeviceTypeByWidth, useToast } from 'learn-card-base';
@@ -247,7 +248,7 @@ const VerifySharedResume: React.FC = () => {
                                 )}
                             </button>
                             <a
-                                href="https://learncard.app/login"
+                                href={`${getAppBaseUrl()}/login`}
                                 className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white no-underline"
                             >
                                 Get LearnCard

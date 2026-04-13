@@ -27,8 +27,6 @@ import {
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareCredentials from './ShareCredentials';
 
-export const baseUrl = getBaseUrl();
-
 const ShareCredentialsModal = ({
     onDismiss,
 }: {
@@ -179,6 +177,7 @@ const ShareCredentialsModal = ({
         }
     };
 
+    const baseUrl = getBaseUrl();
     const link = `https://${baseUrl}/share-creds/${vpUri}/${randomSeed}`;
 
     const handleCopy = async () => {

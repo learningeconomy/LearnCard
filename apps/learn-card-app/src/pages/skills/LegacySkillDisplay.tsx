@@ -6,6 +6,8 @@ import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import LegacySkillInfoModal from './LegacySkillInfoModal';
 
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 import { LegacySkillEntry } from '../../hooks/useAlignments';
 
 type LegacySkillDisplayProps = {
@@ -14,6 +16,7 @@ type LegacySkillDisplayProps = {
 
 const LegacySkillDisplay: React.FC<LegacySkillDisplayProps> = ({ skill }) => {
     const { newModal } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const openSkillInfoModal = () => {
         newModal(
@@ -39,7 +42,7 @@ const LegacySkillDisplay: React.FC<LegacySkillDisplayProps> = ({ skill }) => {
                 {skill.title}
                 <span className="flex gap-[5px] items-center text-grayscale-700 font-poppins font-[500] text-[12px] w-full">
                     <SkillsFrameworkIcon className="w-[15px] h-[15px]" color="currentColor" />
-                    <span className="line-clamp-1">LearnCard</span>
+                    <span className="line-clamp-1">{brandingConfig?.name}</span>
                 </span>
             </div>
 

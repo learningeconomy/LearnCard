@@ -5,6 +5,7 @@ import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { getDefaultAchievementTypeImage } from '../boostHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type LearnCardTemplateListItemProps = {
     categoryType: CredentialCategory;
@@ -19,6 +20,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
 }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const baseLink = `/boost?boostUserType=${BoostUserTypeEnum.someone}&boostCategoryType=${categoryType}&boostSubCategoryType=${subType}`;
     let link = baseLink;
@@ -55,7 +57,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
                     {achievementTypeDisplay}
                 </h3>
                 <p className="text-[13.5px] font-[600] text-grayscale-700 line-clamp-1">
-                    LearnCard Template
+                    {brandingConfig?.name} Template
                 </p>
             </div>
             <button

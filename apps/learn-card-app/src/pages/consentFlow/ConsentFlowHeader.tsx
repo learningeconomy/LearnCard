@@ -1,6 +1,6 @@
 import React from 'react';
 import Plus from 'learn-card-base/svgs/Plus';
-import LearnCardAppIcon from '../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { LaunchPadAppListItem, useCurrentUser, UserProfilePicture } from 'learn-card-base';
@@ -18,6 +18,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
     app,
     contractImageOnly,
 }) => {
+    const { appIcon } = useTenantBrandingAssets();
     const currentUser = useCurrentUser();
 
     const { name: contractName, image: contractImage } = contractDetails ?? {};
@@ -69,8 +70,8 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
                             {!showCurrentUserPic && (
                                 <div className="w-[50px] h-[50px] rounded-[10px] overflow-hidden border-solid border-white border-[2px] absolute bottom-[0px] right-[-40px] drop-shadow-bottom bg-white">
                                     <img
-                                        src={LearnCardAppIcon}
-                                        alt="LearnCard App Icon"
+                                        src={appIcon}
+                                        alt="App Icon"
                                         className="h-full w-full object-contain"
                                     />
                                 </div>

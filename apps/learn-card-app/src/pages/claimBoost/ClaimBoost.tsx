@@ -21,7 +21,6 @@ import {
     useIsLoggedIn,
     redirectStore,
     ProfilePicture,
-    LEARNCARD_NETWORK_API_URL,
     CredentialCategoryEnum,
     useGetCredentialWithEdits,
     useGetVCInfo,
@@ -40,6 +39,7 @@ import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import {
     getAchievementType,
@@ -176,7 +176,7 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${LEARNCARD_NETWORK_API_URL}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
                     challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
                 }`
             );
