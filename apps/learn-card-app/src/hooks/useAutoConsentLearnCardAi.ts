@@ -43,12 +43,12 @@ export const useAutoConsentLearnCardAi = () => {
                         wallet
                     );
                     const alreadyConsented = consentedContracts.some(
-                        consent =>
+                        (consent: { contract?: { uri?: string }; status?: string | null }) =>
                             consent?.contract?.uri === contractUri &&
                             consent?.status !== 'withdrawn'
                     );
 
-                    if (alreadyConsented) return false;
+                    if (alreadyConsented) return true;
 
                     const contractDetails = await wallet.invoke.getContract(contractUri);
                     const ownerDid = contractDetails?.owner?.did;
@@ -62,10 +62,10 @@ export const useAutoConsentLearnCardAi = () => {
 
                     const categoriesWithLiveSync = Object.keys(terms.read.credentials.categories);
                     await Promise.all(
-                        categoriesWithLiveSync.map(async category => {
+                        categoriesWithLiveSync.map(async (category: string) => {
                             const allCategoryCredUris =
                                 (await wallet.index.LearnCloud.get({ category }))?.map(
-                                    item => item.uri
+                                    (item: { uri: string }) => item.uri
                                 ) ?? [];
 
                             terms.read.credentials.categories[category].shared =

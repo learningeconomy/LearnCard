@@ -8,20 +8,28 @@ import {
     useGetPreferencesForDid,
     useUpdatePreferences,
     useGetCurrentLCNUser,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import useAutoConsentLearnCardAi from '../../hooks/useAutoConsentLearnCardAi';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { useAnalytics } from '../../analytics';
 
 const PrivacySettingsPage: React.FC = () => {
     const history = useHistory();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences } = useUpdatePreferences();
+    const { mutate: updatePreferences, mutateAsync: updatePreferencesAsync } =
+        useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const brandingConfig = useBrandingConfig();
+    const { presentToast } = useToast();
+    const { guardedAction } = useGuardianGate();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const profileType = switchedProfileStore.use.profileType();
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
@@ -29,18 +37,57 @@ const PrivacySettingsPage: React.FC = () => {
     const dob = currentLCNUser?.dob;
     const age = dob ? calculateAge(dob) : null;
     const threshold = getMinorAgeThreshold(currentLCNUser?.country);
-    const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
-    const isMinor = isMinorByAge;
+    const isChildProfile = profileType === 'child';
+    const isMinorByAge = age !== null && !isNaN(age) && age < threshold;
+    const isMinor = isChildProfile || isMinorByAge;
 
-    const aiEnabled = isMinor ? false : (preferences?.aiEnabled ?? true);
-    const analyticsEnabled = isMinor ? false : (preferences?.analyticsEnabled ?? true);
-    const bugReportsEnabled = isMinor ? false : (preferences?.bugReportsEnabled ?? true);
+    const aiEnabled = isMinorByAge
+        ? false
+        : isChildProfile
+        ? preferences?.aiEnabled ?? false
+        : preferences?.aiEnabled ?? true;
+    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
+    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
 
     const handleAiToggle = useCallback(
-        (enabled: boolean) => {
-            updatePreferences({ aiEnabled: enabled });
+        async (enabled: boolean) => {
+            if (!enabled || !isChildProfile) {
+                updatePreferences({ aiEnabled: enabled });
+                return;
+            }
+
+            await guardedAction(
+                async () => {
+                    const consented = await autoConsentLearnCardAi({
+                        enabled: true,
+                        userOverrides: {
+                            displayName: currentLCNUser?.displayName ?? '',
+                            image: currentLCNUser?.image ?? '',
+                        },
+                    });
+
+                    if (!consented) {
+                        presentToast('Something went wrong. Please try again.', {
+                            type: ToastTypeEnum.Error,
+                        });
+                        return;
+                    }
+
+                    await updatePreferencesAsync({ aiEnabled: enabled });
+                },
+                { ignorePriorVerification: true }
+            );
         },
-        [updatePreferences]
+        [
+            autoConsentLearnCardAi,
+            currentLCNUser?.displayName,
+            currentLCNUser?.image,
+            guardedAction,
+            isChildProfile,
+            presentToast,
+            updatePreferences,
+            updatePreferencesAsync,
+        ]
     );
 
     const handleAnalyticsToggle = useCallback(
@@ -100,8 +147,8 @@ const PrivacySettingsPage: React.FC = () => {
                             </div>
                             <IonToggle
                                 checked={aiEnabled}
-                                disabled={isMinor}
-                                onIonChange={e => !isMinor && handleAiToggle(e.detail.checked)}
+                                disabled={isMinorByAge}
+                                onIonChange={e => !isMinorByAge && handleAiToggle(e.detail.checked)}
                                 aria-label="AI Features"
                             />
                         </div>
