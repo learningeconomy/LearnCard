@@ -79,16 +79,20 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-[10px] items-start justify-start px-[20px] pb-1">
-                            <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
-                        </div>
+                        {program?.occupationDetails?.OnetDescription && (
+                            <>
+                                <div className="flex flex-col gap-[10px] items-start justify-start px-[20px] pb-1">
+                                    <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
+                                </div>
 
-                        {/* description */}
-                        <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">
-                            <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
-                                {program?.occupationDetails?.OnetDescription || ''}
-                            </p>
-                        </div>
+                                {/* description */}
+                                <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">
+                                    <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
+                                        {program?.occupationDetails?.OnetDescription || ''}
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </section>
                 </div>
             </div>
