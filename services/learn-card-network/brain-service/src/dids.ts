@@ -26,6 +26,7 @@ import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationship
 import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
 import { getDidMetadataForProfile } from '@accesslayer/did-metadata/relationships/read';
 import { mergeWith, omit } from 'lodash';
+import { getServerDidWebDID } from '@helpers/federation.helpers';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -156,6 +157,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 id: `${did}#universal-inbox`,
                 type: 'UniversalInboxService',
                 serviceEndpoint: `${baseUrl}/api/inbox/receive`,
+                serviceDid: getServerDidWebDID(domain),
             },
         ];
 
@@ -185,7 +187,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         if (saDocs) {
             saDocs.map(sa => {
-                (finalDoc.verificationMethod = [
+                ((finalDoc.verificationMethod = [
                     ...(finalDoc.verificationMethod || []),
                     ...sa.verificationMethod,
                 ]),
@@ -200,7 +202,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     (finalDoc.keyAgreement = [
                         ...(finalDoc.keyAgreement || []),
                         ...(sa.keyAgreement || []),
-                    ]);
+                    ]));
             });
         }
 

@@ -7,7 +7,7 @@ import {
     isServiceTrusted,
     getTrustedServices,
     getServerDidWebDID,
-    getServerDidFromUserDid,
+    getOwningServiceDid,
 } from '@helpers/federation.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
@@ -74,7 +74,7 @@ export const federationRouter = t.router({
 
             const recipientProfile = await getProfileByProfileId(profileId);
 
-            const senderServerDid = getServerDidFromUserDid(senderDid);
+            const senderServerDid = await getOwningServiceDid(senderDid);
             const localServerDid = getServerDidWebDID(ctx.domain);
             const isLocalSender = senderServerDid === localServerDid;
 
@@ -85,7 +85,7 @@ export const federationRouter = t.router({
             // senderDid = did:web:service-b.com (Service B's DID)
             // issuerDid = did:web:service-b.com:users:a (User A's DID on Service B)
             // We verify getServerDidFromUserDid(issuerDid) === senderDid
-            const issuerServerDid = getServerDidFromUserDid(issuerDid);
+            const issuerServerDid = await getOwningServiceDid(issuerDid);
             if (issuerDid !== senderDid && issuerServerDid !== senderDid) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',

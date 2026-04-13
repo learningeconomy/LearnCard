@@ -64,10 +64,7 @@ const renderTemplateJson = (jsonString: string, templateData: Record<string, unk
 
 const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
     return (
-        !!profile &&
-        'did' in profile &&
-        typeof profile.did === 'string' &&
-        profile.did.length > 0
+        !!profile && 'did' in profile && typeof profile.did === 'string' && profile.did.length > 0
     );
 };
 
@@ -198,20 +195,50 @@ export async function getLearnCardNetworkPlugin(
         const serviceDomain = `${serviceUrl.hostname}${
             serviceUrl.port ? `%3A${serviceUrl.port}` : ''
         }`;
-        const recipientParts = recipientDid.split(':');
-        const recipientDomain = recipientParts[2];
+        const localServiceDid = `did:web:${serviceDomain}`;
 
-        if (recipientDomain === serviceDomain) {
+        const getInferredServiceDid = (did: string): string | null => {
+            if (!did.startsWith('did:web:')) return null;
+
+            const parts = did.split(':');
+            if (parts.length < 3) return null;
+
+            const pathMarkerIndex = parts.findIndex((part, index) => {
+                if (index < 3) return false;
+                return part === 'users' || part === 'app' || part === 'manager';
+            });
+
+            if (pathMarkerIndex === -1) {
+                return did;
+            }
+
+            return `did:web:${parts.slice(2, pathMarkerIndex).join(':')}`;
+        };
+
+        const getInboxService = (didDoc: {
+            service?: Array<{
+                type: string | string[];
+                serviceEndpoint?: string;
+                serviceDid?: string;
+            }>;
+        }) =>
+            didDoc.service?.find(service => {
+                const type = Array.isArray(service.type) ? service.type[0] : service.type;
+                return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+            });
+
+        const inferredServiceDid = getInferredServiceDid(recipientDid);
+
+        if (inferredServiceDid === localServiceDid) {
             return `${serviceUrl.origin}/api/inbox/receive`;
         }
 
         const didDoc = await _learnCard.invoke.resolveDid(recipientDid);
-        const inboxService = didDoc.service?.find(
-            (service: { type: string | string[]; serviceEndpoint: string }) => {
-                const type = Array.isArray(service.type) ? service.type[0] : service.type;
-                return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
-            }
-        );
+        const inboxService = getInboxService(didDoc);
+
+        if ((inboxService?.serviceDid || inferredServiceDid) === localServiceDid) {
+            return `${serviceUrl.origin}/api/inbox/receive`;
+        }
 
         if (!inboxService?.serviceEndpoint) {
             throw new Error(
@@ -1261,8 +1288,7 @@ export async function getLearnCardNetworkPlugin(
                             } else {
                                 const targetProfile = await _learnCard.invoke.getProfile(recipient);
 
-                                if (!hasDid(targetProfile))
-                                    return client.boost.send.mutate(input);
+                                if (!hasDid(targetProfile)) return client.boost.send.mutate(input);
 
                                 targetDid = targetProfile.did;
                             }
@@ -2237,9 +2263,8 @@ export const getVerifyBoostPlugin = async (
                 const boostCredential = credential?.boostCredential;
                 try {
                     if (boostCredential) {
-                        const verifyBoostCredential = await learnCard.invoke.verifyCredential(
-                            boostCredential
-                        );
+                        const verifyBoostCredential =
+                            await learnCard.invoke.verifyCredential(boostCredential);
                         if (!boostCredential?.boostId && !credential?.boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'

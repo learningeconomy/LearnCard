@@ -86,6 +86,8 @@ describe('Federation', () => {
             expect(inboxServiceB).toBeDefined();
             expect(inboxServiceA?.serviceEndpoint).toContain('localhost:4000');
             expect(inboxServiceB?.serviceEndpoint).toContain('localhost:4001');
+            expect(inboxServiceA?.serviceDid).toBe('did:web:localhost%3A4000');
+            expect(inboxServiceB?.serviceDid).toBe('did:web:localhost%3A4001');
         });
     });
 

@@ -6,6 +6,17 @@ type TrustedService = {
     endpoint: string;
 };
 
+type InboxService = {
+    id: string;
+    type: string | string[];
+    serviceEndpoint?: string;
+    serviceDid?: string;
+};
+
+type DidDocumentWithServices = {
+    service?: InboxService[];
+};
+
 let registryCache: { services: TrustedService[]; expiresAt: number } | null = null;
 
 export const getServerDidWebDID = (_domain: string): string => {
@@ -14,22 +25,38 @@ export const getServerDidWebDID = (_domain: string): string => {
     return `did:web:${encodedDomain}`;
 };
 
+const getDidPathMarkerIndex = (parts: string[]): number => {
+    const pathMarkerIndex = parts.findIndex((part, index) => {
+        if (index < 3) return false;
+        return part === 'users' || part === 'app' || part === 'manager';
+    });
+
+    return pathMarkerIndex;
+};
+
 /**
- * Extracts the server DID from a user DID
- * e.g., did:web:localhost:4000:users:testa -> did:web:localhost:4000
- * e.g., did:web:localhost%3A4000:users:testa -> did:web:localhost%3A4000
+ * Extracts the server DID from a did:web string.
+ *
+ * Legacy examples:
+ * - did:web:localhost:4000:users:testa -> did:web:localhost:4000
+ * - did:web:localhost%3A4000:users:testa -> did:web:localhost%3A4000
+ *
+ * Preview example:
+ * - did:web:pr-123.preview.learncard.ai:brain:users:alice -> did:web:pr-123.preview.learncard.ai:brain
  */
 export const getServerDidFromUserDid = (userDid: string): string | null => {
     if (!userDid.startsWith('did:web:')) return null;
 
     const parts = userDid.split(':');
-    // did:web:domain:path... -> we want did:web:domain
     if (parts.length < 3) return null;
 
-    // Parts are: ['did', 'web', 'domain', 'users', 'profileId']
-    // We need to reconstruct did:web:domain
-    const domain = parts[2];
-    return `did:web:${domain}`;
+    const pathMarkerIndex = getDidPathMarkerIndex(parts);
+
+    if (pathMarkerIndex === -1) {
+        return userDid;
+    }
+
+    return `did:web:${parts.slice(2, pathMarkerIndex).join(':')}`;
 };
 
 /**
@@ -37,17 +64,14 @@ export const getServerDidFromUserDid = (userDid: string): string | null => {
  * and optionally a remote registry
  */
 export const isServiceTrusted = async (senderDid: string, domain: string): Promise<boolean> => {
-    // Extract the server DID from the sender's user DID
-    const senderServerDid = getServerDidFromUserDid(senderDid);
+    const senderServerDid = await getOwningServiceDid(senderDid);
     if (!senderServerDid) return false;
 
     if (senderServerDid === getServerDidWebDID(domain)) return true;
 
-    // Check env whitelist first (for local overrides)
     const whitelist = (process.env.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
     if (whitelist.includes(senderServerDid)) return true;
 
-    // Check remote registry if configured
     const registryUrl = process.env.BRAIN_SERVICE_REGISTRY_URL;
     if (registryUrl) {
         const registry = await fetchRegistry(registryUrl);
@@ -64,14 +88,12 @@ export const getTrustedServices = async (domain: string): Promise<TrustedService
     const services: TrustedService[] = [];
     const ownDid = getServerDidWebDID(domain);
 
-    // Add self
     services.push({
         did: ownDid,
         name: 'Self',
         endpoint: `https://${domain || process.env.DOMAIN_NAME}`,
     });
 
-    // Add from env whitelist
     const whitelist = (process.env.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
     for (const did of whitelist) {
         if (did !== ownDid) {
@@ -83,7 +105,6 @@ export const getTrustedServices = async (domain: string): Promise<TrustedService
         }
     }
 
-    // Add from remote registry if configured
     const registryUrl = process.env.BRAIN_SERVICE_REGISTRY_URL;
     if (registryUrl) {
         const registry = await fetchRegistry(registryUrl);
@@ -97,9 +118,6 @@ export const getTrustedServices = async (domain: string): Promise<TrustedService
     return services;
 };
 
-/**
- * Fetches the trust registry from a remote URL with caching
- */
 const fetchRegistry = async (registryUrl: string) => {
     if (registryCache && Date.now() < registryCache.expiresAt) {
         return registryCache;
@@ -107,7 +125,7 @@ const fetchRegistry = async (registryUrl: string) => {
 
     try {
         const response = await fetch(registryUrl, {
-            signal: AbortSignal.timeout(10000), // 10 second timeout for registry fetch
+            signal: AbortSignal.timeout(10000),
         });
         if (!response.ok) {
             throw new Error(`Failed to fetch registry: ${response.status}`);
@@ -117,14 +135,13 @@ const fetchRegistry = async (registryUrl: string) => {
 
         registryCache = {
             services: data.services || [],
-            expiresAt: Date.now() + 3600000, // 1 hour cache
+            expiresAt: Date.now() + 3600000,
         };
 
         return registryCache;
     } catch (error) {
         console.error('Failed to fetch brain-service trust registry:', error);
-        // Return empty cache on error
-        return { services: [], expiresAt: Date.now() + 60000 }; // 1 minute retry
+        return { services: [], expiresAt: Date.now() + 60000 };
     }
 };
 
@@ -135,52 +152,80 @@ export const clearTrustRegistryCache = (): void => {
     registryCache = null;
 };
 
-/**
- * Extracts the UniversalInboxService endpoint from a DID document's service array
- */
-export const extractInboxServiceEndpoint = (didDoc: {
-    service?: Array<{ id: string; type: string | string[]; serviceEndpoint: string }>;
-}): string | null => {
+export const extractInboxService = (didDoc: DidDocumentWithServices): InboxService | null => {
     if (!didDoc.service || !Array.isArray(didDoc.service)) {
         return null;
     }
 
-    const inboxService = didDoc.service.find(s => {
-        const type = Array.isArray(s.type) ? s.type[0] : s.type;
-        return type === 'UniversalInboxService';
-    });
-
-    return inboxService?.serviceEndpoint || null;
+    return (
+        didDoc.service.find(service => {
+            const type = Array.isArray(service.type) ? service.type[0] : service.type;
+            return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+        }) || null
+    );
 };
 
 /**
- * Result type for findInboxServiceEndpoint
+ * Extracts the UniversalInboxService endpoint from a DID document's service array
  */
+export const extractInboxServiceEndpoint = (didDoc: DidDocumentWithServices): string | null => {
+    return extractInboxService(didDoc)?.serviceEndpoint || null;
+};
+
+/**
+ * Extracts explicit service DID metadata from a DID document's inbox service entry.
+ */
+export const extractInboxServiceServiceDid = (didDoc: DidDocumentWithServices): string | null => {
+    const serviceDid = extractInboxService(didDoc)?.serviceDid;
+    return typeof serviceDid === 'string' && serviceDid.length > 0 ? serviceDid : null;
+};
+
+/**
+ * Resolves the owning service DID for a did:web, preferring explicit DID-doc metadata
+ * and falling back to string inference for legacy documents.
+ */
+export const getOwningServiceDid = async (did: string): Promise<string | null> => {
+    const inferredServiceDid = getServerDidFromUserDid(did);
+
+    if (!did.includes(':users:')) {
+        return inferredServiceDid;
+    }
+
+    try {
+        const learnCard = await getLearnCard();
+        const didDoc = await learnCard.invoke.resolveDid(did);
+        const explicitServiceDid = extractInboxServiceServiceDid(didDoc);
+
+        if (!explicitServiceDid) {
+            return inferredServiceDid;
+        }
+
+        if (!inferredServiceDid || explicitServiceDid === inferredServiceDid) {
+            return explicitServiceDid;
+        }
+
+        console.warn(
+            `Resolved DID document for ${did} exposed mismatched serviceDid ${explicitServiceDid}; falling back to inferred service DID ${inferredServiceDid}`
+        );
+        return inferredServiceDid;
+    } catch (error) {
+        console.error(`Failed to resolve service DID metadata for DID ${did}:`, error);
+        return inferredServiceDid;
+    }
+};
+
 export type InboxServiceResult =
     | { type: 'local'; endpoint: string }
     | { type: 'remote'; endpoint: string }
     | { type: 'not_found'; error: string };
 
-/**
- * Finds the appropriate inbox service endpoint for a recipient DID.
- *
- * If the DID is a local did:web (matches the current domain), returns the local inbox endpoint.
- * If the DID is a remote did:web, resolves the DID document and looks for UniversalInboxService.
- * Returns an error result if no inbox service can be found.
- *
- * @param recipientDid - The recipient's DID (e.g., did:web:example.com:users:alice)
- * @param domain - The current service's domain (e.g., localhost%3A4000 or learncard.com)
- * @returns InboxServiceResult indicating local, remote, or not found
- */
 export const findInboxServiceEndpoint = async (
     recipientDid: string,
     domain: string
 ): Promise<InboxServiceResult> => {
-    // Check if it's a did:web
     if (recipientDid.startsWith('did:web:')) {
-        const serverDid = getServerDidFromUserDid(recipientDid);
+        const inferredServerDid = getServerDidFromUserDid(recipientDid);
         const localServerDid = getServerDidWebDID(domain);
-        const isLocalDID = serverDid === localServerDid;
         const protocol = domain.includes('localhost') ? 'http://' : 'https://';
         const baseUrl = `${protocol}${domain.replace(/%3A/g, ':')}`;
         const localEndpoint = `${baseUrl}/api/inbox/receive`;
@@ -189,10 +234,11 @@ export const findInboxServiceEndpoint = async (
             const learnCard = await getLearnCard();
             const didDoc = await learnCard.invoke.resolveDid(recipientDid);
             const endpoint = extractInboxServiceEndpoint(didDoc);
+            const serviceDid = extractInboxServiceServiceDid(didDoc) || inferredServerDid;
 
             if (endpoint) {
                 return {
-                    type: endpoint === localEndpoint ? 'local' : 'remote',
+                    type: serviceDid === localServerDid ? 'local' : 'remote',
                     endpoint,
                 };
             }
@@ -200,7 +246,7 @@ export const findInboxServiceEndpoint = async (
             console.error(`Failed to resolve DID ${recipientDid}:`, error);
         }
 
-        if (isLocalDID) {
+        if (inferredServerDid === localServerDid) {
             return {
                 type: 'local',
                 endpoint: localEndpoint,
@@ -213,7 +259,6 @@ export const findInboxServiceEndpoint = async (
         };
     }
 
-    // For non-did:web DIDs (did:key, etc.), we can't federate
     return {
         type: 'not_found',
         error: `Recipient DID ${recipientDid} is not a did:web and cannot be used for inbox federation`,
