@@ -55,65 +55,69 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col items-center justify-start">
                     <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
                         {/* header */}
-                        <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
-                            <div className="w-full h-[195px] rounded-[20px] overflow-hidden relative">
-                                {metaData?.thumbnailUrl && (
-                                    <img
-                                        src={metaData?.thumbnailUrl || ''}
-                                        alt={content.title}
-                                        className="w-full h-full object-cover"
+                        <div className="border-b-[1px] border-grayscale-200 border-solid">
+                            <div className="flex flex-col gap-[10px] items-center px-[20px] py-[20px]">
+                                <div className="w-full h-[195px] rounded-[20px] overflow-hidden relative">
+                                    {metaData?.thumbnailUrl && (
+                                        <img
+                                            src={metaData?.thumbnailUrl || ''}
+                                            alt={content.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    )}
+
+                                    <div
+                                        className="absolute bottom-0 left-0 w-full h-1/2"
+                                        style={{
+                                            background:
+                                                'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 54.69%, rgba(0, 0, 0, 0.50) 90.62%)',
+                                        }}
                                     />
-                                )}
 
-                                <div
-                                    className="absolute bottom-0 left-0 w-full h-1/2"
-                                    style={{
-                                        background:
-                                            'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 54.69%, rgba(0, 0, 0, 0.50) 90.62%)',
-                                    }}
-                                />
-
-                                <Video className="absolute left-2 bottom-2 h-[20px] w-[20px] text-white" />
-                            </div>
-
-                            <h2 className="text-[20px] text-grayscale-900 font-poppins">
-                                {content.title}
-                            </h2>
-                        </div>
-
-                        {/* details */}
-                        <div className="flex gap-[10px] items-center justify-start p-[20px]">
-                            <div className="flex flex-col items-start w-full">
-                                <p className="text-grayscale-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
-                                    Provided by
-                                </p>
-
-                                <p className="text-grayscale-900 font-poppins text-base tracking-[-0.25px]">
-                                    {content.source ?? getVideoSource(content.url || '')}
-                                </p>
-                            </div>
-                        </div>
-
-                        {content.description && (
-                            <>
-                                <div className="flex flex-col gap-[10px] items-start justify-start px-[20px] pb-1">
-                                    <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
+                                    <Video className="absolute left-2 bottom-2 h-[20px] w-[20px] text-white" />
                                 </div>
 
-                                {/* description */}
-                                <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">
-                                    <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
-                                        {content.description}
+                                <h2 className="text-[20px] text-grayscale-900 font-poppins">
+                                    {content.title}
+                                </h2>
+                            </div>
+                        </div>
+
+                        <div className="px-[20px]">
+                            {/* details */}
+                            <div className="flex gap-[10px] items-center justify-start py-[20px]">
+                                <div className="flex flex-col items-start w-full">
+                                    <p className="text-grayscale-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
+                                        Provided by
+                                    </p>
+
+                                    <p className="text-grayscale-900 font-poppins text-base tracking-[-0.25px]">
+                                        {content.source ?? getVideoSource(content.url || '')}
                                     </p>
                                 </div>
-                            </>
-                        )}
+                            </div>
 
-                        <GrowSkillsSkillChips
-                            searchQuery={content.title || ''}
-                            layout="wrap"
-                            className="border-t-[1px] border-grayscale-200 py-[20px] px-[20px]"
-                        />
+                            {content.description && (
+                                <>
+                                    <div className="flex flex-col gap-[10px] items-start justify-start pb-1">
+                                        <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
+                                    </div>
+
+                                    {/* description */}
+                                    <div className="flex flex-col gap-[10px] items-start justify-start py-[20px]">
+                                        <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
+                                            {content.description}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
+                            <GrowSkillsSkillChips
+                                searchQuery={content.title || ''}
+                                layout="wrap"
+                                className="border-t-[1px] border-grayscale-200 py-[20px]"
+                            />
+                        </div>
                     </section>
                 </div>
             </div>
