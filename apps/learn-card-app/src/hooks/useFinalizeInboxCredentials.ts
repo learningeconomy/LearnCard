@@ -75,14 +75,6 @@ export const useFinalizeInboxCredentials = () => {
                 const result = await wallet.invoke?.finalizeInboxCredentials();
 
                 const vcs: VC[] = result?.verifiableCredentials || [];
-                const guardianPending = result?.guardianPending ?? 0;
-
-                if (guardianPending > 0) {
-                    console.info(
-                        `[finalize] ${guardianPending} credential(s) awaiting guardian approval`
-                    );
-                    walletStore.set.setIsSyncing(WalletSyncState.Completed, 0);
-                }
 
                 if (!vcs.length) {
                     // Nothing to store but consider finalization complete for a while
