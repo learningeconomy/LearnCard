@@ -4,6 +4,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
+import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 
 import PathwaySearchInput from './PathwaySearchInput';
 import ExplorePathwaysModal from '../ExplorePathwaysModal';
@@ -25,6 +27,8 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
         CredentialCategoryEnum.aiPathway
     );
     const { IconWithShape: SkillsIcon } = getThemedCategoryIcons(CredentialCategoryEnum.skill);
+    const ResolvedPathwaysIcon = PathwaysIcon ?? AiPathwaysIconWithShape;
+    const ResolvedSkillsIcon = SkillsIcon ?? SkillsIconWithShape;
 
     const openExplorePathwaysModal = ({
         query,
@@ -53,6 +57,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         What would you like to do?
                     </IonLabel>
                     <PathwaySearchInput
+                        variant="simple"
                         value={searchQuery}
                         onValueChange={setSearchQuery}
                         onSearchSubmit={query => openExplorePathwaysModal({ query })}
@@ -76,7 +81,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         }
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
-                        <SkillsIcon className="w-[50px] h-[50px]" />
+                        <ResolvedSkillsIcon className="w-[50px] h-[50px]" />
                         Grow Skills
                     </button>
 
@@ -89,7 +94,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         }
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
-                        <PathwaysIcon className="w-[50px] h-[50px]" />
+                        <ResolvedPathwaysIcon className="w-[50px] h-[50px]" />
                         Find Roles
                     </button>
                 </div>

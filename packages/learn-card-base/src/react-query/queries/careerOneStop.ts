@@ -6,15 +6,21 @@ import { useWallet } from 'learn-card-base';
 
 import { networkStore } from '../../stores/NetworkStore';
 
-const fetchOccupationDetailsForKeyword = async (
-    keyword: string
-): Promise<OccupationDetailsResponse[]> => {
+const fetchOccupationDetailsForKeyword = async ({
+    keyword,
+    limit,
+    topNDetails,
+}: {
+    keyword: string;
+    limit?: number;
+    topNDetails?: number;
+}): Promise<OccupationDetailsResponse[]> => {
     const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ keyword }),
+        body: JSON.stringify({ keyword, limit, topNDetails }),
     });
 
     if (!res.ok) {
@@ -29,18 +35,22 @@ export const useOccupationSuggestionsForKeyword = (keyword: string) => {
     return useQuery({
         queryKey: ['occupation-suggestions', keyword],
         queryFn: async () => {
-            return fetchOccupationDetailsForKeyword(keyword);
+            return fetchOccupationDetailsForKeyword({ keyword });
         },
         enabled: keyword.length >= 2,
         staleTime: 1000 * 60 * 5,
     });
 };
 
-export const useOccupationDetailsForKeyword = (keyword: string) => {
+export const useOccupationDetailsForKeyword = (
+    keyword: string,
+    limit?: number,
+    topNDetails?: number
+) => {
     return useQuery({
-        queryKey: ['occupation-details', keyword],
+        queryKey: ['occupation-details', keyword, limit, topNDetails],
         queryFn: async () => {
-            return fetchOccupationDetailsForKeyword(keyword);
+            return fetchOccupationDetailsForKeyword({ keyword, limit, topNDetails });
         },
         enabled: Boolean(keyword),
     });
@@ -187,7 +197,7 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
             // Step 1-2: Fetch occupation details for each keyword
             const occupationPromises = keywords
                 .slice(0, 3)
-                .map(keyword => fetchOccupationDetailsForKeyword(keyword));
+                .map(keyword => fetchOccupationDetailsForKeyword({ keyword }));
 
             const occupationResults = await Promise.all(occupationPromises);
 
