@@ -5,10 +5,13 @@ import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 const ResumeConfigPanelDocumentSetup: React.FC = () => {
     const [open, setOpen] = useState<boolean>(true);
     const documentSetup = resumeBuilderStore.useTracked.documentSetup();
     const setDocumentSetup = resumeBuilderStore.set.setDocumentSetup;
+    const brandingConfig = useBrandingConfig();
 
     return (
         <div className="bg-white border border-grayscale-200 rounded-2xl overflow-hidden">
@@ -29,13 +32,12 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                         <div className="flex flex-col">
                             <div className="flex items-center justify-between gap-2 w-full">
                                 <p className="text-xs font-semibold text-grayscale-900">
-                                    LearnCard QR code • {documentSetup?.showQRCode ? 'On' : 'Off'}
+                                    {brandingConfig?.name} QR code •{' '}
+                                    {documentSetup?.showQRCode ? 'On' : 'Off'}
                                 </p>
                                 <ResumeBuilderToggle
                                     checked={Boolean(documentSetup?.showQRCode)}
-                                    onChange={checked =>
-                                        setDocumentSetup({ showQRCode: checked })
-                                    }
+                                    onChange={checked => setDocumentSetup({ showQRCode: checked })}
                                 />
                             </div>
                             <p className="text-sm text-grayscale-700 mt-1">

@@ -3,6 +3,8 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
 import { BrandingEnum, getHeaderBrandingColor } from './headerBrandingHelpers';
+import { useBrandingAssets, useTenantConfig } from '../../config/TenantConfigProvider';
+import { getHeaderText } from '../../config/brandingHelpers';
 
 import ScoutPassLogoAndText from 'learn-card-base/svgs/ScoutLogoAndText';
 
@@ -23,6 +25,8 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
 }) => {
     const location = useLocation();
     const history = useHistory();
+    const brandingAssets = useBrandingAssets();
+    const tenantConfig = useTenantConfig();
 
     if (branding === BrandingEnum.metaversity) {
         return (
@@ -62,16 +66,30 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
         );
     }
 
+    // Default branding — use tenant's dark wordmark image if configured,
+    // otherwise fall back to the tenant's headerText (e.g. "VETPASS"),
+    // and finally to "LEARNCARD" as last resort.
+    const textLogoDarkUrl = brandingAssets.textLogoDarkUrl;
+    const headerText = getHeaderText(tenantConfig.branding);
+
     return (
         <button
-            onClick={() => history.push('/wallet')}
+            onClick={() => history.push(tenantConfig.branding.homeRoute ?? '/wallet')}
             className={`text-sm z-10 tracking-[6px] font-bold select-none ${getHeaderBrandingColor(
                 branding,
                 location.pathname
             )} ${textColor} ${className}`}
             disabled={disableClick}
         >
-            LEARNCARD
+            {textLogoDarkUrl ? (
+                <img
+                    src={textLogoDarkUrl}
+                    alt={headerText}
+                    className="max-w-[150px] max-h-[20px] object-contain"
+                />
+            ) : (
+                headerText
+            )}
         </button>
     );
 };

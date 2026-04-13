@@ -27,13 +27,16 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     loading,
 }) => {
     const { categoryId: categoryType } = walletPageItem;
-    const { getThemedCategory } = useTheme();
+    const { getThemedCategory, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
     const { IconWithShape, Icon } = icons;
     const { primaryColor, indicatorColor, borderColor } = colors;
 
+    const passportCardBgColor = themeColors?.defaults?.passportCardBgColor;
+    const passportCardTextColor = themeColors?.defaults?.passportCardTextColor;
+
     let countDisplay: React.ReactNode | null = (
-        <p className="font-poppins text-[14px] text-grayscale-900">
+        <p className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
             {loading ? (
                 <div className="flex items-center gap-[5px]">
                     <IonSpinner name="crescent" className="h-[14px] w-[14px]" /> Items
@@ -55,7 +58,8 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <div
             role="button"
             onClick={() => handleItemClick(categoryType)}
-            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white bg-${primaryColor}`}
+            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white ${!passportCardBgColor ? `bg-${primaryColor}` : ''}`}
+            style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
         >
             <div className="flex items-center justify-center relative">
                 {IconWithShape ? (
@@ -66,7 +70,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
             </div>
 
             <div className="flex flex-col items-start justify-center">
-                <p className="font-poppins text-[17px] font-[600] leading-[130%] text-grayscale-900">
+                <p className={`font-poppins text-[17px] font-[600] leading-[130%] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
                     {walletPageItem.labels.plural}
                 </p>
                 {countDisplay}

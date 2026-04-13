@@ -1,43 +1,41 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import themeStore from '../store/themeStore';
-import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
+import { getAllowedThemes, isThemeSwitchingEnabled } from '../store/themeStore';
 
-import { useTheme } from '../hooks/useTheme';
-import { ThemeEnum } from '../helpers/theme-helpers';
-import { loadThemeSchema } from '../helpers/loadTheme';
+import { applyTheme, useTheme } from '../hooks/useTheme';
+import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
-import { ViewMode } from '../types/theme.types';
-import {
-    useCreatePreferences,
-    useGetPreferencesForDid,
-    useUpdatePreferences,
-} from 'learn-card-base';
-
-const THEMES: ThemeEnum[] = [ThemeEnum.Colorful, ThemeEnum.Formal];
+import { useUpdatePreferences } from 'learn-card-base';
 
 export enum themeSelectorViewMode {
     Mini = 'mini',
     Full = 'full',
 }
 
+// TODOS:
+// do a native builds ios + android
+// check all existing flows
+
+// checkout google doc, fix easiest items first
+// # https://docs.google.com/document/d/1oBkAlfT-ipRzmndRLev2G_d54g12hwuncFEqS2_H8uA/edit?pli=1&tab=t.0#task=ApQbAo4m6trRc6nu
+
 export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
     const flags = useFlags();
-    const { theme, syncThemeDefaults } = useTheme();
-    const setTheme = themeStore.set.theme;
+    const { theme } = useTheme();
 
-    const schemas = useMemo(() => THEMES.map(loadThemeSchema), []);
+    const allowedThemeIds = useMemo(() => {
+        const allowed = new Set(getAllowedThemes());
 
-    const { mutateAsync: createPreferences, isPending: isCreatingPreferences } =
-        useCreatePreferences();
+        return getRegisteredThemeIds().filter(id => allowed.has(id));
+    }, []);
+
+    const schemas = useMemo(() => allowedThemeIds.map(loadThemeSchema), [allowedThemeIds]);
+
     const { mutateAsync: updatePreferences, isPending: isUpdatingPreferences } =
         useUpdatePreferences();
-    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid(
-        flags?.enableThemeToggle
-    );
 
     const themeButtons = useMemo<ThemeButton[]>(() => {
         return schemas.map(schema => ({
@@ -47,47 +45,16 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }));
     }, [schemas]);
 
-    const handleThemeChange = useCallback((t: ThemeEnum) => setTheme(t), [setTheme]);
-
-    const handleSetViewMode = (themeSelected: ThemeEnum) => {
-        const schema = loadThemeSchema(themeSelected);
-        if (schema?.defaults?.viewMode === ViewMode.Grid) {
-            passportPageStore.set.setViewMode(PassportPageViewMode.grid);
-        } else if (schema?.defaults?.viewMode === ViewMode.List) {
-            passportPageStore.set.setViewMode(PassportPageViewMode.list);
-        }
+    const handleSetTheme = async (themeSelected: string) => {
+        await updatePreferences({
+            theme: themeSelected,
+        });
+        applyTheme(themeSelected);
     };
-
-    const handleSetTheme = async (themeSelected: ThemeEnum) => {
-        if (!preferences?.theme) {
-            await createPreferences({
-                theme: themeSelected,
-            });
-        } else {
-            await updatePreferences({
-                theme: themeSelected,
-            });
-        }
-        handleThemeChange(themeSelected);
-        handleSetViewMode(themeSelected);
-        syncThemeDefaults(themeSelected);
-        refetchPreferences();
-    };
-
-    const syncTheme = useCallback(() => {
-        const cachedTheme = themeStore.get.theme();
-        if (cachedTheme !== preferences?.theme && preferences?.theme !== undefined) {
-            handleSetTheme(preferences?.theme as ThemeEnum);
-        }
-    }, [preferences]);
-
-    // only sync theme if preferences are loaded
-    // && the cached theme is different from the theme stored in the DB
-    useEffect(() => {
-        syncTheme();
-    }, [syncTheme]);
 
     if (flags?.enableThemeToggle === false) return null;
+
+    if (!isThemeSwitchingEnabled()) return null;
 
     if (viewMode === themeSelectorViewMode.Mini) {
         return (
@@ -102,7 +69,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                             onClick={async () => {
                                 await handleSetTheme(btn.theme);
                             }}
-                            disabled={isCreatingPreferences}
+                            disabled={isUpdatingPreferences}
                             aria-pressed={selected}
                             className={`w-full flex items-center justify-start py-[12px] px-2 text-xs text-grayscale-900 rounded-full ${
                                 selected ? 'bg-white rounded-[16px] shadow-soft-bottom' : ''
@@ -129,8 +96,9 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                 <div className="w-full px-4 flex flex-col gap-2">
                     <h4 className="w-full text-grayscale-900 text-[17px]">Choose Your Theme</h4>
                     <p className="w-full text-grayscale-600 text-xs">
-                        Switch between our signature, colorful experience and a classic, formal
-                        style.
+                        {allowedThemeIds.includes('colorful') && allowedThemeIds.includes('formal')
+                            ? 'Switch between our signature, colorful experience and a classic, formal style.'
+                            : 'Choose your preferred visual style.'}
                     </p>
                 </div>
 
@@ -148,7 +116,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                     onClick={async () => {
                                         await handleSetTheme(btn.theme);
                                     }}
-                                    disabled={isCreatingPreferences}
+                                    disabled={isUpdatingPreferences}
                                     aria-pressed={selected}
                                     className={`w-full flex items-center justify-start py-[12px] px-2 text-xs text-grayscale-900 rounded-[10px] ${
                                         selected ? 'bg-white rounded-[16px] shadow-soft-bottom' : ''

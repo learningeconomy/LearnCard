@@ -16,7 +16,6 @@ import {
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getBaseUrl, useGetCredentialsListFromIDX, useToast, ToastTypeEnum } from 'learn-card-base';
-export const baseUrl = getBaseUrl();
 
 type IDXBundle = {
     bundleId: string;
@@ -31,6 +30,7 @@ const ViewSharedCredentials = ({
     onDismiss: (data?: string | null | undefined | number, role?: string) => void;
 }) => {
     const [page, setPage] = useState('application');
+    const baseUrl = getBaseUrl();
     const { presentToast } = useToast();
     const [vpUri, setVpUri] = useState<string>();
     const currentUser = useCurrentUser();

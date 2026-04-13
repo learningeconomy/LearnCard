@@ -5,7 +5,9 @@ import { Clipboard } from '@capacitor/clipboard';
 import { IonSpinner } from '@ionic/react';
 
 import { useWallet } from 'learn-card-base';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,6 +19,7 @@ export type ParentInviteModalProps = {
 
 const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal }) => {
     const { initWallet } = useWallet();
+    const brandingConfig = useBrandingConfig();
 
     const { presentToast } = useToast();
 
@@ -33,7 +36,9 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             const challenge = uuidv4();
             const generated: { challenge: string; profileId: string } =
                 await wallet?.invoke?.generateInvite(challenge, expiration);
-            const _inviteLink = `https://learncard.app/invite?challenge=${generated?.challenge}&profileId=${generated?.profileId}`;
+            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${
+                generated?.challenge
+            }&profileId=${generated?.profileId}`;
             setInviteLink(_inviteLink);
         } catch (e) {
             presentToast('Failed to generate invite link', {
@@ -67,7 +72,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
         if (!inviteLink) return;
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'LearnCard Invite',
+                title: `${brandingConfig?.name} Invite`,
                 text: '',
                 url: inviteLink,
                 dialogTitle: 'Share Invite',
@@ -87,9 +92,9 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             return;
         }
 
-        const subject = encodeURIComponent('Join LearnCard');
+        const subject = encodeURIComponent(`Join ${brandingConfig?.name}`);
         const body = encodeURIComponent(
-            `Hi,\n\nPlease join me on LearnCard using this invite link:\n${inviteLink}\n\nThanks!`
+            `Hi,\n\nPlease join me on ${brandingConfig?.name} using this invite link:\n${inviteLink}\n\nThanks!`
         );
 
         window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
@@ -102,7 +107,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                     <img src={LearnCardCircle} alt="LearnCard" className="h-[60px] w-[60px]" />
                 </div>
                 <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                    Invite your parent to join LearnCard!
+                    Invite your parent to join {brandingConfig?.name}!
                 </h2>
                 <p className="text-grayscale-700 text-[15px] leading-[22px] px-[10px]">
                     Click the <span className="font-semibold">Share Invite</span> button or type in

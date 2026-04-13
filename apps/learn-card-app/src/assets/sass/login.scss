@@ -23,9 +23,9 @@
         font-size: 24px;
         height: 100px;
         text-align: center;
-        background-color: #20c397;
+        background-color: var(--ion-color-grayscale-100);
         color: #000000;
-        border: 1px solid #20c397;
+        border: 1px solid var(--ion-color-grayscale-100);
         outline: none;
         transition: background-color 0.3s ease-out;
 
@@ -84,9 +84,9 @@
         border-radius: 12px;
         font-size: 24px;
         height: 60px;
-        background-color: #20c397;
+        background-color: var(--ion-color-grayscale-100);
         color: #000000;
-        border: 1px solid #20c397;
+        border: 1px solid var(--ion-color-grayscale-100);
         outline: none;
         transition: background-color 0.3s ease-out;
 
@@ -173,7 +173,7 @@
     margin-top: 0;
 
     .PhoneInputInput {
-        background-color: #20c397;
+        background-color: rgba(255, 255, 255, 0.2);
         border: none;
         border-radius: 15px;
         color: white;
@@ -195,7 +195,7 @@
         display: flex;
         border: none;
         border-radius: 15px;
-        background-color: #20c397;
+        background-color: rgba(255, 255, 255, 0.2);
         align-items: center;
         justify-content: center;
         width: 20%;

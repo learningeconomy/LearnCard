@@ -170,6 +170,10 @@ const IssueManagedBoostSelector: React.FC = () => {
             })
         ) ?? [];
 
+    const metaColor = categoryMeta.color;
+    const metaTextColor =
+        selectedCategory === BoostCategoryOptionsEnum.all ? 'grayscale-900' : categoryMeta.color;
+
     return (
         <div className="relative w-full h-[95vh] md:h-[650px] flex flex-col bg-white overflow-hidden">
             <div className="flex flex-col p-5 border-b border-grayscale-200 bg-white z-10">
@@ -193,11 +197,11 @@ const IssueManagedBoostSelector: React.FC = () => {
                     >
                         <div className="flex items-center gap-3">
                             <div
-                                className={`p-2 rounded-full bg-${categoryMeta.color} bg-opacity-10 text-${categoryMeta.color}`}
+                                className={`p-2 rounded-full bg-${metaColor} bg-opacity-10 text-${metaTextColor}`}
                             >
                                 <CategoryIcon className="w-6 h-6" />
                             </div>
-                            <span className={`text-${categoryMeta.color} font-medium text-lg`}>
+                            <span className={`text-${metaTextColor} font-medium text-lg`}>
                                 {categoryMeta.title}
                             </span>
                         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import {
     IonPage,
@@ -14,6 +14,7 @@ import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPo
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
+import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 
 interface EmbedAppParams {
     appId: string;
@@ -66,6 +67,37 @@ export const EmbedAppFullScreen: React.FC = () => {
 
     const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
     const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
+
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const handleTapNotificationAction = useCallback(
+        (actionPath: string) => {
+            if (!iframeRef.current || !embedUrl) return;
+
+            // Only allow relative paths — reject anything with a protocol (e.g. javascript:, data:)
+            if (/^[a-z][a-z0-9+.-]*:/i.test(actionPath)) return;
+
+            try {
+                const base = new URL(embedUrl);
+                const expectedOrigin = base.origin;
+                const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
+                base.pathname = base.pathname.replace(/\/$/, '') + safePath;
+
+                // Verify the constructed URL hasn't escaped to a different origin
+                if (base.origin !== expectedOrigin) return;
+
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(window.location.origin)}`;
+            } catch {
+                // embedUrl is invalid — do not navigate
+            }
+        },
+        [embedUrl]
+    );
+
+    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName, {
+        onTapAction: handleTapNotificationAction,
+    });
+
     const launchConfig = history.location.state?.launchConfig;
     const isInstalled = history.location.state?.isInstalled ?? false;
 
@@ -98,6 +130,7 @@ export const EmbedAppFullScreen: React.FC = () => {
         isInstalled,
         appId,
         onCredentialIssued: handleCredentialIssued,
+        onAppNotification: handleAppNotification,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -140,6 +173,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                             appId={appId}
                             appName={appName}
                             pendingCredential={pendingCredential}
+                            onNavigateAction={handleTapNotificationAction}
                         />
                     </IonButtons>
                 </IonToolbar>
@@ -164,6 +198,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                         </div>
                     )}
                     <iframe
+                        ref={iframeRef}
                         src={embedUrlWithOverride}
                         onLoad={() => setIsLoading(false)}
                         style={{
@@ -184,6 +219,8 @@ export const EmbedAppFullScreen: React.FC = () => {
                     onDismiss={handleDismissClaimModal}
                 />
             )}
+
+            {ToastOverlay}
         </IonPage>
     );
 };

@@ -17,9 +17,9 @@ import {
     ModalTypes,
     SocialLoginTypes,
     useDeviceTypeByWidth,
-    useGetPreferencesForDid,
     QrLoginRequester,
     getAuthConfig,
+    getSSSConfig,
 } from 'learn-card-base';
 
 import { Capacitor } from '@capacitor/core';
@@ -28,7 +28,11 @@ import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
 
 import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
-import { setPersistence, browserSessionPersistence, indexedDBLocalPersistence } from 'firebase/auth';
+import {
+    setPersistence,
+    browserSessionPersistence,
+    indexedDBLocalPersistence,
+} from 'firebase/auth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { auth } from '../../firebase/firebase';
@@ -41,21 +45,18 @@ import OnboardingContainer from '../../components/onboarding/OnboardingContainer
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
-import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
-import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
+import LoginWelcomePanel from './LoginWelcomePanel';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
-import DesktopLoginBG from '../../assets/images/desktop-login-bg.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import EndorsementSuccessfullRequestModal from '../../components/boost-endorsements/EndorsementRequestModal/EndorsementSuccessfullRequestModal';
 
-import { themeStore } from '../../theme/store/themeStore';
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { ThemeEnum } from '../../theme/helpers/theme-helpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
-    const { syncThemeDefaults } = useTheme();
+    const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -82,21 +83,6 @@ export const LoginContent: React.FC = () => {
     const isWeb = !Capacitor.isNativePlatform();
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
-    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid(isLoggedIn);
-
-    const fetchPreferences = useCallback(async () => {
-        try {
-            const result = await refetchPreferences();
-            if (result?.data?.theme) {
-                const theme = result?.data?.theme ?? ThemeEnum.Colorful;
-                themeStore.set.theme(theme);
-                syncThemeDefaults(theme);
-            }
-        } catch (error) {
-            console.error('Error fetching preferences:', error);
-            return null;
-        }
-    }, [refetchPreferences]);
 
     const handleGeneratePinUpdateToken = useCallback(async () => {
         try {
@@ -152,7 +138,8 @@ export const LoginContent: React.FC = () => {
 
         didRedirectRef.current = true;
 
-        const redirectTo = redirectStore.get.authRedirect() || query.get('redirectTo') || query.get('returnUrl');
+        const redirectTo =
+            redirectStore.get.authRedirect() || query.get('redirectTo') || query.get('returnUrl');
         const lcnRedirectTo = redirectStore.get.lcnRedirect();
         // const isChapiInteraction = chapiStore.get.isChapiInteraction();
         try {
@@ -161,7 +148,7 @@ export const LoginContent: React.FC = () => {
                 if (currentUser && isLoggedIn) {
                     // Child still logged in: set redirect to families and logout to allow parent login
                     redirectStore.set.lcnRedirect('/families?createFamily=true');
-                    handleLogout(BrandingEnum.learncard, {
+                    handleLogout({
                         appendQuery: { redirectTo: '/families?createFamily=true' },
                     });
                     return;
@@ -187,8 +174,6 @@ export const LoginContent: React.FC = () => {
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             }
-
-            fetchPreferences();
         } catch (e) {
             console.error(e);
         }
@@ -236,25 +221,41 @@ export const LoginContent: React.FC = () => {
         <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
             <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                 <div className="flex flex-col items-center justify-center w-full">
-                    <img
-                        src={LearnCardBrandMark}
-                        alt="Learn Card brand mark"
-                        className="w-[80px] h-[80px] mb-[20px]"
-                    />
-                    <img src={LearnCardTextLogo} alt="Learn Card text logo" />
+                    {fullLogoDark ? (
+                        <img
+                            src={fullLogoDark}
+                            alt="Logo"
+                            className="max-w-[300px] max-h-[160px] object-contain"
+                        />
+                    ) : (
+                        <>
+                            <img
+                                src={brandMarkLight}
+                                alt="Brand mark"
+                                className="w-[80px] h-[80px] mb-[20px]"
+                            />
+                            <img
+                                src={textLogo}
+                                alt="Logo"
+                                className="max-w-[300px] max-h-[80px] object-contain"
+                            />
+                        </>
+                    )}
                 </div>
             </IonRow>
             {showQrLogin && !qrApproved ? (
                 <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                     <div className="w-full bg-white rounded-[20px] shadow-2xl">
                         <QrLoginRequester
-                            serverUrl={authConfig.serverUrl}
+                            serverUrl={getSSSConfig().serverUrl}
                             onApproved={(deviceShare, _approverDid, hint, version) => {
                                 console.debug(
                                     '[QR Login] approved — share:',
                                     deviceShare.substring(0, 8) + '...',
-                                    '| hint:', hint ?? '(none)',
-                                    '| shareVersion:', version ?? '(none)'
+                                    '| hint:',
+                                    hint ?? '(none)',
+                                    '| shareVersion:',
+                                    version ?? '(none)'
                                 );
 
                                 // Store the device share locally so the coordinator
@@ -262,16 +263,17 @@ export const LoginContent: React.FC = () => {
                                 window.sessionStorage.setItem('qr_login_device_share', deviceShare);
 
                                 if (version != null) {
-                                    window.sessionStorage.setItem('qr_login_share_version', String(version));
+                                    window.sessionStorage.setItem(
+                                        'qr_login_share_version',
+                                        String(version)
+                                    );
                                 }
 
                                 setAccountHint(hint ?? null);
                                 setQrApproved(true);
                             }}
                             onCancel={() => setShowQrLogin(false)}
-                            renderQrCode={(data) => (
-                                <QRCodeSVG value={data} size={192} level="M" />
-                            )}
+                            renderQrCode={data => <QRCodeSVG value={data} size={192} level="M" />}
                         />
                     </div>
                 </IonRow>
@@ -279,16 +281,37 @@ export const LoginContent: React.FC = () => {
                 <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                     <div className="w-full bg-white rounded-[20px] shadow-2xl p-8 text-center font-poppins animate-fade-in-up">
                         <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <svg
+                                width="28"
+                                height="28"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                className="text-emerald-600"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
                         </div>
 
-                        <h2 className="text-xl font-semibold text-grayscale-900 mb-2">You're all set!</h2>
+                        <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
+                            You're all set!
+                        </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
-                            {accountHint
-                                ? <>Sign in with <span className="font-medium text-grayscale-900">{accountHint}</span> to access your account.</>
-                                : 'Now just sign in below to access your account.'
-                            }
+                            {accountHint ? (
+                                <>
+                                    Sign in with{' '}
+                                    <span className="font-medium text-grayscale-900">
+                                        {accountHint}
+                                    </span>{' '}
+                                    to access your account.
+                                </>
+                            ) : (
+                                'Now just sign in below to access your account.'
+                            )}
                         </p>
 
                         <button
@@ -308,13 +331,30 @@ export const LoginContent: React.FC = () => {
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white shrink-0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    className="text-white shrink-0"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
 
                                 <span className="text-sm text-white font-medium">
-                                    {accountHint
-                                        ? <>Sign in with <span className="font-semibold">{accountHint}</span> to finish</>
-                                        : 'Device linked — sign in to finish'
-                                    }
+                                    {accountHint ? (
+                                        <>
+                                            Sign in with{' '}
+                                            <span className="font-semibold">{accountHint}</span> to
+                                            finish
+                                        </>
+                                    ) : (
+                                        'Device linked — sign in to finish'
+                                    )}
                                 </span>
                             </div>
                         </IonRow>
@@ -331,7 +371,11 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    You'll be taken back to <span className="font-semibold">{installIntent.appName ?? 'the app'}</span> after sign in
+                                    You'll be taken back to{' '}
+                                    <span className="font-semibold">
+                                        {installIntent.appName ?? 'the app'}
+                                    </span>{' '}
+                                    after sign in
                                 </span>
                             </div>
                         </IonRow>
@@ -381,7 +425,9 @@ export const LoginContent: React.FC = () => {
                                     try {
                                         await setPersistence(
                                             auth(),
-                                            next ? browserSessionPersistence : indexedDBLocalPersistence
+                                            next
+                                                ? browserSessionPersistence
+                                                : indexedDBLocalPersistence
                                         );
                                     } catch (e) {
                                         console.warn('Failed to set Firebase persistence', e);
@@ -390,30 +436,38 @@ export const LoginContent: React.FC = () => {
                                 className={`
                                     flex items-center gap-2.5 px-4 py-2 rounded-full
                                     transition-all duration-200 select-none
-                                    ${isPublicMode
-                                        ? 'bg-white/20 ring-1 ring-white/40'
-                                        : 'bg-white/10 hover:bg-white/15'
+                                    ${
+                                        isPublicMode
+                                            ? 'bg-white/20 ring-1 ring-white/40'
+                                            : 'bg-white/10 hover:bg-white/15'
                                     }
                                 `}
                             >
-                                <div className={`
+                                <div
+                                    className={`
                                     relative w-8 h-[18px] rounded-full transition-colors duration-200
                                     ${isPublicMode ? 'bg-white/90' : 'bg-white/30'}
-                                `}>
-                                    <div className={`
+                                `}
+                                >
+                                    <div
+                                        className={`
                                         absolute top-[2px] w-[14px] h-[14px] rounded-full
                                         transition-all duration-200 shadow-sm
-                                        ${isPublicMode
-                                            ? 'left-[15px] bg-emerald-600'
-                                            : 'left-[2px] bg-white/70'
+                                        ${
+                                            isPublicMode
+                                                ? 'left-[15px] bg-emerald-600'
+                                                : 'left-[2px] bg-white/70'
                                         }
-                                    `} />
+                                    `}
+                                    />
                                 </div>
 
-                                <span className={`
+                                <span
+                                    className={`
                                     text-sm transition-colors duration-200
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
-                                `}>
+                                `}
+                                >
                                     Shared or public computer
                                 </span>
                             </button>
@@ -436,7 +490,6 @@ export const LoginContent: React.FC = () => {
                     </GenericErrorBoundary>
                 </>
             )}
-
         </div>
     );
 };
@@ -444,6 +497,10 @@ export const LoginContent: React.FC = () => {
 const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     alternateBgComponent,
 }) => {
+    const { desktopLoginBg } = useTenantBrandingAssets();
+    const { theme } = useTheme();
+    const loginBgColor =
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -467,27 +524,41 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     }, [isMobile, isDesktop, isSuccessEndorsementModalOpen]);
 
     return (
-        <IonPage color="emerald-700" className="flex flex-col h-full">
+        <IonPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.learncard} />
             )}
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow bg-emerald-700"
-                color="emerald-700"
+                className="flex flex-col flex-grow"
+                style={{ '--background': loginBgColor } as React.CSSProperties}
             >
-                <IonGrid className="h-full w-full flex items-center justify-center bg-emerald-700">
+                <IonGrid
+                    className="h-full w-full flex items-center justify-center"
+                    style={{ backgroundColor: loginBgColor }}
+                >
                     <LoginContent />
                     {/* Desktop background image */}
                     {isDesktop &&
                         !endorsementRequest?.relationship?.label &&
                         !endorsementRequest?.description && (
                             <>
-                                <div className="w-full h-full p-0 m-0 flex items-center justify-center">
+                                <div className="w-full h-full p-0 m-0 flex items-center justify-center overflow-hidden">
                                     {alternateBgComponent ? (
                                         alternateBgComponent
+                                    ) : desktopLoginBg ? (
+                                        <img
+                                            src={desktopLoginBg}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className="w-full h-full object-cover"
+                                            onError={e => {
+                                                (e.target as HTMLImageElement).style.display =
+                                                    'none';
+                                            }}
+                                        />
                                     ) : (
-                                        <img src={DesktopLoginBG} alt="" aria-hidden="true" />
+                                        <LoginWelcomePanel />
                                     )}
                                 </div>
                             </>

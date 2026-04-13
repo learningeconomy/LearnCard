@@ -5,11 +5,11 @@ import NotificationIcon from 'learn-card-base/svgs/NotificationIcon';
 import { useGetUnreadUserNotifications } from 'learn-card-base';
 import { getNotificationButtonColor } from 'learn-card-base/helpers/colorHelpers';
 
-const NotificationButton: React.FC = () => {
+const NotificationButton: React.FC<{ colorOverride?: string }> = ({ colorOverride }) => {
     const history = useHistory();
     const location = useLocation();
     const { data, isLoading: notificationsLoading, refetch } = useGetUnreadUserNotifications();
-    const color = getNotificationButtonColor(location.pathname);
+    const color = colorOverride ?? getNotificationButtonColor(location.pathname);
 
     const unreadCount =
         data?.notifications && data?.notifications?.length > 0 ? data?.notifications?.length : null;

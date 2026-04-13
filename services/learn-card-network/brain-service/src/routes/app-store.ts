@@ -1,15 +1,21 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
+import type { ProfileType } from 'types/profile';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
+import {
+    getContractUriFromLaunchConfig,
+    getContractUriFromGuideState,
+} from '@helpers/integrations.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -49,6 +55,7 @@ import {
     countCredentialsSentByListingToProfile,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
+import { IntegrationValidator } from 'types/integration';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     getPrimarySigningAuthorityForListing,
@@ -74,11 +81,20 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
+import {
+    getContractTermsForProfile,
+    getContractDetailsByUri,
+} from '@accesslayer/consentflowcontract/relationships/read';
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
+import {
+    handleIncrementCounterEvent,
+    handleGetCounterEvent,
+    handleGetCountersEvent,
+} from '@helpers/app-counter.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -445,13 +461,13 @@ const verifyIntegrationOwnership = async (integrationId: string, profileId: stri
 
 // Helper to verify listing ownership via integration
 const verifyListingOwnership = async (listingId: string, profileId: string) => {
-    const listing = await readAppStoreListingById(listingId);
+    const listing = await readAppStoreListingByIdOrSlug(listingId);
 
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
 
-    const integration = await getIntegrationForListing(listingId);
+    const integration = await getIntegrationForListing(listing.listing_id);
 
     if (!integration) {
         throw new TRPCError({
@@ -991,6 +1007,156 @@ const handleGetTemplateRecipientsEvent = async (
     };
 };
 
+const handleRequestLearnerContextEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>,
+    listing?: { launch_config_json?: string }
+): Promise<Record<string, unknown>> => {
+    const { instructions, detailLevel = 'compact' } = event as {
+        instructions?: string;
+        detailLevel?: string;
+    };
+
+    const credentialUris: string[] = [];
+    let personalData: Record<string, string> = {};
+
+    const sentCredentials = await getCredentialsSentByListingToProfile(
+        listingId,
+        profile.profileId,
+        { limit: 100 }
+    );
+
+    for (const sentCred of sentCredentials) {
+        const credentialUri = getCredentialUri(sentCred.credentialId, ctx.domain);
+        credentialUris.push(credentialUri);
+    }
+
+    // Resolve contractUri from launch_config_json or guideState
+    let contractUri = getContractUriFromLaunchConfig(listing);
+
+    if (!contractUri) {
+        const integration = await getIntegrationForListing(listingId);
+        contractUri = getContractUriFromGuideState(integration);
+    }
+
+    if (contractUri) {
+        try {
+            const contractDetails = await getContractDetailsByUri(contractUri);
+
+            if (contractDetails?.contract) {
+                const terms = await getContractTermsForProfile(
+                    profile,
+                    contractDetails.contract
+                );
+
+                if (event.includeCredentials && terms?.terms?.read?.credentials) {
+                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
+                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
+                    );
+
+                    credentialUris.push(...uris);
+                }
+
+                if (event.includePersonalData && terms?.terms?.read?.personal) {
+                    personalData = terms.terms.read.personal;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching contract credentials:', error);
+        }
+    }
+
+    return {
+        credentialUris,
+        personalData,
+        instructions,
+        detailLevel,
+        maxCredentials: credentialUris.length,
+        did: `did:web:${ctx.domain}:${profile.profileId}`,
+    };
+};
+
+// Helper to handle send-notification app event
+const handleSendNotificationEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string; notificationsWebhook?: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const parsed = SendNotificationEventValidator.safeParse(event);
+
+    if (!parsed.success) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Invalid notification event: ${parsed.error.message}`,
+        });
+    }
+
+    const { title, body, actionPath, category, priority = 'normal' } = parsed.data;
+
+    if (!title && !body) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+    }
+
+    // Rate limit: max 10 notifications per user per app per hour (atomic increment)
+    const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
+    const count = await cache.incr(rateLimitKey, 3600);
+
+    if (count === undefined) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Rate limiting service unavailable',
+        });
+    }
+
+    if (count > 10) {
+        // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+        // while keeping the semantic code in the message for clients.
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
+        });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+    }
+
+    const profileDid = getDidWeb(ctx.domain, profile.profileId);
+
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+        to: {
+            did: profileDid,
+            profileId: profile.profileId,
+            ...(profile.notificationsWebhook && {
+                notificationsWebhook: profile.notificationsWebhook,
+            }),
+        },
+        from: {
+            did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+            profileId: listing.slug ?? listingId,
+            displayName: listing.display_name,
+        },
+        message: { title, body },
+        data: {
+            metadata: {
+                listingId,
+                listingSlug: listing.slug,
+                actionPath,
+                category,
+                priority,
+            },
+        },
+    });
+
+    return { sent: true };
+};
+
 export const appStoreRouter = t.router({
     // ==================== Integration Owner Routes ====================
 
@@ -1255,6 +1421,24 @@ export const appStoreRouter = t.router({
                 did: primarySa.relationship.did,
                 isPrimary: primarySa.relationship.isPrimary ?? true,
             };
+        }),
+
+    getIntegrationForListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/integration',
+                tags: ['App Store'],
+                summary: 'Get Integration for Listing',
+                description: 'Get the integration associated with an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(IntegrationValidator.optional())
+        .query(async ({ input }) => {
+            return (await getIntegrationForListing(input.listingId)) ?? undefined;
         }),
 
     submitForReview: profileRoute
@@ -1904,6 +2088,117 @@ export const appStoreRouter = t.router({
             return getBoostsForListing(input.listingId, ctx.domain);
         }),
 
+    // ==================== App Notification Route ====================
+
+    sendAppNotification: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/notify',
+                tags: ['App Store'],
+                summary: 'Send App Notification',
+                description:
+                    'Send a notification to a user on behalf of an app. Caller must own the listing. Recipient must have the app installed.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipient: z.string(),
+                title: z.string().optional(),
+                body: z.string().optional(),
+                actionPath: z.string().optional(),
+                category: z.string().optional(),
+                priority: z.enum(['normal', 'high']).default('normal'),
+            })
+        )
+        .output(z.object({ sent: z.boolean() }))
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, recipient, title, body, actionPath, category, priority } = input;
+
+            if (!title && !body) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+            }
+
+            // Verify caller owns the listing
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            // Resolve recipient to profileId (accepts profileId or DID)
+            const recipientProfileId = await getProfileIdFromString(recipient, ctx.domain);
+
+            if (!recipientProfileId) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not resolve recipient to a profile',
+                });
+            }
+
+            // Verify recipient has the app installed
+            const isInstalled = await hasProfileInstalledApp(recipientProfileId, listingId);
+
+            if (!isInstalled) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Recipient does not have this app installed',
+                });
+            }
+
+            // Rate limit: max 60 notifications per listing per hour (atomic increment)
+            const rateLimitKey = `app-notif-server-rate:${listingId}`;
+            const count = await cache.incr(rateLimitKey, 3600);
+
+            if (count === undefined) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Rate limiting service unavailable',
+                });
+            }
+
+            if (count > 60) {
+                // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+                // while keeping the semantic code in the message for clients.
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    message: 'Rate limit exceeded: max 60 notifications per app per hour',
+                });
+            }
+
+            const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
+
+            // Look up recipient profile to get notificationsWebhook for delivery
+            const recipientProfile = await getProfileByProfileId(recipientProfileId);
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+                to: {
+                    did: recipientDid,
+                    profileId: recipientProfileId,
+                    ...(recipientProfile?.notificationsWebhook && {
+                        notificationsWebhook: recipientProfile.notificationsWebhook,
+                    }),
+                },
+                from: {
+                    did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+                    profileId: listing.slug ?? listingId,
+                    displayName: listing.display_name,
+                },
+                message: { title, body },
+                data: {
+                    metadata: {
+                        listingId,
+                        listingSlug: listing.slug,
+                        actionPath,
+                        category,
+                        priority,
+                    },
+                },
+            });
+
+            return { sent: true };
+        }),
+
     // ==================== Generic App Event Route ====================
 
     appEvent: profileRoute
@@ -1968,6 +2263,26 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'get-template-recipients') {
                 return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'request-learner-context') {
+                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event, listing);
+            }
+
+            if (eventType === 'send-notification') {
+                return handleSendNotificationEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'increment-counter') {
+                return handleIncrementCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counter') {
+                return handleGetCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counters') {
+                return handleGetCountersEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
