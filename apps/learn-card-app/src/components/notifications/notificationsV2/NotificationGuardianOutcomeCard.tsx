@@ -1,8 +1,25 @@
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
 import { UserProfilePicture } from 'learn-card-base';
+import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import { clearFinalizeCache } from '../../../hooks/useFinalizeInboxCredentials';
+import autoVerifyStore from '../../../stores/autoVerifyStore';
+
+const CATEGORY_DISPLAY_TO_ROUTE: Record<string, string> = {
+    'Achievement': '/achievements',
+    'Social Badge': '/socialBadges',
+    'Learning History': '/learninghistory',
+    'Accomplishment': '/accomplishments',
+    'Accommodation': '/accommodations',
+    'Work History': '/workhistory',
+    'Family': '/families',
+    'ID': '/ids',
+    'Skill': '/skills',
+    'Membership': '/memberships',
+};
 
 type NotificationGuardianOutcomeCardProps = {
     notification: NotificationType;
@@ -15,6 +32,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     variant,
     onRead,
 }) => {
+    const history = useHistory();
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
@@ -22,8 +40,21 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     const accentColor = variant === 'approved' ? 'text-emerald-600' : 'text-red-500';
     const statusText = variant === 'approved' ? 'Approved' : 'Not Approved';
 
-    const handleMarkRead = async () => {
+    const handleClick = async () => {
         await onRead?.();
+
+        if (variant === 'approved') {
+            // Clear finalize cache so the newly-approved credential gets picked up
+            clearFinalizeCache();
+            // Trigger re-finalization so the credential moves from inbox to wallet
+            autoVerifyStore.set.markVerifySuccess();
+
+            // Navigate to the credential's category page if we know the type, otherwise wallet
+            const achievementType = notification?.data?.achievementType as string | undefined;
+            const categoryName = achievementType ? CATEGORY_MAP[achievementType] : undefined;
+            const route = categoryName ? CATEGORY_DISPLAY_TO_ROUTE[categoryName] : undefined;
+            history.push(route ?? '/wallet');
+        }
     };
 
     return (
@@ -35,8 +66,8 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
             }
         >
             <div
-                onClick={handleMarkRead}
-                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[10px] px-[10px] ${bgColor} my-[15px]`}
+                onClick={handleClick}
+                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[10px] px-[10px] ${bgColor} my-[15px] cursor-pointer`}
             >
                 <div className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0">
                     <UserProfilePicture

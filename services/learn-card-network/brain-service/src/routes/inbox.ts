@@ -1256,9 +1256,14 @@ export const inboxRouter = t.router({
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
                     let credentialName: string | undefined;
+                    let achievementType: string | undefined;
                     try {
                         const parsed = JSON.parse(inboxCredential.credential);
                         credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
+                        const subject = Array.isArray(parsed?.credentialSubject)
+                            ? parsed.credentialSubject[0]
+                            : parsed?.credentialSubject;
+                        achievementType = subject?.achievement?.achievementType;
                     } catch {}
 
                     await addNotificationToQueue({
@@ -1269,7 +1274,7 @@ export const inboxRouter = t.router({
                             title: 'Credential Approved',
                             body: `Your guardian approved "${credentialName ?? 'a credential'}" for you.`,
                         },
-                        data: { inboxCredentialId, credentialName },
+                        data: { inboxCredentialId, credentialName, achievementType },
                     });
                 }
             } catch (err) {
