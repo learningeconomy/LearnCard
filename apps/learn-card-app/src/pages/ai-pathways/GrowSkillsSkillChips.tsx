@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { IonSkeletonText } from '@ionic/react';
 
 import { conditionalPluralize, useSemanticSearchSkills } from 'learn-card-base';
 
@@ -37,13 +38,12 @@ const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
     const containerClassName = 'className' in props ? props.className ?? '' : '';
     const isWrapLayout = layout === 'wrap';
 
-    const { data: semanticSearchSkillsData } = useSemanticSearchSkills(
-        searchQuery ?? '',
-        frameworkId ?? '',
-        {
+    const { data: semanticSearchSkillsData, isLoading: semanticSearchSkillsLoading } =
+        useSemanticSearchSkills(searchQuery ?? '', frameworkId ?? '', {
             limit: 25,
-        }
-    );
+        });
+
+    const isLoadingSkills = !providedSkills && semanticSearchSkillsLoading;
 
     const skills =
         providedSkills ?? ((semanticSearchSkillsData?.records ?? []) as GrowSkillsSkillRecord[]);
@@ -176,6 +176,31 @@ const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
     const skillRowClassName = isWrapLayout
         ? 'flex flex-wrap gap-[5px]'
         : 'flex items-center gap-[5px] w-full overflow-hidden';
+
+    if (isLoadingSkills) {
+        return (
+            <div className={rootClassName}>
+                <p className="text-[14px] text-grayscale-600 font-bold leading-[14px] tracking-[0.32px]">
+                    Skills
+                </p>
+
+                <div className={skillRowClassName}>
+                    {Array.from({ length: 2 }, (_unused: unknown, index: number) => (
+                        <IonSkeletonText
+                            key={`skill-skeleton-${index}`}
+                            animated
+                            style={{
+                                width: '111px',
+                                height: '27px',
+                                borderRadius: '40px',
+                                margin: 0,
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={rootClassName}>
