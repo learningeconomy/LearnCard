@@ -23,13 +23,14 @@ import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.hel
 export async function finalizeInboxCredentialsForProfile(
     profile: ProfileType,
     domain: string
-): Promise<{ processed: number; claimed: number; errors: number; verifiableCredentials: VC[] }> {
+): Promise<{ processed: number; claimed: number; errors: number; guardianPending: number; verifiableCredentials: VC[] }> {
     const contactMethods = await getContactMethodsForProfile(profile.did);
     const verifiedContacts = contactMethods.filter(cm => cm.isVerified);
 
     let processed = 0;
     let claimed = 0;
     let errors = 0;
+    let guardianPending = 0;
 
     // Preload LC DID for webhooks
     let lcDid: string | null = null;
@@ -48,6 +49,7 @@ export async function finalizeInboxCredentialsForProfile(
                 inboxCredential.guardianStatus === 'AWAITING_GUARDIAN' ||
                 inboxCredential.guardianStatus === 'GUARDIAN_REJECTED'
             ) {
+                guardianPending += 1;
                 continue;
             }
 
@@ -247,5 +249,5 @@ export async function finalizeInboxCredentialsForProfile(
         }
     }
 
-    return { processed, claimed, errors, verifiableCredentials };
+    return { processed, claimed, errors, guardianPending, verifiableCredentials };
 }

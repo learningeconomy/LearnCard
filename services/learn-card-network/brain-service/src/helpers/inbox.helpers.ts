@@ -15,6 +15,7 @@ import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { doesProfileManageProfile } from '@accesslayer/profile-manager/relationships/read';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
 import { sendCredential } from '@helpers/credential.helpers';
 import { sendBoost } from '@helpers/boost.helpers';
@@ -207,7 +208,14 @@ export const issueToInbox = async (
     // Check if recipient already exists with verified email
     const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
 
-    if (existingProfile && !guardianEmail) {
+    // Check if the recipient is a managed child (has a guardian via MANAGES relationship).
+    // Managed children need guardian approval for all inbox credentials, even without explicit guardianEmail.
+    const recipientManagers = existingProfile
+        ? await getProfilesThatManageAProfile(existingProfile.profileId)
+        : [];
+    const recipientIsManaged = recipientManagers.length > 0;
+
+    if (existingProfile && !guardianEmail && !recipientIsManaged) {
         // Auto-deliver to existing user
         let finalCredential: VC;
 
@@ -331,6 +339,8 @@ export const issueToInbox = async (
         };
     } else {
         // Store in inbox for claiming
+        // Guardian gate if issuer specified guardianEmail OR recipient is a managed child
+        const needsGuardianGate = !!guardianEmail || recipientIsManaged;
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(credential),
             isSigned,
@@ -342,11 +352,9 @@ export const issueToInbox = async (
             integrationId,
             signingAuthority,
             expiresInDays,
-            ...(guardianEmail
-                ? {
-                      guardianEmail,
-                      guardianStatus: 'AWAITING_GUARDIAN' as const,
-                  }
+            ...(guardianEmail ? { guardianEmail } : {}),
+            ...(needsGuardianGate
+                ? { guardianStatus: 'AWAITING_GUARDIAN' as const }
                 : {}),
         });
 
@@ -459,6 +467,85 @@ export const issueToInbox = async (
             } catch (err) {
                 console.error('[issueToInbox] Failed to send guardian in-app notification:', err);
                 // Non-critical — email path is always available as fallback
+            }
+        } else if (!guardianEmail && recipientIsManaged) {
+            // Auto-detected managed child: send in-app notifications to all guardians
+            // No email OTP flow needed — guardians approve in-app via MANAGES relationship
+            try {
+                const childProfile = await getProfileForInboxCredential(inboxCredential.id);
+
+                let credentialName: string | undefined;
+                try {
+                    credentialName = (credential as any)?.name
+                        ?? (credential as any)?.credentialSubject?.achievement?.name;
+                } catch {}
+
+                for (const guardianProfile of recipientManagers) {
+                    await addNotificationToQueue({
+                        type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVAL_PENDING,
+                        to: guardianProfile,
+                        from: issuerProfile,
+                        message: {
+                            title: 'Credential Approval Request',
+                            body: `${credentialName ?? 'A credential'} for ${childProfile?.displayName ?? 'your student'} from ${issuerProfile.displayName}`,
+                        },
+                        data: {
+                            inboxCredentialId: inboxCredential.id,
+                            childProfileId: childProfile?.profileId ?? '',
+                            childDisplayName: childProfile?.displayName ?? '',
+                            credentialName: credentialName ?? '',
+                            issuerDisplayName: issuerProfile.displayName,
+                        },
+                    });
+                }
+            } catch (err) {
+                console.error('[issueToInbox] Failed to send guardian in-app notifications for managed child:', err);
+            }
+
+            // Still send the normal claim email to the child so they know a credential arrived
+            if (!delivery?.suppress) {
+                const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);
+                const emailClaimUrl = generateClaimUrl(emailClaimToken);
+                await createEmailSentRelationship(
+                    issuerProfile.did,
+                    inboxCredential?.id,
+                    recipient.value,
+                    emailClaimToken
+                );
+
+                const deliveryService = getDeliveryService(recipient);
+                const injectedTemplateFields = {
+                    recipient: {
+                        ...(delivery?.template?.model?.recipient ?? {}),
+                        ...(recipientContactMethod ? {
+                            ...(recipientContactMethod.type === 'email' ? {
+                                email: recipientContactMethod.value,
+                            } : {}),
+                            ...(recipientContactMethod.type === 'phone' ? {
+                                phone: recipientContactMethod.value,
+                            } : {}),
+                        } : {}),
+                    },
+                    issuer: {
+                        name: issuerProfile.displayName,
+                        ...(delivery?.template?.model?.issuer ?? {})
+                    },
+                    credential: {
+                        name: (credential as any)?.name,
+                        ...(delivery?.template?.model?.credential ?? {})
+                    }
+                };
+
+                await deliveryService.send({
+                    contactMethod: recipient,
+                    templateId: delivery?.template?.id ?? 'universal-inbox',
+                    templateModel: {
+                        emailClaimUrl,
+                        claimToken: emailClaimToken,
+                        ...injectedTemplateFields,
+                    },
+                    messageStream: 'universal-inbox',
+                });
             }
         } else if (!delivery?.suppress) {
             const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);

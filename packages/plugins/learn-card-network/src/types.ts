@@ -593,6 +593,7 @@ export type LearnCardNetworkPluginMethods = {
         processed: number;
         claimed: number;
         errors: number;
+        guardianPending: number;
         verifiableCredentials: VC[];
     }>;
 

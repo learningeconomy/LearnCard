@@ -179,46 +179,44 @@ describe('Guardian Gated Routes - Context Passing', () => {
         });
     });
 
-    describe('finalize — guardian gating', () => {
-        it('should return FORBIDDEN for managed child without guardian VP', async () => {
+    describe('finalize — credential-level guardian gating', () => {
+        it('should succeed for managed child and return guardianPending count', async () => {
             mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
             mockIsProfileManaged.mockResolvedValue(true);
             mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
 
-            // No guardian approval token passed — hasGuardianApproval will be false
+            // No guardian approval token needed — finalize now uses profileRoute
+            // Guardian gating happens at the credential level, not route level
             const caller = createCaller(childLearnCard.id.did());
 
-            await expect(caller.inbox.finalize({})).rejects.toMatchObject({
-                code: 'FORBIDDEN',
-                message: expect.stringMatching(/guardian approval/i),
-            });
+            const result = await caller.inbox.finalize({});
+            expect(result).toBeDefined();
+            expect(result.processed).toBeGreaterThanOrEqual(0);
+            expect(result.guardianPending).toBeGreaterThanOrEqual(0);
         });
 
-        it('should not return FORBIDDEN for a non-managed profile', async () => {
+        it('should succeed for non-managed profile with guardianPending=0', async () => {
             mockGetProfileByDid.mockResolvedValue(mockNonManagedProfile as any);
             mockIsProfileManaged.mockResolvedValue(false);
 
             const caller = createCaller(nonManagedLearnCard.id.did());
 
-            // Should pass the guardian gate and attempt finalization.
-            // Profile has no verified contact methods so result is an empty processed set.
             const result = await caller.inbox.finalize({});
             expect(result).toBeDefined();
             expect(result.processed).toBeGreaterThanOrEqual(0);
+            expect(result.guardianPending).toBe(0);
         });
 
-        it('should allow managed child through when a valid guardian approval token is provided', async () => {
+        it('should include guardianPending in response schema', async () => {
             mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
             mockIsProfileManaged.mockResolvedValue(true);
             mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
 
-            const token = await generateGuardianApprovalToken(guardianLearnCard, 'child-user');
-            const caller = createCaller(childLearnCard.id.did(), token);
+            const caller = createCaller(childLearnCard.id.did());
 
-            // Should pass the guardian gate and proceed to finalization
             const result = await caller.inbox.finalize({});
-            expect(result).toBeDefined();
-            expect(result.processed).toBeGreaterThanOrEqual(0);
+            expect(result).toHaveProperty('guardianPending');
+            expect(typeof result.guardianPending).toBe('number');
         });
     });
 });

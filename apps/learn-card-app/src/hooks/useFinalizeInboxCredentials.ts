@@ -40,12 +40,6 @@ export const clearFinalizeCache = (): void => {
 
 const hasProfileId = (p: LCNProfile | undefined): boolean => !!p && typeof p.profileId === 'string' && p.profileId.length > 0;
 
-const isTRPCForbiddenError = (err: unknown): boolean => {
-    if (!err || typeof err !== 'object') return false;
-    const maybeCode = (err as { data?: { code?: string } }).data?.code;
-    return maybeCode === 'FORBIDDEN';
-};
-
 export const useFinalizeInboxCredentials = () => {
     const { data: isLCNUser } = useIsCurrentUserLCNUser();
     const isLoggedIn = useIsLoggedIn();
@@ -78,21 +72,17 @@ export const useFinalizeInboxCredentials = () => {
                 // Skip if recently finalized for this profile
                 if (!needsFinalize(profileId)) return;
 
-                let result;
-                try {
-                    result = await wallet.invoke?.finalizeInboxCredentials();
-                } catch (err: unknown) {
-                    // Guardian-gated: managed child without parent VP — silently skip, don't mark finalized
-                    if (isTRPCForbiddenError(err)) {
-                        console.debug('[finalize] Skipped: guardian approval required for managed child profile');
-                        markFinalized(profileId); // Cache to prevent retry loop; will re-check after TTL
-                        return;
-                    }
-                    // Re-throw other errors
-                    throw err;
-                }
+                const result = await wallet.invoke?.finalizeInboxCredentials();
 
                 const vcs: VC[] = result?.verifiableCredentials || [];
+                const guardianPending = result?.guardianPending ?? 0;
+
+                if (guardianPending > 0) {
+                    console.info(
+                        `[finalize] ${guardianPending} credential(s) awaiting guardian approval`
+                    );
+                    walletStore.set.setIsSyncing(WalletSyncState.Completed, 0);
+                }
 
                 if (!vcs.length) {
                     // Nothing to store but consider finalization complete for a while

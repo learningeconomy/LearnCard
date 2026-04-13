@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute, verifiedContactRoute, guardianGatedRoute } from '@routes';
+import { t, profileRoute, openRoute, verifiedContactRoute } from '@routes';
 import {
     PaginationOptionsValidator,
     IssueInboxCredentialValidator,
@@ -630,7 +630,7 @@ export const inboxRouter = t.router({
         }),
 
     // Finalize all pending inbox credentials for verified contact methods
-    finalize: guardianGatedRoute
+    finalize: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -639,7 +639,7 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Finalize Universal Inbox Credentials',
                 description:
-                    'Sign and issue all pending inbox credentials for verified contact methods of the authenticated profile',
+                    'Sign and issue all pending inbox credentials for verified contact methods of the authenticated profile. Credentials awaiting guardian approval are skipped and counted in guardianPending.',
             },
             requiredScope: 'inbox:write',
         })
@@ -649,19 +649,12 @@ export const inboxRouter = t.router({
                 processed: z.number(),
                 claimed: z.number(),
                 errors: z.number(),
+                guardianPending: z.number(),
                 verifiableCredentials: z.array(VCValidator),
             })
         )
         .mutation(async ({ ctx }) => {
             const { profile } = ctx.user;
-            const { isChildAccount, hasGuardianApproval } = ctx;
-
-            if (isChildAccount && !hasGuardianApproval) {
-                throw new TRPCError({
-                    code: 'FORBIDDEN',
-                    message: 'Child accounts require guardian approval to finalize inbox credentials.',
-                });
-            }
 
             return finalizeInboxCredentialsForProfile(profile, ctx.domain);
         }),
