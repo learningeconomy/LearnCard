@@ -71,6 +71,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'A
     });
 
     const filterText = filter.trim().toLowerCase();
+    const hasAiSessionCards = cards.some(card => card.type === 'ai-session');
+    const visibleTabs = growSkillsTabs.filter(tab => tab !== 'AI Sessions' || hasAiSessionCards);
+    const resolvedActiveTab = activeTab === 'AI Sessions' && !hasAiSessionCards ? 'All' : activeTab;
 
     const getCardTitle = (card: (typeof cards)[number]) => {
         if (card.type === 'ai-session') return card.pathway?.title ?? '';
@@ -82,15 +85,15 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'A
 
     const visibleCards = useMemo(() => {
         return cards.filter(card => {
-            if (activeTab === 'AI Sessions' && card.type !== 'ai-session') return false;
-            if (activeTab === 'Courses' && card.type !== 'course') return false;
-            if (activeTab === 'Media' && card.type !== 'media') return false;
+            if (resolvedActiveTab === 'AI Sessions' && card.type !== 'ai-session') return false;
+            if (resolvedActiveTab === 'Courses' && card.type !== 'course') return false;
+            if (resolvedActiveTab === 'Media' && card.type !== 'media') return false;
 
             if (!filterText) return true;
 
             return getCardTitle(card).toLowerCase().includes(filterText);
         });
-    }, [activeTab, cards, filterText]);
+    }, [cards, filterText, resolvedActiveTab]);
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
@@ -148,8 +151,8 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({ initialActiveTab = 'A
                 </div> */}
 
                 <div className="flex flex-wrap gap-[10px]">
-                    {growSkillsTabs.map(tab => {
-                        const isActive = activeTab === tab;
+                    {visibleTabs.map(tab => {
+                        const isActive = resolvedActiveTab === tab;
 
                         return (
                             <button
