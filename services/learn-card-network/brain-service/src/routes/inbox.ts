@@ -31,7 +31,6 @@ import {
     getInboxCredentialsForProfile,
     getInboxCredentialByIdAndGuardianEmail,
     getContactMethodForInboxCredential,
-    getApprovedInboxCredentialsByGuardianEmail,
     getInboxCredentialById,
 } from '@accesslayer/inbox-credential/read';
 import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
