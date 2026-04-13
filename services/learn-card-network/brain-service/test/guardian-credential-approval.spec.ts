@@ -285,6 +285,18 @@ describe('Guardian-Gated Credential Issuance', () => {
         });
 
         it('should establish MANAGES relationship and return child info for approved credentials', async () => {
+            // Create the student profile so getProfileForInboxCredential can traverse
+            // InboxCredential → ADDRESSED_TO → ContactMethod ← HAS_CONTACT_METHOD ← Profile
+            const studentUser = await getUser('d'.repeat(64));
+            await studentUser.clients.fullAuth.profile.createProfile({
+                profileId: 'student1',
+                displayName: 'Student One',
+            });
+            const { createProfileContactMethodRelationship } = await import(
+                '../src/accesslayer/contact-method/relationships/create'
+            );
+            const { getContactMethodByValue } = await import('../src/accesslayer/contact-method/read');
+
             const signedVc = await userA.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,
                 issuer: userA.learnCard.id.did(),
@@ -297,15 +309,13 @@ describe('Guardian-Gated Credential Issuance', () => {
                 options: { guardianEmail: 'guardian@home.com' },
             });
 
+            // Link student profile to the student contact method created by boost.send
+            const studentCm = await getContactMethodByValue('email', 'student@school.edu');
+            await createProfileContactMethodRelationship('student1', studentCm!.id);
+
             const credentials = await InboxCredential.findMany({ where: {} });
             const inboxCred = credentials[0]!;
-            console.log('[TEST DEBUG] inboxCred before update:', { id: inboxCred.id, guardianEmail: inboxCred.guardianEmail, guardianStatus: inboxCred.guardianStatus });
-            const updated = await updateInboxCredential(inboxCred.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
-            console.log('[TEST DEBUG] updateInboxCredential result:', updated ? { id: updated.id, guardianStatus: updated.guardianStatus } : 'null');
-
-            // Verify the update persisted
-            const reloaded = await InboxCredential.findMany({ where: {} });
-            console.log('[TEST DEBUG] reloaded credential:', { guardianStatus: reloaded[0]?.guardianStatus, guardianEmail: reloaded[0]?.guardianEmail });
+            await updateInboxCredential(inboxCred.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
 
             const guardianUser = await getUser('b'.repeat(64));
             await guardianUser.clients.fullAuth.profile.createProfile({
@@ -314,11 +324,6 @@ describe('Guardian-Gated Credential Issuance', () => {
             });
 
             const { createContactMethod } = await import('../src/accesslayer/contact-method/create');
-            const { createProfileContactMethodRelationship } = await import(
-                '../src/accesslayer/contact-method/relationships/create'
-            );
-            const { getContactMethodsForProfile } = await import('../src/accesslayer/contact-method/read');
-            const { getApprovedInboxCredentialsByGuardianEmail } = await import('../src/accesslayer/inbox-credential/read');
             const cm = await createContactMethod({
                 type: 'email',
                 value: 'guardian@home.com',
@@ -327,18 +332,7 @@ describe('Guardian-Gated Credential Issuance', () => {
             });
             await createProfileContactMethodRelationship('guardian1', cm.id);
 
-            // Debug: check contact methods for guardian profile
-            const guardianDid = guardianUser.learnCard.id.did();
-            const contactMethods = await getContactMethodsForProfile(guardianDid);
-            console.log('[TEST DEBUG] guardian DID:', guardianDid);
-            console.log('[TEST DEBUG] contactMethods for guardian:', contactMethods.map(c => ({ type: c.type, value: c.value, isVerified: c.isVerified })));
-
-            // Debug: directly query approved credentials
-            const approvedCreds = await getApprovedInboxCredentialsByGuardianEmail('guardian@home.com');
-            console.log('[TEST DEBUG] approvedCreds:', approvedCreds.map(c => ({ id: c.id, guardianStatus: c.guardianStatus, guardianEmail: c.guardianEmail })));
-
             const result = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks({});
-            console.log('[TEST DEBUG] claimPendingGuardianLinks result:', result);
 
             expect(result).toHaveLength(1);
             expect(result[0]!.childDisplayName).toBeTruthy();
@@ -352,6 +346,17 @@ describe('Guardian-Gated Credential Issuance', () => {
         });
 
         it('should be idempotent — second call returns managerId: null for already-linked children', async () => {
+            // Create the student profile so getProfileForInboxCredential can traverse the graph
+            const studentUser = await getUser('e'.repeat(64));
+            await studentUser.clients.fullAuth.profile.createProfile({
+                profileId: 'student2',
+                displayName: 'Student Two',
+            });
+            const { createProfileContactMethodRelationship } = await import(
+                '../src/accesslayer/contact-method/relationships/create'
+            );
+            const { getContactMethodByValue } = await import('../src/accesslayer/contact-method/read');
+
             const signedVc = await userA.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,
                 issuer: userA.learnCard.id.did(),
@@ -363,6 +368,11 @@ describe('Guardian-Gated Credential Issuance', () => {
                 signedCredential: signedVc,
                 options: { guardianEmail: 'guardian2@home.com' },
             });
+
+            // Link student profile to the student contact method created by boost.send
+            const studentCm = await getContactMethodByValue('email', 'student2@school.edu');
+            await createProfileContactMethodRelationship('student2', studentCm!.id);
+
             const credentials = await InboxCredential.findMany({ where: {} });
             await updateInboxCredential(credentials[0]!.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
 
@@ -372,9 +382,6 @@ describe('Guardian-Gated Credential Issuance', () => {
                 displayName: 'Guardian Two',
             });
             const { createContactMethod } = await import('../src/accesslayer/contact-method/create');
-            const { createProfileContactMethodRelationship } = await import(
-                '../src/accesslayer/contact-method/relationships/create'
-            );
             const cm = await createContactMethod({
                 type: 'email',
                 value: 'guardian2@home.com',
