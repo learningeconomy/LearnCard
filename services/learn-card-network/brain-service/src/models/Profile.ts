@@ -100,7 +100,6 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             highlightedCredentials: { type: 'array', items: { type: 'string' }, required: false },
             dob: { type: 'string', required: false },
             country: { type: 'string', required: false },
-            isFederated: { type: 'boolean', required: false },
             role: {
                 type: 'string',
                 required: false,
