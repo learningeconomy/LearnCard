@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vites
 import { getUser } from './helpers/getClient';
 import { testUnsignedBoost } from './helpers/send';
 import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost, ProfileManager } from '@models';
-import { updateInboxCredential } from '../src/accesslayer/inbox-credential/update';
+import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { sendSpy } from './helpers/spies';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
@@ -299,7 +299,13 @@ describe('Guardian-Gated Credential Issuance', () => {
 
             const credentials = await InboxCredential.findMany({ where: {} });
             const inboxCred = credentials[0]!;
-            await updateInboxCredential(inboxCred.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
+            console.log('[TEST DEBUG] inboxCred before update:', { id: inboxCred.id, guardianEmail: inboxCred.guardianEmail, guardianStatus: inboxCred.guardianStatus });
+            const updated = await updateInboxCredential(inboxCred.id, { guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
+            console.log('[TEST DEBUG] updateInboxCredential result:', updated ? { id: updated.id, guardianStatus: updated.guardianStatus } : 'null');
+
+            // Verify the update persisted
+            const reloaded = await InboxCredential.findMany({ where: {} });
+            console.log('[TEST DEBUG] reloaded credential:', { guardianStatus: reloaded[0]?.guardianStatus, guardianEmail: reloaded[0]?.guardianEmail });
 
             const guardianUser = await getUser('b'.repeat(64));
             await guardianUser.clients.fullAuth.profile.createProfile({
@@ -311,6 +317,8 @@ describe('Guardian-Gated Credential Issuance', () => {
             const { createProfileContactMethodRelationship } = await import(
                 '../src/accesslayer/contact-method/relationships/create'
             );
+            const { getContactMethodsForProfile } = await import('../src/accesslayer/contact-method/read');
+            const { getApprovedInboxCredentialsByGuardianEmail } = await import('../src/accesslayer/inbox-credential/read');
             const cm = await createContactMethod({
                 type: 'email',
                 value: 'guardian@home.com',
@@ -319,7 +327,18 @@ describe('Guardian-Gated Credential Issuance', () => {
             });
             await createProfileContactMethodRelationship('guardian1', cm.id);
 
+            // Debug: check contact methods for guardian profile
+            const guardianDid = guardianUser.learnCard.id.did();
+            const contactMethods = await getContactMethodsForProfile(guardianDid);
+            console.log('[TEST DEBUG] guardian DID:', guardianDid);
+            console.log('[TEST DEBUG] contactMethods for guardian:', contactMethods.map(c => ({ type: c.type, value: c.value, isVerified: c.isVerified })));
+
+            // Debug: directly query approved credentials
+            const approvedCreds = await getApprovedInboxCredentialsByGuardianEmail('guardian@home.com');
+            console.log('[TEST DEBUG] approvedCreds:', approvedCreds.map(c => ({ id: c.id, guardianStatus: c.guardianStatus, guardianEmail: c.guardianEmail })));
+
             const result = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks({});
+            console.log('[TEST DEBUG] claimPendingGuardianLinks result:', result);
 
             expect(result).toHaveLength(1);
             expect(result[0]!.childDisplayName).toBeTruthy();
