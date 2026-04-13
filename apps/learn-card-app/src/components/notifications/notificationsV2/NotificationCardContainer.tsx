@@ -14,6 +14,7 @@ import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
 import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import NotificationAppStoreCard from './NotificationAppStoreCard';
+import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
 
@@ -35,6 +36,7 @@ export const NOTIFICATION_TYPES = {
     APP_LISTING_SUBMITTED: 'APP_LISTING_SUBMITTED',
     APP_LISTING_APPROVED: 'APP_LISTING_APPROVED',
     APP_LISTING_REJECTED: 'APP_LISTING_REJECTED',
+    APP_NOTIFICATION: 'APP_NOTIFICATION',
 };
 
 export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
@@ -384,6 +386,17 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 notification={notification}
                 onRead={handleMarkAsRead}
                 variant="rejected"
+            />
+        );
+    }
+
+    /* App notification from an installed app */
+    if (type === NOTIFICATION_TYPES.APP_NOTIFICATION) {
+        return (
+            <NotificationAppNotificationCard
+                notification={notification}
+                onRead={handleMarkAsRead}
+                onArchive={handleArchiveNotification}
             />
         );
     }

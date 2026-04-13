@@ -7,6 +7,11 @@ export enum SkillLevel {
     Expert = 5,
 }
 
+export type SelectedSkill = {
+    id: string;
+    proficiency: SkillLevel;
+};
+
 export const SKILL_LEVEL_META = {
     [SkillLevel.Hidden]: {
         name: 'Hidden',

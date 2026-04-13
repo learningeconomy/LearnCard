@@ -11,12 +11,14 @@ import {
 import AlertTriangle from '../../components/svgs/AlertTriangle';
 import { useHistory } from 'react-router-dom';
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import useTheme from '../../theme/hooks/useTheme';
 
 const SeedPhraseModal: React.FC = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const [seed, setSeed] = useState<string>('');
     const [errorMessage, setErrorMessage] = useState<string>('');
@@ -82,7 +84,7 @@ const SeedPhraseModal: React.FC = () => {
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
                 Enter your <span className="font-semibold">64-character</span> or{' '}
                 <span className="font-semibold">word phrase seed</span> below to regain access to an
-                existing LearnCard passport.
+                existing {brandingConfig?.name} passport.
             </p>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
                 This is an advanced option for users who already saved their seed during passport

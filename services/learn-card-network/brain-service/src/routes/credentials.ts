@@ -77,7 +77,14 @@ export const credentialsRouter = t.router({
                 metadata,
             });
 
-            const credentialUri = await sendCredential(profile, targetProfile, credential, ctx.domain, metadata, activityId);
+            const credentialUri = await sendCredential(
+                profile,
+                targetProfile,
+                credential,
+                ctx.domain,
+                metadata,
+                activityId
+            );
 
             return credentialUri;
         }),
@@ -191,10 +198,16 @@ export const credentialsRouter = t.router({
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {
-            return getIncomingCredentialsForProfile(ctx.domain, ctx.user.profile, {
-                limit,
-                from: typeof from === 'string' ? [from] : from,
-            });
+            const incomingCredentials = await getIncomingCredentialsForProfile(
+                ctx.domain,
+                ctx.user.profile,
+                {
+                    limit,
+                    from: typeof from === 'string' ? [from] : from,
+                }
+            );
+
+            return incomingCredentials.slice(0, limit);
         }),
 
     deleteCredential: profileRoute
@@ -244,7 +257,8 @@ export const credentialsRouter = t.router({
                 path: '/credentials/revoked',
                 tags: ['Credentials'],
                 summary: 'Get revoked credentials',
-                description: "This endpoint returns credential URIs that have been revoked for the current user",
+                description:
+                    'This endpoint returns credential URIs that have been revoked for the current user',
             },
             requiredScope: 'credentials:read',
         })

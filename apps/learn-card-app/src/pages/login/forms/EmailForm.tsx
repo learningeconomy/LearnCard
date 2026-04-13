@@ -6,6 +6,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import {
     currentUserStore,
     getRandomBaseColor,
@@ -75,6 +76,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
+    const { theme } = useTheme();
+    const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
+    const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
+
     const flags = useFlags();
     const query = usePathQuery();
     const history = useHistory();
@@ -312,7 +317,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         formTitle = null;
 
         const defaultEmailInputClassName =
-            'bg-emerald-600 text-white placeholder:text-white white-placeholder';
+            'bg-white/20 text-white placeholder:text-white white-placeholder';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
         const emailError = errors.email?.[0];
@@ -461,7 +466,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${!loginButtonBgColor ? 'bg-grayscale-900' : ''} ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
+                    style={{
+                        ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
+                        ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
+                    }}
                     onClick={handleOnClick}
                     disabled={disabled}
                 >

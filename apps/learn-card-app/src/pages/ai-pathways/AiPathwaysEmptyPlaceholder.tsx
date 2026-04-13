@@ -4,15 +4,22 @@ import { useHistory } from 'react-router-dom';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 import CheckListButton from '../../components/learncard/checklist/CheckListButton';
 
+import useTheme from '../../theme/hooks/useTheme';
 import { useIsLoggedIn } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export const AiPathwaysEmptyPlaceholder: React.FC = () => {
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
+    const brandingConfig = useBrandingConfig();
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
 
-    let title = isLoggedIn ? 'No AI Pathways yet.' : 'Join LearnCard\nto unlock AI Pathways';
+    let title = isLoggedIn
+        ? 'No AI Pathways yet.'
+        : `Join ${brandingConfig?.name}\nto unlock AI Pathways`;
     const text = isLoggedIn
-        ? `Build your LearnCard to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
+        ? `Build your ${brandingConfig?.name} to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
         : 'AI Pathways connect your skills to relevant courses, careers, salaries, and learning content.';
 
     return (
@@ -31,9 +38,9 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
                         onClick={() => {
                             history.push('/');
                         }}
-                        className="p-[11px] bg-emerald-700 rounded-full text-white flex-1 font-poppins text-[17px] font-semibold w-full"
+                        className={`p-[11px] bg-${primaryColor} rounded-full text-white flex-1 font-poppins text-[17px] font-semibold w-full`}
                     >
-                        Join LearnCard
+                        Join {brandingConfig?.name}
                     </button>
                 )}
             </div>

@@ -66,6 +66,7 @@ import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
@@ -88,6 +89,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const [user, setUser] = useState(_user);
     const { theme } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
+    const brandingConfig = useBrandingConfig();
+    const buildMyLCTitle = `Build My ${brandingConfig.name}`;
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -207,7 +210,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         <UserProfileSetup
                             title="My Account"
                             handleCloseModal={closeModal}
-                            handleLogout={() => handleLogout(branding)}
+                            handleLogout={() => handleLogout()}
                             showNetworkSettings={true}
                             showNotificationsModal={false}
                         />,
@@ -248,7 +251,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Build My LearnCard',
+                title: buildMyLCTitle,
                 Icon: BuildColorBlocksIcon,
                 caretText: checkListItemText,
                 onClick: async () => {
@@ -766,7 +769,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                 let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
 
-                                if (title === 'Build My LearnCard') {
+                                if (title === buildMyLCTitle) {
                                     icon = (
                                         <img
                                             src={buildMyLCIcon}
@@ -791,7 +794,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         {!hideLogout && (
                             <button
                                 onClick={() =>
-                                    handleLogout(branding, { overrideRedirectUrl: '/login' })
+                                    handleLogout({ overrideRedirectUrl: '/login' })
                                 }
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}

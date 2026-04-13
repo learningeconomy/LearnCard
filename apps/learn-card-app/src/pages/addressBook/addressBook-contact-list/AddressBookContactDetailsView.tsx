@@ -17,6 +17,7 @@ import { ModalTypes, UserProfilePicture, useModal } from 'learn-card-base';
 
 import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import useTheme from '../../../theme/hooks/useTheme';
@@ -64,17 +65,17 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     showCloseButton,
     showBoostButton,
     showRequestButton,
-    handleConnectionRequest = () => { },
+    handleConnectionRequest = () => {},
     showDeleteButton,
-    handleRemoveConnection = () => { },
+    handleRemoveConnection = () => {},
     showAcceptButton,
-    handleAcceptConnectionRequest = () => { },
+    handleAcceptConnectionRequest = () => {},
     showCancelButton,
-    handleCancelConnectionRequest = () => { },
+    handleCancelConnectionRequest = () => {},
     showBlockButton,
-    handleBlockUser = () => { },
+    handleBlockUser = () => {},
     showUnblockButton,
-    handleUnblockUser = () => { },
+    handleUnblockUser = () => {},
     history,
 }) => {
     const { presentToast } = useToast();
@@ -83,6 +84,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     const sectionPortal = document.getElementById('section-cancel-portal');
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
+    const brandingConfig = useBrandingConfig();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -331,7 +333,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 <IonCol className="w-full bg-grayscale-100 flex items-center justify-between px-4 rounded-2xl">
                     <div className="w-[80%] flex flex-col justify-center items-start text-left">
                         <p className="text-grayscale-500 font-medium text-sm">
-                            LearnCard Number (DID)
+                            {brandingConfig?.name} Number (DID)
                         </p>
                         <p className="w-full text-grayscale-900 line-clamp-1">{contact?.did}</p>
                     </div>

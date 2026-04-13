@@ -17,7 +17,6 @@ import AiInsightsLearningSnapshots from './AiInsightsLearningSnapshots';
 import RequestInsightsCard from './request-insights/RequestInsightsCard';
 import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
@@ -118,9 +117,6 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
-                <ExperimentalFeatureBox />
-            </div>
             <div className="flex items-center justify-center w-full my-4">
                 {flags?.showGenerateAiInsightsButton && (
                     <button
@@ -138,12 +134,15 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
-            {/* <AiInsightsLearningPathwaysCard /> */}
-            <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+            <AiInsightsPromptBoxContainer />
+            {!flags?.hideAiPathways && (
+                <div className="w-full flex gap-3 mt-4">
+                    <AiInsightsLearningPathwaysCard />
+                    <AiInsightsSkillsCardSimple />
+                </div>
+            )}
         </>
     );
 
@@ -171,6 +170,7 @@ const AiInsights: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiInsights}
                         hidePlusBtn={true}
+                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex relative justify-center items-center w-full">

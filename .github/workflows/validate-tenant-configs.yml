@@ -1,0 +1,21 @@
+name: Validate Tenant Configs
+
+on:
+  pull_request:
+    paths:
+      - 'apps/learn-card-app/environments/**'
+      - 'packages/learn-card-base/src/config/tenantConfigSchema.ts'
+      - 'packages/learn-card-base/src/config/tenantDefaults.ts'
+
+jobs:
+  validate:
+    name: Validate tenant configs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+
+      - name: Validate all tenant configs
+        working-directory: apps/learn-card-app
+        run: npx tsx scripts/validate-tenant-configs.ts

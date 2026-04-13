@@ -1,19 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import { Capacitor } from '@capacitor/core';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
 
-import { IonRow, IonCol, useIonModal } from '@ionic/react';
 import NotificationImage from '../../assets/images/notification-polygon.png';
-import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
-
-import {
-    PushNotificationsSettingsState,
-    PushNotificationSettingsEnum,
-} from '../push-notification-settings/pushNotifications.helpers';
 import { pushUtilities } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
-import ModalLayout from '../../layout/ModalLayout';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -22,52 +15,31 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-
-    const [settings, setSettings] = useState<PushNotificationsSettingsState>({
-        connectionRequests: true,
-        newBoosts: true,
-    });
-
-    const [presentModal, dismissModal] = useIonModal(PushNotificationsSettings, {
-        handleCloseModal: () => dismissModal(),
-        settings: settings,
-        handleStateChange: (settingsType: PushNotificationSettingsEnum, settingState: boolean) =>
-            handleStateChange(settingsType, settingState),
-    });
-
-    const handleStateChange = (
-        settingsType: PushNotificationSettingsEnum,
-        settingState: boolean
-    ) => {
-        const _settings = settings;
-
-        _settings[settingsType] = !settingState;
-        setSettings({ ..._settings });
-    };
+    const brandingConfig = useBrandingConfig();
 
     return (
-        <ModalLayout handleOnClick={handleCloseModal}>
-            <IonRow className="flex flex-col pb-4 pt-2 w-full">
-                <IonCol className="w-full flex items-center justify-center">
-                    <h6 className="tracking-[12px] text-base font-bold text-black">LEARNCARD</h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+        <section className="w-full px-6 pt-6 pb-4">
+            <div className="w-full flex flex-col items-center pb-4 pt-2">
+                <div className="w-full flex items-center justify-center">
+                    <h6 className="tracking-[12px] text-base font-bold text-black">
+                        {brandingConfig?.name}
+                    </h6>
+                </div>
+                <div className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black font-poppins text-xl">
                         Stay in the Loop?
                     </h6>
-                </IonCol>
-            </IonRow>
+                </div>
+            </div>
 
-            <IonRow className="w-full flex items-center justify-center">
-                <IonCol className="flex items-center justify-around w-full max-w-[600px]">
-                    <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1">
-                        <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
-                        <img src={NotificationImage} alt="notification icon" className="z-50" />
-                    </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="text-center">
+            <div className="w-full flex items-center justify-center">
+                <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 max-w-[600px]">
+                    <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
+                    <img src={NotificationImage} alt="notification icon" className="z-50" />
+                </div>
+            </div>
+            <div className="flex items-center justify-center w-full">
+                <div className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         <span className="font-bold text-grayscale-800">
                             Receive push notifications for:
@@ -77,16 +49,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                         badges).
                     </p>
                     <br />
-                    {/* <button
-                                onClick={() => presentModal()}
-                                className="text-indigo-500 font-bold"
-                            >
-                                Settings
-                            </button> */}
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full flex items-center justify-center mt-4">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-grayscale-200">
+                </div>
+            </div>
+            <div className="w-full flex items-center justify-center mt-4">
+                <div className="flex items-center flex-col w-full border-grayscale-200">
                     <button
                         onClick={async () => {
                             const permissionState =
@@ -147,10 +113,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             Not Yet
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex items-center justify-center">
+                </div>
+            </div>
+            <div className="flex items-center justify-center mt-4 w-full">
+                <div className="flex items-center justify-center">
                     <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
                         Privacy Policy
                     </button>
@@ -158,9 +124,9 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                     <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
                         Terms of Service
                     </button>
-                </IonCol>
-            </IonRow>
-        </ModalLayout>
+                </div>
+            </div>
+        </section>
     );
 };
 

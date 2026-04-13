@@ -73,6 +73,19 @@ export type Cache = {
 
     /** Gets TTL of a key **/
     ttl: (key: RedisKey) => Promise<number | undefined>;
+
+    /** Pushes values to the end of a Redis list */
+    rpush: (key: RedisKey, ...values: RedisValue[]) => Promise<number | undefined>;
+
+    /** Gets a range of elements from a Redis list */
+    lrange: (key: RedisKey, start: number, stop: number) => Promise<string[] | undefined>;
+
+    /**
+     * Atomically increments a key by 1 and returns the new value.
+     * If the key does not exist it is created with value 1.
+     * When ttl is provided and this is the first increment (result === 1), EXPIRE is set.
+     */
+    incr: (key: RedisKey, ttl?: number) => Promise<number | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -187,6 +200,45 @@ export const getCache = (): Cache => {
                 if (cache?.node) return await cache.node.ttl(key);
             } catch (e) {
                 // logger.error('Cache get error', e);
+            }
+
+            return undefined;
+        },
+        rpush: async (key, ...values) => {
+            try {
+                if (cache?.redis) return await cache.redis.rpush(key, ...values);
+                if (cache?.node) return await cache.node.rpush(key, ...values);
+            } catch (e) {
+                console.error('Cache rpush error', e);
+            }
+
+            return undefined;
+        },
+        lrange: async (key, start, stop) => {
+            try {
+                if (cache?.redis) return await cache.redis.lrange(key, start, stop);
+                if (cache?.node) return await cache.node.lrange(key, start, stop);
+            } catch (e) {
+                console.error('Cache lrange error', e);
+            }
+
+            return undefined;
+        },
+        incr: async (key, ttl) => {
+            try {
+                const redis = cache?.redis ?? cache?.node;
+                if (!redis) return undefined;
+
+                const newVal = await redis.incr(key);
+
+                // Set TTL on first increment so the window auto-expires
+                if (newVal === 1 && ttl) {
+                    await redis.expire(key, ttl);
+                }
+
+                return newVal;
+            } catch (e) {
+                console.error('Cache incr error', e);
             }
 
             return undefined;

@@ -4,7 +4,7 @@ import { Autoplay } from 'swiper';
 
 import { IonSpinner } from '@ionic/react';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
-import LearncardLogo from '../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import {
     ChatBotQuestionsEnum,
@@ -53,6 +53,7 @@ const AiSessionLoader: React.FC<{
     showCloseButton = false,
     closeButtonHandler = () => {},
 }) => {
+    const { appIcon } = useTenantBrandingAssets();
     const { closeModal } = useModal();
     const appSelection = chatBotQA?.find(qa => qa?.type === ChatBotQuestionsEnum.AppSelection);
 
@@ -121,7 +122,7 @@ const AiSessionLoader: React.FC<{
                         />
                     ) : (
                         <img
-                            src={app?.img ?? LearncardLogo}
+                            src={app?.img ?? appIcon}
                             className="h-[70px] w-[70px] rounded-full object-cover z-50 bg-white border-white border-solid border-[6px] box-content"
                         />
                     )}

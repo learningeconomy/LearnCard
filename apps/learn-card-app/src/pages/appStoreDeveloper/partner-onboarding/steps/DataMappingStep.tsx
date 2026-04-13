@@ -40,6 +40,7 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject, fieldNameToVariable } from '../types';
 import { CodeBlock } from '../../components/CodeBlock';
+import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
 import { 
     extractDynamicVariables,
@@ -92,7 +93,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [webhookUrl] = useState(dataMapping?.webhookUrl || `https://api.learncard.com/webhooks/${Date.now().toString(36)}`);
+    const [webhookUrl] = useState(dataMapping?.webhookUrl || `${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/webhooks/${Date.now().toString(36)}`);
     const [copiedUrl, setCopiedUrl] = useState(false);
     const [samplePayload, setSamplePayload] = useState<Record<string, unknown> | null>(
         dataMapping?.samplePayload || null
@@ -987,7 +988,7 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
 # Get your API Token from the "API Tokens" tab in your dashboard.
 # Create a token with "Full Access" or "Credentials Only" scope.
 
-curl -X POST "https://network.learncard.com/api/send" \\
+curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '${payloadJson}'
