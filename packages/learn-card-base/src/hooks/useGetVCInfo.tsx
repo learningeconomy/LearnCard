@@ -339,8 +339,6 @@ export const useGetVCInfo = (
         rawResults.push(credentialSubject.result);
     }
 
-    console.log('rawResults', rawResults);
-
     const results: CredentialResultDisplay[] = rawResults
         .map((result, index) => {
             // CLR resultDescription may be either an id reference string or
@@ -393,9 +391,6 @@ export const useGetVCInfo = (
 
     // CLR child credentials may include creditsEarned alongside result values.
     const creditsEarned = credentialSubject?.creditsEarned;
-
-    console.log('results', results);
-    console.log('creditsEarned', creditsEarned);
 
     // Achievement type resolution
     let achievementType = '';
