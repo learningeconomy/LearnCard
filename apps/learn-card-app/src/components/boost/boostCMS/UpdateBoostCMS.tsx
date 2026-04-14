@@ -549,6 +549,11 @@ const UpdateBoostCMS: React.FC = () => {
         try {
             setIsLoading(true);
             if (_boostUri && state?.issueTo.length > 0) {
+                // If we skipped the publish step, update the boost to LIVE before issuing
+                if (skippedPublishStep) {
+                    await updateBoostStatus(wallet, _boostUri, LCNBoostStatusEnum.live);
+                }
+
                 const uris = await Promise.all(
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
@@ -578,10 +583,6 @@ const UpdateBoostCMS: React.FC = () => {
                 );
 
                 if (uris.length > 0) {
-                    // If we skipped the publish step, update the boost to LIVE now that it's been issued
-                    if (skippedPublishStep && _boostUri) {
-                        await updateBoostStatus(wallet, _boostUri, LCNBoostStatusEnum.live);
-                    }
                     setIsLoading(false);
                     presentToast(`Boost issued successfully`, {
                         duration: 3000,
