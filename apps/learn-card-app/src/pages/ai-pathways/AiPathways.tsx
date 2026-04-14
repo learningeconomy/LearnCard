@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
+import ExplorePathwaysModal from './ExplorePathwaysModal';
 import MainHeader from '../../components/main-header/MainHeader';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
@@ -21,11 +22,7 @@ import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
-import {
-    useAiInsightCredential,
-    useAiPathways,
-    CredentialCategoryEnum,
-} from 'learn-card-base';
+import { useAiInsightCredential, useAiPathways, CredentialCategoryEnum } from 'learn-card-base';
 
 import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 
@@ -112,15 +109,11 @@ const AiPathways: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            {percentage > 0 && (
-                                <AiPathwaysWhatWouldYouLikeToDoCard />
-                            )}
+                            {percentage > 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
                             <MySkillProfile />
 
-                            {percentage === 0 && (
-                                <AiPathwaysWhatWouldYouLikeToDoCard />
-                            )}
+                            {percentage === 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
                             {emptyPathways ? (
                                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
