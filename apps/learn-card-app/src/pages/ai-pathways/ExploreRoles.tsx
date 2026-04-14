@@ -62,12 +62,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
             setSubmittedSearchQuery(defaultRoleQuery);
             setHasAppliedDefaultSearch(true);
         }
-    }, [
-        defaultRoleQuery,
-        hasAppliedDefaultSearch,
-        initialSearchQuery,
-        submittedSearchQuery,
-    ]);
+    }, [defaultRoleQuery, hasAppliedDefaultSearch, initialSearchQuery, submittedSearchQuery]);
 
     const { data: occupationsData, isLoading: occupationsLoading } = useOccupationDetailsForKeyword(
         submittedSearchQuery.trim(),
