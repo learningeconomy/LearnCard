@@ -172,13 +172,22 @@ const SkillsPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <AiFeatureLinks
-                                features={['ai-sessions', 'pathways', 'ai-insights']}
-                                className="mb-4"
-                            />
+                            {isBoostsEmpty && (
+                                <AiFeatureLinks
+                                    features={['ai-sessions', 'pathways', 'ai-insights']}
+                                    className="mb-4"
+                                />
+                            )}
 
                             {selectedTab === TabEnum.MY_HUB && <SkillsMyHub />}
                             {selectedTab === TabEnum.ADMIN_PANEL && <SkillsAdminPanel />}
+
+                            {!isBoostsEmpty && (
+                                <AiFeatureLinks
+                                    features={['ai-sessions', 'pathways', 'ai-insights']}
+                                    className="mt-4"
+                                />
+                            )}
                         </div>
                     </div>
                 </IonContent>
