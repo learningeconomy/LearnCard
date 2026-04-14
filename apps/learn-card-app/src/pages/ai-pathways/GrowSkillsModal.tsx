@@ -220,7 +220,11 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                             return null;
                         })}
                     </div>
-                ) : null}
+                ) : (
+                    <div className="w-full rounded-[20px] border border-grayscale-200 bg-white p-4 text-sm text-grayscale-600 font-poppins">
+                        No results found. Try a broader search term.
+                    </div>
+                )}
             </section>
         </div>
     );
