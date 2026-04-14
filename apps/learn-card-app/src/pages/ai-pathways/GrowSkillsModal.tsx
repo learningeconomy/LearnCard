@@ -187,9 +187,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                             if (card.type === 'ai-session') {
                                 return (
                                     <GrowSkillsAiSessionItem
-                                        key={
-                                            card.pathway?.pathwayUri || card.pathway?.title || index
-                                        }
+                                        key={`${
+                                            card.pathway?.pathwayUri || card.pathway?.title
+                                        }-${index}`}
                                         data={card.pathway}
                                     />
                                 );
@@ -198,7 +198,10 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                             if (card.type === 'course') {
                                 return (
                                     <GrowSkillsCourseItem
-                                        key={card.program?.ProgramName || index}
+                                        key={
+                                            card.program?.ID ??
+                                            `${card.program?.ProgramName}-${index}`
+                                        }
                                         program={card.program}
                                     />
                                 );
@@ -207,11 +210,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                             if (card.type === 'media') {
                                 return (
                                     <GrowSkillsMediaItem
-                                        key={
-                                            card.occupation.OnetCode ||
-                                            card.occupation.OnetTitle ||
-                                            index
-                                        }
+                                        key={`${
+                                            card.occupation.OnetCode || card.occupation.OnetTitle
+                                        }-${index}`}
                                         occupation={card.occupation}
                                     />
                                 );
