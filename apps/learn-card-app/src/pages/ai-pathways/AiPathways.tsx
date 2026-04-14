@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
-import ExplorePathwaysModal from './ExplorePathwaysModal';
 import MainHeader from '../../components/main-header/MainHeader';
-import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
+import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
+import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
@@ -46,6 +46,11 @@ const AiPathways: React.FC = () => {
                             )}
 
                             <GrowSkillsPathwaysHome />
+
+                            <AiFeatureLinks
+                                features={['ai-sessions', 'skills-hub', 'ai-insights']}
+                                className="px-4 max-w-[600px]"
+                            />
                         </div>
                     </AiFeatureGate>
                 </IonContent>
