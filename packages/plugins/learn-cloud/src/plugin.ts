@@ -336,9 +336,8 @@ export const getLearnCloudPlugin = async (
                     const fullUrl = (
                         uriUrl.startsWith('http')
                             ? uriUrl
-                            : `http${
-                                  uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
-                              }://${uriUrl}`
+                            : `http${uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
+                            }://${uriUrl}`
                     ).replaceAll('%3A', ':');
 
                     learnCard.debug?.('LearnCloud read.get different LearnCloud!', {
@@ -404,6 +403,32 @@ export const getLearnCloudPlugin = async (
                 ]);
 
                 return client.storage.store.mutate({ item: jwe });
+            },
+            delete: async (_learnCard, uri) => {
+                _learnCard.debug?.("learnCard.store['LearnCloud'].delete", { uri });
+
+                let deleted = false;
+
+                try {
+                    deleted = Boolean(await client.storage.delete.mutate({ uri }));
+                } catch (error) {
+                    _learnCard.debug?.('LearnCloud store.delete storage.delete failed', error);
+                }
+
+                if (!deleted) return false;
+
+                try {
+                    const records = await _learnCard.index.LearnCloud.get({ uri });
+                    for (const record of records) {
+                        await _learnCard.index.LearnCloud.remove(record.id, {
+                            cache: 'skip-cache',
+                        });
+                    }
+                } catch (error) {
+                    _learnCard.debug?.('LearnCloud store.delete index cleanup failed', error);
+                }
+
+                return true;
             },
         },
         index: {
