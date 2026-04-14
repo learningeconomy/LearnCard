@@ -28,17 +28,23 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
 
     const handleStartContent = async () => {
         const fallbackUrl = content.url || '';
+        const isYoutube = metaData?.type === 'youtube';
 
-        if (Capacitor?.isNativePlatform() && metaData?.type === 'youtube') {
+        if (Capacitor?.isNativePlatform() && isYoutube) {
             const youtubeUrl = metaData.videoId
                 ? `https://www.youtube.com/watch?v=${metaData.videoId}`
                 : fallbackUrl;
             if (!youtubeUrl) return;
             await Browser.open({ url: youtubeUrl });
             return;
+        } else if (isYoutube) {
+            // We can lightbox youtube videos
+            setCurrentLightboxUrl(fallbackUrl);
+        } else {
+            // Link is probably a broken CareerOneStop link...
+            //   Just open the link in a new tab so it's clear that it's a problem on their end :shrug:
+            await Browser.open({ url: fallbackUrl });
         }
-
-        setCurrentLightboxUrl(fallbackUrl);
     };
 
     return (
