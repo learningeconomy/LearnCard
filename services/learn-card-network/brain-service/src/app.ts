@@ -18,6 +18,7 @@ import { skillsRouter, SkillsRouter } from '@routes/skills';
 import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
 import { activityRouter, ActivityRouter } from '@routes/activity';
+import { federationRouter, FederationRouter } from '@routes/federation';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -44,6 +45,7 @@ export const appRouter = t.router<{
     integrations: IntegrationsRouter;
     appStore: AppStoreRouter;
     activity: ActivityRouter;
+    federation: FederationRouter;
     test?: TestRouter;
 }>({
     boost: boostsRouter,
@@ -65,7 +67,8 @@ export const appRouter = t.router<{
     integrations: integrationsRouter,
     appStore: appStoreRouter,
     activity: activityRouter,
-    test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
+    federation: federationRouter,
+    test: process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 
 export type AppRouter = typeof appRouter;

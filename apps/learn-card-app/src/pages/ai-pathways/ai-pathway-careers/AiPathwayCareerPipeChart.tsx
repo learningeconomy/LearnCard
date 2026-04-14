@@ -2,14 +2,16 @@ import React from 'react';
 import numeral from 'numeral';
 
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { buildSalaryPipeData } from './ai-pathway-careers.helpers';
+import { buildSalaryPipeData, getYearlyWages } from './ai-pathway-careers.helpers';
 import { Wages } from 'learn-card-base/types/careerOneStop';
 
 const MEDIAN_BUCKET = 4;
 
 export const AiPathwayCareerPipeChart: React.FC<{ wages: Wages }> = ({ wages }) => {
     const { NationalWagesList = [] } = wages;
-    const [_rate, yearly] = NationalWagesList;
+    const yearly = getYearlyWages(NationalWagesList);
+
+    if (!yearly) return null;
 
     const data = buildSalaryPipeData(yearly);
 
