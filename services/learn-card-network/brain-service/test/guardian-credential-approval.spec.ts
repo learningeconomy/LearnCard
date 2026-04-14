@@ -278,6 +278,244 @@ describe('Guardian-Gated Credential Issuance', () => {
         });
     });
 
+    describe('approveGuardianCredentialInApp', () => {
+        let inboxCredId: string;
+        let guardianUser: Awaited<ReturnType<typeof getUser>>;
+        let studentUser: Awaited<ReturnType<typeof getUser>>;
+
+        beforeEach(async () => {
+            // Create student profile
+            studentUser = await getUser('f'.repeat(64));
+            await studentUser.clients.fullAuth.profile.createProfile({
+                profileId: 'studentinapp',
+                displayName: 'Student InApp',
+            });
+
+            // Create guardian profile
+            guardianUser = await getUser('g'.repeat(64));
+            await guardianUser.clients.fullAuth.profile.createProfile({
+                profileId: 'guardianinapp',
+                displayName: 'Guardian InApp',
+            });
+
+            // Issue a credential with guardian gating
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+            sendSpy.mockClear();
+
+            await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'studentinapp@school.edu',
+                template: { credential: testUnsignedBoost },
+                signedCredential: signedVc,
+                options: { guardianEmail: 'guardianinapp@home.com' },
+            });
+            sendSpy.mockClear();
+
+            const credentials = await InboxCredential.findMany({ where: {} });
+            inboxCredId = credentials[0]!.id;
+
+            // Link student to the contact method
+            const { createProfileContactMethodRelationship } = await import(
+                '../src/accesslayer/contact-method/relationships/create'
+            );
+            const { getContactMethodByValue } = await import('../src/accesslayer/contact-method/read');
+            const studentCm = await getContactMethodByValue('email', 'studentinapp@school.edu');
+            await createProfileContactMethodRelationship('studentinapp', studentCm!.id);
+        });
+
+        it('should reject with FORBIDDEN when caller has no MANAGES relationship', async () => {
+            await expect(
+                guardianUser.clients.fullAuth.inbox.approveGuardianCredentialInApp({
+                    inboxCredentialId: inboxCredId,
+                })
+            ).rejects.toThrow(/guardian relationship/);
+        });
+
+        it('should approve when caller has MANAGES relationship with the child', async () => {
+            // Establish MANAGES relationship
+            const { createManagesRelationship } = await import(
+                '../src/accesslayer/profile-manager/relationships/create'
+            );
+            const { createProfileManager } = await import('../src/accesslayer/profile-manager/create');
+            const manager = await createProfileManager({
+                displayName: 'Guardian InApp',
+                managerType: 'guardian',
+            });
+            await createManagesRelationship(manager.id, 'studentinapp');
+            await manager.relateTo({
+                alias: 'administratedBy',
+                where: { profileId: 'guardianinapp' },
+            });
+
+            const result = await guardianUser.clients.fullAuth.inbox.approveGuardianCredentialInApp({
+                inboxCredentialId: inboxCredId,
+            });
+
+            expect(result.success).toBe(true);
+
+            const updated = await InboxCredential.findMany({ where: { id: inboxCredId } });
+            expect(updated[0]!.guardianStatus).toBe('GUARDIAN_APPROVED');
+            expect(updated[0]!.isAccepted).toBe(true);
+        });
+
+        it('should send student email notification after in-app approval', async () => {
+            const { createManagesRelationship } = await import(
+                '../src/accesslayer/profile-manager/relationships/create'
+            );
+            const { createProfileManager } = await import('../src/accesslayer/profile-manager/create');
+            const manager = await createProfileManager({
+                displayName: 'Guardian InApp',
+                managerType: 'guardian',
+            });
+            await createManagesRelationship(manager.id, 'studentinapp');
+            await manager.relateTo({
+                alias: 'administratedBy',
+                where: { profileId: 'guardianinapp' },
+            });
+
+            await guardianUser.clients.fullAuth.inbox.approveGuardianCredentialInApp({
+                inboxCredentialId: inboxCredId,
+            });
+
+            expect(sendSpy).toHaveBeenCalledTimes(1);
+            const studentNotification = sendSpy.mock.calls[0][0];
+            expect(studentNotification.contactMethod.value).toBe('studentinapp@school.edu');
+            expect(studentNotification.templateId).toBe('guardian-approved-claim');
+        });
+
+        it('should reject with BAD_REQUEST for already-approved credential', async () => {
+            const { createManagesRelationship } = await import(
+                '../src/accesslayer/profile-manager/relationships/create'
+            );
+            const { createProfileManager } = await import('../src/accesslayer/profile-manager/create');
+            const manager = await createProfileManager({
+                displayName: 'Guardian InApp',
+                managerType: 'guardian',
+            });
+            await createManagesRelationship(manager.id, 'studentinapp');
+            await manager.relateTo({
+                alias: 'administratedBy',
+                where: { profileId: 'guardianinapp' },
+            });
+
+            await guardianUser.clients.fullAuth.inbox.approveGuardianCredentialInApp({
+                inboxCredentialId: inboxCredId,
+            });
+
+            await expect(
+                guardianUser.clients.fullAuth.inbox.approveGuardianCredentialInApp({
+                    inboxCredentialId: inboxCredId,
+                })
+            ).rejects.toThrow(/already/);
+        });
+    });
+
+    describe('rejectGuardianCredentialInApp', () => {
+        let inboxCredId: string;
+        let guardianUser: Awaited<ReturnType<typeof getUser>>;
+        let studentUser: Awaited<ReturnType<typeof getUser>>;
+
+        beforeEach(async () => {
+            studentUser = await getUser('h'.repeat(64));
+            await studentUser.clients.fullAuth.profile.createProfile({
+                profileId: 'studentreject',
+                displayName: 'Student Reject',
+            });
+
+            guardianUser = await getUser('i'.repeat(64));
+            await guardianUser.clients.fullAuth.profile.createProfile({
+                profileId: 'guardianreject',
+                displayName: 'Guardian Reject',
+            });
+
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+            sendSpy.mockClear();
+
+            await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'studentreject@school.edu',
+                template: { credential: testUnsignedBoost },
+                signedCredential: signedVc,
+                options: { guardianEmail: 'guardianreject@home.com' },
+            });
+            sendSpy.mockClear();
+
+            const credentials = await InboxCredential.findMany({ where: {} });
+            inboxCredId = credentials[0]!.id;
+
+            const { createProfileContactMethodRelationship } = await import(
+                '../src/accesslayer/contact-method/relationships/create'
+            );
+            const { getContactMethodByValue } = await import('../src/accesslayer/contact-method/read');
+            const studentCm = await getContactMethodByValue('email', 'studentreject@school.edu');
+            await createProfileContactMethodRelationship('studentreject', studentCm!.id);
+        });
+
+        it('should reject with FORBIDDEN when caller has no MANAGES relationship', async () => {
+            await expect(
+                guardianUser.clients.fullAuth.inbox.rejectGuardianCredentialInApp({
+                    inboxCredentialId: inboxCredId,
+                })
+            ).rejects.toThrow(/guardian relationship/);
+        });
+
+        it('should reject credential when caller has MANAGES relationship', async () => {
+            const { createManagesRelationship } = await import(
+                '../src/accesslayer/profile-manager/relationships/create'
+            );
+            const { createProfileManager } = await import('../src/accesslayer/profile-manager/create');
+            const manager = await createProfileManager({
+                displayName: 'Guardian Reject',
+                managerType: 'guardian',
+            });
+            await createManagesRelationship(manager.id, 'studentreject');
+            await manager.relateTo({
+                alias: 'administratedBy',
+                where: { profileId: 'guardianreject' },
+            });
+
+            const result = await guardianUser.clients.fullAuth.inbox.rejectGuardianCredentialInApp({
+                inboxCredentialId: inboxCredId,
+            });
+
+            expect(result.success).toBe(true);
+
+            const updated = await InboxCredential.findMany({ where: { id: inboxCredId } });
+            expect(updated[0]!.guardianStatus).toBe('GUARDIAN_REJECTED');
+        });
+
+        it('should send student email notification after in-app rejection', async () => {
+            const { createManagesRelationship } = await import(
+                '../src/accesslayer/profile-manager/relationships/create'
+            );
+            const { createProfileManager } = await import('../src/accesslayer/profile-manager/create');
+            const manager = await createProfileManager({
+                displayName: 'Guardian Reject',
+                managerType: 'guardian',
+            });
+            await createManagesRelationship(manager.id, 'studentreject');
+            await manager.relateTo({
+                alias: 'administratedBy',
+                where: { profileId: 'guardianreject' },
+            });
+
+            await guardianUser.clients.fullAuth.inbox.rejectGuardianCredentialInApp({
+                inboxCredentialId: inboxCredId,
+            });
+
+            expect(sendSpy).toHaveBeenCalledTimes(1);
+            const studentNotification = sendSpy.mock.calls[0][0];
+            expect(studentNotification.contactMethod.value).toBe('studentreject@school.edu');
+            expect(studentNotification.templateId).toBe('guardian-rejected-credential');
+        });
+    });
+
     describe('claimPendingGuardianLinks', () => {
         it('should return empty array when caller has no verified email contact method', async () => {
             const result = await userA.clients.fullAuth.inbox.claimPendingGuardianLinks({});

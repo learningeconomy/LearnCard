@@ -23,15 +23,22 @@ type GuardianLinkResult = {
 export async function claimPendingGuardianLinksForProfile(
     profile: ProfileType
 ): Promise<GuardianLinkResult[]> {
+    console.log('[claimPendingGuardianLinks] Starting for profile:', profile.profileId, 'did:', profile.did);
+
     const contactMethods = await getContactMethodsForProfile(profile.did);
     const verifiedEmail = contactMethods.find(
         cm => cm.type === 'email' && cm.isVerified
     );
-    if (!verifiedEmail) return [];
+    if (!verifiedEmail) {
+        console.log('[claimPendingGuardianLinks] No verified email found. ContactMethods:', contactMethods.map(cm => ({ type: cm.type, value: cm.value, isVerified: cm.isVerified })));
+        return [];
+    }
+    console.log('[claimPendingGuardianLinks] Verified email:', verifiedEmail.value);
 
     const approvedCredentials = await getApprovedInboxCredentialsByGuardianEmail(
         verifiedEmail.value
     );
+    console.log('[claimPendingGuardianLinks] Approved credentials found:', approvedCredentials.length);
     if (approvedCredentials.length === 0) return [];
 
     const results: GuardianLinkResult[] = [];
@@ -39,7 +46,11 @@ export async function claimPendingGuardianLinksForProfile(
     for (const inboxCredential of approvedCredentials) {
         try {
             const childProfile = await getProfileForInboxCredential(inboxCredential.id);
-            if (!childProfile) continue;
+            if (!childProfile) {
+                console.log('[claimPendingGuardianLinks] No child profile found for credential:', inboxCredential.id);
+                continue;
+            }
+            console.log('[claimPendingGuardianLinks] Found child profile:', childProfile.profileId, 'for credential:', inboxCredential.id);
 
             const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
             const alreadyManages = existingManagers.some(m => m.profileId === profile.profileId);
@@ -47,6 +58,7 @@ export async function claimPendingGuardianLinksForProfile(
             let managerId: string | null = null;
 
             if (!alreadyManages) {
+                console.log('[claimPendingGuardianLinks] Creating MANAGES relationship:', profile.profileId, '->', childProfile.profileId);
                 const manager = await createProfileManager({
                     displayName: profile.displayName ?? 'Guardian',
                     managerType: 'guardian',
@@ -59,6 +71,9 @@ export async function claimPendingGuardianLinksForProfile(
                     }),
                 ]);
                 managerId = manager.id;
+                console.log('[claimPendingGuardianLinks] MANAGES relationship created, managerId:', managerId);
+            } else {
+                console.log('[claimPendingGuardianLinks] Already manages child:', childProfile.profileId);
             }
 
             results.push({
