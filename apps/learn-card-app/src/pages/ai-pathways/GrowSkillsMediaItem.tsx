@@ -34,7 +34,8 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
     const hasDraggedRef = useRef(false);
 
-    const dragThreshold = 8;
+    // Threshold for how much you can drag before it's not longer considered a click
+    const dragThreshold = 10;
 
     const title = occupation?.OnetTitle || 'Video';
     const videoCode = occupation?.Video?.[0]?.VideoCode?.replace(/[^0-9]/g, '') || '';
@@ -91,6 +92,11 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
 
     const handlePointerUp = () => {
         pointerStartRef.current = null;
+
+        // If you've dragged 10px (dragThreshold) or less, treat it as a click -> open the details
+        if (!hasDraggedRef.current) {
+            handleViewCourse();
+        }
     };
 
     const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -118,6 +124,7 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             onClickCapture={handleClickCapture}
+            role="button"
         >
             <div className="relative h-[162px] overflow-hidden flex-shrink-0 bg-grayscale-200">
                 {metaData?.thumbnailUrl && (
@@ -127,16 +134,14 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
                         style={{ backgroundImage: `url(${metaData.thumbnailUrl})` }}
                     />
                 )}
-                <button
-                    type="button"
-                    onClick={handleViewCourse}
+                <div
                     aria-label={`Play ${title || 'video'}`}
                     className="absolute inset-0 z-10 flex items-center justify-center"
                 >
                     <span className="flex h-[45px] w-[45px] items-center justify-center rounded-full bg-white shadow-bottom-4-4">
                         <Play className="h-[25px] w-[25px] text-grayscale-800 fill-current stroke-current" />
                     </span>
-                </button>
+                </div>
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
             </div>
             <div className="p-[10px] flex flex-col h-full gap-[10px] min-h-[92px]">
