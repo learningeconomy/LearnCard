@@ -1024,6 +1024,17 @@ export const useGetMyManagedChildren = () => {
     });
 };
 
+export const useGetMyGuardians = () => {
+    const { initWallet } = useWallet();
+    return useQuery<LCNProfile[]>({
+        queryKey: ['useGetMyGuardians'],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return (await wallet.invoke.getMyGuardians?.()) ?? [];
+        },
+    });
+};
+
 export const useGetDid = (method?: string, enabled = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();

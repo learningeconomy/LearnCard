@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import type { FC } from 'react';
 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { useGetBoosts, useGetMyManagedChildren } from 'learn-card-base/react-query/queries/queries';
+import { useGetBoosts, useGetMyManagedChildren, useGetMyGuardians } from 'learn-card-base/react-query/queries/queries';
 
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 import type { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
@@ -16,8 +17,25 @@ const labelClass = 'text-[13px] font-[600] text-grayscale-700 mb-[4px] block fon
 const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = ({ option }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const queryClient = useQueryClient();
     const { data: boosts = [], isLoading: boostsLoading } = useGetBoosts();
     const { data: managedChildren = [], isLoading: managedLoading } = useGetMyManagedChildren();
+    const { data: guardians = [], isLoading: guardiansLoading } = useGetMyGuardians();
+
+    const removeRelationship = useMutation<boolean, Error, { profileId: string }>({
+        mutationFn: async ({ profileId }) => {
+            const wallet = await initWallet();
+            return (await wallet.invoke.removeManagesRelationship?.(profileId)) ?? false;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['useGetMyManagedChildren'] });
+            queryClient.invalidateQueries({ queryKey: ['useGetMyGuardians'] });
+            presentToast('Relationship removed', { type: ToastTypeEnum.Success });
+        },
+        onError: (err) => {
+            presentToast(err.message || 'Failed to remove relationship', { type: ToastTypeEnum.Error });
+        },
+    });
 
     const [recipientEmail, setRecipientEmail] = useState('');
     const [guardianEmail, setGuardianEmail] = useState('');
@@ -197,13 +215,13 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
                         )}
                         {!managedLoading && managedChildren.length === 0 && (
                             <p className="text-[13px] text-grayscale-400 font-notoSans">
-                                You're not currently managing any accounts.
+                                You&apos;re not currently managing any accounts.
                             </p>
                         )}
                         {!managedLoading && managedChildren.map(profile => (
                             <div
                                 key={profile.profileId}
-                                className="flex items-center gap-[8px] py-[8px] border-b border-grayscale-100 last:border-0"
+                                className="flex items-center justify-between gap-[8px] py-[8px] border-b border-grayscale-100 last:border-0"
                             >
                                 <div>
                                     <p className="text-[14px] font-[600] text-grayscale-900 font-notoSans">
@@ -213,6 +231,49 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
                                         @{profile.profileId}
                                     </p>
                                 </div>
+                                <button
+                                    onClick={() => removeRelationship.mutate({ profileId: profile.profileId })}
+                                    disabled={removeRelationship.isPending}
+                                    className="text-[12px] text-red-600 font-[600] font-notoSans border border-red-200 rounded-full px-[12px] py-[4px] hover:bg-red-50 disabled:opacity-50"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Guardian Accounts */}
+                    <hr className="border-grayscale-100" />
+                    <div>
+                        <p className={`${labelClass} mb-[8px]`}>My Guardians</p>
+                        {guardiansLoading && (
+                            <span className="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full" />
+                        )}
+                        {!guardiansLoading && guardians.length === 0 && (
+                            <p className="text-[13px] text-grayscale-400 font-notoSans">
+                                No guardian accounts linked to this profile.
+                            </p>
+                        )}
+                        {!guardiansLoading && guardians.map(profile => (
+                            <div
+                                key={profile.profileId}
+                                className="flex items-center justify-between gap-[8px] py-[8px] border-b border-grayscale-100 last:border-0"
+                            >
+                                <div>
+                                    <p className="text-[14px] font-[600] text-grayscale-900 font-notoSans">
+                                        {profile.displayName || profile.profileId}
+                                    </p>
+                                    <p className="text-[12px] text-grayscale-400 font-notoSans">
+                                        @{profile.profileId}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => removeRelationship.mutate({ profileId: profile.profileId })}
+                                    disabled={removeRelationship.isPending}
+                                    className="text-[12px] text-red-600 font-[600] font-notoSans border border-red-200 rounded-full px-[12px] py-[4px] hover:bg-red-50 disabled:opacity-50"
+                                >
+                                    Leave
+                                </button>
                             </div>
                         ))}
                     </div>

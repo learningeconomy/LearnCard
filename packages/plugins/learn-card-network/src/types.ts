@@ -149,6 +149,8 @@ export type LearnCardNetworkPluginMethods = {
         Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
     >;
     getMyManagedChildren: () => Promise<LCNProfile[]>;
+    getMyGuardians: () => Promise<LCNProfile[]>;
+    removeManagesRelationship: (profileId: string) => Promise<boolean>;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;

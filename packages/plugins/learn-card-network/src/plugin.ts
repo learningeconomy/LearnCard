@@ -410,6 +410,14 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.profileManager.getMyManagedChildren.query();
             },
+            getMyGuardians: async () => {
+                await ensureUser();
+                return client.profileManager.getMyGuardians.query();
+            },
+            removeManagesRelationship: async (_learnCard, profileId) => {
+                await ensureUser();
+                return client.profileManager.removeManagesRelationship.mutate({ profileId });
+            },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
                 await ensureUser();
 
