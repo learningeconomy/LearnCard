@@ -1030,7 +1030,11 @@ export const useGetMyGuardians = () => {
         queryKey: ['useGetMyGuardians'],
         queryFn: async () => {
             const wallet = await initWallet();
-            return (await wallet.invoke.getMyGuardians?.()) ?? [];
+            if (!wallet.invoke.getMyGuardians) {
+                console.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
+                return [];
+            }
+            return (await wallet.invoke.getMyGuardians()) ?? [];
         },
     });
 };

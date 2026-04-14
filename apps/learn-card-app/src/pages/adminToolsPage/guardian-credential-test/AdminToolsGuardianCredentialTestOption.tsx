@@ -20,7 +20,7 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
     const queryClient = useQueryClient();
     const { data: boosts = [], isLoading: boostsLoading } = useGetBoosts();
     const { data: managedChildren = [], isLoading: managedLoading } = useGetMyManagedChildren();
-    const { data: guardians = [], isLoading: guardiansLoading } = useGetMyGuardians();
+    const { data: guardians = [], isLoading: guardiansLoading, error: guardiansError } = useGetMyGuardians();
 
     const removeRelationship = useMutation<boolean, Error, { profileId: string }>({
         mutationFn: async ({ profileId }) => {
@@ -249,7 +249,12 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
                         {guardiansLoading && (
                             <span className="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full" />
                         )}
-                        {!guardiansLoading && guardians.length === 0 && (
+                        {!guardiansLoading && guardiansError && (
+                            <p className="text-[13px] text-red-500 font-notoSans">
+                                Error: {guardiansError instanceof Error ? guardiansError.message : 'Failed to load guardians'}
+                            </p>
+                        )}
+                        {!guardiansLoading && !guardiansError && guardians.length === 0 && (
                             <p className="text-[13px] text-grayscale-400 font-notoSans">
                                 No guardian accounts linked to this profile.
                             </p>
