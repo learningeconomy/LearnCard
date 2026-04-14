@@ -43,7 +43,10 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
         setActionState('approving');
         try {
             const wallet = await getWallet();
-            await wallet?.invoke?.approveGuardianCredentialInApp(inboxCredentialId);
+            if (!wallet?.invoke?.approveGuardianCredentialInApp) {
+                throw new Error('Wallet not initialized');
+            }
+            await wallet.invoke.approveGuardianCredentialInApp(inboxCredentialId);
             setActionState('approved');
             updateNotification({
                 notificationId: notification?._id,
@@ -60,7 +63,10 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
         setActionState('rejecting');
         try {
             const wallet = await getWallet();
-            await wallet?.invoke?.rejectGuardianCredentialInApp(inboxCredentialId);
+            if (!wallet?.invoke?.rejectGuardianCredentialInApp) {
+                throw new Error('Wallet not initialized');
+            }
+            await wallet.invoke.rejectGuardianCredentialInApp(inboxCredentialId);
             setActionState('rejected');
             updateNotification({
                 notificationId: notification?._id,
