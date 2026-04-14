@@ -54,8 +54,11 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
             'Your boost is published and no more edits can be made. You can return to issuing or quit to start over.';
     }
 
+    // Show "Issue Later" only when on issueTo step AND publish step was NOT skipped
     const quitWithoutSavingText =
-        currentStep === BoostCMSStepsEnum.issueTo ? 'Issue Later' : 'Quit Without Saving';
+        currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep
+            ? 'Issue Later'
+            : 'Quit Without Saving';
 
     return (
         <section className="pt-[36px] pb-[16px]">
@@ -76,8 +79,9 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                     {promptText}
 
                     {currentStep !== BoostCMSStepsEnum.confirmation &&
-                        currentStep !== BoostCMSStepsEnum.issueTo &&
-                        !isEditMode && (
+                        !isEditMode &&
+                        (currentStep !== BoostCMSStepsEnum.issueTo ||
+                            (currentStep === BoostCMSStepsEnum.issueTo && skippedPublishStep)) && (
                             <button
                                 disabled={isSaveLoading}
                                 onClick={handleQuitAndSave}
