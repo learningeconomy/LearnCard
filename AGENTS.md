@@ -554,6 +554,38 @@ if (profileId === currentLCNUser?.profileId) {
 
 Without this, the credential shows "Pending Acceptance" because only CREDENTIAL_SENT exists (no CREDENTIAL_RECEIVED).
 
+## CredentialBuilder Component
+
+Location: `apps/learn-card-app/src/pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/`
+
+A form-based OBv3 credential template builder used by partner onboarding. Key files:
+
+| File                    | Purpose                                                                     |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `CredentialBuilder.tsx` | Main component with form/JSON modes                                         |
+| `types.ts`              | Template types: `OBv3CredentialTemplate`, `TemplateFieldValue`              |
+| `utils.ts`              | `templateToJson()` / `jsonToTemplate()` serialization, `validateTemplate()` |
+| `sections/`             | Form sections: Achievement, Evidence, Dates, CustomFields                   |
+
+### Adding New Template Fields
+
+1. Add optional field to interface in `types.ts` (e.g., `ctid?: TemplateFieldValue`)
+2. Add `FieldEditor` in appropriate section component (e.g., `AchievementSection.tsx`)
+3. Update `templateToJson()` to serialize the field to JSON
+4. Update `jsonToTemplate()` to deserialize (round-trip support)
+5. Add validation in `validateTemplate()` if format constraints exist
+6. Add to `extractVariablesByType()` for dynamic field support
+7. Write unit tests in `utils.test.ts`
+
+### CTID (Credential Engine Registry) Integration
+
+The `ctid` field links credentials to the Credential Engine Registry:
+
+-   **Format**: `ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (UUID with ce- prefix)
+-   **Serialization**: Emits an OBv3 alignment entry with `targetFramework: 'Credential Engine Registry'`
+-   **Round-trip**: Detected via `targetFramework` + `targetType: 'ceterms:Credential'`, extracted to `ctid` field
+-   **Validation**: Regex pattern `/^ce-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`
+
 ## AuthCoordinator Architecture
 
 The AuthCoordinator is a unified state machine that coordinates authentication and key derivation across LearnCard applications. It replaces the previous ad-hoc Web3Auth flow with a composable, provider-agnostic system.

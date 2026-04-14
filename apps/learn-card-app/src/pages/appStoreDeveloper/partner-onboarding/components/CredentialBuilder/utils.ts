@@ -32,32 +32,28 @@ const SYSTEM_VARIABLES = ['issue_date', 'issuer_did', 'recipient_did'];
  * Detect the credential schema type from JSON structure
  */
 export const detectSchemaType = (json: Record<string, unknown>): CredentialSchemaType => {
-    const contexts = Array.isArray(json['@context']) ? json['@context'] as string[] : [];
-    const types = Array.isArray(json.type) ? json.type as string[] : [];
+    const contexts = Array.isArray(json['@context']) ? (json['@context'] as string[]) : [];
+    const types = Array.isArray(json.type) ? (json.type as string[]) : [];
 
     // Check for OBv3 indicators
-    const isOBv3 = contexts.some(c => 
-        typeof c === 'string' && (
-            c.includes('openbadges') || 
-            c.includes('ob/v3') ||
-            c.includes('purl.imsglobal.org/spec/ob')
-        )
-    ) && types.some(t => 
-        t === 'OpenBadgeCredential' 
-    );
+    const isOBv3 =
+        contexts.some(
+            c =>
+                typeof c === 'string' &&
+                (c.includes('openbadges') ||
+                    c.includes('ob/v3') ||
+                    c.includes('purl.imsglobal.org/spec/ob'))
+        ) && types.some(t => t === 'OpenBadgeCredential');
 
     if (isOBv3) return 'obv3';
 
     // Check for CLR 2.0 indicators
-    const isCLR = contexts.some(c => 
-        typeof c === 'string' && (
-            c.includes('clr/v2') ||
-            c.includes('comprehensivelearnerrecord')
-        )
-    ) || types.some(t => 
-        t === 'ClrCredential' ||
-        t === 'ComprehensiveLearnerRecord'
-    );
+    const isCLR =
+        contexts.some(
+            c =>
+                typeof c === 'string' &&
+                (c.includes('clr/v2') || c.includes('comprehensivelearnerrecord'))
+        ) || types.some(t => t === 'ClrCredential' || t === 'ComprehensiveLearnerRecord');
 
     if (isCLR) return 'clr2';
 
@@ -199,9 +195,10 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
         });
     }
 
-    // Alignment
+    // Alignment (user-defined)
+    const alignments: Record<string, unknown>[] = [];
     if (ach.alignment && ach.alignment.length > 0) {
-        achievement.alignment = ach.alignment.map(a => {
+        for (const a of ach.alignment) {
             const align: Record<string, unknown> = {
                 type: ['Alignment'],
                 targetName: fieldToJson(a.targetName),
@@ -216,8 +213,26 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
             if (a.targetCode?.value || a.targetCode?.isDynamic) {
                 align.targetCode = fieldToJson(a.targetCode);
             }
-            return align;
+            alignments.push(align);
+        }
+    }
+
+    // Add CTID alignment entry if present
+    const ctidValue = fieldToJson(ach.ctid);
+    if (ctidValue) {
+        const achievementNameValue = fieldToJson(ach.name) || 'Achievement';
+        alignments.push({
+            type: ['Alignment'],
+            targetName: achievementNameValue,
+            targetUrl: `https://credentialfinder.org/credential/${ctidValue}`,
+            targetType: 'ceterms:Credential',
+            targetCode: ctidValue,
+            targetFramework: 'Credential Engine Registry',
         });
+    }
+
+    if (alignments.length > 0) {
+        achievement.alignment = alignments;
     }
 
     return achievement;
@@ -251,10 +266,15 @@ const serializeResults = (results: ResultTemplate[]): Record<string, unknown>[] 
  * Serialize issuer from template to JSON (shared between OBv3 and CLR)
  */
 const serializeIssuer = (issuer: IssuerTemplate): string | Record<string, unknown> => {
-    const issuerHasExtraFields = (issuer.name?.value || issuer.name?.isDynamic)
-        || (issuer.url?.value || issuer.url?.isDynamic)
-        || (issuer.image?.value || issuer.image?.isDynamic)
-        || (issuer.email?.value || issuer.email?.isDynamic);
+    const issuerHasExtraFields =
+        issuer.name?.value ||
+        issuer.name?.isDynamic ||
+        issuer.url?.value ||
+        issuer.url?.isDynamic ||
+        issuer.image?.value ||
+        issuer.image?.isDynamic ||
+        issuer.email?.value ||
+        issuer.email?.isDynamic;
 
     if (issuerHasExtraFields) {
         const issuerObj: Record<string, unknown> = {
@@ -312,21 +332,51 @@ const serializeEvidence = (evidence: EvidenceTemplate[]): Record<string, unknown
  * Parse a single achievement JSON object into AchievementTemplate (shared between OBv3 and CLR)
  */
 export const parseAchievement = (achievementObj: Record<string, unknown>): AchievementTemplate => {
-    const criteriaObj = (typeof achievementObj.criteria === 'object' && achievementObj.criteria !== null) ? achievementObj.criteria as Record<string, unknown> : undefined;
-    const alignmentArr = Array.isArray(achievementObj.alignment) ? achievementObj.alignment as Record<string, unknown>[] : [];
-    const resultDescArr = Array.isArray(achievementObj.resultDescription) ? achievementObj.resultDescription as Record<string, unknown>[] : [];
-    const otherIdArr = Array.isArray(achievementObj.otherIdentifier) ? achievementObj.otherIdentifier as Record<string, unknown>[] : [];
+    const criteriaObj =
+        typeof achievementObj.criteria === 'object' && achievementObj.criteria !== null
+            ? (achievementObj.criteria as Record<string, unknown>)
+            : undefined;
+    const rawAlignmentArr = Array.isArray(achievementObj.alignment)
+        ? (achievementObj.alignment as Record<string, unknown>[])
+        : [];
+    const resultDescArr = Array.isArray(achievementObj.resultDescription)
+        ? (achievementObj.resultDescription as Record<string, unknown>[])
+        : [];
+    const otherIdArr = Array.isArray(achievementObj.otherIdentifier)
+        ? (achievementObj.otherIdentifier as Record<string, unknown>[])
+        : [];
+
+    // Detect and extract CTID from Credential Engine Registry alignment entry
+    const ctidAlignment = rawAlignmentArr.find(
+        a =>
+            a.targetFramework === 'Credential Engine Registry' &&
+            a.targetType === 'ceterms:Credential'
+    );
+    const extractedCtid = ctidAlignment?.targetCode as string | undefined;
+
+    // Filter out CTID alignment from regular alignments (will be stored in ctid field)
+    const alignmentArr = rawAlignmentArr.filter(
+        a =>
+            !(
+                a.targetFramework === 'Credential Engine Registry' &&
+                a.targetType === 'ceterms:Credential'
+            )
+    );
 
     return {
         id: achievementObj.id ? jsonToField(achievementObj.id) : undefined,
         name: jsonToField(achievementObj.name || ''),
         description: jsonToField(achievementObj.description || ''),
-        achievementType: achievementObj.achievementType ? jsonToField(achievementObj.achievementType) : undefined,
+        achievementType: achievementObj.achievementType
+            ? jsonToField(achievementObj.achievementType)
+            : undefined,
         image: achievementObj.image ? jsonToField(achievementObj.image) : undefined,
-        criteria: criteriaObj ? {
-            id: criteriaObj.id ? jsonToField(criteriaObj.id) : undefined,
-            narrative: criteriaObj.narrative ? jsonToField(criteriaObj.narrative) : undefined,
-        } : undefined,
+        criteria: criteriaObj
+            ? {
+                  id: criteriaObj.id ? jsonToField(criteriaObj.id) : undefined,
+                  narrative: criteriaObj.narrative ? jsonToField(criteriaObj.narrative) : undefined,
+              }
+            : undefined,
         alignment: alignmentArr.map((a, i) => ({
             id: `alignment_${i}`,
             targetName: jsonToField(a.targetName || ''),
@@ -336,24 +386,39 @@ export const parseAchievement = (achievementObj: Record<string, unknown>): Achie
             targetCode: a.targetCode ? jsonToField(a.targetCode) : undefined,
         })),
         humanCode: achievementObj.humanCode ? jsonToField(achievementObj.humanCode) : undefined,
-        fieldOfStudy: achievementObj.fieldOfStudy ? jsonToField(achievementObj.fieldOfStudy) : undefined,
-        specialization: achievementObj.specialization ? jsonToField(achievementObj.specialization) : undefined,
-        creditsAvailable: achievementObj.creditsAvailable ? jsonToField(achievementObj.creditsAvailable) : undefined,
-        tag: Array.isArray(achievementObj.tag) ? achievementObj.tag as string[] : undefined,
+        fieldOfStudy: achievementObj.fieldOfStudy
+            ? jsonToField(achievementObj.fieldOfStudy)
+            : undefined,
+        specialization: achievementObj.specialization
+            ? jsonToField(achievementObj.specialization)
+            : undefined,
+        creditsAvailable: achievementObj.creditsAvailable
+            ? jsonToField(achievementObj.creditsAvailable)
+            : undefined,
+        tag: Array.isArray(achievementObj.tag) ? (achievementObj.tag as string[]) : undefined,
         inLanguage: achievementObj.inLanguage ? jsonToField(achievementObj.inLanguage) : undefined,
         version: achievementObj.version ? jsonToField(achievementObj.version) : undefined,
-        otherIdentifier: otherIdArr.length > 0 ? otherIdArr.map((oi, i) => ({
-            id: `otherId_${i}`,
-            identifier: jsonToField(oi.identifier || ''),
-            identifierType: jsonToField(oi.identifierType || ''),
-        })) : undefined,
-        resultDescription: resultDescArr.length > 0 ? resultDescArr.map((rd, i) => ({
-            id: (rd.id as string) || `resultDesc_${i}`,
-            name: jsonToField(rd.name || ''),
-            resultType: rd.resultType ? jsonToField(rd.resultType) : undefined,
-            allowedValue: Array.isArray(rd.allowedValue) ? rd.allowedValue as string[] : undefined,
-            requiredValue: rd.requiredValue ? jsonToField(rd.requiredValue) : undefined,
-        })) : undefined,
+        ctid: extractedCtid ? jsonToField(extractedCtid) : undefined,
+        otherIdentifier:
+            otherIdArr.length > 0
+                ? otherIdArr.map((oi, i) => ({
+                      id: `otherId_${i}`,
+                      identifier: jsonToField(oi.identifier || ''),
+                      identifierType: jsonToField(oi.identifierType || ''),
+                  }))
+                : undefined,
+        resultDescription:
+            resultDescArr.length > 0
+                ? resultDescArr.map((rd, i) => ({
+                      id: (rd.id as string) || `resultDesc_${i}`,
+                      name: jsonToField(rd.name || ''),
+                      resultType: rd.resultType ? jsonToField(rd.resultType) : undefined,
+                      allowedValue: Array.isArray(rd.allowedValue)
+                          ? (rd.allowedValue as string[])
+                          : undefined,
+                      requiredValue: rd.requiredValue ? jsonToField(rd.requiredValue) : undefined,
+                  }))
+                : undefined,
     };
 };
 
@@ -374,9 +439,14 @@ const parseResults = (resultArr: Record<string, unknown>[]): ResultTemplate[] =>
  * Parse issuer from JSON (shared between OBv3 and CLR)
  */
 const parseIssuer = (issuerValue: unknown): IssuerTemplate => {
-    const issuerObj = (typeof issuerValue === 'object' && issuerValue !== null) ? issuerValue as Record<string, unknown> : null;
+    const issuerObj =
+        typeof issuerValue === 'object' && issuerValue !== null
+            ? (issuerValue as Record<string, unknown>)
+            : null;
     return {
-        id: issuerValue ? jsonToField(typeof issuerValue === 'string' ? issuerValue : issuerObj?.id) : undefined,
+        id: issuerValue
+            ? jsonToField(typeof issuerValue === 'string' ? issuerValue : issuerObj?.id)
+            : undefined,
         name: issuerObj?.name ? jsonToField(issuerObj.name) : staticField(''),
         url: issuerObj?.url ? jsonToField(issuerObj.url) : undefined,
         image: issuerObj?.image ? jsonToField(issuerObj.image) : undefined,
@@ -468,7 +538,10 @@ export const clrTemplateToJson = (template: OBv3CredentialTemplate): Record<stri
     }
 
     // Serialize embedded signed VCs (passthrough — these are pre-signed, not editable)
-    if (template.clrSubject?.verifiableCredential && template.clrSubject.verifiableCredential.length > 0) {
+    if (
+        template.clrSubject?.verifiableCredential &&
+        template.clrSubject.verifiableCredential.length > 0
+    ) {
         credentialSubject.verifiableCredential = template.clrSubject.verifiableCredential;
     }
 
@@ -508,7 +581,8 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
 
     // Credential name mirrors achievement name (static or dynamic)
     const achievementName = template.credentialSubject.achievement.name;
-    credential.name = fieldToJson(achievementName) || fieldToJson(template.name) || 'Untitled Credential';
+    credential.name =
+        fieldToJson(achievementName) || fieldToJson(template.name) || 'Untitled Credential';
 
     if (template.description?.value || template.description?.isDynamic) {
         credential.description = fieldToJson(template.description);
@@ -541,7 +615,7 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         credentialSubject.name = fieldToJson(template.credentialSubject.name);
     }
 
-    // Achievement (use shared helper)
+    // Achievement (use shared helper - includes CTID alignment support)
     credentialSubject.achievement = serializeAchievement(template.credentialSubject.achievement);
 
     // Additional CredentialSubject fields (OBv3 AchievementSubject spec-compliant)
@@ -609,15 +683,29 @@ const SIGNING_ARTIFACT_CONTEXTS = new Set([
 /**
  * Parse a CLR 2.0 JSON credential into template model
  */
-export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: string[], types: string[]): OBv3CredentialTemplate => {
-    const subjectObj = (typeof json.credentialSubject === 'object' && json.credentialSubject !== null) ? json.credentialSubject as Record<string, unknown> : {};
-    const evidenceArr = Array.isArray(json.evidence) ? json.evidence as Record<string, unknown>[]
-        : Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
+export const jsonToClrTemplate = (
+    json: Record<string, unknown>,
+    contexts: string[],
+    types: string[]
+): OBv3CredentialTemplate => {
+    const subjectObj =
+        typeof json.credentialSubject === 'object' && json.credentialSubject !== null
+            ? (json.credentialSubject as Record<string, unknown>)
+            : {};
+    const evidenceArr = Array.isArray(json.evidence)
+        ? (json.evidence as Record<string, unknown>[])
+        : Array.isArray(subjectObj.evidence)
+        ? (subjectObj.evidence as Record<string, unknown>[])
+        : [];
 
     // Parse multi-achievement array
-    const achievementArr = Array.isArray(subjectObj.achievement) ? subjectObj.achievement as Record<string, unknown>[] : [];
+    const achievementArr = Array.isArray(subjectObj.achievement)
+        ? (subjectObj.achievement as Record<string, unknown>[])
+        : [];
     const achievements: AchievementEntryTemplate[] = achievementArr.map((achObj, i) => {
-        const resultArr = Array.isArray(achObj.result) ? achObj.result as Record<string, unknown>[] : [];
+        const resultArr = Array.isArray(achObj.result)
+            ? (achObj.result as Record<string, unknown>[])
+            : [];
         // Use the achievement's own id (injected on serialization) for stable association references;
         // fall back to a sequential id for entries that pre-date this behaviour.
         const entryId = typeof achObj.id === 'string' && achObj.id ? achObj.id : `ach_${i}`;
@@ -626,13 +714,19 @@ export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: strin
             achievement: parseAchievement(achObj),
             result: resultArr.length > 0 ? parseResults(resultArr) : undefined,
             creditsEarned: achObj.creditsEarned ? jsonToField(achObj.creditsEarned) : undefined,
-            activityStartDate: achObj.activityStartDate ? jsonToField(achObj.activityStartDate) : undefined,
-            activityEndDate: achObj.activityEndDate ? jsonToField(achObj.activityEndDate) : undefined,
+            activityStartDate: achObj.activityStartDate
+                ? jsonToField(achObj.activityStartDate)
+                : undefined,
+            activityEndDate: achObj.activityEndDate
+                ? jsonToField(achObj.activityEndDate)
+                : undefined,
         };
     });
 
     // Parse associations
-    const associationArr = Array.isArray(subjectObj.association) ? subjectObj.association as Record<string, unknown>[] : [];
+    const associationArr = Array.isArray(subjectObj.association)
+        ? (subjectObj.association as Record<string, unknown>[])
+        : [];
     const associations: AssociationTemplate[] = associationArr.map((assoc, i) => ({
         id: `assoc_${i}`,
         associationType: jsonToField(assoc.associationType || ''),
@@ -642,7 +736,7 @@ export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: strin
 
     // Parse embedded signed VCs (the other CLR 2.0 mechanism)
     const verifiableCredentialArr = Array.isArray(subjectObj.verifiableCredential)
-        ? subjectObj.verifiableCredential as Record<string, unknown>[]
+        ? (subjectObj.verifiableCredential as Record<string, unknown>[])
         : [];
 
     return {
@@ -656,26 +750,35 @@ export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: strin
         issuer: parseIssuer(json.issuer),
         credentialSubject: {
             id: subjectObj.id ? jsonToField(subjectObj.id) : undefined,
-            achievement: achievements.length > 0 ? achievements[0].achievement : { name: staticField(''), description: staticField('') },
+            achievement:
+                achievements.length > 0
+                    ? achievements[0].achievement
+                    : { name: staticField(''), description: staticField('') },
             evidence: parseEvidence(evidenceArr),
         },
         clrSubject: {
             achievements,
             associations,
-            verifiableCredential: verifiableCredentialArr.length > 0 ? verifiableCredentialArr : undefined,
+            verifiableCredential:
+                verifiableCredentialArr.length > 0 ? verifiableCredentialArr : undefined,
         },
         validFrom: jsonToField(json.validFrom || json.issuanceDate || '{{issue_date}}'),
-        validUntil: json.validUntil || json.expirationDate ? jsonToField(json.validUntil || json.expirationDate) : undefined,
+        validUntil:
+            json.validUntil || json.expirationDate
+                ? jsonToField(json.validUntil || json.expirationDate)
+                : undefined,
         customFields: [],
     };
 };
 
 export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTemplate => {
     const schemaType = detectSchemaType(json);
-    const rawContexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
+    const rawContexts = Array.isArray(json['@context'])
+        ? (json['@context'] as string[])
+        : DEFAULT_CONTEXTS;
     // Strip signing artifact contexts that get injected by issueCredential()
     const contexts = rawContexts.filter(c => !SIGNING_ARTIFACT_CONTEXTS.has(c));
-    const types = Array.isArray(json.type) ? json.type as string[] : DEFAULT_TYPES;
+    const types = Array.isArray(json.type) ? (json.type as string[]) : DEFAULT_TYPES;
 
     // CLR 2.0 credentials get full parsing
     if (schemaType === 'clr2') {
@@ -704,13 +807,26 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         };
     }
 
-    const subjectObj = (typeof json.credentialSubject === 'object' && json.credentialSubject !== null) ? json.credentialSubject as Record<string, unknown> : {};
-    const achievementObj = (typeof subjectObj.achievement === 'object' && subjectObj.achievement !== null) ? subjectObj.achievement as Record<string, unknown> : {};
+    const subjectObj =
+        typeof json.credentialSubject === 'object' && json.credentialSubject !== null
+            ? (json.credentialSubject as Record<string, unknown>)
+            : {};
+    const achievementObj =
+        typeof subjectObj.achievement === 'object' && subjectObj.achievement !== null
+            ? (subjectObj.achievement as Record<string, unknown>)
+            : {};
     // Evidence is a top-level credential property (VC v2), but also check subjectObj for backwards compat
-    const evidenceArr = Array.isArray(json.evidence) ? json.evidence as Record<string, unknown>[]
-        : Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
-    const resultArr = Array.isArray(subjectObj.result) ? subjectObj.result as Record<string, unknown>[] : [];
-    const subjectIdArr = Array.isArray(subjectObj.identifier) ? subjectObj.identifier as Record<string, unknown>[] : [];
+    const evidenceArr = Array.isArray(json.evidence)
+        ? (json.evidence as Record<string, unknown>[])
+        : Array.isArray(subjectObj.evidence)
+        ? (subjectObj.evidence as Record<string, unknown>[])
+        : [];
+    const resultArr = Array.isArray(subjectObj.result)
+        ? (subjectObj.result as Record<string, unknown>[])
+        : [];
+    const subjectIdArr = Array.isArray(subjectObj.identifier)
+        ? (subjectObj.identifier as Record<string, unknown>[])
+        : [];
 
     // Parse credential subject with all OBv3 AchievementSubject fields
     const credentialSubject: CredentialSubjectTemplate = {
@@ -720,16 +836,23 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         evidence: parseEvidence(evidenceArr),
         // Additional OBv3 AchievementSubject fields
         creditsEarned: subjectObj.creditsEarned ? jsonToField(subjectObj.creditsEarned) : undefined,
-        activityStartDate: subjectObj.activityStartDate ? jsonToField(subjectObj.activityStartDate) : undefined,
-        activityEndDate: subjectObj.activityEndDate ? jsonToField(subjectObj.activityEndDate) : undefined,
+        activityStartDate: subjectObj.activityStartDate
+            ? jsonToField(subjectObj.activityStartDate)
+            : undefined,
+        activityEndDate: subjectObj.activityEndDate
+            ? jsonToField(subjectObj.activityEndDate)
+            : undefined,
         term: subjectObj.term ? jsonToField(subjectObj.term) : undefined,
         licenseNumber: subjectObj.licenseNumber ? jsonToField(subjectObj.licenseNumber) : undefined,
         role: subjectObj.role ? jsonToField(subjectObj.role) : undefined,
-        identifier: subjectIdArr.length > 0 ? subjectIdArr.map((id, i) => ({
-            id: `subjectId_${i}`,
-            identifier: jsonToField(id.identityHash || id.identifier || ''),
-            identifierType: jsonToField(id.identityType || id.identifierType || ''),
-        })) : undefined,
+        identifier:
+            subjectIdArr.length > 0
+                ? subjectIdArr.map((id, i) => ({
+                      id: `subjectId_${i}`,
+                      identifier: jsonToField(id.identityHash || id.identifier || ''),
+                      identifierType: jsonToField(id.identityType || id.identifierType || ''),
+                  }))
+                : undefined,
         result: resultArr.length > 0 ? parseResults(resultArr) : undefined,
     };
 
@@ -744,7 +867,10 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         issuer: parseIssuer(json.issuer),
         credentialSubject,
         validFrom: jsonToField(json.validFrom || json.issuanceDate || '{{issue_date}}'),
-        validUntil: json.validUntil || json.expirationDate ? jsonToField(json.validUntil || json.expirationDate) : undefined,
+        validUntil:
+            json.validUntil || json.expirationDate
+                ? jsonToField(json.validUntil || json.expirationDate)
+                : undefined,
         customFields: [],
     };
 };
@@ -752,7 +878,9 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
 /**
  * Extract all mustache variables from any JSON object (for raw/custom credentials)
  */
-export const extractVariablesFromRawJson = (json: unknown): { system: string[]; dynamic: string[] } => {
+export const extractVariablesFromRawJson = (
+    json: unknown
+): { system: string[]; dynamic: string[] } => {
     const systemVars: Set<string> = new Set();
     const dynamicVars: Set<string> = new Set();
 
@@ -793,7 +921,10 @@ export interface ExtractedVariables {
 /**
  * Check all fields of an AchievementTemplate for variables (shared helper)
  */
-const checkAchievementFields = (ach: AchievementTemplate, checkField: (field: TemplateFieldValue | undefined) => void) => {
+const checkAchievementFields = (
+    ach: AchievementTemplate,
+    checkField: (field: TemplateFieldValue | undefined) => void
+) => {
     checkField(ach.id);
     checkField(ach.name);
     checkField(ach.description);
@@ -807,6 +938,7 @@ const checkAchievementFields = (ach: AchievementTemplate, checkField: (field: Te
     checkField(ach.creditsAvailable);
     checkField(ach.inLanguage);
     checkField(ach.version);
+    checkField(ach.ctid);
     ach.otherIdentifier?.forEach(oi => {
         checkField(oi.identifier);
         checkField(oi.identifierType);
@@ -878,7 +1010,7 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
     checkField(template.credentialSubject.id);
     checkField(template.credentialSubject.name);
 
-    // Achievement (OBv3 single achievement)
+    // Achievement (OBv3 single achievement - includes CTID)
     checkAchievementFields(template.credentialSubject.achievement, checkField);
 
     // CLR 2.0 multi-achievement fields
@@ -1008,7 +1140,7 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
     checkField(template.credentialSubject.id);
     checkField(template.credentialSubject.name);
 
-    // Achievement (OBv3 single achievement)
+    // Achievement (OBv3 single achievement - includes CTID)
     checkAchievementFields(template.credentialSubject.achievement, checkField);
 
     // CLR 2.0 multi-achievement fields
@@ -1084,15 +1216,21 @@ export interface FieldValidationError {
  * Validate a template and return field-level errors
  */
 /**
- * Validate a single achievement's URLs (shared between OBv3 and CLR)
+ * Validate a single achievement's URLs and CTID (shared between OBv3 and CLR)
  */
-const validateAchievementUrls = (ach: AchievementTemplate, prefix: string): FieldValidationError[] => {
+const validateAchievementUrls = (
+    ach: AchievementTemplate,
+    prefix: string
+): FieldValidationError[] => {
     const errors: FieldValidationError[] = [];
 
     const criteriaId = ach.criteria?.id;
     if (criteriaId?.value && !criteriaId.isDynamic) {
         if (!/^https?:\/\//i.test(criteriaId.value) && !/^urn:/i.test(criteriaId.value)) {
-            errors.push({ field: `${prefix}.criteria.id`, message: 'Must be a valid URL (e.g., https://example.com)' });
+            errors.push({
+                field: `${prefix}.criteria.id`,
+                message: 'Must be a valid URL (e.g., https://example.com)',
+            });
         }
     }
 
@@ -1101,8 +1239,23 @@ const validateAchievementUrls = (ach: AchievementTemplate, prefix: string): Fiel
         const a = alignments[i];
         if (a.targetUrl?.value && !a.targetUrl.isDynamic) {
             if (!/^https?:\/\//i.test(a.targetUrl.value) && !/^urn:/i.test(a.targetUrl.value)) {
-                errors.push({ field: `${prefix}.alignment.${i}.targetUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
+                errors.push({
+                    field: `${prefix}.alignment.${i}.targetUrl`,
+                    message: 'Must be a valid URL (e.g., https://example.com)',
+                });
             }
+        }
+    }
+
+    // CTID must match Credential Engine Registry format: ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    const ctid = ach.ctid;
+    if (ctid?.value && !ctid.isDynamic) {
+        const ctidPattern = /^ce-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!ctidPattern.test(ctid.value)) {
+            errors.push({
+                field: `${prefix}.ctid`,
+                message: 'Invalid CTID format. Must be ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+            });
         }
     }
 
@@ -1124,13 +1277,19 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
 
         // A CLR needs at least one of: achievements or embedded verifiableCredentials
         if (achievements.length === 0 && embeddedVCs.length === 0) {
-            errors.push({ field: 'achievements-list', message: 'At least one achievement or embedded credential is required' });
+            errors.push({
+                field: 'achievements-list',
+                message: 'At least one achievement or embedded credential is required',
+            });
         }
 
         for (let i = 0; i < achievements.length; i++) {
             const entry = achievements[i];
             if (!entry.achievement.name.value && !entry.achievement.name.isDynamic) {
-                errors.push({ field: `achievements.${i}.name`, message: `Achievement ${i + 1} name is required` });
+                errors.push({
+                    field: `achievements.${i}.name`,
+                    message: `Achievement ${i + 1} name is required`,
+                });
             }
             errors.push(...validateAchievementUrls(entry.achievement, `achievements.${i}`));
         }
@@ -1141,10 +1300,16 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         for (let i = 0; i < associations.length; i++) {
             const assoc = associations[i];
             if (assoc.sourceAchievementId && !validIds.has(assoc.sourceAchievementId)) {
-                errors.push({ field: `associations.${i}.source`, message: 'Source achievement not found' });
+                errors.push({
+                    field: `associations.${i}.source`,
+                    message: 'Source achievement not found',
+                });
             }
             if (assoc.targetAchievementId && !validIds.has(assoc.targetAchievementId)) {
-                errors.push({ field: `associations.${i}.target`, message: 'Target achievement not found' });
+                errors.push({
+                    field: `associations.${i}.target`,
+                    message: 'Target achievement not found',
+                });
             }
         }
 
@@ -1153,8 +1318,14 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         for (let i = 0; i < evidenceItems.length; i++) {
             const e = evidenceItems[i];
             if (e.evidenceUrl?.value && !e.evidenceUrl.isDynamic) {
-                if (!/^https?:\/\//i.test(e.evidenceUrl.value) && !/^urn:/i.test(e.evidenceUrl.value)) {
-                    errors.push({ field: `evidence.${i}.evidenceUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
+                if (
+                    !/^https?:\/\//i.test(e.evidenceUrl.value) &&
+                    !/^urn:/i.test(e.evidenceUrl.value)
+                ) {
+                    errors.push({
+                        field: `evidence.${i}.evidenceUrl`,
+                        message: 'Must be a valid URL (e.g., https://example.com)',
+                    });
                 }
             }
         }
@@ -1163,7 +1334,10 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
     }
 
     // OBv3 validation
-    if (!template.credentialSubject.achievement.name.value && !template.credentialSubject.achievement.name.isDynamic) {
+    if (
+        !template.credentialSubject.achievement.name.value &&
+        !template.credentialSubject.achievement.name.isDynamic
+    ) {
         errors.push({ field: 'achievement.name', message: 'Achievement name is required' });
     }
 
@@ -1175,7 +1349,10 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         const e = evidenceItems[i];
         if (e.evidenceUrl?.value && !e.evidenceUrl.isDynamic) {
             if (!/^https?:\/\//i.test(e.evidenceUrl.value) && !/^urn:/i.test(e.evidenceUrl.value)) {
-                errors.push({ field: `evidence.${i}.evidenceUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
+                errors.push({
+                    field: `evidence.${i}.evidenceUrl`,
+                    message: 'Must be a valid URL (e.g., https://example.com)',
+                });
             }
         }
     }
@@ -1186,7 +1363,10 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
 /**
  * Get the error message for a specific field from validation errors
  */
-export const getFieldError = (errors: FieldValidationError[], field: string): string | undefined => {
+export const getFieldError = (
+    errors: FieldValidationError[],
+    field: string
+): string | undefined => {
     return errors.find(e => e.field === field)?.message;
 };
 
