@@ -407,7 +407,12 @@ const UpdateBoostCMS: React.FC = () => {
                     `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
                 );
             }
-            handleConfirmationModal();
+            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
+            if (flags?.skipPublishStep) {
+                setCurrentStep(BoostCMSStepsEnum.create);
+            } else {
+                handleConfirmationModal();
+            }
         }
     };
 
