@@ -9,7 +9,7 @@ import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
-import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
+import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
@@ -141,9 +141,12 @@ const AiPathways: React.FC = () => {
                                         occupations={occupations}
                                         isLoading={isLoading}
                                     />
-                                    <ExploreAiInsightsButton />
                                 </>
                             )}
+                            <AiFeatureLinks
+                                features={['ai-sessions', 'skills-hub', 'ai-insights']}
+                                className="px-4 max-w-[600px]"
+                            />
                         </div>
                     </AiFeatureGate>
                 </IonContent>
