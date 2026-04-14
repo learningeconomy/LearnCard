@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { ChevronRight } from 'lucide-react';
 import { useHistory } from 'react-router-dom';
-import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
+import { useModal } from 'learn-card-base';
 
-import { type GrowSkillsPathway } from './useGrowSkillsContent';
+import { ChevronRight } from 'lucide-react';
 import GrowSkillsSkillChips from './GrowSkillsSkillChips';
+import { type GrowSkillsPathway } from './useGrowSkillsContent';
+import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
 type GrowSkillsAiSessionItemProps = {
     data: GrowSkillsPathway;
@@ -12,6 +13,8 @@ type GrowSkillsAiSessionItemProps = {
 
 const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data }) => {
     const history = useHistory();
+    const { closeModal } = useModal();
+
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
     const hasDraggedRef = useRef(false);
 
@@ -22,6 +25,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
     const handleStart = () => {
         if (!topicUri || !pathwayUri) return;
 
+        closeModal();
         history.push(
             `/chats?topicUri=${encodeURIComponent(topicUri)}&pathwayUri=${encodeURIComponent(
                 pathwayUri
