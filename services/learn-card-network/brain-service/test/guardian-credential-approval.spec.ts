@@ -285,14 +285,14 @@ describe('Guardian-Gated Credential Issuance', () => {
 
         beforeEach(async () => {
             // Create student profile
-            studentUser = await getUser('f'.repeat(64));
+            studentUser = await getUser('f1'.repeat(32));
             await studentUser.clients.fullAuth.profile.createProfile({
                 profileId: 'studentinapp',
                 displayName: 'Student InApp',
             });
 
             // Create guardian profile
-            guardianUser = await getUser('g'.repeat(64));
+            guardianUser = await getUser('f2'.repeat(32));
             await guardianUser.clients.fullAuth.profile.createProfile({
                 profileId: 'guardianinapp',
                 displayName: 'Guardian InApp',
@@ -419,13 +419,13 @@ describe('Guardian-Gated Credential Issuance', () => {
         let studentUser: Awaited<ReturnType<typeof getUser>>;
 
         beforeEach(async () => {
-            studentUser = await getUser('h'.repeat(64));
+            studentUser = await getUser('f3'.repeat(32));
             await studentUser.clients.fullAuth.profile.createProfile({
                 profileId: 'studentreject',
                 displayName: 'Student Reject',
             });
 
-            guardianUser = await getUser('i'.repeat(64));
+            guardianUser = await getUser('f4'.repeat(32));
             await guardianUser.clients.fullAuth.profile.createProfile({
                 profileId: 'guardianreject',
                 displayName: 'Guardian Reject',
