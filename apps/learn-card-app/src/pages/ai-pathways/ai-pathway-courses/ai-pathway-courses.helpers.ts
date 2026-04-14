@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
+import { TrainingProgram } from 'learn-card-base';
 
 const TEXT_TOKEN_MAP: Record<string, string> = {
     apos: "'",
@@ -16,18 +16,53 @@ const decodeTextToken = (token?: string) => {
     return TEXT_TOKEN_MAP[token.toLowerCase()] ?? ' ';
 };
 
+const getProgramCoursesCount = (program: any) =>
+    Array.isArray(program?.courses)
+        ? program.courses.length
+        : Array.isArray(program?.syllabusCourses)
+        ? program.syllabusCourses.length
+        : 0;
+
 export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => {
     const randomSchoolPrograms = _.shuffle([...trainingPrograms]);
 
     const selectedSchoolPrograms = randomSchoolPrograms;
 
-    const schoolPrograms = selectedSchoolPrograms.map((program: any) => ({
-        ...(program?.SchoolPrograms?.[0] || {}),
-        keyword: program?.keyword,
-        courses: program?.syllabusCourses,
-        occupationDetails: program?.occupationDetails,
-        school: program?.syllabusCourses?.[0]?.institution,
-    }));
+    const schoolPrograms: any[] = [];
+    const programIndexes = new Map<string, number>();
+
+    selectedSchoolPrograms.forEach((program: any) => {
+        const courses = program?.courses ?? program?.syllabusCourses ?? [];
+
+        const normalizedProgram = {
+            ...(program?.SchoolPrograms?.[0] || {}),
+            ID: program?.SchoolPrograms?.[0]?.ID ?? program?.ID,
+            keyword: program?.keyword,
+            courses,
+            occupationDetails: program?.occupationDetails,
+            school: courses?.[0]?.institution ?? program?.syllabusCourses?.[0]?.institution,
+        };
+
+        const programId = normalizedProgram.ID;
+
+        if (!programId) {
+            schoolPrograms.push(normalizedProgram);
+            return;
+        }
+
+        const existingIndex = programIndexes.get(programId);
+
+        if (existingIndex === undefined) {
+            programIndexes.set(programId, schoolPrograms.length);
+            schoolPrograms.push(normalizedProgram);
+            return;
+        }
+
+        const existingProgram = schoolPrograms[existingIndex];
+        if (getProgramCoursesCount(normalizedProgram) > getProgramCoursesCount(existingProgram)) {
+            schoolPrograms[existingIndex] = normalizedProgram;
+        }
+    });
 
     return schoolPrograms;
 };
