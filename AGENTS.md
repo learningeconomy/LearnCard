@@ -554,6 +554,38 @@ if (profileId === currentLCNUser?.profileId) {
 
 Without this, the credential shows "Pending Acceptance" because only CREDENTIAL_SENT exists (no CREDENTIAL_RECEIVED).
 
+## CredentialBuilder Component
+
+Location: `apps/learn-card-app/src/pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/`
+
+A form-based OBv3 credential template builder used by partner onboarding. Key files:
+
+| File                    | Purpose                                                                     |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `CredentialBuilder.tsx` | Main component with form/JSON modes                                         |
+| `types.ts`              | Template types: `OBv3CredentialTemplate`, `TemplateFieldValue`              |
+| `utils.ts`              | `templateToJson()` / `jsonToTemplate()` serialization, `validateTemplate()` |
+| `sections/`             | Form sections: Achievement, Evidence, Dates, CustomFields                   |
+
+### Adding New Template Fields
+
+1. Add optional field to interface in `types.ts` (e.g., `ctid?: TemplateFieldValue`)
+2. Add `FieldEditor` in appropriate section component (e.g., `AchievementSection.tsx`)
+3. Update `templateToJson()` to serialize the field to JSON
+4. Update `jsonToTemplate()` to deserialize (round-trip support)
+5. Add validation in `validateTemplate()` if format constraints exist
+6. Add to `extractVariablesByType()` for dynamic field support
+7. Write unit tests in `utils.test.ts`
+
+### CTID (Credential Engine Registry) Integration
+
+The `ctid` field links credentials to the Credential Engine Registry:
+
+-   **Format**: `ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (UUID with ce- prefix)
+-   **Serialization**: Emits an OBv3 alignment entry with `targetFramework: 'Credential Engine Registry'`
+-   **Round-trip**: Detected via `targetFramework` + `targetType: 'ceterms:Credential'`, extracted to `ctid` field
+-   **Validation**: Regex pattern `/^ce-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`
+
 ## AuthCoordinator Architecture
 
 The AuthCoordinator is a unified state machine that coordinates authentication and key derivation across LearnCard applications. It replaces the previous ad-hoc Web3Auth flow with a composable, provider-agnostic system.
@@ -662,7 +694,15 @@ A user with a cached private key can use the wallet even without an active Fireb
 The `packages/learn-card-base` package provides reusable, styled form components for use in LearnCard applications. Import from `learn-card-base`:
 
 ```typescript
-import { TextInput, TextArea, Toggle, Checkbox, SelectInput, RadioGroup } from 'learn-card-base';
+import {
+    TextInput,
+    SearchInput,
+    TextArea,
+    Toggle,
+    Checkbox,
+    SelectInput,
+    RadioGroup,
+} from 'learn-card-base';
 ```
 
 ### Available Components
@@ -670,6 +710,7 @@ import { TextInput, TextArea, Toggle, Checkbox, SelectInput, RadioGroup } from '
 | Component     | Purpose                                  | Key Props                                                                      |
 | ------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
 | `TextInput`   | Single-line text input (uses IonInput)   | `value`, `onChange`, `placeholder`, `type`, `disabled`, `startIcon`, `endIcon` |
+| `SearchInput` | Search field with built-in search/clear  | `value`, `onChange`, `placeholder`, `disabled`, `onClear`                      |
 | `TextArea`    | Multi-line text input (uses IonTextarea) | `value`, `onChange`, `placeholder`, `rows`, `autoGrow`, `disabled`             |
 | `Toggle`      | Boolean toggle switch                    | `checked`, `onChange`, `label`, `labelPosition`, `size`                        |
 | `Checkbox`    | Pill-style checkbox with label           | `checked`, `onChange`, `label`, `disabled`, `className`                        |
@@ -685,6 +726,13 @@ import { TextInput, TextArea, Toggle, Checkbox, SelectInput, RadioGroup } from '
     onChange={value => setLocation(value ?? '')}
     placeholder="Enter location"
     endIcon={<MapPin className="w-5 h-5" />}
+/>
+
+// SearchInput with built-in icon and clear button
+<SearchInput
+    value={search}
+    onChange={setSearch}
+    placeholder="Search by skill, goal, or job"
 />
 
 // TextArea for longer content

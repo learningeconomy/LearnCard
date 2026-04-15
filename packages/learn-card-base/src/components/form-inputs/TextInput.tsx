@@ -1,10 +1,9 @@
 import React from 'react';
 import { IonInput } from '@ionic/react';
-import { SetState } from '@learncard/helpers';
 
 type TextInputProps = {
     value: string | number | null | undefined;
-    onChange: (value: string | null | undefined) => void | SetState<string>;
+    onChange: (value: string) => void;
     placeholder?: string;
     type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url';
     disabled?: boolean;
@@ -65,7 +64,7 @@ const TextInput: React.FC<TextInputProps> = ({
                 debounce={debounce}
                 maxlength={maxLength}
                 autocapitalize={autocapitalize}
-                onIonInput={e => onChange(e.detail.value)}
+                onIonInput={e => onChange(e.detail.value ?? '')}
                 onIonFocus={onFocus}
                 onIonBlur={onBlur}
                 onKeyDown={onKeyDown}

@@ -4,7 +4,6 @@ import SkillDisplay from './SkillDisplay';
 import SkillsHubSearch from './SkillsHubSearch';
 import LegacySkillDisplay from './LegacySkillDisplay';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
-import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { useAlignments } from '../../hooks/useAlignments';
@@ -38,8 +37,6 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
 
     return (
         <div className="flex flex-col gap-[10px] w-full">
-            <ExploreAiInsightsButton />
-
             {showPlaceholder && <SkillsPageEmptyPlaceholder isLoading={isLoading} />}
 
             {!showPlaceholder && (

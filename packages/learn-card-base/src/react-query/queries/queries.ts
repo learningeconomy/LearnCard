@@ -1013,6 +1013,32 @@ export const useGetManagedProfiles = (userDid: string) => {
     });
 };
 
+export const useGetMyManagedChildren = () => {
+    const { initWallet } = useWallet();
+    return useQuery<LCNProfile[]>({
+        queryKey: ['useGetMyManagedChildren'],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return (await wallet.invoke.getMyManagedChildren?.()) ?? [];
+        },
+    });
+};
+
+export const useGetMyGuardians = () => {
+    const { initWallet } = useWallet();
+    return useQuery<LCNProfile[]>({
+        queryKey: ['useGetMyGuardians'],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            if (!wallet.invoke.getMyGuardians) {
+                console.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
+                return [];
+            }
+            return (await wallet.invoke.getMyGuardians()) ?? [];
+        },
+    });
+};
+
 export const useGetDid = (method?: string, enabled = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();

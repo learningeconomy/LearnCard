@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { UseQueryResult, useQuery } from '@tanstack/react-query';
 import _ from 'lodash';
 
 import type { CareerOneStopOccupation, OccupationDetailsResponse } from '../../types/careerOneStop';
