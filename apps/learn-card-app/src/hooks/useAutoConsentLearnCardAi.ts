@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { CurrentUser, useWallet, useCurrentUser } from 'learn-card-base';
+import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getTermsWithSharedUrisForWallet } from 'learn-card-base/hooks/useSharedUrisInTerms';
 
@@ -16,11 +16,17 @@ type AutoConsentOptions = {
     userOverrides?: Partial<CurrentUser>;
 };
 
+const getLearnCardAiContractUri = (): string | undefined =>
+    aiPassportApps.find(app => app.type === AiPassportAppsEnum.learncardapp)?.contractUri;
+
 export const useAutoConsentLearnCardAi = () => {
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
+    const { mutateAsync: withdrawConsent } = useWithdrawConsent(getLearnCardAiContractUri() ?? '');
     const inFlightRef = useRef<Promise<boolean> | null>(null);
+    const withdrawInFlightRef = useRef<Promise<boolean> | null>(null);
+    const learnCardAiContractUri = getLearnCardAiContractUri();
 
     const autoConsentLearnCardAi = useCallback(
         async ({ enabled, userOverrides }: AutoConsentOptions) => {
@@ -32,11 +38,7 @@ export const useAutoConsentLearnCardAi = () => {
                     const wallet = await initWallet();
                     if (!wallet) return false;
 
-                    const learnCardAiApp = aiPassportApps.find(
-                        app => app.type === AiPassportAppsEnum.learncardapp
-                    );
-                    const contractUri = learnCardAiApp?.contractUri;
-                    if (!contractUri) return false;
+                    if (!learnCardAiContractUri) return false;
 
                     const consentedContracts = await getOrFetchConsentedContracts(
                         queryClient,
@@ -44,13 +46,13 @@ export const useAutoConsentLearnCardAi = () => {
                     );
                     const alreadyConsented = consentedContracts.some(
                         (consent: { contract?: { uri?: string }; status?: string | null }) =>
-                            consent?.contract?.uri === contractUri &&
+                            consent?.contract?.uri === learnCardAiContractUri &&
                             consent?.status !== 'withdrawn'
                     );
 
                     if (alreadyConsented) return true;
 
-                    const contractDetails = await wallet.invoke.getContract(contractUri);
+                    const contractDetails = await wallet.invoke.getContract(learnCardAiContractUri);
                     const ownerDid = contractDetails?.owner?.did;
                     if (!contractDetails?.contract || !ownerDid) return false;
 
@@ -84,7 +86,7 @@ export const useAutoConsentLearnCardAi = () => {
                         }
                     );
 
-                    await wallet.invoke.consentToContract(contractUri, {
+                    await wallet.invoke.consentToContract(learnCardAiContractUri, {
                         terms: enrichedTerms.terms,
                         expiresAt: '',
                         oneTime: false,
@@ -103,10 +105,46 @@ export const useAutoConsentLearnCardAi = () => {
             inFlightRef.current = run;
             return run;
         },
-        [currentUser, initWallet, queryClient]
+        [currentUser, initWallet, learnCardAiContractUri, queryClient]
     );
 
-    return { autoConsentLearnCardAi };
+    const withdrawLearnCardAiConsent = useCallback(async () => {
+        if (withdrawInFlightRef.current) return withdrawInFlightRef.current;
+
+        const run = (async () => {
+            try {
+                const wallet = await initWallet();
+                if (!wallet) return false;
+                if (!learnCardAiContractUri) return false;
+
+                const consentedContracts = await getOrFetchConsentedContracts(queryClient, wallet);
+                const consentedContract = consentedContracts.find(
+                    (consent: {
+                        uri?: string;
+                        contract?: { uri?: string };
+                        status?: string | null;
+                    }) =>
+                        consent?.contract?.uri === learnCardAiContractUri &&
+                        consent?.status !== 'withdrawn'
+                );
+
+                if (!consentedContract?.uri) return true;
+
+                await withdrawConsent(consentedContract.uri);
+                return true;
+            } catch (error) {
+                console.error('Failed to withdraw LearnCard AI consent:', error);
+                return false;
+            } finally {
+                withdrawInFlightRef.current = null;
+            }
+        })();
+
+        withdrawInFlightRef.current = run;
+        return run;
+    }, [initWallet, learnCardAiContractUri, queryClient, withdrawConsent]);
+
+    return { autoConsentLearnCardAi, withdrawLearnCardAiConsent };
 };
 
 export default useAutoConsentLearnCardAi;

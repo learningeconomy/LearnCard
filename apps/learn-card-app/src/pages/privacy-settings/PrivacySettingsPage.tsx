@@ -29,7 +29,7 @@ const PrivacySettingsPage: React.FC = () => {
     const brandingConfig = useBrandingConfig();
     const { presentToast } = useToast();
     const { guardedAction } = useGuardianGate();
-    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
+    const { autoConsentLearnCardAi, withdrawLearnCardAiConsent } = useAutoConsentLearnCardAi();
     const profileType = switchedProfileStore.use.profileType();
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
@@ -51,6 +51,20 @@ const PrivacySettingsPage: React.FC = () => {
 
     const handleAiToggle = useCallback(
         async (enabled: boolean) => {
+            if (!enabled && isChildProfile) {
+                const withdrawn = await withdrawLearnCardAiConsent();
+
+                if (!withdrawn) {
+                    presentToast('Something went wrong. Please try again.', {
+                        type: ToastTypeEnum.Error,
+                    });
+                    return;
+                }
+
+                await updatePreferencesAsync({ aiEnabled: false });
+                return;
+            }
+
             if (!enabled || !isChildProfile) {
                 updatePreferences({ aiEnabled: enabled });
                 return;
@@ -85,6 +99,7 @@ const PrivacySettingsPage: React.FC = () => {
             guardedAction,
             isChildProfile,
             presentToast,
+            withdrawLearnCardAiConsent,
             updatePreferences,
             updatePreferencesAsync,
         ]
