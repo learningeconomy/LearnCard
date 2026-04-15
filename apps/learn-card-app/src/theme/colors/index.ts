@@ -12,6 +12,7 @@ export type CategoryColor = {
     headerBrandingTextColor?: string;
     backgroundPrimaryColor?: string; // header
     backgroundSecondaryColor?: string; // content
+    helperTextColor?: string;
     tabActiveColor?: string;
 };
 
@@ -106,4 +107,3 @@ export type ColorSetByEnum = {
     [ColorSetEnum.introSlides]: IntroSlidesColors;
     [ColorSetEnum.defaults]: DefaultColors;
 };
-

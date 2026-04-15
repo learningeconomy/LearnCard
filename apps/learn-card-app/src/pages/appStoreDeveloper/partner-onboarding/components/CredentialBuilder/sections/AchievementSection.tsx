@@ -6,10 +6,7 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
 
-import {
-    OBv3CredentialTemplate,
-    AchievementTemplate,
-} from '../types';
+import { OBv3CredentialTemplate, AchievementTemplate } from '../types';
 import { CollapsibleSection } from '../FieldEditor';
 import { FieldValidationError } from '../utils';
 import { AchievementEditor } from './AchievementEditor';

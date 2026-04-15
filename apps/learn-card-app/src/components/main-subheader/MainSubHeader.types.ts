@@ -127,13 +127,13 @@ export const SubheaderContentType: Record<
         showBetaLabel: true,
     },
     [SubheaderTypeEnum.AiPathways]: {
-        title: 'AI Pathways',
+        title: 'Pathways',
         IconComponent: AiPathwaysIcon,
         iconColor: 'text-lime-700',
         textColor: 'text-white',
         bgColor: 'bg-white',
-        helperText: 'Your',
-        helperTextClickable: 'Lessons and Careers',
+        helperText: 'Grow your skills & find new roles',
+        // helperTextClickable: 'Lessons and Careers',
         showBetaLabel: true,
     },
     [SubheaderTypeEnum.Job]: {

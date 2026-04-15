@@ -22,7 +22,10 @@ export const staticField = (value: string): TemplateFieldValue => ({
 });
 
 // Helper to create a dynamic field
-export const dynamicField = (variableName: string, defaultValue: string = ''): TemplateFieldValue => ({
+export const dynamicField = (
+    variableName: string,
+    defaultValue: string = ''
+): TemplateFieldValue => ({
     value: defaultValue,
     isDynamic: true,
     variableName,
@@ -84,6 +87,7 @@ export interface AchievementTemplate {
     version?: TemplateFieldValue;
     otherIdentifier?: IdentifierEntryTemplate[];
     resultDescription?: ResultDescriptionTemplate[]; // Defines possible results
+    ctid?: TemplateFieldValue; // Credential Engine Registry ID (CTID)
 }
 
 // OBv3 Alignment structure
@@ -273,10 +277,7 @@ export const DEFAULT_CONTEXTS = [
 ];
 
 // Default types
-export const DEFAULT_TYPES = [
-    'VerifiableCredential',
-    'OpenBadgeCredential',
-];
+export const DEFAULT_TYPES = ['VerifiableCredential', 'OpenBadgeCredential'];
 
 // CLR 2.0 contexts (VC v2 + OBv3 + CLR)
 export const CLR2_CONTEXTS = [
@@ -286,10 +287,7 @@ export const CLR2_CONTEXTS = [
 ];
 
 // CLR 2.0 types
-export const CLR2_TYPES = [
-    'VerifiableCredential',
-    'ClrCredential',
-];
+export const CLR2_TYPES = ['VerifiableCredential', 'ClrCredential'];
 
 // CLR 2.0 association types per spec
 export const CLR2_ASSOCIATION_TYPES = [
