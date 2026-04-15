@@ -31,7 +31,6 @@ const PrivacySettingsPage: React.FC = () => {
         dob: currentLCNUser?.dob,
         country: currentLCNUser?.country,
     });
-    const isChildProfile = ageGate.isChildProfile;
     const { handleAiToggle } = useAiConsentToggle();
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
 
