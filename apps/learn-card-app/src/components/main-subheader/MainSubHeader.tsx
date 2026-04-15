@@ -49,7 +49,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const newCredsCount = newCredsForCategory?.length ?? 0;
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
-    const { headerTextColor, backgroundPrimaryColor } = colors;
+    const { headerTextColor, backgroundPrimaryColor, helperTextColor } = colors;
 
     const history = useHistory();
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
@@ -117,14 +117,16 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         )}
                         {newCredsCountDisplay}
                     </span>
-                    <span className="font-poppins text-[12px]">
+                    <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
                         <span>{helperText}</span>{' '}
-                        <button
-                            className="font-[600] underline"
-                            onClick={() => presentCategoryDescriptorModal()}
-                        >
-                            {helperTextClickable}.
-                        </button>
+                        {helperTextClickable && (
+                            <button
+                                className="font-[600] underline"
+                                onClick={() => presentCategoryDescriptorModal()}
+                            >
+                                {helperTextClickable}.
+                            </button>
+                        )}
                     </span>
                 </h2>
             </IonCol>

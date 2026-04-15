@@ -35,16 +35,28 @@ export const CategoryColorSchema = z
         statusBarColor: z.string().optional().describe('Bare token or "light" for status bar'),
 
         /** Full utility class — applied directly. E.g. `"text-white"`, `"text-grayscale-900"` */
-        headerBrandingTextColor: z.string().optional().describe('Full Tailwind text class for header branding'),
+        headerBrandingTextColor: z
+            .string()
+            .optional()
+            .describe('Full Tailwind text class for header branding'),
 
         /** Full utility class — applied directly. E.g. `"text-white"` */
         headerTextColor: z.string().optional().describe('Full Tailwind text class for header text'),
 
         /** Full utility class — applied directly. E.g. `"!bg-cyan-400"`, `"!bg-white"` */
-        backgroundPrimaryColor: z.string().optional().describe('Full Tailwind bg class for header background'),
+        backgroundPrimaryColor: z
+            .string()
+            .optional()
+            .describe('Full Tailwind bg class for header background'),
 
         /** Bare token — used as `bg-${backgroundSecondaryColor}`. E.g. `"cyan-200"` */
-        backgroundSecondaryColor: z.string().optional().describe('Bare Tailwind token for content background'),
+        backgroundSecondaryColor: z
+            .string()
+            .optional()
+            .describe('Bare Tailwind token for content background'),
+
+        /** Full utility class — applied directly. E.g. `"text-grayscale-700"` */
+        helperTextColor: z.string().optional().describe('Full Tailwind text class for helper text'),
 
         /** Full utility class — applied directly. E.g. `"bg-blue-300"` */
         tabActiveColor: z.string().optional().describe('Full Tailwind bg class for active tab'),
