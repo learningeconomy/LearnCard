@@ -46,8 +46,8 @@ export const AiSessionAssessmentPreviewContainer: React.FC<{
         );
     }
 
-    // TODO: Check if the session has been completed by checking for session children
-    if (session?.vc?.completed || assessmentVc) {
+    // Assessment is completed when the assessment credential exists
+    if (assessmentVc) {
         return (
             <FinishedAiSessionAssessmentPreview
                 topicRecord={hookTopicRecord || passedTopicRecord}

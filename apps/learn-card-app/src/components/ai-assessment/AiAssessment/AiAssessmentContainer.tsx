@@ -109,8 +109,7 @@ export const AiAssessmentContainer: React.FC<{
     // === Helpers ===
     const isAlreadyCompleted = async () => {
         const enriched = await refetchSummaryInfo();
-        const alreadyCompleted =
-            enriched?.data?.summaryVc?.completed || Boolean(enriched?.data?.assessmentVc);
+        const alreadyCompleted = Boolean(enriched?.data?.assessmentVc);
 
         if (alreadyCompleted) {
             await fetchNewContractCredentials();
