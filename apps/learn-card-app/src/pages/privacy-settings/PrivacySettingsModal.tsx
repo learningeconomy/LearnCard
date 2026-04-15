@@ -26,8 +26,7 @@ type ProfileVisibilityValue =
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences } =
-        useUpdatePreferences();
+    const { mutate: updatePreferences } = useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
@@ -43,8 +42,7 @@ const PrivacySettingsModal: React.FC = () => {
         dob: currentLCNUser?.dob,
         country: currentLCNUser?.country,
     });
-    const isChildProfile = ageGate.isChildProfile;
-    const { handleAiToggle } = useAiConsentToggle({ isChildProfile });
+    const { handleAiToggle } = useAiConsentToggle();
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
 
     const aiEnabled = ageGate.isAiAgeRestricted
@@ -101,8 +99,6 @@ const PrivacySettingsModal: React.FC = () => {
         },
         [initWallet, presentToast, refetch]
     );
-
-
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {

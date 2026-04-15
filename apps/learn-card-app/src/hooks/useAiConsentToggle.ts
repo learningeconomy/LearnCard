@@ -1,14 +1,15 @@
 import { useCallback } from 'react';
 
-import { ToastTypeEnum, useUpdatePreferences, useGetCurrentLCNUser, useToast } from 'learn-card-base';
+import {
+    ToastTypeEnum,
+    useUpdatePreferences,
+    useGetCurrentLCNUser,
+    useToast,
+    switchedProfileStore,
+} from 'learn-card-base';
 
 import useAutoConsentLearnCardAi from './useAutoConsentLearnCardAi';
 import { useGuardianGate } from './useGuardianGate';
-
-type AiToggleDeps = {
-    /** If true, child-profile consent flow is needed (else simple preference update) */
-    isChildProfile: boolean;
-};
 
 /**
  * Shared hook for toggling AI features with transaction-like consistency
@@ -22,12 +23,14 @@ type AiToggleDeps = {
  * This avoids the original bug where consent could succeed but preferences
  * could fail (or vice versa), leaving state inconsistent.
  */
-export const useAiConsentToggle = ({ isChildProfile }: AiToggleDeps) => {
+export const useAiConsentToggle = () => {
     const { mutateAsync: updatePreferencesAsync } = useUpdatePreferences();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { presentToast } = useToast();
     const { guardedAction } = useGuardianGate();
     const { autoConsentLearnCardAi, withdrawLearnCardAiConsent } = useAutoConsentLearnCardAi();
+    const profileType = switchedProfileStore.use.profileType();
+    const isChildProfile = profileType === 'child';
 
     const handleAiToggle = useCallback(
         async (enabled: boolean) => {
@@ -112,10 +115,10 @@ export const useAiConsentToggle = ({ isChildProfile }: AiToggleDeps) => {
             currentLCNUser?.displayName,
             currentLCNUser?.image,
             guardedAction,
-            isChildProfile,
             presentToast,
             updatePreferencesAsync,
             withdrawLearnCardAiConsent,
+            isChildProfile,
         ]
     );
 

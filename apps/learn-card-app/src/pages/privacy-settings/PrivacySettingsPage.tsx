@@ -18,8 +18,7 @@ import { useAnalytics } from '../../analytics';
 const PrivacySettingsPage: React.FC = () => {
     const history = useHistory();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences } =
-        useUpdatePreferences();
+    const { mutate: updatePreferences } = useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const brandingConfig = useBrandingConfig();
@@ -33,7 +32,7 @@ const PrivacySettingsPage: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isChildProfile = ageGate.isChildProfile;
-    const { handleAiToggle } = useAiConsentToggle({ isChildProfile });
+    const { handleAiToggle } = useAiConsentToggle();
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
 
     const aiEnabled = ageGate.isAiAgeRestricted
@@ -43,8 +42,6 @@ const PrivacySettingsPage: React.FC = () => {
         : preferences?.aiEnabled ?? true;
     const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
     const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
-
-
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
