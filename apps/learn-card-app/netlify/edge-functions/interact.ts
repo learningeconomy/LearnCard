@@ -49,6 +49,12 @@ function getLCNApiUrl(context: Context, hostname: string): string {
 }
 
 export default async (request: Request, context: Context) => {
+  // Guardian credential approval is handled by the SPA router, not VC-API
+  const url = new URL(request.url);
+  if (url.pathname.startsWith('/interactions/guardian-credential-approval')) {
+    return context.next();
+  }
+
   const acceptHeader = request.headers.get("Accept");
   const interactionUrl = request.url; // e.g., https://learncard.app/interactions/claim/z8n38Dp7a?iuv=1
 

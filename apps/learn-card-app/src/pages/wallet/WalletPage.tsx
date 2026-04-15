@@ -4,6 +4,7 @@ import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
+import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 
 import {
     useModal,
@@ -110,21 +111,7 @@ const WalletPage: React.FC = () => {
     const handleViewModal = () => setViewCredsIsOpen(true);
     const handleCloseViewModal = () => setViewCredsIsOpen(false);
 
-    const categoryToPath: Partial<Record<CredentialCategoryEnum, string>> = {
-        [CredentialCategoryEnum.aiTopic]: '/ai/topics',
-        [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
-        [CredentialCategoryEnum.aiInsight]: '/ai/insights', // placeholder
-        [CredentialCategoryEnum.skill]: '/skills',
-        [CredentialCategoryEnum.socialBadge]: '/socialBadges',
-        [CredentialCategoryEnum.achievement]: '/achievements',
-        [CredentialCategoryEnum.learningHistory]: '/learninghistory',
-        [CredentialCategoryEnum.accomplishment]: '/accomplishments',
-        [CredentialCategoryEnum.accommodation]: '/accommodations',
-        [CredentialCategoryEnum.workHistory]: '/workhistory',
-        [CredentialCategoryEnum.family]: '/families',
-        [CredentialCategoryEnum.id]: '/ids',
-        [CredentialCategoryEnum.membership]: '/memberships',
-    };
+    const categoryToPath = CATEGORY_TO_ROUTE;
 
     const AI_CATEGORIES = [
         CredentialCategoryEnum.aiTopic,

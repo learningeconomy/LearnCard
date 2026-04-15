@@ -14,6 +14,8 @@ import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
 import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import NotificationAppStoreCard from './NotificationAppStoreCard';
+import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard';
+import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
@@ -36,6 +38,9 @@ export const NOTIFICATION_TYPES = {
     APP_LISTING_SUBMITTED: 'APP_LISTING_SUBMITTED',
     APP_LISTING_APPROVED: 'APP_LISTING_APPROVED',
     APP_LISTING_REJECTED: 'APP_LISTING_REJECTED',
+    GUARDIAN_APPROVAL_PENDING: 'GUARDIAN_APPROVAL_PENDING',
+    GUARDIAN_APPROVED: 'GUARDIAN_APPROVED',
+    GUARDIAN_REJECTED: 'GUARDIAN_REJECTED',
     APP_NOTIFICATION: 'APP_NOTIFICATION',
 };
 
@@ -390,6 +395,35 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         );
     }
 
+    /* Guardian credential approval request */
+    if (type === NOTIFICATION_TYPES.GUARDIAN_APPROVAL_PENDING) {
+        return (
+            <NotificationGuardianApprovalCard
+                notification={notification}
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
+    /* Guardian approved a credential for the student */
+    if (type === NOTIFICATION_TYPES.GUARDIAN_APPROVED) {
+        return (
+            <NotificationGuardianOutcomeCard
+                notification={notification}
+                variant="approved"
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
+    /* Guardian rejected a credential for the student */
+    if (type === NOTIFICATION_TYPES.GUARDIAN_REJECTED) {
+        return (
+            <NotificationGuardianOutcomeCard
+                notification={notification}
+                variant="rejected"
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
     /* App notification from an installed app */
     if (type === NOTIFICATION_TYPES.APP_NOTIFICATION) {
         return (
