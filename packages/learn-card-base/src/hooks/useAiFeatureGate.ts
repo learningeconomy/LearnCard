@@ -1,8 +1,7 @@
 import { switchedProfileStore } from '../stores/walletStore';
 import { useGetPreferencesForDid } from '../react-query/queries/preferences';
 import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
-import { calculateAge } from '../helpers/dateHelpers';
-import { getMinorAgeThreshold } from '../constants/gdprAgeLimits';
+import { getAiFeatureAgeGateState } from '../helpers/aiFeatureGate';
 
 export type AiFeatureGateReason = 'enabled' | 'disabled_by_user' | 'disabled_minor' | 'loading';
 
@@ -20,21 +19,13 @@ export function useAiFeatureGate(): {
     const profileType = switchedProfileStore.use.profileType();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
-    // Local DOB fallback: gate minors even when preferences haven't been written yet.
-    // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
-    const dob = currentLCNUser?.dob;
-    const age = dob ? calculateAge(dob) : null;
-    const threshold = getMinorAgeThreshold(currentLCNUser?.country);
+    const ageGate = getAiFeatureAgeGateState({
+        profileType,
+        dob: currentLCNUser?.dob,
+        country: currentLCNUser?.country,
+    });
 
-    const isMinorByAge = age !== null && !isNaN(age) && age < threshold;
-    const isChildProfile = profileType === 'child';
-    const isAgeQualifiedChild = age !== null && !isNaN(age) && age >= threshold;
-
-    if (isChildProfile && !isAgeQualifiedChild) {
-        return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
-    }
-
-    if (isMinorByAge) {
+    if (ageGate.isAiAgeRestricted) {
         return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
     }
 
@@ -44,7 +35,7 @@ export function useAiFeatureGate(): {
 
     // Default true for existing non-child users who have no stored aiEnabled field,
     // but require an explicit approval for child profiles.
-    const aiEnabled = isChildProfile
+    const aiEnabled = ageGate.isChildProfile
         ? preferences?.aiEnabled ?? false
         : preferences?.aiEnabled ?? true;
 
