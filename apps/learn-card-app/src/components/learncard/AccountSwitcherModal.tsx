@@ -171,8 +171,11 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
                     {profileRecords
                         ?.filter(({ profile }: { profile: LCNProfile }) => {
-                            // Filter out the active child account since it's already shown in ActiveChildAccountButton
-                            if (profileType === 'child' && currentLCNUser?.did === profile?.did) {
+                            // Filter out the active switched account since it's already shown in ActiveChildAccountButton
+                            if (
+                                (profileType === 'child' || profileType === 'service') &&
+                                currentLCNUser?.did === profile?.did
+                            ) {
                                 return false;
                             }
                             return true;

@@ -1,8 +1,8 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
-import { InboxCredential, InboxCredentialInstance } from '@models';
-import { ContactMethodQueryType } from '@learncard/types';
+import { InboxCredential } from '@models';
+import { ContactMethodQueryType, InboxCredentialType } from '@learncard/types';
 import { flattenObject } from '@helpers/objects.helpers';
 import { getInboxCredentialById } from './read';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
@@ -21,7 +21,9 @@ export const createInboxCredential = async (input: {
     integrationId?: string;
     signingAuthority?: { endpoint: string; name: string; listingSlug?: string };
     expiresInDays?: number;
-}): Promise<InboxCredentialInstance> => {
+    guardianEmail?: string;
+    guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
+}): Promise<InboxCredentialType> => {
 
     const id = uuid();
     const expiresAt = new Date();
@@ -45,6 +47,8 @@ export const createInboxCredential = async (input: {
             'signingAuthority.name': input.signingAuthority.name,
             ...(input.signingAuthority.listingSlug ? { 'signingAuthority.listingSlug': input.signingAuthority.listingSlug } : {}),
         } : {}),
+        ...(input.guardianEmail ? { guardianEmail: input.guardianEmail } : {}),
+        ...(input.guardianStatus ? { guardianStatus: input.guardianStatus } : {}),
     };
 
     await new QueryBuilder(
@@ -68,22 +72,26 @@ export const createInboxCredential = async (input: {
             });
         }
 
-    const inboxCredential = (await getInboxCredentialById(id))!;
-
     // Create relationships SEQUENTIALLY to prevent deadlocks
     // (Parallel execution can cause deadlocks when multiple transactions
     // try to acquire locks on the same Profile node)
-    await inboxCredential.relateTo({
-        alias: 'createdBy',
-        properties: { timestamp: new Date().toISOString() },
-        where: { profileId: input.issuerProfile.profileId },
-    });
+    const timestamp = new Date().toISOString();
 
-    await inboxCredential.relateTo({
-        alias: 'addressedTo',
-        properties: { timestamp: new Date().toISOString() },
-        where: { type: input.recipient.type, value: input.recipient.value },
-    });
+    await new QueryBuilder(new BindParam({ inboxId: id, profileId: input.issuerProfile.profileId, timestamp }))
+        .match({ model: InboxCredential, identifier: 'ic' })
+        .where('ic.id = $inboxId')
+        .match('(profile:Profile)')
+        .where('profile.profileId = $profileId')
+        .create('(profile)-[:CREATED_INBOX_CREDENTIAL { timestamp: $timestamp }]->(ic)')
+        .run();
 
-    return inboxCredential;
+    await new QueryBuilder(new BindParam({ inboxId: id, type: input.recipient.type, value: input.recipient.value, timestamp }))
+        .match({ model: InboxCredential, identifier: 'ic' })
+        .where('ic.id = $inboxId')
+        .match('(contactMethod:ContactMethod)')
+        .where('contactMethod.type = $type AND contactMethod.value = $value')
+        .create('(ic)-[:ADDRESSED_TO { timestamp: $timestamp }]->(contactMethod)')
+        .run();
+
+    return (await getInboxCredentialById(id))!;
 };

@@ -46,11 +46,16 @@ export const isProfileManaged = async (profileId: string): Promise<boolean> => {
 
 export const getProfilesThatManageAProfile = async (profileId: string): Promise<ProfileType[]> => {
     const results = convertQueryResultToPropertiesObjectArray<{ manager: FlatProfileType }>(
-        await new QueryBuilder()
+        await new QueryBuilder(new BindParam({ profileId }))
+            .match({
+                related: [
+                    { model: Profile, where: { profileId }, identifier: 'child' },
+                ],
+            })
             .match({
                 optional: true,
                 related: [
-                    { model: Profile, where: { profileId } },
+                    { identifier: 'child' },
                     Profile.getRelationshipByAlias('managedBy'),
                     { identifier: 'directManager', model: Profile },
                 ],
@@ -58,7 +63,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
             .match({
                 optional: true,
                 related: [
-                    { model: Profile, where: { profileId } },
+                    { identifier: 'child' },
                     { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
                     { model: ProfileManager },
                     ProfileManager.getRelationshipByAlias('administratedBy'),
@@ -68,7 +73,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
             .match({
                 optional: true,
                 related: [
-                    { model: Profile, where: { profileId } },
+                    { identifier: 'child' },
                     { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
                     { model: ProfileManager },
                     ProfileManager.getRelationshipByAlias('childOf'),
@@ -83,10 +88,10 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
             )
             .where(
                 `
-(implicitManager IS NULL AND manager IS NOT NULL) OR 
-implicitManager = manager OR 
-(implicitManager IS NULL AND directManager IS NOT NULL) OR 
-implicitManager = directManager OR 
+(implicitManager IS NULL AND manager IS NOT NULL) OR
+implicitManager = manager OR
+(implicitManager IS NULL AND directManager IS NOT NULL) OR
+implicitManager = directManager OR
 (implicitManager IS NOT NULL AND canManageChildrenProfiles = true)
 `
             )
@@ -150,11 +155,11 @@ export const getProfilesThatAProfileManages = async (
         )
         .where(
             `
-(implicitlyManaged IS NULL AND managed IS NOT NULL) OR 
-implicitlyManaged = managed OR 
-(implicitlyManaged IS NULL AND directlyManaged IS NOT NULL) OR 
-implicitlyManaged = directlyManaged OR 
-(implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true)
+((implicitlyManaged IS NULL AND managed IS NOT NULL AND (manager IS NULL OR coalesce(manager.managerType, '') <> 'guardian')) OR
+implicitlyManaged = managed OR
+(implicitlyManaged IS NULL AND directlyManaged IS NOT NULL) OR
+implicitlyManaged = directlyManaged OR
+(implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true))
 `
         )
         .with(

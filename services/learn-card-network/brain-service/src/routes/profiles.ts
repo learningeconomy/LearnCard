@@ -86,6 +86,7 @@ import {
     stripSensitiveProfileListFields,
 } from '@helpers/profile-privacy.helpers';
 import { verifyAuthToken } from '@helpers/oidc-jwt.helpers';
+import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
@@ -184,6 +185,16 @@ export const profilesRouter = t.router({
                             // the client-side useFinalizeInboxCredentials hook can do.
                             // Server-side fire-and-forget would race the hook and leave
                             // credentials marked ISSUED but never stored in the wallet.
+
+                            // Auto-establish guardian MANAGES relationships for any
+                            // previously-approved credentials linked to this email.
+                            // Safe server-side — only creates relationships, no credential
+                            // state changes or wallet interactions.
+                            try {
+                                await claimPendingGuardianLinksForProfile(profile);
+                            } catch (err) {
+                                console.error('[createProfile] Auto-claim guardian links failed (non-fatal):', err);
+                            }
                         }
                     } catch (e) {
                         console.error('Auto-verify email failed (non-fatal):', e);

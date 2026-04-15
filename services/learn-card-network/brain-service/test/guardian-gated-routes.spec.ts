@@ -178,4 +178,45 @@ describe('Guardian Gated Routes - Context Passing', () => {
             expect(profile).toBeDefined();
         });
     });
+
+    describe('finalize — credential-level guardian gating', () => {
+        it('should succeed for managed child and return guardianPending count', async () => {
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
+
+            // No guardian approval token needed — finalize now uses profileRoute
+            // Guardian gating happens at the credential level, not route level
+            const caller = createCaller(childLearnCard.id.did());
+
+            const result = await caller.inbox.finalize({});
+            expect(result).toBeDefined();
+            expect(result.processed).toBeGreaterThanOrEqual(0);
+            expect(result.guardianPending).toBeGreaterThanOrEqual(0);
+        });
+
+        it('should succeed for non-managed profile with guardianPending=0', async () => {
+            mockGetProfileByDid.mockResolvedValue(mockNonManagedProfile as any);
+            mockIsProfileManaged.mockResolvedValue(false);
+
+            const caller = createCaller(nonManagedLearnCard.id.did());
+
+            const result = await caller.inbox.finalize({});
+            expect(result).toBeDefined();
+            expect(result.processed).toBeGreaterThanOrEqual(0);
+            expect(result.guardianPending).toBe(0);
+        });
+
+        it('should include guardianPending in response schema', async () => {
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
+
+            const caller = createCaller(childLearnCard.id.did());
+
+            const result = await caller.inbox.finalize({});
+            expect(result).toHaveProperty('guardianPending');
+            expect(typeof result.guardianPending).toBe('number');
+        });
+    });
 });

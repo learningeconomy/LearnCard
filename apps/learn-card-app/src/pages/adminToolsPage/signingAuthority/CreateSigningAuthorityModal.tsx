@@ -8,7 +8,7 @@ import { useModal, useWallet } from 'learn-card-base';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
-const BaseSigningAuthoritySchema = z.object({
+const CreateSigningAuthorityModalValidator = z.object({
     name: z
         .string()
         .min(3)
@@ -17,33 +17,6 @@ const BaseSigningAuthoritySchema = z.object({
             /^[a-z0-9-]+$/,
             'Name must be 3–15 characters long and contain only lowercase letters, numbers, and hyphens.'
         ),
-    did: z.string().optional(),
-    endpoint: z
-        .string()
-        .regex(/^https?:\/\/[^\s]+$/i, 'Must be a valid URL starting with http:// or https://')
-        .refine(
-            url => {
-                try {
-                    new URL(url);
-                    return true;
-                } catch {
-                    return false;
-                }
-            },
-            { message: 'Must be a valid URL' }
-        )
-        .optional(),
-});
-
-// Extended schema that adds conditional validation for DID when endpoint is provided
-const CreateSigningAuthorityModalValidator = BaseSigningAuthoritySchema.superRefine((data, ctx) => {
-    if (data.endpoint && !data.did) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'DID is required when endpoint is provided',
-            path: ['did'],
-        });
-    }
 });
 
 const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => void }> = ({
@@ -58,26 +31,12 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
     const sectionPortal = document.getElementById('section-cancel-portal');
 
     const [name, setName] = useState<string | undefined>(undefined);
-    const [did, setDid] = useState<string | undefined>(undefined);
-    const [endpoint, setEndpoint] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState<string>('');
-
     const [errors, setErrors] = useState<Record<string, string[]>>({});
-
     const [loading, setLoading] = useState<boolean>(false);
 
-    const clearInputs = () => {
-        setName(undefined);
-        setEndpoint(undefined);
-        setDid(undefined);
-    };
-
     const validate = () => {
-        const parsedData = CreateSigningAuthorityModalValidator.safeParse({
-            name,
-            did,
-            endpoint,
-        });
+        const parsedData = CreateSigningAuthorityModalValidator.safeParse({ name });
 
         if (parsedData.success) {
             setErrors({});
@@ -100,58 +59,31 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
             return;
         }
 
-        const hasName = !!name?.trim();
-        const hasEndpoint = !!endpoint?.trim();
-        const hasDid = !!did?.trim();
-
-        if (hasEndpoint && hasDid) {
-            try {
-                await wallet?.invoke.resolveDid(did);
-            } catch (err) {
-                console.error('resolveDid error:', err);
-                setErrorMessage('DID is not valid.');
-                setLoading(false);
-                return;
-            }
-        }
-
-        if (hasName && hasEndpoint && hasDid) {
-            try {
-                await wallet?.invoke.registerSigningAuthority(endpoint, name, did);
-                clearInputs();
-                fetchSigningAuthorities();
-                closeModal();
-                setLoading(false);
-            } catch (err) {
-                setLoading(false);
-                console.error('Registration error:', err);
-                setErrorMessage('Failed to register signing authority.');
-            }
-        } else if (hasName) {
-            try {
-                const authority = await wallet?.invoke.createSigningAuthority(name);
-                await wallet?.invoke.registerSigningAuthority(
-                    authority?.endpoint,
-                    authority?.name,
-                    authority?.did
-                );
-                clearInputs();
-                fetchSigningAuthorities();
-                setLoading(false);
-                closeModal();
-            } catch (err) {
-                setLoading(false);
-                console.error('Registration error:', err);
-                setErrorMessage('Failed to register signing authority.');
-            }
+        try {
+            const authority = await wallet?.invoke.createSigningAuthority(name!);
+            await wallet?.invoke.registerSigningAuthority(
+                authority?.endpoint,
+                authority?.name,
+                authority?.did
+            );
+            fetchSigningAuthorities();
+            closeModal();
+        } catch (err) {
+            console.error('Registration error:', err);
+            setErrorMessage('Failed to create signing authority.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <section className="p-[20px]">
-            <h1 className="font-semibold mb-[10px] font-notoSans text-[20px] text-grayscale-900">
+            <h1 className="font-semibold mb-[4px] font-notoSans text-[20px] text-grayscale-900">
                 Create Signing Authority
             </h1>
+            <p className="text-sm text-grayscale-500 mb-[16px]">
+                A signing authority cryptographically signs your credentials so recipients can verify they came from you.
+            </p>
             {errorMessage && (
                 <div className="w-full rounded-[15px] bg-red-100 px-4 py-2 mb-[10px]">
                     <p className="text-red-500 text-md">{errorMessage}</p>
@@ -159,7 +91,7 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
             )}
             <div className="flex flex-col w-full">
                 <IonInput
-                    className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base  ${
+                    className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ${
                         errors.name ? 'border-red-500 border-[1px] border-solid' : 'mb-[10px]'
                     }`}
                     type="text"
@@ -177,52 +109,11 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
                     </div>
                 )}
             </div>
-            <div className="flex flex-col w-full">
-                <IonInput
-                    className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ${
-                        errors.endpoint ? 'border-red-500 border-[1px] border-solid' : 'mb-[10px]'
-                    }`}
-                    type="text"
-                    onIonInput={e => {
-                        setEndpoint(e.detail.value);
-                        setErrors({ endpoint: undefined });
-                        setErrorMessage('');
-                    }}
-                    value={endpoint}
-                    placeholder="Endpoint"
-                />
-                {errors.endpoint && (
-                    <div className="w-full">
-                        <p className="text-red-500 text-sm mb-2 pl-1 mt-1">{errors.endpoint[0]}</p>
-                    </div>
-                )}
-            </div>
-            <div className="flex flex-col w-full">
-                <IonInput
-                    className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ${
-                        errors.did ? 'border-red-500 border-[1px] border-solid' : 'mb-[10px]'
-                    }`}
-                    type="text"
-                    onIonInput={e => {
-                        setDid(e.detail.value);
-                        setErrors({ did: undefined });
-                        setErrorMessage('');
-                    }}
-                    value={did}
-                    placeholder="DID (Endpoint required)"
-                    disabled={endpoint === ''}
-                />
-                {errors.did && (
-                    <div className="w-full">
-                        <p className="text-red-500 text-sm mb-2 pl-1 mt-1">{errors.did[0]}</p>
-                    </div>
-                )}
-            </div>
             {sectionPortal &&
                 createPortal(
                     <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
                         <button
-                            disabled={name === '' || loading}
+                            disabled={!name || loading}
                             onClick={() => createSigningAuthority()}
                             className={`bg-${primaryColor} text-white text-lg font-notoSans py-2 rounded-[20px] font-semibold w-full h-full disabled:opacity-50`}
                         >

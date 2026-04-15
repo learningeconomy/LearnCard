@@ -21,6 +21,11 @@ export type InboxCredentialType = {
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
     'signingAuthority.listingSlug'?: string;
+    // Guardian gate fields
+    guardianEmail?: string;
+    guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
+    guardianApprovedAt?: string;
+    guardianApprovedByDid?: string;
 };
 
 export type InboxCredentialRelationships = {
@@ -88,6 +93,14 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             'signingAuthority.endpoint': { type: 'string', required: false },
             'signingAuthority.name': { type: 'string', required: false },
             'signingAuthority.listingSlug': { type: 'string', required: false },
+            guardianEmail: { type: 'string', required: false },
+            guardianStatus: {
+                type: 'string',
+                required: false,
+                enum: ['AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED'],
+            },
+            guardianApprovedAt: { type: 'string', required: false },
+            guardianApprovedByDid: { type: 'string', required: false },
         },
         relationships: {
             addressedTo: { 
