@@ -11,6 +11,7 @@ import { useParams } from 'react-router-dom';
 import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
+import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
 import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 
@@ -50,14 +51,10 @@ const toErrorMessage = (err: unknown): string =>
         ? err.message
         : 'Something went wrong. The approval link may be invalid or expired.';
 
-const isLocalHost =
-    typeof window !== 'undefined' &&
-    ['localhost', '127.0.0.1', '::1'].includes(window?.location?.hostname);
-
-const getNetworkInitOverrides = () =>
-    isLocalHost
-        ? { network: 'http://localhost:4000/trpc' as const }
-        : { network: true as const };
+const getNetworkUrl = (): string => {
+    const config = getResolvedTenantConfig();
+    return config.apis?.brainService ?? 'https://network.learncard.com/trpc';
+};
 
 const GuardianCredentialApprovalPage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
@@ -84,7 +81,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
             try {
                 const wallet = await initLearnCard({
                     seed: 'a',
-                    ...getNetworkInitOverrides(),
+                    network: getNetworkUrl(),
                     didkit,
                     allowRemoteContexts: true,
                 });
