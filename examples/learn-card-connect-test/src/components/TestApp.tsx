@@ -1,21 +1,48 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { LearnCardConnect } from '@learncard/react';
 import '@learncard/react/dist/main.css';
 import { generateTestData } from '../helpers/testDataGenerator';
 
-export default function TestApp() {
-    const [context, setContext] = useState(null);
-    const [error, setError] = useState(null);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [generationStatus, setGenerationStatus] = useState([]);
+const API_KEY_STORAGE_KEY = 'learn-card-connect-test-api-key';
 
-    const handleContextReady = useCallback(ctx => {
+interface ContextData {
+    prompt: string;
+    metadata: {
+        did: string;
+        name?: string;
+    };
+}
+
+interface LearnCardError {
+    code: string;
+    message: string;
+}
+
+export default function TestApp() {
+    const [context, setContext] = useState<ContextData | null>(null);
+    const [error, setError] = useState<LearnCardError | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generationStatus, setGenerationStatus] = useState<string[]>([]);
+    const [apiKey, setApiKey] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+        }
+        return '';
+    });
+
+    useEffect(() => {
+        if (apiKey) {
+            localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+        }
+    }, [apiKey]);
+
+    const handleContextReady = useCallback((ctx: ContextData) => {
         console.log('Context received:', ctx);
         setContext(ctx);
         setError(null);
     }, []);
 
-    const handleError = useCallback(err => {
+    const handleError = useCallback((err: LearnCardError) => {
         console.error('LearnCard Connect Error:', err);
         setError(err);
         setContext(null);
@@ -26,15 +53,19 @@ export default function TestApp() {
         setGenerationStatus([]);
 
         try {
-            const updateStatus = msg => {
-                setGenerationStatus(prev => [...prev, msg]);
+            const updateStatus = (msg: string) => {
+                setGenerationStatus((prev: string[]) => [...prev, msg]);
             };
 
-            await generateTestData(updateStatus);
+            const generatedApiKey = await generateTestData(updateStatus);
+            setApiKey(generatedApiKey);
+            localStorage.setItem(API_KEY_STORAGE_KEY, generatedApiKey);
             updateStatus('✅ Test data generation complete!');
+            updateStatus('💾 API key saved to localStorage');
         } catch (err) {
             console.error('Test data generation failed:', err);
-            setGenerationStatus(prev => [...prev, `❌ Error: ${err.message}`]);
+            const message = err instanceof Error ? err.message : String(err);
+            setGenerationStatus((prev: string[]) => [...prev, `❌ Error: ${message}`]);
         } finally {
             setIsGenerating(false);
         }
@@ -123,14 +154,50 @@ export default function TestApp() {
                     modal, authenticate as the demo user, and fetch consented context.
                 </p>
 
-                <LearnCardConnect
-                    apiKey="test-api-key"
-                    onContextReady={handleContextReady}
-                    onError={handleError}
-                    buttonText="Personalize with LearnCard"
-                    mode="modal"
-                    hostOrigin="http://localhost:3000"
-                />
+                {apiKey ? (
+                    <div>
+                        <LearnCardConnect
+                            apiKey={apiKey}
+                            onContextReady={handleContextReady}
+                            onError={handleError}
+                            buttonText="Personalize with LearnCard"
+                            mode="modal"
+                            hostOrigin="http://localhost:3000"
+                            requestTimeout={9999999999999}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setApiKey('');
+                                localStorage.removeItem(API_KEY_STORAGE_KEY);
+                            }}
+                            style={{
+                                marginTop: '10px',
+                                padding: '8px 16px',
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                            }}
+                        >
+                            Clear API Key
+                        </button>
+                    </div>
+                ) : (
+                    <div
+                        style={{
+                            padding: '12px',
+                            background: '#fff3cd',
+                            borderRadius: '6px',
+                            color: '#856404',
+                            fontSize: '14px',
+                        }}
+                    >
+                        ⚠️ Please generate test data first to get an API key.
+                    </div>
+                )}
             </div>
 
             {context && (

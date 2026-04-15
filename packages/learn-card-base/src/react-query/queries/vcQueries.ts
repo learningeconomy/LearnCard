@@ -562,9 +562,23 @@ export const useGetCredentialsPaginated = (
 ) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const initialCredentialsSignature =
+        initialCredentials
+            ?.map(
+                credential =>
+                    credential.id ??
+                    `${credential.issuanceDate ?? ''}-${credential.proof?.proofValue ?? ''}`
+            )
+            .join('|') ?? '';
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
+        queryKey: [
+            'useGetCredentials',
+            switchedDid ?? '',
+            category,
+            returnUri,
+            initialCredentialsSignature,
+        ],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -1086,10 +1100,17 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                         if (records && records.length > 0) {
                             // Remove the record from the index
                             await wallet.index.LearnCloud.remove?.(records[0]!.id);
-                            console.log('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
+                            console.log(
+                                '[useSyncRevokedCredentials] Removed revoked credential from index:',
+                                uri
+                            );
                         }
                     } catch (e) {
-                        console.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);
+                        console.error(
+                            '[useSyncRevokedCredentials] Error removing credential:',
+                            uri,
+                            e
+                        );
                     }
                 }
 

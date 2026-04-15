@@ -77,7 +77,8 @@ export const showNavBar = (path?: string): boolean => {
         path?.includes('/app-store') ||
         path?.includes('/cli') ||
         path?.includes('/login') ||
-        path?.includes('/resume-builder')
+        path?.includes('/resume-builder') ||
+        path?.includes('/embed/context')
     ) {
         return false;
     }

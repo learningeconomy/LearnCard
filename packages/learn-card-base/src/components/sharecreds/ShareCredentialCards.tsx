@@ -1,24 +1,42 @@
 import React from 'react';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
-import useShareCredentials, { VcType, VC_TYPE } from 'learn-card-base/hooks/useShareCredentials';
+import useShareCredentials, { VC_TYPE } from 'learn-card-base/hooks/useShareCredentials';
+import type { VcType } from 'learn-card-base/hooks/useShareCredentials';
 
 import GenericCardWrapper from 'learn-card-base/components/GenericCardWrapper/GenericCardWrapper';
 import { IonToggle } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper';
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
-type ShareCredentialCardsProps = { preSelectedCredentials?: VC[]; viewOnly?: boolean };
+type ShareCredentialCardsController = Pick<
+    ReturnType<typeof useShareCredentials>,
+    | 'handleToggleSelectAllType'
+    | 'handleVcClick'
+    | 'loading'
+    | 'getUniqueId'
+    | 'vcCounts'
+    | 'getAllSelected'
+    | 'getVcsByType'
+    | 'isVcSelected'
+>;
 
-const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
-    preSelectedCredentials = undefined,
-    viewOnly = false,
+type ShareCredentialCardsProps = {
+    preSelectedCredentials?: VC[];
+    viewOnly?: boolean;
+    controller?: ShareCredentialCardsController;
+};
+
+type ShareCredentialCardsContentProps = {
+    controller: ShareCredentialCardsController;
+    viewOnly: boolean;
+};
+
+const ShareCredentialCardsContent: React.FC<ShareCredentialCardsContentProps> = ({
+    controller,
+    viewOnly,
 }) => {
-    const { search } = useLocation();
-    let { skipReload } = queryString.parse(search);
-    const skipReloadBool = skipReload === 'true';
-
     const {
         handleToggleSelectAllType,
         handleVcClick,
@@ -28,7 +46,7 @@ const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
         getAllSelected,
         getVcsByType,
         isVcSelected,
-    } = useShareCredentials(preSelectedCredentials, skipReloadBool);
+    } = controller;
     const showCredentials = !credentialsLoading;
 
     const vcDisplayWord: { [vcType in VcType]: string } = {
@@ -57,12 +75,12 @@ const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
     if (!showCredentials) return null;
     return (
         <>
-            {Object.values(VC_TYPE).map((vcType, index) => {
+            {Object.values(VC_TYPE).map(vcType => {
                 const count = viewOnly
                     ? vcCounts[vcType].selectedCount
                     : vcCounts[vcType].totalCount;
                 return (
-                    <React.Fragment key={index}>
+                    <React.Fragment key={vcType}>
                         {count > 0 && (
                             <section key={vcType} data-testid={`${vcType}-section`}>
                                 <div className="flex justify-between items-center mx-[20px] mt-[20px]">
@@ -119,6 +137,24 @@ const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
             })}
         </>
     );
+};
+
+const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
+    preSelectedCredentials = undefined,
+    viewOnly = false,
+    controller,
+}) => {
+    const { search } = useLocation();
+    const { skipReload } = queryString.parse(search);
+    const skipReloadBool = skipReload === 'true';
+
+    if (controller) {
+        return <ShareCredentialCardsContent controller={controller} viewOnly={viewOnly} />;
+    }
+
+    const shareCredentials = useShareCredentials(preSelectedCredentials, skipReloadBool);
+
+    return <ShareCredentialCardsContent controller={shareCredentials} viewOnly={viewOnly} />;
 };
 
 export default ShareCredentialCards;

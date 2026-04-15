@@ -1,13 +1,15 @@
 import { initLearnCard } from '@learncard/init';
 
 const TEST_ACCOUNT_EMAIL = 'demo@learningeconomy.io';
+const TEST_ACCOUNT_PROFILE_ID = 'demo';
+const TEST_ACCOUNT_DISPLAY_NAME = 'Demo';
 const PARTNER_SEED = 'abcabc';
 const NETWORK_URL = 'http://localhost:4000/trpc';
 const CLOUD_URL = 'http://localhost:4100/trpc';
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function generatePK(str) {
+export async function generatePK(str: string) {
     const msgUint8 = new TextEncoder().encode(str);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -15,10 +17,10 @@ export async function generatePK(str) {
     return hashHex;
 }
 
-export async function generateTestData(updateStatus) {
+export async function generateTestData(updateStatus: (msg: string) => void): Promise<string> {
     updateStatus('🔑 Generating seeds...');
 
-    const testAccountSeed = await generatePK(TEST_ACCOUNT_EMAIL);
+    const testAccountSeed = await generatePK(`${TEST_ACCOUNT_EMAIL}password123`);
     updateStatus(`✅ Test account seed generated (${testAccountSeed.substring(0, 16)}...)`);
 
     updateStatus('🔐 Initializing wallets...');
@@ -49,8 +51,8 @@ export async function generateTestData(updateStatus) {
         const existingTestProfile = await testWallet.invoke.getProfile();
         if (!existingTestProfile) {
             await testWallet.invoke.createProfile({
-                profileId: 'test-demo-user',
-                displayName: 'Test Demo User',
+                profileId: TEST_ACCOUNT_PROFILE_ID,
+                displayName: TEST_ACCOUNT_DISPLAY_NAME,
                 bio: 'Test user for LearnCard Connect',
                 shortBio: 'Test user',
             });
@@ -59,7 +61,7 @@ export async function generateTestData(updateStatus) {
             updateStatus('ℹ️ Test account profile already exists');
         }
     } catch (error) {
-        if (error.message?.includes('already exists')) {
+        if (error instanceof Error && error.message?.includes('already exists')) {
             updateStatus('ℹ️ Test account profile already exists');
         } else {
             throw error;
@@ -80,7 +82,7 @@ export async function generateTestData(updateStatus) {
             updateStatus('ℹ️ Partner profile already exists');
         }
     } catch (error) {
-        if (error.message?.includes('already exists')) {
+        if (error instanceof Error && error.message?.includes('already exists')) {
             updateStatus('ℹ️ Partner profile already exists');
         } else {
             throw error;
@@ -110,19 +112,19 @@ export async function generateTestData(updateStatus) {
         },
     };
 
-    let contractUri;
+    let contractUri = '';
     try {
-        contractUri = await partnerWallet.invoke.createConsentFlowContract({
+        contractUri = await partnerWallet.invoke.createContract({
             contract,
             name: 'Test Partner App Contract',
         });
         updateStatus(`✅ Consent flow contract created: ${contractUri}`);
     } catch (error) {
-        if (error.message?.includes('already exists')) {
+        if (error instanceof Error && error.message?.includes('already exists')) {
             updateStatus('ℹ️ Contract may already exist, continuing...');
-            const contracts = await partnerWallet.invoke.getConsentFlowContracts({});
+            const contracts = await partnerWallet.invoke.getContracts({});
             if (contracts.records.length > 0) {
-                contractUri = contracts.records[0].uri;
+                contractUri = contracts.records[0]?.uri ?? '';
                 updateStatus(`ℹ️ Using existing contract: ${contractUri}`);
             }
         } else {
@@ -155,37 +157,70 @@ export async function generateTestData(updateStatus) {
         },
     ];
 
-    const testUnsignedBoost = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
-        type: ['VerifiableCredential'],
-        issuer: testDid,
-        credentialSubject: {
-            id: testDid,
-        },
-    };
+    const credentialUrisByCategory: Record<string, string[]> = {};
 
     for (const boostDef of testBoosts) {
         try {
-            const boostUri = await testWallet.invoke.createBoost({
-                credential: testUnsignedBoost,
-                category: boostDef.category,
-                type: boostDef.type,
+            const newCredential = testWallet.invoke.newCredential({
+                type: 'achievement',
                 name: boostDef.name,
+                achievementName: boostDef.name,
                 description: boostDef.description,
+                criteriaNarrative: 'Earned through completion.',
+            });
+
+            const subject = Array.isArray(newCredential.credentialSubject)
+                ? newCredential.credentialSubject[0]
+                : newCredential.credentialSubject;
+
+            if (subject?.achievement) {
+                subject.achievement.achievementType = boostDef.type;
+                subject.id = testDid;
+            }
+            newCredential.issuer = testDid;
+
+            const boostUri = await testWallet.invoke.createBoost(newCredential, {
+                category: boostDef.category,
+                name: boostDef.name,
             });
             updateStatus(`✅ Created boost: ${boostDef.name}`);
 
             await sleep(500);
 
-            await testWallet.invoke.sendBoost({
-                boostUri,
-                profileId: 'test-demo-user',
+            const credentialUri = await testWallet.invoke.sendBoost(
+                TEST_ACCOUNT_PROFILE_ID,
+                boostUri
+            );
+            await testWallet.invoke.acceptCredential(credentialUri);
+
+            const sentCredential = await testWallet.read.get(credentialUri);
+            if (!sentCredential) {
+                throw new Error(`Unable to read sent credential for ${boostDef.name}`);
+            }
+
+            const walletCredentialUri =
+                await testWallet.store.LearnCloud.uploadEncrypted?.(sentCredential);
+            if (!walletCredentialUri) {
+                throw new Error(`Unable to store credential in LearnCloud for ${boostDef.name}`);
+            }
+
+            await testWallet.index.LearnCloud.add({
+                id: crypto.randomUUID(),
+                uri: walletCredentialUri,
+                category: boostDef.category,
+                title: boostDef.name,
             });
-            updateStatus(`✅ Sent boost to self: ${boostDef.name}`);
+
+            credentialUrisByCategory[boostDef.category] = [
+                ...(credentialUrisByCategory[boostDef.category] ?? []),
+                credentialUri,
+            ];
+            updateStatus(`✅ Sent and indexed credential: ${boostDef.name}`);
 
             await sleep(500);
         } catch (error) {
-            updateStatus(`⚠️ Error with boost ${boostDef.name}: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            updateStatus(`⚠️ Error with boost ${boostDef.name}: ${message}`);
         }
     }
 
@@ -196,7 +231,7 @@ export async function generateTestData(updateStatus) {
     try {
         const terms = {
             read: {
-                personal: { name: 'Test Demo User' },
+                personal: { name: TEST_ACCOUNT_DISPLAY_NAME },
                 credentials: {
                     shareAll: true,
                     sharing: true,
@@ -227,23 +262,30 @@ export async function generateTestData(updateStatus) {
             },
         };
 
-        await testWallet.invoke.consentToContract({
-            contractUri,
-            terms,
-        });
+        await testWallet.invoke.consentToContract(contractUri, { terms });
         updateStatus('✅ Consented to contract');
     } catch (error) {
-        if (error.message?.includes('already consented')) {
+        if (error instanceof Error && error.message?.includes('already consented')) {
             updateStatus('ℹ️ Already consented to contract');
         } else {
             throw error;
         }
     }
 
+    const consentedContracts = await testWallet.invoke.getConsentedContracts({});
+    const termsUri = consentedContracts.records.find(
+        record => record.contract.uri === contractUri
+    )?.uri;
+
+    if (termsUri) {
+        await testWallet.invoke.syncCredentialsToContract(termsUri, credentialUrisByCategory);
+        updateStatus('✅ Synced generated credentials to contract');
+    }
+
     updateStatus('🔍 Verifying consented data...');
 
     try {
-        const consentedData = await partnerWallet.invoke.getConsentedDataForDid(testDid, {
+        const consentedData = await partnerWallet.invoke.getConsentFlowDataForDid(testDid, {
             limit: 50,
         });
 
@@ -252,15 +294,33 @@ export async function generateTestData(updateStatus) {
         if (consentedData.records.length > 0) {
             updateStatus('📊 Consented credentials:');
             for (const record of consentedData.records.slice(0, 5)) {
-                const credName =
-                    record.credential?.name ||
-                    record.credential?.credentialSubject?.achievement?.name ||
-                    'Unknown';
+                const cred = record.credentials[0];
+                const credName = cred?.uri || 'Unknown';
                 updateStatus(`   - ${credName}`);
             }
         }
     } catch (error) {
-        updateStatus(`⚠️ Error fetching consented data: ${error.message}`);
+        const message = error instanceof Error ? error.message : String(error);
+        updateStatus(`⚠️ Error fetching consented data: ${message}`);
+    }
+
+    await sleep(1000);
+
+    updateStatus('🔑 Creating API key for partner app...');
+
+    let apiKey = '';
+    try {
+        const grantId = await partnerWallet.invoke.addAuthGrant({
+            name: 'test-partner-key',
+            scope: 'contracts-data:read',
+        });
+        updateStatus(`✅ Auth grant created: ${grantId.substring(0, 16)}...`);
+
+        apiKey = await partnerWallet.invoke.getAPITokenForAuthGrant(grantId);
+        updateStatus(`✅ API key generated: ${apiKey.substring(0, 30)}...`);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        updateStatus(`⚠️ Error creating API key: ${message}`);
     }
 
     updateStatus('');
@@ -270,4 +330,11 @@ export async function generateTestData(updateStatus) {
     updateStatus('Sign in with:');
     updateStatus(`  Email: ${TEST_ACCOUNT_EMAIL}`);
     updateStatus('  Password: demo123 (or use your local test password)');
+    updateStatus('');
+    updateStatus('API Key for testing:');
+    updateStatus(`  ${apiKey}`);
+    updateStatus('');
+    updateStatus('Copy this API key and use it in the LearnCardConnect component!');
+
+    return apiKey;
 }
