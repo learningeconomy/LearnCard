@@ -17,8 +17,7 @@ import {
 } from 'learn-card-base';
 import { getAiFeatureAgeGateState } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
-import useAutoConsentLearnCardAi from '../../hooks/useAutoConsentLearnCardAi';
-import { useGuardianGate } from '../../hooks/useGuardianGate';
+import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
 
 type ProfileVisibilityValue =
@@ -27,7 +26,7 @@ type ProfileVisibilityValue =
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences, mutateAsync: updatePreferencesAsync } =
+    const { mutate: updatePreferences } =
         useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
@@ -35,8 +34,6 @@ const PrivacySettingsModal: React.FC = () => {
     const { presentToast } = useToast();
     const { name: brandName } = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
-    const { guardedAction } = useGuardianGate();
-    const { autoConsentLearnCardAi, withdrawLearnCardAiConsent } = useAutoConsentLearnCardAi();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
@@ -47,6 +44,7 @@ const PrivacySettingsModal: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isChildProfile = ageGate.isChildProfile;
+    const { handleAiToggle } = useAiConsentToggle({ isChildProfile });
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
 
     const aiEnabled = ageGate.isAiAgeRestricted
@@ -104,61 +102,7 @@ const PrivacySettingsModal: React.FC = () => {
         [initWallet, presentToast, refetch]
     );
 
-    const handleAiToggle = useCallback(
-        async (enabled: boolean) => {
-            if (!enabled && isChildProfile) {
-                const withdrawn = await withdrawLearnCardAiConsent();
 
-                if (!withdrawn) {
-                    presentToast('Something went wrong. Please try again.', {
-                        type: ToastTypeEnum.Error,
-                    });
-                    return;
-                }
-
-                await updatePreferencesAsync({ aiEnabled: false });
-                return;
-            }
-
-            if (!enabled || !isChildProfile) {
-                updatePreferences({ aiEnabled: enabled });
-                return;
-            }
-
-            await guardedAction(
-                async () => {
-                    const consented = await autoConsentLearnCardAi({
-                        enabled: true,
-                        userOverrides: {
-                            displayName: currentLCNUser?.displayName ?? '',
-                            image: currentLCNUser?.image ?? '',
-                        },
-                    });
-
-                    if (!consented) {
-                        presentToast('Something went wrong. Please try again.', {
-                            type: ToastTypeEnum.Error,
-                        });
-                        return;
-                    }
-
-                    await updatePreferencesAsync({ aiEnabled: enabled });
-                },
-                { ignorePriorVerification: true }
-            );
-        },
-        [
-            autoConsentLearnCardAi,
-            currentLCNUser?.displayName,
-            currentLCNUser?.image,
-            guardedAction,
-            isChildProfile,
-            presentToast,
-            withdrawLearnCardAiConsent,
-            updatePreferences,
-            updatePreferencesAsync,
-        ]
-    );
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
