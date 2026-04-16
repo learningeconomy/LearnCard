@@ -4,6 +4,7 @@ import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
 import { trace, traceCrypto, traceHttp } from '@tracing';
+import { PerfTracker } from '@helpers/perf';
 
 dotenv.config();
 
@@ -41,6 +42,8 @@ export async function issueCredentialWithSigningAuthority(
     };
 
     return trace('signing-authority', 'issueCredentialWithSigningAuthority', async () => {
+        const perf = new PerfTracker('issueCredentialWithSigningAuthority');
+
         try {
 
             if (IS_TEST_ENVIRONMENT) {
@@ -50,6 +53,7 @@ export async function issueCredentialWithSigningAuthority(
             console.log('[SA Helper] Initiating credential issuance', logContext);
 
             const learnCard = await trace('init', 'getDidWebLearnCard', () => getDidWebLearnCard());
+            perf.mark('initDid');
 
             const brainDid = learnCard.id.did();
             console.log('[SA Helper] Brain DID resolved:', brainDid);
@@ -57,6 +61,7 @@ export async function issueCredentialWithSigningAuthority(
             const didJwt = await traceCrypto('getDidAuthVp', () =>
                 learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
             );
+            perf.mark('didAuthVp');
 
             if (!didJwt) {
                 console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
@@ -109,6 +114,8 @@ export async function issueCredentialWithSigningAuthority(
 
             clearTimeout(timeoutId);
 
+            perf.mark('http');
+
             console.log('[SA Helper] LCA-API response status:', response.status, response.statusText);
 
             if (!response.ok) {
@@ -125,6 +132,7 @@ export async function issueCredentialWithSigningAuthority(
             }
 
             const res = await trace('internal', 'parseResponse', () => response.json());
+            perf.mark('parse');
 
             if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
                 console.error('[SA Helper] LCA-API returned error in body:', JSON.stringify(res));
@@ -141,6 +149,7 @@ export async function issueCredentialWithSigningAuthority(
                     throw new Error('Signing Authority returned malformed JWE');
                 }
 
+                perf.done({ saEndpoint: signingAuthorityForUser.signingAuthority.endpoint });
                 return validationResult.data;
             } else {
                 const validationResult = await VCValidator.spa(res);
@@ -150,11 +159,13 @@ export async function issueCredentialWithSigningAuthority(
                     throw new Error('Signing Authority returned malformed VC');
                 }
 
+                perf.done({ saEndpoint: signingAuthorityForUser.signingAuthority.endpoint });
                 return validationResult.data;
             }
         } catch (error) {
             const errMsg = error instanceof Error ? error.message : String(error);
             const errStack = error instanceof Error ? error.stack : undefined;
+            perf.done({ saEndpoint: signingAuthorityForUser.signingAuthority.endpoint, error: errMsg });
             console.error('[SA Helper] issueCredentialWithSigningAuthority failed:', {
                 error: errMsg,
                 stack: errStack,

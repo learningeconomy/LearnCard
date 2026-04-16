@@ -8,6 +8,7 @@ import type { ProfileType } from 'types/profile';
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { PerfTracker } from '@helpers/perf';
 import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -509,6 +510,8 @@ const handleSendCredentialEvent = async (
     listingId: string,
     event: Record<string, unknown>
 ): Promise<Record<string, unknown>> => {
+    const perf = new PerfTracker('handleSendCredentialEvent');
+
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
@@ -527,6 +530,8 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
     }
 
+    perf.mark('getBoost');
+
     const { boost, boostUri } = boostResult;
 
     // NOTE: This is best-effort duplicate prevention, not a guarantee.
@@ -542,6 +547,8 @@ const handleSendCredentialEvent = async (
         );
 
         if (existingCredential && existingCredential.status !== 'revoked') {
+            perf.mark('duplicateCheck');
+            perf.done({ listingId, boostUri, duplicate: true });
             return {
                 hasCredential: true,
                 alreadyClaimed: true,
@@ -551,6 +558,7 @@ const handleSendCredentialEvent = async (
                 boostUri,
             };
         }
+        perf.mark('duplicateCheck');
     }
 
     if (isDraftBoost(boost)) {
@@ -565,17 +573,23 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
 
+    perf.mark('readListing');
+
     // Get the integration that owns this listing
     const integration = await getIntegrationForListing(listingId);
     if (!integration) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
     }
 
+    perf.mark('getIntegration');
+
     // Get integration owner for signing
     const integrationOwner = await getOwnerProfileForIntegration(integration.id);
     if (!integrationOwner) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
     }
+
+    perf.mark('getOwner');
 
     // Get signing authority for the listing, falling back to legacy integration SA or owner SA
     const listingSa = await getPrimarySigningAuthorityForListing(listing);
@@ -587,6 +601,8 @@ const handleSendCredentialEvent = async (
             ? undefined
             : await getPrimarySigningAuthorityForUser(integrationOwner);
     const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    perf.mark('saResolve');
 
     if (!sa) {
         throw new TRPCError({
@@ -600,6 +616,8 @@ const handleSendCredentialEvent = async (
     if (!targetProfile.length) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
+
+    perf.mark('targetProfile');
 
     const target = targetProfile[0];
 
@@ -658,6 +676,8 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    perf.mark('buildCredential');
+
     // Issue via signing authority
     let credential: VC | JWE;
 
@@ -690,11 +710,14 @@ const handleSendCredentialEvent = async (
             saName: sa.relationship.name,
             saEndpoint: sa.signingAuthority.endpoint,
         });
+        perf.done({ listingId, boostUri, error: errMsg });
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: `Could not issue credential with signing authority: ${errMsg}`,
         });
     }
+
+    perf.mark('saIssue');
 
     // Log credential activity FIRST to get activityId for chaining
     const activityId = await logCredentialSent({
@@ -709,6 +732,8 @@ const handleSendCredentialEvent = async (
         metadata: { listingId, templateAlias },
     });
 
+    perf.mark('logActivity');
+
     // Send to user's wallet (credential stays pending until user claims via the app UI)
     const credentialUri = await sendBoost({
         from: integrationOwner,
@@ -721,6 +746,9 @@ const handleSendCredentialEvent = async (
         integrationId: integration.id,
         listingId,
     });
+
+    perf.mark('sendBoost');
+    perf.done({ listingId, boostUri });
 
     return {
         credentialUri,

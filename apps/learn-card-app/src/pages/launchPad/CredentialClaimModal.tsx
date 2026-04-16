@@ -9,6 +9,22 @@ import { VC, VP } from '@learncard/types';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
+// --- LC-1644 perf instrumentation (gated on VITE_DEBUG_PERF) ---
+const PERF_ENABLED = !!import.meta.env.VITE_DEBUG_PERF;
+
+const perfMark = (name: string) => {
+    if (PERF_ENABLED) performance.mark(`claim:${name}`);
+};
+
+const perfMeasure = (name: string, start: string, end: string) => {
+    if (!PERF_ENABLED) return;
+    try {
+        performance.measure(`claim:${name}`, `claim:${start}`, `claim:${end}`);
+        const entry = performance.getEntriesByName(`claim:${name}`, 'measure').pop();
+        if (entry) console.log(JSON.stringify({ perf: `claim:${name}`, ms: Math.round(entry.duration) }));
+    } catch {}
+};
+
 interface CredentialClaimModalProps {
     credentialUri: string;
     boostUri?: string;
@@ -33,10 +49,16 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     useEffect(() => {
         const resolveCredential = async () => {
             try {
+                perfMark('mount');
                 setIsLoading(true);
                 setError(null);
                 const wallet = await initWallet();
+                perfMeasure('initWallet', 'mount', 'mount-initWallet');
+                perfMark('mount-initWallet');
                 const vc = await wallet.read.get(credentialUri);
+                perfMark('mount-credentialResolved');
+                perfMeasure('credentialResolved', 'mount-initWallet', 'mount-credentialResolved');
+                perfMeasure('mount-total', 'mount', 'mount-credentialResolved');
 
                 if (!vc) throw new Error('Error resolving credential');
 
@@ -58,19 +80,28 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         setIsClaiming(true);
 
         try {
+            perfMark('claim-start');
             await addVCtoWallet({ uri: credentialUri });
+            perfMark('claim-addVC');
+            perfMeasure('addVC', 'claim-start', 'claim-addVC');
             
             // Find and update the notification for this credential
             try {
                 const wallet = await initWallet();
+                perfMark('claim-initWallet');
+                perfMeasure('initWallet', 'claim-addVC', 'claim-initWallet');
                 if (wallet) {
                     await wallet.invoke.acceptCredential(credentialUri);
+                    perfMark('claim-accept');
+                    perfMeasure('accept', 'claim-initWallet', 'claim-accept');
 
                     // Query for the notification with this credential URI
                     const result = await wallet.invoke.queryNotifications(
                         { 'data.vcUris': credentialUri, archived: false },
                         { limit: 1 }
                     );
+                    perfMark('claim-queryNotif');
+                    perfMeasure('queryNotif', 'claim-accept', 'claim-queryNotif');
 
                     if (result && typeof result !== 'boolean' && result.notifications?.[0]?._id) {
                         await wallet.invoke.updateNotificationMeta(result.notifications[0]._id, {
@@ -78,6 +109,9 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                             read: true,
                         });
                     }
+                    perfMark('claim-updateNotif');
+                    perfMeasure('updateNotif', 'claim-queryNotif', 'claim-updateNotif');
+                    perfMeasure('claim-total', 'claim-start', 'claim-updateNotif');
                 }
             } catch (notifErr) {
                 // Don't fail the claim if notification update fails
