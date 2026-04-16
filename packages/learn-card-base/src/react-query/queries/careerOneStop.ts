@@ -278,7 +278,31 @@ export const searchYouTubeVideos = async (keyword: string): Promise<YouTubeVideo
         throw new Error(error.error || `Failed to search videos: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+        throw new Error('Invalid response: expected an array of videos');
+    }
+
+    const validatedVideos = data.filter((item: any): item is YouTubeVideo => {
+        return (
+            typeof item === 'object' &&
+            item !== null &&
+            typeof item.videoId === 'string' &&
+            typeof item.title === 'string' &&
+            typeof item.description === 'string' &&
+            typeof item.channelTitle === 'string' &&
+            typeof item.publishedAt === 'string' &&
+            typeof item.thumbnailUrl === 'string' &&
+            typeof item.url === 'string'
+        );
+    });
+
+    if (validatedVideos.length === 0 && data.length > 0) {
+        throw new Error('Invalid response: no valid video objects found');
+    }
+
+    return validatedVideos;
 };
 
 interface UseYouTubeSearchOptions {
