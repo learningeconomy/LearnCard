@@ -29,6 +29,9 @@ services:
             LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
             API_URL: http://localhost:5100/trpc
             SKIP_DIDKIT_NAPI: '1'
+            # LC-1644: Enable frontend perf instrumentation (performance.mark/measure)
+            # Zero-cost when the gating code isn't hit; toggle off by unsetting.
+            VITE_DEBUG_PERF: '1'
             # Enable polling for Vite file watching in Docker
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
@@ -127,6 +130,9 @@ services:
             IS_OFFLINE: true
             PORT: 4000
             SEED: a
+            # LC-1644: Enable backend PerfTracker JSON logs (gated on this env var)
+            # Zero-cost in hot paths when unset; toggle off by unsetting.
+            LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for file watching in Docker
