@@ -152,7 +152,7 @@ export const credentialsRouter = t.router({
                         issuer,
                         credential,
                     },
-                    from: getFrom({ mailbox: 'endorsement' }),
+                    from: getFrom({ mailbox: 'endorsement', branding: ctx.tenant.emailBranding }),
                     branding: ctx.tenant.emailBranding,
                 });
                 return true;
