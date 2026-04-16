@@ -392,7 +392,13 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${!bgHex ? bg : ''} w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${!textColor ? 'text-grayscale-900' : ''} rounded-[20px] text-center border-solid border-[3px] ${!borderColor ? 'border-white' : ''} shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${
+                !bgHex ? bg : ''
+            } w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${
+                !textColor ? 'text-grayscale-900' : ''
+            } rounded-[20px] text-center border-solid border-[3px] ${
+                !borderColor ? 'border-white' : ''
+            } shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
             style={{
                 ...(bgHex ? { backgroundColor: bgHex } : {}),
                 ...(textColor ? { color: textColor } : {}),
@@ -472,10 +478,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             await wallet?.invoke?.updateProfile({
                 role: newRole,
             });
-            presentToast('Role updated', {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
         } catch (e) {
             setOptimisticRole(null);
             setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
@@ -492,12 +494,20 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             isCenteringRef.current = true;
             const container = roleScrollRef.current;
             const selectedElement = selectedRoleRef.current;
-            const containerWidth = container.offsetWidth;
-            const elementLeft = selectedElement.offsetLeft;
-            const elementWidth = selectedElement.offsetWidth;
-            const scrollPosition = elementLeft - containerWidth / 2 + elementWidth / 2;
+
+            // Use getBoundingClientRect for accurate pill center positioning
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = selectedElement.getBoundingClientRect();
+
+            // Calculate the center of the pill relative to the container's visible area
+            const elementCenterInViewport = elementRect.left + elementRect.width / 2;
+            const containerCenterInViewport = containerRect.left + containerRect.width / 2;
+
+            // Adjust scroll by the difference to center the pill
+            const scrollAdjustment = elementCenterInViewport - containerCenterInViewport;
+
             container.scrollTo({
-                left: scrollPosition,
+                left: container.scrollLeft + scrollAdjustment,
                 behavior: smooth ? 'smooth' : 'instant',
             });
             // Re-enable infinite scroll after animation completes
@@ -796,8 +806,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 <X className="w-[20px] h-[20px]" />
             </button>
             <div
-                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${!actionModalCardBgColor ? 'bg-white' : ''}`}
-                style={actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined}
+                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${
+                    !actionModalCardBgColor ? 'bg-white' : ''
+                }`}
+                style={
+                    actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined
+                }
             >
                 <div className="w-full flex items-center justify-center mb-[5px]">
                     <ProfilePicture
@@ -808,8 +822,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 </div>
                 <div className="flex flex-col items-center justify-center mb-[15px]">
                     <p
-                        className={`text-center text-[16px] font-poppins font-normal mb-[5px] ${!actionModalCardTextColor ? 'text-grayscale-800' : ''}`}
-                        style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
+                        className={`text-center text-[16px] font-poppins font-normal mb-[5px] ${
+                            !actionModalCardTextColor ? 'text-grayscale-800' : ''
+                        }`}
+                        style={
+                            actionModalCardTextColor
+                                ? { color: actionModalCardTextColor }
+                                : undefined
+                        }
                     >
                         {roleDescriptions[activeRole]}
                     </p>
@@ -906,7 +926,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             </div>
 
             <h3
-                className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${!actionModalCardTextColor ? 'text-grayscale-900' : ''}`}
+                className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${
+                    !actionModalCardTextColor ? 'text-grayscale-900' : ''
+                }`}
                 style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
             >
                 What would you like to do?
@@ -917,8 +939,16 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     <ActionButton
                         key={`${label}-${i}`}
                         label={label}
-                        bg={!actionModalButtonColors ? (colorByLabel[label] ?? bgColors[i % bgColors.length]) : ''}
-                        bgHex={actionModalButtonColors ? actionModalButtonColors[i % actionModalButtonColors.length] : undefined}
+                        bg={
+                            !actionModalButtonColors
+                                ? colorByLabel[label] ?? bgColors[i % bgColors.length]
+                                : ''
+                        }
+                        bgHex={
+                            actionModalButtonColors
+                                ? actionModalButtonColors[i % actionModalButtonColors.length]
+                                : undefined
+                        }
                         textColor={actionModalTextColor}
                         borderColor={actionModalButtonBorderColor}
                         role={activeRole}
