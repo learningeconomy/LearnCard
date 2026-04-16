@@ -10,13 +10,12 @@ import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
 import MainHeader from '../../components/main-header/MainHeader';
 import LearnerInsights from './learner-insights/LearnerInsights';
+import SharedInsights from './shared-insights/SharedInsights';
 import ShareInsightsCard from './share-insights/ShareInsightsCard';
-import AiInsightsSkillsCardSimple from './AiInsightsSkillsCardSimple';
 import AiInsightsLearningSnapshots from './AiInsightsLearningSnapshots';
 import RequestInsightsCard from './request-insights/RequestInsightsCard';
-import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
+import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
@@ -57,6 +56,7 @@ const AiInsights: React.FC = () => {
         if (
             tab === AiInsightsTabsEnum.MyInsights ||
             tab === AiInsightsTabsEnum.LearnerInsights ||
+            tab === AiInsightsTabsEnum.SharedInsights ||
             tab === AiInsightsTabsEnum.ChildInsights
         ) {
             setSelectedTab(tab);
@@ -98,26 +98,24 @@ const AiInsights: React.FC = () => {
 
     const topSkills = getTopSkills(aggregatedSkills, 3);
 
-    const contractRequest =
-        pendingRequests?.length > 0
-            ? pendingRequests?.map(request => (
-                  <AiInsightsUserRequestsToast
-                      contractUri={request?.contract?.uri}
-                      options={{
-                          className: 'bg-indigo-100 p-4 rounded-[16px] mb-4',
-                          isInline: true,
-                          useDarkText: true,
-                          hideCloseButton: true,
-                      }}
-                  />
-              ))
-            : null;
+    let contractRequest = null;
+    if (pendingRequests?.length > 0) {
+        contractRequest = pendingRequests?.map((request, index) => (
+            <AiInsightsUserRequestsToast
+                key={`request-${index}`}
+                contractUri={request?.contract?.uri}
+                options={{
+                    className: 'bg-indigo-100 p-4 rounded-[16px] mb-4',
+                    isInline: true,
+                    useDarkText: true,
+                    hideCloseButton: true,
+                }}
+            />
+        ));
+    }
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
-                <ExperimentalFeatureBox />
-            </div>
             <div className="flex items-center justify-center w-full my-4">
                 {flags?.showGenerateAiInsightsButton && (
                     <button
@@ -135,21 +133,27 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
-            {/* <AiInsightsLearningPathwaysCard /> */}
-            <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+            <AiInsightsPromptBoxContainer />
+            {!flags?.hideAiPathways && (
+                <AiFeatureLinks
+                    features={['ai-sessions', 'skills-hub', 'pathways']}
+                    className="mt-4"
+                />
+            )}
         </>
     );
 
     const childInsights = <ChildInsights />;
     const learningInsights = <LearnerInsights />;
+    const sharedInsights = <SharedInsights />;
 
     let activeInsights;
     if (selectedTab === AiInsightsTabsEnum.MyInsights) {
         activeInsights = myInsights;
+    } else if (selectedTab === AiInsightsTabsEnum.SharedInsights) {
+        activeInsights = sharedInsights;
     } else if (selectedTab === AiInsightsTabsEnum.ChildInsights) {
         activeInsights = childInsights;
     } else {
@@ -165,6 +169,7 @@ const AiInsights: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiInsights}
                         hidePlusBtn={true}
+                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex relative justify-center items-center w-full">

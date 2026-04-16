@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
@@ -9,9 +9,14 @@ import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
+import {
+    getContractUriFromLaunchConfig,
+    getContractUriFromGuideState,
+} from '@helpers/integrations.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -23,6 +28,7 @@ import {
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
+    getListedAppsWithSubmitter,
     getInstalledAppsForProfile,
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
@@ -31,6 +37,7 @@ import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
+    associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
@@ -78,7 +85,12 @@ import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { sendBoost, isDraftBoost, getBoostUri } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
+import {
+    getAppDidWeb,
+    getDidWeb,
+    getProfileIdFromDid,
+    getProfileIdFromString,
+} from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import {
     getContractTermsForProfile,
@@ -87,6 +99,11 @@ import {
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
+import {
+    handleIncrementCounterEvent,
+    handleGetCounterEvent,
+    handleGetCountersEvent,
+} from '@helpers/app-counter.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -228,6 +245,7 @@ const AppStoreListingBaseSchema = z.object({
         .optional(),
     min_age: z.number().optional(),
     age_rating: AgeRating.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
@@ -266,6 +284,14 @@ type ListingStorageInput<T extends Record<string, unknown>> = Omit<
 > & {
     highlights_json?: string;
     screenshots_json?: string;
+};
+
+// Helper to strip sensitive fields (contact_email) from listings for public responses
+const stripSensitiveFields = <T extends Record<string, unknown>>(
+    listing: T
+): Omit<T, 'contact_email'> => {
+    const { contact_email, ...rest } = listing;
+    return rest as Omit<T, 'contact_email'>;
 };
 
 // Helper to transform listing for API response (JSON strings -> arrays)
@@ -372,10 +398,18 @@ const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema.omit({
     promotion_level: true,
 }).superRefine(iframeUrlRefinement);
 
+// Submitter info for admin responses
+const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
 // Extended validator that includes the transformed array fields for API responses
 const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
 }).omit({
     highlights_json: true,
     screenshots_json: true,
@@ -691,7 +725,7 @@ const handleSendCredentialEvent = async (
         metadata: { listingId, templateAlias },
     });
 
-    // Send to user's wallet
+    // Send to user's wallet (credential stays pending until user claims via the app UI)
     const credentialUri = await sendBoost({
         from: issuer,
         to: target,
@@ -992,7 +1026,8 @@ const handleRequestLearnerContextEvent = async (
     ctx: { domain: string },
     profile: ProfileType,
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    listing?: { launch_config_json?: string }
 ): Promise<Record<string, unknown>> => {
     const { instructions, detailLevel = 'compact' } = event as {
         instructions?: string;
@@ -1013,36 +1048,31 @@ const handleRequestLearnerContextEvent = async (
         credentialUris.push(credentialUri);
     }
 
-    const integration = await getIntegrationForListing(listingId);
+    // Resolve contractUri from launch_config_json or guideState
+    let contractUri = getContractUriFromLaunchConfig(listing);
 
-    if (integration?.guideState) {
-        const guideState = integration.guideState;
+    if (!contractUri) {
+        const integration = await getIntegrationForListing(listingId);
+        contractUri = getContractUriFromGuideState(integration);
+    }
 
+    if (contractUri) {
         try {
-            const contractUri =
-                guideState?.config?.embedAppConfig?.featureConfig['request-data-consent']
-                    ?.contractUri;
+            const contractDetails = await getContractDetailsByUri(contractUri);
 
-            if (contractUri) {
-                const contractDetails = await getContractDetailsByUri(contractUri);
+            if (contractDetails?.contract) {
+                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
 
-                if (contractDetails?.contract) {
-                    const terms = await getContractTermsForProfile(
-                        profile,
-                        contractDetails.contract
+                if (event.includeCredentials && terms?.terms?.read?.credentials) {
+                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
+                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
                     );
 
-                    if (event.includeCredentials && terms?.terms?.read?.credentials) {
-                        const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
-                            category => category.shared ?? []
-                        );
+                    credentialUris.push(...uris);
+                }
 
-                        credentialUris.push(...uris);
-                    }
-
-                    if (event.includePersonalData && terms?.terms?.read?.personal) {
-                        personalData = terms.terms.read.personal;
-                    }
+                if (event.includePersonalData && terms?.terms?.read?.personal) {
+                    personalData = terms.terms.read.personal;
                 }
             }
         } catch (error) {
@@ -1413,6 +1443,85 @@ const handleSendAiSessionCredentialEvent = async (
     };
 };
 
+// Helper to handle send-notification app event
+const handleSendNotificationEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string; notificationsWebhook?: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const parsed = SendNotificationEventValidator.safeParse(event);
+
+    if (!parsed.success) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Invalid notification event: ${parsed.error.message}`,
+        });
+    }
+
+    const { title, body, actionPath, category, priority = 'normal' } = parsed.data;
+
+    if (!title && !body) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+    }
+
+    // Rate limit: max 10 notifications per user per app per hour (atomic increment)
+    const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
+    const count = await cache.incr(rateLimitKey, 3600);
+
+    if (count === undefined) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Rate limiting service unavailable',
+        });
+    }
+
+    if (count > 10) {
+        // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+        // while keeping the semantic code in the message for clients.
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
+        });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+    }
+
+    const profileDid = getDidWeb(ctx.domain, profile.profileId);
+
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+        to: {
+            did: profileDid,
+            profileId: profile.profileId,
+            ...(profile.notificationsWebhook && {
+                notificationsWebhook: profile.notificationsWebhook,
+            }),
+        },
+        from: {
+            did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+            profileId: listing.slug ?? listingId,
+            displayName: listing.display_name,
+        },
+        message: { title, body },
+        data: {
+            metadata: {
+                listingId,
+                listingSlug: listing.slug,
+                actionPath,
+                category,
+                priority,
+            },
+        },
+    });
+
+    return { sent: true };
+};
+
 export const appStoreRouter = t.router({
     // ==================== Integration Owner Routes ====================
 
@@ -1454,6 +1563,7 @@ export const appStoreRouter = t.router({
             });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
+            await associateListingWithSubmitter(listing.listing_id, ctx.user.profile.profileId);
 
             return listing.listing_id;
         }),
@@ -1724,9 +1834,19 @@ export const appStoreRouter = t.router({
                 });
             }
 
+            const submittedAt = new Date().toISOString();
+
+            // Update status on the listing node
             const result = await updateAppStoreListing(listing, {
                 app_listing_status: 'PENDING_REVIEW',
             });
+
+            // Create or update SUBMITTED_LISTING relationship with submitted_at
+            await associateListingWithSubmitter(
+                listing.listing_id,
+                ctx.user.profile.profileId,
+                submittedAt
+            );
 
             // Notify all App Store admins about the new submission
             if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
@@ -1740,6 +1860,64 @@ export const appStoreRouter = t.router({
                         message: {
                             title: 'New App Listing Submitted',
                             body: `"${listing.display_name}" has been submitted for review.`,
+                        },
+                        data: {
+                            metadata: {
+                                listingId: listing.listing_id,
+                                listingName: listing.display_name,
+                            },
+                        },
+                    });
+                }
+            }
+
+            return result;
+        }),
+
+    unsubmitForReview: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/unsubmit-for-review',
+                tags: ['App Store'],
+                summary: 'Unsubmit Listing from Review',
+                description: 'Withdraw a PENDING_REVIEW listing back to DRAFT status',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // Only PENDING_REVIEW listings can be unsubmitted
+            if (listing.app_listing_status !== 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Cannot unsubmit listing with status "${listing.app_listing_status}". Only PENDING_REVIEW listings can be unsubmitted.`,
+                });
+            }
+
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: 'DRAFT',
+            });
+
+            // Notify all App Store admins that the submission was withdrawn
+            if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
+                const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+
+                for (const adminProfile of adminProfiles) {
+                    await addNotificationToQueue({
+                        type: 'APP_LISTING_WITHDRAWN',
+                        to: adminProfile,
+                        from: ctx.user.profile,
+                        message: {
+                            title: 'App Listing Withdrawn',
+                            body: `"${listing.display_name}" has been withdrawn from review.`,
                         },
                         data: {
                             metadata: {
@@ -1811,7 +1989,9 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
-            const records = rawRecords.map(transformListingForResponse);
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
             const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
 
             return { hasMore, cursor, records };
@@ -1837,7 +2017,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return transformListingForResponse(listing);
+            return stripSensitiveFields(transformListingForResponse(listing));
         }),
 
     getPublicListingBySlug: openRoute
@@ -1860,7 +2040,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return transformListingForResponse(listing);
+            return stripSensitiveFields(transformListingForResponse(listing));
         }),
 
     getListingInstallCount: openRoute
@@ -2038,7 +2218,9 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
-            const records = rawRecords.map(transformListingForResponse);
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
             const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.installed_at : undefined;
 
             return { hasMore, cursor, records };
@@ -2271,6 +2453,117 @@ export const appStoreRouter = t.router({
             return getBoostsForListing(input.listingId, ctx.domain);
         }),
 
+    // ==================== App Notification Route ====================
+
+    sendAppNotification: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/notify',
+                tags: ['App Store'],
+                summary: 'Send App Notification',
+                description:
+                    'Send a notification to a user on behalf of an app. Caller must own the listing. Recipient must have the app installed.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipient: z.string(),
+                title: z.string().optional(),
+                body: z.string().optional(),
+                actionPath: z.string().optional(),
+                category: z.string().optional(),
+                priority: z.enum(['normal', 'high']).default('normal'),
+            })
+        )
+        .output(z.object({ sent: z.boolean() }))
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, recipient, title, body, actionPath, category, priority } = input;
+
+            if (!title && !body) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+            }
+
+            // Verify caller owns the listing
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            // Resolve recipient to profileId (accepts profileId or DID)
+            const recipientProfileId = await getProfileIdFromString(recipient, ctx.domain);
+
+            if (!recipientProfileId) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not resolve recipient to a profile',
+                });
+            }
+
+            // Verify recipient has the app installed
+            const isInstalled = await hasProfileInstalledApp(recipientProfileId, listingId);
+
+            if (!isInstalled) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Recipient does not have this app installed',
+                });
+            }
+
+            // Rate limit: max 60 notifications per listing per hour (atomic increment)
+            const rateLimitKey = `app-notif-server-rate:${listingId}`;
+            const count = await cache.incr(rateLimitKey, 3600);
+
+            if (count === undefined) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Rate limiting service unavailable',
+                });
+            }
+
+            if (count > 60) {
+                // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+                // while keeping the semantic code in the message for clients.
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    message: 'Rate limit exceeded: max 60 notifications per app per hour',
+                });
+            }
+
+            const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
+
+            // Look up recipient profile to get notificationsWebhook for delivery
+            const recipientProfile = await getProfileByProfileId(recipientProfileId);
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+                to: {
+                    did: recipientDid,
+                    profileId: recipientProfileId,
+                    ...(recipientProfile?.notificationsWebhook && {
+                        notificationsWebhook: recipientProfile.notificationsWebhook,
+                    }),
+                },
+                from: {
+                    did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+                    profileId: listing.slug ?? listingId,
+                    displayName: listing.display_name,
+                },
+                message: { title, body },
+                data: {
+                    metadata: {
+                        listingId,
+                        listingSlug: listing.slug,
+                        actionPath,
+                        category,
+                        priority,
+                    },
+                },
+            });
+
+            return { sent: true };
+        }),
+
     // ==================== Generic App Event Route ====================
 
     appEvent: profileRoute
@@ -2338,11 +2631,33 @@ export const appStoreRouter = t.router({
             }
 
             if (eventType === 'request-learner-context') {
-                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event);
+                return handleRequestLearnerContextEvent(
+                    ctx,
+                    profile,
+                    resolvedListingId,
+                    event,
+                    listing
+                );
             }
 
             if (eventType === 'send-ai-session-credential') {
                 return handleSendAiSessionCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'send-notification') {
+                return handleSendNotificationEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'increment-counter') {
+                return handleIncrementCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counter') {
+                return handleGetCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counters') {
+                return handleGetCountersEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
@@ -2487,8 +2802,8 @@ export const appStoreRouter = t.router({
             const limit = input?.limit ?? 25;
 
             // Get listings with optional status filter, or all statuses if not specified
-            // Admin can see all listings including demoted ones
-            const results = await getListedApps({
+            // Admin can see all listings including demoted ones, with submitter info
+            const results = await getListedAppsWithSubmitter({
                 limit: limit + 1,
                 cursor: input?.cursor,
                 status: input?.status,

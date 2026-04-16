@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConsentFlow Test App</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 640px; margin: 40px auto; padding: 20px; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 16px; margin-bottom: 16px; color: #111; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+        input:focus, select:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 3px rgba(6,182,212,0.1); }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .btn-primary { background: #06b6d4; color: white; }
+        .btn-primary:hover { background: #0891b2; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-success:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #e2e8f0; color: #475569; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .hint { font-size: 12px; color: #888; margin-top: -12px; margin-bottom: 16px; }
+
+        .param { margin-bottom: 12px; }
+        .param-name { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+        .param-value { font-size: 13px; font-family: 'SF Mono', Monaco, monospace; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; word-break: break-all; max-height: 120px; overflow-y: auto; }
+        .copy-btn { font-size: 11px; padding: 4px 10px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer; float: right; }
+        .copy-btn:hover { background: #cbd5e1; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+        .hidden { display: none; }
+        pre { font-size: 12px; background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+        .divider { border-top: 1px solid #e2e8f0; margin: 16px 0; }
+        .status-msg { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+        .status-msg.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+        .status-msg.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+        .status-msg.loading { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+        .spinner.dark { border-color: #1e40af; border-top-color: transparent; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .flex-row { display: flex; gap: 8px; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ConsentFlow Test App</h1>
+        <p class="subtitle">Test the LearnCard consent redirect flow end-to-end</p>
+
+        <!-- SETUP SECTION -->
+        <div id="setup-section">
+            <div class="card">
+                <h2>1. Configure</h2>
+
+                <label for="env">Environment</label>
+                <select id="env" onchange="updateBaseUrl()">
+                    <option value="https://learncard.app">Production (learncard.app)</option>
+                    <option value="http://localhost:3000" selected>Local Dev (localhost:3000)</option>
+                    <option value="https://staging.learncard.app">Staging</option>
+                    <option value="custom">Custom...</option>
+                </select>
+
+                <div id="custom-url-row" class="hidden">
+                    <label for="custom-base">Custom Base URL</label>
+                    <input id="custom-base" type="url" placeholder="https://your-learncard-instance.com" />
+                </div>
+
+                <label for="contract-uri">Contract URI</label>
+                <input id="contract-uri" type="text" placeholder="lc:contract:..." />
+                <p class="hint">Paste the contract URI from the developer portal (Step 1 of the guide)</p>
+
+                <label for="callback-url">Callback URL (returnTo)</label>
+                <input id="callback-url" type="url" />
+                <p class="hint">This page's URL is used by default</p>
+
+                <div class="divider"></div>
+
+                <label for="issuer-seed">API Key or Seed</label>
+                <input id="issuer-seed" type="password" placeholder="eyJhbG... (API key) or 64-char hex seed" />
+                <p class="hint">API key JWT from developer portal, or a 64-char hex seed. Stored in localStorage, never sent externally</p>
+
+                <label for="template-uri">Template URI</label>
+                <input id="template-uri" type="text" placeholder="lc:boost:..." />
+                <p class="hint">The credential template to send after consent</p>
+
+                <label for="integration-id">Integration ID (optional)</label>
+                <input id="integration-id" type="text" placeholder="uuid..." />
+                <p class="hint">For dashboard activity tracking</p>
+
+                <label for="network-url">Network URL (optional)</label>
+                <input id="network-url" type="text" placeholder="http://localhost:4000/trpc" />
+                <p class="hint">Leave empty for production. Set to local brain-service URL for local dev</p>
+            </div>
+
+            <div class="card">
+                <h2>2. Test Connection</h2>
+                <p style="font-size: 13px; color: #666; margin-bottom: 16px;">
+                    Verify your seed initializes correctly before launching the consent flow.
+                </p>
+                <button class="btn btn-secondary" id="test-init-btn" onclick="testInit()">
+                    Test LearnCard Init
+                </button>
+                <div id="init-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>3. Launch Consent Flow</h2>
+                <p style="font-size: 13px; color: #666; margin-bottom: 16px;">
+                    Redirects to LearnCard's consent screen. After consent, you'll be redirected back
+                    here with <code>did</code> and <code>vp</code> query params, and can send a credential.
+                </p>
+
+                <div id="preview-url" style="font-size: 12px; font-family: monospace; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 16px; word-break: break-all; color: #475569;"></div>
+
+                <button class="btn btn-primary" id="launch-btn" onclick="launchConsentFlow()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Open Consent Flow
+                </button>
+            </div>
+        </div>
+
+        <!-- CALLBACK SECTION -->
+        <div id="callback-section" class="hidden">
+            <div class="card">
+                <h2>Callback Received <span class="badge badge-success" id="status-badge">SUCCESS</span></h2>
+
+                <div id="param-did" class="param">
+                    <div class="param-name">
+                        did (User's DID)
+                        <button class="copy-btn" onclick="copyParam('did-value')">Copy</button>
+                    </div>
+                    <div class="param-value" id="did-value"></div>
+                </div>
+
+                <div id="param-vp" class="param">
+                    <div class="param-name">
+                        vp (Verifiable Presentation JWT)
+                        <button class="copy-btn" onclick="copyParam('vp-value')">Copy</button>
+                    </div>
+                    <div class="param-value" id="vp-value"></div>
+                </div>
+            </div>
+
+            <div class="card" id="vp-decoded-card">
+                <h2>Decoded VP (JWT Payload)</h2>
+                <pre id="vp-decoded"></pre>
+            </div>
+
+            <!-- SEND CREDENTIAL CARD -->
+            <div class="card" id="send-card">
+                <h2>Send Credential</h2>
+                <p style="font-size: 13px; color: #666; margin-bottom: 16px;">
+                    Now send a credential to the user who just consented. The DID from the callback is pre-filled.
+                </p>
+
+                <label for="send-seed">API Key or Seed</label>
+                <input id="send-seed" type="password" placeholder="eyJhbG... (API key) or 64-char hex seed" />
+
+                <label for="send-recipient">Recipient DID</label>
+                <input id="send-recipient" type="text" readonly style="background: #f8fafc;" />
+
+                <label for="send-contract">Contract URI</label>
+                <input id="send-contract" type="text" placeholder="lc:contract:..." />
+
+                <label for="send-template">Template URI</label>
+                <input id="send-template" type="text" placeholder="lc:boost:..." />
+
+                <label for="send-integration">Integration ID (optional)</label>
+                <input id="send-integration" type="text" placeholder="uuid..." />
+
+                <label for="send-network">Network URL (optional)</label>
+                <input id="send-network" type="text" placeholder="http://localhost:4000/trpc" />
+
+                <div class="flex-row">
+                    <button class="btn btn-success" id="send-btn" onclick="sendCredential()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Send Credential
+                    </button>
+                </div>
+
+                <div id="send-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>Equivalent Code</h2>
+                <pre id="send-snippet"></pre>
+            </div>
+
+            <button class="btn btn-primary" onclick="resetApp()" style="margin-top: 8px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                Test Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        // On load
+        window.addEventListener('DOMContentLoaded', () => {
+            const callbackInput = document.getElementById('callback-url');
+            callbackInput.value = window.location.origin + window.location.pathname;
+
+            // Load saved values
+            const saved = JSON.parse(localStorage.getItem('consentFlowTest') || '{}');
+            if (saved.contractUri) document.getElementById('contract-uri').value = saved.contractUri;
+            if (saved.env) document.getElementById('env').value = saved.env;
+            if (saved.customBase) document.getElementById('custom-base').value = saved.customBase;
+            if (saved.seed) document.getElementById('issuer-seed').value = saved.seed;
+            if (saved.templateUri) document.getElementById('template-uri').value = saved.templateUri;
+            if (saved.integrationId) document.getElementById('integration-id').value = saved.integrationId;
+            if (saved.networkUrl) document.getElementById('network-url').value = saved.networkUrl;
+
+            updateBaseUrl();
+            updatePreview();
+
+            // Check for callback params
+            const params = new URLSearchParams(window.location.search);
+            const did = params.get('did');
+            const vp = params.get('vp');
+
+            if (did || vp) {
+                showCallbackResults(did, vp);
+            }
+
+            // Live preview updates
+            ['contract-uri', 'callback-url', 'custom-base', 'issuer-seed', 'template-uri', 'integration-id', 'network-url'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', () => { updatePreview(); saveConfig(); });
+            });
+        });
+
+        function saveConfig() {
+            localStorage.setItem('consentFlowTest', JSON.stringify({
+                contractUri: document.getElementById('contract-uri').value,
+                env: document.getElementById('env').value,
+                customBase: document.getElementById('custom-base').value,
+                seed: document.getElementById('issuer-seed').value,
+                templateUri: document.getElementById('template-uri').value,
+                integrationId: document.getElementById('integration-id').value.replace(/^['"]+|['"]+$/g, '').trim(),
+                networkUrl: document.getElementById('network-url').value,
+            }));
+        }
+
+        function updateBaseUrl() {
+            const env = document.getElementById('env').value;
+            document.getElementById('custom-url-row').classList.toggle('hidden', env !== 'custom');
+            updatePreview();
+        }
+
+        function getBaseUrl() {
+            const env = document.getElementById('env').value;
+            return env === 'custom' ? document.getElementById('custom-base').value : env;
+        }
+
+        function updatePreview() {
+            const baseUrl = getBaseUrl();
+            const contractUri = document.getElementById('contract-uri').value;
+            const callbackUrl = document.getElementById('callback-url').value;
+
+            document.getElementById('launch-btn').disabled = !contractUri || !baseUrl;
+
+            if (!contractUri) {
+                document.getElementById('preview-url').textContent = 'Enter a contract URI above...';
+                return;
+            }
+
+            const url = buildConsentUrl(baseUrl, contractUri, callbackUrl);
+            document.getElementById('preview-url').textContent = url;
+        }
+
+        function buildConsentUrl(baseUrl, contractUri, callbackUrl) {
+            const url = new URL('/consent-flow', baseUrl);
+            url.searchParams.set('uri', contractUri);
+            if (callbackUrl) url.searchParams.set('returnTo', callbackUrl);
+            return url.toString();
+        }
+
+        function launchConsentFlow() {
+            const baseUrl = getBaseUrl();
+            const contractUri = document.getElementById('contract-uri').value;
+            const callbackUrl = document.getElementById('callback-url').value;
+
+            if (!contractUri) { alert('Please enter a contract URI'); return; }
+
+            saveConfig();
+            window.location.href = buildConsentUrl(baseUrl, contractUri, callbackUrl);
+        }
+
+        async function testInit() {
+            const seed = document.getElementById('issuer-seed').value;
+            const networkUrl = document.getElementById('network-url').value;
+            const statusEl = document.getElementById('init-status');
+
+            if (!seed) { statusEl.textContent = 'Enter an API key or seed first'; statusEl.className = 'status-msg error'; return; }
+
+            statusEl.innerHTML = '<div class="status-msg loading"><span class="spinner dark"></span>Initializing LearnCard...</div>';
+            document.getElementById('test-init-btn').disabled = true;
+
+            try {
+                const res = await fetch('/api/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ seed, networkUrl: networkUrl || undefined }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.innerHTML = `<div class="status-msg success">Connected! DID: <code style="font-size:11px; word-break:break-all;">${esc(data.did)}</code></div>`;
+                } else {
+                    statusEl.innerHTML = `<div class="status-msg error">Error: ${esc(data.error)}</div>`;
+                }
+            } catch (err) {
+                statusEl.innerHTML = `<div class="status-msg error">Failed to connect to server: ${esc(err.message)}</div>`;
+            }
+            document.getElementById('test-init-btn').disabled = false;
+        }
+
+        function showCallbackResults(did, vp) {
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('callback-section').classList.remove('hidden');
+
+            const badge = document.getElementById('status-badge');
+            const saved = JSON.parse(localStorage.getItem('consentFlowTest') || '{}');
+
+            // Show DID
+            if (did) {
+                document.getElementById('did-value').textContent = did;
+            } else {
+                document.getElementById('param-did').classList.add('hidden');
+                badge.className = 'badge badge-warning';
+                badge.textContent = 'PARTIAL';
+            }
+
+            // Show VP
+            if (vp) {
+                document.getElementById('vp-value').textContent = vp;
+                try {
+                    const parts = vp.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                        document.getElementById('vp-decoded').textContent = JSON.stringify(payload, null, 2);
+                    } else {
+                        document.getElementById('vp-decoded-card').classList.add('hidden');
+                    }
+                } catch (e) {
+                    document.getElementById('vp-decoded').textContent = '(Could not decode JWT: ' + e.message + ')';
+                }
+            } else {
+                document.getElementById('param-vp').classList.add('hidden');
+                document.getElementById('vp-decoded-card').classList.add('hidden');
+                if (!did) { badge.className = 'badge badge-error'; badge.textContent = 'NO PARAMS'; }
+            }
+
+            // Pre-fill send form from saved config
+            document.getElementById('send-recipient').value = did || '';
+            document.getElementById('send-seed').value = saved.seed || '';
+            document.getElementById('send-contract').value = saved.contractUri || '';
+            document.getElementById('send-template').value = saved.templateUri || '';
+            document.getElementById('send-integration').value = saved.integrationId || '';
+            document.getElementById('send-network').value = saved.networkUrl || '';
+
+            // Generate code snippet
+            updateSendSnippet(did, saved);
+        }
+
+        function updateSendSnippet(did, saved) {
+            document.getElementById('send-snippet').textContent =
+`import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({
+    apiKey: 'YOUR_API_TOKEN', // from the developer portal API Tokens tab
+    network: true,${saved?.networkUrl ? `\n    networkLearnCardForDomain: '${saved.networkUrl}',` : ''}
+});
+
+await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '${did || 'USER_DID'}',
+    contractUri: '${saved?.contractUri || 'YOUR_CONTRACT_URI'}',
+    templateUri: '${saved?.templateUri || 'YOUR_TEMPLATE_URI'}',${saved?.integrationId ? `\n    integrationId: '${saved.integrationId}',` : ''}
+});`;
+        }
+
+        async function sendCredential() {
+            const seed = document.getElementById('send-seed').value;
+            const recipient = document.getElementById('send-recipient').value;
+            const contractUri = document.getElementById('send-contract').value;
+            const templateUri = document.getElementById('send-template').value;
+            const integrationId = document.getElementById('send-integration').value.replace(/^['"]+|['"]+$/g, '').trim();
+            const networkUrl = document.getElementById('send-network').value;
+            const statusEl = document.getElementById('send-status');
+            const btn = document.getElementById('send-btn');
+
+            if (!seed) { statusEl.textContent = 'Enter your API key or seed'; statusEl.className = 'status-msg error'; return; }
+            if (!recipient) { statusEl.textContent = 'No recipient DID (did the callback return one?)'; statusEl.className = 'status-msg error'; return; }
+            if (!contractUri) { statusEl.textContent = 'Enter a contract URI'; statusEl.className = 'status-msg error'; return; }
+            if (!templateUri) { statusEl.textContent = 'Enter a template URI'; statusEl.className = 'status-msg error'; return; }
+
+            statusEl.innerHTML = '<div class="status-msg loading"><span class="spinner dark"></span>Initializing wallet &amp; sending credential...</div>';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Sending...';
+
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        seed,
+                        recipient,
+                        contractUri,
+                        templateUri,
+                        integrationId: integrationId || undefined,
+                        networkUrl: networkUrl || undefined,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    statusEl.innerHTML = `<div class="status-msg success">
+                        <strong>Credential sent!</strong><br/>
+                        <span style="font-size: 12px;">Issuer: ${esc(data.issuerDid)}</span><br/>
+                        <span style="font-size: 12px;">Result: <code>${esc(JSON.stringify(data.result))}</code></span>
+                    </div>`;
+                } else {
+                    statusEl.innerHTML = `<div class="status-msg error">
+                        <strong>Send failed:</strong> ${esc(data.error)}
+                        ${data.details ? `<br/><span style="font-size:11px">${esc(data.details)}</span>` : ''}
+                    </div>`;
+                }
+            } catch (err) {
+                statusEl.innerHTML = `<div class="status-msg error">
+                    <strong>Request failed:</strong> ${esc(err.message)}<br/>
+                    <span style="font-size: 11px;">Is the server running? (node server.js)</span>
+                </div>`;
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send Credential`;
+        }
+
+        function copyParam(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            });
+        }
+
+        function resetApp() {
+            window.location.href = window.location.origin + window.location.pathname;
+        }
+    </script>
+</body>
+</html>

@@ -17,7 +17,6 @@ import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 
 const AiPathwayCourses: React.FC<{
     keywords?: string[];
-    fieldOfStudy?: string;
     courses: any;
     schoolPrograms: any;
     isLoading: boolean;

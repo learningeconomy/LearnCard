@@ -1,3 +1,8 @@
+// NOTE: Guardian credential approval (LC-1729/1730/1731) is not feature complete.
+// Current implementation creates a MANAGES relationship but guardian child accounts
+// are full independent accounts with a guardian — not the same as family child accounts.
+// This is part of a larger goal of making child accounts independent of parent accounts.
+
 import { v4 as uuid } from 'uuid';
 import cache from '@cache';
 
@@ -10,6 +15,7 @@ export type GuardianApprovalTokenData = {
     createdAt: string;
     expiresAt: string;
     used: boolean;
+    inboxCredentialId?: string; // NEW: present for credential-scoped tokens
 };
 
 export type GuardianApprovalValidationResult =
@@ -118,3 +124,47 @@ export const generateGuardianApprovalUrl = (token: string): string => {
 
     return `${protocol}://${domain}/interactions/guardian-approval/${token}`;
 };
+
+// NEW: Generate a credential-scoped approval token
+export const generateGuardianCredentialApprovalToken = async (
+    inboxCredentialId: string,
+    guardianEmail: string,
+    ttlHours = 24 * 7 // 7 days default
+): Promise<string> => {
+    const token = uuid();
+    const key = `${GUARDIAN_APPROVAL_PREFIX}${token}`;
+
+    const ttlSeconds = Math.max(0, Math.floor(ttlHours * 60 * 60));
+    const data: GuardianApprovalTokenData = {
+        token,
+        requesterProfileId: '', // Not applicable for credential tokens
+        guardianEmail,
+        inboxCredentialId,
+        createdAt: new Date().toISOString(),
+        expiresAt:
+            ttlSeconds > 0
+                ? new Date(Date.now() + ttlSeconds * 1000).toISOString()
+                : new Date(Date.now() - 1000).toISOString(),
+        used: false,
+    };
+
+    const cacheTtl = ttlSeconds > 0 ? ttlSeconds : 60;
+    await cache.set(key, JSON.stringify(data), cacheTtl);
+
+    return token;
+};
+
+// NEW: URL for credential-specific guardian approval (different path than profile approval)
+export const generateGuardianCredentialApprovalUrl = (token: string): string => {
+    const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
+    const domain =
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost:${process.env.CLIENT_APP_PORT || 3000}`
+            : domainName;
+
+    const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
+
+    return `${protocol}://${domain}/interactions/guardian-credential-approval/${token}`;
+};
+
+

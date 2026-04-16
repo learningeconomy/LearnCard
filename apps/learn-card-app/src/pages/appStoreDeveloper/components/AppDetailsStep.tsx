@@ -13,11 +13,11 @@ interface AppDetailsStepProps {
 
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
-        onChange({ ...data, [field]: value });
+        onChange({ [field]: value });
     };
 
     const handleArrayChange = (field: 'highlights' | 'screenshots', values: string[]) => {
-        onChange({ ...data, [field]: values });
+        onChange({ [field]: values });
     };
 
     const addArrayItem = (field: 'highlights' | 'screenshots') => {
@@ -493,6 +493,32 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         placeholder="Android Package Name (e.g., com.example.app)"
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 mb-2 mt-2">
+                        <label className="text-sm font-medium text-gray-600">
+                            Contact Information
+                        </label>
+
+                        <span className="text-xs text-gray-400">(optional)</span>
+                    </div>
+
+                    <p className="text-xs text-gray-400 mb-2">
+                        A reliable contact method in case any issues arise with your application
+                        during the review process.
+                    </p>
+                    <input
+                        type="email"
+                        value={data.contact_email || ''}
+                        onChange={e => handleChange('contact_email', e.target.value.trim())}
+                        placeholder="Email address"
+                        className={`flex-1 w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                            errors.contact_email ? 'border-red-300' : 'border-gray-200'
+                        }`}
+                    />
+                    {errors.contact_email && (
+                        <p className="text-red-500 text-xs mt-1">{errors.contact_email}</p>
+                    )}
                 </div>
             </div>
 

@@ -616,6 +616,19 @@ export const syncCredentialsToContract = async (
     return result.summary.counters.containsUpdates();
 };
 
+export const updateRequestedForStatusIfExists = async (
+    id: string,
+    profileId: string,
+    status: 'pending' | 'accepted' | 'denied'
+): Promise<void> => {
+    const cypher = `
+        MATCH (contract:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->(profile:Profile {profileId: $profileId})
+        SET r.status = $status
+    `;
+
+    await neogma.queryRunner.run(cypher, { id, profileId, status });
+};
+
 export const upsertRequestedForRelationship = async (
     id: string,
     profileId: string,

@@ -12,6 +12,7 @@ import {
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useAnalytics } from '../../analytics';
 
 const PrivacySettingsPage: React.FC = () => {
@@ -20,6 +21,7 @@ const PrivacySettingsPage: React.FC = () => {
     const { mutate: updatePreferences } = useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const brandingConfig = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
@@ -113,7 +115,7 @@ const PrivacySettingsPage: React.FC = () => {
                                     Analytics & Insights
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Help improve LearnCard with anonymous usage data
+                                    Help improve {brandingConfig?.name} with anonymous usage data
                                 </p>
                             </div>
                             <IonToggle

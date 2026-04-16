@@ -4,7 +4,9 @@ import { JWE, UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from
 
 import { t, didAndChallengeRoute, openRoute } from '@routes';
 import { createCredential } from '@accesslayer/credential/create';
+import { deleteCredentialById } from '@accesslayer/credential/delete';
 import { getCredentialById, getCredentialsById } from '@accesslayer/credential/read';
+import { getAllDidsForDid } from '@accesslayer/user/read';
 import { getUriParts, constructUri } from '@helpers/uri.helpers';
 import { encryptObject } from '@helpers/encryption.helpers';
 import { isEncrypted } from '@learncard/helpers';
@@ -12,6 +14,7 @@ import {
     setCredentialForId,
     getCachedCredentialById,
     getCachedCredentialsById,
+    deleteCredentialForId,
 } from '@cache/credentials';
 
 export const storageRouter = t.router({
@@ -38,7 +41,7 @@ export const storageRouter = t.router({
                 ? (item as any)
                 : await encryptObject(item, ctx.domain, [ctx.user.did]);
 
-            const id = await createCredential(jwe);
+            const id = await createCredential(jwe, ctx.user.did);
 
             if (!id) {
                 throw new TRPCError({
@@ -50,6 +53,47 @@ export const storageRouter = t.router({
             await setCredentialForId(id, jwe);
 
             return constructUri('credential', id, ctx.domain);
+        }),
+
+    delete: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/storage/delete',
+                tags: ['Storage'],
+                summary: 'Delete a stored Credential/Presentation',
+                description: 'Deletes a stored item by URI when the caller is authorized.',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { uri } = input;
+            const { id, type } = getUriParts(uri);
+
+            if (type !== 'credential' && type !== 'presentation') {
+                return false;
+            }
+
+            const credential = await getCredentialById(id);
+            if (!credential) return false;
+
+            if (credential.did) {
+                const dids = await getAllDidsForDid(ctx.user.did);
+                if (!dids.includes(credential.did)) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'You do not own this stored credential.',
+                    });
+                }
+            }
+
+            const deletedCount = await deleteCredentialById(id);
+            if (!deletedCount) return false;
+
+            await deleteCredentialForId(id);
+            return true;
         }),
 
     resolve: openRoute
@@ -123,20 +167,16 @@ export const storageRouter = t.router({
 
             const cachedValues = await getCachedCredentialsById(filteredIds);
 
-            // An array where each element has three possible values:
-            // - Resolved object from cache hit
-            // - String URI from cache miss
-            // - Null from invalid URI or other error
             const withCachedValues = uris.map((uri, index) => {
                 const id = ids[index];
 
-                if (!id) return null; // Null if invalid ID
+                if (!id) return null;
 
                 const filteredIndex = filteredIds.findIndex(filteredId => filteredId === id);
 
-                if (filteredIndex < 0) return null; // This is theoretically impossible, but a good sanity check
+                if (filteredIndex < 0) return null;
 
-                return cachedValues[filteredIndex] || uri; // Resolved object if cache hit, string uri if cache miss
+                return cachedValues[filteredIndex] || uri;
             });
 
             const cacheMisses = withCachedValues.filter(

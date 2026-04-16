@@ -1,6 +1,8 @@
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
+    LCNVisibleProfile,
+    LCNProfileConnectionStatusEnum,
     LCNProfileManager,
     UnsignedVC,
     VC,
@@ -17,6 +19,7 @@ import {
     PaginatedBoostRecipientsType,
     PaginatedBoostRecipientsWithChildrenType,
     PaginatedLCNProfiles,
+    PaginatedVisibleLCNProfiles,
     ConsentFlowContract,
     ConsentFlowContractQuery,
     ConsentFlowTerms,
@@ -118,11 +121,12 @@ export type LearnCardNetworkPluginDependentMethods = {
     clearDidWebCache?: () => Promise<void>;
     createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
     decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
+    resolveDid: (did: string) => Promise<DidDocument>;
 };
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>) => Promise<string>;
+    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }) => Promise<string>;
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -141,6 +145,12 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    claimPendingGuardianLinks: () => Promise<
+        Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
+    >;
+    getMyManagedChildren: () => Promise<LCNProfile[]>;
+    getMyGuardians: () => Promise<LCNProfile[]>;
+    removeManagesRelationship: (profileId: string) => Promise<boolean>;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;
@@ -151,7 +161,7 @@ export type LearnCardNetworkPluginMethods = {
         manager: Partial<Omit<LCNProfileManager, 'id' | 'created'>>
     ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
-    getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
+    getProfile: (profileId?: string) => Promise<LCNVisibleProfile | undefined>;
     getProfileManagerProfile: (id?: string) => Promise<LCNProfileManager | undefined>;
     searchProfiles: (
         profileId?: string,
@@ -161,7 +171,7 @@ export type LearnCardNetworkPluginMethods = {
             includeConnectionStatus?: boolean;
             includeServiceProfiles?: boolean;
         }
-    ) => Promise<LCNProfile[]>;
+    ) => Promise<(LCNVisibleProfile & { connectionStatus?: LCNProfileConnectionStatusEnum })[]>;
     connectWith: (profileId: string) => Promise<boolean>;
     connectWithExpiredInvite: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
@@ -169,18 +179,20 @@ export type LearnCardNetworkPluginMethods = {
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
     /** @deprecated Use getPaginatedConnections */
-    getConnections: () => Promise<LCNProfile[]>;
-    getPaginatedConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
+    getConnections: () => Promise<LCNVisibleProfile[]>;
+    getPaginatedConnections: (
+        options?: PaginationOptionsType
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     /** @deprecated Use getPaginatedPendingConnections */
-    getPendingConnections: () => Promise<LCNProfile[]>;
+    getPendingConnections: () => Promise<LCNVisibleProfile[]>;
     getPaginatedPendingConnections: (
         options?: PaginationOptionsType
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     /** @deprecated Use getPaginatedConnectionRequests */
-    getConnectionRequests: () => Promise<LCNProfile[]>;
+    getConnectionRequests: () => Promise<LCNVisibleProfile[]>;
     getPaginatedConnectionRequests: (
         options?: PaginationOptionsType
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     generateInvite: (
         challenge?: string,
         expiration?: number,
@@ -200,7 +212,7 @@ export type LearnCardNetworkPluginMethods = {
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
-    getBlockedProfiles: () => Promise<LCNProfile[]>;
+    getBlockedProfiles: () => Promise<LCNVisibleProfile[]>;
 
     sendCredential: (
         profileId: string,
@@ -373,7 +385,7 @@ export type LearnCardNetworkPluginMethods = {
     getBoostAdmins: (
         uri: string,
         options?: Partial<PaginationOptionsType> & { includeSelf?: boolean }
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     getBoostPermissions: (uri: string, profileId?: string) => Promise<BoostPermissions>;
     updateBoostPermissions: (
         uri: string,
@@ -533,6 +545,14 @@ export type LearnCardNetworkPluginMethods = {
         }[]
     >;
 
+    getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
+        {
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
     forwardContractRequestToProfile: (
         parentProfileId: string,
         targetProfileId: string,
@@ -576,6 +596,7 @@ export type LearnCardNetworkPluginMethods = {
         processed: number;
         claimed: number;
         errors: number;
+        guardianPending: number;
         verifiableCredentials: VC[];
     }>;
 
@@ -587,6 +608,20 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<{ message: string; approvalUrl: string }>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
+    getGuardianPendingCredential: (token: string) => Promise<{
+        inboxCredentialId: string;
+        guardianStatus: string;
+        issuer: { displayName: string; profileId: string };
+        credentialName?: string;
+        createdAt: string;
+        expiresAt: string;
+        canApproveInApp: boolean;
+    }>;
+    sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
+    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
+    rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
+    rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
@@ -714,6 +749,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
+    unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
@@ -798,6 +834,18 @@ export type LearnCardNetworkPluginMethods = {
     getActivity: (options: { activityId: string }) => Promise<CredentialActivityRecord | null>;
 
     getActivityChain: (options: { activityId: string }) => Promise<CredentialActivityRecord[]>;
+
+    // Federation
+
+    isServiceTrusted: (serviceDid: string) => Promise<boolean>;
+
+    getTrustedServices: () => Promise<
+        Array<{
+            did: string;
+            name: string;
+            endpoint: string;
+        }>
+    >;
 };
 
 /** @group LearnCardNetwork Plugin */

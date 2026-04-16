@@ -38,6 +38,7 @@ import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoa
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
+import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -47,7 +48,7 @@ import {
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { VC } from '@learncard/types';
+import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
@@ -73,6 +74,8 @@ type BoostEarnedCardProps = {
     isInSkillsModal?: boolean;
     hideOptionsMenu?: boolean;
     textColor?: string;
+    isClrChildCredential?: boolean;
+    parentVerificationItems?: VerificationItem[];
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -95,6 +98,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isInSkillsModal,
     hideOptionsMenu = false,
     textColor,
+    isClrChildCredential = false,
+    parentVerificationItems = [],
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -214,6 +219,15 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         handlePresentBoostMenuModal();
     };
 
+    const clrAchievements: any[] =
+        isClrCredential && Array.isArray(cred?.credentialSubject?.achievement)
+            ? cred.credentialSubject.achievement
+            : [];
+    const clrAssociations: any[] =
+        isClrCredential && Array.isArray(cred?.credentialSubject?.association)
+            ? cred.credentialSubject.association
+            : [];
+
     const customLinkedCredentialsComponent =
         linkedCredentialCount > 0 ? (
             <BoostLinkedCredentialsBox
@@ -224,15 +238,33 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 linkedCredentials={getClrLinkedCredentials(credential)}
                 defaultImg={defaultImg}
             />
+        ) : clrAchievements.length > 0 ? (
+            <ClrAchievementsSummaryBox
+                achievements={clrAchievements}
+                associations={clrAssociations}
+            />
         ) : undefined;
 
     const presentModal = () => {
+        const inheritedVerificationItems = isClrChildCredential
+            ? parentVerificationItems
+            : undefined;
+
+        let verificationItems;
+        if (isClrChildCredential) {
+            verificationItems = inheritedVerificationItems;
+        } else if (isBoost) {
+            verificationItems = undefined;
+        } else {
+            verificationItems = [];
+        }
+
         const earnedBoostIdCardProps = {
             credential: cred,
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: undefined,
+            verificationItems,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
@@ -275,6 +307,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             },
             formattedDisplayType: formattedAchievementType,
             isEarnedBoost: true,
+            isClrChildCredential,
         };
 
         const earnedBoostModalProps = {
@@ -282,7 +315,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: isBoost ? undefined : [],
+            verificationItems,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
@@ -306,6 +339,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             previewType,
             displayType: displayType,
             isEarnedBoost: true,
+            isClrChildCredential,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;

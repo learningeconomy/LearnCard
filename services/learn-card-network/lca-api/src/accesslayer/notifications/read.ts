@@ -9,6 +9,22 @@ import {
     NotificationsSortEnumValidator,
 } from 'types/notifications';
 
+export const getNotificationsByTypeAndListingId = async (
+    type: string,
+    listingId: string
+): Promise<MongoNotificationType[] | false> => {
+    try {
+        const notifications = await Notifications.find({
+            type: type as any,
+            'data.metadata.listingId': listingId,
+        }).toArray();
+        return notifications;
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
+};
+
 export const getNotificationById = async (
     _id: string
 ): Promise<MongoNotificationType | null | false> => {
@@ -95,7 +111,8 @@ export const queryNotifications = async (
 
         if (queryInput['from.did']) mongoQuery['from.did'] = queryInput['from.did'];
 
-        if (queryInput['from.profileId']) mongoQuery['from.profileId'] = queryInput['from.profileId'];
+        if (queryInput['from.profileId'])
+            mongoQuery['from.profileId'] = queryInput['from.profileId'];
 
         if (queryInput['data.vcUris']) {
             // Support both single string and array - find notifications containing any of these URIs
@@ -110,6 +127,10 @@ export const queryNotifications = async (
                 ? queryInput['data.vpUris']
                 : [queryInput['data.vpUris']];
             mongoQuery['data.vpUris'] = { $in: vpUris };
+        }
+
+        if (queryInput['data.metadata.listingId']) {
+            mongoQuery['data.metadata.listingId'] = queryInput['data.metadata.listingId'];
         }
 
         if (queryInput.read !== undefined) mongoQuery.read = queryInput.read;

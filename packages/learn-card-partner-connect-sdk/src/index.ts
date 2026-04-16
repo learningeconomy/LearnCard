@@ -40,6 +40,11 @@ import type {
     LearnerContextResponse,
     SendAiSessionCredentialInput,
     SendAiSessionCredentialResponse,
+    AppNotificationInput,
+    AppNotificationResponse,
+    IncrementCounterResponse,
+    GetCounterResponse,
+    GetCountersResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -82,11 +87,18 @@ export class PartnerConnect {
     /**
      * Configure the active host origin using the following hierarchy:
      * 1. Check for `lc_host_override` query parameter (for staging/testing)
-     * 2. Fall back to first configured origin
-     * 3. Fall back to DEFAULT_HOST_ORIGIN
+     * 2. Check sessionStorage for a previously stored override (survives in-app navigation)
+     * 3. Fall back to first configured origin
+     * 4. Fall back to DEFAULT_HOST_ORIGIN
+     *
+     * When a valid override is found in the query parameter, it is persisted to
+     * sessionStorage so that subsequent page navigations within the same tab
+     * automatically use the same override without requiring it in every URL.
      *
      * This origin will be used for all outgoing messages and incoming message validation.
      */
+    private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
     private configureActiveOrigin(): void {
         if (typeof window === 'undefined') {
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
@@ -111,12 +123,36 @@ export class PartnerConnect {
                         this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
                 } else {
                     this.activeHostOrigin = hostOverride;
+
+                    // Persist to sessionStorage so subsequent page navigations
+                    // within this tab automatically use the same override.
+                    try {
+                        sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, hostOverride);
+                    } catch {
+                        // sessionStorage may be unavailable (e.g. sandboxed iframes)
+                    }
+
                     console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
                 }
             } else {
-                // Use first configured origin or default
-                this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+                // Fall back to a previously stored override from this session
+                let storedOverride: string | null = null;
+
+                try {
+                    storedOverride = sessionStorage.getItem(PartnerConnect.SESSION_STORAGE_KEY);
+                } catch {
+                    // sessionStorage may be unavailable
+                }
+
+                if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
+                    this.activeHostOrigin = storedOverride;
+                    console.log('[LearnCard SDK] Using stored lc_host_override:', storedOverride);
+                } else {
+                    // Use first configured origin or default
+                    this.activeHostOrigin =
+                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+                    console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+                }
             }
         } catch (error) {
             console.error('[LearnCard SDK] Error configuring active origin:', error);
@@ -621,23 +657,6 @@ export class PartnerConnect {
      *
      * @param input - Session details including title and optional metadata
      * @returns Promise resolving to topic and session URIs
-     *
-     * @example
-     * ```typescript
-     * // Create a new AI session
-     * const session = await learnCard.sendAiSessionCredential({
-     *   sessionTitle: 'Introduction to Machine Learning'
-     * });
-     * console.log('Topic URI:', session.topicUri);
-     * console.log('Session created:', session.sessionCredentialUri);
-     *
-     * // Create another session under the same topic
-     * const session2 = await learnCard.sendAiSessionCredential({
-     *   sessionTitle: 'Advanced ML Concepts',
-     *   metadata: { difficulty: 'advanced' }
-     * });
-     * // session2.topicUri === session.topicUri (same topic)
-     * ```
      */
     public sendAiSessionCredential(
         input: SendAiSessionCredentialInput
@@ -645,6 +664,48 @@ export class PartnerConnect {
         return this.sendAppEvent<SendAiSessionCredentialResponse>({
             type: 'send-ai-session-credential',
             ...input,
+        });
+    }
+
+    /**
+     * Send a notification to the current user from this app.
+     * The notification appears in the user's LearnCard notification inbox.
+     */
+    public sendNotification(input: AppNotificationInput): Promise<AppNotificationResponse> {
+        return this.sendAppEvent<AppNotificationResponse>({
+            type: 'send-notification',
+            ...input,
+        });
+    }
+
+    /**
+     * Increment or decrement an app-scoped counter for the current user.
+     */
+    public incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse> {
+        return this.sendAppEvent<IncrementCounterResponse>({
+            type: 'increment-counter',
+            key,
+            amount,
+        });
+    }
+
+    /**
+     * Read the current value of an app-scoped counter for the current user.
+     */
+    public getCounter(key: string): Promise<GetCounterResponse> {
+        return this.sendAppEvent<GetCounterResponse>({
+            type: 'get-counter',
+            key,
+        });
+    }
+
+    /**
+     * Read multiple app-scoped counters at once for the current user.
+     */
+    public getCounters(keys?: string[]): Promise<GetCountersResponse> {
+        return this.sendAppEvent<GetCountersResponse>({
+            type: 'get-counters',
+            ...(keys ? { keys } : {}),
         });
     }
 

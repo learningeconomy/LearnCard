@@ -4,7 +4,8 @@ import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
-import SkillProficiencyBar, { SkillLevel } from './SkillProficiencyBar';
+import SkillProficiencyBar from './SkillProficiencyBar';
+import { SkillLevel } from './skillTypes';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 
 import { ModalTypes, useModal } from 'learn-card-base';
@@ -90,7 +91,7 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
             {isNodeSelected && (
                 <div className="flex flex-col items-center p-[10px] border-solid border-t-[1px] border-grayscale-200">
                     <div
-                        className={`bg-grayscale-50 flex flex-col gap-[15px] w-full overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-in-out ${
+                        className={`bg-transparent flex flex-col gap-[15px] w-full overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-in-out ${
                             isExpanded
                                 ? 'max-h-[200px] opacity-100 translate-y-0 mb-[15px]'
                                 : 'max-h-0 opacity-0 -translate-y-1 pointer-events-none mb-0'

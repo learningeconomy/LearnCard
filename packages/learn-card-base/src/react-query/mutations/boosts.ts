@@ -47,7 +47,6 @@ type SharedCredentialsIndex = {
 
 export const baseBoostShareRouteName = 'share-boost';
 
-const baseUrl = getBaseUrl();
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
@@ -62,6 +61,8 @@ export const useShareBoostMutation = () => {
             credentialUri: string;
             shareRouteName?: string;
         }) => {
+            const baseUrl = getBaseUrl();
+
             // get current index data stored on ceramic for user
             // currentUser's wallet
             const myWallet = await initWallet();
@@ -278,7 +279,10 @@ export const useCreateBoost = () => {
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
-                    category: state?.basicInfo?.type,
+                    category:
+                        state?.basicInfo?.type ||
+                        getDefaultCategoryForCredential(unsignedCredential) ||
+                        'Achievement',
                     status,
                     claimPermissions: defaultClaimPermissions,
                     defaultPermissions,
@@ -297,7 +301,10 @@ export const useCreateBoost = () => {
                 boostUri = await wallet.invoke.createChildBoost(parentUri, unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
-                    category: state?.basicInfo?.type,
+                    category:
+                        state?.basicInfo?.type ||
+                        getDefaultCategoryForCredential(unsignedCredential) ||
+                        'Achievement',
                     status,
                     claimPermissions: defaultClaimPermissions,
                     defaultPermissions,

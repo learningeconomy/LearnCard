@@ -10,6 +10,7 @@ import {
     useWallet,
     useUpdateTerms,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
 import useGuardianGate from 'src/hooks/useGuardianGate';
 
@@ -53,6 +54,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 }) => {
     const { closeModal } = useModal();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
     const { guardedAction } = useGuardianGate();
 
     // Use passed termsUri/ownerDid if provided (e.g., from ManageDataSharingModal)
@@ -207,8 +209,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                     <h4 className="text-grayscale-900 text-[20px] font-notoSans">
                         {contractCategoryReadDataExists
-                            ? 'Share Your LearnCard Data'
-                            : 'This app is not able to read any credentials from your LearnCard.'}
+                            ? `Share Your ${brandingConfig?.name} Data`
+                            : `This app is not able to read any credentials from your ${brandingConfig?.name}.`}
                     </h4>
 
                     {contractCategoryReadDataExists && (
@@ -313,8 +315,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                     <h4 className="text-grayscale-900 text-[20px] font-notoSans">
                         {contractCategoryWriteDataExists
-                            ? `Allow ${name} to Add Data to Your LearnCard`
-                            : 'This app is not able to write any data to your LearnCard.'}
+                            ? `Allow ${name} to Add Data to Your ${brandingConfig?.name}`
+                            : `This app is not able to write any data to your ${brandingConfig?.name}.`}
                     </h4>
 
                     {contractCategoryWriteDataExists && (
@@ -348,9 +350,9 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
                                     Turning on{' '}
                                     <span className="font-[600] font-notoSans">Allow All</span> will
-                                    let the app issue credentials and add them to your LearnCard. If
-                                    turned off, you can selectively choose which wallet categories
-                                    that the app can add to.
+                                    let the app issue credentials and add them to your{' '}
+                                    {brandingConfig?.name}. If turned off, you can selectively choose
+                                    which wallet categories that the app can add to.
                                 </p>
                             </div>
 

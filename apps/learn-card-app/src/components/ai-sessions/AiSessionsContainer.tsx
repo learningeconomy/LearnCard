@@ -56,7 +56,7 @@ export const AiSessionsContainer: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     useEffect(() => {
-        if (!isCollapsed) {
+        if (!isDesktop && !isCollapsed) {
             sideMenuStore.set.isCollapsed(true);
         }
     }, []);
@@ -83,6 +83,8 @@ export const AiSessionsContainer: React.FC<{
         /localhost:/,
         'localhost%3A'
     );
+    const { data: enrichedSessionData, isLoading: isLoadingEnrichedSessions } =
+        useGetEnrichedSession(topicUri);
 
     const topicRecord = enrichedSessionData?.topicRecord;
     const topicVc = enrichedSessionData?.topicVc;

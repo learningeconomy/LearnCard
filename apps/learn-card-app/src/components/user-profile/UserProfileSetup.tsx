@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 import { pushUtilities, useWallet } from 'learn-card-base';
 
-import { IonPage } from '@ionic/react';
-
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import UserProfileSetupHeader from './UserProfileSetupHeader';
 import UserProfileUpdateForm from './UserProfileUpdateForm';
@@ -11,7 +9,6 @@ import NetworkSettings from '../network-settings/NetworkSettings';
 import JoinNetworkPrompt from '../network-prompts/JoinNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
-import ModalLayout from '../../layout/ModalLayout';
 import ChapiPrompt from '../chapi-prompt/ChapiPrompt';
 
 import {
@@ -163,16 +160,11 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
 
     if (profileFormState === UserProfileFormStateEnum.Permissions) {
         activeForm = (
-            <ModalLayout
-                handleOnClick={() => setProfileFormState(UserProfileFormStateEnum.Account)}
-                allowScroll
-            >
-                <JoinNetworkPrompt
-                    handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
-                    showNotificationsModal={false}
-                    showRejectModal={false}
-                />
-            </ModalLayout>
+            <JoinNetworkPrompt
+                handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
+                showNotificationsModal={false}
+                showRejectModal={false}
+            />
         );
     } else if (profileFormState === UserProfileFormStateEnum.PermissionsSettings) {
         activeForm = (

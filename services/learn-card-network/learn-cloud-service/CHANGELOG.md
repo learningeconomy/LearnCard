@@ -1,5 +1,106 @@
 # @learncard/network-brain-service
 
+## 2.5.11
+
+### Patch Changes
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/types@5.13.4
+    -   @learncard/core@9.4.14
+    -   @learncard/helpers@1.2.14
+    -   @learncard/did-web-plugin@1.1.14
+    -   @learncard/didkey-plugin@1.1.14
+    -   @learncard/didkit-plugin@1.8.4
+    -   @learncard/didkit-plugin-node@0.2.10
+    -   @learncard/encryption-plugin@1.1.14
+    -   @learncard/learn-card-plugin@1.2.14
+    -   @learncard/vc-plugin@1.4.10
+    -   @learncard/vc-templates-plugin@1.1.14
+    -   @learncard/crypto-plugin@1.1.14
+    -   @learncard/expiration-plugin@1.2.14
+
+## 2.5.10
+
+### Patch Changes
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+    -   @learncard/core@9.4.13
+    -   @learncard/helpers@1.2.13
+    -   @learncard/did-web-plugin@1.1.13
+    -   @learncard/didkey-plugin@1.1.13
+    -   @learncard/didkit-plugin@1.8.3
+    -   @learncard/didkit-plugin-node@0.2.9
+    -   @learncard/encryption-plugin@1.1.13
+    -   @learncard/learn-card-plugin@1.2.13
+    -   @learncard/vc-plugin@1.4.9
+    -   @learncard/vc-templates-plugin@1.1.13
+    -   @learncard/crypto-plugin@1.1.13
+    -   @learncard/expiration-plugin@1.2.13
+
+## 2.5.9
+
+### Patch Changes
+
+-   Updated dependencies [[`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8), [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5)]:
+    -   @learncard/types@5.13.2
+    -   @learncard/core@9.4.12
+    -   @learncard/helpers@1.2.12
+    -   @learncard/did-web-plugin@1.1.12
+    -   @learncard/didkey-plugin@1.1.12
+    -   @learncard/didkit-plugin@1.8.2
+    -   @learncard/didkit-plugin-node@0.2.8
+    -   @learncard/encryption-plugin@1.1.12
+    -   @learncard/learn-card-plugin@1.2.12
+    -   @learncard/vc-plugin@1.4.8
+    -   @learncard/vc-templates-plugin@1.1.12
+    -   @learncard/crypto-plugin@1.1.12
+    -   @learncard/expiration-plugin@1.2.12
+
+## 2.5.8
+
+### Patch Changes
+
+-   [#1093](https://github.com/learningeconomy/LearnCard/pull/1093) [`6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2`](https://github.com/learningeconomy/LearnCard/commit/6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Small dev change to not use NAPI didkit in local docker containers
+
+-   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2), [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0)]:
+    -   @learncard/types@5.13.1
+    -   @learncard/core@9.4.11
+    -   @learncard/helpers@1.2.11
+    -   @learncard/did-web-plugin@1.1.11
+    -   @learncard/didkey-plugin@1.1.11
+    -   @learncard/didkit-plugin@1.8.1
+    -   @learncard/didkit-plugin-node@0.2.7
+    -   @learncard/encryption-plugin@1.1.11
+    -   @learncard/learn-card-plugin@1.2.11
+    -   @learncard/vc-plugin@1.4.7
+    -   @learncard/vc-templates-plugin@1.1.11
+    -   @learncard/crypto-plugin@1.1.11
+    -   @learncard/expiration-plugin@1.2.11
+
+## 2.5.7
+
+### Patch Changes
+
+-   [#1083](https://github.com/learningeconomy/LearnCard/pull/1083) [`01a12c4353c28196a6e49ea6996656717faa246a`](https://github.com/learningeconomy/LearnCard/commit/01a12c4353c28196a6e49ea6996656717faa246a) Thanks [@Custard7](https://github.com/Custard7)! - fix: PR Preview URI resolution
+
+-   [#1081](https://github.com/learningeconomy/LearnCard/pull/1081) [`5b871b0c056a7d82b1426c2a13feb0004162db46`](https://github.com/learningeconomy/LearnCard/commit/5b871b0c056a7d82b1426c2a13feb0004162db46) Thanks [@Custard7](https://github.com/Custard7)! - fix: PR Preview LearnCloud .well-known resolution
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/helpers@1.2.10
+    -   @learncard/types@5.13.0
+    -   @learncard/didkit-plugin@1.8.0
+    -   @learncard/core@9.4.10
+    -   @learncard/did-web-plugin@1.1.10
+    -   @learncard/didkey-plugin@1.1.10
+    -   @learncard/didkit-plugin-node@0.2.6
+    -   @learncard/encryption-plugin@1.1.10
+    -   @learncard/learn-card-plugin@1.2.10
+    -   @learncard/vc-plugin@1.4.6
+    -   @learncard/vc-templates-plugin@1.1.10
+    -   @learncard/crypto-plugin@1.1.10
+    -   @learncard/expiration-plugin@1.2.10
+
 ## 2.5.6
 
 ### Patch Changes

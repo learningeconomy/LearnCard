@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonRow, IonCol, IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
@@ -15,6 +16,7 @@ export const ScannerPermissionsPrompt: React.FC<{
 }> = ({ handleCloseModal, showScanner }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const handleScan = async () => {
         const scannerPermissions = await BarcodeScanner.checkPermissions();
@@ -53,7 +55,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                 <IonRow className="flex flex-col pb-6 pt-2 w-full">
                     <IonCol className="w-full flex items-center justify-center">
                         <h6 className="tracking-[12px] text-base font-bold text-black">
-                            LEARNCARD
+                            {brandingConfig?.name}
                         </h6>
                     </IonCol>
                 </IonRow>

@@ -416,12 +416,67 @@ export interface SendAiSessionCredentialInput {
 export interface SendAiSessionCredentialResponse {
     /** URI of the AI Topic (parent) boost */
     topicUri: string;
+    /** URI of the topic credential, if a new topic was created */
+    topicCredentialUri?: string;
     /** URI of the created AI Session credential */
     sessionCredentialUri: string;
     /** URI of the session boost (child of topic) */
     sessionBoostUri: string;
     /** Whether a new topic was created (true) or existing was used (false) */
     isNewTopic: boolean;
+}
+
+/**
+ * Input for sending a notification to the current user from this app.
+ * The notification appears in the user's LearnCard notification inbox.
+ */
+export interface AppNotificationInput {
+    /** Notification title */
+    title?: string;
+
+    /** Notification body text */
+    body?: string;
+
+    /** Deep link path within the app (e.g. '/prizes') */
+    actionPath?: string;
+
+    /** Grouping category (e.g. 'reward', 'announcement', 'status') */
+    category?: string;
+
+    /** Notification priority */
+    priority?: 'normal' | 'high';
+}
+
+/**
+ * Response from sendNotification
+ */
+export interface AppNotificationResponse {
+    sent: boolean;
+}
+
+/**
+ * Response from incrementCounter
+ */
+export interface IncrementCounterResponse {
+    key: string;
+    previousValue: number;
+    newValue: number;
+}
+
+/**
+ * Response from getCounter
+ */
+export interface GetCounterResponse {
+    key: string;
+    value: number;
+    updatedAt: string | null;
+}
+
+/**
+ * Response from getCounters
+ */
+export interface GetCountersResponse {
+    counters: GetCounterResponse[];
 }
 
 /**

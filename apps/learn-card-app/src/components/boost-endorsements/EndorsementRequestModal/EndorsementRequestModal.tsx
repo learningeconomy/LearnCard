@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import EndorsementForm from '../EndorsementForm/EndorsementForm';
 import EndorsementBadge from '../../../assets/images/endorsement-badge.png';
 import EndorsementRequestModalFooter from './EndorsementRequestModalFooter';
-import DesktopLoginBG from '../../../assets/images/desktop-login-bg-alt.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
 import EndorsementSuccessfullRequestModal from './EndorsementSuccessfullRequestModal';
 import EndorsementRequestModalSkeletonLoader from './EndorsementRequestModalSkeletonLoader';
@@ -31,6 +31,7 @@ export const EndorsementRequestModal: React.FC<{
     shareLinkInfo?: string;
     existingEndorsements?: VC[];
 }> = ({ credential, shareLinkInfo, existingEndorsements }) => {
+    const { desktopLoginBgAlt } = useTenantBrandingAssets();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
@@ -126,12 +127,16 @@ export const EndorsementRequestModal: React.FC<{
     const loggedOutBGStyles = isLoggedIn
         ? {}
         : {
-              background: `url(${DesktopLoginBG})`,
+              background: `url(${desktopLoginBgAlt})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
           };
 
-    if (pendingEndorsement) {
+    // Only show success view if there's a valid pending endorsement with actual content
+    const hasValidPendingEndorsement =
+        pendingEndorsement?.description || pendingEndorsement?.relationship?.type;
+
+    if (pendingEndorsement && hasValidPendingEndorsement) {
         return (
             <EndorsementDraftRequestSuccess
                 credential={credential}

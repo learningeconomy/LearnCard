@@ -55,6 +55,7 @@ import {
     getRequestedForForUser,
     getContractById,
     getAllRequestsForTargetProfile,
+    getSharedInsightsRequestsForTargetProfile,
 } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -63,6 +64,7 @@ import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
+    updateRequestedForStatusIfExists,
     updateTerms,
     upsertRequestedForRelationship,
     withdrawTerms,
@@ -88,6 +90,10 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
+import {
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
 import {
     addAutoBoostsToContractDb,
     removeAutoBoostsFromContractDb,
@@ -915,6 +921,13 @@ export const contractsRouter = t.router({
             }
 
             if (await hasProfileConsentedToContract(profile, contractDetails.contract)) {
+                try {
+                    await upsertRequestedForRelationship(
+                        contractDetails.contract.id,
+                        profile.profileId,
+                        'accepted'
+                    );
+                } catch {}
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: "You've already consented to this contract!",
@@ -1063,6 +1076,14 @@ export const contractsRouter = t.router({
                 { terms, expiresAt, oneTime },
                 ctx.domain
             );
+
+            try {
+                await updateRequestedForStatusIfExists(
+                    contractDetails.contract.id,
+                    profile.profileId,
+                    'accepted'
+                );
+            } catch {}
 
             const relationship = await getContractTermsForProfile(
                 profile,
@@ -1915,7 +1936,17 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id);
 
-            return requests;
+            return Promise.all(
+                requests.map(async request => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
+                    return {
+                        ...request,
+                        profile: stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, 'authenticated')
+                        ),
+                    };
+                })
+            );
         }),
 
     getRequestStatusForProfile: profileRoute
@@ -1985,7 +2016,16 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForForUser(contract.id, resolvedTargetProfileId);
 
-            return requests?.[0] ?? null;
+            if (!requests?.[0]) return null;
+
+            const updatedProfile = updateDidForProfile(ctx.domain, requests[0].profile);
+
+            return {
+                ...requests[0],
+                profile: stripSensitiveProfileListFields(
+                    sanitizeProfileForTier(updatedProfile, 'authenticated')
+                ),
+            };
         }),
 
     markContractRequestAsSeen: profileRoute
@@ -2178,12 +2218,79 @@ export const contractsRouter = t.router({
             const requests = await getAllRequestsForTargetProfile(resolvedTargetProfileId);
 
             // Construct URIs for contracts
-            return requests.map(request => ({
-                ...request,
-                contract: {
-                    ...request.contract,
-                    uri: constructUri('contract', request.contract.id, ctx.domain),
-                },
+            return Promise.all(
+                requests.map(async request => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
+
+                    return {
+                        ...request,
+                        profile: stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, 'authenticated')
+                        ),
+                        contract: {
+                            ...request.contract,
+                            uri: constructUri('contract', request.contract.id, ctx.domain),
+                        },
+                    };
+                })
+            );
+        }),
+
+    getSharedInsightsRequestsForProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/shared-insights-requests-for-profile',
+                tags: ['Contracts'],
+                summary: 'Get profiles a user has shared insights with',
+                description:
+                    'Gets profiles with REQUESTED_FOR relationships targeting the current user, including request status.',
+            },
+        })
+        .input(
+            z.object({
+                targetProfileId: z.string(),
+            })
+        )
+        .output(
+            z.array(
+                z.object({
+                    profile: LCNProfileValidator,
+                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+                    contractUri: z.string().optional(),
+                })
+            )
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { targetProfileId } = input;
+
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const isCheckingOwnRequests = profile.profileId === resolvedTargetProfileId;
+
+            if (!isCheckingOwnRequests) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You can only query your own shared insights requests.',
+                });
+            }
+
+            const results = await getSharedInsightsRequestsForTargetProfile(
+                resolvedTargetProfileId
+            );
+
+            return results.map(({ contractId, ...rest }) => ({
+                ...rest,
+                contractUri: constructUri('contract', contractId, ctx.domain),
             }));
         }),
 

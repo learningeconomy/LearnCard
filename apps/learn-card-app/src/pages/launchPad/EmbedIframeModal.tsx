@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { X } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPo
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
+import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 
 interface LaunchConfig {
     url?: string;
@@ -52,6 +53,36 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         setPendingCredential({ credentialUri, boostUri });
     }, []);
 
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const handleTapNotificationAction = useCallback(
+        (actionPath: string) => {
+            if (!iframeRef.current) return;
+
+            // Only allow relative paths — reject anything with a protocol (e.g. javascript:, data:)
+            if (/^[a-z][a-z0-9+.-]*:/i.test(actionPath)) return;
+
+            try {
+                const base = new URL(embedUrl);
+                const expectedOrigin = base.origin;
+                const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
+                base.pathname = base.pathname.replace(/\/$/, '') + safePath;
+
+                // Verify the constructed URL hasn't escaped to a different origin
+                if (base.origin !== expectedOrigin) return;
+
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(window.location.origin)}`;
+            } catch {
+                // embedUrl is invalid — do not navigate
+            }
+        },
+        [embedUrl]
+    );
+
+    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName, {
+        onTapAction: handleTapNotificationAction,
+    });
+
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
     }, []);
@@ -90,6 +121,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         isInstalled,
         appId: appId?.toString(),
         onCredentialIssued: handleCredentialIssued,
+        onAppNotification: handleAppNotification,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -112,6 +144,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                 appId={appId?.toString() || 'preview'}
                                 appName={appName}
                                 pendingCredential={pendingCredential}
+                                onNavigateAction={handleTapNotificationAction}
                             />
                             {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
                                 <button
@@ -133,7 +166,6 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                             d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
                                         />
                                     </svg>
-                                    {isMobile ? '' : 'Full Screen'}
                                 </button>
                             )}
                             <button
@@ -169,6 +201,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                             </div>
                         )}
                         <iframe
+                            ref={iframeRef}
                             src={embedUrlWithOverride}
                             onLoad={() => setIsLoading(false)}
                             style={{
@@ -198,6 +231,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     onDismiss={handleDismissClaimModal}
                 />
             )}
+
+            {ToastOverlay}
         </IonPage>
     );
 };

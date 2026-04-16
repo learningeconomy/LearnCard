@@ -6,16 +6,16 @@ import crypto from 'node:crypto';
 // Load issuer seed from environment variable
 const issuerSeed = import.meta.env.LEARNCARD_ISSUER_SEED;
 
-if (!issuerSeed) {
-  throw new Error('LEARNCARD_ISSUER_SEED environment variable is required');
-}
-
 export const server = {
   issueCredential: defineAction({
     input: z.object({
       recipientDid: z.string(),
     }),
     handler: async (input) => {
+
+      if (!issuerSeed) {
+        throw new Error('LEARNCARD_ISSUER_SEED environment variable is required');
+      }
       const learnCard = await initLearnCard({ seed: issuerSeed, network: true });
       const achievementCredential = learnCard.invoke.newCredential({ type: 'achievement' });
 

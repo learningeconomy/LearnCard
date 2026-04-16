@@ -13,6 +13,7 @@ import {
 } from 'learn-card-base';
 
 import { IonPage, useIonModal } from '@ionic/react';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import BoostShareableQRCode from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableQRCode';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
@@ -95,7 +96,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                     );
 
                     setBoostClaimLink(
-                        `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
                     );
                     setIsLinkLoading(false);
                 }
@@ -141,7 +142,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                         );
 
                         setBoostClaimLink(
-                            `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
                         );
                         setIsLinkLoading(false);
                     }
@@ -202,6 +203,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     const [presentClaimQRCode, dismissClaimQRCode] = useIonModal(BoostShareableQRCode, {
         state: shareableCodeState,
         handleCloseModal: () => dismissClaimQRCode(),
+        showCloseButton: true,
         boostClaimLink: boostClaimLink,
         text: 'Scan Code to Join Family',
     });

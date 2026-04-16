@@ -5,6 +5,7 @@ import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import QRCodeUserCard from '../../../components/qrcode-user-card/QRCodeUserCard';
 
 import { useModal, ModalTypes, useGetCurrentLCNUser } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 export const ShareInsightsWithAnyoneController: React.FC = () => {
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -18,9 +19,7 @@ export const ShareInsightsWithAnyoneController: React.FC = () => {
     );
 
     const handleUserQRCodeCard = () => {
-        const overrideShareLink = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?shareInsights=true&learnerProfileId=${currentLCNUser?.profileId}`;
+        const overrideShareLink = `${getAppBaseUrl()}/passport?shareInsights=true&learnerProfileId=${currentLCNUser?.profileId}`;
 
         newModal(
             <QRCodeUserCard

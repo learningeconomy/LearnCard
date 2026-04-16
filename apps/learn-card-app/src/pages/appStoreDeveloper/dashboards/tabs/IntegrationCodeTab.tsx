@@ -10,7 +10,7 @@
  * Mirrors functionality from DataMappingStep for dashboard use.
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     Copy,
     Check,
@@ -27,11 +27,14 @@ import {
     Webhook,
     BellOff,
     FileSpreadsheet,
+    Key,
+    Loader2,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
 import { Clipboard } from '@capacitor/clipboard';
 import { useToast } from 'learn-card-base/hooks/useToast';
+import { useWallet } from 'learn-card-base';
 
 import type { CredentialTemplate } from '../types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
@@ -42,6 +45,14 @@ import {
     OBv3CredentialTemplate,
 } from '../../partner-onboarding/components/CredentialBuilder';
 import { fieldNameToVariable } from '../../partner-onboarding/types';
+import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
+
+type AuthGrant = {
+    id: string;
+    name: string;
+    createdAt: string;
+    status: 'revoked' | 'active';
+};
 
 interface IntegrationCodeTabProps {
     integration: LCNIntegration;
@@ -60,6 +71,7 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
     templates: basicTemplates,
 }) => {
     const { presentToast } = useToast();
+    const { initWallet } = useWallet();
 
     // Load full template details on-demand (not loaded by dashboard for performance)
     const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
@@ -80,6 +92,47 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
         webhookUrl: '',
         suppressDelivery: false,
     });
+
+    // API Token selector state
+    const [authGrants, setAuthGrants] = useState<AuthGrant[]>([]);
+    const [loadingGrants, setLoadingGrants] = useState(false);
+    const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
+    const [apiToken, setApiToken] = useState('');
+    const [showTokenSelector, setShowTokenSelector] = useState(false);
+
+    // Fetch auth grants when switching to example view
+    useEffect(() => {
+        if (viewMode !== 'example') return;
+        const fetchGrants = async () => {
+            setLoadingGrants(true);
+            try {
+                const wallet = await initWallet();
+                const grants = await wallet.invoke.getAuthGrants() || [];
+                const active = grants.filter((g: AuthGrant) => g.status === 'active');
+                setAuthGrants(active);
+            } catch (err) {
+                console.error('Failed to fetch auth grants:', err);
+            } finally {
+                setLoadingGrants(false);
+            }
+        };
+        fetchGrants();
+    }, [viewMode]);
+
+    const selectToken = async (grantId: string) => {
+        try {
+            const wallet = await initWallet();
+            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
+            setApiToken(token);
+            setSelectedGrantId(grantId);
+            setShowTokenSelector(false);
+        } catch (err) {
+            console.error('Failed to get token:', err);
+        }
+    };
+
+    const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
+    const displayTokenName = selectedGrant?.name || (apiToken ? 'Token selected' : 'No token selected');
 
     // Compute issuable templates (exclude master templates, include their children flattened)
     // Get master templates for display
@@ -371,9 +424,9 @@ ${optionsParts.join('\n')}
 
 import { initLearnCard } from '@learncard/init';
 
-// Initialize with your API Token (get from "API Tokens" tab)
+// Initialize with your API Token (select one above to fill this in)
 const learnCard = await initLearnCard({
-    apiToken: process.env.LEARNCARD_API_TOKEN, // Your API Token
+    apiToken: '${apiToken || 'YOUR_API_TOKEN'}',
     network: true
 });
 
@@ -454,7 +507,7 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
 # Get your API Token from the "API Tokens" tab in your dashboard.
 # Create a token with "Full Access" or "Credentials Only" scope.
 
-curl -X POST "https://network.learncard.com/api/send" \\
+curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '${payloadJson}'
@@ -899,6 +952,79 @@ curl -X POST "https://network.learncard.com/api/send" \\
                         <p className="text-xs text-gray-500">
                             Enter a LearnCard Profile ID or an email address
                         </p>
+                    </div>
+
+                    {/* API Token Selector */}
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                    <Key className="w-5 h-5 text-indigo-600" />
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">API Token</p>
+                                    <p className="text-xs text-gray-500">
+                                        {apiToken ? (
+                                            <span className="text-emerald-600 flex items-center gap-1">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                                {displayTokenName}
+                                            </span>
+                                        ) : (
+                                            <span className="text-amber-600">Select a token to fill the code below</span>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setShowTokenSelector(!showTokenSelector)}
+                                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                            >
+                                {showTokenSelector ? 'Hide' : 'Select'}
+                                {showTokenSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
+                        </div>
+
+                        {showTokenSelector && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                {loadingGrants ? (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Loading tokens...
+                                    </div>
+                                ) : authGrants.length === 0 ? (
+                                    <p className="text-sm text-gray-500">
+                                        No API tokens found. Create one in the <span className="text-cyan-600 font-medium">API Tokens</span> tab.
+                                    </p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {authGrants.map((grant) => (
+                                            <button
+                                                key={grant.id}
+                                                onClick={() => selectToken(grant.id)}
+                                                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                                    selectedGrantId === grant.id
+                                                        ? 'bg-indigo-50 border-indigo-300'
+                                                        : 'bg-white border-gray-200 hover:border-indigo-300'
+                                                }`}
+                                            >
+                                                <div className="text-left">
+                                                    <p className="text-sm font-medium text-gray-700">{grant.name}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        Created {new Date(grant.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+
+                                                {selectedGrantId === grant.id && (
+                                                    <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* CSV Template Download */}

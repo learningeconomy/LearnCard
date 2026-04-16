@@ -28,6 +28,7 @@ import {
 
 import { mapBoostsToSkills } from './skills.helpers';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
+import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 
 import { LearnCardRolesEnum } from '../../components/onboarding/onboarding.helpers';
 
@@ -171,8 +172,22 @@ const SkillsPage: React.FC = () => {
                                 </div>
                             )}
 
+                            {isBoostsEmpty && (
+                                <AiFeatureLinks
+                                    features={['ai-sessions', 'pathways', 'ai-insights']}
+                                    className="mb-4"
+                                />
+                            )}
+
                             {selectedTab === TabEnum.MY_HUB && <SkillsMyHub />}
                             {selectedTab === TabEnum.ADMIN_PANEL && <SkillsAdminPanel />}
+
+                            {!isBoostsEmpty && (
+                                <AiFeatureLinks
+                                    features={['ai-sessions', 'pathways', 'ai-insights']}
+                                    className="mt-4"
+                                />
+                            )}
                         </div>
                     </div>
                 </IonContent>

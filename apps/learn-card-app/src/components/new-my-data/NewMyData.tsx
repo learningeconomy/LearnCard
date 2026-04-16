@@ -6,6 +6,7 @@ import { IonSpinner } from '@ionic/react';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { ProfilePicture } from 'learn-card-base';
 import { oauth2ReducerArgStore } from '../../pages/sync-my-school/ExternalAuthServiceProvider';
@@ -14,6 +15,7 @@ import { useRegistryState } from '../../hooks/useRegistryEntryState';
 const NewMyData: React.FC = () => {
     const location = useLocation();
     const currentUser = useCurrentUser();
+    const brandingConfig = useBrandingConfig();
     const entries = useRegistryState();
 
     const entriesLoading = entries?.some(entry => entry.isFetching);
@@ -22,7 +24,7 @@ const NewMyData: React.FC = () => {
         <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white rounded-[24px]">
             <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
                 <span className="text-grayscale-900 uppercase text-[14px] font-montserrat normal font-[700] tracking-[7px] text-center">
-                    LearnCard
+                    {brandingConfig?.name}
                 </span>
 
                 <div className="flex flex-col items-center">

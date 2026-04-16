@@ -80,6 +80,7 @@ const SubmissionForm: React.FC = () => {
             hero_background_color: listing.hero_background_color,
             min_age: listing.min_age,
             age_rating: listing.age_rating,
+            contact_email: listing.contact_email,
         };
     }, [existingListing]);
 
@@ -104,7 +105,9 @@ const SubmissionForm: React.FC = () => {
         setSubmitError(null);
     }, [initialFormData]);
 
-    const handleFormChange = (newData: Partial<AppStoreListingCreate>) => setFormData(newData);
+    const handleFormChange = (newData: Partial<AppStoreListingCreate>) =>
+        setFormData(prev => ({ ...prev, ...newData }));
+
     const hasMinimumDataForDraft = useCallback(
         () => !!formData.display_name?.trim(),
         [formData.display_name]
@@ -118,6 +121,13 @@ const SubmissionForm: React.FC = () => {
             if (!formData.full_description?.trim())
                 newErrors.full_description = 'Description is required';
             if (!formData.icon_url?.trim()) newErrors.icon_url = 'Icon URL is required';
+            // Validate email format if provided (optional field)
+            if (formData.contact_email?.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.contact_email.trim())) {
+                    newErrors.contact_email = 'Please enter a valid email address';
+                }
+            }
         }
         if (step === 3) {
             let config: Record<string, unknown> = {};
@@ -275,6 +285,7 @@ const SubmissionForm: React.FC = () => {
                 hero_background_color: formData.hero_background_color,
                 min_age: formData.min_age,
                 age_rating: formData.age_rating,
+                contact_email: formData.contact_email,
             };
             let savedListingId: string;
             if (isEditMode && listingId) {
@@ -335,6 +346,7 @@ const SubmissionForm: React.FC = () => {
                 hero_background_color: formData.hero_background_color,
                 min_age: formData.min_age,
                 age_rating: formData.age_rating,
+                contact_email: formData.contact_email,
             };
             if (isEditMode && listingId) {
                 await updateMutation.mutateAsync({

@@ -7,6 +7,7 @@ import { CodeBlock } from './CodeBlock';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import type { AppPermission } from '../types';
+import { getAppBaseUrl, getResolvedTenantConfig } from '../../../config/bootstrapTenantConfig';
 
 type AuthGrant = {
     id: string;
@@ -512,7 +513,7 @@ Access-Control-Allow-Headers: Content-Type`}
 
 // Initialize the SDK
 const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
+    hostOrigin: '${getAppBaseUrl()}'
 });
 
 // Request user identity (SSO)
@@ -767,23 +768,23 @@ const consentFlowContractURI = '${displayContractUri}';`}
 
         <StepCard step={2} title="Set Up Your Redirect Handler" icon={<Code className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-3">
-                Create an endpoint to handle the redirect from LearnCard. The user's DID and Delegate VP JWT 
-                will be included in the URL parameters.
+                Create an endpoint to handle the redirect from LearnCard. The user&apos;s DID and a VP JWT
+                (containing a delegate credential) will be included in the URL parameters.
             </p>
 
             <CodeBlock
                 code={`// Example: /api/learncard/callback or /auth/learncard/redirect
 
-app.get('/api/learncard/callback', (req, res) => {
-    // Extract the user's DID and Delegate VP from URL params
-    const { did, delegateVpJwt } = req.query;
-    
+app.get('/api/learncard/callback', async (req, res) => {
+    // Extract the user's DID and delegate VP JWT from URL params
+    const { did, vp } = req.query;
+
     // Store these with the user's account in your system
     await saveUserLearnCardCredentials(userId, {
         did: did,
-        delegateVpJwt: delegateVpJwt
+        vp: vp, // VP JWT containing a delegate credential
     });
-    
+
     // Redirect to your app's success page
     res.redirect('/dashboard?connected=true');
 });`}
@@ -791,8 +792,8 @@ app.get('/api/learncard/callback', (req, res) => {
 
             <p className="text-xs text-gray-500 mt-3">
                 Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
-                <code className="bg-gray-100 px-1.5 py-0.5 rounded">delegateVpJwt</code> to identify and 
-                send credentials to this user later.
+                <code className="bg-gray-100 px-1.5 py-0.5 rounded">vp</code> (a VP JWT containing a delegate credential)
+                to identify and send credentials to this user later.
             </p>
         </StepCard>
 
@@ -1063,7 +1064,7 @@ app.post('/webhooks/learncard', (req, res) => {
             </p>
 
             <CodeBlock
-                code={`curl -X POST https://api.learncard.com/api/inbox/issue \\
+                code={`curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/api/inbox/issue \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{

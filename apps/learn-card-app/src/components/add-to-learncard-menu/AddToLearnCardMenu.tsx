@@ -27,6 +27,7 @@ import {
     useGetCredentialList,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
+import { chatBotStore } from '../../stores/chatBotStore';
 
 export enum AddToLearnCardMenuEnum {
     boostSomeone = 'boostSomeone',
@@ -54,6 +55,7 @@ export const AddToLearnCardMenu: React.FC = () => {
     const existingTopics = topics?.pages?.[0]?.records || [];
 
     const handleNewSession = async (showAiAppSelector?: boolean) => {
+        chatBotStore.set.resetStore();
         closeModal();
 
         const { prompted } = await gate();

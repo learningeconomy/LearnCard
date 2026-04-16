@@ -31,6 +31,7 @@ import AiInsightsInlineConsentFlowRequest from './AiInsights/AiInsightsInlineCon
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 
 type ConsentFlowConfirmationProps = {
@@ -76,6 +77,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     });
     const { presentToast } = useToast();
     const confirm = useConfirmation();
+    const brandingConfig = useBrandingConfig();
 
     const currentUser = useCurrentUser();
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
@@ -191,6 +193,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                 }
             }
             closeAllModals();
+            onCloseCallback?.();
         });
     };
 
@@ -300,7 +303,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                                 {!isSwitchedProfile && (
                                     <>
                                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
-                                            Add to LearnCard.
+                                            Add to {brandingConfig.name}.
                                         </div>
                                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
                                             Save your progress and skills.

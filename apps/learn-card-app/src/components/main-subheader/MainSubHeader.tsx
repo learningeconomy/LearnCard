@@ -49,7 +49,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const newCredsCount = newCredsForCategory?.length ?? 0;
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
-    const { headerTextColor, backgroundPrimaryColor } = colors;
+    const { headerTextColor, backgroundPrimaryColor, helperTextColor } = colors;
 
     const history = useHistory();
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
@@ -57,7 +57,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const sheetModal = useRef<HTMLIonModalElement>(null);
     const centerModal = useRef<HTMLIonModalElement>(null);
 
-    const { iconPadding, helperText, helperTextClickable } = SubheaderContentType[subheaderType];
+    const { iconPadding, helperText, helperTextClickable, showBetaLabel } =
+        SubheaderContentType[subheaderType];
 
     const handleCloseShareModal = () => {
         setShareCredsIsOpen(false);
@@ -109,16 +110,23 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                             />
                         )}{' '}
                         {titleDisplay}
+                        {showBetaLabel && (
+                            <span className="ml-[6px] text-[15px] font-normal text-grayscale-400 leading-[100%]">
+                                beta
+                            </span>
+                        )}
                         {newCredsCountDisplay}
                     </span>
-                    <span className="font-poppins text-[12px]">
+                    <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
                         <span>{helperText}</span>{' '}
-                        <button
-                            className="font-[600] underline"
-                            onClick={() => presentCategoryDescriptorModal()}
-                        >
-                            {helperTextClickable}.
-                        </button>
+                        {helperTextClickable && (
+                            <button
+                                className="font-[600] underline"
+                                onClick={() => presentCategoryDescriptorModal()}
+                            >
+                                {helperTextClickable}.
+                            </button>
+                        )}
                     </span>
                 </h2>
             </IonCol>

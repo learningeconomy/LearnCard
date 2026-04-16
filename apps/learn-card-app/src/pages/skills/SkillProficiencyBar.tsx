@@ -2,62 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import EyeSlash from 'learn-card-base/svgs/EyeSlash';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
-
-export enum SkillLevel {
-    Hidden = 0,
-    Novice = 1,
-    Beginner = 2,
-    Proficient = 3,
-    Advanced = 4,
-    Expert = 5,
-}
-
-const SKILL_LEVEL_META = {
-    [SkillLevel.Hidden]: {
-        name: 'Hidden',
-        color: 'grayscale-500',
-        description: 'Do not display your proficiency status.',
-    },
-    [SkillLevel.Novice]: {
-        name: 'Novice',
-        color: 'grayscale-700',
-        description: 'Just starting and needs guidance.',
-    },
-    [SkillLevel.Beginner]: {
-        name: 'Beginner',
-        color: 'orange-400',
-        description: 'Handles simple tasks without support.',
-    },
-    [SkillLevel.Proficient]: {
-        name: 'Proficient',
-        color: 'violet-500',
-        description: 'Works independently on routine tasks.',
-    },
-    [SkillLevel.Advanced]: {
-        name: 'Advanced',
-        color: 'light-blue-500',
-        description: 'Solves complex tasks efficiently.',
-    },
-    [SkillLevel.Expert]: {
-        name: 'Expert',
-        color: 'emerald-500',
-        description: 'Deep mastery; can lead and mentor others.',
-    },
-};
-
-const LEVELS: SkillLevel[] = [
-    SkillLevel.Hidden,
-    SkillLevel.Novice,
-    SkillLevel.Beginner,
-    SkillLevel.Proficient,
-    SkillLevel.Advanced,
-    SkillLevel.Expert,
-];
-
-export enum SkillProficiencyBarModeEnum {
-    Slider,
-    Display,
-}
+import { SkillLevel, SkillProficiencyBarModeEnum, SKILL_LEVEL_META, LEVELS } from './skillTypes';
 
 type SkillProficiencyBarProps = {
     proficiencyLevel?: SkillLevel;
@@ -219,8 +164,10 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
             {!isDisplayMode && (
                 <div className="flex flex-col">
                     <p className="text-grayscale-800 font-poppins font-[600] text-[14px]">
-                        Skill Level -{' '}
-                        <span className={`text-${color}`}>{SKILL_LEVEL_META[skillLevel].name}</span>
+                        <span className={`text-${color}`}>
+                            {skillLevel === SkillLevel.Hidden && 'Skill Level '}
+                            {SKILL_LEVEL_META[skillLevel].name}
+                        </span>
                     </p>
                     <p className="text-grayscale-700 font-poppins text-[12px]">
                         {SKILL_LEVEL_META[skillLevel].description}

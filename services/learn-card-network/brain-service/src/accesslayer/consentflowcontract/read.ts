@@ -1,9 +1,10 @@
 import { QueryBuilder, BindParam } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
-import { ConsentFlowContract, ConsentFlowInstance } from '@models';
+import { ConsentFlowContract, ConsentFlowInstance, Profile } from '@models';
 import { DbContractType } from 'types/consentflowcontract';
 import { inflateObject } from '@helpers/objects.helpers';
+import { ProfileType } from 'types/profile';
 
 export const getContractById = async (id: string): Promise<DbContractType | null> => {
     return inflateObject<DbContractType>(
@@ -56,6 +57,57 @@ export const getRequestedForList = async (id: string) => {
             readStatus: r.properties?.readStatus ?? null,
         };
     });
+};
+
+export const getSharedInsightsRequestsForTargetProfile = async (
+    targetProfileId: string
+): Promise<
+    {
+        profile: ProfileType;
+        status: 'pending' | 'accepted';
+        readStatus: 'unseen' | 'seen' | null;
+        contractId: string;
+    }[]
+> => {
+    const incomingRequestsResult = await new QueryBuilder(new BindParam({ targetProfileId }))
+        .match({ model: ConsentFlowContract, identifier: 'c' })
+        .match('(c)-[r:REQUESTED_FOR]->(target:Profile)')
+        .where('target.profileId = $targetProfileId')
+        .match({
+            related: [
+                { identifier: 'c', model: ConsentFlowContract },
+                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}|:${
+                    ConsentFlowContract.getRelationshipByAlias('canWrite').name
+                }]-`,
+                { identifier: 'writer', model: Profile },
+            ],
+        })
+        .where("writer.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
+        .return(['writer', 'r', 'c'])
+        .run();
+
+    const mappedResults = incomingRequestsResult.records.map(rec => {
+        const { writer, r, c } = rec.toObject();
+
+        return {
+            profile: inflateObject<ProfileType>(writer.properties),
+            status: r.properties?.status as 'pending' | 'accepted',
+            readStatus: (r.properties?.readStatus ?? null) as 'unseen' | 'seen' | null,
+            contractId: c.properties.id as string,
+        };
+    });
+
+    const dedupedByProfileId = new Map<string, (typeof mappedResults)[number]>();
+
+    mappedResults.forEach(request => {
+        const existing = dedupedByProfileId.get(request.profile.profileId);
+
+        if (!existing || existing.status !== 'accepted') {
+            dedupedByProfileId.set(request.profile.profileId, request);
+        }
+    });
+
+    return Array.from(dedupedByProfileId.values());
 };
 
 export const getRequestedForByStatus = async (
