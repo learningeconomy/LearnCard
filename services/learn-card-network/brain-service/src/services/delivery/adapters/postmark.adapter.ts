@@ -12,6 +12,11 @@ const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'account-approved-email': 'account-approved',
     'embed-email-verification': 'embed-email-verification',
     'contact-method-verification': 'contact-method-verification',
+    'credential-awaiting-guardian': 'credential-awaiting-guardian',
+    'guardian-approved-claim': 'guardian-approved-claim',
+    'guardian-credential-approval': 'guardian-credential-approval',
+    'guardian-email-otp': 'guardian-email-otp',
+    'guardian-rejected-credential': 'guardian-rejected-credential',
 };
 
 export class PostmarkAdapter implements DeliveryService {
@@ -148,6 +153,40 @@ export class PostmarkAdapter implements DeliveryService {
                     issuer: model.issuer,
                     credential: model.credential,
                     message: model.message,
+                };
+
+            case 'credential-awaiting-guardian':
+                return {
+                    issuer: model.issuer,
+                    credential: model.credential,
+                    recipient: model.recipient,
+                };
+
+            case 'guardian-approved-claim':
+                return {
+                    issuer: model.issuer,
+                    credential: model.credential,
+                };
+
+            case 'guardian-credential-approval':
+                return {
+                    approvalUrl: model.approvalUrl,
+                    approvalToken: model.approvalToken,
+                    issuer: model.issuer,
+                    credential: model.credential,
+                    recipient: model.recipient,
+                };
+
+            case 'guardian-email-otp':
+                return {
+                    verificationCode: model.verificationCode,
+                };
+
+            case 'guardian-rejected-credential':
+                return {
+                    issuer: model.issuer,
+                    credential: model.credential,
+                    recipient: model.recipient,
                 };
 
             default:

@@ -12,10 +12,9 @@ import MainHeader from '../../components/main-header/MainHeader';
 import LearnerInsights from './learner-insights/LearnerInsights';
 import SharedInsights from './shared-insights/SharedInsights';
 import ShareInsightsCard from './share-insights/ShareInsightsCard';
-import AiInsightsSkillsCardSimple from './AiInsightsSkillsCardSimple';
 import AiInsightsLearningSnapshots from './AiInsightsLearningSnapshots';
 import RequestInsightsCard from './request-insights/RequestInsightsCard';
-import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
+import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -138,10 +137,10 @@ const AiInsights: React.FC = () => {
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
             <AiInsightsPromptBoxContainer />
             {!flags?.hideAiPathways && (
-                <div className="w-full flex gap-3 mt-4">
-                    <AiInsightsLearningPathwaysCard />
-                    <AiInsightsSkillsCardSimple />
-                </div>
+                <AiFeatureLinks
+                    features={['ai-sessions', 'skills-hub', 'pathways']}
+                    className="mt-4"
+                />
             )}
         </>
     );

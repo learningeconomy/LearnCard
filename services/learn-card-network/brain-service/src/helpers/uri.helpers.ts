@@ -9,7 +9,15 @@ import { isEncrypted } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import { getLearnCard } from './learnCard.helpers';
 
-export const URI_TYPES = ['credential', 'presentation', 'boost', 'contract', 'terms', 'framework', 'skill'] as const;
+export const URI_TYPES = [
+    'credential',
+    'presentation',
+    'boost',
+    'contract',
+    'terms',
+    'framework',
+    'skill',
+] as const;
 
 export type URIType = (typeof URI_TYPES)[number];
 
@@ -39,9 +47,10 @@ export const escapeColonsInDomain = (uri: string): string => {
     return header + domain.replace(/:/g, '%3A') + suffix;
 };
 
-export const isURIType = (type: string): type is URIType => URI_TYPES.includes(type as any);
+export const isURIType = (type: string): type is URIType =>
+    URI_TYPES.includes(type as (typeof URI_TYPES)[number]);
 
-export const getUriParts = (_uri: string, allowOutsideUris: boolean = false): URIParts => {
+export const getUriParts = (_uri: string, allowOutsideUris = false): URIParts => {
     const uri = escapeColonsInDomain(_uri);
     const parts = uri.split(':');
 
@@ -53,7 +62,13 @@ export const getUriParts = (_uri: string, allowOutsideUris: boolean = false): UR
         });
     }
 
-    const [lc, method, domain, type, ...rest] = parts as [string, string, string, string, ...string[]];
+    const [lc, method, domain, type, ...rest] = parts as [
+        string,
+        string,
+        string,
+        string,
+        ...string[]
+    ];
     const id = rest.join(':');
 
     if ((lc !== 'lc' || method !== 'network') && !allowOutsideUris) {
@@ -77,18 +92,14 @@ export const getDomainFromUri = (uri: string): string =>
 
 export const constructUri = (type: URIType, id: string, domain: string): string => {
     const isLocal = domain.includes('localhost');
-    const encodedDomain = isLocal
-        ? domain.replace(/:/g, '%3A')
-        : domain.replace(/:/g, '/');
+    const encodedDomain = isLocal ? domain.replace(/:/g, '%3A') : domain.replace(/:/g, '/');
 
-    return `lc:network:${encodedDomain}/trpc:${type}:${id}`;
+    return `lc:network:${encodedDomain.replace(/\/trpc$/, '')}/trpc:${type}:${id}`;
 };
 
 // Helper specifically for skill URIs which must be of the form
 // lc:network:<domain>/trpc:skill:<frameworkId>:<skillId>
-export const getSkillCompoundFromUri = (
-    uri: string
-): { frameworkId: string; id: string } => {
+export const getSkillCompoundFromUri = (uri: string): { frameworkId: string; id: string } => {
     const { type, id } = getUriParts(uri);
 
     if (type !== 'skill') {
@@ -107,8 +118,13 @@ export const getSkillCompoundFromUri = (
     return { frameworkId, id: skillId };
 };
 
-export const resolveUri = async (uri: string) => {
+export const resolveUri = async (uri: string, localDomain?: string): Promise<unknown> => {
     const { domain, type, method } = getUriParts(uri, true);
+
+    const _localDomain = localDomain || process.env.DOMAIN_NAME;
+    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
+    const normalizedLocalDomain = (_localDomain || '').replace('/trpc', '').replace(/%3A/g, ':');
+    const isLocalUri = !domain || normalizedDomain === normalizedLocalDomain;
 
     if (method === 'cloud') {
         const isLocal = domain.includes('localhost');
@@ -116,7 +132,9 @@ export const resolveUri = async (uri: string) => {
             .replace(/%3A/g, isLocal ? ':' : '/')
             .replace('/trpc', '/api')}/storage/resolve?uri=${encodeURIComponent(uri)}`;
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(15000), // 15 second timeout
+        });
         const resolved = await res.json();
         if (isEncrypted(resolved)) {
             const learnCard = await getLearnCard();
@@ -126,7 +144,10 @@ export const resolveUri = async (uri: string) => {
         return resolved;
     }
 
-    // should probably be if method === 'network' && domain === 'domain'
+    if (method === 'network' && !isLocalUri) {
+        return await resolveExternalNetworkUri(uri, domain);
+    }
+
     switch (type) {
         case 'credential':
             return await getCredentialByUri(uri);
@@ -149,4 +170,24 @@ export const resolveUri = async (uri: string) => {
             return skill;
         }
     }
+};
+
+const resolveExternalNetworkUri = async (uri: string, domain: string): Promise<unknown> => {
+    const isLocal = domain.includes('localhost');
+    const baseUrl = `http${isLocal ? '' : 's'}://${domain
+        .replace(/%3A/g, ':')
+        .replace('/trpc', '')}`;
+
+    const response = await fetch(`${baseUrl}/api/storage/resolve?uri=${encodeURIComponent(uri)}`, {
+        signal: AbortSignal.timeout(15000), // 15 second timeout
+    });
+
+    if (!response.ok) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: `External resource not found: ${uri}`,
+        });
+    }
+
+    return await response.json();
 };

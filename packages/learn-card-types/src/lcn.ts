@@ -1,4 +1,4 @@
-import type {} from 'zod-openapi';
+import type { } from 'zod-openapi';
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
@@ -438,6 +438,13 @@ export const SendBrandingOptionsValidator = z.object({
 });
 export type SendBrandingOptions = z.infer<typeof SendBrandingOptionsValidator>;
 
+export const GuardianStatusValidator = z.enum([
+    'AWAITING_GUARDIAN',
+    'GUARDIAN_APPROVED',
+    'GUARDIAN_REJECTED',
+]);
+export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
+
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
     webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),
@@ -446,6 +453,11 @@ export const SendOptionsValidator = z.object({
         .optional()
         .describe('If true, returns claimUrl without sending email/SMS'),
     branding: SendBrandingOptionsValidator.optional().describe('Branding for email/SMS delivery'),
+    guardianEmail: z
+        .string()
+        .email()
+        .optional()
+        .describe('Guardian email that must approve before student can claim'),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
 
@@ -467,7 +479,19 @@ export const SendBoostInputValidator = z
     .refine(data => data.templateUri || data.template || data.signedCredential, {
         message: 'Either templateUri, template, or signedCredential must be provided.',
         path: ['templateUri'],
-    });
+    })
+    .refine(
+        data => {
+            if (data.options?.guardianEmail) {
+                return data.options.guardianEmail.toLowerCase() !== data.recipient.toLowerCase();
+            }
+            return true;
+        },
+        {
+            message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+            path: ['options', 'guardianEmail'],
+        }
+    );
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
 // Inbox-specific response fields (only present when sent via email/phone)
@@ -475,6 +499,9 @@ export const SendInboxResponseValidator = z.object({
     issuanceId: z.string(),
     status: z.enum(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']),
     claimUrl: z.string().url().optional().describe('Present when suppressDelivery=true'),
+    guardianStatus: GuardianStatusValidator.optional().describe(
+        'Present when guardianEmail was specified'
+    ),
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
@@ -862,6 +889,9 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_REJECTED',
     'APP_LISTING_WITHDRAWN',
     'DEVICE_LINK_REQUEST',
+    'GUARDIAN_APPROVAL_PENDING',
+    'GUARDIAN_APPROVED',
+    'GUARDIAN_REJECTED',
     'APP_NOTIFICATION',
 ]);
 
@@ -1087,6 +1117,11 @@ export const InboxCredentialValidator = z.object({
             name: z.string().optional(),
         })
         .optional(),
+    // Guardian gate fields (all optional — absent on pre-existing credentials)
+    guardianEmail: z.string().email().optional(),
+    guardianStatus: GuardianStatusValidator.optional(),
+    guardianApprovedAt: z.string().optional(),
+    guardianApprovedByDid: z.string().optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;

@@ -329,6 +329,28 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                     />
 
                     <FieldEditor
+                        label="Credential Registry ID (CTID)"
+                        field={achievement.ctid || staticField('')}
+                        onChange={f => {
+                            // Extract CTID from full Credential Finder URL if provided
+                            let ctidValue = f.value;
+                            if (ctidValue && !f.isDynamic) {
+                                const urlMatch = ctidValue.match(
+                                    /credentialfinder\.org\/credential\/(ce-[0-9a-f-]+)/i
+                                );
+                                if (urlMatch) {
+                                    ctidValue = urlMatch[1];
+                                }
+                            }
+                            updateAchievement('ctid', { ...f, value: ctidValue });
+                        }}
+                        placeholder="ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        helpText="Credential Engine Registry ID — links to Credential Finder"
+                        showDynamicToggle={!disableDynamicFields}
+                        error={getFieldError(validationErrors, 'achievement.ctid')}
+                    />
+
+                    <FieldEditor
                         label="Language"
                         field={achievement.inLanguage || staticField('')}
                         onChange={f => updateAchievement('inLanguage', f)}

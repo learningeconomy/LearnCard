@@ -18,7 +18,7 @@ import {
 
 import { Plus, X } from 'lucide-react';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import { ExperiencesIconSolid } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
+import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
 import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
@@ -35,8 +35,10 @@ import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import GrowSkillsModal from './GrowSkillsModal';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
+import ExploreRoles from './ExploreRoles';
 
 type SemanticSkillRecord = {
     id: string;
@@ -182,6 +184,14 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         );
     };
 
+    const openGrowSkillsModal = () => {
+        closeModal();
+        newModal(<GrowSkillsModal initialSearchQuery={search.trim()} />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     const persistGoals = async (nextGoals: string[]) => {
         try {
             await saveGoals({ goals: nextGoals });
@@ -237,6 +247,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 </button>
 
                 <PathwaySearchInput
+                    variant="simple"
                     placeholder="Search by skill, goal, or job..."
                     value={search}
                     onValueChange={setSearch}
@@ -599,7 +610,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 <div className="w-full flex flex-col items-center justify-center gap-[10px] max-w-[600px]">
                     {(showAllOptions || showGrowSkillsButton) && (
                         <button
-                            onClick={closeModal}
+                            onClick={openGrowSkillsModal}
                             className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                         >
                             <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
@@ -609,10 +620,19 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                     {(showAllOptions || showExploreRolesButton) && (
                         <button
-                            onClick={closeModal}
+                            onClick={() =>
+                                newModal(
+                                    <ExploreRoles initialSearchQuery={search.trim()} />,
+                                    undefined,
+                                    {
+                                        desktop: ModalTypes.Right,
+                                        mobile: ModalTypes.Right,
+                                    }
+                                )
+                            }
                             className="w-full bg-cyan-501 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                         >
-                            <ExperiencesIconSolid inverseColors className="w-[30px] h-[30px]" />
+                            <ExperiencesIconWithShape className="w-[30px] h-[30px]" />
                             Explore Roles
                         </button>
                     )}

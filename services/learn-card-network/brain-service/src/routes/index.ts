@@ -14,7 +14,7 @@ import { ContactMethodType } from '@learncard/types';
 import { RegExpTransformer } from '@learncard/helpers';
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     isProfileManaged,
     getProfilesThatManageAProfile,
@@ -190,6 +190,14 @@ export const resolveProfileFromContextDid = async (
     // User authenticated with their did:web. Resolve it and use their controller did to find profile.
     if (didParts[1] === 'web' && didParts[2] === domain) {
         if (didParts[3] === 'manager') return null;
+
+        // For managed profiles (did:web:domain:users:profileId), try direct profileId lookup first.
+        // Managed DID docs have a `controller` pointing to the parent, so following controller
+        // would incorrectly resolve to the parent's profile instead of the managed one.
+        if (didParts[3] === 'users' && didParts[4]) {
+            const directProfile = await getProfileByProfileId(didParts[4]);
+            if (directProfile) return directProfile;
+        }
 
         const learnCard = await getEmptyLearnCard();
         const didDoc = await learnCard.invoke.resolveDid(
