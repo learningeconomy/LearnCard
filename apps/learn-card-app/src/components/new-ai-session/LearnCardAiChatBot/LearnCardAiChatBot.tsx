@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
+import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
@@ -29,7 +30,10 @@ import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
 import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
-import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
+import {
+    AiPassportAppContractUri,
+    getAiPassportAppByContractUri,
+} from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
@@ -52,6 +56,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
+    const aiApp = useMemo(() => getAiPassportAppByContractUri(contractUri), [contractUri]);
     const [showInitialMessages, setShowInitialMessages] = useState(true);
     const [topicInitialized, setTopicInitialized] = useState(() => {
         try {
@@ -369,9 +374,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
             {(!loading || mode !== AiSessionMode.insights) && (
                 <>
+                    <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
                     <div
                         ref={chatContainerRef}
-                        className="flex-1 pt-[150px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
+                        className="flex-1 overflow-y-auto flex flex-col px-4 relative"
                     >
                         <div
                             ref={chatInnerScrollRef}
@@ -386,7 +392,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         key={index}
                                         className="w-full"
                                     >
-                                        <MessageWithQuestions message={msg} />
+                                        <MessageWithQuestions message={msg} aiApp={aiApp} />
                                         {index < messagesToShow.length - 1 &&
                                             msg.role === 'assistant' &&
                                             messagesToShow[index + 1].role === 'assistant' && (

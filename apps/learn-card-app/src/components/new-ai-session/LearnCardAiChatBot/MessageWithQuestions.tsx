@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
-import { ProfilePicture } from 'learn-card-base';
+import { LaunchPadAppListItem, ProfilePicture } from 'learn-card-base';
 import MessageWithArtifact from './MessageWithArtifact';
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
@@ -16,10 +16,35 @@ import { AiSessionMode } from '../newAiSession.helpers';
 
 interface MessageProps {
     message: ChatMessage;
+    aiApp?: LaunchPadAppListItem;
 }
 
+const AiAvatar: React.FC<{ mode: AiSessionMode; aiApp?: LaunchPadAppListItem }> = ({
+    mode,
+    aiApp,
+}) => {
+    const sizeClasses =
+        'h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0';
+
+    if (mode === AiSessionMode.insights) {
+        return <AiInsightsIconWithShape className={`text-grayscale-900 ${sizeClasses}`} />;
+    }
+
+    if (aiApp?.img) {
+        return (
+            <img
+                src={aiApp.img}
+                alt={`${aiApp.name ?? 'AI'} logo`}
+                className={`${sizeClasses} rounded-full object-cover bg-white border-[1px] border-solid border-grayscale-200`}
+            />
+        );
+    }
+
+    return <AiSessionsIconWithShape className={`text-grayscale-900 ${sizeClasses}`} />;
+};
+
 export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
-    function MessageWithQuestions({ message }) {
+    function MessageWithQuestions({ message, aiApp }) {
         const flags = useFlags();
         const $isTyping = useStore(isTyping);
 
@@ -45,11 +70,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
             <div className="w-full flex items-center justify-end">
                 {message.role === 'assistant' && enableChatBubbles && (
                     <div className="mr-2 self-stretch flex items-end pb-5">
-                        {mode === AiSessionMode.insights ? (
-                            <AiInsightsIconWithShape className="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0" />
-                        ) : (
-                            <AiSessionsIconWithShape className="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0" />
-                        )}
+                        <AiAvatar mode={mode} aiApp={aiApp} />
                     </div>
                 )}
                 <div
@@ -72,7 +93,8 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
     },
     (oldProps, newProps) =>
         oldProps.message.role === newProps.message.role &&
-        oldProps.message.content === newProps.message.content
+        oldProps.message.content === newProps.message.content &&
+        oldProps.aiApp?.img === newProps.aiApp?.img
 );
 
 export default MessageWithQuestions;

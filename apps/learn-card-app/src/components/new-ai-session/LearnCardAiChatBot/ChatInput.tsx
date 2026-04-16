@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
-import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
+import { ProfilePicture, useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
 import { ArrowUp } from 'lucide-react';
 
@@ -37,7 +37,18 @@ import { chatBotStore } from '../../../stores/chatBotStore';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
-const ChatInput: React.FC = () => {
+interface ChatInputProps {
+    placeholder?: string;
+    /** Show the user's profile picture inside the input (new Figma design). Defaults to true. */
+    showUserAvatar?: boolean;
+}
+
+const getDefaultPlaceholder = (mode: AiSessionMode): string => {
+    if (mode === AiSessionMode.insights) return 'Ask anything...';
+    return 'Say anything...';
+};
+
+const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
     const { closeAllModals } = useModal();
     const history = useHistory();
     const $planReady = useStore(planReady);
@@ -246,13 +257,22 @@ const ChatInput: React.FC = () => {
     };
 
     const disableSend = !$input.trim() || $isTyping;
+    const resolvedPlaceholder = placeholder ?? getDefaultPlaceholder(mode);
     // const showFinishButton = !showContinue && !$isTyping;
 
     return (
         <>
             <FinishSessionButton />
-            <div className="flex flex-col gap-[10px] p-[15px] sm:p-0">
-                <div className="flex rounded-[15px] overflow-hidden w-full items-center border-[1px] border-grayscale-200 border-solid">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)]">
+                {showUserAvatar && (
+                    <div className="flex-shrink-0 pb-[6px]">
+                        <ProfilePicture
+                            customContainerClass="h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
+                            customImageClass="w-full h-full object-cover rounded-full"
+                        />
+                    </div>
+                )}
+                <div className="flex-1 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
                     <form
                         className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
@@ -276,7 +296,7 @@ const ChatInput: React.FC = () => {
                             }}
                             onKeyDown={handleKeyPress}
                             // disabled={$isTyping}
-                            placeholder={'Ask anything...'}
+                            placeholder={resolvedPlaceholder}
                             style={{ resize: 'none' }}
                             ref={el => {
                                 if (el) {
