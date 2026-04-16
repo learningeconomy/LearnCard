@@ -35,7 +35,7 @@ const ITERATIONS = Number(process.env.PERF_ITERATIONS || 20);
 const WARMUP = Number(process.env.PERF_WARMUP || 2);
 const LABEL = process.env.PERF_LABEL || 'unlabeled';
 const TARGET_P50_TOTAL_MS = 4000;
-const BRAIN_URL = process.env.BRAIN_URL || 'http://localhost:4000';
+const BRAIN_URL = process.env.BRAIN_URL || 'http://localhost:4000/trpc';
 const TEST_SEED = process.env.TEST_SEED || '1'.repeat(64);
 
 // ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ const TEST_SEED = process.env.TEST_SEED || '1'.repeat(64);
 // ---------------------------------------------------------------------------
 
 async function buildClient() {
-    const lc = await initLearnCard({ seed: TEST_SEED });
+    const lc = await initLearnCard({ seed: TEST_SEED, network: BRAIN_URL });
 
     const didAuthFn = async (challenge?: string): Promise<string> => {
         const vp = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
@@ -72,33 +72,21 @@ async function main(): Promise<void> {
 
     // 1. Build authenticated client (need DID before creating profile)
     console.log('[bench] Building tRPC client...');
-    const { client, getDid } = await buildClient();
-    const did = getDid();
-    console.log(`[bench] Client ready: did=${did}\n`);
-
-    // 2. Ensure issuer profile exists (via tRPC so DID is correctly linked)
-    const profileId = 'perf-bench-issuer';
-    try {
-        await client.profile.createProfile.mutate({
-            profileId,
-            displayName: 'Perf Bench Issuer',
-        });
-        console.log(`[bench] Created profile: ${profileId}\n`);
-    } catch (e: any) {
-        // CONFLICT = already exists — that's fine
-        if (e?.message?.includes('already exists') || e?.code === 'CONFLICT') {
-            console.log(`[bench] Profile already exists: ${profileId}\n`);
-        } else {
-            console.warn(`[bench] Profile creation warning: ${e?.message ?? e}\n`);
-        }
-    }
-
-    // 3. Seed Neo4j + MongoDB (Integration, Listing, Boost, SA)
+    // 1. Seed FIRST (creates issuer profile with matching DID in Neo4j directly) —
+    //    avoids needing the tRPC `createProfile` call which routes through the init's
+    //    network plugin that defaults to cloud.learncard.com.
     console.log('[bench] Seeding...');
     const seeded = await seedBench();
     console.log(`[bench] Seeded: listingId=${seeded.listingId} templateAlias=${seeded.templateAlias}\n`);
 
-    // 4. Run iterations
+    // 2. Now build authenticated client (seed has already populated profile with our DID)
+    const { getDid } = await buildClient();
+    const did = getDid();
+    console.log(`[bench] DID ready: did=${did}\n`);
+
+    // 4. Run iterations — rebuild client per iteration to avoid challenge-reuse
+    //    (brain-client pre-fetches challenges but they have to be unique per request;
+    //    something about the batch+async pattern triggers UNAUTHORIZED after iter 1).
     console.log(`[bench] Running ${WARMUP} warmup + ${ITERATIONS} measured iterations...\n`);
     const iterationTimes: number[] = [];
     let errorCount = 0;
@@ -109,6 +97,9 @@ async function main(): Promise<void> {
         let failed = false;
 
         try {
+            // Fresh client per iteration (isolates auth state; adds ~50ms overhead
+            // to iteration time but avoids false UNAUTHORIZED errors)
+            const { client } = await buildClient();
             await client.appStore.appEvent.mutate({
                 listingId: seeded.listingId,
                 event: {
@@ -134,7 +125,13 @@ async function main(): Promise<void> {
 
     // 5. Scrape backend perf logs
     console.log('[bench] Scraping backend perf logs...');
-    const samples = scrapeBackendPerfLogs({ since: startTs });
+    // Compose file is at repo root — pnpm --filter runs CWD inside the service dir,
+    // so we need to resolve the path back up to the monorepo root
+    const repoRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim();
+    const samples = scrapeBackendPerfLogs({
+        since: startTs,
+        composeFile: process.env.COMPOSE_FILE ?? path.join(repoRoot, 'apps/learn-card-app/compose-local.yaml'),
+    });
     console.log(`[bench] Scraped ${samples.length} backend perf samples\n`);
 
     // 6. Aggregate

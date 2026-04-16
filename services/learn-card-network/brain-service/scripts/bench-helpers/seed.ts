@@ -37,6 +37,8 @@ const SLUG = 'perf-bench-app';
 const TEMPLATE_ALIAS = 'bench-badge';
 const SA_ENDPOINT = process.env.SA_ENDPOINT ?? 'http://localhost:5100/api';
 const SA_SEED = process.env.SA_SEED ?? 'b'.repeat(64);
+// Must match TEST_SEED in bench-appevent.ts — determines the authenticated DID
+const ISSUER_SEED = process.env.TEST_SEED ?? '1'.repeat(64);
 
 export interface SeedResult {
     listingId: string;
@@ -103,7 +105,7 @@ export async function seedBench(): Promise<SeedResult> {
                 profileId: ISSUER_PROFILE_ID,
                 displayName: 'Perf Bench Issuer',
                 shortBio: 'Benchmark issuer',
-                did: `did:seed:${ISSUER_PROFILE_ID}`,
+                did: deriveDidKeyFromSeed(ISSUER_SEED),
             }
         );
         console.log(`  [seed] Issuer profile ready: ${ISSUER_PROFILE_ID}`);
