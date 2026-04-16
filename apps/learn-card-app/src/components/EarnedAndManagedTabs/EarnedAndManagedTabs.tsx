@@ -65,7 +65,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     const history = useHistory();
 
     const { searchString, isSearchActive } = credentialSearchStore.useStore();
-
+    console.log('showListViewToggle', showListViewToggle);
     const handleOnChange = (tab: CredentialListTabEnum) => {
         if (tab === CredentialListTabEnum.Managed) {
             history.replace(`${location.pathname}?managed=true`);
@@ -83,7 +83,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
 
     let showEarnedManaged = isManagedAvailable && !isSearchActive;
     if (showEarnedAndManaged !== undefined) showEarnedManaged = showEarnedAndManaged; // override the show earned and managed behavior
-
+    console.log('showEarnedManaged', showEarnedManaged);
+    console.log('isManagedAvailable', isManagedAvailable);
+    console.log('isSearchActive', isSearchActive);
+    console.log('showEarnedAndManaged', showEarnedAndManaged);
     return (
         <IonRow
             className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto overflow-hidden ${containerClassName}`}
@@ -160,7 +163,8 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                         </div>
                     )}
 
-                    {showListViewToggle && setViewMode && !isSearchActive && showEarnedManaged && (
+                    {/* Reuse hideSearch to hide toggle when there is nothing to display in the current tab */}
+                    {showListViewToggle && setViewMode && !isSearchActive && !hideSearch && (
                         <div
                             className={`fix-ripple p-1 rounded-[5px] flex w-fit items-center ${
                                 !showEarnedManaged ? 'mx-auto min-w-[82px]' : ''
