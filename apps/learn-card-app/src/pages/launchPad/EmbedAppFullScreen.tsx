@@ -49,10 +49,11 @@ export const EmbedAppFullScreen: React.FC = () => {
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
+        credential?: any; // LC-1644: pre-resolved VC/VP from APP_EVENT, avoids redundant wallet.read.get()
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
-        setPendingCredential({ credentialUri, boostUri });
+    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string, credential?: any) => {
+        setPendingCredential({ credentialUri, boostUri, credential });
     }, []);
 
     const handleDismissClaimModal = useCallback(() => {
@@ -216,6 +217,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                 <CredentialClaimModal
                     credentialUri={pendingCredential.credentialUri}
                     boostUri={pendingCredential.boostUri}
+                    credential={pendingCredential.credential}
                     onDismiss={handleDismissClaimModal}
                 />
             )}

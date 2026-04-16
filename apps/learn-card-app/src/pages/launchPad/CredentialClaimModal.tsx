@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { X, Check, Loader2 } from 'lucide-react';
 
@@ -28,12 +28,14 @@ const perfMeasure = (name: string, start: string, end: string) => {
 interface CredentialClaimModalProps {
     credentialUri: string;
     boostUri?: string;
+    credential?: VC | VP; // LC-1644: pre-resolved credential from APP_EVENT response
     onDismiss: () => void;
 }
 
 export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     credentialUri,
     boostUri,
+    credential: preResolvedCredential,
     onDismiss,
 }) => {
     const { initWallet, addVCtoWallet } = useWallet();
@@ -45,34 +47,56 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const [credential, setCredential] = useState<VC | VP | undefined | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // LC-1644: Hoist wallet to ref so handleClaim can reuse it without a second initWallet()
+    const walletRef = useRef<Awaited<ReturnType<typeof initWallet>> | null>(null);
+
     // Resolve the credential URI on mount
+    // LC-1644: If preResolvedCredential is provided via prop, skip the network fetch entirely.
     useEffect(() => {
+        let cancelled = false;
+
         const resolveCredential = async () => {
             try {
                 perfMark('mount');
                 setIsLoading(true);
                 setError(null);
+
+                if (preResolvedCredential) {
+                    // Fast path — credential already available from APP_EVENT response
+                    perfMark('mount-credentialResolved');
+                    perfMeasure('credentialResolved', 'mount', 'mount-credentialResolved');
+                    perfMeasure('mount-total', 'mount', 'mount-credentialResolved');
+                    if (!cancelled) setCredential(preResolvedCredential);
+
+                    // Still init wallet in background for handleClaim later
+                    const wallet = await initWallet();
+                    if (!cancelled) walletRef.current = wallet;
+                    return;
+                }
+
+                // Slow path — fallback: fetch credential from network (back-compat)
                 const wallet = await initWallet();
+                if (!cancelled) walletRef.current = wallet;
                 perfMeasure('initWallet', 'mount', 'mount-initWallet');
                 perfMark('mount-initWallet');
-                const vc = await wallet.read.get(credentialUri);
+                const vc = await wallet?.read.get(credentialUri);
                 perfMark('mount-credentialResolved');
                 perfMeasure('credentialResolved', 'mount-initWallet', 'mount-credentialResolved');
                 perfMeasure('mount-total', 'mount', 'mount-credentialResolved');
 
                 if (!vc) throw new Error('Error resolving credential');
-
-                setCredential(vc);
+                if (!cancelled) setCredential(vc);
             } catch (err) {
                 console.error('Failed to resolve credential:', err);
-                setError('Unable to load credential');
+                if (!cancelled) setError('Unable to load credential');
             } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsLoading(false);
             }
         };
 
         resolveCredential();
-    }, [credentialUri]);
+        return () => { cancelled = true; };
+    }, [credentialUri, preResolvedCredential]);
 
     const handleClaim = async () => {
         if (isClaiming || claimed) return;
@@ -87,13 +111,12 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             
             // Find and update the notification for this credential
             try {
-                const wallet = await initWallet();
-                perfMark('claim-initWallet');
-                perfMeasure('initWallet', 'claim-addVC', 'claim-initWallet');
+                const wallet = walletRef.current;
+                perfMark('claim-walletRef');
                 if (wallet) {
                     await wallet.invoke.acceptCredential(credentialUri);
                     perfMark('claim-accept');
-                    perfMeasure('accept', 'claim-initWallet', 'claim-accept');
+                    perfMeasure('accept', 'claim-walletRef', 'claim-accept');
 
                     // Query for the notification with this credential URI
                     const result = await wallet.invoke.queryNotifications(

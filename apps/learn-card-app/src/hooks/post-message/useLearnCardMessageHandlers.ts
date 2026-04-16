@@ -9,7 +9,7 @@ import {
     LEARNCARD_AI_URL,
     getOrFetchIntegrationForListing,
 } from 'learn-card-base';
-import { UnsignedVP } from '@learncard/types';
+import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
@@ -31,7 +31,7 @@ interface UseLearnCardMessageHandlersOptions {
     launchConfig?: LaunchConfig;
     isInstalled?: boolean;
     appId?: string;
-    onCredentialIssued?: (credentialUri: string, boostUri?: string) => void;
+    onCredentialIssued?: (credentialUri: string, boostUri?: string, credential?: VC | VP) => void;
     onAppNotification?: (notification: { title?: string; body?: string; category?: string; priority?: string }) => void;
     debug?: boolean;
 }
@@ -920,7 +920,8 @@ export function useLearnCardMessageHandlers({
                         ) {
                             onCredentialIssued(
                                 result.credentialUri as string,
-                                result.boostUri as string | undefined
+                                result.boostUri as string | undefined,
+                                result.credential as VC | VP | undefined
                             );
                         }
 

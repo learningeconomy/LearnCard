@@ -556,6 +556,7 @@ const handleSendCredentialEvent = async (
                 receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
                 status: existingCredential.status,
                 boostUri,
+                // credential not included — frontend skips modal when alreadyClaimed=true
             };
         }
         perf.mark('duplicateCheck');
@@ -753,6 +754,10 @@ const handleSendCredentialEvent = async (
     return {
         credentialUri,
         boostUri,
+        // LC-1644: Return the signed credential so the frontend can skip
+        // the redundant wallet.read.get() round-trip in CredentialClaimModal.
+        // This is optional — older clients that don't expect it still work.
+        credential: typeof credential !== 'string' ? credential : undefined,
     };
 };
 
