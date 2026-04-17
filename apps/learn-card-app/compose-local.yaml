@@ -133,7 +133,7 @@ services:
             # LC-1644: Enable backend PerfTracker JSON logs (gated on this env var)
             # Zero-cost in hot paths when unset; toggle off by unsetting.
             LC_PERF_LOG: '1'
-            DOMAIN_NAME: 'localhost%3A4000'
+            DOMAIN_NAME: ${DOMAIN_NAME_OVERRIDE:-localhost%3A4000}
             # LC-1644 bench: optionally override ownerDid sent to remote SAs.
             # Leave empty to use default domain-based derivation; set (via shell env or
             # override file) when benching against staging SA registered to a specific user.

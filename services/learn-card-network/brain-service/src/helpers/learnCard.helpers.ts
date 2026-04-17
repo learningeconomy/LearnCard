@@ -171,10 +171,14 @@ export const getLearnCard = async (
 
 export const getServerDidWebDID = (): string => {
     const domainName = process.env.DOMAIN_NAME;
-    const domain =
-        !domainName || process.env.IS_OFFLINE
+    // If an explicit DOMAIN_NAME is set, honor it even in IS_OFFLINE mode.
+    // This allows benching a local brain against a remote SA via an ngrok
+    // tunnel (where the brain's DID must resolve publicly).
+    const domain = domainName
+        ? domainName
+        : process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName;
+            : `localhost%3A${process.env.PORT || 3000}`;
     return `did:web:${domain}`;
 };
 
