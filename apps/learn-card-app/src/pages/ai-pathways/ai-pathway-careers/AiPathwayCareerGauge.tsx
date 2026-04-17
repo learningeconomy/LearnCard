@@ -12,6 +12,22 @@ const GAUGE_ZONES = [
     { value: 25, color: '#D1FAE5' },
 ];
 
+const polarToCartesian = (cx: number, cy: number, r: number, angleDegrees: number) => {
+    const angleRadians = ((angleDegrees - 90) * Math.PI) / 180;
+    return {
+        x: cx + r * Math.cos(angleRadians),
+        y: cy + r * Math.sin(angleRadians),
+    };
+};
+
+const describeArc = (cx: number, cy: number, r: number, startAngle: number, endAngle: number) => {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+
+    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+};
+
 const getLabel = (score: number) => {
     if (score < 20) return 'Very Poor';
     if (score < 35) return 'Poor';
@@ -29,7 +45,7 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
 
     return (
         <div className="w-[260px] text-center flex flex-col gap-[10px]">
-            <p className="text-[14px] text-grayscale-900 leading-[18px">{title}</p>
+            <p className="text-[14px] text-grayscale-900 leading-[18px]">{title}</p>
 
             <div className="relative w-full h-[130px]">
                 {/* Base gauge */}
@@ -42,8 +58,8 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                             innerRadius="55%"
                             outerRadius="100%"
                             dataKey="value"
-                            stroke="oklch(44.6% 0.043 257.281)"
-                            strokeWidth={2}
+                            stroke="none"
+                            strokeWidth={0}
                         >
                             {GAUGE_ZONES.map((entry, index) => (
                                 <Cell key={index} fill={entry.color} />
@@ -57,6 +73,20 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     viewBox="0 0 260 160"
                     className="absolute top-[30%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
+                    {/* Outer and inner bounds */}
+                    <path
+                        d={describeArc(130, 131, 121, 270, 90)}
+                        fill="none"
+                        stroke="#222"
+                        strokeWidth="5"
+                    />
+                    <path
+                        d={describeArc(130, 131, 67, 270, 90)}
+                        fill="none"
+                        stroke="#222"
+                        strokeWidth="5"
+                    />
+
                     {/* Zone dividers */}
                     {[30, 60, 90, 120, 150].map(deg => {
                         const r1 = 77;
@@ -79,22 +109,22 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     <line
                         x1={130 - 78}
                         y1={130}
-                        x2={130 - 100}
+                        x2={130 - 108}
                         y2={130}
                         stroke="#222"
                         strokeWidth="2"
-                        strokeDasharray="3 4"
+                        strokeDasharray="6 6"
                     />
 
                     {/* 100% boundary */}
                     <line
                         x1={130 + 78}
                         y1={130}
-                        x2={130 + 100}
+                        x2={130 + 108}
                         y2={130}
                         stroke="#222"
                         strokeWidth="2"
-                        strokeDasharray="3 4"
+                        strokeDasharray="6 6"
                     />
                 </svg>
                 {/* SVG 2: Needle */}
@@ -109,7 +139,7 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                         x2={130 + mainNeedleLength * Math.cos((Math.PI * angle) / 180)}
                         y2={130 - mainNeedleLength * Math.sin((Math.PI * angle) / 180)}
                         stroke="#222"
-                        strokeWidth="6"
+                        strokeWidth="5"
                         strokeLinecap="round"
                     />
 
@@ -120,19 +150,17 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                         x2={130 - 32 * Math.cos((Math.PI * angle) / 180)}
                         y2={130 + 32 * Math.sin((Math.PI * angle) / 180)}
                         stroke="#222"
-                        strokeWidth="6"
+                        strokeWidth="5"
                         strokeLinecap="round"
                     />
 
                     {/* Pivot outer ring */}
-                    <circle cx="130" cy="130" r="18" fill="white" stroke="#222" strokeWidth="2" />
+                    <circle cx="130" cy="130" r="18" fill="white" stroke="#222" strokeWidth="4" />
 
                     {/* Center pivot */}
-                    <circle cx="130" cy="130" r="6" fill="#222" />
+                    <circle cx="130" cy="130" r="5" fill="#222" />
                 </svg>
             </div>
-
-            <p className="mt-[-50px] text-grayscale-900 text-sm font-semibold">{label}</p>
         </div>
     );
 };
