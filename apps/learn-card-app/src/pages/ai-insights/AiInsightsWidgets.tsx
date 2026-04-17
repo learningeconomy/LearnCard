@@ -9,6 +9,7 @@ import {
     SkillProfileSalaryData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
 import { useOccupationForProfessionalTitle } from './useOccupationForProfessionalTitle';
+import AiInsightsMarketComparisonBox from './AiInsightsMarketComparisonBox';
 import AiPathwayTopPayLocations from '../ai-pathways/ai-pathway-careers/AiPathwayTopPayLocations';
 import AiPathwayCareerJobGrowthInfo from '../ai-pathways/ai-pathway-careers/AiPathwayCareersJobGrowthInfo';
 
@@ -84,6 +85,16 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                     </div>
                 ) : hasOccupationData && occupation ? (
                     <>
+                        <AiInsightsMarketComparisonBox
+                            professionalTitle={professionalTitle}
+                            occupation={occupation}
+                            salaryData={salaryData}
+                        />
+
+                        {occupation.Projections?.Projections?.[0] && (
+                            <div className="h-[1px] w-full bg-grayscale-200" />
+                        )}
+
                         {occupation.Projections?.Projections?.[0] && (
                             <AiPathwayCareerJobGrowthInfo occupation={occupation} compact />
                         )}

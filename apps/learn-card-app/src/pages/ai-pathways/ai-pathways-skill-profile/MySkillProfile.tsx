@@ -49,7 +49,9 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
     };
 
     return (
-        <div className={`w-full max-w-[600px] flex items-center justify-center ${className}`}>
+        <div
+            className={`w-full max-w-[600px] flex items-center justify-center text-left ${className}`}
+        >
             <div className="w-full max-w-[600px] bg-white items-center justify-center flex flex-col shadow-bottom-4-4 px-[15px] py-[18px] rounded-[15px]">
                 <div className="flex flex-col w-full gap-[10px]">
                     <div className="flex gap-[10px] items-center justify-start w-full">
