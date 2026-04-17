@@ -52,7 +52,7 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                 <div
                     className="absolute left-1/2 top-0 h-[160px] w-[260px] pointer-events-none"
                     style={{
-                        transform: 'translateX(calc(-50% - 3px)) translateY(-2px) scale(0.53125)',
+                        transform: 'translateX(calc(-50% - 2px)) translateY(-2px) scale(0.53125)',
                         transformOrigin: 'top center',
                     }}
                 >
