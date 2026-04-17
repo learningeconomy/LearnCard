@@ -13,9 +13,9 @@ const AiPathwayCareerSection: React.FC<AiPathwayCareerSectionProps> = ({
 }) => {
     if (compact) {
         return (
-            <div className="w-full flex flex-col gap-3 py-1">
+            <div className="w-full flex flex-col gap-3">
                 <div className="w-full flex items-center justify-start">
-                    <h2 className="text-[17px] text-grayscale-900 font-poppins font-semibold">
+                    <h2 className="text-[17px] text-grayscale-900 font-poppins font-bold leading-[24px]">
                         {title}
                     </h2>
                 </div>

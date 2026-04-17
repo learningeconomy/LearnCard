@@ -40,17 +40,21 @@ export const AiPathwayTopPayLocations: React.FC<{
             {isLoading ? (
                 <p className="text-sm text-grayscale-600">Finding top pay locations...</p>
             ) : topPaidLocations.length > 0 ? (
-                <div className="w-full flex flex-col items-start justify-start gap-2">
+                <div className="w-full flex flex-col items-start justify-start gap-[10px]">
                     {topPaidLocations.map(l => {
                         return (
                             <div
                                 key={l.location}
                                 className="w-full flex items-center justify-between"
                             >
-                                <p className="text-grayscale-700">{l.location}</p>
-                                <p className="text-grayscale-700 font-semibold">
+                                <p className="text-grayscale-900 text-[16px] leading-[20px]">
+                                    {l.location}
+                                </p>
+                                <p className="text-grayscale-900 text-[14px] leading-[18px]">
                                     {numeral(l.salary).format('$0a')}
-                                    <span className="text-grayscale-500 font-normal">/yr</span>
+                                    <span className="text-grayscale-600 text-[12px] font-[400] leading-[16px] tracking-[0.72px]">
+                                        /yr
+                                    </span>
                                 </p>
                             </div>
                         );
@@ -58,7 +62,7 @@ export const AiPathwayTopPayLocations: React.FC<{
                 </div>
             ) : (
                 <p className="text-sm text-grayscale-600">
-                    Location salary data isn’t available yet.
+                    Location salary data isn't available yet.
                 </p>
             )}
 
