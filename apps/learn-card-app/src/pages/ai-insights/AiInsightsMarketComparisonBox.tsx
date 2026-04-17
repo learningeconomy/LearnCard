@@ -79,8 +79,12 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     );
 
     const scaleMax = Math.max(marketHigh ?? 0, currentSalary ?? 0, 1);
+    const getPositionFromValue = (value: number): number => {
+        return clampPercent((value / scaleMax) * 100);
+    };
+
     const markerLeft =
-        currentSalary !== undefined ? clampPercent((currentSalary / scaleMax) * 100) : undefined;
+        currentSalary !== undefined ? getPositionFromValue(currentSalary) : undefined;
 
     const comparisonPercent =
         currentSalary !== undefined && marketLow !== undefined && marketHigh !== undefined
@@ -92,7 +96,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             : undefined;
 
     const comparisonPercentLabel =
-        comparisonPercent !== undefined ? Math.round(comparisonPercent / 5) * 5 : undefined;
+        comparisonPercent !== undefined ? Math.round(comparisonPercent) : undefined;
     const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const titlePlural = pluralizeTitle(title);
     const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow) : '$0';
@@ -138,9 +142,15 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             </div>
 
             <div className="space-y-2">
-                <div className="flex items-center justify-between text-[14px] leading-[14px] tracking-[0.32px] text-grayscale-600 px-[1px]">
+                <div className="relative h-[16px] px-[1px]">
                     {tickValues.map((tickValue, index) => (
-                        <span key={`${tickValue}-${index}`}>{formatScaleLabel(tickValue)}</span>
+                        <span
+                            key={`${tickValue}-${index}`}
+                            className="absolute top-0 -translate-x-1/2 text-[14px] leading-[14px] tracking-[0.32px] text-grayscale-600"
+                            style={{ left: `${getPositionFromValue(tickValue)}%` }}
+                        >
+                            {formatScaleLabel(tickValue)}
+                        </span>
                     ))}
                 </div>
 
