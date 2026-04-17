@@ -12,6 +12,7 @@ import { useOccupationForProfessionalTitle } from './useOccupationForProfessiona
 import AiInsightsMarketComparisonBox from './AiInsightsMarketComparisonBox';
 import AiPathwayTopPayLocations from '../ai-pathways/ai-pathway-careers/AiPathwayTopPayLocations';
 import AiPathwayCareerJobGrowthInfo from '../ai-pathways/ai-pathway-careers/AiPathwayCareersJobGrowthInfo';
+import AiInsightsQualitativeFactorsBox from './AiInsightsQualitativeFactorsBox';
 import AiInsightsAverageSalaryBox from './AiInsightsAverageSalaryBox';
 
 type AiInsightsWidgetsProps = {};
@@ -99,6 +100,14 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                         {occupation.Projections?.Projections?.[0] && (
                             <AiPathwayCareerJobGrowthInfo occupation={occupation} compact />
                         )}
+
+                        <div className="h-[1px] w-full bg-grayscale-200" />
+
+                        <AiInsightsQualitativeFactorsBox
+                            professionalTitle={professionalTitle}
+                            occupation={occupation}
+                            isLoading={occupationLoading}
+                        />
 
                         {occupation.Projections?.Projections?.[0] && (
                             <div className="h-[1px] w-full bg-grayscale-200" />

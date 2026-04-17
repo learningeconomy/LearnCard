@@ -24,6 +24,7 @@ const getLabel = (score: number) => {
 
 export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
     const angle = 180 - (score / 100) * 180;
+    const mainNeedleLength = 92;
     const label = getLabel(score);
 
     return (
@@ -53,8 +54,8 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
 
                 {/*  Zone divider lines + bounds */}
                 <svg
-                    viewBox="0 0 275 130"
-                    className="absolute left-[5%] top-[-7%] pointer-events-none"
+                    viewBox="0 0 260 160"
+                    className="absolute top-[30%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
                     {/* Zone dividers */}
                     {[30, 60, 90, 120, 150].map(deg => {
@@ -105,8 +106,8 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     <line
                         x1="130"
                         y1="130"
-                        x2={130 + 140 * Math.cos((Math.PI * angle) / 180)}
-                        y2={130 - 140 * Math.sin((Math.PI * angle) / 180)}
+                        x2={130 + mainNeedleLength * Math.cos((Math.PI * angle) / 180)}
+                        y2={130 - mainNeedleLength * Math.sin((Math.PI * angle) / 180)}
                         stroke="#222"
                         strokeWidth="6"
                         strokeLinecap="round"
