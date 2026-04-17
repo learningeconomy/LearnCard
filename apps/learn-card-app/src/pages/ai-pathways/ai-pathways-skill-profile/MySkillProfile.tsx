@@ -58,10 +58,10 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                                 !isExpanded ? 'w-[48px] h-[48px]' : 'w-[30px] h-[30px]'
                             }
                         />
-                        <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px]">
+                        <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px] text-left">
                             My Skill Profile
                             {!isExpanded && (
-                                <span className="text-[14px] font-poppins text-grayscale-700 leading-[130%] font-normal">
+                                <span className="text-[14px] font-poppins text-grayscale-700 leading-[130%] font-normal text-left">
                                     Personalize your pathways.
                                 </span>
                             )}
