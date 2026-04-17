@@ -445,6 +445,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const roleScrollRef = useRef<HTMLDivElement>(null);
     const selectedRoleRef = useRef<HTMLButtonElement>(null);
     const isCenteringRef = useRef(false);
+    const isInitialRoleSetRef = useRef(true);
 
     // Filter out counselor for the visible roles list
     const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
@@ -520,17 +521,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         }
     };
 
-    // Center on role change
+    // Center on role change (instant for initial set, smooth for user changes)
     useEffect(() => {
-        const timer = setTimeout(() => centerRole(true), 50);
+        if (role === null) return;
+        const useInstant = isInitialRoleSetRef.current;
+        isInitialRoleSetRef.current = false;
+        const timer = setTimeout(() => centerRole(!useInstant), useInstant ? 150 : 50);
         return () => clearTimeout(timer);
     }, [role]);
-
-    // Center on initial mount (instant, longer delay for layout)
-    useEffect(() => {
-        const timer = setTimeout(() => centerRole(false), 150);
-        return () => clearTimeout(timer);
-    }, []);
 
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
