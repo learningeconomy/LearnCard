@@ -470,7 +470,14 @@ export const sendBoost = async ({
 
         if (typeof boostUri === 'string') {
             if (!skipNotification) {
-                await trace('notification', 'addNotificationToQueue', () =>
+                // LC-1644: fire-and-forget the BOOST_RECEIVED notification enqueue.
+                // addNotificationToQueue is an SQS SendMessage in prod (~5-30ms) or a
+                // direct webhook call in offline/dev. Neither produces a value the caller
+                // needs, and notifications are eventually-consistent by design — there's
+                // no correctness benefit to making sendBoost wait on the enqueue ack.
+                // Any enqueue failure is logged so operators still have visibility;
+                // the original boostUri return path is unaffected.
+                trace('notification', 'addNotificationToQueue', () =>
                     addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
                         to: to,
@@ -483,8 +490,14 @@ export const sendBoost = async ({
                             vcUris: [boostUri!],
                         },
                     })
-                );
-
+                ).catch((err: unknown) => {
+                    console.error('[sendBoost] BOOST_RECEIVED notification enqueue failed', {
+                        err: err instanceof Error ? err.message : String(err),
+                        from: from.profileId,
+                        to: to.profileId,
+                        boostUri,
+                    });
+                });
             }
 
             return boostUri;
