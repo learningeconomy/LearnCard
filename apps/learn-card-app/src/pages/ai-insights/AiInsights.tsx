@@ -107,7 +107,7 @@ const AiInsights: React.FC = () => {
                 key={`request-${index}`}
                 contractUri={request?.contract?.uri}
                 options={{
-                    className: 'bg-indigo-100 p-4 rounded-[16px] mb-4',
+                    className: 'bg-indigo-100 p-4 rounded-[16px] shadow-bottom-4-4',
                     isInline: true,
                     useDarkText: true,
                     hideCloseButton: true,
@@ -118,7 +118,7 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full my-4">
+            <div className="flex items-center justify-center w-full">
                 {flags?.showGenerateAiInsightsButton && (
                     <button
                         className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
@@ -143,10 +143,7 @@ const AiInsights: React.FC = () => {
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
             <AiInsightsPromptBoxContainer />
             {!flags?.hideAiPathways && (
-                <AiFeatureLinks
-                    features={['ai-sessions', 'skills-hub', 'pathways']}
-                    className="mt-4"
-                />
+                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
             )}
         </>
     );
@@ -179,7 +176,7 @@ const AiInsights: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex relative justify-center items-center w-full">
-                            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
+                            <div className="w-full max-w-[600px] flex flex-col items-stretch gap-[20px] text-center ion-padding mt-[30px] pb-[100px]">
                                 <AiInsightsTabs
                                     selectedTab={selectedTab}
                                     setSelectedTab={setSelectedTab}
