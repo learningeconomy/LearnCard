@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
+import MySkillProfile from '../ai-pathways/ai-pathways-skill-profile/MySkillProfile';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
@@ -37,6 +38,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
+import AiInsightsWidgets from './AiInsightsWidgets';
 
 type Flags = {
     hideAiPathways?: boolean;
@@ -133,6 +135,10 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
+            <MySkillProfile />
+
+            <AiInsightsWidgets />
+
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
             <AiInsightsPromptBoxContainer />
