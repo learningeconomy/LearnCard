@@ -9,11 +9,7 @@ import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysI
 
 import PathwaySearchInput from './PathwaySearchInput';
 import ExplorePathwaysModal from '../ExplorePathwaysModal';
-
-export enum AiPathwaysWhatWouldYouLikeToDoCardOptions {
-    GrowSkills = 'grow-skills',
-    FindRoles = 'find-roles',
-}
+import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './AiPathwaysWhatWouldYouLikeToDoCard.types';
 
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
     const { newModal } = useModal();
