@@ -135,6 +135,7 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
+
             <MySkillProfile />
 
             <AiInsightsWidgets />

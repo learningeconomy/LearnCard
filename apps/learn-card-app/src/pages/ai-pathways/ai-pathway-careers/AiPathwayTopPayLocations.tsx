@@ -1,18 +1,19 @@
 import React from 'react';
 import numeral from 'numeral';
 
-import { useSalariesForKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
-
-import type {
-    OccupationDetailsResponse,
-    CareerOneStopLocationResult,
-} from 'learn-card-base/types/careerOneStop';
+import {
+    useSalariesForKeyword,
+    type OccupationDetailsResponse,
+    type CareerOneStopLocationResult,
+} from 'learn-card-base';
 import { getYearlyWages } from './ai-pathway-careers.helpers';
+import AiPathwayCareerSection from './AiPathwayCareerSection';
 
-export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsResponse }> = ({
-    occupation,
-}) => {
-    const { data } = useSalariesForKeyword({
+export const AiPathwayTopPayLocations: React.FC<{
+    occupation: OccupationDetailsResponse;
+    compact?: boolean;
+}> = ({ occupation, compact = false }) => {
+    const { data, isLoading } = useSalariesForKeyword({
         keyword: occupation.OnetTitle,
     });
 
@@ -32,30 +33,39 @@ export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsR
         .filter((l): l is LocationSalary => l.salary > 0)
         .sort((a, b) => b.salary - a.salary);
 
-    return (
-        <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-4">
-            <div className="w-full flex items-center justify-start">
-                <h2 className="text-xl text-grayscale-800 font-notoSans">Top Pay Locations</h2>
-            </div>
+    const sectionTitle = 'Top Pay Locations';
 
-            <div className="w-full flex flex-col items-start justify-start gap-2">
-                {topPaidLocations.map(l => {
-                    return (
-                        <div key={l.location} className="w-full flex items-center justify-between">
-                            <p className="text-grayscale-700">{l.location}</p>
-                            <p className="text-grayscale-700 font-semibold">
-                                {numeral(l.salary).format('$0a')}
-                                <span className="text-grayscale-500 font-normal">/yr</span>
-                            </p>
-                        </div>
-                    );
-                })}
-            </div>
+    return (
+        <AiPathwayCareerSection title={sectionTitle} compact={compact}>
+            {isLoading ? (
+                <p className="text-sm text-grayscale-600">Finding top pay locations...</p>
+            ) : topPaidLocations.length > 0 ? (
+                <div className="w-full flex flex-col items-start justify-start gap-2">
+                    {topPaidLocations.map(l => {
+                        return (
+                            <div
+                                key={l.location}
+                                className="w-full flex items-center justify-between"
+                            >
+                                <p className="text-grayscale-700">{l.location}</p>
+                                <p className="text-grayscale-700 font-semibold">
+                                    {numeral(l.salary).format('$0a')}
+                                    <span className="text-grayscale-500 font-normal">/yr</span>
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <p className="text-sm text-grayscale-600">
+                    Location salary data isn’t available yet.
+                </p>
+            )}
 
             {/* <div className="w-full flex items-center justify-center">
                 <button className="text-grayscale-900 font-semibold">See All Locations</button>
             </div> */}
-        </div>
+        </AiPathwayCareerSection>
     );
 };
 

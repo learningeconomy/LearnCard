@@ -2,12 +2,13 @@ import React from 'react';
 import numeral from 'numeral';
 
 import ArrowUp from 'learn-card-base/svgs/ArrowUp';
+import { type OccupationDetailsResponse } from 'learn-card-base';
+import AiPathwayCareerSection from './AiPathwayCareerSection';
 
-import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
-
-export const AiPathwayCareerJobGrowthInfo: React.FC<{ occupation: OccupationDetailsResponse }> = ({
-    occupation,
-}) => {
+export const AiPathwayCareerJobGrowthInfo: React.FC<{
+    occupation: OccupationDetailsResponse;
+    compact?: boolean;
+}> = ({ occupation, compact = false }) => {
     const projection = occupation.Projections?.Projections?.[0];
 
     const jobGrowth = projection
@@ -22,13 +23,7 @@ export const AiPathwayCareerJobGrowthInfo: React.FC<{ occupation: OccupationDeta
     if (!jobGrowth) return null;
 
     return (
-        <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-2">
-            <div className="w-full flex items-center justify-start">
-                <h2 className="text-xl text-grayscale-800 font-notoSans">
-                    Growth in the Job Market
-                </h2>
-            </div>
-
+        <AiPathwayCareerSection title="Growth in the Job Market" compact={compact}>
             <div className="w-full flex items-start justify-start gap-2">
                 <span className="w-[20px] h-[20px]">
                     <ArrowUp className="text-grayscale-900 mt-1" />
@@ -41,7 +36,7 @@ export const AiPathwayCareerJobGrowthInfo: React.FC<{ occupation: OccupationDeta
                     per year.
                 </p>
             </div>
-        </div>
+        </AiPathwayCareerSection>
     );
 };
 
