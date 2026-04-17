@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
 
 type CareerGaugeProps = {
     title: string;
@@ -47,16 +47,24 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
         <div className="w-[260px] text-center flex flex-col gap-[10px]">
             <p className="text-[14px] text-grayscale-900 leading-[18px]">{title}</p>
 
-            <div className="relative w-full h-[130px]">
+            <div className="relative w-full h-[85px] overflow-hidden">
                 {/* Base gauge */}
-                <ResponsiveContainer>
-                    <PieChart>
+                <div
+                    className="absolute left-1/2 top-0 h-[160px] w-[260px] pointer-events-none"
+                    style={{
+                        transform: 'translateX(calc(-50% - 3px)) translateY(-2px) scale(0.53125)',
+                        transformOrigin: 'top center',
+                    }}
+                >
+                    <PieChart width={260} height={160}>
                         <Pie
                             data={GAUGE_ZONES}
+                            cx={130}
+                            cy={130}
                             startAngle={180}
                             endAngle={0}
-                            innerRadius="55%"
-                            outerRadius="100%"
+                            innerRadius={67}
+                            outerRadius={123}
                             dataKey="value"
                             stroke="none"
                             strokeWidth={0}
@@ -66,12 +74,12 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                             ))}
                         </Pie>
                     </PieChart>
-                </ResponsiveContainer>
+                </div>
 
                 {/*  Zone divider lines + bounds */}
                 <svg
                     viewBox="0 0 260 160"
-                    className="absolute top-[30%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
+                    className="absolute inset-0 w-full h-full pointer-events-none"
                 >
                     {/* Outer and inner bounds */}
                     <path
@@ -130,7 +138,7 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                 {/* SVG 2: Needle */}
                 <svg
                     viewBox="0 0 260 160"
-                    className="absolute top-[33%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
+                    className="absolute inset-0 w-full h-full pointer-events-none"
                 >
                     {/* main needle */}
                     <line
