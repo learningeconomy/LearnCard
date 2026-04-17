@@ -6,10 +6,10 @@ type CareerGaugeProps = {
 };
 
 const GAUGE_ZONES = [
-    { value: 25, color: 'oklch(98% 0.062 18.334)' },
-    { value: 25, color: 'oklch(99% 0.032 17.717)' },
-    { value: 25, color: 'oklch(99% 0.018 155.826)' },
-    { value: 25, color: 'oklch(98% 0.044 156.743)' },
+    { value: 25, color: '#FECDD3' },
+    { value: 25, color: '#FFF1F2' },
+    { value: 25, color: 'rgba(248, 254, 248, 0.80)' },
+    { value: 25, color: '#D1FAE5' },
 ];
 
 const getLabel = (score: number) => {
@@ -28,8 +28,8 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
     const label = getLabel(score);
 
     return (
-        <div className="w-[260px] text-center">
-            <p className="text-sm mb-1 text-grayscale-900">{title}</p>
+        <div className="w-[260px] text-center flex flex-col gap-[10px]">
+            <p className="text-[14px] text-grayscale-900 leading-[18px">{title}</p>
 
             <div className="relative w-full h-[130px]">
                 {/* Base gauge */}
