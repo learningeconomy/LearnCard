@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
@@ -520,17 +521,31 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
     }
 
-    // Get the boost associated with this app (templateAlias maps to internal boost)
-    const boostResult = await getBoostForListingByTemplateAlias(
-        listingId,
-        templateAlias,
-        ctx.domain
-    );
+    // LC-1644 Phase 1b: Fire the four input-only lookups in parallel. All depend only on
+    // listingId / templateAlias / profileId — none depend on each other. At staging each
+    // query is 0-3ms, so the raw latency win is small (~5-10ms p50), but eliminating the
+    // serial chain reduces cold-path variance and makes the control flow cleaner.
+    const [boostResult, listing, integration, targetProfile] = await Promise.all([
+        getBoostForListingByTemplateAlias(listingId, templateAlias, ctx.domain),
+        readAppStoreListingById(listingId),
+        getIntegrationForListing(listingId),
+        getProfilesByProfileIds([profile.profileId]),
+    ]);
+    perf.mark('parallelReads');
+
     if (!boostResult) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
     }
-
-    perf.mark('getBoost');
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+    const target = targetProfile[0];
+    if (!targetProfile.length || !target) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
 
     const { boost, boostUri } = boostResult;
 
@@ -569,34 +584,22 @@ const handleSendCredentialEvent = async (
         });
     }
 
-    const listing = await readAppStoreListingById(listingId);
-    if (!listing) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
-    }
+    // LC-1644 Phase 1b (cont.): Batch 2 — three lookups that only depend on the Batch 1
+    // results (integration / listing). Run them concurrently; we pick the first non-null SA
+    // by priority (listing > integration > owner). The owner-level SA lookup depends on
+    // integrationOwner, so it runs in a final stage only if neither listingSa nor
+    // integrationSa resolved.
+    const [integrationOwner, listingSa, integrationSa] = await Promise.all([
+        getOwnerProfileForIntegration(integration.id),
+        getPrimarySigningAuthorityForListing(listing),
+        getPrimarySigningAuthorityForIntegration(integration.id),
+    ]);
+    perf.mark('ownerAndSaReads');
 
-    perf.mark('readListing');
-
-    // Get the integration that owns this listing
-    const integration = await getIntegrationForListing(listingId);
-    if (!integration) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-    }
-
-    perf.mark('getIntegration');
-
-    // Get integration owner for signing
-    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
     if (!integrationOwner) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
     }
 
-    perf.mark('getOwner');
-
-    // Get signing authority for the listing, falling back to legacy integration SA or owner SA
-    const listingSa = await getPrimarySigningAuthorityForListing(listing);
-    const integrationSa = listingSa
-        ? undefined
-        : await getPrimarySigningAuthorityForIntegration(integration.id);
     const ownerSa =
         listingSa || integrationSa
             ? undefined
@@ -610,20 +613,6 @@ const handleSendCredentialEvent = async (
             code: 'NOT_FOUND',
             message: 'No signing authority configured for this app',
         });
-    }
-
-    // Get the target profile (the user making the request)
-    const targetProfile = await getProfilesByProfileIds([profile.profileId]);
-    if (!targetProfile.length) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-    }
-
-    perf.mark('targetProfile');
-
-    const target = targetProfile[0];
-
-    if (!target) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
     // Build unsigned credential from boost template
@@ -720,35 +709,40 @@ const handleSendCredentialEvent = async (
 
     perf.mark('saIssue');
 
-    // Log credential activity FIRST to get activityId for chaining
-    const activityId = await logCredentialSent({
-        actorProfileId: integrationOwner.profileId,
-        recipientType: 'profile',
-        recipientIdentifier: target.profileId,
-        recipientProfileId: target.profileId,
-        boostUri,
-        integrationId: integration.id,
-        listingId,
-        source: 'appEvent',
-        metadata: { listingId, templateAlias },
-    });
+    // LC-1644 Phase 1d: run logCredentialSent + sendBoost in parallel. They previously
+    // ran serially because sendBoost needed activityId as a foreign key on the
+    // SentCredential relationship. We now pre-generate the activityId upfront (matching
+    // the uuid the activity log would have chosen itself) and pass it to both calls.
+    // Both writes produce the same Neo4j linkage as before; we just fan them out.
+    // At staging this saves ~40ms on the serial sum (logActivity 40ms + sendBoost 50ms).
+    const activityId = uuid();
+    const [, credentialUri] = await Promise.all([
+        logCredentialSent({
+            actorProfileId: integrationOwner.profileId,
+            recipientType: 'profile',
+            recipientIdentifier: target.profileId,
+            recipientProfileId: target.profileId,
+            boostUri,
+            integrationId: integration.id,
+            listingId,
+            source: 'appEvent',
+            metadata: { listingId, templateAlias },
+            activityId,
+        }),
+        sendBoost({
+            from: integrationOwner,
+            to: target,
+            boost,
+            credential,
+            domain: ctx.domain,
+            skipNotification: false,
+            activityId,
+            integrationId: integration.id,
+            listingId,
+        }),
+    ]);
 
-    perf.mark('logActivity');
-
-    // Send to user's wallet (credential stays pending until user claims via the app UI)
-    const credentialUri = await sendBoost({
-        from: integrationOwner,
-        to: target,
-        boost,
-        credential,
-        domain: ctx.domain,
-        skipNotification: false,
-        activityId,
-        integrationId: integration.id,
-        listingId,
-    });
-
-    perf.mark('sendBoost');
+    perf.mark('logActivityAndSendBoost');
     perf.done({ listingId, boostUri });
 
     return {

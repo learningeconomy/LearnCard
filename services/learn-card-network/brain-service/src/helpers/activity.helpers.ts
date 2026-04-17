@@ -31,13 +31,16 @@ export const logCredentialSent = async (params: {
     listingId?: string;
     source: CredentialActivitySourceType;
     metadata?: Record<string, unknown>;
+    // LC-1644 Phase 1d: callers can pre-generate activityId upfront so
+    // logCredentialSent can run in parallel with dependent writes (e.g. sendBoost
+    // which stores activityId on the SentCredential relationship).
+    activityId?: string;
 }): Promise<string> => {
     const isInboxSend = params.recipientType === 'email' || params.recipientType === 'phone';
 
     return logCredentialActivity({
         ...params,
         eventType: isInboxSend ? 'CREATED' : 'DELIVERED',
-        activityId: undefined,
     });
 };
 
