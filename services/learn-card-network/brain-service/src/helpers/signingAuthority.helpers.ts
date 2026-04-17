@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { Agent, setGlobalDispatcher } from 'undici';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
@@ -12,6 +13,40 @@ const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 21_000;
+
+// LC-1644 Task 3: persistent HTTP agent with keepAlive + connection pool for SA calls.
+//
+// Before this change, every SA issue call did a full TCP+TLS handshake. Staging p50 for
+// the http phase was 222ms (warm), spiking to ~4s on cold lambda due to fresh TLS. Keeping
+// the socket warm across calls eliminates the handshake on subsequent requests to the
+// same SA origin — expected savings 100-300ms per warm call and multiple seconds on cold
+// paths that would otherwise re-handshake.
+//
+// Agent is per-origin pooled; one shared instance handles all SA endpoints. Created lazily
+// so tests that stub fetch don't trigger socket allocation. `pipelining: 1` keeps request
+// ordering deterministic (SA responses aren't idempotent — we don't want body reordering).
+let _saAgent: Agent | undefined;
+const getSaAgent = (): Agent => {
+    if (!_saAgent) {
+        _saAgent = new Agent({
+            keepAliveTimeout: 30_000,
+            keepAliveMaxTimeout: 60_000,
+            connections: 10,
+            pipelining: 1,
+            // Prefer HTTP/2 when the server supports it (e.g. staging.api.learncard.app
+            // fronted by API Gateway). H/2 multiplexes streams over a single TCP
+            // connection, further reducing handshake overhead across concurrent SA calls.
+            allowH2: true,
+        });
+        // Install as global dispatcher so native fetch() picks it up. Node's global
+        // fetch only honors a per-call `dispatcher` option when it's on undici's
+        // internal options object; setting the global dispatcher is the reliable path
+        // and also benefits any other SA-adjacent calls that use plain fetch.
+        setGlobalDispatcher(_saAgent);
+        console.log('[SA Helper] undici keepAlive agent installed as global dispatcher');
+    }
+    return _saAgent;
+};
 
 const _mockIssueCredentialWithSigningAuthority = async (credential: UnsignedVC): Promise<VC> => {
     const learnCard = await getLearnCard();
@@ -113,7 +148,9 @@ export async function issueCredentialWithSigningAuthority(
                         encryption,
                     }),
                     signal,
-                });
+                    // LC-1644 Task 3: keepAlive + pooling via shared undici Agent
+                    dispatcher: getSaAgent(),
+                } as RequestInit & { dispatcher: Agent });
 
                 return resp;
             }, { endpoint: issuerEndpoint });
