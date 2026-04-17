@@ -134,6 +134,10 @@ services:
             # Zero-cost in hot paths when unset; toggle off by unsetting.
             LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
+            # LC-1644 bench: optionally override ownerDid sent to remote SAs.
+            # Leave empty to use default domain-based derivation; set (via shell env or
+            # override file) when benching against staging SA registered to a specific user.
+            SA_OWNER_DID_OVERRIDE: ${SA_OWNER_DID_OVERRIDE:-}
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for file watching in Docker
             CHOKIDAR_USEPOLLING: 'true'

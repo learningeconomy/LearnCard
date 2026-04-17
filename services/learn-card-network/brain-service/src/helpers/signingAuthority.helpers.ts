@@ -29,8 +29,12 @@ export async function issueCredentialWithSigningAuthority(
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
+    // LC-1644 bench: allow SA_OWNER_DID_OVERRIDE env var to force a specific ownerDid
+    // without threading the param through every caller. Only takes effect when set.
     const ownerDid =
-        ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
+        ownerDidOverride
+        ?? process.env.SA_OWNER_DID_OVERRIDE
+        ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
     const logContext = {
         owner: owner.profileId,

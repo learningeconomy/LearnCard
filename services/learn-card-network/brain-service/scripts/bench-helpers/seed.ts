@@ -39,6 +39,12 @@ const SA_ENDPOINT = process.env.SA_ENDPOINT ?? 'http://localhost:5100/api';
 const SA_SEED = process.env.SA_SEED ?? 'b'.repeat(64);
 // Must match TEST_SEED in bench-appevent.ts — determines the authenticated DID
 const ISSUER_SEED = process.env.TEST_SEED ?? '1'.repeat(64);
+// Staging-SA overrides. When pointing at a remote SA (e.g. staging), set these
+// to the SA's actual DID/name/owner — otherwise the SA service rejects the
+// request because the triple (ownerDid, name, did) must match a registered SA.
+const SA_DID_OVERRIDE = process.env.SA_DID;          // e.g. did:key:z6MkoGc...
+const SA_NAME_OVERRIDE = process.env.SA_NAME;        // e.g. 'test'
+const SA_OWNER_DID_OVERRIDE = process.env.SA_OWNER_DID; // e.g. did:web:staging...:users:babystrange
 
 export interface SeedResult {
     listingId: string;
@@ -285,8 +291,8 @@ async function ensureBoostAndSA(
             {
                 endpoint: SA_ENDPOINT,
                 listingId,
-                name: 'default',
-                did: saDidKey,
+                name: SA_NAME_OVERRIDE ?? 'default',
+                did: SA_DID_OVERRIDE ?? saDidKey,
             }
         );
         console.log(`  [seed] SA linked to listing: ${SA_ENDPOINT}`);
@@ -301,8 +307,8 @@ async function ensureBoostAndSA(
             {
                 endpoint: SA_ENDPOINT,
                 profileId: ISSUER_PROFILE_ID,
-                name: 'default',
-                did: saDidKey,
+                name: SA_NAME_OVERRIDE ?? 'default',
+                did: SA_DID_OVERRIDE ?? saDidKey,
             }
         );
     } else {
