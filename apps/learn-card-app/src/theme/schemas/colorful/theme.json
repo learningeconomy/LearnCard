@@ -15,6 +15,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-white",
                 "headerTextColor": "text-grayscale-900",
+                "helperTextColor": "text-grayscale-600",
                 "backgroundPrimaryColor": "!bg-white",
                 "backgroundSecondaryColor": "grayscale-100"
             },

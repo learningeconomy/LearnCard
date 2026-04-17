@@ -123,8 +123,8 @@ export const SubheaderContentType: Record<
         iconColor: 'text-indigo-500',
         textColor: 'text-grayscale-900',
         bgColor: 'bg-white',
-        helperText: 'Personalize my tutor',
-        helperTextClickable: '100% Optimized',
+        helperText: '100% Optimized',
+        helperTextClickable: 'Personalize my tutor',
         showBetaLabel: true,
     },
     [SubheaderTypeEnum.AiInsights]: {

@@ -89,6 +89,36 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             </span>
         ) : null;
 
+    let helperTextComponent = (
+        <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
+            <span>{helperText}</span>{' '}
+            {helperTextClickable && (
+                <button
+                    className="font-[600] underline"
+                    onClick={() => presentCategoryDescriptorModal()}
+                >
+                    {helperTextClickable}.
+                </button>
+            )}
+        </span>
+    );
+
+    if (subheaderType === SubheaderTypeEnum.AiSessions) {
+        helperTextComponent = (
+            <span className={`font-poppins text-[12px]`}>
+                <button
+                    className={`font-semibold !text-${colors?.indicatorColor || ''}`}
+                    onClick={() => presentCategoryDescriptorModal()}
+                >
+                    {helperTextClickable}
+                </button>{' '}
+                <span className={`${helperTextColor || ''} font-medium text-[12px]`}>
+                    • {helperText}
+                </span>
+            </span>
+        );
+    }
+
     return (
         <IonRow className="max-w-[700px] mx-auto">
             <IonCol size={'9'} className="flex items-center justify-start gap-[10px]">
@@ -117,17 +147,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         )}
                         {newCredsCountDisplay}
                     </span>
-                    <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
-                        <span>{helperText}</span>{' '}
-                        {helperTextClickable && (
-                            <button
-                                className="font-[600] underline"
-                                onClick={() => presentCategoryDescriptorModal()}
-                            >
-                                {helperTextClickable}.
-                            </button>
-                        )}
-                    </span>
+                    {helperText && helperTextComponent}
                 </h2>
             </IonCol>
 
