@@ -23,19 +23,29 @@ export const AiPathwayCareerJobGrowthInfo: React.FC<{
     if (!jobGrowth) return null;
 
     return (
-        <AiPathwayCareerSection title="Growth in the Job Market" compact={compact}>
-            <div className="w-full flex items-start justify-start gap-2">
-                <span className="w-[20px] h-[20px]">
-                    <ArrowUp className="text-grayscale-900 mt-1" />
-                </span>
-                <p className="text-grayscale-800 text-sm text-left">
-                    From {jobGrowth.estimatedYear} to {jobGrowth.projectedYear}, demand for{' '}
-                    <strong>{occupation.OnetTitle}</strong> is projected to grow by{' '}
-                    <strong>{jobGrowth.percentChange}%</strong>, with approximately{' '}
-                    <strong>{numeral(jobGrowth.annualOpenings).format('0,0')}</strong> job openings
-                    per year.
-                </p>
-            </div>
+        <AiPathwayCareerSection
+            title="Growth in the Job Market"
+            compact={compact}
+            headerOverride={
+                <h2 className="text-[17px] text-grayscale-900 font-poppins font-bold leading-[24px] flex gap-[5px] items-center">
+                    <ArrowUp className="h-[24px] w-[24px] text-teal-500" />
+
+                    <span className="leading-[24px]">
+                        <span className="text-teal-500">Growth</span> in the Job Market
+                    </span>
+                </h2>
+            }
+        >
+            <p className="text-grayscale-600 text-[14px] text-left">
+                From {jobGrowth.estimatedYear} to {jobGrowth.projectedYear}, demand for{' '}
+                {occupation.OnetTitle} is projected to grow by{' '}
+                <strong className="text-indigo-600 font-bold">{jobGrowth.percentChange}%</strong>,
+                with approximately{' '}
+                <strong className="text-indigo-600 font-bold">
+                    {numeral(jobGrowth.annualOpenings).format('0,0')} new job openings
+                </strong>{' '}
+                for this role.
+            </p>
         </AiPathwayCareerSection>
     );
 };
