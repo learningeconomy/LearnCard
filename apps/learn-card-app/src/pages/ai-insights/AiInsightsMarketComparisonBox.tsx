@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { OccupationDetailsResponse } from 'learn-card-base';
+import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
 import type { SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
 import { getYearlyWages } from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
@@ -98,7 +98,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     const comparisonPercentLabel =
         comparisonPercent !== undefined ? Math.round(comparisonPercent) : undefined;
     const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
-    const titlePlural = pluralizeTitle(title);
+    const titlePlural = toTitleCase(pluralizeTitle(title));
     const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow) : '$0';
     const marketAvgLabel = marketAvg !== undefined ? formatCurrency(marketAvg) : '$0';
     const marketHighLabel = marketHigh !== undefined ? formatCurrency(marketHigh) : '$0';
@@ -137,7 +137,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 </h3>
                 <p className="text-[14px] text-grayscale-600 leading-[18px] text-left">
                     It looks like you make more than {comparisonPercentLabel ?? 0}% of other{' '}
-                    {titlePlural} in the market.
+                    {toTitleCase(titlePlural)} in the market.
                 </p>
             </div>
 
