@@ -12,6 +12,7 @@ import { useOccupationForProfessionalTitle } from './useOccupationForProfessiona
 import AiInsightsMarketComparisonBox from './AiInsightsMarketComparisonBox';
 import AiPathwayTopPayLocations from '../ai-pathways/ai-pathway-careers/AiPathwayTopPayLocations';
 import AiPathwayCareerJobGrowthInfo from '../ai-pathways/ai-pathway-careers/AiPathwayCareersJobGrowthInfo';
+import AiInsightsAverageSalaryBox from './AiInsightsAverageSalaryBox';
 
 type AiInsightsWidgetsProps = {};
 
@@ -115,6 +116,12 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                     </div>
                 )}
             </div>
+
+            <AiInsightsAverageSalaryBox
+                professionalTitle={professionalTitle}
+                occupation={occupation}
+                isLoading={occupationLoading}
+            />
         </React.Fragment>
     );
 };

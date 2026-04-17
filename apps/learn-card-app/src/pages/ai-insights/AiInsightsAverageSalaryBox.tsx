@@ -3,6 +3,7 @@ import numeral from 'numeral';
 
 import type { OccupationDetailsResponse } from 'learn-card-base';
 
+import CaretDown from 'src/components/svgs/CaretDown';
 import AiPathwayCareerPipeChart from '../ai-pathways/ai-pathway-careers/AiPathwayCareerPipeChart';
 import { getYearlyWages } from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
 
@@ -73,34 +74,17 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
         : `${title.toLowerCase()}s`;
 
     return (
-        <div className="flex flex-col gap-4 w-full max-w-[600px] mx-auto rounded-[20px] bg-white py-[18px] px-[16px] shadow-bottom-4-4">
-            <h2 className="text-[18px] font-semibold text-grayscale-900 font-poppins">
+        <div className="flex flex-col gap-[30px] w-full max-w-[600px] mx-auto rounded-[15px] bg-white py-[25px] px-[15px] shadow-bottom-4-4">
+            <h2 className="text-[18px] font-bold text-grayscale-900 font-poppins text-left leading-[24px] tracking-[0.32px]">
                 Average Salaries
             </h2>
 
-            <div className="rounded-[18px] border border-grayscale-200 bg-white px-4 py-4 flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-3">
-                    <p className="min-w-0 text-[18px] font-semibold text-grayscale-800 font-poppins truncate">
+            <div className="rounded-[10px] border-[1px] border-solid border-grayscale-200 bg-grayscale-50 p-[10px] flex flex-col gap-[10px] items-start">
+                <div className="flex items-start gap-[10px] w-full">
+                    <p className="min-w-0 text-[17px] font-bold text-grayscale-800 font-poppins truncate">
                         {title}
                     </p>
-                    <span className="shrink-0 text-grayscale-600 pt-1">
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-6 h-6"
-                        >
-                            <path
-                                d="M6 9L12 15L18 9"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                    </span>
+                    <CaretDown className="h-[25px] w-[25px] ml-auto" version="2" />
                 </div>
 
                 {isLoading ? (
@@ -108,23 +92,25 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                 ) : occupation && yearlyWages ? (
                     <>
                         <p className="flex flex-wrap items-end gap-1 leading-none">
-                            <span className="text-[24px] font-semibold bg-[linear-gradient(90deg,#6366F1_0%,#818CF8_98.7%)] bg-clip-text text-transparent [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]">
+                            <span className="text-[21px] font-bold bg-[linear-gradient(90deg,#6366F1_0%,#818CF8_98.7%)] bg-clip-text text-transparent [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]">
                                 {formattedMedianSalary}
                             </span>
-                            <span className="text-sm text-grayscale-600 font-medium">
+                            <span className="text-[12px] text-grayscale-700 leading-[16px]">
                                 /yr average
                             </span>
                         </p>
 
-                        <p className="text-sm font-medium text-grayscale-600">
-                            Range: {formattedMinSalary} - {formattedMaxSalary}
-                        </p>
-
-                        {employmentCount && (
-                            <p className="text-sm font-semibold text-grayscale-700">
-                                About {employmentCount} {pluralizedTitle} worldwide
+                        <div className="flex flex-col items-start text-[12px] text-grayscale-600 font-bold">
+                            <p>
+                                Range: {formattedMinSalary} - {formattedMaxSalary}
                             </p>
-                        )}
+
+                            {employmentCount && (
+                                <p>
+                                    About {employmentCount} {pluralizedTitle} worldwide
+                                </p>
+                            )}
+                        </div>
                     </>
                 ) : (
                     <p className="text-sm text-grayscale-600">
@@ -134,7 +120,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
             </div>
 
             {occupation && yearlyWages && (
-                <>
+                <div className="flex flex-col">
                     <div className="flex flex-col items-center justify-center gap-1 text-grayscale-600 pt-2">
                         <div className="flex items-center justify-center gap-1.5 text-[14px] leading-none">
                             <span className="w-[6px] h-[6px] rounded-full bg-grayscale-900 shrink-0" />
@@ -151,7 +137,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                     </div>
 
                     <AiPathwayCareerPipeChart wages={occupation.Wages} showMedianOverlay={false} />
-                </>
+                </div>
             )}
         </div>
     );
