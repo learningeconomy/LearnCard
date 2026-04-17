@@ -23,7 +23,7 @@ const AiSessionsPage: React.FC = () => {
                 <IonContent fullscreen color={backgroundSecondaryColor}>
                     <MainHeader
                         category={CredentialCategoryEnum.aiTopic}
-                        showBackButton
+                        showBackButton={false}
                         subheaderType={SubheaderTypeEnum.AiSessions}
                         hidePlusBtn={true}
                         customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
