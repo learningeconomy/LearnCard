@@ -35,6 +35,7 @@ import {
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
+import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -200,6 +201,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         return () => {
             disconnectWebSocket();
         };
+    }, []);
+
+    // Warm the markdown renderer chunk before the first assistant token arrives,
+    // so streaming doesn't flash the Suspense "Rendering…" fallback.
+    useEffect(() => {
+        preloadMarkdownRenderer();
     }, []);
 
     // Track viewport height for pin-user-message min-height

@@ -705,7 +705,7 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
 
     const socket = connectWebSocket();
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        setTimeout(() => sendMessageWithQuestion(content, selectedQuestion), 100);
+        onReady(() => sendMessageWithQuestion(content, selectedQuestion));
         return;
     }
 
@@ -840,15 +840,7 @@ export async function startTopicWithUri(topicUri: string) {
         did,
     };
 
-    // Ensure WebSocket is ready before sending - retry if needed
-    const sendMessage = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageToSend));
-        } else {
-            setTimeout(sendMessage, 100);
-        }
-    };
-    sendMessage();
+    sendWhenReady(messageToSend);
 }
 
 // Function to start a new learning pathway with topic and pathway URIs
@@ -899,15 +891,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         did,
     };
 
-    // Ensure WebSocket is ready before sending - retry if needed
-    const sendMessage = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageToSend));
-        } else {
-            setTimeout(sendMessage, 100);
-        }
-    };
-    sendMessage();
+    sendWhenReady(messageToSend);
 }
 
 // Function to initiate a new session plan for a topic
@@ -1031,15 +1015,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         mode,
     };
 
-    // Ensure WebSocket is ready before sending - retry if needed
-    const sendMessage = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageToSend));
-        } else {
-            setTimeout(sendMessage, 100);
-        }
-    };
-    sendMessage();
+    sendWhenReady(messageToSend);
 }
 
 export async function startInsightsSession(topic: string, initialText?: string) {
@@ -1199,6 +1175,20 @@ export function disconnectWebSocket() {
         }
         ws = null;
     }
+}
+
+// Send a payload as soon as the socket is open. Avoids polling setTimeout loops
+// for the "send right after connect" race that can otherwise add up to 100ms of
+// idle wait per first message.
+function sendWhenReady(payload: unknown) {
+    const json = JSON.stringify(payload);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(json);
+        return;
+    }
+    onReady(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(json);
+    });
 }
 
 // Function to register a callback for when WebSocket is ready
