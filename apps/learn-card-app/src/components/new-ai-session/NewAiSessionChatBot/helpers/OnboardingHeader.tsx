@@ -9,11 +9,6 @@ interface OnboardingHeaderProps {
     onClose?: () => void;
 }
 
-/**
- * Sticky header used for the "New Topic" onboarding Q&A flow.
- * Replaces the legacy bottom-centered X close button (NewAiSessionFooter)
- * with a Figma-accurate top header (title on left, X close on right).
- */
 export const OnboardingHeader: React.FC<OnboardingHeaderProps> = ({ title, onClose }) => {
     const { closeAllModals } = useModal();
 
