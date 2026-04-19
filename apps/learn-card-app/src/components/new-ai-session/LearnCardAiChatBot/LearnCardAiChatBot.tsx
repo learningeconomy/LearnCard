@@ -291,11 +291,13 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
                             {messagesToShow.map((msg, index) => {
                                 const isLastUser = index === lastUserIdx;
-                                // Reserve viewport space under the latest user message so it can
-                                // pin to the top and the assistant reply grows beneath it. The
-                                // pin transfers to the next user message on next send.
+                                const isTail = index === messagesToShow.length - 1;
+                                // Reserve viewport space on whatever is the last rendered block.
+                                // When streaming, that's the StreamingMessage below; otherwise
+                                // it's the tail message wrapper. Keeps the user bubble pinned
+                                // to the top without creating a gap before the assistant reply.
                                 const pinStyle =
-                                    isLastUser && viewportAllowance > 0
+                                    isTail && !streaming && viewportAllowance > 0
                                         ? {
                                               minHeight: `${Math.max(
                                                   0,
@@ -321,7 +323,23 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                 );
                             })}
 
-                            {streaming && <StreamingMessage aiApp={aiApp} />}
+                            {streaming && (
+                                <div
+                                    className="w-full"
+                                    style={
+                                        viewportAllowance > 0
+                                            ? {
+                                                  minHeight: `${Math.max(
+                                                      0,
+                                                      viewportAllowance - 24
+                                                  )}px`,
+                                              }
+                                            : undefined
+                                    }
+                                >
+                                    <StreamingMessage aiApp={aiApp} />
+                                </div>
+                            )}
                         </div>
 
                         {!isAtBottom && (
