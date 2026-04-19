@@ -11,6 +11,7 @@ import { networkStore } from '../NetworkStore';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
+export const streamingMessage = atom<ChatMessage | null>(null);
 export const threads = atom<Thread[]>([]);
 export const currentThreadId = atom<string | null>(null);
 export const isTyping = atom(false);
@@ -61,6 +62,13 @@ export const BACKEND_URL = 'https://api.learncloud.ai';
  */
 export function resetChatStores() {
     messages.set([]);
+    streamingMessage.set(null);
+    if (streamRaf != null) {
+        cancelAnimationFrame(streamRaf);
+        streamRaf = null;
+    }
+    streamBuffer = '';
+    streamingId = null;
     threads.set([]);
     currentThreadId.set(null);
     isTyping.set(false);
@@ -112,6 +120,30 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 let messageListeners: ((message: any) => void)[] = [];
 let readyListeners: (() => void)[] = [];
 let shouldReconnect = true;
+
+// RAF-coalesced streaming state
+let streamBuffer = '';
+let streamRaf: number | null = null;
+let streamingId: string | null = null;
+
+const flushStream = () => {
+    streamRaf = null;
+    if (!streamBuffer) return;
+    const prev = streamingMessage.get();
+    const id = streamingId ?? uuid();
+    streamingId = id;
+    streamingMessage.set({
+        id,
+        role: 'assistant',
+        content: (prev?.content ?? '') + streamBuffer,
+    });
+    streamBuffer = '';
+};
+
+const scheduleFlush = () => {
+    if (streamRaf != null) return;
+    streamRaf = requestAnimationFrame(flushStream);
+};
 
 // Load user's threads
 export async function loadThreads() {
@@ -503,6 +535,18 @@ export function connectWebSocket() {
             }
 
             if (data.done) {
+                // Flush any pending streaming tokens before committing
+                if (streamRaf != null) {
+                    cancelAnimationFrame(streamRaf);
+                    flushStream();
+                }
+                const pending = streamingMessage.get();
+                if (pending) {
+                    messages.set([...messages.get(), pending]);
+                    streamingMessage.set(null);
+                    streamingId = null;
+                }
+
                 isTyping.set(false);
 
                 // Handle thread creation and title updates
@@ -539,22 +583,12 @@ export function connectWebSocket() {
             }
 
             /* -------------------------------------------------- */
-            /* LEGACY STREAM (STRING)                            */
+            /* LEGACY STREAM (STRING) — RAF-coalesced             */
             /* -------------------------------------------------- */
 
             if (typeof data === 'string') {
-                const current = messages.get();
-                const last = current[current.length - 1];
-
-                if (last?.role === 'assistant') {
-                    messages.set([
-                        ...current.slice(0, -1),
-                        { ...last, content: last.content + data },
-                    ]);
-                } else {
-                    messages.set([...current, { role: 'assistant', content: data }]);
-                }
-
+                streamBuffer += data;
+                scheduleFlush();
                 isLoading.set(false);
                 isTyping.set(true);
             }
@@ -591,6 +625,18 @@ export function connectWebSocket() {
 
     ws.onclose = () => {
         if (ws !== socket) return;
+
+        // Flush any partial streaming message so interrupted streams aren't lost
+        if (streamRaf != null) {
+            cancelAnimationFrame(streamRaf);
+            flushStream();
+        }
+        const pending = streamingMessage.get();
+        if (pending) {
+            messages.set([...messages.get(), pending]);
+            streamingMessage.set(null);
+            streamingId = null;
+        }
 
         isTyping.set(false);
         isLoading.set(false);
@@ -668,12 +714,14 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
         }
         // Fallback if we can't find the tool call (shouldn't happen)
         newMessage = {
+            id: uuid(),
             role: 'user',
             content,
         };
     } else {
         // Regular user message
         newMessage = {
+            id: uuid(),
             role: 'user',
             content,
         };
@@ -1043,7 +1091,7 @@ export async function startInsightsSession(topic: string, initialText?: string) 
         JSON.stringify({
             mode: AiSessionMode.insights,
             topic,
-            message: { role: 'user', content: firstMessage },
+            message: { id: uuid(), role: 'user', content: firstMessage },
         })
     );
 }
@@ -1077,8 +1125,8 @@ export async function finishSession(onSuccess?: () => void) {
         showEndingSessionLoader.set(true);
         messages.set([
             ...messages.get(),
-            { role: 'user', content: 'Finish Session' },
-            { role: 'assistant', content: '' },
+            { id: uuid(), role: 'user', content: 'Finish Session' },
+            { id: uuid(), role: 'assistant', content: '' },
         ]);
         sessionEnded.set(true);
 
