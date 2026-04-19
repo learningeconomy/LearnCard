@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import ChatHeader from './ChatHeader';
@@ -57,6 +57,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
+    // iOS Capacitor's WebView resizes natively when the keyboard opens, so we
+    // only manually offset on Android — same pattern as TopicInput.
+    const kbHeight = useKeyboardHeight();
+    const keyboardInset = isPlatformIOS() ? 0 : kbHeight;
     const aiApp = useMemo(() => getAiPassportAppByContractUri(contractUri), [contractUri]);
     const [showInitialMessages, setShowInitialMessages] = useState(true);
     const [topicInitialized, setTopicInitialized] = useState(() => {
@@ -259,6 +263,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             className={`flex flex-col h-full min-h-[32rem] w-full max-w-[829px] mx-auto sm:pb-[30px] bg-white ${
                 isDesktop ? 'pt-[100px]' : ''
             }`}
+            style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
         >
             {isEnding && showEndingLoader && (
                 <AiSessionLoader
