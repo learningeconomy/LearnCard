@@ -56,11 +56,30 @@ export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
 export const BACKEND_URL = 'https://api.learncloud.ai';
 
+const EMPTY_PLAN_METADATA = {
+    sections: {
+        title: '',
+        objectives: 0,
+        skills: 0,
+        roadmap: 0,
+    },
+};
+
+const EMPTY_PLAN_SECTIONS = {
+    welcome: '',
+    summary: '',
+    objectives: [] as string[],
+    skills: [] as string[],
+    roadmap: [] as any[],
+};
+
 /**
- * Reset all chat-related stores to their initial values.
- * Useful when starting a new session or logging out.
+ * Clear everything that represents a single AI session's in-flight state.
+ * Preserves the `threads` sidebar list, `chatInputText`, and auth.
+ * Call at the top of every start* entry point so the previous session's
+ * plan/messages/streaming state don't bleed into the new one.
  */
-export function resetChatStores() {
+export function resetChatSessionStores() {
     messages.set([]);
     streamingMessage.set(null);
     if (streamRaf != null) {
@@ -69,7 +88,6 @@ export function resetChatStores() {
     }
     streamBuffer = '';
     streamingId = null;
-    threads.set([]);
     currentThreadId.set(null);
     isTyping.set(false);
     isLoading.set(false);
@@ -82,23 +100,19 @@ export function resetChatStores() {
     planReady.set(false);
     planReadyThread.set(null);
     planStreamActive.set(false);
-    planMetadata.set({
-        sections: {
-            title: '',
-            objectives: 0,
-            skills: 0,
-            roadmap: 0,
-        },
-    });
-    planSections.set({
-        welcome: '',
-        summary: '',
-        objectives: [],
-        skills: [],
-        roadmap: [],
-    });
-    chatInputText.set('');
+    planMetadata.set(EMPTY_PLAN_METADATA);
+    planSections.set(EMPTY_PLAN_SECTIONS);
     resetArtifactsStore();
+}
+
+/**
+ * Reset all chat-related stores to their initial values.
+ * Useful when starting a new session or logging out.
+ */
+export function resetChatStores() {
+    resetChatSessionStores();
+    threads.set([]);
+    chatInputText.set('');
 }
 
 interface TopicCredential {
@@ -781,13 +795,9 @@ export function sendMessage(content: string) {
 
 // Function to start a new topic using a topic URI
 export async function startTopicWithUri(topicUri: string) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-    planReady.set(false);
-    planReadyThread.set(null);
-    messages.set([]);
-    activeQuestions.set([]);
-    sessionEnded.set(false);
 
     const { did } = auth.get();
     if (!did) {
@@ -843,13 +853,9 @@ export async function startTopicWithUri(topicUri: string) {
 
 // Function to start a new learning pathway with topic and pathway URIs
 export async function startLearningPathway(topicUri: string, pathwayUri: string) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-    planReady.set(false);
-    planReadyThread.set(null);
-    messages.set([]);
-    activeQuestions.set([]);
-    sessionEnded.set(false);
 
     const { did } = auth.get();
     if (!did) {
@@ -906,13 +912,9 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
 
 // Function to initiate a new session plan for a topic
 export async function startTopic(topic: string, mode: AiSessionMode = AiSessionMode.tutor) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-    planReady.set(false);
-    planReadyThread.set(null);
-    messages.set([]);
-    activeQuestions.set([]);
-    sessionEnded.set(false); // New topic implies a new, active session initially
 
     const { did } = auth.get();
 
@@ -1041,11 +1043,9 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
 }
 
 export async function startInsightsSession(topic: string, initialText?: string) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-
-    planReady.set(false);
-    planReadyThread.set(null);
 
     messages.set([
         {
@@ -1053,9 +1053,6 @@ export async function startInsightsSession(topic: string, initialText?: string) 
             content: '', // placeholder for streaming
         },
     ]);
-
-    activeQuestions.set([]);
-    sessionEnded.set(false);
 
     const { did } = auth.get();
     if (!did) {
