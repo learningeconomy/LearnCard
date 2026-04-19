@@ -130,7 +130,9 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
 );
 
 /**
- * Typing dots indicator — matches the existing bounce animation from LearnCardAiChatBot.
+ * Typing dots indicator — rendered inside an assistant bubble so the
+ * "AI is thinking" beat reads as a normal message turn rather than a
+ * floating typography element.
  */
 const TypingDots: React.FC<{ mode: AiSessionMode; aiApp?: LaunchPadAppListItem }> = ({
     mode,
@@ -139,15 +141,14 @@ const TypingDots: React.FC<{ mode: AiSessionMode; aiApp?: LaunchPadAppListItem }
     const flags = useFlags();
     const enableChatBubbles = flags.enableChatBubbles;
 
+    const bubbleStyles = enableChatBubbles
+        ? 'bg-grayscale-100 mr-auto !max-w-fit px-4'
+        : 'bg-white mr-auto !max-w-fit';
+
     return (
-        <div className="w-full flex items-center justify-end">
-            {enableChatBubbles && (
-                <div className="mr-2 self-stretch flex items-end pb-5">
-                    <AiAvatar mode={mode} aiApp={aiApp} />
-                </div>
-            )}
-            <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
-                <div className="flex space-x-2">
+        <AssistantBubble
+            content={
+                <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                     <div
                         className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
@@ -158,8 +159,11 @@ const TypingDots: React.FC<{ mode: AiSessionMode; aiApp?: LaunchPadAppListItem }
                         style={{ animationDelay: '0.4s' }}
                     />
                 </div>
-            </div>
-        </div>
+            }
+            bubbleStyles={bubbleStyles}
+            mode={mode}
+            aiApp={aiApp}
+        />
     );
 };
 

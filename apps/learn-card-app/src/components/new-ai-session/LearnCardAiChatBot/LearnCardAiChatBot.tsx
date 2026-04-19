@@ -321,11 +321,6 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         style={pinStyle}
                                     >
                                         <MessageWithQuestions message={msg} aiApp={aiApp} />
-                                        {index < messagesToShow.length - 1 &&
-                                            msg.role === 'assistant' &&
-                                            messagesToShow[index + 1].role === 'assistant' && (
-                                                <hr className="border-black w-full my-4" />
-                                            )}
                                     </div>
                                 );
                             })}
