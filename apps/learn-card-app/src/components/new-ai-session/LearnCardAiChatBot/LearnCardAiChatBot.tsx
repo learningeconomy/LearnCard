@@ -80,9 +80,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const chatContentRef = useRef<HTMLDivElement>(null);
-    const { isAtBottom, scrollToBottom, pause } = useStickToBottom(chatContainerRef, {
+    // autoFollow: false — AI responses are long-form; the user should read
+    // top-down from the pinned last-user-message, not be yanked to the bottom.
+    const { isAtBottom, scrollToBottom } = useStickToBottom(chatContainerRef, {
         threshold: 64,
         contentRef: chatContentRef,
+        autoFollow: false,
     });
 
     // Pin-user-message refs
@@ -230,21 +233,14 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         return -1;
     }, [messagesToShow]);
 
-    // Pin user message to top of viewport when a new user message is sent
+    // Pin user message to top of viewport when a new user message is sent.
+    // The min-height style on the user bubble reserves viewport space so the
+    // assistant reply can grow beneath it without the view moving.
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
         if (userCount > prevUserCountRef.current) {
             prevUserCountRef.current = userCount;
-            const el = lastUserMessageRef.current;
-            if (el) {
-                el.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                const release = pause();
-                const t = setTimeout(release, 450);
-                return () => {
-                    clearTimeout(t);
-                    release();
-                };
-            }
+            lastUserMessageRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
         } else {
             prevUserCountRef.current = userCount;
         }
@@ -295,11 +291,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
                             {messagesToShow.map((msg, index) => {
                                 const isLastUser = index === lastUserIdx;
-                                const isTail = index === messagesToShow.length - 1;
-                                // Pin only while the user message is the last thing rendered —
-                                // release once any assistant reply lands.
+                                // Reserve viewport space under the latest user message so it can
+                                // pin to the top and the assistant reply grows beneath it. The
+                                // pin transfers to the next user message on next send.
                                 const pinStyle =
-                                    isLastUser && isTail && !streaming && viewportAllowance > 0
+                                    isLastUser && viewportAllowance > 0
                                         ? {
                                               minHeight: `${Math.max(
                                                   0,

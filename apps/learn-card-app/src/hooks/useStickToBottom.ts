@@ -9,6 +9,15 @@ export interface UseStickToBottomOptions {
     contentRef?: RefObject<HTMLElement | null>;
     /** Skip scroll stickiness entirely (for testing or feature flags). */
     enabled?: boolean;
+    /**
+     * When true, auto-scroll to the bottom as the content grows (ChatGPT-style
+     * stream follow). When false (default), the caller tracks `isAtBottom` for
+     * the scroll-down caret but the view only moves on explicit
+     * `scrollToBottom()`. The AI chat window uses false because responses are
+     * long-form and the user should read them top-down from the pinned
+     * last-user-message position.
+     */
+    autoFollow?: boolean;
 }
 
 export interface UseStickToBottomResult {
@@ -42,6 +51,7 @@ export const useStickToBottom = (
     const threshold = options.threshold ?? 64;
     const contentRef = options.contentRef;
     const enabled = options.enabled ?? true;
+    const autoFollow = options.autoFollow ?? false;
 
     const [isAtBottom, setIsAtBottom] = useState(true);
     const stickEnabledRef = useRef(true);
@@ -77,18 +87,17 @@ export const useStickToBottom = (
         };
     }, [scrollRef, threshold, enabled]);
 
-    // ── ResizeObserver ──────────────────────────────────────────────────
+    // ── ResizeObserver (only when autoFollow) ──────────────────────────
     useEffect(() => {
+        if (!autoFollow || !enabled) return;
         const el = scrollRef.current;
-        if (!el || !enabled) return;
+        if (!el) return;
 
         const target = contentRef?.current ?? el.firstElementChild;
         if (!target) return;
 
         const observer = new ResizeObserver(() => {
             if (stickEnabledRef.current && scrollRef.current) {
-                // Instant snap — no animation. The scroll event will update
-                // isAtBottom naturally.
                 scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
             }
         });
@@ -96,7 +105,7 @@ export const useStickToBottom = (
         observer.observe(target as Element);
 
         return () => observer.disconnect();
-    }, [scrollRef, contentRef, enabled]);
+    }, [scrollRef, contentRef, enabled, autoFollow]);
 
     // ── scrollToBottom ──────────────────────────────────────────────────
     const scrollToBottom = useCallback(
