@@ -7,6 +7,7 @@ import ChatBotTypingIndicator from './helpers/TypingIndicator';
 import ChatBotAppList from './helpers/ChatBotAppList';
 import AiSessionLoader from '../AiSessionLoader';
 import TopicInput from './helpers/TopicInput';
+import OnboardingHeader from './helpers/OnboardingHeader';
 
 import {
     ChatBotQA,
@@ -220,6 +221,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     return (
         <div className={`w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
+            <OnboardingHeader title="New Topic" />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}

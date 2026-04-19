@@ -31,7 +31,6 @@ import {
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
-import FinishSessionButton from './FinishSessionButton';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
 
@@ -262,8 +261,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     return (
         <>
-            <FinishSessionButton />
-            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)]">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)] bg-grayscale-50">
                 {showUserAvatar && (
                     <div className="flex-shrink-0 pb-[6px]">
                         <ProfilePicture

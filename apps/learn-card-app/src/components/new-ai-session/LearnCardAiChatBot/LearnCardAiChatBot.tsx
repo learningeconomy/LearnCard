@@ -9,7 +9,6 @@ import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
-import FinishSessionButton from './FinishSessionButton';
 import MessageWithQuestions from './MessageWithQuestions';
 
 import {
@@ -434,7 +433,6 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                         )}
                     </div>
 
-                    {mode !== AiSessionMode.insights && <FinishSessionButton />}
                     <div className="sm:px-4">{!loading && <ChatInput />}</div>
                 </>
             )}
