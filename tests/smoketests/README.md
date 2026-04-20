@@ -13,10 +13,11 @@ Read-only smoke tests for deployed LearnCard environments. These verify that ser
 
 ```bash
 # Set target URLs (defaults to localhost)
-export SMOKETEST_APP_URL=https://staging--learncard.netlify.app
-export SMOKETEST_API_URL=https://network-api-staging.learncard.com
-export SMOKETEST_CLOUD_URL=https://storage-api-staging.learncard.com
-export SMOKETEST_LCA_API_URL=https://app-api-staging.learncard.com
+# Note: API URLs include the `/api` prefix — services mount health/tRPC routes under /api.
+export SMOKETEST_APP_URL=https://staging.learncard.ai
+export SMOKETEST_API_URL=https://staging.network.learncard.com/api
+export SMOKETEST_CLOUD_URL=https://staging.cloud.learncard.com/api
+export SMOKETEST_LCA_API_URL=https://staging.api.learncard.app/api
 
 # Install dependencies
 cd tests/smoketests && pnpm install

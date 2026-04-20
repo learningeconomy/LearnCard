@@ -9,19 +9,14 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
     });
 
     test('login page renders with sign-in elements', async ({ page }) => {
-        await page.goto('/');
-        // The app should show some form of login/sign-in UI
-        // Look for email input or sign-in button
-        const emailInput = page.locator(
-            'input[type="email"], input[placeholder*="email" i], input[name="email"]'
+        await page.goto('/', { waitUntil: 'load' });
+        // Wait for SPA mount before probing for login UI — `.count()` doesn't auto-wait.
+        const loginElements = page.locator(
+            'input[type="email"], input[placeholder*="email" i], input[name="email"], ' +
+                'button:has-text("Sign"), button:has-text("Log in"), ' +
+                'ion-button:has-text("Sign"), ion-button:has-text("Log")'
         );
-        const signInButton = page.locator(
-            'button:has-text("Sign"), button:has-text("Log in"), ion-button:has-text("Sign"), ion-button:has-text("Log")'
-        );
-        // At least one login-related element should be visible
-        const hasEmail = await emailInput.count();
-        const hasSignIn = await signInButton.count();
-        expect(hasEmail + hasSignIn).toBeGreaterThan(0);
+        await expect(loginElements.first()).toBeVisible({ timeout: 15_000 });
     });
 
     test('no critical JS console errors on load', async ({ page }) => {
@@ -31,14 +26,23 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
                 errors.push(msg.text());
             }
         });
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
-        // Filter out known non-critical errors (e.g., favicon 404, third-party scripts)
+        await page.goto('/', { waitUntil: 'load' });
+        // Wait for the Ionic SPA shell to mount so we capture hydration errors too.
+        // Don't use networkidle — real apps have WebSockets/analytics that never go idle.
+        // Wait for any interactive element to paint — signals the SPA has hydrated.
+        // Don't assert on #root/ion-app: they may carry visibility:hidden during splash.
+        await expect(page.locator('button, input, a[href]').first()).toBeVisible({
+            timeout: 15_000,
+        });
+        // Filter out known non-critical errors. The `critical assets load successfully`
+        // test below specifically asserts JS/CSS/WASM didn't 404 — so generic resource
+        // 404s logged here are non-critical (icons, manifest, images, analytics).
         const criticalErrors = errors.filter(
             e =>
                 !e.includes('favicon') &&
                 !e.includes('403') &&
-                !e.includes('net::ERR_BLOCKED_BY_CLIENT')
+                !e.includes('net::ERR_BLOCKED_BY_CLIENT') &&
+                !e.includes('Failed to load resource')
         );
         expect(criticalErrors).toEqual([]);
     });
@@ -56,8 +60,9 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
                 failedRequests.push(`${status} ${url}`);
             }
         });
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
+        await page.goto('/', { waitUntil: 'load' });
+        // `load` fires after all <script>/<link> resources declared in HTML have loaded,
+        // which is exactly what this test asserts — no need to wait for network silence.
         expect(failedRequests).toEqual([]);
     });
 
@@ -81,8 +86,15 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
                 corsErrors.push(text);
             }
         });
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
+        await page.goto('/', { waitUntil: 'load' });
+        // Give the SPA a short window to mount and fire its initial API calls.
+        // Waiting on networkidle would hang forever — the app keeps WebSockets open.
+        // Wait for any interactive element to paint — signals the SPA has hydrated.
+        // Don't assert on #root/ion-app: they may carry visibility:hidden during splash.
+        await expect(page.locator('button, input, a[href]').first()).toBeVisible({
+            timeout: 15_000,
+        });
+        await page.waitForTimeout(2000);
         expect(corsErrors).toEqual([]);
     });
 });
