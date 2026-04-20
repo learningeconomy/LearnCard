@@ -1,11 +1,35 @@
 import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
-import type { AppStoreListing, InstalledApp, PaginatedAppStoreListings, PaginatedInstalledApps } from '@learncard/types';
+import type {
+    AppStoreListing,
+    InstalledApp,
+    PaginatedAppStoreListings,
+    PaginatedInstalledApps,
+} from '@learncard/types';
 
-export type AppStoreCategory = 'All' | 'AI' | 'Learning' | 'Games' | 'Tools' | 'Employment' | 'Credentials' | 'Other';
+export type AppStoreCategory =
+    | 'All'
+    | 'AI'
+    | 'Learning'
+    | 'Games'
+    | 'Tools'
+    | 'Employment'
+    | 'Credentials'
+    | 'Plugins'
+    | 'Other';
 
-export const APP_STORE_CATEGORIES: AppStoreCategory[] = ['All', 'AI', 'Learning', 'Games', 'Tools', 'Employment', 'Credentials', 'Other'];
+export const APP_STORE_CATEGORIES: AppStoreCategory[] = [
+    'All',
+    'AI',
+    'Learning',
+    'Games',
+    'Tools',
+    'Employment',
+    'Credentials',
+    'Plugins',
+    'Other',
+];
 
 // Map LaunchPad tab categories to app store categories
 export const mapTabToCategory = (tab: string): string | undefined => {
@@ -18,6 +42,7 @@ export const mapTabToCategory = (tab: string): string | undefined => {
         'Employment': 'employment',
         'Credentials': 'credentials',
         'Other': 'other',
+        'Plugins': 'plugins',
     };
 
     return mapping[tab];
@@ -35,7 +60,14 @@ export const useAppStore = () => {
         promotionLevel?: string;
     }) => {
         return useQuery({
-            queryKey: ['appStore', 'browse', options?.category, options?.promotionLevel, options?.limit, options?.cursor],
+            queryKey: [
+                'appStore',
+                'browse',
+                options?.category,
+                options?.promotionLevel,
+                options?.limit,
+                options?.cursor,
+            ],
             queryFn: async (): Promise<PaginatedAppStoreListings> => {
                 const wallet = await getWalletOrFallback();
 
@@ -45,7 +77,6 @@ export const useAppStore = () => {
                     limit: options?.limit ?? 50,
                     cursor: options?.cursor,
                 });
-
             },
             staleTime: 1000 * 60 * 0.1, // 5 minutes
         });
@@ -154,7 +185,9 @@ export const useAppStore = () => {
                 // Invalidate related queries
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'installed'] });
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'isInstalled', listingId] });
-                queryClient.invalidateQueries({ queryKey: ['appStore', 'installCount', listingId] });
+                queryClient.invalidateQueries({
+                    queryKey: ['appStore', 'installCount', listingId],
+                });
             },
         });
     };
@@ -171,7 +204,9 @@ export const useAppStore = () => {
                 // Invalidate related queries
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'installed'] });
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'isInstalled', listingId] });
-                queryClient.invalidateQueries({ queryKey: ['appStore', 'installCount', listingId] });
+                queryClient.invalidateQueries({
+                    queryKey: ['appStore', 'installCount', listingId],
+                });
             },
         });
     };
