@@ -13,6 +13,7 @@
 
 import React, { useState } from 'react';
 
+import { AnimatePresence, motion } from 'motion/react';
 import { v4 as uuid } from 'uuid';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
@@ -80,139 +81,157 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
         setOpen(false);
     };
 
+    const hasAny = endorsements.length > 0;
+
     return (
-        <section className="space-y-3">
-            <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
-                    Endorsements
-                </p>
-
-                {!open && (
-                    <button
-                        type="button"
-                        onClick={() => setOpen(true)}
-                        className="text-xs font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
-                    >
-                        Request one
-                    </button>
-                )}
-            </div>
-
-            {endorsements.length === 0 ? (
-                <p className="text-sm text-grayscale-500 leading-relaxed">
-                    No endorsements yet. A mentor, peer, or institution can vouch for this work.
-                </p>
-            ) : (
-                <ul className="space-y-2">
+        <section className="space-y-2">
+            {/*
+                Demoted from a full labeled section to a compact chip
+                list + footer line. Most nodes don't need endorsements
+                to be satisfied; keeping this quiet lets the evidence
+                flow stay the primary act.
+            */}
+            {hasAny && (
+                <ul className="space-y-1.5">
                     {endorsements.map(e => {
                         const isPending = e.endorsementId.startsWith('pending-');
 
                         return (
                             <li
                                 key={e.endorsementId}
-                                className="p-3 rounded-xl border border-grayscale-200 bg-white flex items-start gap-3"
+                                className="flex items-center gap-2.5 py-1.5 px-3 rounded-xl
+                                           bg-white/80 border border-grayscale-200"
                             >
                                 <span
-                                    className={`shrink-0 w-2 h-2 mt-1.5 rounded-full ${
+                                    aria-hidden
+                                    className={`shrink-0 w-1.5 h-1.5 rounded-full ${
                                         isPending ? 'bg-amber-500' : 'bg-emerald-600'
                                     }`}
                                 />
 
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-grayscale-800 capitalize">
-                                        {e.endorserRelationship}
-                                        {e.trustTier && e.trustTier !== 'peer' && (
-                                            <span className="ml-2 text-xs text-grayscale-500">
-                                                · {e.trustTier}
-                                            </span>
-                                        )}
-                                    </p>
+                                <span className="text-sm text-grayscale-800 capitalize truncate">
+                                    {e.endorserRelationship}
+                                </span>
 
-                                    <p className="text-xs text-grayscale-500 truncate">
-                                        {isPending ? 'Waiting on response' : e.endorserDid}
-                                    </p>
-                                </div>
+                                <span className="ml-auto text-[11px] text-grayscale-500 truncate">
+                                    {isPending ? 'Waiting…' : e.endorserDid}
+                                </span>
                             </li>
                         );
                     })}
                 </ul>
             )}
 
-            {open && (
-                <div className="p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 space-y-3">
-                    <div className="space-y-1.5">
-                        <label
-                            htmlFor="endorsement-relationship"
-                            className="text-xs font-medium text-grayscale-700"
-                        >
-                            Who are you asking?
-                        </label>
+            <AnimatePresence mode="wait" initial={false}>
+                {open ? (
+                    <motion.div
+                        key="form"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 space-y-3"
+                    >
+                        <div className="space-y-1.5">
+                            <label
+                                htmlFor="endorsement-relationship"
+                                className="text-xs font-medium text-grayscale-700"
+                            >
+                                Who are you asking?
+                            </label>
 
-                        <select
-                            id="endorsement-relationship"
-                            value={relationship}
-                            onChange={e =>
-                                setRelationship(
-                                    e.target.value as EndorsementRef['endorserRelationship'],
-                                )
-                            }
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
-                                       text-grayscale-900 bg-white focus:outline-none focus:ring-2
-                                       focus:ring-emerald-500 focus:border-transparent font-poppins"
-                        >
-                            {RELATIONSHIP_OPTIONS.map(o => (
-                                <option key={o.value} value={o.value}>
-                                    {o.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                            <select
+                                id="endorsement-relationship"
+                                value={relationship}
+                                onChange={e =>
+                                    setRelationship(
+                                        e.target.value as EndorsementRef['endorserRelationship'],
+                                    )
+                                }
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
+                                           text-grayscale-900 bg-white focus:outline-none focus:ring-2
+                                           focus:ring-emerald-500 focus:border-transparent font-poppins"
+                            >
+                                {RELATIONSHIP_OPTIONS.map(o => (
+                                    <option key={o.value} value={o.value}>
+                                        {o.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="space-y-1.5">
-                        <label
-                            htmlFor="endorsement-contact"
-                            className="text-xs font-medium text-grayscale-700"
-                        >
-                            Contact (email or handle)
-                        </label>
+                        <div className="space-y-1.5">
+                            <label
+                                htmlFor="endorsement-contact"
+                                className="text-xs font-medium text-grayscale-700"
+                            >
+                                Email or handle
+                            </label>
 
-                        <input
-                            id="endorsement-contact"
-                            type="text"
-                            value={contact}
-                            onChange={e => setContact(e.target.value)}
-                            placeholder="alex@example.com"
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
-                                       text-grayscale-900 placeholder:text-grayscale-400 bg-white
-                                       focus:outline-none focus:ring-2 focus:ring-emerald-500
-                                       focus:border-transparent font-poppins"
-                        />
-                    </div>
+                            <input
+                                id="endorsement-contact"
+                                type="text"
+                                value={contact}
+                                onChange={e => setContact(e.target.value)}
+                                placeholder="alex@example.com"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
+                                           text-grayscale-900 placeholder:text-grayscale-400 bg-white
+                                           focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                           focus:border-transparent font-poppins"
+                            />
+                        </div>
 
-                    <div className="flex gap-2">
+                        <div className="flex gap-2">
+                            <motion.button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={!canSubmit}
+                                whileTap={{ scale: 0.97 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                className="flex-1 py-3 px-4 rounded-[20px] bg-emerald-600 text-white
+                                           font-medium text-sm hover:bg-emerald-700 transition-colors
+                                           disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Send request
+                            </motion.button>
+
+                            <button
+                                type="button"
+                                onClick={() => setOpen(false)}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300
+                                           text-grayscale-700 font-medium text-sm
+                                           hover:bg-grayscale-10 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="prompt"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center justify-between gap-3"
+                    >
+                        <p className="text-xs text-grayscale-500 leading-relaxed">
+                            {hasAny
+                                ? 'Want another vouch?'
+                                : 'Want a vouch? A mentor, peer, or institution can back this up.'}
+                        </p>
+
                         <button
                             type="button"
-                            onClick={handleSubmit}
-                            disabled={!canSubmit}
-                            className="flex-1 py-3 px-4 rounded-[20px] bg-emerald-600 text-white
-                                       font-medium text-sm hover:bg-emerald-700 transition-colors
-                                       disabled:opacity-40 disabled:cursor-not-allowed"
+                            onClick={() => setOpen(true)}
+                            className="shrink-0 text-xs font-semibold text-emerald-700
+                                       hover:text-emerald-800 transition-colors"
                         >
-                            Send request
+                            {hasAny ? 'Request another' : 'Request'}
                         </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setOpen(false)}
-                            className="py-3 px-4 rounded-[20px] border border-grayscale-300
-                                       text-grayscale-700 font-medium text-sm
-                                       hover:bg-grayscale-10 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 };

@@ -11,6 +11,9 @@
 
 import React, { useEffect, useMemo } from 'react';
 
+import { IonIcon } from '@ionic/react';
+import { checkmarkCircleOutline } from 'ionicons/icons';
+import { AnimatePresence, motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
@@ -22,6 +25,7 @@ import type { NodeRef, RankingContext } from '../types';
 import CompletionMoment from './CompletionMoment';
 import NextActionCard from './NextActionCard';
 import StreakRibbon from './StreakRibbon';
+import { buildJourney, getGreeting } from './presentation';
 import { getNextAction, rankCandidates } from './ranking';
 
 const HOURS_12 = 12 * 60 * 60 * 1000;
@@ -191,46 +195,103 @@ const TodayMode: React.FC = () => {
         context?.streakState &&
         (context.streakState.current >= 3 || context.streakState.longest >= 3);
 
+    // Derive surface-level presentation bits here so the render stays
+    // declarative and the heavy lifting lives in `./presentation`.
+    const greeting = getGreeting(new Date(now));
+    const journey = buildJourney(activePathway);
+
     return (
-        <div className="max-w-md mx-auto px-4 py-8 font-poppins space-y-5">
-            {justCompletedTitle && (
-                <CompletionMoment
-                    title={justCompletedTitle}
-                    onDismiss={() => pathwayStore.set.clearRecentCompletion()}
-                />
-            )}
-
-            {nodeById && scored ? (
-                <NextActionCard
-                    node={nodeById}
-                    scored={scored}
-                    onOpen={() => {
-                        pathwayStore.set.clearRecentCompletion();
-                        history.push(
-                            `/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`,
-                        );
-                    }}
-                />
-            ) : (
-                <div className="p-5 rounded-[24px] border border-grayscale-200 bg-white text-center">
-                    <h3 className="text-base font-semibold text-grayscale-900 mb-1">
-                        Nothing left to do here
-                    </h3>
-
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        Every available node is either completed or waiting on prerequisites. The
-                        Map view can help you see what's next.
+        <div
+            className="relative min-h-[calc(100vh-220px)] overflow-hidden"
+            style={{
+                // Ambient backdrop — barely perceptible emerald wash from
+                // the top that fades into neutral. Matches the Map's
+                // gradient so moving between tabs doesn't feel like a
+                // jump cut, and gives the hero card a warmer floor to
+                // float on than flat white.
+                background:
+                    'linear-gradient(180deg, rgba(236, 253, 245, 0.5) 0%, rgba(251, 251, 252, 1) 40%, rgba(251, 251, 252, 1) 100%)',
+            }}
+        >
+            <div className="relative max-w-md mx-auto px-4 py-8 font-poppins space-y-5">
+                {/* Time-aware greeting — sets the emotional tone of the page. */}
+                <motion.header
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    className="space-y-0.5 px-1"
+                >
+                    <p className="text-sm font-medium text-grayscale-500">
+                        {greeting}.
                     </p>
-                </div>
-            )}
 
-            {shouldShowStreak && context?.streakState && (
-                <StreakRibbon
-                    current={context.streakState.current}
-                    longest={context.streakState.longest}
-                    inGraceWindow={context.streakState.inGraceWindow}
-                />
-            )}
+                    <p className="text-[13px] text-grayscale-400">
+                        One step, when you're ready.
+                    </p>
+                </motion.header>
+
+                {/*
+                    AnimatePresence lets the completion banner play its
+                    exit tween when `clearRecentCompletion` fires.
+                */}
+                <AnimatePresence>
+                    {justCompletedTitle && (
+                        <CompletionMoment
+                            key="completion"
+                            title={justCompletedTitle}
+                            onDismiss={() => pathwayStore.set.clearRecentCompletion()}
+                        />
+                    )}
+                </AnimatePresence>
+
+                {nodeById && scored ? (
+                    <NextActionCard
+                        node={nodeById}
+                        scored={scored}
+                        journey={journey}
+                        onOpen={() => {
+                            pathwayStore.set.clearRecentCompletion();
+                            history.push(
+                                `/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`,
+                            );
+                        }}
+                    />
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 220, damping: 24, mass: 0.8 }}
+                        className="p-8 rounded-[28px] bg-white/90 backdrop-blur-xl
+                                   border border-white shadow-xl shadow-grayscale-900/5
+                                   text-center"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100
+                                        mx-auto mb-4 flex items-center justify-center">
+                            <IonIcon
+                                icon={checkmarkCircleOutline}
+                                className="text-2xl text-emerald-600"
+                                aria-hidden
+                            />
+                        </div>
+
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1.5">
+                            You're up to date.
+                        </h3>
+
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            Come back tomorrow, or explore what's ahead on the Map.
+                        </p>
+                    </motion.div>
+                )}
+
+                {shouldShowStreak && context?.streakState && (
+                    <StreakRibbon
+                        current={context.streakState.current}
+                        longest={context.streakState.longest}
+                        inGraceWindow={context.streakState.inGraceWindow}
+                    />
+                )}
+            </div>
         </div>
     );
 };

@@ -4,9 +4,19 @@
  *
  * Docs § 5: "A streak is a promise to yourself, not a quota." The
  * ribbon is deliberately calm — no fireworks, no shaming.
+ *
+ * Visual language matches the rest of Today: frosted-glass pill,
+ * rounded-full, subtle tint keyed off state (emerald on track, amber
+ * mid-grace). Only renders when the streak is actually meaningful —
+ * `TodayMode` gates this component to `current ≥ 3` so day-one learners
+ * don't get a "1-day streak" chip that reads as pressure.
  */
 
 import React from 'react';
+
+import { IonIcon } from '@ionic/react';
+import { flame } from 'ionicons/icons';
+import { motion } from 'motion/react';
 
 interface StreakRibbonProps {
     current: number;
@@ -14,50 +24,45 @@ interface StreakRibbonProps {
     inGraceWindow: boolean;
 }
 
-const StreakRibbon: React.FC<StreakRibbonProps> = ({ current, longest, inGraceWindow }) => {
-    if (current === 0 && longest === 0) {
-        return (
-            <div className="py-2.5 px-4 rounded-full bg-grayscale-100 border border-grayscale-200 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-grayscale-300" />
+const StreakRibbon: React.FC<StreakRibbonProps> = ({ current, longest, inGraceWindow }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut', delay: 0.15 }}
+        className={`py-2 px-3.5 rounded-full border backdrop-blur-md flex items-center gap-2 ${
+            inGraceWindow
+                ? 'bg-amber-50/80 border-amber-100'
+                : 'bg-emerald-50/80 border-emerald-100'
+        }`}
+    >
+        <IonIcon
+            icon={flame}
+            className={`text-sm ${
+                inGraceWindow ? 'text-amber-500' : 'text-emerald-600'
+            }`}
+            aria-hidden
+        />
 
-                <span className="text-xs text-grayscale-600">
-                    Today is day one — no streak to keep yet
-                </span>
-            </div>
-        );
-    }
-
-    return (
-        <div
-            className={`py-2.5 px-4 rounded-full border flex items-center gap-2 ${
-                inGraceWindow
-                    ? 'bg-amber-50 border-amber-100'
-                    : 'bg-emerald-50 border-emerald-100'
+        <span
+            className={`text-xs font-semibold ${
+                inGraceWindow ? 'text-amber-700' : 'text-emerald-700'
             }`}
         >
-            <span
-                className={`w-2 h-2 rounded-full ${
-                    inGraceWindow ? 'bg-amber-500' : 'bg-emerald-600'
-                }`}
-            />
+            {current}-day streak
+        </span>
 
-            <span
-                className={`text-xs font-medium ${
-                    inGraceWindow ? 'text-amber-700' : 'text-emerald-700'
-                }`}
-            >
-                {current}-day streak
+        {longest > current && (
+            <span className="text-xs text-grayscale-500">
+                · best {longest}
             </span>
+        )}
 
-            {longest > current && (
-                <span className="text-xs text-grayscale-500">· best {longest}</span>
-            )}
-
-            {inGraceWindow && (
-                <span className="text-xs text-amber-700 ml-auto">Grace window active</span>
-            )}
-        </div>
-    );
-};
+        {inGraceWindow && (
+            <span className="text-[11px] text-amber-700/90 ml-auto">
+                Grace window
+            </span>
+        )}
+    </motion.div>
+);
 
 export default StreakRibbon;
