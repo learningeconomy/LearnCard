@@ -20,6 +20,11 @@ import {
     useGetEnrichedTopicsList,
 } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
+import AiSessionsSearch from '../../components/ai-sessions/AiSessionsSearch/AiSessionsSearch';
+import {
+    AiSessionsFilterOptionsEnum,
+    AiSessionsSortOptionsEnum,
+} from '../../components/ai-sessions/AiSessionsSearch/aiSessions-search.helpers';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -30,6 +35,13 @@ const AiSessionsPage: React.FC = () => {
     const { backgroundSecondaryColor } = colors;
 
     const [searchInput, setSearchInput] = useState('');
+    const [showSearch, setShowSearch] = useState(false);
+    const [filterBy, setFilterBy] = useState<AiSessionsFilterOptionsEnum>(
+        AiSessionsFilterOptionsEnum.showAll
+    );
+    const [sortBy, setSortBy] = useState<AiSessionsSortOptionsEnum>(
+        AiSessionsSortOptionsEnum.newlyAdded
+    );
 
     const { data: records, isLoading: credentialsLoading } = useGetCredentialList('AI Topic');
 
@@ -107,14 +119,31 @@ const AiSessionsPage: React.FC = () => {
                                     <button
                                         className="p-2 text-grayscale-800"
                                         onClick={() => {
-                                            const el =
-                                                document.getElementById('ai-sessions-search');
-                                            el?.focus();
+                                            setShowSearch(v => !v);
+                                            if (showSearch) setSearchInput('');
                                         }}
                                     >
-                                        <Search className="w-[24px] h-[24px]" />
+                                        {showSearch ? (
+                                            <span className="text-[22px] leading-none font-light">
+                                                ×
+                                            </span>
+                                        ) : (
+                                            <Search className="w-[24px] h-[24px]" />
+                                        )}
                                     </button>
                                 </div>
+
+                                {/* Search bar */}
+                                {showSearch && (
+                                    <AiSessionsSearch
+                                        searchInput={searchInput}
+                                        setSearchInput={setSearchInput}
+                                        filterBy={filterBy}
+                                        setFilterBy={setFilterBy}
+                                        sortBy={sortBy}
+                                        setSortBy={setSortBy}
+                                    />
+                                )}
 
                                 {/* New Session button */}
                                 <div className="mt-3 mb-4">
