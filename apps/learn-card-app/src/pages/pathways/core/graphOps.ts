@@ -268,3 +268,76 @@ export const rootNodes = (pathway: Pathway): PathwayNode[] => {
 /** Edges of a given type. Keeps call sites declarative. */
 export const edgesOfType = (pathway: Pathway, type: Edge['type']): Edge[] =>
     pathway.edges.filter(e => e.type === type);
+
+// -----------------------------------------------------------------
+// Neighborhoods (Map mode / progressive disclosure)
+// -----------------------------------------------------------------
+
+export interface Neighborhood {
+    /** Node ids within `radius` hops of `focusId` on the undirected graph. */
+    nodeIds: Set<string>;
+    /** Edges with both endpoints inside `nodeIds`. */
+    edgeIds: Set<string>;
+    /** Depth from focus, keyed by node id. Focus node itself is depth 0. */
+    depthByNode: Map<string, number>;
+}
+
+/**
+ * Depth-N neighborhood around a focus node, treating the graph as
+ * undirected (prerequisites AND related edges both expand). Used by
+ * Map mode for the "depth-2 progressive disclosure" pattern in
+ * docs § 10.
+ */
+export const neighborhood = (
+    pathway: Pathway,
+    focusId: string,
+    radius: number,
+): Neighborhood => {
+    const { prereqs, dependents, related } = buildAdjacency(pathway);
+
+    const combinedNeighbors = (id: string): Set<string> => {
+        const out = new Set<string>();
+
+        prereqs.get(id)?.forEach(n => out.add(n));
+        dependents.get(id)?.forEach(n => out.add(n));
+        related.get(id)?.forEach(n => out.add(n));
+
+        return out;
+    };
+
+    const depthByNode = new Map<string, number>();
+
+    if (!pathway.nodes.some(n => n.id === focusId)) {
+        return { nodeIds: new Set(), edgeIds: new Set(), depthByNode };
+    }
+
+    depthByNode.set(focusId, 0);
+
+    let frontier: string[] = [focusId];
+
+    for (let depth = 1; depth <= radius; depth++) {
+        const next: string[] = [];
+
+        for (const id of frontier) {
+            for (const neighbor of combinedNeighbors(id)) {
+                if (!depthByNode.has(neighbor)) {
+                    depthByNode.set(neighbor, depth);
+                    next.push(neighbor);
+                }
+            }
+        }
+
+        frontier = next;
+        if (frontier.length === 0) break;
+    }
+
+    const nodeIds = new Set(depthByNode.keys());
+
+    const edgeIds = new Set(
+        pathway.edges
+            .filter(e => nodeIds.has(e.from) && nodeIds.has(e.to))
+            .map(e => e.id),
+    );
+
+    return { nodeIds, edgeIds, depthByNode };
+};

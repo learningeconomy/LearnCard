@@ -8,6 +8,7 @@ import {
     buildAdjacency,
     canReach,
     descendants,
+    neighborhood,
     rootNodes,
     validatePathway,
 } from './graphOps';
@@ -191,5 +192,67 @@ describe('rootNodes', () => {
         );
 
         expect(rootNodes(p).map(n => n.id)).toEqual(['a']);
+    });
+});
+
+describe('neighborhood', () => {
+    // Line graph: a -> b -> c -> d -> e
+    const line = pathway(
+        [node('a'), node('b'), node('c'), node('d'), node('e')],
+        [
+            edge('1', 'a', 'b'),
+            edge('2', 'b', 'c'),
+            edge('3', 'c', 'd'),
+            edge('4', 'd', 'e'),
+        ],
+    );
+
+    it('returns focus alone at radius 0', () => {
+        const nb = neighborhood(line, 'c', 0);
+
+        expect(nb.nodeIds).toEqual(new Set(['c']));
+        expect(nb.depthByNode.get('c')).toBe(0);
+        expect(nb.edgeIds.size).toBe(0);
+    });
+
+    it('expands in both directions on the undirected graph', () => {
+        const nb = neighborhood(line, 'c', 1);
+
+        expect(nb.nodeIds).toEqual(new Set(['b', 'c', 'd']));
+        expect(nb.depthByNode.get('b')).toBe(1);
+        expect(nb.depthByNode.get('d')).toBe(1);
+    });
+
+    it('depth-2 covers the canonical progressive-disclosure window', () => {
+        const nb = neighborhood(line, 'c', 2);
+
+        expect(nb.nodeIds).toEqual(new Set(['a', 'b', 'c', 'd', 'e']));
+        expect(nb.depthByNode.get('a')).toBe(2);
+        expect(nb.depthByNode.get('e')).toBe(2);
+    });
+
+    it('only includes edges whose endpoints are both inside the neighborhood', () => {
+        const nb = neighborhood(line, 'c', 1);
+
+        // Edges b-c and c-d are both inside; a-b and d-e are not.
+        expect(nb.edgeIds.size).toBe(2);
+    });
+
+    it('returns an empty neighborhood if the focus node does not exist', () => {
+        const nb = neighborhood(line, 'ghost', 2);
+
+        expect(nb.nodeIds.size).toBe(0);
+        expect(nb.edgeIds.size).toBe(0);
+    });
+
+    it('follows related (non-prerequisite) edges as well as prerequisites', () => {
+        const p = pathway(
+            [node('a'), node('b'), node('c')],
+            [edge('1', 'a', 'b', 'alternative'), edge('2', 'b', 'c')],
+        );
+
+        const nb = neighborhood(p, 'a', 2);
+
+        expect(nb.nodeIds).toEqual(new Set(['a', 'b', 'c']));
     });
 });
