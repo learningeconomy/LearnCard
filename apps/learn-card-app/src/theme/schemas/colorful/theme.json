@@ -25,9 +25,10 @@
                 "borderColor": "teal-500",
                 "statusBarColor": "teal-400",
                 "headerBrandingTextColor": "text-black",
-                "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-teal-400",
-                "backgroundSecondaryColor": "teal-200"
+                "headerTextColor": "text-grayscale-900",
+                "helperTextColor": "text-grayscale-700",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100"
             },
             "aiInsight": {
                 "primaryColor": "lime-300",

@@ -5,6 +5,7 @@ export type VideoMetadata = {
     videoId: string | null;
     embedUrl: string | null;
     thumbnailUrl: string | null;
+    authorName?: string | null;
 };
 
 export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
@@ -26,17 +27,31 @@ export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
             }
             if (id) {
                 let thumb = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+                let authorName: string | null = null;
                 try {
                     const res = await fetch(thumb, { method: 'HEAD' });
                     if (!res.ok) thumb = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
                 } catch {
                     thumb = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
                 }
+                try {
+                    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
+                        url
+                    )}&format=json`;
+                    const oembedResponse = await fetch(oembedUrl);
+                    if (oembedResponse.ok) {
+                        const oembedData = await oembedResponse.json();
+                        authorName = oembedData.author_name ?? null;
+                    }
+                } catch {
+                    authorName = null;
+                }
                 return {
                     type: 'youtube',
                     videoId: id,
                     embedUrl: `https://www.youtube.com/embed/${id}`,
                     thumbnailUrl: thumb,
+                    authorName,
                 };
             }
         }

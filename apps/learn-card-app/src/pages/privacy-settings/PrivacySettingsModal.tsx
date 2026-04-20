@@ -15,10 +15,13 @@ import {
     useWallet,
     useBrandingConfig,
 } from 'learn-card-base';
-import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
-import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
+import { getAiFeatureAgeGateState } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
+import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+
+type ProfileVisibilityValue =
+    (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
 
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
@@ -34,20 +37,25 @@ const PrivacySettingsModal: React.FC = () => {
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
     // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
-    const dob = currentLCNUser?.dob;
-    const age = dob ? calculateAge(dob) : null;
-    const threshold = getMinorAgeThreshold(currentLCNUser?.country);
-    const isMinorByAge =
-        profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
-    const isMinor = isMinorByAge;
+    const ageGate = getAiFeatureAgeGateState({
+        profileType,
+        dob: currentLCNUser?.dob,
+        country: currentLCNUser?.country,
+    });
+    const { handleAiToggle } = useAiConsentToggle();
+    const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
 
-    const aiEnabled = isMinor ? false : preferences?.aiEnabled ?? true;
+    const aiEnabled = ageGate.isAiAgeRestricted
+        ? false
+        : ageGate.isChildProfile
+        ? preferences?.aiEnabled ?? false
+        : preferences?.aiEnabled ?? true;
     const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
     const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
     // Legacy profiles may only have `isPrivate` populated. Mirror the backend
     // fallback so the selected privacy option matches the profile's effective
     // visibility until the user saves the new canonical field.
-    let profileVisibility = ProfileVisibilityEnum.enum.public;
+    let profileVisibility: ProfileVisibilityValue = ProfileVisibilityEnum.enum.public;
     if (currentLCNUser?.profileVisibility) {
         profileVisibility = currentLCNUser.profileVisibility;
     } else if (currentLCNUser?.isPrivate) {
@@ -92,13 +100,6 @@ const PrivacySettingsModal: React.FC = () => {
         [initWallet, presentToast, refetch]
     );
 
-    const handleAiToggle = useCallback(
-        (enabled: boolean) => {
-            updatePreferences({ aiEnabled: enabled });
-        },
-        [updatePreferences]
-    );
-
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
             updatePreferences({ analyticsEnabled: enabled });
@@ -139,7 +140,7 @@ const PrivacySettingsModal: React.FC = () => {
     );
 
     return (
-        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] max-h-[80vh] overflow-y-auto">
+        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] w-full">
             <div className="flex items-center gap-3 mb-4">
                 <button onClick={() => closeModal()} className="p-1 -ml-1">
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
@@ -147,7 +148,7 @@ const PrivacySettingsModal: React.FC = () => {
                 <h1 className="text-xl font-semibold text-grayscale-900">Privacy & Data</h1>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="modal-scrollable flex flex-col gap-4">
                 {isMinor && (
                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
                         <p className="text-sm text-amber-800">
@@ -239,8 +240,10 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={aiEnabled}
-                            disabled={isMinor}
-                            onIonChange={e => !isMinor && handleAiToggle(e.detail.checked)}
+                            disabled={ageGate.isAiAgeRestricted}
+                            onIonChange={e =>
+                                !ageGate.isAiAgeRestricted && handleAiToggle(e.detail.checked)
+                            }
                             aria-label="AI Features"
                         />
                     </div>

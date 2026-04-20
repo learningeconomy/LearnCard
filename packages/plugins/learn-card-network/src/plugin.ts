@@ -402,6 +402,22 @@ export async function getLearnCardNetworkPlugin(
             getManagedProfiles: async (_learnCard, options = {}) => {
                 return client.profileManager.getManagedProfiles.query(options);
             },
+            claimPendingGuardianLinks: async () => {
+                await ensureUser();
+                return client.inbox.claimPendingGuardianLinks.mutate({});
+            },
+            getMyManagedChildren: async () => {
+                await ensureUser();
+                return client.profileManager.getMyManagedChildren.query();
+            },
+            getMyGuardians: async () => {
+                await ensureUser();
+                return client.profileManager.getMyGuardians.query();
+            },
+            removeManagesRelationship: async (_learnCard, profileId) => {
+                await ensureUser();
+                return client.profileManager.removeManagesRelationship.mutate({ profileId });
+            },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
                 await ensureUser();
 
@@ -1762,6 +1778,30 @@ export async function getLearnCardNetworkPlugin(
             approveGuardianRequestByPath: async (_learnCard, token) => {
                 // Open route; no auth required
                 return client.inbox.approveGuardianRequestByPath.query({ token });
+            },
+            getGuardianPendingCredential: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.getGuardianPendingCredential.query({ token });
+            },
+            sendGuardianChallenge: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.sendGuardianChallenge.mutate({ token });
+            },
+            approveGuardianCredential: async (_learnCard, token, otpCode) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianCredential.mutate({ token, otpCode });
+            },
+            rejectGuardianCredential: async (_learnCard, token, otpCode) => {
+                // Open route; no auth required
+                return client.inbox.rejectGuardianCredential.mutate({ token, otpCode });
+            },
+            approveGuardianCredentialInApp: async (_learnCard, inboxCredentialId) => {
+                await ensureUser();
+                return client.inbox.approveGuardianCredentialInApp.mutate({ inboxCredentialId });
+            },
+            rejectGuardianCredentialInApp: async (_learnCard, inboxCredentialId) => {
+                await ensureUser();
+                return client.inbox.rejectGuardianCredentialInApp.mutate({ inboxCredentialId });
             },
             addContactMethod: async (_learnCard, contactMethod) => {
                 await ensureUser();

@@ -4,17 +4,18 @@ import { useHistory } from 'react-router-dom';
 import MyLearnCardModal from '../learncard/MyLearnCardModal';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
-import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
+import { UserProfilePicture } from 'learn-card-base';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { AdminToolOptionsEnum } from '../../pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
-import { useModal, ModalTypes, usePathQuery, useGetConnections } from 'learn-card-base';
+import { useModal, ModalTypes, usePathQuery, useGetConnections, useGetCurrentLCNUser } from 'learn-card-base';
 
 export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ branding }) => {
     const query = usePathQuery();
     const history = useHistory();
     const { data: connections } = useGetConnections();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const showTokenDevTools = query.get('showTokenDevTools');
     const showSigningAuthorityDevTools = query.get('showSigningAuthorityDevTools');
@@ -69,10 +70,11 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
                     );
                 }}
             >
-                <ProfilePicture
-                    customContainerClass="flex justify-center items-center h-[40px] w-[40px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[40px] min-h-[40px]"
-                    customImageClass="flex justify-center items-center h-[40px] w-[40px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[40px] min-h-[40px]"
+                <UserProfilePicture
+                    customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
+                    customImageClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[48px] min-h-[48px]"
                     customSize={120}
+                    user={currentLCNUser}
                 />
             </button>
             <button
