@@ -84,6 +84,7 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
             launch_type: { type: 'string', enum: LaunchType.options, required: true },
             launch_config_json: { type: 'string', required: true },
             category: { type: 'string', required: false },
+            is_plugin: { type: 'boolean', required: false },
             promo_video_url: { type: 'string', required: false },
             promotion_level: {
                 type: 'string',

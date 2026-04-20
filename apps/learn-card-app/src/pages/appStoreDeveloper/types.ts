@@ -22,6 +22,7 @@ export interface ExtendedAppStoreListing extends AppStoreListing {
     submitted_at?: string;
     submitter?: AppStoreListingSubmitter;
     contact_email?: string;
+    is_plugin?: boolean;
 }
 
 export interface AppStoreListingCreate {
@@ -33,6 +34,7 @@ export interface AppStoreListingCreate {
     launch_type: LaunchType;
     launch_config_json: string;
     category?: string;
+    is_plugin?: boolean;
     promo_video_url?: string;
     ios_app_store_id?: string;
     android_app_store_id?: string;
