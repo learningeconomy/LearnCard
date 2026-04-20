@@ -81,7 +81,12 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
+import {
+    getAppDidWeb,
+    getDidWeb,
+    getProfileIdFromDid,
+    getProfileIdFromString,
+} from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import {
     getContractTermsForProfile,
@@ -210,6 +215,7 @@ const AppStoreListingBaseSchema = z.object({
     launch_type: LaunchType,
     launch_config_json: jsonStringValidator,
     category: z.string().max(50).optional(),
+    is_plugin: z.boolean().optional(),
     promo_video_url: z.string().url().optional(),
     promotion_level: PromotionLevel.optional(),
     ios_app_store_id: z.string().max(20).optional(),
@@ -1046,10 +1052,7 @@ const handleRequestLearnerContextEvent = async (
             const contractDetails = await getContractDetailsByUri(contractUri);
 
             if (contractDetails?.contract) {
-                const terms = await getContractTermsForProfile(
-                    profile,
-                    contractDetails.contract
-                );
+                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
 
                 if (event.includeCredentials && terms?.terms?.read?.credentials) {
                     const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
@@ -2266,7 +2269,13 @@ export const appStoreRouter = t.router({
             }
 
             if (eventType === 'request-learner-context') {
-                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event, listing);
+                return handleRequestLearnerContextEvent(
+                    ctx,
+                    profile,
+                    resolvedListingId,
+                    event,
+                    listing
+                );
             }
 
             if (eventType === 'send-notification') {
