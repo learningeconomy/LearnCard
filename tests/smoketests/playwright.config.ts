@@ -13,7 +13,10 @@ export default defineConfig({
     testDir: './tests',
     timeout: 30_000,
     expect: { timeout: 10_000 },
-    retries: 1,
+    // Lambda cold starts (scouts /api/health-check, LCA /docs) occasionally
+    // 500 on the first request after idle. 2 retries absorbs that noise
+    // without masking real regressions.
+    retries: 2,
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     reporter: process.env.CI
