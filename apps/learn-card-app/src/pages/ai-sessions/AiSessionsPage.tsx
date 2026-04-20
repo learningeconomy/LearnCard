@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { IonContent, IonPage } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import AiSessionTopicItem from '../../components/ai-sessions/AiSessionTopics/AiSessionTopicItem';
+import AiSessionTopicItemSkeleton from '../../components/ai-sessions/AiSessionTopics/AiSessionTopicItemSkeleton';
+import {
+    NewAiSessionButton,
+    NewAiSessionButtonEnum,
+} from '../../components/new-ai-session/NewAiSessionButton/NewAiSessionButton';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { CredentialCategoryEnum } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    pluralize,
+    useGetCredentialList,
+    useGetEnrichedTopicsList,
+} from 'learn-card-base';
+import Search from 'learn-card-base/svgs/Search';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -16,6 +28,41 @@ const AiSessionsPage: React.FC = () => {
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiTopic);
     const { backgroundSecondaryColor } = colors;
+
+    const [searchInput, setSearchInput] = useState('');
+
+    const { data: records, isLoading: credentialsLoading } = useGetCredentialList('AI Topic');
+
+    const topicRecords = useMemo(() => {
+        return records?.pages?.flatMap(page => page?.records) || [];
+    }, [records?.pages]);
+
+    const { data: topics, isLoading: topicsLoading } = useGetEnrichedTopicsList(topicRecords);
+
+    const isLoading = credentialsLoading || topicsLoading;
+
+    const topicsCount = topics?.length ?? 0;
+    const totalSessionsCount = useMemo(
+        () => topics?.reduce((acc, t) => acc + (t.sessions?.length || 0), 0) ?? 0,
+        [topics]
+    );
+    const unfinishedCount = useMemo(
+        () =>
+            topics?.reduce(
+                (acc, t) => acc + (t.sessions?.filter((s: any) => !s?.vc?.completed).length || 0),
+                0
+            ) ?? 0,
+        [topics]
+    );
+
+    const displayTopics = useMemo(() => {
+        if (!topics) return [];
+        if (!searchInput) return topics;
+        const lower = searchInput.toLowerCase();
+        return topics.filter(t =>
+            (t.topicVc?.boostCredential?.topicInfo?.title ?? '').toLowerCase().includes(lower)
+        );
+    }, [topics, searchInput]);
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
@@ -29,8 +76,76 @@ const AiSessionsPage: React.FC = () => {
                         customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
-                        <div className="flex relative justify-center items-center w-full">
-                            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]"></div>
+                        <div className="flex justify-center w-full">
+                            <div className="w-full max-w-[600px] px-4 pt-5 pb-[120px]">
+                                {/* Stats + search row */}
+                                <div className="flex items-start justify-between mb-1 pt-6">
+                                    <div>
+                                        <h2 className="text-grayscale-800 font-poppins font-bold text-[22px] leading-tight">
+                                            {isLoading ? (
+                                                <IonSpinner
+                                                    name="crescent"
+                                                    color="dark"
+                                                    className="scale-[0.8] mr-1"
+                                                />
+                                            ) : (
+                                                <>
+                                                    {topicsCount} {pluralize('Topic', topicsCount)},{' '}
+                                                    {totalSessionsCount}{' '}
+                                                    {pluralize('Session', totalSessionsCount)}
+                                                </>
+                                            )}
+                                        </h2>
+                                        {!isLoading && unfinishedCount > 0 && (
+                                            <p className="flex items-center gap-1.5 text-red-500 font-poppins font-semibold text-[14px] mt-0.5">
+                                                <span className="w-[8px] h-[8px] rounded-full bg-red-500 shrink-0" />
+                                                {unfinishedCount} Unfinished{' '}
+                                                {pluralize('Session', unfinishedCount)}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        className="p-2 text-grayscale-800"
+                                        onClick={() => {
+                                            const el =
+                                                document.getElementById('ai-sessions-search');
+                                            el?.focus();
+                                        }}
+                                    >
+                                        <Search className="w-[24px] h-[24px]" />
+                                    </button>
+                                </div>
+
+                                {/* New Session button */}
+                                <div className="mt-3 mb-4">
+                                    <NewAiSessionButton type={NewAiSessionButtonEnum.mobile} />
+                                </div>
+
+                                {/* Topic list */}
+                                {isLoading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <AiSessionTopicItemSkeleton key={i} />
+                                    ))
+                                ) : displayTopics?.length ? (
+                                    displayTopics.map((t, i) => (
+                                        <AiSessionTopicItem
+                                            key={i}
+                                            topicVc={t.topicVc}
+                                            topicBoost={t.topicBoost}
+                                            topicRecord={t.topicRecord}
+                                            topicSessionsCount={t.sessions?.length || 0}
+                                            hasNewSessions={
+                                                (t.sessions?.filter((s: any) => !s?.vc?.completed)
+                                                    .length || 0) > 0
+                                            }
+                                        />
+                                    ))
+                                ) : (
+                                    <p className="text-center text-grayscale-500 font-poppins text-sm mt-8">
+                                        No topics yet
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </AiFeatureGate>
                 </IonContent>
