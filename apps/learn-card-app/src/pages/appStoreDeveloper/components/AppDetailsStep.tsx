@@ -1,5 +1,6 @@
 import React from 'react';
 import { Info, Plus, X, Video, Shield, Smartphone, Palette, Users } from 'lucide-react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import type { AppStoreListingCreate, AgeRating } from '../types';
 import { CATEGORY_OPTIONS, AGE_RATING_OPTIONS } from '../types';
@@ -12,7 +13,13 @@ interface AppDetailsStepProps {
 }
 
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
+    const flags = useFlags();
+
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
+        onChange({ [field]: value });
+    };
+
+    const handleBooleanChange = (field: keyof AppStoreListingCreate, value: boolean) => {
         onChange({ [field]: value });
     };
 
@@ -200,6 +207,25 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     ))}
                 </select>
             </div>
+
+            {/* Is Plugin Checkbox - controlled by pluginVisibility flag */}
+            {flags?.pluginVisibility && (
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="is_plugin"
+                        checked={data.is_plugin || false}
+                        onChange={e => handleBooleanChange('is_plugin', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 focus:ring-2 cursor-pointer"
+                    />
+                    <label
+                        htmlFor="is_plugin"
+                        className="text-sm font-medium text-gray-600 cursor-pointer"
+                    >
+                        Is Plugin?
+                    </label>
+                </div>
+            )}
 
             {/* Age Restrictions */}
             <div>
