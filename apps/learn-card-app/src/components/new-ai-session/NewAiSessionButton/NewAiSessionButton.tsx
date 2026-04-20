@@ -167,10 +167,10 @@ export const NewAiSessionButton: React.FC<{
                           }
                         : () => handleNewSession(undefined, NewAiSessionStepEnum.newTopic)
                 }
-                className="text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid border-grayscale-200 p-[10px] w-full max-w-[95%] flex items-center justify-between pl-[20px] mt-[10px] "
+                className="text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid border-grayscale-200 p-[10px] w-full flex items-center justify-between pl-[20px] mt-[10px] "
             >
-                New Topic
                 <NewAiSessionIcon version="3" />
+                New Session
             </button>
         );
     }
@@ -186,4 +186,3 @@ export const NewAiSessionButton: React.FC<{
 };
 
 export default NewAiSessionButton;
-
