@@ -7,21 +7,28 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm exec playwright test",
+        "command": "pnpm test",
         "cwd": "tests/smoketests"
       }
     },
-    "test:api": {
+    "smoke": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm exec playwright test --project=api",
+        "command": "pnpm smoke",
         "cwd": "tests/smoketests"
       }
     },
-    "test:browser": {
+    "smoke:api": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm exec playwright test --project=browser",
+        "command": "pnpm smoke:api",
+        "cwd": "tests/smoketests"
+      }
+    },
+    "smoke:browser": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm smoke:browser",
         "cwd": "tests/smoketests"
       }
     }

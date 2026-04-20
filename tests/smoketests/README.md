@@ -16,13 +16,13 @@ cd tests/smoketests && pnpm install
 pnpm exec playwright install chromium
 
 # Pick the target environment — URLs are resolved automatically.
-SMOKETEST_ENV=staging    pnpm test   # defaults to staging if unset
-SMOKETEST_ENV=production pnpm test
-SMOKETEST_ENV=scouts     pnpm test   # production ScoutPass (no staging for scouts)
+SMOKETEST_ENV=staging    pnpm smoke   # defaults to staging if unset
+SMOKETEST_ENV=production pnpm smoke
+SMOKETEST_ENV=scouts     pnpm smoke   # production ScoutPass (no staging for scouts)
 
 # API-only / browser-only
-SMOKETEST_ENV=staging pnpm test:api
-SMOKETEST_ENV=staging pnpm test:browser
+SMOKETEST_ENV=staging pnpm smoke:api
+SMOKETEST_ENV=staging pnpm smoke:browser
 
 # HTML report
 pnpm report

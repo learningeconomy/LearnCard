@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test": "playwright test",
-    "test:api": "playwright test --project=api",
-    "test:browser": "playwright test --project=browser",
+    "test": "echo \"Skipping smoketests in unit-test runs. Use 'pnpm smoke' locally, or trigger the smoketest.yml workflow in CI.\"",
+    "smoke": "playwright test",
+    "smoke:api": "playwright test --project=api",
+    "smoke:browser": "playwright test --project=browser",
     "report": "playwright show-report"
   },
   "devDependencies": {
