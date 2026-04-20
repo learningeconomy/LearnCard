@@ -112,8 +112,6 @@ export const useCreateChildAccount = () => {
             queryClient.setQueryData(
                 childrenProfileManagersQueryKey,
                 (old: { hasMore: boolean; cursor: string; records: LCNProfile[] } | undefined) => {
-                    console.log('onMutate::', old);
-
                     const newRecord = {
                         did: tempDid,
                         bio: childAccount?.shortBio,

@@ -91,6 +91,9 @@ const ClaimFromDashboard = lazyWithRetry(
 );
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
+const GuardianCredentialApprovalPage = lazyWithRetry(
+    () => import('./pages/interactions/GuardianCredentialApprovalPage')
+);
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
@@ -339,6 +342,11 @@ export const Routes: React.FC = () => {
                             exact
                             path="/claim/from-dashboard"
                             component={ClaimFromDashboard}
+                        />
+                        <SentryRoute
+                            exact
+                            path="/interactions/guardian-credential-approval/:token"
+                            component={GuardianCredentialApprovalPage}
                         />
                         <SentryRoute path="/interactions/*" component={InteractionsPage} />
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />

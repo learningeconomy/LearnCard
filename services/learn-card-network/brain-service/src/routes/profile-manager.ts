@@ -19,8 +19,10 @@ import { ProfileManagerType, ProfileManagerValidator } from 'types/profile-manag
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
+import { deleteManagesRelationship } from '@accesslayer/profile-manager/relationships/delete';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { getManagedProfiles } from '@accesslayer/profile-manager/relationships/read';
+import { getManagedProfiles, getProfilesManagedByProfile } from '@accesslayer/profile-manager/relationships/read';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { updateProfileManager } from '@accesslayer/profile-manager/update';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 
@@ -179,6 +181,77 @@ export const profileManagersRouter = t.router({
                 ...(nextCursor && { cursor: nextCursor }),
                 records: profiles.slice(0, limit),
             };
+        }),
+
+    getMyManagedChildren: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile-manager/my-managed-children',
+                tags: ['Profile Managers'],
+                summary: 'Get profiles managed by the current user',
+                description:
+                    'Returns all profiles managed via ProfileManagers that the current profile administrates.',
+            },
+            requiredScope: 'profileManagers:read',
+        })
+        .input(z.void())
+        .output(z.array(LCNProfileValidator))
+        .query(async ({ ctx }) => {
+            return getProfilesManagedByProfile(ctx.user.profile.profileId);
+        }),
+
+    getMyGuardians: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile-manager/my-guardians',
+                tags: ['Profile Managers'],
+                summary: 'Get profiles that manage the current user',
+                description:
+                    'Returns all profiles that manage the current profile via a MANAGES relationship.',
+            },
+            requiredScope: 'profileManagers:read',
+        })
+        .input(z.void())
+        .output(z.array(LCNProfileValidator))
+        .query(async ({ ctx }) => {
+            return getProfilesThatManageAProfile(ctx.user.profile.profileId);
+        }),
+
+    removeManagesRelationship: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile-manager/remove-manages',
+                tags: ['Profile Managers'],
+                summary: 'Remove a MANAGES relationship',
+                description:
+                    'Removes the MANAGES relationship between the current profile and a child profile, or between a guardian and the current profile.',
+            },
+            requiredScope: 'profileManagers:write',
+        })
+        .input(z.object({ profileId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const myProfileId = ctx.user.profile.profileId;
+            const { profileId: targetProfileId } = input;
+
+            // Try removing as guardian (I manage targetProfileId)
+            const removedAsGuardian = await deleteManagesRelationship(myProfileId, targetProfileId);
+            if (removedAsGuardian) return true;
+
+            // Try removing as child (targetProfileId manages me)
+            const removedAsChild = await deleteManagesRelationship(targetProfileId, myProfileId);
+            if (removedAsChild) return true;
+
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No MANAGES relationship found between these profiles.',
+            });
         }),
 
     getProfileManager: openProfileManagerRoute
