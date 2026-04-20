@@ -21,6 +21,7 @@ type AppStoreListItemProps = {
     isInstalled?: boolean;
     isInstalledLoading?: boolean;
     onInstallSuccess?: () => void;
+    isPlugin?: boolean;
 };
 
 const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
@@ -28,6 +29,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     isInstalled = false,
     isInstalledLoading = false,
     onInstallSuccess,
+    isPlugin = false,
 }) => {
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.launchPad);
@@ -313,7 +315,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             <button className={buttonClass} disabled>
                                 <IonSpinner name="dots" className="w-4 h-4" />
                             </button>
-                        ) : isInstalled || installedAt ? (
+                        ) : isInstalled || installedAt || isPlugin ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
                                     Open
