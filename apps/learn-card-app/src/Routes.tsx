@@ -8,6 +8,7 @@ import {
     lcRoutes as tabRoutes,
     lazyWithRetry,
     ChunkBoundary,
+    useFeatureConfig,
 } from 'learn-card-base';
 import * as Sentry from '@sentry/react';
 
@@ -51,6 +52,7 @@ const VerifySharedResume = lazyWithRetry(
     () => import('./pages/resume-builder/VerifySharedResume')
 );
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
+const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -183,6 +185,8 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
+    const features = useFeatureConfig();
+    const pathwaysEnabled = features.pathways === true;
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -263,6 +267,15 @@ export const Routes: React.FC = () => {
                             path="/ai/pathways/discovery"
                             component={AiPathwaysDiscovery}
                         />
+                        {/*
+                         * Pathways v2 — greenfield alongside the existing
+                         * /ai/pathways feature. Gated by the tenant feature
+                         * flag `features.pathways` (default off). See
+                         * docs/pathways-architecture.md.
+                         */}
+                        {pathwaysEnabled && (
+                            <PrivateRoute path="/pathways" component={PathwaysShell} />
+                        )}
                         <PrivateRoute
                             exact
                             path="/learninghistory"

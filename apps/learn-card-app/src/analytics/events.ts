@@ -42,6 +42,24 @@ export const AnalyticsEvents = {
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
     LAUNCHPAD_QUICKNAV_ACTION_CLICKED: 'launchpad_quicknav_action_clicked',
     LAUNCHPAD_APP_INSTALLED: 'launchpad_app_installed',
+
+    // Pathways (see docs § 13). Phase 0 stubs — callers land in later phases.
+    PATHWAYS_ONBOARD_STARTED: 'pathways.onboard.started',
+    PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED: 'pathways.onboard.suggestionsRendered',
+    PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED: 'pathways.onboard.suggestionAccepted',
+    PATHWAYS_TODAY_NEXT_ACTION_SHOWN: 'pathways.today.nextActionShown',
+    PATHWAYS_TODAY_NEXT_ACTION_DISMISSED: 'pathways.today.nextActionDismissed',
+    PATHWAYS_NODE_TERMINATION_COMPLETED: 'pathways.node.terminationCompleted',
+    PATHWAYS_PROPOSAL_CREATED: 'pathways.proposal.created',
+    PATHWAYS_PROPOSAL_ACCEPTED: 'pathways.proposal.accepted',
+    PATHWAYS_PROPOSAL_REJECTED: 'pathways.proposal.rejected',
+    PATHWAYS_PROPOSAL_EXPIRED: 'pathways.proposal.expired',
+    PATHWAYS_AGENT_BUDGET_EXCEEDED: 'pathways.agent.budgetExceeded',
+    PATHWAYS_LEARNER_COST_SNAPSHOT: 'pathways.learnerCost.snapshot',
+    PATHWAYS_ENDORSEMENT_REQUESTED: 'pathways.endorsement.requested',
+    PATHWAYS_ENDORSEMENT_RECEIVED: 'pathways.endorsement.received',
+    PATHWAYS_ENDORSEMENT_DECLINED: 'pathways.endorsement.declined',
+    PATHWAYS_OFFLINE_CONFLICT: 'pathways.offline.conflict',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -158,6 +176,102 @@ export interface AnalyticsEventPayloads {
         appName: string;
         appId: string;
         category?: string;
+    };
+
+    // -- Pathways (docs § 13) ------------------------------------------------
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_STARTED]: {
+        hasWallet: boolean;
+        goalMode: 'free-text' | 'template' | 'skipped';
+    };
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED]: {
+        latencyMs: number;
+        vectorOnly: boolean;
+        suggestionCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED]: {
+        suggestionId: string;
+        position: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_SHOWN]: {
+        nodeId: string;
+        reasons: string[];
+        topScore: number;
+        runnerUpScores: number[];
+    };
+
+    [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_DISMISSED]: {
+        nodeId: string;
+        reasons: string[];
+    };
+
+    [AnalyticsEvents.PATHWAYS_NODE_TERMINATION_COMPLETED]: {
+        nodeId: string;
+        terminationKind: string;
+        evidenceCount: number;
+        offlineQueued: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED]: {
+        agent: string;
+        pathwayId: string | null;
+        tokensIn?: number;
+        tokensOut?: number;
+        latencyMs: number;
+        costCents: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_ACCEPTED]: {
+        proposalId: string;
+        agent: string;
+        ageMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_REJECTED]: {
+        proposalId: string;
+        agent: string;
+        ageMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_EXPIRED]: {
+        proposalId: string;
+        agent: string;
+    };
+
+    [AnalyticsEvents.PATHWAYS_AGENT_BUDGET_EXCEEDED]: {
+        agent: string;
+        tier: 'low' | 'medium' | 'high';
+        cappedAt: 'per-invocation' | 'per-learner-monthly' | 'per-tenant-monthly';
+    };
+
+    [AnalyticsEvents.PATHWAYS_LEARNER_COST_SNAPSHOT]: {
+        learnerDid: string;
+        monthToDateCents: number;
+        byCapability: Record<string, number>;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_REQUESTED]: {
+        nodeId: string;
+        endorserRelationship: 'mentor' | 'peer' | 'guardian' | 'institution';
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_RECEIVED]: {
+        nodeId: string;
+        endorserTrustTier: string;
+        latencyMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_DECLINED]: {
+        nodeId: string;
+        reason?: string;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OFFLINE_CONFLICT]: {
+        mutationType: string;
+        resolution: 'client-wins' | 'server-wins' | 'last-write-wins' | 'learner-prompt';
     };
 }
 

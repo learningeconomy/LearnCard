@@ -136,6 +136,12 @@ export const tenantFeatureConfigSchema = z.object({
     themeSwitching: z.boolean().default(true),
     introSlides: z.boolean().default(true),
     launchPadQuickActions: z.boolean().default(true),
+
+    /**
+     * Pathways v2 — greenfield experimental feature at `/pathways`.
+     * Default off. See `apps/learn-card-app/docs/pathways-architecture.md`.
+     */
+    pathways: z.boolean().default(false),
 }).passthrough();
 
 export const tenantObservabilityConfigSchema = z.object({
