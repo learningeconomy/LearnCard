@@ -15,6 +15,7 @@ import { lazyWithRetry } from 'learn-card-base';
 
 import PathwaysHeader from './PathwaysHeader';
 import { pathwayStore } from '../../stores/pathways';
+import { useCostSnapshot } from './hooks/useCostSnapshot';
 
 const PathwaysErrorFallback: React.FC = () => (
     <div className="max-w-md mx-auto px-4 py-12 font-poppins text-center">
@@ -43,6 +44,9 @@ const ModeFallback: React.FC = () => (
 
 const PathwaysShell: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
+
+    // Emit the daily cost snapshot once per UTC day.
+    useCostSnapshot();
 
     return (
         <IonPage>

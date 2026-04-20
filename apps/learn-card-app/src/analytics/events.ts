@@ -244,7 +244,11 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PATHWAYS_AGENT_BUDGET_EXCEEDED]: {
         agent: string;
         tier: 'low' | 'medium' | 'high';
-        cappedAt: 'per-invocation' | 'per-learner-monthly' | 'per-tenant-monthly';
+        cappedAt:
+            | 'per-invocation'
+            | 'per-learner-daily'
+            | 'per-learner-monthly'
+            | 'per-tenant-monthly';
     };
 
     [AnalyticsEvents.PATHWAYS_LEARNER_COST_SNAPSHOT]: {
