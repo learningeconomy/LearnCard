@@ -33,6 +33,7 @@ const WhatIfMode = lazyWithRetry(() => import('./what-if/WhatIfMode'));
 const BuildMode = lazyWithRetry(() => import('./build/BuildMode'));
 const OnboardRoute = lazyWithRetry(() => import('./onboard/OnboardRoute'));
 const ProposalsRoute = lazyWithRetry(() => import('./proposals/ProposalsRoute'));
+const NodeDetail = lazyWithRetry(() => import('./node/NodeDetail'));
 
 const ModeFallback: React.FC = () => (
     <div className="max-w-4xl mx-auto px-4 py-8 font-poppins">
@@ -72,6 +73,11 @@ const PathwaysShell: React.FC = () => {
                                     exact
                                     path="/pathways/proposals"
                                     component={ProposalsRoute}
+                                />
+                                <Route
+                                    exact
+                                    path="/pathways/node/:pathwayId/:nodeId"
+                                    component={NodeDetail}
                                 />
 
                                 <Route>

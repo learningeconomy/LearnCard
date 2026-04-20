@@ -1,35 +1,127 @@
 /**
  * OnboardRoute — cold-start / first-mile flow (docs § 6).
  *
- * Phase 0 stub. Phase 1 lands GoalCapture + CredentialScan + SuggestionGrid,
- * driven by a vector-first / LLM-maybe PlannerAgent.seed() pipeline.
+ * Three-step stepper: GoalCapture → CredentialScan → SuggestionGrid.
+ * Picking a suggestion instantiates the template, sets it as the active
+ * pathway, and redirects to Today. The whole flow works with an empty
+ * wallet and without network — the "cold-start always renders" invariant.
  */
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
-const OnboardRoute: React.FC = () => (
-    <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-5">
-        <div>
-            <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                Let's find what's next
-            </h2>
+import { useHistory } from 'react-router-dom';
 
-            <p className="text-sm text-grayscale-600 leading-relaxed">
-                Phase 1 will synthesize the credentials you already have and suggest 3–5
-                pathways you could start today. Zero setup.
-            </p>
-        </div>
+import { AnalyticsEvents, useAnalytics } from '../../../analytics';
+import { pathwayStore } from '../../../stores/pathways';
+import { useLearnerDid } from '../hooks/useLearnerDid';
 
-        <div className="p-4 rounded-[20px] bg-grayscale-100 border border-grayscale-200">
-            <p className="text-sm text-grayscale-600 italic">
-                Onboarding flow scaffolded but not yet wired — see{' '}
-                <code className="px-1 py-0.5 rounded bg-white text-grayscale-800">
-                    docs/pathways-architecture.md § 6
-                </code>
-                .
-            </p>
-        </div>
-    </div>
-);
+import CredentialScan from './CredentialScan';
+import GoalCapture from './GoalCapture';
+import SuggestionGrid from './SuggestionGrid';
+import { instantiateTemplate } from './templates';
+import {
+    suggestPathways,
+    type PathwaySuggestion,
+    type WalletSignal,
+} from './suggestPathways';
+
+type Step = 'goal' | 'scan' | 'suggestions';
+
+const OnboardRoute: React.FC = () => {
+    const history = useHistory();
+    const analytics = useAnalytics();
+    const learnerDid = useLearnerDid();
+
+    const [step, setStep] = useState<Step>('goal');
+    const [goalText, setGoalText] = useState('');
+    const [wallet, setWallet] = useState<WalletSignal>({ tags: [] });
+    const [renderStartedAt, setRenderStartedAt] = useState<number | null>(null);
+
+    const suggestions = useMemo(
+        () => suggestPathways({ goalText, wallet }),
+        [goalText, wallet],
+    );
+
+    const goToScan = (text: string) => {
+        setGoalText(text);
+        analytics.track(AnalyticsEvents.PATHWAYS_ONBOARD_STARTED, {
+            hasWallet: false,
+            goalMode: text.length > 0 ? 'free-text' : 'skipped',
+        });
+        setStep('scan');
+    };
+
+    const goToSuggestions = (signal: WalletSignal) => {
+        setWallet(signal);
+        setRenderStartedAt(Date.now());
+        setStep('suggestions');
+    };
+
+    // Fire "suggestionsRendered" once, the first time the grid paints.
+    React.useEffect(() => {
+        if (step !== 'suggestions' || renderStartedAt === null) return;
+
+        analytics.track(AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED, {
+            latencyMs: Date.now() - renderStartedAt,
+            vectorOnly: true,
+            suggestionCount: suggestions.length,
+        });
+
+        // Only emit once per render cycle.
+        setRenderStartedAt(null);
+    }, [step, renderStartedAt, suggestions.length, analytics]);
+
+    const handlePick = (suggestion: PathwaySuggestion, position: number) => {
+        const now = new Date().toISOString();
+        const pathway = instantiateTemplate(suggestion.template, {
+            ownerDid: learnerDid,
+            now,
+        });
+
+        pathwayStore.set.upsertPathway(pathway);
+        pathwayStore.set.setActivePathway(pathway.id);
+
+        analytics.track(AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED, {
+            suggestionId: suggestion.template.id,
+            position,
+        });
+
+        history.replace('/pathways/today');
+    };
+
+    switch (step) {
+        case 'goal':
+            return (
+                <GoalCapture
+                    initial={goalText}
+                    onContinue={goToScan}
+                    onSkip={() => goToScan('')}
+                />
+            );
+
+        case 'scan':
+            return (
+                <CredentialScan
+                    onContinue={goToSuggestions}
+                    onBack={() => setStep('goal')}
+                />
+            );
+
+        case 'suggestions':
+            return (
+                <SuggestionGrid
+                    suggestions={suggestions}
+                    goalText={goalText}
+                    onPick={(s) => {
+                        const position = suggestions.findIndex(
+                            x => x.template.id === s.template.id,
+                        );
+                        handlePick(s, position);
+                    }}
+                    onBack={() => setStep('scan')}
+                />
+            );
+    }
+};
 
 export default OnboardRoute;
