@@ -19,7 +19,7 @@ import { availableNodes } from '../core/graphOps';
 import { collectFsrsDue } from '../scheduler/fsrsScheduler';
 import type { NodeRef, RankingContext } from '../types';
 
-import IdentityBanner from './IdentityBanner';
+import CompletionMoment from './CompletionMoment';
 import NextActionCard from './NextActionCard';
 import StreakRibbon from './StreakRibbon';
 import { getNextAction, rankCandidates } from './ranking';
@@ -154,15 +154,49 @@ const TodayMode: React.FC = () => {
         ? activePathway.nodes.find(n => n.id === scored.node.nodeId)
         : null;
 
+    // -- Completion moment -------------------------------------------------
+    //
+    // Read from `pathwayStore.recentCompletion`, which `completeTermination`
+    // sets inside the reducer. We keep this on the store (not in component
+    // state) because NodeDetail navigates away on "Mark complete", unmounting
+    // Today — a component-scoped ref would be lost on remount. The banner
+    // auto-clears after 5s so re-opening Today later doesn't show a stale
+    // signal.
+
+    const recentCompletion = pathwayStore.use.recentCompletion();
+
+    const justCompletedTitle =
+        recentCompletion && activePathway && recentCompletion.pathwayId === activePathway.id
+            ? recentCompletion.title
+            : null;
+
+    useEffect(() => {
+        if (!recentCompletion) return;
+
+        const handle = window.setTimeout(
+            () => pathwayStore.set.clearRecentCompletion(),
+            5000,
+        );
+
+        return () => window.clearTimeout(handle);
+    }, [recentCompletion]);
+
+    // -- Streak ribbon gating ---------------------------------------------
+    //
+    // On day 1–2 the "1-day streak · Grace window active" ribbon reads as
+    // noise. Only surface the ribbon once the streak is actually
+    // meaningful, or when there's a real longest streak to protect.
+
+    const shouldShowStreak =
+        context?.streakState &&
+        (context.streakState.current >= 3 || context.streakState.longest >= 3);
+
     return (
         <div className="max-w-md mx-auto px-4 py-8 font-poppins space-y-5">
-            <IdentityBanner goal={activePathway.goal} pathwayTitle={activePathway.title} />
-
-            {context?.streakState && (
-                <StreakRibbon
-                    current={context.streakState.current}
-                    longest={context.streakState.longest}
-                    inGraceWindow={context.streakState.inGraceWindow}
+            {justCompletedTitle && (
+                <CompletionMoment
+                    title={justCompletedTitle}
+                    onDismiss={() => pathwayStore.set.clearRecentCompletion()}
                 />
             )}
 
@@ -170,14 +204,11 @@ const TodayMode: React.FC = () => {
                 <NextActionCard
                     node={nodeById}
                     scored={scored}
-                    onOpen={() =>
-                        history.push(`/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`)
-                    }
-                    onDismiss={() => {
-                        analytics.track(AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_DISMISSED, {
-                            nodeId: scored.node.nodeId,
-                            reasons: scored.reasons,
-                        });
+                    onOpen={() => {
+                        pathwayStore.set.clearRecentCompletion();
+                        history.push(
+                            `/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`,
+                        );
                     }}
                 />
             ) : (
@@ -191,6 +222,14 @@ const TodayMode: React.FC = () => {
                         Map view can help you see what's next.
                     </p>
                 </div>
+            )}
+
+            {shouldShowStreak && context?.streakState && (
+                <StreakRibbon
+                    current={context.streakState.current}
+                    longest={context.streakState.longest}
+                    inGraceWindow={context.streakState.inGraceWindow}
+                />
             )}
         </div>
     );

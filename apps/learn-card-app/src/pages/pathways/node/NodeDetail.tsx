@@ -162,7 +162,7 @@ const NodeDetail: React.FC = () => {
         });
     };
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
         if (completing) return;
         setCompleting(true);
 
@@ -178,6 +178,18 @@ const NodeDetail: React.FC = () => {
                 conflictStrategy: 'client-wins-with-reconcile',
                 enqueuedAt: new Date().toISOString(),
             });
+        }
+
+        // Fire a light haptic tap before committing the state change so
+        // the feedback lines up with the learner's finger still on the
+        // button. Safe no-op on web; wrapped in try/catch because the
+        // native plugin can reject if the device has haptics disabled.
+        try {
+            const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+
+            await Haptics.impact({ style: ImpactStyle.Light });
+        } catch {
+            // No haptics available — keep going silently.
         }
 
         pathwayStore.set.completeTermination(pathway.id, node.id, []);

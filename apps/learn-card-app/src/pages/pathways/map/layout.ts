@@ -1,24 +1,34 @@
 /**
  * Layout — assign (x, y) coordinates to pathway nodes for Map mode.
  *
- * Pure function. Uses a simple level-based layered layout:
- *   1. Compute each node's longest-path distance from the roots (its
- *      "level"). This is O(V + E) on a DAG.
- *   2. Group nodes by level, order within a level by the graph's
- *      natural node order.
- *   3. Emit (levelIndex * X_SPACING, indexWithinLevel * Y_SPACING).
+ * Pure function. Uses a simple level-based layered layout and renders
+ * **bottom-up**: level 0 (root / starting step) anchors at the bottom
+ * of the canvas, and each subsequent level stacks upward. This matches
+ * the "pathway = journey toward a destination" metaphor and the native
+ * vertical-scroll gesture on phone.
  *
- * Good enough for Phase 2. If the user graphs get dense we can swap
- * in dagre or elk later — this module is the seam, callers depend only
- * on the output shape.
+ * Algorithm:
+ *   1. Compute each node's longest-path distance from the roots — its
+ *      "level". O(V + E) on a DAG.
+ *   2. Within a level, order by the graph's natural node order.
+ *   3. Emit (i * X_SPACING, (maxLevel - level) * Y_SPACING) — so level 0
+ *      lands at the largest y (bottom of the canvas) and the final
+ *      level lands at y = 0 (top).
+ *
+ * Good enough for Phase 2. If the graphs get dense we can swap in dagre
+ * or elk later — this module is the seam, callers depend only on the
+ * output shape.
  */
 
 import type { Pathway } from '../types';
 
 import { buildAdjacency } from '../core/graphOps';
 
-export const X_SPACING = 220;
-export const Y_SPACING = 120;
+/** Horizontal gap between siblings within the same level. */
+export const X_SPACING = 240;
+
+/** Vertical gap between consecutive levels. */
+export const Y_SPACING = 140;
 export const NODE_WIDTH = 200;
 export const NODE_HEIGHT = 80;
 
@@ -80,15 +90,23 @@ export const layoutPathway = (pathway: Pathway): NodePosition[] => {
         byLevel.set(l, bucket);
     }
 
+    // `maxLevel` anchors level 0 at the bottom of the canvas (largest y).
+    const maxLevel = byLevel.size > 0 ? Math.max(...byLevel.keys()) : 0;
+
     const positions: NodePosition[] = [];
 
     for (const [l, ids] of byLevel) {
+        // Center siblings horizontally around x = 0 so the visual spine
+        // of the pathway runs straight up through the canvas instead of
+        // drifting right when a level has many children.
+        const offset = ((ids.length - 1) * X_SPACING) / 2;
+
         ids.forEach((id, i) => {
             positions.push({
                 id,
                 level: l,
-                x: l * X_SPACING,
-                y: i * Y_SPACING,
+                x: i * X_SPACING - offset,
+                y: (maxLevel - l) * Y_SPACING,
             });
         });
     }

@@ -9,14 +9,30 @@ import { createStore } from '@udecode/zustood';
 
 import type { Evidence, Pathway, PathwayNode } from '../../pages/pathways/types';
 
+interface RecentCompletion {
+    nodeId: string;
+    pathwayId: string;
+    title: string;
+    /** ISO timestamp of when the node flipped to `completed`. */
+    completedAt: string;
+}
+
 interface PathwayStoreState {
     pathways: Record<string, Pathway>;
     activePathwayId: string | null;
+    /**
+     * Fire-and-forget signal set by `completeTermination` and read by
+     * Today's completion banner. Kept on the store (not component state)
+     * because NodeDetail navigates away, unmounting Today — so we need a
+     * survive-navigation record of "a node just completed".
+     */
+    recentCompletion: RecentCompletion | null;
 }
 
 const initialState: PathwayStoreState = {
     pathways: {},
     activePathwayId: null,
+    recentCompletion: null,
 };
 
 export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
@@ -75,12 +91,31 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
 
             if (!node) return;
 
+            const wasAlreadyCompleted = node.progress.status === 'completed';
+            const now = new Date().toISOString();
+
             node.progress.status = 'completed';
             node.progress.artifacts = [...node.progress.artifacts, ...evidence];
-            node.progress.completedAt = new Date().toISOString();
-            node.updatedAt = new Date().toISOString();
-            pathway.updatedAt = new Date().toISOString();
+            node.progress.completedAt = now;
+            node.updatedAt = now;
+            pathway.updatedAt = now;
+
+            // Only emit the completion signal on the real transition —
+            // re-calls on an already-completed node shouldn't retrigger
+            // Today's banner.
+            if (!wasAlreadyCompleted) {
+                draft.recentCompletion = {
+                    nodeId: node.id,
+                    pathwayId: pathway.id,
+                    title: node.title,
+                    completedAt: now,
+                };
+            }
         });
+    },
+
+    clearRecentCompletion: () => {
+        set.recentCompletion(null);
     },
 })).extendSelectors((state, get) => ({
     activePathway: (): Pathway | null => {

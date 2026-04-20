@@ -76,6 +76,7 @@ const OnboardRoute: React.FC = () => {
         const pathway = instantiateTemplate(suggestion.template, {
             ownerDid: learnerDid,
             now,
+            learnerGoalText: goalText,
         });
 
         pathwayStore.set.upsertPathway(pathway);

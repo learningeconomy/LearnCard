@@ -14,7 +14,6 @@ interface NextActionCardProps {
     node: PathwayNode;
     scored: ScoredCandidate;
     onOpen: () => void;
-    onDismiss?: () => void;
 }
 
 const policyCallToAction = (node: PathwayNode): string => {
@@ -36,7 +35,6 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
     node,
     scored,
     onOpen,
-    onDismiss,
 }) => (
     <article className="p-5 rounded-[24px] border border-grayscale-200 bg-white shadow-sm">
         <div className="space-y-4">
@@ -70,26 +68,14 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                 </ul>
             )}
 
-            <div className="space-y-2 pt-1">
-                <button
-                    type="button"
-                    onClick={onOpen}
-                    className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm
-                               hover:opacity-90 transition-opacity"
-                >
-                    {policyCallToAction(node)}
-                </button>
-
-                {onDismiss && (
-                    <button
-                        type="button"
-                        onClick={onDismiss}
-                        className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                    >
-                        Not right now
-                    </button>
-                )}
-            </div>
+            <button
+                type="button"
+                onClick={onOpen}
+                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm
+                           hover:opacity-90 transition-opacity mt-1"
+            >
+                {policyCallToAction(node)}
+            </button>
         </div>
     </article>
 );

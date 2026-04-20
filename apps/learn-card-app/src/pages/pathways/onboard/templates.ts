@@ -317,11 +317,19 @@ export interface InstantiateOptions {
     now: string;
     /** Defaults to `uuid()`. Tests inject a deterministic generator. */
     makeId?: () => string;
+    /**
+     * The learner's own words for what they're working toward. When
+     * provided (and non-empty), this becomes the pathway's `goal`
+     * instead of the template's canonical goal — keeping the template
+     * recoverable via `templateRef` for future pattern-matching while
+     * making the visible goal feel personal (docs § 6).
+     */
+    learnerGoalText?: string;
 }
 
 export const instantiateTemplate = (
     template: PathwayTemplate,
-    { ownerDid, now, makeId = uuid }: InstantiateOptions,
+    { ownerDid, now, makeId = uuid, learnerGoalText }: InstantiateOptions,
 ): Pathway => {
     const pathwayId = makeId();
 
@@ -363,11 +371,13 @@ export const instantiateTemplate = (
         type: te.type,
     }));
 
+    const learnerGoalTrimmed = learnerGoalText?.trim() ?? '';
+
     return {
         id: pathwayId,
         ownerDid,
         title: template.title,
-        goal: template.goal,
+        goal: learnerGoalTrimmed.length > 0 ? learnerGoalTrimmed : template.goal,
         nodes,
         edges,
         status: 'active',

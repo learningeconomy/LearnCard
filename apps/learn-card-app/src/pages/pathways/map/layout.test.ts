@@ -51,8 +51,8 @@ const pathway = (nodes: PathwayNode[], edges: Edge[]): Pathway => ({
 const byId = (positions: ReturnType<typeof layoutPathway>) =>
     Object.fromEntries(positions.map(p => [p.id, p]));
 
-describe('layoutPathway', () => {
-    it('places a root at level 0', () => {
+describe('layoutPathway (bottom-up)', () => {
+    it('places a lone root at level 0 and at the origin', () => {
         const p = pathway([node('a')], []);
 
         const positions = byId(layoutPathway(p));
@@ -76,20 +76,18 @@ describe('layoutPathway', () => {
         expect(positions.c.level).toBe(2);
     });
 
-    it('spaces levels by X_SPACING on the x-axis', () => {
-        const p = pathway(
-            [node('a'), node('b')],
-            [edge('1', 'a', 'b')],
-        );
+    it('anchors level 0 at the bottom — y decreases as level increases', () => {
+        const p = pathway([node('a'), node('b')], [edge('1', 'a', 'b')]);
 
         const positions = byId(layoutPathway(p));
 
-        expect(positions.a.x).toBe(0);
-        expect(positions.b.x).toBe(X_SPACING);
+        // a is the root (level 0) → bottom. b is level 1 → above a (smaller y).
+        expect(positions.a.y).toBeGreaterThan(positions.b.y);
+        expect(positions.a.y - positions.b.y).toBe(Y_SPACING);
     });
 
-    it('stacks siblings at the same level along the y-axis', () => {
-        // a -> b, a -> c  → b and c at level 1, stacked.
+    it('stacks siblings at the same level along the x-axis, centered around 0', () => {
+        // a -> b, a -> c  → b and c at level 1, side-by-side.
         const p = pathway(
             [node('a'), node('b'), node('c')],
             [edge('1', 'a', 'b'), edge('2', 'a', 'c')],
@@ -98,7 +96,10 @@ describe('layoutPathway', () => {
         const positions = byId(layoutPathway(p));
 
         expect(positions.b.level).toBe(positions.c.level);
-        expect(Math.abs(positions.b.y - positions.c.y)).toBe(Y_SPACING);
+        expect(positions.b.y).toBe(positions.c.y);
+        expect(Math.abs(positions.b.x - positions.c.x)).toBe(X_SPACING);
+        // Centered: the midpoint of the two siblings sits at x = 0.
+        expect(positions.b.x + positions.c.x).toBe(0);
     });
 
     it('produces a position for every node even if the graph has cycles or orphans', () => {
