@@ -578,12 +578,12 @@ const LaunchPad: React.FC = () => {
                                             </>
                                         )}
 
-                                        {/* Available Plugins (when Plugins tab is selected in search mode) */}
+                                        {/* Plugins */}
                                         {isPluginsTab && filteredPlugins.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Available Plugins
+                                                        Plugins
                                                     </p>
                                                 </div>
                                                 {filteredPlugins.map(app => (
@@ -733,7 +733,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Available Plugins
+                                                    Plugins
                                                 </p>
                                             </div>
                                             {filteredPlugins.map(app => (
