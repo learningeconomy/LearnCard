@@ -12,40 +12,46 @@ Read-only smoke tests for deployed LearnCard environments. These verify that ser
 ## Running Locally
 
 ```bash
-# Set target URLs (defaults to localhost)
-# Note: API URLs include the `/api` prefix — services mount health/tRPC routes under /api.
-export SMOKETEST_APP_URL=https://staging.learncard.ai
-export SMOKETEST_API_URL=https://staging.network.learncard.com/api
-export SMOKETEST_CLOUD_URL=https://staging.cloud.learncard.com/api
-export SMOKETEST_LCA_API_URL=https://staging.api.learncard.app/api
-
-# Install dependencies
 cd tests/smoketests && pnpm install
-
-# Install Playwright browser
 pnpm exec playwright install chromium
 
-# Run API health checks only
-pnpm test:api
+# Pick the target environment — URLs are resolved automatically.
+SMOKETEST_ENV=staging    pnpm test   # defaults to staging if unset
+SMOKETEST_ENV=production pnpm test
+SMOKETEST_ENV=scouts     pnpm test   # production ScoutPass (no staging for scouts)
 
-# Run browser smoke checks only
-pnpm test:browser
+# API-only / browser-only
+SMOKETEST_ENV=staging pnpm test:api
+SMOKETEST_ENV=staging pnpm test:browser
 
-# Run all tests
-pnpm test
-
-# View HTML report
+# HTML report
 pnpm report
 ```
+
+### URL resolution
+
+Target URLs come from repo config — no duplicated env vars:
+
+- **staging / production** → `apps/learn-card-app/environments/learncard/config.json`
+  (merged with `config.staging.json` for staging)
+- **scouts** → URLs mirror `packages/learn-card-base/src/constants/Networks.ts`
+  with the frontend at `pass.scout.org`
+
+Override individual URLs for ad-hoc debugging via `SMOKETEST_APP_URL`,
+`SMOKETEST_API_URL`, `SMOKETEST_CLOUD_URL`, `SMOKETEST_LCA_API_URL`.
 
 ## CI Integration
 
 The smoketest workflow (`.github/workflows/smoketest.yml`) is triggered:
 
-1. **Automatically** — after staging deploys succeed (`smoketest-staging` job in `deploy.yml`)
-2. **Manually** — via `workflow_dispatch` with environment selection (staging/production)
+1. **Automatically** after deploys in `deploy.yml`:
+   - `smoketest-staging` — after staging deploys (push to `main`)
+   - `smoketest-production` — after production deploys (release commit or manual `production` dispatch)
+   - `smoketest-scouts` — after manual `scouts` dispatch
+2. **Manually** — via `workflow_dispatch` on `smoketest.yml` with environment selection (staging/production/scouts)
 
-URLs are configured as GitHub environment variables (`SMOKETEST_APP_URL`, etc.) in the `staging-smoketest` / `production-smoketest` environments.
+No GitHub environment variables are required — the workflow passes
+`SMOKETEST_ENV` and the URL resolver reads from in-repo config.
 
 ## Test Tiers
 

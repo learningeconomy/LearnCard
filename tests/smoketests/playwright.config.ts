@@ -1,9 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import { resolveUrls } from './lib/resolveUrls';
 
-const APP_URL = process.env.SMOKETEST_APP_URL ?? 'http://localhost:3000';
-const API_URL = process.env.SMOKETEST_API_URL ?? 'http://localhost:3100';
-const CLOUD_URL = process.env.SMOKETEST_CLOUD_URL ?? 'http://localhost:3200';
-const LCA_API_URL = process.env.SMOKETEST_LCA_API_URL ?? 'http://localhost:3300';
+// Target environment is picked by SMOKETEST_ENV (staging|production|scouts).
+// URLs are resolved from apps/learn-card-app/environments/<tenant>/config*.json
+// for learncard, and from Networks.ts constants for scouts — so smoketests
+// follow whatever the app is actually configured to hit.
+const urls = resolveUrls();
+const APP_URL = urls.app;
+const API_URL = urls.api;
 
 export default defineConfig({
     testDir: './tests',
@@ -44,5 +48,3 @@ export default defineConfig({
     ],
 });
 
-// Export URLs for use in test files
-export { APP_URL, API_URL, CLOUD_URL, LCA_API_URL };

@@ -970,7 +970,8 @@ jobs:
               run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
 
     # ============================================================================
-    # SMOKETEST (after staging deploys)
+    # SMOKETEST (after deploys — one job per target environment)
+    # Fires when any deploy in this run succeeded, gated on the run's target.
     # ============================================================================
     smoketest-staging:
         name: Smoketest Staging
@@ -989,6 +990,46 @@ jobs:
         uses: ./.github/workflows/smoketest.yml
         with:
             environment: staging
+        secrets: inherit
+
+    smoketest-production:
+        name: Smoketest Production
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                needs.determine-affected.outputs.is_release == 'true' ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'production')
+            ) &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: production
+        secrets: inherit
+
+    smoketest-scouts:
+        name: Smoketest Scouts
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.outputs.is_manual == 'true' &&
+            github.event.inputs.target-environment == 'scouts' &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: scouts
         secrets: inherit
 
     # ============================================================================

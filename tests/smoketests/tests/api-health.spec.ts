@@ -1,9 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { resolveUrls } from '../lib/resolveUrls';
 
-// URLs from environment — playwright.config.ts sets baseURL to API_URL for api project
-const API_URL = process.env.SMOKETEST_API_URL ?? 'http://localhost:3100';
-const CLOUD_URL = process.env.SMOKETEST_CLOUD_URL ?? 'http://localhost:3200';
-const LCA_API_URL = process.env.SMOKETEST_LCA_API_URL ?? 'http://localhost:3300';
+const { api: API_URL, cloud: CLOUD_URL, lcaApi: LCA_API_URL } = resolveUrls();
 
 test.describe('Tier 1: API Health Checks', () => {
     test.describe('Brain Service (Network API)', () => {
