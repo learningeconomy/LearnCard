@@ -24,9 +24,15 @@ import { IonIcon } from '@ionic/react';
 import { arrowForwardOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
+import { mcpRegistryStore } from '../../../stores/pathways';
 import type { PathwayNode, ScoredCandidate } from '../types';
 
-import { type Journey, journeyLabel, policyCallToAction, policyLabel } from './presentation';
+import {
+    type Journey,
+    journeyLabel,
+    policyLabel,
+    resolvePolicyCallToAction,
+} from './presentation';
 
 interface NextActionCardProps {
     node: PathwayNode;
@@ -42,7 +48,18 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
     onOpen,
 }) => {
     const primaryReason = scored.reasons[0];
-    const policyKind = node.stage.policy.kind;
+    const policy = node.stage.policy;
+    const policyKind = policy.kind;
+
+    // Look up the MCP server's human-readable label for `external`
+    // policies so the CTA reads "Open in Figma" rather than "Open the
+    // external tool." Subscribing via the store selector keeps the
+    // label reactive if the learner connects the server mid-session.
+    const mcpServers = mcpRegistryStore.use.servers();
+    const mcpLabel =
+        policy.kind === 'external'
+            ? mcpServers[policy.mcp.serverId]?.label ?? null
+            : null;
 
     return (
         <motion.article
@@ -100,7 +117,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                            flex items-center justify-center gap-2
                            shadow-md shadow-grayscale-900/20"
             >
-                <span>{policyCallToAction(policyKind)}</span>
+                <span>{resolvePolicyCallToAction(policy, mcpLabel)}</span>
 
                 <IonIcon
                     icon={arrowForwardOutline}

@@ -27,6 +27,7 @@ import { useHistory } from 'react-router-dom';
 import { pathwayStore } from '../../../stores/pathways';
 import { availableNodes, neighborhood } from '../core/graphOps';
 
+import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
 import { NODE_HEIGHT, NODE_WIDTH, layoutPathway } from './layout';
 
@@ -111,6 +112,18 @@ const MapModeInner: React.FC = () => {
     const nb = useMemo(
         () => (activePathway && focusId ? neighborhood(activePathway, focusId, 2) : null),
         [activePathway, focusId],
+    );
+
+    // Memoized navigation handler so the MapNode data object identity is
+    // stable across re-renders (React Flow treats a changed `data` as a
+    // node update — not a correctness bug, but cheap to avoid).
+    const openNode = React.useCallback(
+        (nodeId: string) => {
+            if (!activePathway) return;
+
+            history.push(`/pathways/node/${activePathway.id}/${nodeId}`);
+        },
+        [activePathway, history],
     );
 
     const rfNodes: RfNode<MapNodeData>[] = useMemo(() => {
@@ -277,11 +290,21 @@ const MapModeInner: React.FC = () => {
                 panOnDrag
                 proOptions={{ hideAttribution: true }}
                 onNodeClick={(_event, node) => {
-                    // Single-click re-focuses; double-click opens detail.
-                    setFocusId(node.id);
+                    // Click on a non-focus node → re-focus (pan/center
+                    // on it). Click on the already-focused node → open
+                    // NodeDetail. This mirrors Google Maps' pin behavior:
+                    // first tap selects, second tap dives in. The
+                    // `FocusActionBar` at the bottom of the viewport is
+                    // the primary, most-discoverable way to open; this
+                    // click gesture is the secondary shortcut.
+                    if (node.id === focusId) {
+                        openNode(node.id);
+                    } else {
+                        setFocusId(node.id);
+                    }
                 }}
                 onNodeDoubleClick={(_event, node) => {
-                    history.push(`/pathways/node/${activePathway.id}/${node.id}`);
+                    openNode(node.id);
                 }}
             >
                 <FocusPanner focusId={focusId} positions={positions} />
@@ -306,6 +329,22 @@ const MapModeInner: React.FC = () => {
                     nodeColor={minimapNodeColor}
                 />
             </ReactFlow>
+
+            {/*
+                Bottom action sheet — persistent, docked affordance for
+                opening the focused node. Bookends the top "On your way to"
+                pill: destination above, current action below. Lives in
+                the viewport chrome so it never overlaps the graph's
+                edges (the mistake the previous attached CTA made).
+            */}
+            <FocusActionBar
+                node={
+                    focusId
+                        ? activePathway.nodes.find(n => n.id === focusId) ?? null
+                        : null
+                }
+                onOpen={openNode}
+            />
         </div>
     );
 };

@@ -18,7 +18,9 @@
 
 import React from 'react';
 
+import { IonIcon } from '@ionic/react';
 import { Handle, Position } from '@xyflow/react';
+import { chevronForwardOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
 import type { PathwayNode } from '../types';
@@ -64,7 +66,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
 
     return (
         <motion.div
-            className="font-poppins"
+            className="relative font-poppins"
             style={{ width: 200 }}
             // Entrance: fade + slight rise, staggered naturally by React Flow's
             // mount order. A 300ms duration keeps the whole graph appearing
@@ -118,7 +120,30 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                     </span>
                 )}
 
-                <p className="text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 mb-1.5">
+                {/*
+                    Corner chevron on the focus card — communicates "this
+                    card is tappable to open" without growing the card's
+                    height (the actual action lives in FocusActionBar at
+                    the bottom of the map, so edges never get blocked).
+                */}
+                {isFocusNode && status !== 'completed' && status !== 'skipped' && (
+                    <span
+                        aria-hidden
+                        className="absolute top-2 right-2 w-5 h-5 rounded-full
+                                   bg-emerald-600 text-white
+                                   flex items-center justify-center
+                                   shadow-sm shadow-emerald-600/40"
+                    >
+                        <IonIcon
+                            icon={chevronForwardOutline}
+                            className="text-[10px]"
+                        />
+                    </span>
+                )}
+
+                <p className={`text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 mb-1.5 ${
+                    isFocusNode && status !== 'completed' && status !== 'skipped' ? 'pr-6' : ''
+                }`}>
                     {node.title}
                 </p>
 

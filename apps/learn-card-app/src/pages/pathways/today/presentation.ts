@@ -136,3 +136,100 @@ const POLICY_CALLS: Record<Policy['kind'], string> = {
  * appears elsewhere (e.g. a widget).
  */
 export const policyCallToAction = (kind: Policy['kind']): string => POLICY_CALLS[kind];
+
+/**
+ * Resolve the CTA label for a specific policy, threading in MCP context
+ * when the policy is `external`. A generic "Open the external tool" is
+ * fine when we don't know the server (still-unresolved registry) but
+ * terrible when we do — the learner should see "Open in Figma" /
+ * "Open in Notion" / etc so the action sets clear expectations.
+ *
+ * The `mcpLabel` comes from `mcpRegistryStore.servers[serverId].label`
+ * at the call site. We keep this module store-free so it stays
+ * unit-testable.
+ */
+export const resolvePolicyCallToAction = (
+    policy: Policy,
+    mcpLabel?: string | null,
+): string => {
+    if (policy.kind === 'external' && mcpLabel) {
+        return `Open in ${mcpLabel}`;
+    }
+
+    return policyCallToAction(policy.kind);
+};
+
+// ---------------------------------------------------------------------------
+// Identity framing
+// ---------------------------------------------------------------------------
+
+/**
+ * Mapping of common goal-verbs to their gerund (-ing) form. Used to turn
+ * a goal like "write a novel" into "someone writing a novel" — the
+ * past-progressive identity phrasing the architecture calls out as
+ * load-bearing (§10, synthesis doc's "habit-identity" research).
+ *
+ * The list is intentionally small. If a verb isn't here we fall back to
+ * rendering the goal verbatim rather than hand-rolling fragile English.
+ */
+const GERUND_MAP: Record<string, string> = {
+    write: 'writing',
+    build: 'building',
+    ship: 'shipping',
+    learn: 'learning',
+    get: 'getting',
+    become: 'becoming',
+    make: 'making',
+    create: 'creating',
+    master: 'mastering',
+    explore: 'exploring',
+    practice: 'practicing',
+    study: 'studying',
+    read: 'reading',
+    grow: 'growing',
+    design: 'designing',
+    teach: 'teaching',
+    run: 'running',
+    start: 'starting',
+    publish: 'publishing',
+    finish: 'finishing',
+    change: 'changing',
+    earn: 'earning',
+    land: 'landing',
+};
+
+const IDENTITY_PREFIX = /^(a |an |the |someone |the next )/i;
+
+/**
+ * Transform a pathway's `goal` into an identity-tense phrase suitable
+ * for the "You are becoming __" framing on Today.
+ *
+ *   "write a novel"          → "someone writing a novel"
+ *   "ship one artifact"      → "someone shipping one artifact"
+ *   "a better writer"        → "a better writer"          (already identity)
+ *   "someone who writes"     → "someone who writes"       (already identity)
+ *   "the next CEO"           → "the next CEO"             (already identity)
+ *   "foo bar baz"            → "foo bar baz"              (can't transform)
+ *   ""                       → ""
+ *
+ * The goal here is *honesty* over cleverness: if we can't produce a
+ * grammatical identity phrase, we render the goal verbatim rather than
+ * generating something grating.
+ */
+export const identityPhrase = (goal: string): string => {
+    const trimmed = goal.trim();
+
+    if (!trimmed) return '';
+
+    // Already identity-phrased — leave it alone.
+    if (IDENTITY_PREFIX.test(trimmed)) return trimmed;
+
+    const [first, ...rest] = trimmed.split(/\s+/);
+    const gerund = GERUND_MAP[first.toLowerCase()];
+
+    if (!gerund) return trimmed;
+
+    const suffix = rest.length > 0 ? ` ${rest.join(' ')}` : '';
+
+    return `someone ${gerund}${suffix}`;
+};

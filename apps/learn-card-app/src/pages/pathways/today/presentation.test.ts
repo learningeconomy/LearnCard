@@ -5,6 +5,7 @@ import type { Edge, Pathway, PathwayNode } from '../types';
 import {
     buildJourney,
     getGreeting,
+    identityPhrase,
     journeyLabel,
     policyCallToAction,
     policyLabel,
@@ -160,5 +161,48 @@ describe('policyCallToAction', () => {
         expect(policyCallToAction('assessment')).toMatch(/^Start/);
         expect(policyCallToAction('artifact')).toMatch(/^Work/);
         expect(policyCallToAction('external')).toMatch(/^Open/);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// identityPhrase — past-progressive framing for the "You are becoming __" line
+// ---------------------------------------------------------------------------
+
+describe('identityPhrase', () => {
+    it('turns a verb-first goal into a "someone __ing __" phrase', () => {
+        expect(identityPhrase('write a novel')).toBe('someone writing a novel');
+        expect(identityPhrase('ship one public-facing artifact')).toBe(
+            'someone shipping one public-facing artifact',
+        );
+        expect(identityPhrase('build a startup')).toBe('someone building a startup');
+    });
+
+    it('accepts a bare verb with no object', () => {
+        expect(identityPhrase('write')).toBe('someone writing');
+    });
+
+    it('leaves goals already in identity form untouched', () => {
+        expect(identityPhrase('a better writer')).toBe('a better writer');
+        expect(identityPhrase('the next CEO')).toBe('the next CEO');
+        expect(identityPhrase('someone who writes fiction')).toBe(
+            'someone who writes fiction',
+        );
+        expect(identityPhrase('an effective manager')).toBe('an effective manager');
+    });
+
+    it('falls back to the raw goal when it cannot transform it grammatically', () => {
+        // Not a verb in our map — we render it verbatim rather than butchering it.
+        expect(identityPhrase('foo bar baz')).toBe('foo bar baz');
+    });
+
+    it('is case-insensitive on the leading verb', () => {
+        expect(identityPhrase('Write a novel')).toBe('someone writing a novel');
+        expect(identityPhrase('SHIP it')).toBe('someone shipping it');
+    });
+
+    it('trims whitespace and handles empty input', () => {
+        expect(identityPhrase('  write a novel  ')).toBe('someone writing a novel');
+        expect(identityPhrase('')).toBe('');
+        expect(identityPhrase('   ')).toBe('');
     });
 });

@@ -23,9 +23,10 @@ import { collectFsrsDue } from '../scheduler/fsrsScheduler';
 import type { NodeRef, RankingContext } from '../types';
 
 import CompletionMoment from './CompletionMoment';
+import IdentityBanner from './IdentityBanner';
 import NextActionCard from './NextActionCard';
 import StreakRibbon from './StreakRibbon';
-import { buildJourney, getGreeting } from './presentation';
+import { buildJourney, getGreeting, identityPhrase } from './presentation';
 import { getNextAction, rankCandidates } from './ranking';
 
 const HOURS_12 = 12 * 60 * 60 * 1000;
@@ -214,6 +215,14 @@ const TodayMode: React.FC = () => {
             }}
         >
             <div className="relative max-w-md mx-auto px-4 py-8 font-poppins space-y-5">
+                {/*
+                    Identity banner — "Becoming X" whisper. The synthesis doc
+                    names habit-identity framing as load-bearing; this is
+                    where it lives on Today. Placed above the greeting so it
+                    anchors the whole page's "why".
+                */}
+                <IdentityBanner phrase={identityPhrase(activePathway.goal)} />
+
                 {/* Time-aware greeting — sets the emotional tone of the page. */}
                 <motion.header
                     initial={{ opacity: 0, y: -6 }}

@@ -30,9 +30,13 @@ import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
 import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
+import { canProject } from '../projection/toAchievementCredential';
+
+import CredentialPreview from './CredentialPreview';
 import EndorsementPanel from './EndorsementPanel';
 import EvidencePanel from './EvidencePanel';
 import EvidenceUploader from './EvidenceUploader';
+import ReviewsPanel from './ReviewsPanel';
 import TerminationProgress from './TerminationProgress';
 import { computeTerminationView, terminationDone } from './termination';
 
@@ -301,7 +305,7 @@ const NodeDetail: React.FC = () => {
                 </motion.header>
 
                 {/* -------------------------------------------------- */}
-                {/* Working state: chips + uploader + commit            */}
+                {/* Working state: chips + uploader-or-reviews + commit */}
                 {/* -------------------------------------------------- */}
                 {!isCompleted && (
                     <motion.div
@@ -311,10 +315,32 @@ const NodeDetail: React.FC = () => {
                     >
                         <EvidencePanel evidence={node.progress.artifacts} />
 
-                        <EvidenceUploader
-                            onSubmit={handleAttach}
-                            expectedType={expectedArtifactType}
-                        />
+                        {/*
+                            For `review` policies, show FSRS grading rather
+                            than an evidence uploader — the node asks you to
+                            recall, not to attach. Every other policy kind
+                            flows through the same uploader.
+                        */}
+                        {node.stage.policy.kind === 'review' ? (
+                            <ReviewsPanel
+                                pathwayId={pathway.id}
+                                node={
+                                    node as typeof node & {
+                                        stage: {
+                                            policy: {
+                                                kind: 'review';
+                                                fsrs: typeof node.stage.policy.fsrs;
+                                            };
+                                        };
+                                    }
+                                }
+                            />
+                        ) : (
+                            <EvidenceUploader
+                                onSubmit={handleAttach}
+                                expectedType={expectedArtifactType}
+                            />
+                        )}
                     </motion.div>
                 )}
 
@@ -381,6 +407,17 @@ const NodeDetail: React.FC = () => {
                                     </p>
                                 </div>
                             </div>
+
+                            {/*
+                                If this node projects to a credential, render the
+                                drafted claim inline. Honors §3.6 ("we project,
+                                we don't store a signed VC") and makes the
+                                Phase 1 contract ("every node is a potential
+                                OB 3.0 claim") tangible the moment it matters.
+                            */}
+                            {canProject(node) && (
+                                <CredentialPreview node={node} ownerDid={pathway.ownerDid} />
+                            )}
 
                             <div className="flex gap-2 pt-1">
                                 <button
