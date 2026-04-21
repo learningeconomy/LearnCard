@@ -136,12 +136,13 @@ const AiInsights: React.FC = () => {
             {contractRequest}
             <ShareInsightsCard />
 
+            {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
+            <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+
             <MySkillProfile />
 
             <AiInsightsWidgets />
 
-            {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
             <AiInsightsPromptBoxContainer />
             {!flags?.hideAiPathways && (
                 <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
