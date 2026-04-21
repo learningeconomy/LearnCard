@@ -1002,35 +1002,39 @@ const handleGetTemplateRecipientsEvent = async (
         }
     );
 
-    const rawRecords = result.records.map((record: { get: (key: string) => unknown }) => {
-        const sent = inflateObject<Record<string, unknown>>(
-            ((record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {})
-        );
-        const receivedNode = record.get('received') as { properties?: Record<string, unknown> } | null;
-        const received = receivedNode?.properties
-            ? inflateObject<Record<string, unknown>>(receivedNode.properties)
-            : undefined;
+    const rawRecords = result.records
+        .map((record: { get: (key: string) => unknown }) => {
+            const sent = inflateObject<Record<string, unknown>>(
+                (record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {}
+            );
+            const receivedNode = record.get('received') as {
+                properties?: Record<string, unknown>;
+            } | null;
+            const received = receivedNode?.properties
+                ? inflateObject<Record<string, unknown>>(receivedNode.properties)
+                : undefined;
 
-        return {
-            recipientProfileId: record.get('recipientProfileId') as string | undefined,
-            recipientDisplayName: record.get('recipientDisplayName') as string | undefined,
-            sentDate: sent.date as string,
-            claimedDate: received?.date as string | undefined,
-            credentialUri: getCredentialUri(record.get('credentialId') as string, ctx.domain),
-            status: received ? ('claimed' as const) : ('pending' as const),
-        };
-    }).filter(
-        (
-            record
-        ): record is {
-            recipientProfileId: string;
-            recipientDisplayName: string | undefined;
-            sentDate: string;
-            claimedDate: string | undefined;
-            credentialUri: string;
-            status: 'pending' | 'claimed';
-        } => Boolean(record.recipientProfileId)
-    );
+            return {
+                recipientProfileId: record.get('recipientProfileId') as string | undefined,
+                recipientDisplayName: record.get('recipientDisplayName') as string | undefined,
+                sentDate: sent.date as string,
+                claimedDate: received?.date as string | undefined,
+                credentialUri: getCredentialUri(record.get('credentialId') as string, ctx.domain),
+                status: received ? ('claimed' as const) : ('pending' as const),
+            };
+        })
+        .filter(
+            (
+                record
+            ): record is {
+                recipientProfileId: string;
+                recipientDisplayName: string | undefined;
+                sentDate: string;
+                claimedDate: string | undefined;
+                credentialUri: string;
+                status: 'pending' | 'claimed';
+            } => Boolean(record.recipientProfileId)
+        );
 
     const directProfileRecords = await getBoostRecipients(boost, {
         limit: limit + 1,
