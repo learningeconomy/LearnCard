@@ -10,7 +10,13 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { IonIcon } from '@ionic/react';
+import { AnimatePresence } from 'framer-motion';
+import { cloudDownloadOutline } from 'ionicons/icons';
+
 import { pathwayStore } from '../../../stores/pathways';
+import { useLearnerDid } from '../hooks/useLearnerDid';
+import ImportCtdlModal from '../import/ImportCtdlModal';
 import type { Pathway } from '../types';
 
 import NodeEditor from './NodeEditor';
@@ -18,8 +24,10 @@ import { addNode as addNodeOp } from './buildOps';
 
 const BuildMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
+    const learnerDid = useLearnerDid();
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
 
     // Auto-select the first node when the pathway becomes available.
     useEffect(() => {
@@ -34,17 +42,50 @@ const BuildMode: React.FC = () => {
         });
     }, [activePathway]);
 
+    // Commit a freshly-imported pathway: persist, focus it, pick its
+    // first node, close the modal. The selected-id wiring via the
+    // effect above picks up automatically once `activePathway` changes.
+    const handleImported = (pathway: Pathway) => {
+        pathwayStore.set.upsertPathway(pathway);
+        pathwayStore.set.setActivePathway(pathway.id);
+        setImportOpen(false);
+    };
+
     if (!activePathway) {
         return (
-            <div className="max-w-md mx-auto px-4 py-12 font-poppins text-center">
-                <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                    No pathway to edit
-                </h2>
+            <>
+                <div className="max-w-md mx-auto px-4 py-12 font-poppins text-center">
+                    <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
+                        No pathway to edit
+                    </h2>
 
-                <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Start one from Today and it will show up here for editing.
-                </p>
-            </div>
+                    <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                        Start one from Today, or bring in an existing one from the
+                        Credential Engine Registry.
+                    </p>
+
+                    <button
+                        type="button"
+                        onClick={() => setImportOpen(true)}
+                        className="inline-flex items-center gap-2 py-3 px-4 rounded-[20px]
+                                   bg-grayscale-900 text-white font-medium text-sm
+                                   hover:opacity-90 transition-opacity"
+                    >
+                        <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                        Import from Credential Engine
+                    </button>
+                </div>
+
+                <AnimatePresence>
+                    {importOpen && (
+                        <ImportCtdlModal
+                            ownerDid={learnerDid}
+                            onImport={handleImported}
+                            onClose={() => setImportOpen(false)}
+                        />
+                    )}
+                </AnimatePresence>
+            </>
         );
     }
 
@@ -120,6 +161,21 @@ const BuildMode: React.FC = () => {
                     >
                         + Add node
                     </button>
+
+                    {/* Secondary action — import another pathway alongside
+                        the active one. Kept subtle so it doesn't compete
+                        with "Add node" visually. */}
+                    <button
+                        type="button"
+                        onClick={() => setImportOpen(true)}
+                        className="w-full inline-flex items-center justify-center gap-1.5
+                                   py-2.5 px-3 rounded-[20px] text-sm font-medium
+                                   text-grayscale-600 hover:text-grayscale-900 hover:bg-grayscale-10
+                                   transition-colors"
+                    >
+                        <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                        Import from Credential Engine
+                    </button>
                 </aside>
 
                 <main className="min-w-0">
@@ -141,6 +197,16 @@ const BuildMode: React.FC = () => {
                     )}
                 </main>
             </div>
+
+            <AnimatePresence>
+                {importOpen && (
+                    <ImportCtdlModal
+                        ownerDid={learnerDid}
+                        onImport={handleImported}
+                        onClose={() => setImportOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

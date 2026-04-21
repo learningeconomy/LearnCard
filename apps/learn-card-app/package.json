@@ -147,6 +147,7 @@
         "build": "npx tsx scripts/prepare-native-config.ts ${TENANT:-learncard} ${STAGE:+--stage $STAGE} && NODE_OPTIONS=\"--max-old-space-size=16608\" vite build",
         "docker-build": "npx tsx scripts/prepare-native-config.ts learncard --stage local && NODE_OPTIONS=\"--max-old-space-size=4608\" vite build -d",
         "test:unit": "vitest run",
+        "test:live-ctdl": "LEARNCARD_PATHWAYS_LIVE_TESTS=1 vitest run src/pages/pathways/import/fetchCtdlPathway.live.test.ts",
         "test-playwright": "playwright test",
         "test-ui": "playwright test --ui",
         "test": "echo \"Actually we don't want to run playwright tests in CI... Use test-playwright or test-ui if you're not CI\"",

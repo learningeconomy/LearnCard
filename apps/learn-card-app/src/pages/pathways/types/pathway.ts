@@ -228,6 +228,22 @@ export const PathwayNodeSchema = z.object({
     createdBy: z.enum(['learner', 'agent', 'template']),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
+
+    // -------------------------------------------------------------
+    // Provenance (optional) — populated when this node originated
+    // outside our system (CTDL import, OBv3 achievement, etc.).
+    //
+    // `sourceUri` is the canonical linked-data identifier of the
+    // foreign resource (e.g. a Credential Engine Registry URL).
+    // `sourceCtid` is the short CTID form (`ce-<uuid>`) when the
+    // source is CTDL.
+    //
+    // Keeping both lets us render provenance honestly ("from IMA's
+    // AI in Finance pathway") and lets a re-import *update* the
+    // node rather than duplicate it.
+    // -------------------------------------------------------------
+    sourceUri: z.string().optional(),
+    sourceCtid: z.string().optional(),
 });
 export type PathwayNode = z.infer<typeof PathwayNodeSchema>;
 
@@ -271,7 +287,12 @@ export type Visibility = z.infer<typeof VisibilitySchema>;
 export const PathwayStatusSchema = z.enum(['active', 'archived', 'sunset']);
 export type PathwayStatus = z.infer<typeof PathwayStatusSchema>;
 
-export const PathwaySourceSchema = z.enum(['template', 'generated', 'authored']);
+export const PathwaySourceSchema = z.enum([
+    'template',
+    'generated',
+    'authored',
+    'ctdl-imported',
+]);
 export type PathwaySource = z.infer<typeof PathwaySourceSchema>;
 
 export const PathwaySchema = z.object({
@@ -285,6 +306,28 @@ export const PathwaySchema = z.object({
     visibility: VisibilitySchema,
     source: PathwaySourceSchema,
     templateRef: z.string().optional(),
+
+    /**
+     * The node a learner is ultimately earning — the terminal of the
+     * pathway graph. Mirrors CTDL's `ceterms:hasDestinationComponent`:
+     * exactly one node per pathway (zero in degenerate cases).
+     *
+     * Stored on the pathway rather than as a boolean on the node so the
+     * uniqueness constraint is structural: "there is one destination"
+     * can't be violated by editing a second node's flag.
+     */
+    destinationNodeId: z.string().uuid().optional(),
+
+    // -------------------------------------------------------------
+    // Provenance (optional) — see `PathwayNodeSchema` for rationale.
+    // When a pathway was imported from the Credential Engine Registry,
+    // `sourceCtid` holds the CTID and `sourceUri` holds the canonical
+    // resource URL. Together they let us de-duplicate re-imports and
+    // surface "imported from IMA's AI in Finance pathway" provenance.
+    // -------------------------------------------------------------
+    sourceUri: z.string().optional(),
+    sourceCtid: z.string().optional(),
+
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
 });
