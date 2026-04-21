@@ -217,32 +217,132 @@ describe('computeSuggestedRoute', () => {
         expect(route.etaMinutes).toBe(90);
     });
 
-    it('picks a shortest path when multiple routes to the destination exist', () => {
+    // -----------------------------------------------------------------
+    // AND-prereq semantics. A destination with multiple prereqs can't
+    // be unlocked until every prereq is met, so the route must enumerate
+    // every uncompleted sibling — not just the one the focus is on.
+    // -----------------------------------------------------------------
+    it('includes every uncompleted sibling in a fan-in to the destination', () => {
         resetIds();
-        const a = makeNode({ title: 'A' });
-        const direct = makeNode({ title: 'direct' });
-        const longer1 = makeNode({ title: 'longer1' });
-        const longer2 = makeNode({ title: 'longer2' });
+        const s1 = makeNode({ title: 'sibling 1' });
+        const s2 = makeNode({ title: 'sibling 2 (focus)' });
+        const s3 = makeNode({ title: 'sibling 3' });
         const dest = makeNode({ title: 'dest' });
 
-        // Two paths from A to dest:
-        //   A → direct → dest                 (length 3)
-        //   A → longer1 → longer2 → dest      (length 4)
         const p = makePathway(
-            [a, direct, longer1, longer2, dest],
+            [s1, s2, s3, dest],
             [
-                edge(a.id, direct.id),
+                edge(s1.id, dest.id),
+                edge(s2.id, dest.id),
+                edge(s3.id, dest.id),
+            ],
+            dest.id,
+        );
+
+        const route = computeSuggestedRoute(p, s2.id)!;
+
+        // Focus first, then siblings in pathway.nodes order, then dest.
+        expect(route.nodeIds).toEqual([s2.id, s1.id, s3.id, dest.id]);
+        expect(route.remainingSteps).toBe(4);
+        // Every fan-in arrow (3 of them) on the ribbon — not just
+        // the focus→dest edge.
+        expect(route.edgeIds).toHaveLength(3);
+    });
+
+    it('elides completed siblings from nodeIds but keeps their edges in the ribbon', () => {
+        resetIds();
+        const s1Done = makeNode({
+            title: 's1 (done)',
+            progress: {
+                status: 'completed',
+                artifacts: [],
+                reviewsDue: 0,
+                streak: { current: 0, longest: 0 },
+                completedAt: NOW,
+            },
+        });
+        const s2 = makeNode({ title: 's2 (focus)' });
+        const s3 = makeNode({ title: 's3' });
+        const dest = makeNode({ title: 'dest' });
+
+        const p = makePathway(
+            [s1Done, s2, s3, dest],
+            [
+                edge(s1Done.id, dest.id),
+                edge(s2.id, dest.id),
+                edge(s3.id, dest.id),
+            ],
+            dest.id,
+        );
+
+        const route = computeSuggestedRoute(p, s2.id)!;
+
+        // s1 is completed → not a "step" anymore, elided from nodeIds.
+        expect(route.nodeIds).toEqual([s2.id, s3.id, dest.id]);
+        expect(route.remainingSteps).toBe(3);
+
+        // But its edge into the destination is part of the journey
+        // zone, so the ribbon shows all three fan-in arrows (the
+        // four-bucket styler will render the completed one as trail).
+        expect(route.edgeIds).toHaveLength(3);
+    });
+
+    it('keeps the focus at position 0 even when siblings come before it in pathway order', () => {
+        resetIds();
+        const s1 = makeNode({ title: 's1' });
+        const s2 = makeNode({ title: 's2' });
+        const focus = makeNode({ title: 'focus (declared last)' });
+        const dest = makeNode({ title: 'dest' });
+
+        const p = makePathway(
+            [s1, s2, focus, dest],
+            [
+                edge(s1.id, dest.id),
+                edge(s2.id, dest.id),
+                edge(focus.id, dest.id),
+            ],
+            dest.id,
+        );
+
+        const route = computeSuggestedRoute(p, focus.id)!;
+
+        expect(route.nodeIds[0]).toBe(focus.id);
+        expect(route.nodeIds[route.nodeIds.length - 1]).toBe(dest.id);
+    });
+
+    it('returns all three hops of a linear chain when siblings exist off the chain', () => {
+        resetIds();
+        const a = makeNode({ title: 'A (focus)' });
+        const b = makeNode({ title: 'B' });
+        const direct = makeNode({ title: 'direct' });
+        const dest = makeNode({ title: 'dest' });
+
+        // Two paths both feed dest:
+        //   A → B → dest
+        //   direct → dest
+        // From A, the route must include BOTH branches because dest
+        // can't open until both prereqs (B and direct) are met.
+        const p = makePathway(
+            [a, b, direct, dest],
+            [
+                edge(a.id, b.id),
+                edge(b.id, dest.id),
                 edge(direct.id, dest.id),
-                edge(a.id, longer1.id),
-                edge(longer1.id, longer2.id),
-                edge(longer2.id, dest.id),
             ],
             dest.id,
         );
 
         const route = computeSuggestedRoute(p, a.id)!;
 
-        expect(route.nodeIds).toEqual([a.id, direct.id, dest.id]);
+        expect(route.nodeIds).toContain(a.id);
+        expect(route.nodeIds).toContain(b.id);
+        expect(route.nodeIds).toContain(direct.id);
+        expect(route.nodeIds).toContain(dest.id);
+        expect(route.nodeIds).toHaveLength(4);
+        // `b` depends on `a`, so a must come before b in the order.
+        expect(route.nodeIds.indexOf(a.id)).toBeLessThan(route.nodeIds.indexOf(b.id));
+        // Destination always last.
+        expect(route.nodeIds[route.nodeIds.length - 1]).toBe(dest.id);
     });
 
     it('excludes completed nodes from the remaining count and ETA', () => {
@@ -267,8 +367,13 @@ describe('computeSuggestedRoute', () => {
 
         const route = computeSuggestedRoute(p, a.id)!;
 
+        // a is completed but is the focus → included in nodeIds as
+        // the anchor; b and c uncompleted → included too. Focus at
+        // position 0 per the pin contract.
+        expect(route.nodeIds).toEqual([a.id, b.id, c.id]);
+
+        // But only uncompleted nodes count toward remaining work.
         expect(route.remainingSteps).toBe(2);
-        // a is done; b + c = 60 min.
         expect(route.etaMinutes).toBe(60);
     });
 

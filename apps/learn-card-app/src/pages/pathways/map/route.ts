@@ -129,29 +129,45 @@ export const formatEta = (minutes: number): string => {
 
 export interface SuggestedRoute {
     /**
-     * Ordered node ids from focus → destination, inclusive on both
-     * ends. Always length ≥ 1 (a route of just [destination] means
-     * you're there).
+     * Ordered list of nodes that still need the learner's attention
+     * to unlock the destination, starting with the focus (position 0)
+     * and ending with the destination. Siblings of the focus that
+     * are *also* prerequisites of the destination are included —
+     * the route reflects "work remaining," not just "a shortest
+     * path."
+     *
+     * For fan-in patterns (many siblings → one target), every
+     * uncompleted sibling shows up because the target's AND-gate
+     * can't open until they all finish. Completed nodes are elided
+     * from this list so the "Step N of M" count in Navigate mode
+     * reflects work left, not history.
      */
     nodeIds: string[];
 
     /**
-     * Edge ids connecting consecutive pairs in `nodeIds`. Always
-     * length `nodeIds.length - 1` when the route is present.
+     * Edge ids that belong to the *journey zone* — the subgraph
+     * containing every ancestor of the destination (plus the
+     * destination itself). This is broader than "edges between
+     * consecutive nodeIds" so the route ribbon can highlight all
+     * fan-in arrows, including those from completed siblings that
+     * have already "crossed the finish line" into the target. The
+     * four-bucket edge styler in `MapMode` then distinguishes
+     * trail-vs-projected within this set via source completion.
      */
     edgeIds: string[];
 
     /**
-     * Sum of `nodeEffortMinutes` across every *uncompleted* node in
-     * `nodeIds` (including the focus if it isn't yet complete).
-     * Completed nodes don't add to the ETA since there's no
-     * remaining work there.
+     * Sum of `nodeEffortMinutes` across every uncompleted node the
+     * learner still has to do. Always excludes completed nodes even
+     * if they sneak into `nodeIds` (the focus can be completed in
+     * edge cases where the learner manually re-focuses a done node).
      */
     etaMinutes: number;
 
     /**
-     * Count of nodes on the route that still need completion.
-     * Useful for "3 steps to go" micro-copy.
+     * Count of uncompleted nodes on the route. Used for "3 steps to
+     * go" micro-copy and the Navigate mode "Step N of M" position
+     * indicator (where M = `nodeIds.length`).
      */
     remainingSteps: number;
 
@@ -162,16 +178,47 @@ export interface SuggestedRoute {
 /**
  * Compute the suggested route from `focusId` → destination.
  *
- * Returns `null` when:
- *   - The pathway has no `destinationNodeId`.
- *   - The focus node doesn't exist (defensive).
- *   - The destination is unreachable from the focus (focus is off the
- *     subtree that leads to the destination — rare but possible after
- *     a pathway edit).
+ * ## Semantics: work remaining, not shortest path
  *
- * Algorithm: breadth-first search over the `dependents` adjacency
- * (the direction that "points toward the goal"), tracking the
- * previous hop per visited node so we can reconstruct the path. O(V + E).
+ * A naive BFS shortest-path picks `[focus, destination]` when the
+ * focus is one of N siblings all feeding into the destination. But
+ * the destination's termination is an AND-gate: every uncompleted
+ * sibling must finish before the destination unlocks. From the
+ * learner's perspective the *real* route is "finish all the siblings
+ * you haven't done, then arrive at the destination."
+ *
+ * So: we compute the **journey zone** (all ancestors of the
+ * destination that reach it via forward edges), then the **work set**
+ * = uncompleted nodes in that zone, anchored by the focus and
+ * destination. The work set is topologically sorted so siblings
+ * without inter-dependencies come out in a predictable order, with
+ * the focus pinned to position 0 so the learner's "you are here"
+ * pin doesn't jump.
+ *
+ * ## What this means downstream
+ *
+ *   - **Edge ribbon** — every fan-in arrow into the destination
+ *     highlights as "on route," not just the one from the focus.
+ *     The visual picture matches the AND-gate semantics.
+ *   - **Step N of M** — Navigate mode shows the true number of
+ *     remaining steps (e.g., "Step 1 of 7" when you're on the first
+ *     of 6 badges + certificate).
+ *   - **ETA** — sums effort across all remaining work, not just a
+ *     single chain.
+ *
+ * ## Returns
+ *
+ * `null` when:
+ *   - The pathway has no `destinationNodeId`.
+ *   - The focus doesn't exist (defensive).
+ *   - The focus can't reach the destination — it's off the subtree
+ *     that feeds in. Rare but possible post-edit; the Map falls back
+ *     to its pre-route rendering.
+ *
+ * ## Complexity
+ *
+ * O(V + E): one reverse BFS from the destination, plus a Kahn
+ * topo-sort over the work set.
  */
 export const computeSuggestedRoute = (
     pathway: Pathway,
@@ -199,56 +246,132 @@ export const computeSuggestedRoute = (
         };
     }
 
-    const { dependents } = buildAdjacency(pathway);
+    const { prereqs, dependents } = buildAdjacency(pathway);
 
-    // `prev[n]` records the hop we came from to reach n. `null`
-    // marks the BFS origin (the focus).
-    const prev = new Map<string, string | null>();
-    prev.set(focusId, null);
+    // -------------------------------------------------------------
+    // 1. Reverse BFS from destination to find the journey zone:
+    //    every node that can reach the destination by following
+    //    forward edges. This is the "ancestor closure" of dest.
+    // -------------------------------------------------------------
+    const ancestors = new Set<string>();
+    const revQueue: string[] = [destinationId];
 
-    const queue: string[] = [focusId];
-    let found = false;
+    while (revQueue.length > 0) {
+        const at = revQueue.shift()!;
 
-    while (queue.length > 0) {
-        const current = queue.shift()!;
-
-        if (current === destinationId) {
-            found = true;
-            break;
-        }
-
-        for (const next of dependents.get(current) ?? []) {
-            if (prev.has(next)) continue;
-
-            prev.set(next, current);
-            queue.push(next);
+        for (const p of prereqs.get(at) ?? []) {
+            if (ancestors.has(p)) continue;
+            ancestors.add(p);
+            revQueue.push(p);
         }
     }
 
-    if (!found) return null;
+    // Reachability check: if focus isn't an ancestor of dest, the
+    // destination is unreachable from here — tell the caller to fall
+    // back rather than render a misleading route.
+    if (!ancestors.has(focusId)) return null;
 
-    // Reconstruct the path focus → ... → destination.
+    // journeyZone = ancestors ∪ {destination}. Used for edge
+    // highlighting (keep completed-→-uncompleted arrows visible).
+    const journeyZone = new Set<string>(ancestors);
+    journeyZone.add(destinationId);
+
+    // -------------------------------------------------------------
+    // 2. Work set = uncompleted nodes in the journey zone, plus the
+    //    focus (even if completed, it anchors "you are here") and
+    //    the destination (it's the end of the line by definition).
+    //    Completed non-focus nodes are elided so "Step N of M"
+    //    reflects remaining effort rather than history.
+    // -------------------------------------------------------------
+    const workSet = new Set<string>();
+    workSet.add(focusId);
+    workSet.add(destinationId);
+
+    for (const a of ancestors) {
+        if (a === focusId) continue;
+        const status = nodeById.get(a)?.progress.status;
+        if (status !== 'completed') workSet.add(a);
+    }
+
+    // -------------------------------------------------------------
+    // 3. Topological sort of the work set using Kahn's algorithm,
+    //    with a stable tiebreaker (pathway.nodes insertion order)
+    //    so the learner sees the same sibling ordering every render.
+    //    Focus is pulled to the front of the initial ready queue so
+    //    position 0 always = "where you are."
+    // -------------------------------------------------------------
+    const nodeOrder = new Map<string, number>();
+    pathway.nodes.forEach((n, i) => nodeOrder.set(n.id, i));
+
+    // In-degree counts only prereqs that are also in the work set;
+    // prereqs outside the set are conceptually "already resolved"
+    // (they're completed and thus elided) so they don't block.
+    const inDegree = new Map<string, number>();
+    for (const id of workSet) {
+        let count = 0;
+        for (const p of prereqs.get(id) ?? []) {
+            if (workSet.has(p)) count += 1;
+        }
+        inDegree.set(id, count);
+    }
+
+    const compareByNodeOrder = (a: string, b: string): number =>
+        (nodeOrder.get(a) ?? 0) - (nodeOrder.get(b) ?? 0);
+
+    const ready: string[] = [...workSet].filter(id => inDegree.get(id) === 0);
+    ready.sort(compareByNodeOrder);
+
+    // Pin focus to position 0 of the ready queue if it's ready.
+    const focusReadyIdx = ready.indexOf(focusId);
+    if (focusReadyIdx > 0) {
+        ready.splice(focusReadyIdx, 1);
+        ready.unshift(focusId);
+    }
+
     const nodeIds: string[] = [];
-    let at: string | null = destinationId;
 
-    while (at !== null) {
-        nodeIds.unshift(at);
-        at = prev.get(at) ?? null;
+    while (ready.length > 0) {
+        const at = ready.shift()!;
+        nodeIds.push(at);
+
+        for (const dep of dependents.get(at) ?? []) {
+            if (!workSet.has(dep)) continue;
+
+            const next = (inDegree.get(dep) ?? 0) - 1;
+            inDegree.set(dep, next);
+
+            if (next === 0) {
+                // Insert into ready while keeping pathway-order stable.
+                const insertIdx = ready.findIndex(
+                    id => compareByNodeOrder(dep, id) < 0,
+                );
+                if (insertIdx === -1) ready.push(dep);
+                else ready.splice(insertIdx, 0, dep);
+            }
+        }
     }
 
-    // Find the specific edge ids connecting consecutive pairs.
-    // Multi-edges between the same two nodes are forbidden by the
-    // Pathway schema, so `find` is unambiguous.
+    // -------------------------------------------------------------
+    // 4. Edge set for the ribbon: every pathway edge whose both
+    //    endpoints are in the journey zone. This includes edges
+    //    from completed ancestors into uncompleted dependents, so
+    //    the route ribbon stays visually continuous even when part
+    //    of the fan-in is already done (rendered as "trail"). The
+    //    four-bucket styler in MapMode picks the exact look.
+    // -------------------------------------------------------------
     const edgeIds: string[] = [];
-    for (let i = 0; i < nodeIds.length - 1; i++) {
-        const fromId = nodeIds[i]!;
-        const toId = nodeIds[i + 1]!;
-        const edge = pathway.edges.find(e => e.from === fromId && e.to === toId);
-        if (edge) edgeIds.push(edge.id);
+    for (const e of pathway.edges) {
+        if (journeyZone.has(e.from) && journeyZone.has(e.to)) {
+            edgeIds.push(e.id);
+        }
     }
 
-    // Tally remaining ETA + remaining step count, skipping nodes the
-    // learner has already completed along this route.
+    // -------------------------------------------------------------
+    // 5. ETA + remaining step count. Focus may be completed in the
+    //    rare case a learner re-focuses a done node; guard here so
+    //    "Step 1 of N" never says you have zero work remaining on
+    //    a done node.
+    // -------------------------------------------------------------
     let etaMinutes = 0;
     let remainingSteps = 0;
     for (const nid of nodeIds) {
