@@ -1,18 +1,27 @@
 /**
  * WhatSection — "what happens here" (policy).
  *
- * M1 wraps the existing `PolicyEditor` verbatim so the edit surface
- * stays identical; the section adds:
+ * Structure when expanded:
  *
- *   - A jargon-free section title ("What happens here") instead of
- *     the raw word "Policy".
- *   - A one-line summary built from `summarizePolicy` so the author
- *     can see the current state when the section is collapsed.
+ *   1. TemplatePicker — 7 starter shapes. Tapping one sets BOTH
+ *      policy + termination atomically. This is the primary entry
+ *      point for 90% of nodes.
  *
- * The composite invariant (policy ⇔ termination pairing) lives in
- * the parent `InspectorPane` — this section is intentionally dumb so
- * M2's registry-driven rewrite can replace just the inner editor
- * without touching the section shell.
+ *   2. PolicyEditor — variant-specific fields for the current
+ *      policy kind. Authors tweak the specifics here after (or
+ *      without) picking a template.
+ *
+ * The composite invariant (policy ⇔ termination pairing) lives here
+ * — both the template picker AND the policy editor can disturb it,
+ * so it has to be owned at this one spot:
+ *
+ *   - Picking a template calls `onPick`, which writes policy +
+ *     termination in one transaction.
+ *
+ *   - Editing a composite policy's `pathwayRef` flips the paired
+ *     `pathway-completed` termination's ref too (same atomic write).
+ *     Switching AWAY from composite resets the termination to the
+ *     template default so we don't leak an orphan `pathway-completed`.
  */
 
 import React, { useMemo } from 'react';
@@ -20,11 +29,12 @@ import React, { useMemo } from 'react';
 import { flashOutline } from 'ionicons/icons';
 
 import { pathwayStore } from '../../../../../stores/pathways';
-import type { Pathway, PathwayNode } from '../../../types';
+import type { Pathway, PathwayNode, Policy } from '../../../types';
 import PolicyEditor from '../../PolicyEditor';
-import { setPolicy, setTermination } from '../../buildOps';
-import { DEFAULT_TERMINATION } from '../../buildOps';
+import { DEFAULT_TERMINATION, setPolicy, setTermination } from '../../buildOps';
 import { summarizePolicy } from '../../summarize/summarizePolicy';
+import TemplatePicker from '../../templates/TemplatePicker';
+import type { NodeTemplate } from '../../templates/registry';
 import Section from '../Section';
 
 interface WhatSectionProps {
@@ -34,28 +44,34 @@ interface WhatSectionProps {
 }
 
 const WhatSection: React.FC<WhatSectionProps> = ({ pathway, node, onChangePathway }) => {
-    // The composite policy picker needs the full pathway map. We
-    // subscribe here rather than threading it through so the section
-    // surface stays narrow — InspectorPane doesn't need to know that
-    // WhatSection secretly depends on the pathway store.
+    // Composite picker needs the full pathway map. Subscribing here
+    // keeps WhatSection's prop surface narrow — InspectorPane doesn't
+    // need to know this section secretly depends on the store.
     const allPathways = pathwayStore.use.pathways();
 
-    // Build a title map for the summarizer. Memoised by identity so
-    // every keystroke doesn't reallocate a big record.
     const pathwayTitleById = useMemo(
-        () =>
-            Object.fromEntries(
-                Object.values(allPathways).map(p => [p.id, p.title]),
-            ),
+        () => Object.fromEntries(Object.values(allPathways).map(p => [p.id, p.title])),
         [allPathways],
     );
 
-    const handlePolicyChange = (policy: PathwayNode['stage']['policy']) => {
-        // Composite invariant (carried over verbatim from the
-        // previous NodeEditor): a `composite` policy is always
-        // paired with a `pathway-completed` termination pointing at
-        // the same pathway ref. Flip both atomically so the learner
-        // experience stays coherent.
+    /**
+     * Apply a template — set policy + termination in one store
+     * transaction so history / offline-queue get a single commit.
+     */
+    const handlePickTemplate = (template: NodeTemplate) => {
+        let next = setPolicy(pathway, node.id, template.policy());
+        next = setTermination(next, node.id, template.termination());
+        onChangePathway(next);
+    };
+
+    /**
+     * Edit the policy directly (variant-specific fields). Carries
+     * the composite ⇔ pathway-completed invariant: when editing a
+     * composite policy to point at a pathway, flip the paired
+     * termination to the same ref. When switching AWAY from
+     * composite, reset the termination to a sane default.
+     */
+    const handlePolicyChange = (policy: Policy) => {
         let next = setPolicy(pathway, node.id, policy);
 
         const wasComposite = node.stage.policy.kind === 'composite';
@@ -86,12 +102,24 @@ const WhatSection: React.FC<WhatSectionProps> = ({ pathway, node, onChangePathwa
             iconTone="emerald"
             defaultOpen
         >
-            <PolicyEditor
-                value={node.stage.policy}
-                onChange={handlePolicyChange}
-                parentPathwayId={pathway.id}
-                allPathways={allPathways}
-            />
+            <div className="space-y-5">
+                <TemplatePicker
+                    policy={node.stage.policy}
+                    termination={node.stage.termination}
+                    onPick={handlePickTemplate}
+                />
+
+                <div className="pt-4 border-t border-grayscale-200">
+                    <p className="text-xs font-medium text-grayscale-700 mb-2">Details</p>
+
+                    <PolicyEditor
+                        value={node.stage.policy}
+                        onChange={handlePolicyChange}
+                        parentPathwayId={pathway.id}
+                        allPathways={allPathways}
+                    />
+                </div>
+            </div>
         </Section>
     );
 };

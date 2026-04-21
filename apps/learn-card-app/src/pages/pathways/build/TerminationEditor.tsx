@@ -1,370 +1,96 @@
 /**
- * TerminationEditor — discriminated-union editor for the 5 Termination
- * variants (including recursive `composite`).
+ * TerminationEditor — registry-driven shell.
  *
- * Controlled component: never mutates state; only calls `onChange` with
- * the full new Termination value.
+ * Renders:
+ *   1. A kind dropdown (author-selectable kinds only).
+ *   2. The variant-specific Editor from `TERMINATION_KINDS[kind]`.
+ *
+ * Unlike `PolicyEditor` (which drops its kind dropdown in favour of
+ * the TemplatePicker), this one KEEPS its dropdown because:
+ *
+ *   a) `DoneSection` lets the author tweak termination independently
+ *      of policy — someone might want to switch from "self-attest"
+ *      to "endorsement" without re-picking a whole template.
+ *
+ *   b) `composite` sub-goals need an inline kind picker per-row —
+ *      each sub-goal can be any kind except composite-inside-composite.
+ *
+ * Nested composite sub-goals pass `nested` so the editor hides the
+ * outer "Done when" label and filters out the composite kind from
+ * the dropdown (keeps depth bounded + reading order simple).
  */
 
 import React from 'react';
 
-import type { ArtifactType, Termination } from '../types';
+import type { Termination } from '../types';
 
-const ARTIFACT_OPTIONS: readonly ArtifactType[] = [
-    'text',
-    'image',
-    'audio',
-    'video',
-    'pdf',
-    'link',
-    'code',
-    'other',
-];
-
-const TERMINATION_KIND_LABELS: Record<Termination['kind'], string> = {
-    'artifact-count': 'Attach N artifacts',
-    endorsement: 'Get endorsements',
-    'self-attest': 'Self-attest',
-    'assessment-score': 'Reach a score',
-    composite: 'All / any of sub-goals',
-    // Pathway-completed terminations are owned by the composite
-    // policy invariant (see NodeEditor). Authors can't construct them
-    // by hand, but the label is still required by the types and is
-    // shown when an existing composite node is inspected in a
-    // read-only surface.
-    'pathway-completed': 'Completion of a nested pathway',
-};
-
-// Kinds the author can actually pick from the dropdown. Pathway-
-// completed is excluded: it's always paired with a composite policy
-// and flipped atomically by the composite invariant, so letting the
-// user set it manually would only create orphan terminations.
-const SELECTABLE_KINDS: ReadonlyArray<Termination['kind']> = [
-    'artifact-count',
-    'endorsement',
-    'self-attest',
-    'assessment-score',
-    'composite',
-];
-
-const defaultForKind = (kind: Termination['kind']): Termination => {
-    switch (kind) {
-        case 'artifact-count':
-            return { kind: 'artifact-count', count: 1, artifactType: 'text' };
-        case 'endorsement':
-            return { kind: 'endorsement', minEndorsers: 1 };
-        case 'self-attest':
-            return { kind: 'self-attest', prompt: 'I did the work.' };
-        case 'assessment-score':
-            return { kind: 'assessment-score', min: 70 };
-        case 'composite':
-            return {
-                kind: 'composite',
-                require: 'all',
-                of: [{ kind: 'self-attest', prompt: 'Sub-goal 1' }],
-            };
-        case 'pathway-completed':
-            // Unreachable from the UI (filtered out of the dropdown)
-            // but the discriminant requires us to handle it. Return a
-            // placeholder ref that Zod will reject if somehow emitted.
-            return { kind: 'pathway-completed', pathwayRef: '' };
-    }
-};
-
-const label = 'text-xs font-medium text-grayscale-700';
-const input =
-    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
-
-// -----------------------------------------------------------------
-// Variant fields
-// -----------------------------------------------------------------
-
-const ArtifactCountFields: React.FC<{
-    value: Extract<Termination, { kind: 'artifact-count' }>;
-    onChange: (next: Termination) => void;
-}> = ({ value, onChange }) => (
-    <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-            <label className={label} htmlFor="term-count">
-                Count
-            </label>
-
-            <input
-                id="term-count"
-                type="number"
-                min={1}
-                className={input}
-                value={value.count}
-                onChange={e =>
-                    onChange({ ...value, count: Math.max(1, Number(e.target.value) || 1) })
-                }
-            />
-        </div>
-
-        <div className="space-y-1.5">
-            <label className={label} htmlFor="term-type">
-                Artifact type
-            </label>
-
-            <select
-                id="term-type"
-                className={input}
-                value={value.artifactType}
-                onChange={e =>
-                    onChange({ ...value, artifactType: e.target.value as ArtifactType })
-                }
-            >
-                {ARTIFACT_OPTIONS.map(t => (
-                    <option key={t} value={t}>
-                        {t}
-                    </option>
-                ))}
-            </select>
-        </div>
-    </div>
-);
-
-const EndorsementFields: React.FC<{
-    value: Extract<Termination, { kind: 'endorsement' }>;
-    onChange: (next: Termination) => void;
-}> = ({ value, onChange }) => (
-    <div className="space-y-3">
-        <div className="space-y-1.5">
-            <label className={label} htmlFor="term-min-endorsers">
-                Minimum endorsers
-            </label>
-
-            <input
-                id="term-min-endorsers"
-                type="number"
-                min={1}
-                className={input}
-                value={value.minEndorsers}
-                onChange={e =>
-                    onChange({
-                        ...value,
-                        minEndorsers: Math.max(1, Number(e.target.value) || 1),
-                    })
-                }
-            />
-        </div>
-
-        <div className="space-y-1.5">
-            <label className={label} htmlFor="term-trusted-issuers">
-                Trusted issuer DIDs (optional, comma-separated)
-            </label>
-
-            <input
-                id="term-trusted-issuers"
-                type="text"
-                className={input}
-                placeholder="did:web:school.edu, did:key:…"
-                value={value.trustedIssuers?.join(', ') ?? ''}
-                onChange={e => {
-                    const list = e.target.value
-                        .split(',')
-                        .map(s => s.trim())
-                        .filter(Boolean);
-
-                    onChange({
-                        ...value,
-                        trustedIssuers: list.length > 0 ? list : undefined,
-                    });
-                }}
-            />
-        </div>
-    </div>
-);
-
-const SelfAttestFields: React.FC<{
-    value: Extract<Termination, { kind: 'self-attest' }>;
-    onChange: (next: Termination) => void;
-}> = ({ value, onChange }) => (
-    <div className="space-y-1.5">
-        <label className={label} htmlFor="term-prompt">
-            Prompt
-        </label>
-
-        <textarea
-            id="term-prompt"
-            rows={2}
-            className={`${input} resize-none`}
-            placeholder="What is the learner attesting to?"
-            value={value.prompt}
-            onChange={e => onChange({ ...value, prompt: e.target.value })}
-        />
-    </div>
-);
-
-const AssessmentScoreFields: React.FC<{
-    value: Extract<Termination, { kind: 'assessment-score' }>;
-    onChange: (next: Termination) => void;
-}> = ({ value, onChange }) => (
-    <div className="space-y-1.5">
-        <label className={label} htmlFor="term-min-score">
-            Minimum score
-        </label>
-
-        <input
-            id="term-min-score"
-            type="number"
-            className={input}
-            value={value.min}
-            onChange={e => onChange({ ...value, min: Number(e.target.value) || 0 })}
-        />
-    </div>
-);
-
-const CompositeFields: React.FC<{
-    value: Extract<Termination, { kind: 'composite' }>;
-    onChange: (next: Termination) => void;
-}> = ({ value, onChange }) => {
-    const updateSub = (i: number, next: Termination) => {
-        onChange({
-            ...value,
-            of: value.of.map((t, idx) => (idx === i ? next : t)),
-        });
-    };
-
-    const removeSub = (i: number) => {
-        if (value.of.length === 1) return;
-        onChange({ ...value, of: value.of.filter((_, idx) => idx !== i) });
-    };
-
-    const addSub = () =>
-        onChange({
-            ...value,
-            of: [...value.of, { kind: 'self-attest', prompt: `Sub-goal ${value.of.length + 1}` }],
-        });
-
-    return (
-        <div className="space-y-3">
-            <div className="space-y-1.5">
-                <label className={label} htmlFor="term-require">
-                    Require
-                </label>
-
-                <select
-                    id="term-require"
-                    className={input}
-                    value={value.require}
-                    onChange={e =>
-                        onChange({ ...value, require: e.target.value as 'all' | 'any' })
-                    }
-                >
-                    <option value="all">All of the sub-goals</option>
-                    <option value="any">Any one of the sub-goals</option>
-                </select>
-            </div>
-
-            <div className="space-y-2">
-                <p className={label}>Sub-goals</p>
-
-                <ul className="space-y-3 pl-3 border-l-2 border-grayscale-200">
-                    {value.of.map((sub, i) => (
-                        <li key={i} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-grayscale-500">
-                                    Sub-goal {i + 1}
-                                </span>
-
-                                <button
-                                    type="button"
-                                    onClick={() => removeSub(i)}
-                                    disabled={value.of.length === 1}
-                                    className="text-xs text-grayscale-500 hover:text-red-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                >
-                                    Remove
-                                </button>
-                            </div>
-
-                            <TerminationEditor
-                                value={sub}
-                                onChange={next => updateSub(i, next)}
-                                nested
-                            />
-                        </li>
-                    ))}
-                </ul>
-
-                <button
-                    type="button"
-                    onClick={addSub}
-                    className="text-xs font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
-                >
-                    + Add sub-goal
-                </button>
-            </div>
-        </div>
-    );
-};
-
-// -----------------------------------------------------------------
-// Editor
-// -----------------------------------------------------------------
+import { INPUT, LABEL } from './shared/inputs';
+import { SELECTABLE_TERMINATION_KIND_LIST, TERMINATION_KINDS } from './termination/registry';
+import type { TerminationEditorContext } from './termination/types';
 
 interface TerminationEditorProps {
     value: Termination;
     onChange: (next: Termination) => void;
-    /** When true, hides the outer "Termination" label so composite nesting reads cleanly. */
+    /** True when rendered as a sub-goal inside a composite parent. */
     nested?: boolean;
 }
 
-const TerminationEditor: React.FC<TerminationEditorProps> = ({ value, onChange, nested }) => {
+const TerminationEditor: React.FC<TerminationEditorProps> = ({
+    value,
+    onChange,
+    nested = false,
+}) => {
     const handleKindChange = (nextKind: Termination['kind']) => {
         if (nextKind === value.kind) return;
-        onChange(defaultForKind(nextKind));
+        onChange(TERMINATION_KINDS[nextKind].default());
     };
 
-    // Composite sub-goals can't themselves be composite (keep depth finite
-    // and the UI readable). Filter it out of the options when nested.
-    // We start from SELECTABLE_KINDS (which already excludes the
-    // composite-owned `pathway-completed` kind) rather than the full
-    // label map, so authors only see the kinds they can pick.
-    const kinds = SELECTABLE_KINDS.filter(k => !(nested && k === 'composite'));
+    // Composite sub-goals can't themselves be composite (keeps depth
+    // finite + the UI readable). Filter the composite kind out of the
+    // dropdown when nested.
+    const kinds = SELECTABLE_TERMINATION_KIND_LIST.filter(
+        spec => !(nested && spec.kind === 'composite'),
+    );
+
+    const spec = TERMINATION_KINDS[value.kind];
+
+    // Narrowing cast — the registry's `satisfies` clause guarantees
+    // the Editor accepts `value` with the current kind, but TS's
+    // distributive inference can't prove that from the widened union.
+    const Editor = spec.Editor as React.FC<{
+        value: typeof value;
+        onChange: (next: Termination) => void;
+        context: TerminationEditorContext;
+    }>;
 
     return (
         <div className="space-y-3">
             <div className="space-y-1.5">
                 {!nested && (
-                    <label className={label} htmlFor="term-kind">
-                        Termination
+                    <label className={LABEL} htmlFor="term-kind">
+                        Finish this step when…
                     </label>
                 )}
 
                 <select
                     id={nested ? undefined : 'term-kind'}
-                    className={input}
+                    className={INPUT}
                     value={value.kind}
                     onChange={e => handleKindChange(e.target.value as Termination['kind'])}
                 >
                     {kinds.map(k => (
-                        <option key={k} value={k}>
-                            {TERMINATION_KIND_LABELS[k]}
+                        <option key={k.kind} value={k.kind}>
+                            {k.label}
                         </option>
                     ))}
                 </select>
             </div>
 
-            {value.kind === 'artifact-count' && (
-                <ArtifactCountFields value={value} onChange={onChange} />
-            )}
-
-            {value.kind === 'endorsement' && (
-                <EndorsementFields value={value} onChange={onChange} />
-            )}
-
-            {value.kind === 'self-attest' && (
-                <SelfAttestFields value={value} onChange={onChange} />
-            )}
-
-            {value.kind === 'assessment-score' && (
-                <AssessmentScoreFields value={value} onChange={onChange} />
-            )}
-
-            {value.kind === 'composite' && (
-                <CompositeFields value={value} onChange={onChange} />
-            )}
+            <Editor
+                value={value}
+                onChange={onChange}
+                context={{ nested }}
+            />
         </div>
     );
 };
