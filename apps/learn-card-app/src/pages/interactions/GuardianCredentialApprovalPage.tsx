@@ -13,7 +13,7 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig, getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -56,11 +56,6 @@ const toErrorMessage = (err: unknown): string =>
 const getNetworkUrl = (): string => {
     const config = getResolvedTenantConfig();
     return config.apis?.brainService ?? 'https://network.learncard.com/trpc';
-};
-
-const getTenantHeaders = (): Record<string, string> | undefined => {
-    const tenantId = getResolvedTenantConfig().tenantId;
-    return tenantId ? { 'X-Tenant-Id': tenantId } : undefined;
 };
 
 const GuardianCredentialApprovalPage: React.FC = () => {
