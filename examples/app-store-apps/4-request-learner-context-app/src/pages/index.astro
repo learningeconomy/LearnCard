@@ -347,11 +347,40 @@ import '../styles/global.css';
                         <div id="results" class="hidden space-y-6">
                             <h3 class="text-xl font-bold text-gray-800">Results</h3>
 
-                            <div class="result-card rounded-2xl p-6">
+                            <div id="prompt-section" class="result-card rounded-2xl p-6">
                                 <pre
                                     id="prompt-display"
                                     class="prompt-display text-green-300 text-sm whitespace-pre-wrap">
                                 </pre>
+                            </div>
+
+                            <div id="structured-section" class="hidden space-y-4">
+                                <div
+                                    id="personal-data-section"
+                                    class="hidden glass-panel rounded-2xl p-6 space-y-3"
+                                >
+                                    <h4 class="text-lg font-semibold text-gray-800">
+                                        Personal Data
+                                    </h4>
+                                    <div id="personal-data-display" class="space-y-2"></div>
+                                </div>
+
+                                <div
+                                    id="credentials-section"
+                                    class="hidden glass-panel rounded-2xl p-6 space-y-3"
+                                >
+                                    <h4 class="text-lg font-semibold text-gray-800">
+                                        Credentials
+                                        <span
+                                            id="credentials-count"
+                                            class="text-sm font-normal text-gray-500"></span>
+                                    </h4>
+                                    <div
+                                        id="credentials-display"
+                                        class="space-y-3 max-h-[400px] overflow-y-auto"
+                                    >
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
@@ -693,11 +722,103 @@ import '../styles/global.css';
                     }
                 }
 
+                function renderStructuredData(
+                    raw:
+                        | { credentials?: unknown[]; personalData?: Record<string, unknown> }
+                        | undefined
+                ) {
+                    const structuredSection = document.getElementById('structured-section');
+                    const personalDataSection = document.getElementById('personal-data-section');
+                    const personalDataDisplay = document.getElementById('personal-data-display');
+                    const credentialsSection = document.getElementById('credentials-section');
+                    const credentialsDisplay = document.getElementById('credentials-display');
+                    const credentialsCount = document.getElementById('credentials-count');
+
+                    if (
+                        !structuredSection ||
+                        !personalDataSection ||
+                        !personalDataDisplay ||
+                        !credentialsSection ||
+                        !credentialsDisplay ||
+                        !credentialsCount
+                    ) {
+                        return;
+                    }
+
+                    structuredSection.classList.remove('hidden');
+
+                    if (raw?.personalData && Object.keys(raw.personalData).length > 0) {
+                        personalDataSection.classList.remove('hidden');
+                        personalDataDisplay.innerHTML = Object.entries(raw.personalData)
+                            .map(
+                                ([key, value]) => `
+                                <div class="flex items-baseline gap-2 py-1 border-b border-gray-100 last:border-0">
+                                    <span class="text-sm font-medium text-gray-500 min-w-[120px]">${key}</span>
+                                    <span class="text-sm text-gray-800 break-all">${
+                                        typeof value === 'object'
+                                            ? JSON.stringify(value)
+                                            : String(value)
+                                    }</span>
+                                </div>
+                            `
+                            )
+                            .join('');
+                    } else {
+                        personalDataSection.classList.add('hidden');
+                    }
+
+                    if (raw?.credentials && raw.credentials.length > 0) {
+                        credentialsSection.classList.remove('hidden');
+                        credentialsCount.textContent = `(${raw.credentials.length})`;
+                        credentialsDisplay.innerHTML = raw.credentials
+                            .map((cred: any, i: number) => {
+                                const name =
+                                    cred?.name ||
+                                    cred?.credentialSubject?.achievement?.name ||
+                                    `Credential ${i + 1}`;
+                                const type =
+                                    (Array.isArray(cred?.type) ? cred.type : [cred?.type])
+                                        .filter((t: string) => t !== 'VerifiableCredential')
+                                        .join(', ') || 'VerifiableCredential';
+                                const issuer =
+                                    typeof cred?.issuer === 'string'
+                                        ? cred.issuer
+                                        : cred?.issuer?.name || cred?.issuer?.id || 'Unknown';
+
+                                return `
+                                    <details class="group rounded-xl border-2 border-gray-200 overflow-hidden">
+                                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">${
+                                                i + 1
+                                            }</div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-semibold text-gray-800 truncate">${name}</div>
+                                                <div class="text-xs text-gray-500">${type} · ${issuer}</div>
+                                            </div>
+                                            <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </summary>
+                                        <div class="p-4 bg-gray-900 border-t border-gray-200">
+                                            <pre class="text-xs text-green-300 whitespace-pre-wrap break-all">${JSON.stringify(
+                                                cred,
+                                                null,
+                                                2
+                                            )}</pre>
+                                        </div>
+                                    </details>
+                                `;
+                            })
+                            .join('');
+                    } else {
+                        credentialsSection.classList.add('hidden');
+                    }
+                }
+
                 async function handleRequest() {
                     const credsToggle = document.getElementById('include-credentials') as HTMLInputElement | null;
                     const personalDataToggle = document.getElementById('include-personal-data') as HTMLInputElement | null;
                     const formatSelect = document.getElementById('format') as HTMLSelectElement | null;
                     const detailSelect = document.getElementById('detail-level') as HTMLSelectElement | null;
+                    const isStructured = formatSelect?.value === 'structured';
 
                     try {
                         const context = await learnCard.requestLearnerContext({
@@ -707,13 +828,30 @@ import '../styles/global.css';
                             detailLevel: (detailSelect?.value as 'compact' | 'expanded') ?? 'expanded',
                         });
 
+                        const promptSection = document.getElementById('prompt-section');
+                        const structuredSection = document.getElementById('structured-section');
                         const promptDisplay = document.getElementById('prompt-display');
                         const didDisplay = document.getElementById('did-display');
                         const nameDisplay = document.getElementById('name-display');
                         const results = document.getElementById('results');
                         const authStatus = document.getElementById('auth-status');
 
-                        if (promptDisplay) promptDisplay.textContent = context.prompt;
+                        if (isStructured) {
+                            if (promptSection) promptSection.classList.add('hidden');
+                            renderStructuredData(
+                                context.raw as
+                                    | {
+                                          credentials?: unknown[];
+                                          personalData?: Record<string, unknown>;
+                                      }
+                                    | undefined
+                            );
+                        } else {
+                            if (promptSection) promptSection.classList.remove('hidden');
+                            if (structuredSection) structuredSection.classList.add('hidden');
+                            if (promptDisplay) promptDisplay.textContent = context.prompt;
+                        }
+
                         if (didDisplay) didDisplay.textContent = context.did;
                         if (nameDisplay) nameDisplay.textContent = context.displayName || 'N/A';
                         if (results) results.classList.remove('hidden');
