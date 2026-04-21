@@ -158,12 +158,14 @@ describe('detectCollections', () => {
         expect(detectCollections(pathway)).toEqual([]);
     });
 
-    it('rejects a member that has its own incoming prerequisite', () => {
-        // Having 5 siblings but one has an upstream prereq — the rewrite
-        // would strand that upstream edge. Detector must exclude the
-        // gated member; with only 4 clean siblings left we still have a
-        // valid group. With 5 siblings and ONE gated, we drop below 5
-        // but the threshold is 4 → should still detect the remaining 4.
+    it('splits a fan-in into sub-groups when members have different incoming prereq sets', () => {
+        // Under the relaxed rule #3: members may have incoming
+        // prereqs, but only if *every* member in the group shares
+        // the exact same set. Mixed incoming sets → the sub-bucket
+        // each member falls into can only collapse if it hits
+        // MIN_COLLECTION_SIZE on its own. Here sib[0] has a unique
+        // upstream; the other 4 are pure fan-in. The 4 clean
+        // siblings still form a group; the gated one is left out.
         resetIds();
 
         const sibs = Array.from({ length: 5 }, () => makeNode());
@@ -171,8 +173,9 @@ describe('detectCollections', () => {
         const target = makeNode();
 
         const edges = [
-            // sib[0] is gated by `upstream`: must be excluded from group.
+            // sib[0] has a unique incoming prereq (set = {upstream}).
             edge(upstream.id, sibs[0].id),
+            // All 5 siblings feed the target.
             ...sibs.map(s => edge(s.id, target.id)),
         ];
 
@@ -181,9 +184,121 @@ describe('detectCollections', () => {
         const groups = detectCollections(pathway);
 
         expect(groups).toHaveLength(1);
-        // 5 - 1 gated = 4 remaining, still hitting MIN_COLLECTION_SIZE.
+        // 4 siblings with empty incoming-set form one group; sib[0]
+        // is alone in its incoming bucket and below threshold.
         expect(groups[0].memberIds).toHaveLength(4);
         expect(groups[0].memberIds).not.toContain(sibs[0].id);
+        expect(groups[0].sharedPrereqIds).toEqual([]);
+        expect(groups[0].incomingEdgeIds).toEqual([]);
+    });
+
+    it('groups members that share the SAME incoming prereq (the new behaviour)', () => {
+        // Option 2 in action: 5 siblings that all share a single
+        // upstream prereq (`Software Development`) and all fan into
+        // one downstream target. Under the old rule they would have
+        // been scattered individually; under the new rule they form
+        // a clean collection, and the synthetic prereq→collection
+        // edge will be emitted by MapMode.
+        resetIds();
+
+        const upstream = makeNode({ title: 'Software Development' });
+        const sibs = Array.from({ length: 5 }, (_, i) =>
+            makeNode({ title: `Badge ${i + 1}` }),
+        );
+        const target = makeNode({ title: 'Certificate' });
+
+        const incomingEdges = sibs.map(s => edge(upstream.id, s.id));
+        const outgoingEdges = sibs.map(s => edge(s.id, target.id));
+
+        const pathway = makePathway(
+            [upstream, ...sibs, target],
+            [...incomingEdges, ...outgoingEdges],
+        );
+
+        const groups = detectCollections(pathway);
+
+        expect(groups).toHaveLength(1);
+        expect(groups[0].memberIds).toEqual(sibs.map(s => s.id));
+        expect(groups[0].targetNodeId).toBe(target.id);
+        expect(groups[0].sharedPrereqIds).toEqual([upstream.id]);
+
+        // N × K = 5 × 1 incoming edges → all collected for collapse.
+        expect(groups[0].incomingEdgeIds).toHaveLength(5);
+        expect(new Set(groups[0].incomingEdgeIds)).toEqual(
+            new Set(incomingEdges.map(e => e.id)),
+        );
+
+        // Outgoing edges (member → target) unchanged.
+        expect(groups[0].edgeIds).toHaveLength(5);
+    });
+
+    it('groups members that share MULTIPLE identical incoming prereqs', () => {
+        // Two upstream prereqs, both shared by all 4 members.
+        // Still a valid collection: the incoming-set key
+        // "{upstreamA, upstreamB}" is identical across members.
+        resetIds();
+
+        const upstreamA = makeNode({ title: 'Prereq A' });
+        const upstreamB = makeNode({ title: 'Prereq B' });
+        const sibs = Array.from({ length: 4 }, () => makeNode());
+        const target = makeNode();
+
+        const edges = [
+            ...sibs.flatMap(s => [
+                edge(upstreamA.id, s.id),
+                edge(upstreamB.id, s.id),
+            ]),
+            ...sibs.map(s => edge(s.id, target.id)),
+        ];
+
+        const pathway = makePathway(
+            [upstreamA, upstreamB, ...sibs, target],
+            edges,
+        );
+
+        const groups = detectCollections(pathway);
+
+        expect(groups).toHaveLength(1);
+        // Sorted by pathway-order.
+        expect(groups[0].sharedPrereqIds).toEqual([upstreamA.id, upstreamB.id]);
+        // 4 members × 2 prereqs = 8 incoming edges.
+        expect(groups[0].incomingEdgeIds).toHaveLength(8);
+    });
+
+    it('refuses to group if a shared prereq is also a member', () => {
+        // Rule #8 anti-self-loop: a node can't simultaneously be a
+        // member AND a shared prereq of its own group. The detector
+        // must refuse rather than emit a degenerate collection.
+        resetIds();
+
+        const memberA = makeNode();
+        const memberB = makeNode();
+        const memberC = makeNode();
+        const memberD = makeNode(); // This one will also be "upstream"
+        const target = makeNode();
+
+        const edges = [
+            // memberD is a prereq of A, B, C…
+            edge(memberD.id, memberA.id),
+            edge(memberD.id, memberB.id),
+            edge(memberD.id, memberC.id),
+            // …but memberD itself also feeds the target directly —
+            // under the sub-bucket rule, only A/B/C share the
+            // incoming set {memberD}, which is only 3 members.
+            edge(memberA.id, target.id),
+            edge(memberB.id, target.id),
+            edge(memberC.id, target.id),
+            edge(memberD.id, target.id),
+        ];
+
+        const pathway = makePathway(
+            [memberA, memberB, memberC, memberD, target],
+            edges,
+        );
+
+        // A/B/C share incoming {memberD}; D has empty incoming.
+        // Neither bucket hits MIN_COLLECTION_SIZE (3 and 1).
+        expect(detectCollections(pathway)).toEqual([]);
     });
 
     it('excludes the destination node from being a member', () => {
@@ -335,7 +450,9 @@ describe('computeCollectionProgress', () => {
             id: 'collection-x',
             memberIds: [],
             targetNodeId: 'x',
+            sharedPrereqIds: [],
             edgeIds: [],
+            incomingEdgeIds: [],
             policyKind: 'practice' as const,
         };
 

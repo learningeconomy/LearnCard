@@ -24,11 +24,13 @@
  *      siblings individually is intentional, not chaotic.
  *   2. Every member has **exactly one** outgoing prerequisite edge, and
  *      they all point at the **same** target node `T`.
- *   3. No member has any incoming prerequisite edge — members are pure
- *      fan-in, not themselves gated by upstream nodes. This keeps the
- *      presentation-layer rewrite local: collapsing `G` can't strand
- *      an upstream edge that was feeding a member.
- *   4. No edges between members (implied by #3, asserted for safety).
+ *   3. Members may have **shared incoming prerequisites**, but every
+ *      member must have the *exact same set* of incoming prereq node
+ *      ids. Empty (no incoming edges at all) is the common case and
+ *      remains valid; two members with different incoming prereqs
+ *      would strand an edge when the collection collapses, so we
+ *      refuse to group them.
+ *   4. No edges between members — members don't gate each other.
  *   5. All members share the same `policy.kind` — a mixed group reads
  *      as "miscellaneous" and is better shown individually.
  *   6. Target `T` is not itself a member of `G` (would be a self-loop
@@ -36,6 +38,8 @@
  *   7. None of the members is the pathway's `destinationNodeId` — the
  *      destination must always render as its own card so the learner
  *      sees the goal explicitly.
+ *   8. None of the shared incoming prereqs is itself a member of `G`
+ *      (same anti-self-loop logic as #6 on the outgoing side).
  *
  * ## What this module does NOT do
  *
@@ -79,12 +83,31 @@ export interface CollectionGroup {
     targetNodeId: string;
 
     /**
+     * Shared incoming prereq node ids — the set of upstream nodes
+     * that every member of this collection points from. Usually empty
+     * (pure fan-in, rule #3's original case). When non-empty, the
+     * Map collapses the N × K real edges into K synthetic
+     * `prereq → collection` edges so the picture stays clean.
+     *
+     * Sorted by `pathway.nodes` order for stable downstream use.
+     */
+    sharedPrereqIds: string[];
+
+    /**
      * Edge ids that connect members to the target. The Map replaces
      * these N edges with a single `collection → target` edge. Listed
      * explicitly (not derived at render time) so the renderer doesn't
      * re-walk adjacency just to know what to drop.
      */
     edgeIds: string[];
+
+    /**
+     * Edge ids that connect shared prereqs to members (N × K edges
+     * where N = members, K = shared prereqs). Listed so the Map can
+     * drop them and emit K synthetic `prereq → collection` edges in
+     * their place. Empty when `sharedPrereqIds` is empty.
+     */
+    incomingEdgeIds: string[];
 
     /**
      * Shared policy kind — used by the card to choose its avatar tone
@@ -105,21 +128,31 @@ export const detectCollections = (pathway: Pathway): CollectionGroup[] => {
     const nodeById = new Map(pathway.nodes.map(n => [n.id, n]));
     const destinationId = pathway.destinationNodeId ?? null;
 
-    /**
-     * Index members by "where they point": `target -> set of member
-     * ids`. We only add a node to a bucket when it's shape-legal
-     * (exactly one outgoing, no incoming, not the destination).
-     */
-    const candidatesByTarget = new Map<string, string[]>();
+    // Stable ordering: re-walk pathway.nodes to pick the natural
+    // left-to-right order (Map layout honors it). Reused for member
+    // sort AND shared-prereq sort, so a collection with the same
+    // inputs produces deep-equal output on every detection pass.
+    const orderedIndex = new Map(pathway.nodes.map((n, i) => [n.id, i]));
+
+    // Candidate member: exactly-one outgoing target, not the
+    // destination. We no longer require "no incoming edges"
+    // here — that's enforced later via the shared-prereq-set
+    // equality check (rule #3).
+    interface Candidate {
+        nodeId: string;
+        targetId: string;
+        /** Sorted (by pathway.nodes order), stringified for equality checks. */
+        incomingSet: string[];
+        incomingKey: string;
+    }
+
+    const candidatesByTarget = new Map<string, Candidate[]>();
 
     for (const node of pathway.nodes) {
         if (node.id === destinationId) continue;
 
         const outgoing = dependents.get(node.id);
         if (!outgoing || outgoing.size !== 1) continue;
-
-        const incoming = prereqs.get(node.id);
-        if (incoming && incoming.size > 0) continue;
 
         // Single target — safe to read via iterator.
         const [targetId] = outgoing;
@@ -128,50 +161,88 @@ export const detectCollections = (pathway: Pathway): CollectionGroup[] => {
         // edges that slipped past validation.
         if (!nodeById.has(targetId)) continue;
 
+        // Build the incoming-prereq set, sorted by pathway-order for
+        // deterministic equality. Empty set is the common case and
+        // still valid (rule #3 original).
+        const incomingSet = [...(prereqs.get(node.id) ?? new Set<string>())]
+            .sort((a, b) => (orderedIndex.get(a) ?? 0) - (orderedIndex.get(b) ?? 0));
+
+        const incomingKey = incomingSet.join('|');
+
         const bucket = candidatesByTarget.get(targetId) ?? [];
-        bucket.push(node.id);
+        bucket.push({ nodeId: node.id, targetId, incomingSet, incomingKey });
         candidatesByTarget.set(targetId, bucket);
     }
 
-    // Stable member ordering: re-walk pathway.nodes to pick the
-    // natural left-to-right order (Map layout honors it).
-    const orderedIndex = new Map(pathway.nodes.map((n, i) => [n.id, i]));
-
     const groups: CollectionGroup[] = [];
 
-    // Iterate targets in node-order too, so the resulting array is
-    // stable across object-iteration changes.
+    // Iterate targets in node-order so the resulting array is stable
+    // across object-iteration changes.
     for (const target of pathway.nodes) {
-        const memberIds = candidatesByTarget.get(target.id);
-        if (!memberIds || memberIds.length < MIN_COLLECTION_SIZE) continue;
+        const candidates = candidatesByTarget.get(target.id);
+        if (!candidates || candidates.length < MIN_COLLECTION_SIZE) continue;
 
-        // Shape parity — all members share the same policy kind. Mixed
-        // groups get rendered individually.
-        const kinds = new Set(
-            memberIds.map(id => nodeById.get(id)!.stage.policy.kind),
-        );
-        if (kinds.size !== 1) continue;
+        // -----------------------------------------------------------
+        // Sub-bucket by shared-prereq-set equality. Two members
+        // with different incoming prereq sets can't belong to the
+        // same collection because collapsing them would strand a
+        // unique edge. Candidates with the same `incomingKey` form
+        // one potential group.
+        // -----------------------------------------------------------
+        const byIncomingKey = new Map<string, Candidate[]>();
+        for (const c of candidates) {
+            const arr = byIncomingKey.get(c.incomingKey) ?? [];
+            arr.push(c);
+            byIncomingKey.set(c.incomingKey, arr);
+        }
 
-        const sharedKind = [...kinds][0] as Policy['kind'];
+        for (const subset of byIncomingKey.values()) {
+            if (subset.length < MIN_COLLECTION_SIZE) continue;
 
-        const sortedMembers = [...memberIds].sort(
-            (a, b) => (orderedIndex.get(a) ?? 0) - (orderedIndex.get(b) ?? 0),
-        );
+            const memberIds = subset.map(c => c.nodeId);
 
-        // Pick the specific edge ids so the Map can drop them without
-        // re-walking the pathway.
-        const memberSet = new Set(sortedMembers);
-        const edgeIds = pathway.edges
-            .filter(e => memberSet.has(e.from) && e.to === target.id)
-            .map(e => e.id);
+            // Shape parity — all members share the same policy kind.
+            const kinds = new Set(
+                memberIds.map(id => nodeById.get(id)!.stage.policy.kind),
+            );
+            if (kinds.size !== 1) continue;
 
-        groups.push({
-            id: `collection-${target.id}`,
-            memberIds: sortedMembers,
-            targetNodeId: target.id,
-            edgeIds,
-            policyKind: sharedKind,
-        });
+            const sharedKind = [...kinds][0] as Policy['kind'];
+
+            const sortedMembers = [...memberIds].sort(
+                (a, b) => (orderedIndex.get(a) ?? 0) - (orderedIndex.get(b) ?? 0),
+            );
+            const memberSet = new Set(sortedMembers);
+
+            // Rule #8: shared prereqs can't also be members of the
+            // same group (would be a self-loop through the synthetic
+            // collection node).
+            const sharedPrereqIds = subset[0]!.incomingSet;
+            if (sharedPrereqIds.some(pid => memberSet.has(pid))) continue;
+
+            // Outgoing edges member → target (existing logic).
+            const edgeIds = pathway.edges
+                .filter(e => memberSet.has(e.from) && e.to === target.id)
+                .map(e => e.id);
+
+            // Incoming edges prereq → member for every shared prereq
+            // and every member. N × K edges get collapsed into K
+            // synthetic edges in MapMode.
+            const prereqSet = new Set(sharedPrereqIds);
+            const incomingEdgeIds = pathway.edges
+                .filter(e => memberSet.has(e.to) && prereqSet.has(e.from))
+                .map(e => e.id);
+
+            groups.push({
+                id: `collection-${target.id}`,
+                memberIds: sortedMembers,
+                targetNodeId: target.id,
+                sharedPrereqIds,
+                edgeIds,
+                incomingEdgeIds,
+                policyKind: sharedKind,
+            });
+        }
     }
 
     return groups;
@@ -206,7 +277,13 @@ export const buildCollectionIndex = (groups: CollectionGroup[]): CollectionIndex
         byId.set(g.id, g);
 
         for (const memberId of g.memberIds) memberToGroupId.set(memberId, g.id);
+
+        // Both sides of the collection's edge boundary get mapped:
+        // outgoing (member → target) AND incoming (prereq → member).
+        // The Map's renderer drops any edge in this set and emits
+        // synthetic collection-facing edges in their place.
         for (const edgeId of g.edgeIds) edgeToGroupId.set(edgeId, g.id);
+        for (const edgeId of g.incomingEdgeIds) edgeToGroupId.set(edgeId, g.id);
     }
 
     return { memberToGroupId, edgeToGroupId, byId };

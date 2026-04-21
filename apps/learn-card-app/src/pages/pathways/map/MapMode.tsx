@@ -464,8 +464,11 @@ const MapModeInner: React.FC = () => {
         const currentlyCompleted = new Set<string>();
 
         // Which edges are folded into a (currently collapsed)
-        // collection? Those get dropped; a single synthetic
-        // collection→target edge stands in for the whole bundle.
+        // collection? Those get dropped; synthetic edges stand in
+        // for the whole bundle:
+        //   - one `collection → target` edge (always)
+        //   - K `prereq → collection` edges (one per shared prereq,
+        //     when the collection has shared incoming prereqs)
         const collapsedEdgeIds = new Set<string>();
         const collapsedGroupIds = new Set<string>();
 
@@ -474,6 +477,10 @@ const MapModeInner: React.FC = () => {
 
             collapsedGroupIds.add(group.id);
             for (const eid of group.edgeIds) collapsedEdgeIds.add(eid);
+            // NEW: drop the N × K real member-incoming edges too.
+            // They're replaced by K synthetic `prereq → collection`
+            // edges emitted below.
+            for (const eid of group.incomingEdgeIds) collapsedEdgeIds.add(eid);
         }
 
         const edges: RfEdge[] = [];
@@ -578,6 +585,14 @@ const MapModeInner: React.FC = () => {
             // up with the target visually, so depth-fade should agree.
             const inFocus = nb ? nb.nodeIds.has(group.targetNodeId) : true;
 
+            // Outgoing funnel: collection → target. Picks up route
+            // styling when any underlying member → target edge is
+            // on-route (the whole group shares the target, so if one
+            // edge is on-route they all are).
+            const anyOutgoingOnRoute = group.edgeIds.some(
+                eid => routeIndex?.edgeOnRoute.has(eid) ?? false,
+            );
+
             edges.push({
                 id: `${group.id}-edge`,
                 source: group.id,
@@ -585,17 +600,82 @@ const MapModeInner: React.FC = () => {
                 type: 'default',
                 animated: false,
                 style: {
-                    stroke: allDone
-                        ? inFocus
-                            ? '#10B981'
-                            : '#A7F3D0'
-                        : inFocus
-                            ? '#9CA3AF'
-                            : '#E5E7EB',
-                    strokeWidth: inFocus ? 1.5 : 1,
+                    stroke: anyOutgoingOnRoute
+                        ? allDone
+                            ? inFocus ? '#10B981' : '#6EE7B7'
+                            : inFocus ? '#10B981' : '#A7F3D0'
+                        : allDone
+                            ? inFocus ? '#10B981' : '#A7F3D0'
+                            : inFocus ? '#9CA3AF' : '#E5E7EB',
+                    strokeWidth: anyOutgoingOnRoute ? (inFocus ? 2.25 : 1.75) : (inFocus ? 1.5 : 1),
+                    strokeDasharray: anyOutgoingOnRoute && !allDone ? '6 5' : undefined,
                     opacity: inFocus ? 1 : 0.7,
                 },
             } satisfies RfEdge);
+
+            // Incoming funnel: one synthetic `prereq → collection`
+            // edge per shared prereq. This is the Option 2 payoff —
+            // N × K real edges collapse into K tidy funnels, matching
+            // how the outgoing side already collapses N real edges
+            // into 1.
+            //
+            // Styling mirrors the member→target ribbon: completed
+            // prereq renders as trail-emerald; uncompleted renders
+            // as dashed projected-emerald when on route.
+            for (const prereqId of group.sharedPrereqIds) {
+                const prereqNode = activePathway.nodes.find(n => n.id === prereqId);
+                if (!prereqNode) continue;
+
+                const prereqCompleted = prereqNode.progress.status === 'completed';
+
+                // An incoming edge is "on route" when the prereq is
+                // on the route zone — every member of the group is
+                // an ancestor of the destination (by construction,
+                // since they all feed `targetNodeId` which feeds the
+                // destination), so it's enough to check the prereq
+                // via any of its real member edges.
+                const incomingOnRoute = group.incomingEdgeIds.some(
+                    eid => routeIndex?.edgeOnRoute.has(eid) ?? false,
+                );
+
+                const prereqInFocus = nb ? nb.nodeIds.has(prereqId) || nb.nodeIds.has(group.targetNodeId) : true;
+
+                let stroke: string;
+                let strokeWidth: number;
+                let strokeDasharray: string | undefined;
+
+                if (incomingOnRoute && prereqCompleted) {
+                    stroke = prereqInFocus ? '#10B981' : '#6EE7B7';
+                    strokeWidth = prereqInFocus ? 2.5 : 2;
+                    strokeDasharray = undefined;
+                } else if (incomingOnRoute) {
+                    stroke = prereqInFocus ? '#10B981' : '#A7F3D0';
+                    strokeWidth = prereqInFocus ? 2.25 : 1.75;
+                    strokeDasharray = '6 5';
+                } else if (prereqCompleted) {
+                    stroke = prereqInFocus ? '#A7F3D0' : '#D1FAE5';
+                    strokeWidth = 1;
+                    strokeDasharray = undefined;
+                } else {
+                    stroke = prereqInFocus ? '#CBD5E1' : '#E5E7EB';
+                    strokeWidth = 1;
+                    strokeDasharray = undefined;
+                }
+
+                edges.push({
+                    id: `${group.id}-incoming-${prereqId}`,
+                    source: prereqId,
+                    target: group.id,
+                    type: 'default',
+                    animated: false,
+                    style: {
+                        stroke,
+                        strokeWidth,
+                        strokeDasharray,
+                        opacity: incomingOnRoute ? 1 : prereqInFocus ? 0.8 : 0.55,
+                    },
+                } satisfies RfEdge);
+            }
         }
 
         // Mark this render's set as "seen" for the next render so the
