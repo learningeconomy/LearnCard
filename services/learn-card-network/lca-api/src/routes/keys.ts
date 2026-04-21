@@ -384,8 +384,8 @@ export const keysRouter = t.router({
                                 verificationCode: code,
                                 verificationEmail: input.email,
                             },
-                            branding: ctx.tenant.emailBranding,
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant.emailBranding }),
+                            branding: ctx.tenant?.emailBranding,
+                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
                         }
                         : {
                             to: input.email,
@@ -400,7 +400,7 @@ export const keysRouter = t.router({
                                 '',
                                 'If you did not request this, you can safely ignore this email.',
                             ].join('\n'),
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant.emailBranding }),
+                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
                         }
                 );
             } catch (emailError) {
@@ -538,7 +538,7 @@ export const keysRouter = t.router({
 
             // IMPORTANT: The emailShare is NEVER written to the database.
             // It is only held in memory for the duration of this request.
-            const brandName = ctx.tenant.emailBranding?.brandName || process.env.POSTMARK_BRAND_NAME || 'LearnCard';
+            const brandName = ctx.tenant?.emailBranding?.brandName || process.env.POSTMARK_BRAND_NAME || 'LearnCard';
 
             try {
                 await getDeliveryService().send(
@@ -550,8 +550,8 @@ export const keysRouter = t.router({
                                 brandName,
                                 recoveryKey: input.emailShare,
                             },
-                            branding: ctx.tenant.emailBranding,
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant.emailBranding }),
+                            branding: ctx.tenant?.emailBranding,
+                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
                         }
                         : {
                             to: targetEmail,
@@ -571,7 +571,7 @@ export const keysRouter = t.router({
                                 '',
                                 'If you did not request this, you can safely ignore this email.',
                             ].join('\n'),
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant.emailBranding }),
+                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
                         }
                 );
             } catch (emailError) {

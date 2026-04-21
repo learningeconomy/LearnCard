@@ -300,7 +300,7 @@ export const contactMethodsRouter = t.router({
                     verificationCode: verificationToken,
                     verificationEmail: value,
                 },
-                branding: ctx.tenant.emailBranding,
+                branding: ctx.tenant?.emailBranding,
             });
 
             return {
@@ -397,7 +397,7 @@ export const contactMethodsRouter = t.router({
                 templateModel: {
                     verificationToken,
                 },
-                branding: ctx.tenant.emailBranding,
+                branding: ctx.tenant?.emailBranding,
             });
 
             return {

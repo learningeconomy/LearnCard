@@ -287,8 +287,8 @@ export const firebaseRouter = t.router({
                             verificationEmail: email,
                             recipient: { name: email },
                         },
-                        branding: ctx.tenant.emailBranding,
-                        from: getFrom({ mailbox: 'login', branding: ctx.tenant.emailBranding }),
+                        branding: ctx.tenant?.emailBranding,
+                        from: getFrom({ mailbox: 'login', branding: ctx.tenant?.emailBranding }),
                     });
                 } catch (error) {
                     console.error('Failed to send verification email:', error);

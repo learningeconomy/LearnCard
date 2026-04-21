@@ -146,7 +146,7 @@ export const inboxRouter = t.router({
                         ...injectedTemplateFields,
                         ...(template?.model || {}),
                     },
-                    branding: ctx.tenant.emailBranding,
+                    branding: ctx.tenant?.emailBranding,
                     // messageStream: 'guardian-approval',
                 });
 
@@ -241,7 +241,7 @@ export const inboxRouter = t.router({
                                     profileId: requester.profileId,
                                 },
                             },
-                            branding: ctx.tenant.emailBranding,
+                            branding: ctx.tenant?.emailBranding,
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -339,7 +339,7 @@ export const inboxRouter = t.router({
                                     profileId: requester.profileId,
                                 },
                             },
-                            branding: ctx.tenant.emailBranding,
+                            branding: ctx.tenant?.emailBranding,
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -896,7 +896,7 @@ export const inboxRouter = t.router({
                 templateModel: {
                     verificationCode: otpCode,
                 },
-                branding: ctx.tenant.emailBranding,
+                branding: ctx.tenant?.emailBranding,
                 messageStream: 'universal-inbox',
             });
 
@@ -1012,7 +1012,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
-                        branding: ctx.tenant.emailBranding,
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
@@ -1095,7 +1095,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
-                        branding: ctx.tenant.emailBranding,
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
@@ -1193,7 +1193,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
-                        branding: ctx.tenant.emailBranding,
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
@@ -1284,7 +1284,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
-                        branding: ctx.tenant.emailBranding,
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
