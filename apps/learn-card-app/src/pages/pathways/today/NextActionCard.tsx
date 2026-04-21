@@ -21,17 +21,18 @@
 import React from 'react';
 
 import { IonIcon } from '@ionic/react';
-import { arrowForwardOutline } from 'ionicons/icons';
+import { arrowForwardOutline, openOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
 import { mcpRegistryStore } from '../../../stores/pathways';
 import type { PathwayNode, ScoredCandidate } from '../types';
 
 import {
+    getNodeEarnLink,
     type Journey,
     journeyLabel,
     policyLabel,
-    resolvePolicyCallToAction,
+    resolveNodeCallToAction,
 } from './presentation';
 
 interface NextActionCardProps {
@@ -89,6 +90,25 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                 </span>
             </div>
 
+            {/* Badge artwork (CTDL-imported nodes only). Shown above the
+                title as a small rounded thumbnail — enough to identify
+                the credential at a glance without dominating the card. */}
+            {node.credentialProjection?.image && (
+                <img
+                    src={node.credentialProjection.image}
+                    alt=""
+                    className="mb-3 w-14 h-14 rounded-2xl
+                               bg-grayscale-10 border border-grayscale-200
+                               object-contain p-1"
+                    loading="lazy"
+                    onError={e => {
+                        // Silently hide on error — a broken-image icon
+                        // would break the card's quiet aesthetic.
+                        e.currentTarget.style.display = 'none';
+                    }}
+                />
+            )}
+
             {/* Title + description — the emotional center of the card. */}
             <h2 className="text-[22px] font-semibold text-grayscale-900 leading-[1.2] mb-2">
                 {node.title}
@@ -107,23 +127,65 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                 </p>
             )}
 
-            <motion.button
-                type="button"
-                onClick={onOpen}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="group w-full py-3.5 px-5 rounded-[20px] bg-grayscale-900 text-white
-                           font-medium text-sm hover:bg-grayscale-800 transition-colors
-                           flex items-center justify-center gap-2
-                           shadow-md shadow-grayscale-900/20"
-            >
-                <span>{resolvePolicyCallToAction(policy, mcpLabel)}</span>
+            {(() => {
+                // Split label and external target: if the node carries a
+                // real `earnUrl` (CTDL-imported credential), render the
+                // CTA as an `<a target="_blank">` so clicking jumps to
+                // the issuer page. Still fire `onOpen` so the node
+                // detail is waiting in-app when the learner switches
+                // tabs back. Not-started only — once they're mid-flight,
+                // the in-app detail is the honest destination.
+                const label = resolveNodeCallToAction(node, mcpLabel);
+                const earnLink =
+                    node.progress.status === 'not-started'
+                        ? getNodeEarnLink(node)
+                        : null;
 
-                <IonIcon
-                    icon={arrowForwardOutline}
-                    className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
-                />
-            </motion.button>
+                const ctaClass =
+                    `group w-full py-3.5 px-5 rounded-[20px] bg-grayscale-900 text-white
+                     font-medium text-sm hover:bg-grayscale-800 transition-colors
+                     flex items-center justify-center gap-2
+                     shadow-md shadow-grayscale-900/20`;
+
+                const icon = (
+                    <IonIcon
+                        icon={earnLink ? openOutline : arrowForwardOutline}
+                        className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
+                        aria-hidden
+                    />
+                );
+
+                if (earnLink) {
+                    return (
+                        <motion.a
+                            href={earnLink.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onOpen}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            className={ctaClass}
+                            aria-label={`${label} (opens in a new tab)`}
+                        >
+                            <span>{label}</span>
+                            {icon}
+                        </motion.a>
+                    );
+                }
+
+                return (
+                    <motion.button
+                        type="button"
+                        onClick={onOpen}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        className={ctaClass}
+                    >
+                        <span>{label}</span>
+                        {icon}
+                    </motion.button>
+                );
+            })()}
         </motion.article>
     );
 };

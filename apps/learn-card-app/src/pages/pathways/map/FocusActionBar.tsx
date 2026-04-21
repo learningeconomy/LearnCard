@@ -31,13 +31,14 @@
 import React from 'react';
 
 import { IonIcon } from '@ionic/react';
-import { arrowForwardOutline } from 'ionicons/icons';
+import { arrowForwardOutline, openOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 
 import { mcpRegistryStore } from '../../../stores/pathways';
 import {
+    getNodeEarnLink,
     policyLabel,
-    resolvePolicyCallToAction,
+    resolveNodeCallToAction,
 } from '../today/presentation';
 import type { PathwayNode } from '../types';
 
@@ -114,34 +115,81 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, onOpen }) => {
                             </p>
                         </div>
 
-                        <motion.button
-                            type="button"
-                            onClick={() => onOpen(node.id)}
-                            whileTap={{ scale: 0.96 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            className="group shrink-0 py-2.5 px-4 rounded-full
-                                       bg-emerald-600 text-white text-sm font-semibold
-                                       shadow-md shadow-emerald-600/30
-                                       hover:bg-emerald-700 transition-colors
-                                       flex items-center gap-1.5 whitespace-nowrap"
-                        >
-                            <span>
-                                {status === 'in-progress' || status === 'stalled'
+                        {(() => {
+                            // Resolve the CTA once — label and external
+                            // target are orthogonal concerns, so we
+                            // render the same inner content whether the
+                            // button is an `<a>` (earn-link present) or
+                            // a plain `<button>`.
+                            const ctaLabel =
+                                status === 'in-progress' || status === 'stalled'
                                     ? 'Keep going'
-                                    : resolvePolicyCallToAction(
-                                          node.stage.policy,
+                                    : resolveNodeCallToAction(
+                                          node,
                                           node.stage.policy.kind === 'external'
                                               ? mcpServers[node.stage.policy.mcp.serverId]?.label ?? null
                                               : null,
-                                      )}
-                            </span>
+                                      );
 
-                            <IonIcon
-                                icon={arrowForwardOutline}
-                                className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
-                                aria-hidden
-                            />
-                        </motion.button>
+                            // `earnLink` is only surfaced when the node
+                            // is a credential projection with a real
+                            // http(s) URL (see `getNodeEarnLink`). For
+                            // `in-progress` / `stalled` nodes we keep
+                            // the in-app flow so the learner can record
+                            // progress rather than being kicked out.
+                            const earnLink =
+                                status === 'not-started' ? getNodeEarnLink(node) : null;
+
+                            const ctaClass =
+                                `group shrink-0 py-2.5 px-4 rounded-full
+                                 bg-emerald-600 text-white text-sm font-semibold
+                                 shadow-md shadow-emerald-600/30
+                                 hover:bg-emerald-700 transition-colors
+                                 flex items-center gap-1.5 whitespace-nowrap`;
+
+                            const icon = (
+                                <IonIcon
+                                    icon={earnLink ? openOutline : arrowForwardOutline}
+                                    className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
+                                    aria-hidden
+                                />
+                            );
+
+                            if (earnLink) {
+                                return (
+                                    <motion.a
+                                        href={earnLink.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        // Fire the in-app open alongside so the
+                                        // learner lands on the node detail when
+                                        // they switch back from the new tab —
+                                        // that's where they mark it complete.
+                                        onClick={() => onOpen(node.id)}
+                                        whileTap={{ scale: 0.96 }}
+                                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                        className={ctaClass}
+                                        aria-label={`${ctaLabel} (opens in a new tab)`}
+                                    >
+                                        <span>{ctaLabel}</span>
+                                        {icon}
+                                    </motion.a>
+                                );
+                            }
+
+                            return (
+                                <motion.button
+                                    type="button"
+                                    onClick={() => onOpen(node.id)}
+                                    whileTap={{ scale: 0.96 }}
+                                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                    className={ctaClass}
+                                >
+                                    <span>{ctaLabel}</span>
+                                    {icon}
+                                </motion.button>
+                            );
+                        })()}
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -22,12 +22,13 @@
 import React, { useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
-import { closeOutline, mapOutline } from 'ionicons/icons';
+import { closeOutline, mapOutline, openOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
+import { getNodeEarnLink } from '../today/presentation';
 import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
 import { canProject } from '../projection/toAchievementCredential';
@@ -280,6 +281,22 @@ const NodeDetail: React.FC = () => {
     const requirementText =
         view.kind === 'ready' ? null : view.requirement;
 
+    // Issuer-side earn link (populated by the CTDL importer from
+    // `ceterms:sourceData` or `ceterms:subjectWebpage` — including via
+    // `proxyFor` resolution). Copy degrades with the source so we
+    // never promise a landing page awards a credential.
+    const earnLink = getNodeEarnLink(node);
+    const earnLinkLabel = earnLink
+        ? earnLink.source === 'sourceData'
+            ? 'Go to issuer page'
+            : 'View landing page'
+        : null;
+
+    // Badge/certificate artwork from the CTDL import (or the proxied
+    // credential). Falls back to `null` when the upstream record has
+    // no image — we don't render a broken thumbnail.
+    const image = node.credentialProjection?.image ?? null;
+
     return (
         <OverlayFrame onClose={close}>
             <div className="px-6 pt-10 pb-8 space-y-5">
@@ -291,6 +308,30 @@ const NodeDetail: React.FC = () => {
                     transition={{ ...SECTION_MOTION.transition, delay: 0.05 }}
                     className="flex items-start gap-4 pr-10"
                 >
+                    {image && (
+                        // Badge artwork lives on the left of the
+                        // header, sized to line up visually with the
+                        // `TerminationProgress` ring on the right so
+                        // the row reads as "thing you earn · progress
+                        // toward earning it." `object-contain` keeps
+                        // non-square badges from being cropped by the
+                        // rounded frame.
+                        <img
+                            src={image}
+                            alt=""
+                            className="shrink-0 w-16 h-16 rounded-2xl
+                                       bg-grayscale-10 border border-grayscale-200
+                                       object-contain p-1"
+                            loading="lazy"
+                            onError={e => {
+                                // If the CDN is down / link rotted we
+                                // silently drop the image rather than
+                                // render a broken-image icon.
+                                e.currentTarget.style.display = 'none';
+                            }}
+                        />
+                    )}
+
                     <div className="flex-1 min-w-0 space-y-1.5">
                         <h2 className="text-[22px] font-semibold text-grayscale-900 leading-[1.2]">
                             {node.title}
@@ -317,6 +358,48 @@ const NodeDetail: React.FC = () => {
 
                     <TerminationProgress view={view} />
                 </motion.header>
+
+                {/* -------------------------------------------------- */}
+                {/* Where to earn this — issuer link row (CTDL-imported  */}
+                {/* nodes only). Rendered above the working state so the */}
+                {/* learner sees the off-app path before they start     */}
+                {/* uploading proof here. Copy adapts to the CTDL       */}
+                {/* source so a `subjectWebpage` is honestly "View      */}
+                {/* landing page" rather than a false "Earn it here."   */}
+                {/* -------------------------------------------------- */}
+                {earnLink && earnLinkLabel && (
+                    <motion.a
+                        {...SECTION_MOTION}
+                        transition={{ ...SECTION_MOTION.transition, delay: 0.08 }}
+                        href={earnLink.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${earnLinkLabel} (opens in a new tab)`}
+                        className="group flex items-center justify-between gap-3
+                                   px-4 py-3 rounded-[18px]
+                                   bg-white/70 backdrop-blur
+                                   border border-grayscale-200
+                                   hover:bg-white hover:border-grayscale-300
+                                   hover:shadow-sm transition-all duration-200"
+                    >
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
+                                Where to earn this
+                            </p>
+
+                            <p className="text-sm font-medium text-grayscale-900 truncate">
+                                {earnLinkLabel}
+                            </p>
+                        </div>
+
+                        <IonIcon
+                            icon={openOutline}
+                            className="shrink-0 text-grayscale-500 text-lg
+                                       group-hover:text-grayscale-900 transition-colors"
+                            aria-hidden
+                        />
+                    </motion.a>
+                )}
 
                 {/* -------------------------------------------------- */}
                 {/* Working state: composite body OR evidence/review    */}

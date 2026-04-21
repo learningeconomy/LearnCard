@@ -131,10 +131,18 @@ export const fromCtdlPathway = (opts: FromCtdlOptions): FromCtdlResult => {
             continue;
         }
 
+        // Merge in fields from `ceterms:proxyFor` (if resolved) so the
+        // learner-facing data living on the proxied `Badge` /
+        // `Certificate` (image, subjectWebpage, description, …) shows
+        // up as if it lived on the component itself. Component fields
+        // always win — the pathway author's framing of each step is
+        // authoritative over the upstream registry record.
+        const effective = getEffectiveComponent(component, graph.proxies);
+
         nodes.push(buildNode({
             pathwayId,
             nodeId: idMap[uri],
-            component,
+            component: effective,
             preferredLocale,
             now,
             warnings,
@@ -611,6 +619,131 @@ const basicStage = (): { policy: Policy; termination: Termination } => ({
 });
 
 /**
+ * Keep only `http(s):` URLs for earn-link surfacing. CTDL can (and
+ * does) emit registry-canonical URIs like `ce-abc123` or other
+ * non-resolvable forms; those are metadata, not destinations.
+ */
+const asHttpUrl = (candidate: unknown): string | undefined => {
+    if (typeof candidate !== 'string') return undefined;
+
+    const trimmed = candidate.trim();
+
+    if (!/^https?:\/\//i.test(trimmed)) return undefined;
+
+    return trimmed;
+};
+
+/**
+ * Build a merged view of a pathway `CredentialComponent` and its
+ * resolved `ceterms:proxyFor` credential. Fills in *missing* fields on
+ * the component from the proxied resource — learner-facing data like
+ * `ceterms:image`, `ceterms:subjectWebpage`, and long-form description
+ * typically live on the proxied `Badge` / `Certificate`, not on the
+ * pathway component. Returns the component unchanged when there is no
+ * proxy (or the proxy failed to resolve upstream).
+ *
+ * Policy: **component wins**. The pathway author's framing of a step
+ * is authoritative; proxy fields only supplement the gaps. This keeps
+ * authors in control while letting the UI pick up the richness of the
+ * registry record for free.
+ *
+ * Fields explicitly *not* propagated from the proxy — because they
+ * would break the pathway graph or our provenance tracking:
+ *
+ *   - `@id`, `@type`, `ceterms:ctid`: identity belongs to the
+ *     component, not the proxy.
+ *   - `ceterms:hasChild` / `hasCondition`: graph edges are
+ *     component-level.
+ */
+const getEffectiveComponent = (
+    component: CtdlPathwayComponent,
+    proxies: CtdlGraph['proxies'],
+): CtdlPathwayComponent => {
+    const proxyUri = component['ceterms:proxyFor'];
+
+    if (typeof proxyUri !== 'string') return component;
+
+    const proxy = proxies?.[proxyUri];
+
+    if (!proxy) return component;
+
+    // Shallow clone — we don't want to mutate the caller's graph.
+    const merged: CtdlPathwayComponent = { ...component };
+
+    if (!merged['ceterms:subjectWebpage']
+        && typeof proxy['ceterms:subjectWebpage'] === 'string') {
+        merged['ceterms:subjectWebpage'] = proxy['ceterms:subjectWebpage'];
+    }
+
+    if (!merged['ceterms:sourceData']
+        && typeof proxy['ceterms:sourceData'] === 'string') {
+        merged['ceterms:sourceData'] = proxy['ceterms:sourceData'];
+    }
+
+    if (!merged['ceterms:image']
+        && typeof proxy['ceterms:image'] === 'string') {
+        merged['ceterms:image'] = proxy['ceterms:image'];
+    }
+
+    if (!merged['ceterms:name'] && proxy['ceterms:name'] !== undefined) {
+        merged['ceterms:name'] = proxy['ceterms:name'];
+    }
+
+    if (!merged['ceterms:description']
+        && proxy['ceterms:description'] !== undefined) {
+        merged['ceterms:description'] = proxy['ceterms:description'];
+    }
+
+    // Credential-type fallback: the proxy's @type ("ceterms:Badge",
+    // "ceterms:Certificate", …) tells us what kind of credential the
+    // component awards when the component itself doesn't declare
+    // `ceterms:credentialType`. Keeps "Earn this badge" copy accurate
+    // on proxied CredentialComponents.
+    if (!merged['ceterms:credentialType']
+        && typeof proxy['@type'] === 'string'
+        && /^ceterms:/.test(proxy['@type'])) {
+        merged['ceterms:credentialType'] = proxy['@type'];
+    }
+
+    return merged;
+};
+
+/**
+ * Pick the best "where does the learner go to earn this?" URL from a
+ * (possibly proxy-merged) CTDL component. Priority:
+ *
+ *   1. `ceterms:sourceData` — CTDL's "URL to the real-world credential
+ *      / course / assessment". The closest thing to a guaranteed
+ *      earn-link the registry exposes.
+ *   2. `ceterms:subjectWebpage` — the component's human landing page.
+ *      Honest fallback; we'll downgrade the CTA copy to "Learn more".
+ *
+ * `ceterms:proxyFor` is *not* used as a fallback: when it resolves to
+ * a registry resource URL it renders as raw CTDL JSON in the browser,
+ * which is useless to a learner. Proxy resolution is handled upstream
+ * (see `getEffectiveComponent`) so the component's own fields can be
+ * populated with the proxied credential's `subjectWebpage` /
+ * `sourceData` — and those are what this function surfaces.
+ *
+ * Returns `undefined` if neither field produces a resolvable URL.
+ */
+const pickEarnUrl = (
+    component: CtdlPathwayComponent,
+): { earnUrl: string; earnUrlSource: 'sourceData' | 'subjectWebpage' } | undefined => {
+    const sourceData = asHttpUrl(component['ceterms:sourceData']);
+
+    if (sourceData) return { earnUrl: sourceData, earnUrlSource: 'sourceData' };
+
+    const subjectWebpage = asHttpUrl(component['ceterms:subjectWebpage']);
+
+    if (subjectWebpage) {
+        return { earnUrl: subjectWebpage, earnUrlSource: 'subjectWebpage' };
+    }
+
+    return undefined;
+};
+
+/**
  * Derive an `AchievementProjection` (our OBv3 projection primitive)
  * from a CTDL component. Only credentialing components — those that
  * represent something the learner actually *earns* — get a projection.
@@ -665,8 +798,12 @@ const buildProjection = (
         return 'Achievement';
     })();
 
+    const image = asHttpUrl(component['ceterms:image']);
+
     return {
         achievementType,
         criteria: description || `Complete the requirements for "${title}".`,
+        ...(image ? { image } : {}),
+        ...pickEarnUrl(component),
     };
 };

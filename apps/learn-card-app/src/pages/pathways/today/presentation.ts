@@ -7,7 +7,7 @@
  * replaced without touching any rendering code.
  */
 
-import type { Pathway, Policy } from '../types';
+import type { EarnUrlSource, Pathway, PathwayNode, Policy } from '../types';
 
 // ---------------------------------------------------------------------------
 // Greeting
@@ -166,6 +166,173 @@ export const resolvePolicyCallToAction = (
     }
 
     return policyCallToAction(policy.kind);
+};
+
+// ---------------------------------------------------------------------------
+// Node-aware call-to-action
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a CTDL-style `achievementType` string to a short credential noun
+ * we can use in CTA copy. The matching is intentionally forgiving:
+ * real-world registries mix in values like `"Badge"`, `"DigitalBadge"`,
+ * `"ceterms:Badge"`, `"Certification"`, etc.
+ *
+ * Returns `null` when nothing matches — callers should fall back to
+ * the generic "credential" noun so we never invent a bad label.
+ */
+const credentialNoun = (achievementType: string | undefined): string | null => {
+    if (!achievementType) return null;
+
+    const t = achievementType.toLowerCase();
+
+    if (t.includes('badge')) return 'badge';
+    if (t.includes('certificate') || t.includes('certification')) return 'certificate';
+    if (t.includes('diploma')) return 'diploma';
+    if (t.includes('degree')) return 'degree';
+    if (t.includes('license') || t.includes('licence')) return 'license';
+    if (t.includes('microcredential') || t.includes('micro-credential')) {
+        return 'micro-credential';
+    }
+
+    return null;
+};
+
+/**
+ * CTA label for a full `PathwayNode`.
+ *
+ * Smarter than `resolvePolicyCallToAction` because it can see both the
+ * policy *and* the termination *and* the credential projection — which
+ * is exactly where a honest label comes from for CTDL-imported nodes.
+ *
+ * The generic `"Work on the artifact"` copy is a leaky abstraction
+ * (artifact is our internal policy kind, not the learner's task). For
+ * a CredentialComponent import the same node is really an "Earn this
+ * badge" / "Earn this certificate" moment, and for assessment nodes
+ * it's "Take the assessment". We surface that whenever we can, and
+ * fall back to the policy-level copy only when the node has no better
+ * signal.
+ *
+ * Precedence (highest wins):
+ *   1. `external` + known MCP label → "Open in {Figma|Notion|…}"
+ *   2. `credentialProjection` + endorsement-style termination
+ *      → "Earn this {badge|certificate|credential}"
+ *   3. termination kind → verb that matches what the learner actually
+ *      submits ("Submit your work", "Take the assessment", "Mark
+ *      complete", "Record practice")
+ *   4. policy kind fallback (existing `resolvePolicyCallToAction`)
+ *
+ * Composite is intentionally *not* special-cased here; the caller that
+ * has a resolved child pathway can override with "Open {child title}".
+ * Doing it in this module would require the full pathway map.
+ */
+export const resolveNodeCallToAction = (
+    node: PathwayNode,
+    mcpLabel?: string | null,
+): string => {
+    const { policy, termination } = node.stage;
+
+    // 1. MCP wins when present — the most specific label.
+    if (policy.kind === 'external' && mcpLabel) {
+        return `Open in ${mcpLabel}`;
+    }
+
+    // 2. Credential-aware copy. The CTDL import populates
+    //    `credentialProjection` on every CredentialComponent, so this
+    //    branch covers the entire IMA-style pathway.
+    const projection = node.credentialProjection;
+
+    if (projection) {
+        const noun = credentialNoun(projection.achievementType) ?? 'credential';
+
+        // Source-aware degrade: when the earn link is just a landing
+        // page (`subjectWebpage`) we refuse to promise "Earn" — the
+        // click doesn't award anything. Only `sourceData` is
+        // CTDL-guaranteed to be the "go earn it" URL, so we keep the
+        // "Earn this X" copy only in that case (or when there's no
+        // external link at all and the work happens in-app).
+        if (projection.earnUrlSource === 'subjectWebpage') return 'Learn more';
+
+        // Endorsement terminations read as "earn the thing" — the
+        // learner is working toward an outside-issued artifact.
+        if (termination.kind === 'endorsement') {
+            return `Earn this ${noun}`;
+        }
+
+        // An assessment that awards a credential reads as "take the
+        // assessment" — that's the verb that gets them there.
+        if (
+            termination.kind === 'assessment-score' ||
+            policy.kind === 'assessment'
+        ) {
+            return 'Take the assessment';
+        }
+
+        // Fallthrough for credential-bearing nodes: the honest verb
+        // is submission (upload proof, attach link, etc.).
+        if (
+            termination.kind === 'artifact-count' ||
+            policy.kind === 'artifact'
+        ) {
+            return 'Submit your proof';
+        }
+    }
+
+    // 3. Termination-kind-aware fallback (no credential projection).
+    //    Narrow to the terminations whose verbiage is sharper than the
+    //    policy-level copy; everything else falls through to policy.
+    switch (termination.kind) {
+        case 'self-attest':
+            return 'Mark complete';
+
+        case 'assessment-score':
+            return 'Take the assessment';
+
+        case 'artifact-count':
+            return 'Add evidence';
+
+        // endorsement / pathway-completed / composite fall through to
+        // the policy layer so composite's pathway-aware copy and
+        // endorsement's nudge still read correctly.
+        default:
+            break;
+    }
+
+    // 4. Existing policy-kind fallback.
+    return resolvePolicyCallToAction(policy, mcpLabel);
+};
+
+// ---------------------------------------------------------------------------
+// Earn-link resolver (external target for a node)
+// ---------------------------------------------------------------------------
+
+export interface NodeEarnLink {
+    /** Resolvable `http(s)` URL where the learner can act on this node. */
+    href: string;
+    /** Which CTDL field this URL came from; callers use it to hedge copy. */
+    source: EarnUrlSource;
+}
+
+/**
+ * Return the external earn-link for a node when one exists, or `null`.
+ *
+ * Kept separate from `resolveNodeCallToAction` so the two concerns —
+ * *what to say* vs *where to go* — stay orthogonal. CTA surfaces can
+ * combine them: render an `<a href>` when this returns a link, render
+ * a plain `<button>` otherwise. The label stays the same resolver
+ * output either way; only its target changes.
+ *
+ * Today this reads straight off `node.credentialProjection`, populated
+ * by the CTDL importer from `ceterms:sourceData` / `subjectWebpage` /
+ * `proxyFor`. Author-created nodes get `null` unless they grow their
+ * own equivalent field.
+ */
+export const getNodeEarnLink = (node: PathwayNode): NodeEarnLink | null => {
+    const projection = node.credentialProjection;
+
+    if (!projection?.earnUrl || !projection.earnUrlSource) return null;
+
+    return { href: projection.earnUrl, source: projection.earnUrlSource };
 };
 
 // ---------------------------------------------------------------------------

@@ -25,7 +25,11 @@ import '@xyflow/react/dist/style.css';
 import { useHistory } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
-import { availableNodes, neighborhood } from '../core/graphOps';
+import {
+    availableNodes,
+    buildAdjacency,
+    neighborhood,
+} from '../core/graphOps';
 
 import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
@@ -114,6 +118,41 @@ const MapModeInner: React.FC = () => {
         [activePathway, focusId],
     );
 
+    // Precompute prerequisite progress for every node in one adjacency
+    // build. `prereqProgress` on `graphOps` exposes a per-node helper,
+    // but calling it N times walks adjacency N times — wasteful for
+    // fan-in graphs like the IMA pathway. Folding it here gives us
+    // O(nodes + edges) instead of O(nodes · (nodes + edges)).
+    const prereqByNode = useMemo(() => {
+        const acc = new Map<string, { met: number; total: number; gated: boolean }>();
+
+        if (!activePathway) return acc;
+
+        const { prereqs } = buildAdjacency(activePathway);
+        const completed = new Set(
+            activePathway.nodes
+                .filter(n => n.progress.status === 'completed')
+                .map(n => n.id),
+        );
+
+        for (const node of activePathway.nodes) {
+            const set = prereqs.get(node.id) ?? new Set<string>();
+            const total = set.size;
+
+            if (total === 0) {
+                acc.set(node.id, { met: 0, total: 0, gated: false });
+                continue;
+            }
+
+            let met = 0;
+            for (const id of set) if (completed.has(id)) met += 1;
+
+            acc.set(node.id, { met, total, gated: met < total });
+        }
+
+        return acc;
+    }, [activePathway]);
+
     // Memoized navigation handler so the MapNode data object identity is
     // stable across re-renders (React Flow treats a changed `data` as a
     // node update — not a correctness bug, but cheap to avoid).
@@ -133,18 +172,23 @@ const MapModeInner: React.FC = () => {
             const node = activePathway.nodes.find(n => n.id === pos.id)!;
             const inFocus = nb ? nb.nodeIds.has(pos.id) : true;
             const isFocusNode = pos.id === focusId;
+            const prereq = prereqByNode.get(pos.id) ?? {
+                met: 0,
+                total: 0,
+                gated: false,
+            };
 
             return {
                 id: pos.id,
                 type: 'pathwayNode',
                 position: { x: pos.x, y: pos.y },
-                data: { node, inFocus, isFocusNode },
+                data: { node, inFocus, isFocusNode, prereq },
                 width: NODE_WIDTH,
                 height: NODE_HEIGHT,
                 draggable: false,
             };
         });
-    }, [activePathway, positions, nb, focusId]);
+    }, [activePathway, positions, nb, focusId, prereqByNode]);
 
     // Track which edges have already been seen as "completed" so we can
     // flag *newly* completed ones for the draw-in animation exactly

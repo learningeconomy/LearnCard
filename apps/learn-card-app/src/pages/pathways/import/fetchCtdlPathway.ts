@@ -35,6 +35,7 @@
 import {
     extractRefIds,
     getPathwayMemberRefs,
+    type CtdlCredential,
     type CtdlGraph,
     type CtdlPathway,
     type CtdlPathwayComponent,
@@ -128,7 +129,53 @@ export const fetchCtdlPathway = async (
         }
     }
 
-    return { pathway, components };
+    // Second pass — resolve `ceterms:proxyFor` references. A CTDL
+    // `CredentialComponent` typically carries only the display name of
+    // what will be earned; the learner-facing data (landing page URL,
+    // badge image, longer description) lives on the proxied
+    // `ceterms:Badge` / `ceterms:Certificate` / etc. Without this pass
+    // the importer gets a title and nothing else to show — which is
+    // what the IMA "AI in Finance" pathway looks like in practice.
+    //
+    // Failures are swallowed per-proxy rather than propagated: the
+    // pathway is still importable without its artwork, and a single
+    // dead-letter link shouldn't sink the whole operation.
+    const proxies: Record<string, CtdlCredential> = {};
+
+    const proxyUris = new Set<string>();
+
+    for (const component of Object.values(components)) {
+        const proxyRef = component['ceterms:proxyFor'];
+
+        if (typeof proxyRef === 'string' && /^https?:\/\//i.test(proxyRef)) {
+            proxyUris.add(proxyRef);
+        }
+    }
+
+    const proxyQueue = [...proxyUris];
+
+    while (proxyQueue.length > 0) {
+        const batch = proxyQueue.splice(0, concurrency);
+
+        const results = await Promise.allSettled(
+            batch.map(uri => fetchJson<CtdlCredential>(uri, fetchImpl)),
+        );
+
+        for (const [i, settled] of results.entries()) {
+            if (settled.status === 'fulfilled') {
+                const credential = settled.value;
+
+                proxies[credential['@id'] ?? batch[i]] = credential;
+            }
+            // Rejected fetches leave the proxy out; the importer falls
+            // back to whatever the component itself carries. We don't
+            // warn here because individual proxy misses are a
+            // reasonable steady state (some registry records are
+            // incomplete).
+        }
+    }
+
+    return { pathway, components, proxies };
 };
 
 // ---------------------------------------------------------------------------

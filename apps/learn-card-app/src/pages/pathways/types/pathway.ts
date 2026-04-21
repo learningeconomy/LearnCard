@@ -215,11 +215,39 @@ export type Stage = z.infer<typeof StageSchema>;
 // A node does NOT store a VC; it stores a projection used at issuance.
 // -----------------------------------------------------------------
 
+/**
+ * Where the learner actually *goes* to earn this credential. CTDL
+ * exposes two candidate URL fields per component/credential that we
+ * surface (`ceterms:proxyFor` exists but resolves to a registry JSON
+ * endpoint, useless as a destination — we resolve proxies upstream in
+ * the importer and pull the proxied credential's own `subjectWebpage`
+ * / `sourceData` through, tagging them with their *actual* field
+ * rather than the proxy indirection).
+ *
+ *   - `sourceData`: the issuer's "earn it here" URL. A click here is
+ *     meaningfully "go start the work."
+ *   - `subjectWebpage`: the issuer's human landing page. A click here
+ *     is "read about it"; we never promise it earns anything.
+ *
+ * Separation matters: saying "Earn this badge ↗" and dropping someone
+ * on a 404 or a marketing page is worse than not surfacing a link at
+ * all, so the CTA resolver degrades copy to match the source.
+ */
+export const EarnUrlSourceSchema = z.enum([
+    'sourceData',
+    'subjectWebpage',
+]);
+export type EarnUrlSource = z.infer<typeof EarnUrlSourceSchema>;
+
 export const AchievementProjectionSchema = z.object({
     achievementType: z.string(),
     criteria: z.string(),
     image: z.string().url().optional(),
     alignment: z.array(AlignmentRefSchema).optional(),
+    /** Issuer URL where the learner can go to actually earn this. */
+    earnUrl: z.string().url().optional(),
+    /** Which CTDL field the `earnUrl` came from. */
+    earnUrlSource: EarnUrlSourceSchema.optional(),
 });
 export type AchievementProjection = z.infer<typeof AchievementProjectionSchema>;
 

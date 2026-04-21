@@ -5,10 +5,12 @@ import type { Edge, Pathway, PathwayNode } from '../types';
 import {
     buildJourney,
     getGreeting,
+    getNodeEarnLink,
     identityPhrase,
     journeyLabel,
     policyCallToAction,
     policyLabel,
+    resolveNodeCallToAction,
 } from './presentation';
 
 const NOW = '2026-04-20T12:00:00.000Z';
@@ -161,6 +163,259 @@ describe('policyCallToAction', () => {
         expect(policyCallToAction('assessment')).toMatch(/^Start/);
         expect(policyCallToAction('artifact')).toMatch(/^Work/);
         expect(policyCallToAction('external')).toMatch(/^Open/);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// resolveNodeCallToAction — the node-aware CTA resolver
+// ---------------------------------------------------------------------------
+
+describe('resolveNodeCallToAction', () => {
+    // Small helpers keep tests readable — each test cares about ~2
+    // fields of the node, so we start from a conservative default and
+    // override what matters.
+    const credentialNode = (
+        achievementType: string,
+        overrides?: Partial<PathwayNode['stage']>,
+    ): PathwayNode => ({
+        ...node('credential'),
+        credentialProjection: {
+            achievementType,
+            criteria: 'Earn the thing.',
+        },
+        stage: {
+            initiation: [],
+            policy: {
+                kind: 'artifact',
+                prompt: 'Earn this credential.',
+                expectedArtifact: 'link',
+            },
+            termination: { kind: 'endorsement', minEndorsers: 1 },
+            ...overrides,
+        },
+    });
+
+    it('uses "Earn this badge" for a Badge credential node with endorsement termination', () => {
+        expect(resolveNodeCallToAction(credentialNode('Badge'))).toBe('Earn this badge');
+    });
+
+    it('normalizes CTDL "DigitalBadge" to "Earn this badge"', () => {
+        // Real registries emit the long form. The matcher is forgiving
+        // on purpose.
+        expect(resolveNodeCallToAction(credentialNode('DigitalBadge'))).toBe(
+            'Earn this badge',
+        );
+    });
+
+    it('uses "Earn this certificate" for Certificate and Certification alike', () => {
+        expect(resolveNodeCallToAction(credentialNode('Certificate'))).toBe(
+            'Earn this certificate',
+        );
+        expect(resolveNodeCallToAction(credentialNode('Certification'))).toBe(
+            'Earn this certificate',
+        );
+    });
+
+    it('uses "Earn this micro-credential" for MicroCredential variants', () => {
+        expect(resolveNodeCallToAction(credentialNode('MicroCredential'))).toBe(
+            'Earn this micro-credential',
+        );
+    });
+
+    it('falls back to "Earn this credential" for an unknown CTDL type', () => {
+        // Honest fallback — never invent a noun we can't recognize.
+        expect(resolveNodeCallToAction(credentialNode('SomeNovelBadgeTypeV2'))).toBe(
+            'Earn this badge',
+        );
+        expect(resolveNodeCallToAction(credentialNode('UnrecognizedThing'))).toBe(
+            'Earn this credential',
+        );
+    });
+
+    it('overrides with "Take the assessment" when a credential node has assessment-score termination', () => {
+        const asmt = credentialNode('Badge', {
+            initiation: [],
+            policy: { kind: 'assessment', rubric: { criteria: [] } },
+            termination: { kind: 'assessment-score', min: 70 },
+        });
+
+        expect(resolveNodeCallToAction(asmt)).toBe('Take the assessment');
+    });
+
+    it('overrides with "Submit your proof" when a credential node has artifact-count termination', () => {
+        const proof = credentialNode('Certificate', {
+            initiation: [],
+            policy: {
+                kind: 'artifact',
+                prompt: 'Attach proof.',
+                expectedArtifact: 'link',
+            },
+            termination: {
+                kind: 'artifact-count',
+                count: 1,
+                artifactType: 'link',
+            },
+        });
+
+        expect(resolveNodeCallToAction(proof)).toBe('Submit your proof');
+    });
+
+    it('uses "Mark complete" for a self-attest termination with no credential projection', () => {
+        expect(resolveNodeCallToAction(node('n1'))).toBe('Mark complete');
+    });
+
+    it('uses "Take the assessment" for assessment-score without credential projection', () => {
+        const asmt: PathwayNode = {
+            ...node('a'),
+            stage: {
+                initiation: [],
+                policy: { kind: 'assessment', rubric: { criteria: [] } },
+                termination: { kind: 'assessment-score', min: 80 },
+            },
+        };
+
+        expect(resolveNodeCallToAction(asmt)).toBe('Take the assessment');
+    });
+
+    it('honors "Open in {MCP}" for external-policy nodes over all credential logic', () => {
+        // MCP label wins because it is the most specific hint. Even if
+        // the node also claims to award a credential, the action is
+        // still "open the tool first."
+        const external: PathwayNode = {
+            ...credentialNode('Badge'),
+            stage: {
+                initiation: [],
+                policy: {
+                    kind: 'external',
+                    mcp: { serverId: 'figma', toolName: 'openFile' },
+                },
+                termination: { kind: 'self-attest', prompt: 'done' },
+            },
+        };
+
+        expect(resolveNodeCallToAction(external, 'Figma')).toBe('Open in Figma');
+    });
+
+    it('says "Learn more" when the credential has only a `subjectWebpage` earn URL', () => {
+        // A landing-page URL doesn't earn anything by clicking it, so we
+        // refuse to promise "Earn this badge" — better to under-promise
+        // than drop the learner on a marketing page with a bait-y CTA.
+        const web = credentialNode('Badge');
+
+        web.credentialProjection = {
+            ...web.credentialProjection!,
+            earnUrl: 'https://issuer.example/about',
+            earnUrlSource: 'subjectWebpage',
+        };
+
+        expect(resolveNodeCallToAction(web)).toBe('Learn more');
+    });
+
+    it('keeps "Earn this {noun}" when the credential has a `sourceData` earn URL', () => {
+        // `sourceData` is CTDL's canonical "go here to earn it" field —
+        // keeping the strongest CTA copy is honest here.
+        const src = credentialNode('Badge');
+
+        src.credentialProjection = {
+            ...src.credentialProjection!,
+            earnUrl: 'https://issuer.example/earn',
+            earnUrlSource: 'sourceData',
+        };
+
+        expect(resolveNodeCallToAction(src)).toBe('Earn this badge');
+    });
+
+    it('falls through to policy-level copy when no sharper signal exists', () => {
+        // A practice node with an endorsement termination has no
+        // credential projection and no termination match — so it
+        // bottoms out at the policy layer.
+        const practice: PathwayNode = {
+            ...node('p'),
+            stage: {
+                initiation: [],
+                policy: {
+                    kind: 'practice',
+                    cadence: { frequency: 'weekly', perPeriod: 1 },
+                    artifactTypes: ['text'],
+                },
+                termination: { kind: 'endorsement', minEndorsers: 1 },
+            },
+        };
+
+        expect(resolveNodeCallToAction(practice)).toBe(policyCallToAction('practice'));
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getNodeEarnLink — external earn-link resolver for CTA surfaces
+// ---------------------------------------------------------------------------
+
+describe('getNodeEarnLink', () => {
+    it('returns null for a plain node without a credential projection', () => {
+        // Author-created nodes don't carry CTDL earn links today.
+        expect(getNodeEarnLink(node('x'))).toBeNull();
+    });
+
+    it('returns null when the credential projection has no earnUrl', () => {
+        const n: PathwayNode = {
+            ...node('x'),
+            credentialProjection: {
+                achievementType: 'Badge',
+                criteria: 'do the thing',
+            },
+        };
+
+        expect(getNodeEarnLink(n)).toBeNull();
+    });
+
+    it('returns { href, source } for a credential node with a sourceData earnUrl', () => {
+        const n: PathwayNode = {
+            ...node('x'),
+            credentialProjection: {
+                achievementType: 'Badge',
+                criteria: 'do the thing',
+                earnUrl: 'https://issuer.example/earn',
+                earnUrlSource: 'sourceData',
+            },
+        };
+
+        expect(getNodeEarnLink(n)).toEqual({
+            href: 'https://issuer.example/earn',
+            source: 'sourceData',
+        });
+    });
+
+    it('surfaces the subjectWebpage source so callers can degrade copy', () => {
+        // Callers use `source` to downgrade the button label from
+        // "Earn this badge" to "Learn more" — mostly a plumbing test
+        // but guards that the tag flows through untouched.
+        const n: PathwayNode = {
+            ...node('x'),
+            credentialProjection: {
+                achievementType: 'Badge',
+                criteria: 'do the thing',
+                earnUrl: 'https://issuer.example/about',
+                earnUrlSource: 'subjectWebpage',
+            },
+        };
+
+        expect(getNodeEarnLink(n)?.source).toBe('subjectWebpage');
+    });
+
+    it('returns null when earnUrl is present but earnUrlSource is missing', () => {
+        // Guards against a half-populated projection surfacing a
+        // sourceless link — we can't render honest copy without
+        // knowing which CTDL field produced the URL.
+        const n: PathwayNode = {
+            ...node('x'),
+            credentialProjection: {
+                achievementType: 'Badge',
+                criteria: 'do the thing',
+                earnUrl: 'https://issuer.example/earn',
+            } as PathwayNode['credentialProjection'],
+        };
+
+        expect(getNodeEarnLink(n)).toBeNull();
     });
 });
 

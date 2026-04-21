@@ -160,6 +160,18 @@ export interface CtdlPathwayComponent {
     /** URL to the real-world credential / course / assessment. */
     'ceterms:sourceData'?: string;
 
+    /**
+     * Human-readable landing page for the component (inherited from the
+     * CTDL Resource base). Not a guaranteed "earn it here" link — often
+     * a marketing page — so we degrade the CTA copy accordingly.
+     */
+    'ceterms:subjectWebpage'?: string;
+
+    /** Badge / certificate artwork URL. Often missing on the component
+     * itself — when it is, the importer falls back to the proxied
+     * credential's `ceterms:image`. */
+    'ceterms:image'?: string;
+
     /** Declarative proxy — the actual credential/course referenced. */
     'ceterms:proxyFor'?: string;
 
@@ -176,6 +188,45 @@ export interface CtdlPathwayComponent {
 }
 
 // ---------------------------------------------------------------------------
+// Proxied credential (target of `ceterms:proxyFor`)
+// ---------------------------------------------------------------------------
+
+/**
+ * A CTDL credential resource (`ceterms:Badge`, `ceterms:Certificate`,
+ * etc.) referenced from a `CredentialComponent` via `ceterms:proxyFor`.
+ *
+ * The pathway component typically carries only the *name* of what the
+ * learner will earn; the rich, learner-facing data (landing page URL,
+ * badge image, longer description) lives on the proxied credential.
+ * Real-world example — the IMA "AI in Finance" pathway: each node
+ * component has no `subjectWebpage` or `image` of its own, but its
+ * `proxyFor` target (a `ceterms:Badge`) has both. We resolve the proxy
+ * so that UI can render the real landing page and badge image.
+ *
+ * Only the fields the importer actually merges are typed; everything
+ * else is passthrough via the index signature.
+ */
+export interface CtdlCredential {
+    '@id': string;
+    '@type'?: string;
+
+    'ceterms:ctid'?: string;
+    'ceterms:name'?: CtdlLocalizedString;
+    'ceterms:description'?: CtdlLocalizedString;
+
+    /** Issuer's canonical landing page for the credential. */
+    'ceterms:subjectWebpage'?: string;
+
+    /** Badge / certificate artwork URL. */
+    'ceterms:image'?: string;
+
+    /** Where to actually earn this (rare, but sometimes on the cred). */
+    'ceterms:sourceData'?: string;
+
+    [k: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // Import surface — the exact data `fromCtdlPathway` consumes.
 // ---------------------------------------------------------------------------
 
@@ -186,10 +237,16 @@ export interface CtdlPathwayComponent {
  *
  * `fetchCtdlPathwayById` assembles this from live registry calls;
  * tests construct it from fixtures.
+ *
+ * `proxies` holds credential resources resolved from each component's
+ * `ceterms:proxyFor` reference. It is optional because fixtures
+ * predating proxy resolution (and simple CTDL pathways without proxies)
+ * legitimately omit it.
  */
 export interface CtdlGraph {
     pathway: CtdlPathway;
     components: Record<string, CtdlPathwayComponent>;
+    proxies?: Record<string, CtdlCredential>;
 }
 
 // ---------------------------------------------------------------------------

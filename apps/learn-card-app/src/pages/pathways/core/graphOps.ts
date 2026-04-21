@@ -265,6 +265,56 @@ export const rootNodes = (pathway: Pathway): PathwayNode[] => {
     return pathway.nodes.filter(n => (prereqs.get(n.id)?.size ?? 0) === 0);
 };
 
+// -----------------------------------------------------------------
+// Prerequisite progress (Map gating)
+// -----------------------------------------------------------------
+
+export interface PrereqProgress {
+    /** How many direct prerequisite nodes exist for this node. */
+    total: number;
+    /** How many of those prerequisites are in status `completed`. */
+    met: number;
+    /**
+     * True iff there's at least one unmet prerequisite — i.e. the node
+     * cannot be started yet. A root node (`total === 0`) is never
+     * gated; a fully-satisfied node (`met === total`) is never gated.
+     */
+    gated: boolean;
+}
+
+/**
+ * Direct prerequisite count + how many of them are completed, for a
+ * single node. Pure, O(edges + prereqs). Separate from `availableNodes`
+ * so the Map can render per-node gating state (e.g. "2 of 6 earned ·
+ * Locked" on the destination) without recomputing adjacency per card.
+ *
+ * The Map calls this once per node render; for a 10k-node pathway the
+ * caller should memoize `buildAdjacency` and fold in the completion
+ * set themselves. For the sizes we actually see (O(10–100) nodes), the
+ * straightforward call is fine.
+ */
+export const prereqProgress = (
+    pathway: Pathway,
+    nodeId: string,
+): PrereqProgress => {
+    const { prereqs } = buildAdjacency(pathway);
+    const directPrereqs = prereqs.get(nodeId) ?? new Set<string>();
+    const total = directPrereqs.size;
+
+    if (total === 0) {
+        return { total: 0, met: 0, gated: false };
+    }
+
+    let met = 0;
+
+    for (const prereqId of directPrereqs) {
+        const prereqNode = pathway.nodes.find(n => n.id === prereqId);
+        if (prereqNode?.progress.status === 'completed') met += 1;
+    }
+
+    return { total, met, gated: met < total };
+};
+
 /** Edges of a given type. Keeps call sites declarative. */
 export const edgesOfType = (pathway: Pathway, type: Edge['type']): Edge[] =>
     pathway.edges.filter(e => e.type === type);

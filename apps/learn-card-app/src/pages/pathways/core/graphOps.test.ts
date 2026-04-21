@@ -9,6 +9,7 @@ import {
     canReach,
     descendants,
     neighborhood,
+    prereqProgress,
     rootNodes,
     validatePathway,
 } from './graphOps';
@@ -192,6 +193,94 @@ describe('rootNodes', () => {
         );
 
         expect(rootNodes(p).map(n => n.id)).toEqual(['a']);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// prereqProgress — per-node gating for Map card affordances
+// ---------------------------------------------------------------------------
+
+describe('prereqProgress', () => {
+    it('returns zero/zero/un-gated for a root node (no incoming prereq edges)', () => {
+        const p = pathway([node('a')], []);
+
+        expect(prereqProgress(p, 'a')).toEqual({ total: 0, met: 0, gated: false });
+    });
+
+    it('counts every direct prerequisite edge, regardless of completion', () => {
+        // Fan-in: a, b, c → d. With nothing completed, all three are
+        // unmet, and d is gated.
+        const p = pathway(
+            [node('a'), node('b'), node('c'), node('d')],
+            [edge('1', 'a', 'd'), edge('2', 'b', 'd'), edge('3', 'c', 'd')],
+        );
+
+        expect(prereqProgress(p, 'd')).toEqual({ total: 3, met: 0, gated: true });
+    });
+
+    it('reports partial progress accurately — this is the IMA destination case', () => {
+        // Mirrors the IMA AI in Finance fan-in: 6 children into a
+        // certificate destination, two completed. This is the exact
+        // state the Map card should render as "2/6 · Locked".
+        const p = pathway(
+            [
+                node('c1', 'completed'),
+                node('c2', 'completed'),
+                node('c3'),
+                node('c4'),
+                node('c5'),
+                node('c6'),
+                node('cert'),
+            ],
+            [
+                edge('1', 'c1', 'cert'),
+                edge('2', 'c2', 'cert'),
+                edge('3', 'c3', 'cert'),
+                edge('4', 'c4', 'cert'),
+                edge('5', 'c5', 'cert'),
+                edge('6', 'c6', 'cert'),
+            ],
+        );
+
+        expect(prereqProgress(p, 'cert')).toEqual({ total: 6, met: 2, gated: true });
+    });
+
+    it('is un-gated the moment every direct prerequisite is completed', () => {
+        const p = pathway(
+            [node('a', 'completed'), node('b', 'completed'), node('c')],
+            [edge('1', 'a', 'c'), edge('2', 'b', 'c')],
+        );
+
+        expect(prereqProgress(p, 'c')).toEqual({ total: 2, met: 2, gated: false });
+    });
+
+    it('ignores non-prerequisite edges (alternative/related edges do not gate)', () => {
+        // c has one prerequisite (a) and one alternative (b). Only
+        // the prerequisite counts for gating.
+        const p = pathway(
+            [node('a', 'completed'), node('b'), node('c')],
+            [edge('1', 'a', 'c'), edge('2', 'b', 'c', 'alternative')],
+        );
+
+        expect(prereqProgress(p, 'c')).toEqual({ total: 1, met: 1, gated: false });
+    });
+
+    it('tolerates lookups against unknown node ids without throwing', () => {
+        const p = pathway([node('a')], []);
+
+        expect(prereqProgress(p, 'ghost')).toEqual({ total: 0, met: 0, gated: false });
+    });
+
+    it('only counts *direct* prerequisites, not transitive ones', () => {
+        // a → b → c. From c's perspective, only b is a direct
+        // prereq; a is transitive and does not gate c directly.
+        // Even though a is not complete, c is un-gated because b is.
+        const p = pathway(
+            [node('a'), node('b', 'completed'), node('c')],
+            [edge('1', 'a', 'b'), edge('2', 'b', 'c')],
+        );
+
+        expect(prereqProgress(p, 'c')).toEqual({ total: 1, met: 1, gated: false });
     });
 });
 

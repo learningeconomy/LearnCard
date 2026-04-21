@@ -482,6 +482,417 @@ describe('fromCtdlPathway — warnings', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Earn-link capture — `ceterms:sourceData` / `subjectWebpage` / `proxyFor`
+// ---------------------------------------------------------------------------
+
+describe('fromCtdlPathway — earn-link capture', () => {
+    // Small helper: build a minimal one-component graph where the
+    // destination is a CredentialComponent. We override the component's
+    // fields per-test to exercise each earn-url source.
+    const buildGraph = (
+        componentOverrides: Record<string, unknown>,
+    ) => ({
+        pathway: {
+            '@id': 'https://x.test/ce-root',
+            '@type': 'ceterms:Pathway',
+            'ceterms:ctid': 'ce-root',
+            'ceterms:name': 'Earn-link test pathway',
+            'ceterms:hasChild': [{ '@id': 'https://x.test/ce-dest' }],
+            'ceterms:hasDestinationComponent': [
+                { '@id': 'https://x.test/ce-dest' },
+            ],
+        },
+        components: {
+            'https://x.test/ce-dest': {
+                '@id': 'https://x.test/ce-dest',
+                '@type': 'ceterms:CredentialComponent',
+                'ceterms:ctid': 'ce-dest',
+                'ceterms:name': 'Destination',
+                'ceterms:credentialType': [{ '@id': 'ceterms:Badge' }],
+                ...componentOverrides,
+            },
+        },
+    });
+
+    const runImport = (graph: ReturnType<typeof buildGraph>) =>
+        fromCtdlPathway({
+            graph,
+            ownerDid: OWNER,
+            now: NOW,
+            generateId: makeDeterministicIds(),
+        });
+
+    it('captures `ceterms:sourceData` as the primary earn URL', () => {
+        const { pathway } = runImport(
+            buildGraph({
+                'ceterms:sourceData': 'https://issuer.example/earn',
+            }),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://issuer.example/earn',
+        );
+        expect(dest?.credentialProjection?.earnUrlSource).toBe('sourceData');
+    });
+
+    it('falls back to `ceterms:subjectWebpage` when `sourceData` is absent', () => {
+        const { pathway } = runImport(
+            buildGraph({
+                'ceterms:subjectWebpage': 'https://issuer.example/about',
+            }),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://issuer.example/about',
+        );
+        expect(dest?.credentialProjection?.earnUrlSource).toBe(
+            'subjectWebpage',
+        );
+    });
+
+    it('never surfaces an unresolved `ceterms:proxyFor` URL as the earn link', () => {
+        // A raw proxyFor URL resolves to the registry's JSON endpoint,
+        // useless to a learner. Without a resolved proxy we leave the
+        // earn link blank rather than drop the learner on raw CTDL.
+        const { pathway } = runImport(
+            buildGraph({
+                'ceterms:proxyFor': 'https://credentialengineregistry.org/resources/ce-abc',
+            }),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBeUndefined();
+        expect(dest?.credentialProjection?.earnUrlSource).toBeUndefined();
+    });
+
+    it('prefers `sourceData` over `subjectWebpage` when both are present on the component', () => {
+        const { pathway } = runImport(
+            buildGraph({
+                'ceterms:sourceData': 'https://issuer.example/earn',
+                'ceterms:subjectWebpage': 'https://issuer.example/about',
+            }),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://issuer.example/earn',
+        );
+        expect(dest?.credentialProjection?.earnUrlSource).toBe('sourceData');
+    });
+
+    it('leaves `earnUrl` / `earnUrlSource` undefined when no resolvable URL is present', () => {
+        const { pathway } = runImport(buildGraph({}));
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        // The projection still exists (it's a CredentialComponent),
+        // but the earn-link fields stay off so the UI doesn't invent
+        // a link that doesn't exist.
+        expect(dest?.credentialProjection).toBeDefined();
+        expect(dest?.credentialProjection?.earnUrl).toBeUndefined();
+        expect(dest?.credentialProjection?.earnUrlSource).toBeUndefined();
+    });
+
+    it('rejects non-http schemes so we never render an unopenable link', () => {
+        // `sourceData` is a plain string in CTDL; publishers occasionally
+        // emit mailto:/javascript:/plain registry URIs. Skip them all.
+        const { pathway } = runImport(
+            buildGraph({
+                'ceterms:sourceData': 'mailto:issuer@example.com',
+                'ceterms:subjectWebpage': 'https://issuer.example/about',
+            }),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://issuer.example/about',
+        );
+        expect(dest?.credentialProjection?.earnUrlSource).toBe(
+            'subjectWebpage',
+        );
+    });
+
+    it('imported pathway still validates against PathwaySchema with earn-link fields populated', () => {
+        // Guards against accidentally adding a field the runtime
+        // schema can't roundtrip — a regression here would break
+        // store hydration.
+        const { pathway } = runImport(
+            buildGraph({
+                'ceterms:sourceData': 'https://issuer.example/earn',
+            }),
+        );
+
+        expect(() => PathwaySchema.parse(pathway)).not.toThrow();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Proxy resolution — `ceterms:proxyFor` merges fields from the proxied
+// credential back onto the component before projection.
+// ---------------------------------------------------------------------------
+
+describe('fromCtdlPathway — proxyFor resolution', () => {
+    // Helper: build a graph where the destination component has a
+    // `proxyFor` ref, and the proxy record is provided in
+    // `graph.proxies`. This mirrors what `fetchCtdlPathway` assembles
+    // after its second pass.
+    const PROXY_URI = 'https://credentialengineregistry.org/resources/ce-proxy';
+
+    const buildGraphWithProxy = (
+        componentOverrides: Record<string, unknown>,
+        proxyOverrides: Record<string, unknown>,
+    ) => ({
+        pathway: {
+            '@id': 'https://x.test/ce-root',
+            '@type': 'ceterms:Pathway',
+            'ceterms:ctid': 'ce-root',
+            'ceterms:name': 'Proxy test pathway',
+            'ceterms:hasChild': [{ '@id': 'https://x.test/ce-dest' }],
+            'ceterms:hasDestinationComponent': [
+                { '@id': 'https://x.test/ce-dest' },
+            ],
+        },
+        components: {
+            'https://x.test/ce-dest': {
+                '@id': 'https://x.test/ce-dest',
+                '@type': 'ceterms:CredentialComponent',
+                'ceterms:ctid': 'ce-dest',
+                'ceterms:name': 'Destination',
+                'ceterms:proxyFor': PROXY_URI,
+                ...componentOverrides,
+            },
+        },
+        proxies: {
+            [PROXY_URI]: {
+                '@id': PROXY_URI,
+                '@type': 'ceterms:Badge',
+                ...proxyOverrides,
+            },
+        },
+    });
+
+    const runImport = (graph: ReturnType<typeof buildGraphWithProxy>) =>
+        fromCtdlPathway({
+            graph,
+            ownerDid: OWNER,
+            now: NOW,
+            generateId: makeDeterministicIds(),
+        });
+
+    it('uses the proxied credential\'s `ceterms:subjectWebpage` as the earn link', () => {
+        // The real-world IMA case: the CredentialComponent has only a
+        // name + proxyFor, and the Badge at the other end carries the
+        // enrollment page URL.
+        const { pathway } = runImport(
+            buildGraphWithProxy(
+                {},
+                {
+                    'ceterms:subjectWebpage':
+                        'https://enterprise.imaglobal.org/learning-paths/data-literacy',
+                },
+            ),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://enterprise.imaglobal.org/learning-paths/data-literacy',
+        );
+        // Tagged as `subjectWebpage` — that's the actual source on the
+        // proxied credential. Honest copy: the CTA degrades to "Learn
+        // more" rather than promising earning.
+        expect(dest?.credentialProjection?.earnUrlSource).toBe(
+            'subjectWebpage',
+        );
+    });
+
+    it('uses the proxied credential\'s `ceterms:sourceData` when present (priority 1)', () => {
+        // A proxied credential that does declare an "earn it here" URL
+        // should flow through with the strong "Earn this X" copy.
+        const { pathway } = runImport(
+            buildGraphWithProxy(
+                {},
+                {
+                    'ceterms:sourceData': 'https://issuer.example/enroll',
+                    'ceterms:subjectWebpage': 'https://issuer.example/about',
+                },
+            ),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://issuer.example/enroll',
+        );
+        expect(dest?.credentialProjection?.earnUrlSource).toBe('sourceData');
+    });
+
+    it('captures the proxied credential\'s `ceterms:image` into the projection', () => {
+        // Badges / certificates rarely carry an image on the pathway
+        // component itself — the artwork lives on the proxied Badge.
+        const { pathway } = runImport(
+            buildGraphWithProxy(
+                {},
+                {
+                    'ceterms:image': 'https://images.example/badge.png',
+                },
+            ),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.image).toBe(
+            'https://images.example/badge.png',
+        );
+    });
+
+    it('lets the component win when both component and proxy declare the same field', () => {
+        // Pathway authors' framing of a step is authoritative — their
+        // `subjectWebpage` override should beat whatever's on the
+        // underlying registry Badge.
+        const { pathway } = runImport(
+            buildGraphWithProxy(
+                {
+                    'ceterms:subjectWebpage': 'https://authors.choice/landing',
+                },
+                {
+                    'ceterms:subjectWebpage': 'https://issuer.example/about',
+                },
+            ),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBe(
+            'https://authors.choice/landing',
+        );
+    });
+
+    it('infers `credentialType` from the proxy\'s @type when the component omits it', () => {
+        // Component has no ceterms:credentialType; proxy is @type
+        // ceterms:Badge → projection's achievementType comes through
+        // as "Badge" and the CTA reads "Earn this badge".
+        const { pathway } = runImport(
+            buildGraphWithProxy(
+                {},
+                {
+                    '@type': 'ceterms:Badge',
+                    'ceterms:subjectWebpage': 'https://issuer.example/about',
+                },
+            ),
+        );
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.achievementType).toBe('Badge');
+    });
+
+    it('ignores the proxy when it is missing from `graph.proxies` (fetch failure)', () => {
+        // Upstream fetch swallows per-proxy failures; the importer has
+        // to degrade cleanly — no earn URL, no image, no crash.
+        const graph = buildGraphWithProxy({}, {});
+
+        // Simulate a fetch failure for the proxy by dropping it.
+        delete (graph as { proxies?: unknown }).proxies;
+
+        const { pathway } = fromCtdlPathway({
+            graph: graph as Parameters<typeof fromCtdlPathway>[0]['graph'],
+            ownerDid: OWNER,
+            now: NOW,
+            generateId: makeDeterministicIds(),
+        });
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.earnUrl).toBeUndefined();
+        expect(dest?.credentialProjection?.image).toBeUndefined();
+        expect(dest).toBeDefined(); // pathway still imports
+    });
+
+    it('schema-validates a pathway built from a proxied credential', () => {
+        const { pathway } = runImport(
+            buildGraphWithProxy(
+                {},
+                {
+                    'ceterms:subjectWebpage': 'https://issuer.example/about',
+                    'ceterms:image': 'https://images.example/badge.png',
+                },
+            ),
+        );
+
+        expect(() => PathwaySchema.parse(pathway)).not.toThrow();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Image capture — `ceterms:image` on the component (no proxy involved)
+// ---------------------------------------------------------------------------
+
+describe('fromCtdlPathway — image capture', () => {
+    const buildGraph = (
+        componentOverrides: Record<string, unknown>,
+    ) => ({
+        pathway: {
+            '@id': 'https://x.test/ce-root',
+            '@type': 'ceterms:Pathway',
+            'ceterms:ctid': 'ce-root',
+            'ceterms:name': 'Image test pathway',
+            'ceterms:hasChild': [{ '@id': 'https://x.test/ce-dest' }],
+            'ceterms:hasDestinationComponent': [
+                { '@id': 'https://x.test/ce-dest' },
+            ],
+        },
+        components: {
+            'https://x.test/ce-dest': {
+                '@id': 'https://x.test/ce-dest',
+                '@type': 'ceterms:CredentialComponent',
+                'ceterms:ctid': 'ce-dest',
+                'ceterms:name': 'Destination',
+                'ceterms:credentialType': [{ '@id': 'ceterms:Badge' }],
+                ...componentOverrides,
+            },
+        },
+    });
+
+    it('captures `ceterms:image` directly from the component when present', () => {
+        const { pathway } = fromCtdlPathway({
+            graph: buildGraph({
+                'ceterms:image': 'https://images.example/component.png',
+            }),
+            ownerDid: OWNER,
+            now: NOW,
+            generateId: makeDeterministicIds(),
+        });
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.image).toBe(
+            'https://images.example/component.png',
+        );
+    });
+
+    it('leaves `image` undefined when neither the component nor a proxy provides one', () => {
+        const { pathway } = fromCtdlPathway({
+            graph: buildGraph({}),
+            ownerDid: OWNER,
+            now: NOW,
+            generateId: makeDeterministicIds(),
+        });
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.image).toBeUndefined();
+    });
+
+    it('rejects a non-http `image` so we never render a broken thumbnail', () => {
+        const { pathway } = fromCtdlPathway({
+            graph: buildGraph({
+                'ceterms:image': 'not-a-url',
+            }),
+            ownerDid: OWNER,
+            now: NOW,
+            generateId: makeDeterministicIds(),
+        });
+        const dest = pathway.nodes.find(n => n.title === 'Destination');
+
+        expect(dest?.credentialProjection?.image).toBeUndefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Determinism — same input should produce the same output (modulo UUIDs)
 // ---------------------------------------------------------------------------
 

@@ -23,7 +23,9 @@ import { Handle, Position } from '@xyflow/react';
 import {
     chevronForwardOutline,
     gitBranchOutline,
+    lockClosedOutline,
     openOutline,
+    ribbonOutline,
 } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
@@ -31,11 +33,46 @@ import { pathwayStore } from '../../../stores/pathways';
 import { computePathwayProgress, resolveCompositeChild } from '../core/composition';
 import type { PathwayNode } from '../types';
 
+/**
+ * Per-node prerequisite fold. Produced once in `MapMode` and handed to
+ * every card so gating (Locked · 2/6) renders without any card having
+ * to walk adjacency itself.
+ */
+export interface MapNodePrereq {
+    met: number;
+    total: number;
+    gated: boolean;
+}
+
 export type MapNodeData = {
     node: PathwayNode;
     inFocus: boolean;
     isFocusNode: boolean;
+    prereq: MapNodePrereq;
 } & Record<string, unknown>;
+
+/**
+ * Short display label for a CTDL-style `achievementType`. Narrows the
+ * long registry forms (`"DigitalBadge"`, `"Certification"`, etc.) to
+ * the handful of nouns that fit in a 60-ish-px chip. Unknown values
+ * fall through to `"Credential"` so we never print raw CTDL strings.
+ */
+const credentialTypeChip = (achievementType: string | undefined): string => {
+    if (!achievementType) return 'Credential';
+
+    const t = achievementType.toLowerCase();
+
+    if (t.includes('badge')) return 'Badge';
+    if (t.includes('certificate') || t.includes('certification')) return 'Certificate';
+    if (t.includes('diploma')) return 'Diploma';
+    if (t.includes('degree')) return 'Degree';
+    if (t.includes('license') || t.includes('licence')) return 'License';
+    if (t.includes('microcredential') || t.includes('micro-credential')) {
+        return 'Micro-credential';
+    }
+
+    return 'Credential';
+};
 
 type Status = PathwayNode['progress']['status'];
 
@@ -236,18 +273,103 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                     {node.title}
                 </p>
 
-                <div className="flex items-center gap-1.5">
-                    <span
-                        aria-hidden
-                        className={`inline-block w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`}
-                    />
+                {/*
+                    Bottom meta row. Three concerns packed into one line:
 
-                    <span className="text-[10px] font-medium uppercase tracking-wide text-grayscale-500">
-                        {isFocusNode && status === 'not-started'
+                      1. **Credential affordance** (optional) — when the
+                         node carries a `credentialProjection` (every
+                         CredentialComponent from a CTDL import does),
+                         lead with a ribbon icon + credential type
+                         chip ("Badge" / "Certificate" / …). This
+                         flips the card from "generic task" to
+                         "something you earn" without eating the title.
+
+                      2. **Gated state** — if the node has unmet
+                         prerequisites, the row swaps its status
+                         label to `Locked · {met}/{total}` with a lock
+                         glyph. This is the honest counter-signal to
+                         "Up next" on gated destinations: the IMA
+                         Certificate node now reads "Certificate ·
+                         Locked · 0/6" instead of the misleading
+                         "Up next".
+
+                      3. **Status label** — the existing `STATUS_LABEL`
+                         copy still drives the tail of the row when
+                         nothing gates the node. `"Your next step"`
+                         still wins on the focus-node + not-started
+                         case for tight coupling with the focus halo.
+                */}
+                {(() => {
+                    const projection = node.credentialProjection;
+                    const typeLabel = projection
+                        ? credentialTypeChip(projection.achievementType)
+                        : null;
+
+                    // Gated wins over any status label — "Up next" is
+                    // false when you can't start yet.
+                    const isGated = data.prereq.gated;
+
+                    const tailLabel = isGated
+                        ? `Locked · ${data.prereq.met}/${data.prereq.total}`
+                        : isFocusNode && status === 'not-started'
                             ? 'Your next step'
-                            : STATUS_LABEL[status]}
-                    </span>
-                </div>
+                            : STATUS_LABEL[status];
+
+                    // Gated reads as grayscale; otherwise keep the
+                    // emerald accent on the credential ribbon so the
+                    // card visually separates "earnable" from "locked".
+                    const ribbonTone = isGated
+                        ? 'text-grayscale-400'
+                        : status === 'completed'
+                            ? 'text-emerald-600'
+                            : 'text-emerald-500';
+
+                    return (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            {projection && (
+                                <>
+                                    <IonIcon
+                                        aria-hidden
+                                        icon={ribbonOutline}
+                                        className={`shrink-0 text-[11px] ${ribbonTone}`}
+                                    />
+
+                                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-grayscale-500">
+                                        {typeLabel}
+                                    </span>
+
+                                    <span
+                                        aria-hidden
+                                        className="shrink-0 text-grayscale-300 text-[10px]"
+                                    >
+                                        ·
+                                    </span>
+                                </>
+                            )}
+
+                            {!projection && (
+                                <span
+                                    aria-hidden
+                                    className={`shrink-0 inline-block w-1.5 h-1.5 rounded-full ${
+                                        isGated ? 'bg-grayscale-300' : STATUS_DOT[status]
+                                    }`}
+                                />
+                            )}
+
+                            {isGated && (
+                                <IonIcon
+                                    aria-hidden
+                                    icon={lockClosedOutline}
+                                    className="shrink-0 text-[10px] text-grayscale-400"
+                                />
+                            )}
+
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-grayscale-500 truncate">
+                                {tailLabel}
+                            </span>
+                        </div>
+                    );
+                })()}
             </div>
 
             <Handle
