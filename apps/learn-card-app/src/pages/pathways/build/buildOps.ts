@@ -221,6 +221,93 @@ export const setDestinationNode = (
 };
 
 // -----------------------------------------------------------------
+// Reorder
+// -----------------------------------------------------------------
+
+/**
+ * Move `nodeId` to the given index (clamped to `[0, nodes.length - 1]`).
+ *
+ * Only the `nodes` array is reordered; edges are index-agnostic (they
+ * reference ids), and `destinationNodeId` is stored by id too, so
+ * reordering is a pure presentation concern — no edge fix-ups needed.
+ *
+ * Returns the input unchanged when the move is a no-op (same index,
+ * or a node id that isn't in this pathway) so `useHistory`'s
+ * identity-preserving skip kicks in.
+ */
+export const reorderNodes = (
+    pathway: Pathway,
+    nodeId: string,
+    toIndex: number,
+    opts?: BuildOpOptions,
+): Pathway => {
+    const { now } = resolve(opts);
+
+    const fromIndex = pathway.nodes.findIndex(n => n.id === nodeId);
+
+    // Unknown node — no-op. Surface no error; the caller is likely a
+    // DND handler firing on a stale frame.
+    if (fromIndex === -1) return pathway;
+
+    // Clamp destination. The drag UI hands us the visual slot, which
+    // can read as `nodes.length` when the row is dropped past the
+    // last slot; that's "move to the end", clamped to last index.
+    const clamped = Math.max(0, Math.min(toIndex, pathway.nodes.length - 1));
+
+    if (fromIndex === clamped) return pathway;
+
+    const next = pathway.nodes.slice();
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(clamped, 0, moved);
+
+    return {
+        ...pathway,
+        nodes: next,
+        updatedAt: now,
+    };
+};
+
+/**
+ * Replace the `nodes` array outright with the supplied ordering. The
+ * framer-motion `Reorder.Group` handler hands us the new order as an
+ * array rather than a single move — this overload keeps the commit
+ * seam clean for that shape.
+ *
+ * Validates that every id in the new order exists in the pathway
+ * exactly once. Mismatches mean the DND surface and the pathway got
+ * out of sync; returning the input unchanged makes the bug loud but
+ * non-destructive.
+ */
+export const setNodeOrder = (
+    pathway: Pathway,
+    orderedIds: string[],
+    opts?: BuildOpOptions,
+): Pathway => {
+    const { now } = resolve(opts);
+
+    if (orderedIds.length !== pathway.nodes.length) return pathway;
+
+    const byId = new Map(pathway.nodes.map(n => [n.id, n] as const));
+    const reordered: PathwayNode[] = [];
+
+    for (const id of orderedIds) {
+        const node = byId.get(id);
+        if (!node) return pathway;
+        reordered.push(node);
+    }
+
+    // Identity-preserving no-op when the order didn't actually change.
+    const sameOrder = reordered.every((n, i) => n === pathway.nodes[i]);
+    if (sameOrder) return pathway;
+
+    return {
+        ...pathway,
+        nodes: reordered,
+        updatedAt: now,
+    };
+};
+
+// -----------------------------------------------------------------
 // Composite (nesting + composition) ops
 //
 // A "composite" node represents completion of another pathway. We
@@ -286,6 +373,95 @@ export const setCompositePolicy = (
     const withTermination = setTermination(withPolicy, nodeId, termination, opts);
 
     return { ok: true, pathway: withTermination };
+};
+
+/**
+ * Create a brand-new empty `Pathway` and wire the parent's node as a
+ * composite reference to it.
+ *
+ * This is the "Create new pathway here" affordance in the nested-
+ * pathway picker. Before M5, an author who wanted to nest a pathway
+ * had to either import from the Credential Engine Registry (which
+ * replaces their working pathway) or leave Build mode entirely to
+ * start a second pathway in a parallel tab. Both flows were lossy.
+ *
+ * ## Returns a *pair*, not one pathway
+ *
+ * `{ parent, nested }` — the caller commits both. We deliberately
+ * don't fold this into a single "upsert both" because:
+ *
+ *   - The two writes are independent: the nested pathway lives at
+ *     its own id in the store; the parent's mutation is just a
+ *     composite ref flip.
+ *   - `useHistory` wants one `apply` per user action. The caller
+ *     persists the nested first (so the composite ref resolves)
+ *     then calls `commit(parent)` — that's a single history
+ *     transaction that can be undone by the reverse sequence.
+ *
+ * ## Cycle safety is trivially satisfied
+ *
+ * The new nested pathway has an id the parent has never referenced
+ * (we just generated it), so `wouldCreateCycle` always returns false.
+ * We bypass `setCompositePolicy`'s `pathways` lookup and build the
+ * policy/termination pair directly.
+ *
+ * ## Authoring the new pathway
+ *
+ * The new pathway ships with `source: 'authored'`, empty nodes/edges,
+ * `visibility.self: true`, and status `'active'`. Title is whatever
+ * the caller hands us — typical default: "New pathway". The author
+ * edits it by drilling into it via the outline (OutlinePane renders
+ * an inline hint for empty nested pathways).
+ */
+export interface CreateNestedPathwayResult {
+    parent: Pathway;
+    nested: Pathway;
+}
+
+export const createNestedPathway = (
+    pathway: Pathway,
+    parentNodeId: string,
+    draft: {
+        title: string;
+        goal?: string;
+        renderStyle?: CompositeRenderStyle;
+    },
+    opts?: BuildOpOptions,
+): CreateNestedPathwayResult | null => {
+    const { now, makeId } = resolve(opts);
+
+    // Parent node must exist — defensive so a stale UI frame can't
+    // silently create an orphan pathway that nothing points at.
+    if (!pathway.nodes.some(n => n.id === parentNodeId)) return null;
+
+    const nestedId = makeId();
+
+    const nested: Pathway = {
+        id: nestedId,
+        ownerDid: pathway.ownerDid,
+        title: draft.title,
+        goal: draft.goal ?? '',
+        nodes: [],
+        edges: [],
+        status: 'active',
+        visibility: {
+            self: true,
+            mentors: false,
+            guardians: false,
+            publicProfile: false,
+        },
+        source: 'authored',
+        createdAt: now,
+        updatedAt: now,
+    };
+
+    const renderStyle = draft.renderStyle ?? DEFAULT_COMPOSITE_RENDER_STYLE;
+    const { policy, termination } = makeCompositeStage(nestedId, renderStyle);
+
+    const withPolicy = setPolicy(pathway, parentNodeId, policy, opts);
+    const parent = setTermination(withPolicy, parentNodeId, termination, opts);
+
+    return { parent, nested };
 };
 
 /**

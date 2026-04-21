@@ -57,6 +57,8 @@ import { useHistory } from './history/useHistory';
 import { validatePathway } from './validate/validatePathway';
 import {
     addNode as addNodeOp,
+    createNestedPathway,
+    setNodeOrder,
     setPolicy,
     setTermination,
 } from './buildOps';
@@ -249,6 +251,53 @@ const BuildMode: React.FC = () => {
         else setSelectedId(null);
     };
 
+    /**
+     * Create a brand-new empty pathway and wire the selected node as
+     * a composite reference to it — the M5 affordance that replaces
+     * the old nested-picker dead-end.
+     *
+     * Order matters:
+     *
+     *   1. Persist the nested pathway FIRST. If we committed the
+     *      parent with a ref before the nested existed, the
+     *      composite picker would briefly render "pathway isn't
+     *      loaded" — visible flash of an invalid state.
+     *
+     *   2. `commit(parent)` goes through the history stack so the
+     *      whole create-and-wire is undoable as one transaction.
+     *      The nested pathway persists as a side effect; undoing the
+     *      parent's composite ref flip leaves an orphan pathway in
+     *      the store, which is the cheaper/clearer trade-off than
+     *      trying to two-phase-commit across the history boundary.
+     *
+     *   3. Drill in so the author lands on the new nested pathway
+     *      ready to edit. The breadcrumb takes them back when
+     *      they're done.
+     */
+    const handleCreateNestedPathwayFromInspector = (title: string) => {
+        if (!selectedId) return;
+
+        const result = createNestedPathway(activePathway, selectedId, { title });
+        if (!result) return;
+
+        pathwayStore.set.upsertPathway(result.nested);
+        commit(result.parent);
+        handleDrillIn(result.nested.id);
+    };
+
+    /**
+     * Drag-to-reorder handler. Takes the new id order from
+     * `Reorder.Group`'s onReorder callback (mapped to ids by the
+     * OutlinePane), runs it through the pure `setNodeOrder` op, and
+     * commits. Identity-preserving when the order didn't actually
+     * change, so the history stack doesn't collect phantom moves
+     * from framer-motion's optimistic reflow.
+     */
+    const handleReorder = (orderedIds: string[]) => {
+        const next = setNodeOrder(activePathway, orderedIds);
+        commit(next);
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-6 font-poppins">
             {/*
@@ -293,6 +342,8 @@ const BuildMode: React.FC = () => {
                     onOpenImport={() => setImportOpen(true)}
                     onDrillIn={handleDrillIn}
                     summarizeContext={summarizeContext}
+                    issues={issues}
+                    onReorder={handleReorder}
                 />
 
                 <main className="min-w-0">
@@ -303,6 +354,7 @@ const BuildMode: React.FC = () => {
                             onChangePathway={commit}
                             onDeleted={handleDeleted}
                             issues={issues}
+                            onCreateNestedPathway={handleCreateNestedPathwayFromInspector}
                         />
                     ) : (
                         <div className="p-6 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center">

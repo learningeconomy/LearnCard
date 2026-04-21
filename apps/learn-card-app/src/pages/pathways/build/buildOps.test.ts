@@ -8,11 +8,14 @@ import {
     addEdge,
     addNode,
     addPathwayRefNode,
+    createNestedPathway,
     makeCompositeStage,
     removeEdge,
     removeNode,
+    reorderNodes,
     setCompositePolicy,
     setDestinationNode,
+    setNodeOrder,
     setPolicy,
     setTermination,
     updateNode,
@@ -443,5 +446,153 @@ describe('setDestinationNode', () => {
         const after = setDestinationNode(before, 'ghost', opts);
 
         expect(after).toBe(before);
+    });
+});
+
+describe('reorderNodes', () => {
+    it('moves a node to the target index, preserving the others', () => {
+        const before = pathway([node('a'), node('b'), node('c'), node('d')]);
+        const after = reorderNodes(before, 'c', 0, opts);
+
+        expect(after.nodes.map(n => n.id)).toEqual(['c', 'a', 'b', 'd']);
+        expect(after.updatedAt).toBe(LATER);
+    });
+
+    it('clamps indices past the end to the last slot', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = reorderNodes(before, 'a', 99, opts);
+
+        expect(after.nodes.map(n => n.id)).toEqual(['b', 'c', 'a']);
+    });
+
+    it('is a no-op when the node is already at the target index', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = reorderNodes(before, 'b', 1, opts);
+
+        // Identity-preserving no-op so useHistory's skip fires.
+        expect(after).toBe(before);
+    });
+
+    it('is a no-op when the node id is unknown', () => {
+        const before = pathway([node('a'), node('b')]);
+        const after = reorderNodes(before, 'ghost', 0, opts);
+
+        expect(after).toBe(before);
+    });
+});
+
+describe('setNodeOrder', () => {
+    it('replaces the nodes array with the supplied ordering', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = setNodeOrder(before, ['c', 'a', 'b'], opts);
+
+        expect(after.nodes.map(n => n.id)).toEqual(['c', 'a', 'b']);
+        expect(after.updatedAt).toBe(LATER);
+    });
+
+    it('preserves node object identity for unchanged positions', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = setNodeOrder(before, ['a', 'c', 'b'], opts);
+
+        // Node `a` didn't move — same reference; `b` and `c` moved
+        // but their object references are preserved (we only reordered).
+        expect(after.nodes[0]).toBe(before.nodes[0]);
+        expect(after.nodes[1]).toBe(before.nodes[2]);
+        expect(after.nodes[2]).toBe(before.nodes[1]);
+    });
+
+    it('is a no-op (identity-preserving) when the ordering is unchanged', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = setNodeOrder(before, ['a', 'b', 'c'], opts);
+
+        expect(after).toBe(before);
+    });
+
+    it('rejects an ordering with the wrong length (returns input unchanged)', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = setNodeOrder(before, ['a', 'b'], opts);
+
+        expect(after).toBe(before);
+    });
+
+    it('rejects an ordering with an unknown id (returns input unchanged)', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+        const after = setNodeOrder(before, ['a', 'b', 'ghost'], opts);
+
+        expect(after).toBe(before);
+    });
+});
+
+describe('createNestedPathway', () => {
+    it('creates a fresh empty pathway and wires the parent node as composite', () => {
+        resetIds();
+
+        const before = pathway([node('a'), node('b')]);
+        const result = createNestedPathway(
+            before,
+            'a',
+            { title: 'New nested pathway' },
+            opts,
+        );
+
+        expect(result).not.toBeNull();
+        if (!result) return;
+
+        const { parent, nested } = result;
+
+        // Nested pathway: empty, authored, ownerDid inherited.
+        expect(nested.nodes).toEqual([]);
+        expect(nested.edges).toEqual([]);
+        expect(nested.source).toBe('authored');
+        expect(nested.ownerDid).toBe(before.ownerDid);
+        expect(nested.title).toBe('New nested pathway');
+        expect(nested.status).toBe('active');
+        expect(nested.createdAt).toBe(LATER);
+
+        // Parent node `a` now composite-points at the new nested id.
+        const composite = parent.nodes.find(n => n.id === 'a');
+        expect(composite?.stage.policy).toEqual({
+            kind: 'composite',
+            pathwayRef: nested.id,
+            renderStyle: 'inline-expandable',
+        });
+        expect(composite?.stage.termination).toEqual({
+            kind: 'pathway-completed',
+            pathwayRef: nested.id,
+        });
+
+        // Unrelated node `b` untouched.
+        expect(parent.nodes.find(n => n.id === 'b')).toEqual(
+            before.nodes.find(n => n.id === 'b'),
+        );
+    });
+
+    it('honours an explicit renderStyle', () => {
+        resetIds();
+
+        const before = pathway([node('a')]);
+        const result = createNestedPathway(
+            before,
+            'a',
+            { title: 'X', renderStyle: 'link-out' },
+            opts,
+        );
+
+        expect(result).not.toBeNull();
+        if (!result) return;
+
+        expect(result.parent.nodes[0].stage.policy).toMatchObject({
+            kind: 'composite',
+            renderStyle: 'link-out',
+        });
+    });
+
+    it('returns null when the parent node does not exist', () => {
+        // Defensive guard: an orphan nested pathway would be stored
+        // forever without any composite ref resolving to it.
+        const before = pathway([node('a')]);
+        const result = createNestedPathway(before, 'ghost', { title: 'X' }, opts);
+
+        expect(result).toBeNull();
     });
 });

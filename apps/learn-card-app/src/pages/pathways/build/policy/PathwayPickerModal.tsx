@@ -24,6 +24,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+    addCircleOutline,
     checkmarkCircleOutline,
     closeOutline,
     flagOutline,
@@ -41,6 +42,17 @@ interface PathwayPickerModalProps {
     /** Current pathwayRef (if any) — highlights the matching row. */
     currentRef?: string;
     onPick: (pathway: Pathway) => void;
+
+    /**
+     * "Create a brand-new empty pathway here" handler.
+     *
+     * When supplied, the modal renders a prominent create action at
+     * the top — and when there are no existing pathways to pick, a
+     * single full-width create button replaces the old dead-end empty
+     * copy. Omit this prop only when the caller can't create pathways
+     * on the learner's behalf (e.g. read-only review surfaces).
+     */
+    onCreateNew?: () => void;
     onClose: () => void;
 }
 
@@ -49,6 +61,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
     allPathways,
     currentRef,
     onPick,
+    onCreateNew,
     onClose,
 }) => {
     const [query, setQuery] = useState('');
@@ -154,7 +167,10 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                         </button>
                     </header>
 
-                    {/* Search input */}
+                    {/* Search input — only useful once there's
+                        something to search through. Hidden in the
+                        zero-candidate case (create-new is the only
+                        meaningful affordance there). */}
                     {candidates.length > 0 && (
                         <div className="px-5 py-3 border-b border-grayscale-200">
                             <div className="relative">
@@ -176,12 +192,33 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                         </div>
                     )}
 
-                    {/* Body — scrollable list. */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3">
+                    {/* Body — scrollable list + actions. */}
+                    <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+                        {/*
+                            Create-new action. Always rendered when
+                            the handler is supplied — at the top of
+                            the list when candidates exist, or as the
+                            sole affordance when the pool is empty.
+                            Before M5 the empty state dead-ended with
+                            "import one from the Registry or author
+                            another pathway, then come back" — a
+                            real UX cul-de-sac. Now the author
+                            creates the nested pathway in place.
+                        */}
+                        {onCreateNew && <CreateNewRow onCreateNew={onCreateNew} />}
+
                         {candidates.length === 0 ? (
+                            // Still informative when onCreateNew is
+                            // absent; with it, the create button
+                            // above is the whole UI and this is just
+                            // a short hint.
                             <EmptyState
-                                title="No other pathways yet"
-                                blurb="Import one from the Credential Engine Registry or author another pathway, then come back here."
+                                title={onCreateNew ? 'Or pick an existing one' : 'No other pathways yet'}
+                                blurb={
+                                    onCreateNew
+                                        ? "You don't have any other pathways yet — create one above."
+                                        : 'Start another pathway from Today, then come back here.'
+                                }
                             />
                         ) : filtered.length === 0 ? (
                             <EmptyState
@@ -299,6 +336,45 @@ const PickerRow: React.FC<{
         </button>
     );
 };
+
+// ---------------------------------------------------------------------------
+// CreateNewRow — the "Create a new pathway here" primary action.
+//
+// Rendered at the top of the body when `onCreateNew` is supplied.
+// Distinct from PickerRow both visually (dashed border, emerald
+// accent) and structurally (a plus icon, no step count / no
+// destination — there's nothing to describe yet).
+// ---------------------------------------------------------------------------
+
+const CreateNewRow: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew }) => (
+    <button
+        type="button"
+        onClick={onCreateNew}
+        className="
+            w-full text-left p-3 rounded-xl
+            border border-dashed border-emerald-300
+            bg-emerald-50/40
+            hover:bg-emerald-50 hover:border-emerald-400
+            transition-colors
+        "
+    >
+        <div className="flex items-center gap-3">
+            <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-600 text-white text-base">
+                <IonIcon icon={addCircleOutline} aria-hidden />
+            </span>
+
+            <div className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-emerald-900">
+                    Create a new pathway
+                </span>
+
+                <span className="block text-xs text-emerald-700/80 leading-snug mt-0.5">
+                    Start a blank one right here and edit it next.
+                </span>
+            </div>
+        </div>
+    </button>
+);
 
 // ---------------------------------------------------------------------------
 // EmptyState — shared by "no candidates" and "no results".

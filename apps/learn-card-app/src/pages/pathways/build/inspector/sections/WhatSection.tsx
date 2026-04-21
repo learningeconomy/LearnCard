@@ -41,9 +41,22 @@ interface WhatSectionProps {
     pathway: Pathway;
     node: PathwayNode;
     onChangePathway: (next: Pathway) => void;
+
+    /**
+     * "Create a new nested pathway in place" — invoked by the composite
+     * picker modal's create action. Forwarded into the PolicyEditor's
+     * context. Passed in from InspectorPane / BuildMode so the commit
+     * + drill-in side-effects live at the top of the tree.
+     */
+    onCreateNestedPathway?: (title: string) => void;
 }
 
-const WhatSection: React.FC<WhatSectionProps> = ({ pathway, node, onChangePathway }) => {
+const WhatSection: React.FC<WhatSectionProps> = ({
+    pathway,
+    node,
+    onChangePathway,
+    onCreateNestedPathway,
+}) => {
     // Composite picker needs the full pathway map. Subscribing here
     // keeps WhatSection's prop surface narrow — InspectorPane doesn't
     // need to know this section secretly depends on the store.
@@ -117,6 +130,7 @@ const WhatSection: React.FC<WhatSectionProps> = ({ pathway, node, onChangePathwa
                         onChange={handlePolicyChange}
                         parentPathwayId={pathway.id}
                         allPathways={allPathways}
+                        onCreateNestedPathway={onCreateNestedPathway}
                     />
                 </div>
             </div>

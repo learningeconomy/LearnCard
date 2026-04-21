@@ -33,6 +33,14 @@ interface PolicyEditorProps {
      */
     parentPathwayId?: string;
     allPathways?: PolicyEditorContext['allPathways'];
+
+    /**
+     * "Create a new nested pathway in place" — M5. Only wired by the
+     * CompositeSpec's picker modal today; other editors ignore it.
+     * Host binds the handler to the currently-selected node so the
+     * kind-specific UI just supplies a title.
+     */
+    onCreateNestedPathway?: PolicyEditorContext['onCreateNestedPathway'];
 }
 
 const PolicyEditor: React.FC<PolicyEditorProps> = ({
@@ -40,6 +48,7 @@ const PolicyEditor: React.FC<PolicyEditorProps> = ({
     onChange,
     parentPathwayId,
     allPathways,
+    onCreateNestedPathway,
 }) => {
     const spec = POLICY_KINDS[value.kind];
 
@@ -56,7 +65,7 @@ const PolicyEditor: React.FC<PolicyEditorProps> = ({
         <Editor
             value={value}
             onChange={onChange}
-            context={{ parentPathwayId, allPathways }}
+            context={{ parentPathwayId, allPathways, onCreateNestedPathway }}
         />
     );
 };

@@ -31,10 +31,18 @@ import type { SummarizeContext } from '../summarize/summarizePolicy';
  * nested-pathway picker), but we thread them through every editor so
  * the registry surface is uniform and new kinds that need cross-
  * pathway data can use them without changing the plumbing.
+ *
+ * `onCreateNestedPathway` is the M5 affordance: the CompositeSpec's
+ * picker modal lets authors create a brand-new empty nested pathway
+ * in place, so the dead-end "import one or author another and come
+ * back" copy from M3 never appears. The host (BuildMode) binds the
+ * callback to the currently-selected node so the title parameter is
+ * the only thing a kind-specific UI supplies.
  */
 export interface PolicyEditorContext {
     parentPathwayId?: string;
     allPathways?: PathwayMap;
+    onCreateNestedPathway?: (title: string) => void;
 }
 
 export interface PolicyEditorProps<K extends Policy['kind']> {

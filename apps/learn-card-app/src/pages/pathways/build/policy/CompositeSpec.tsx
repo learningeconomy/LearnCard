@@ -49,7 +49,7 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
     onChange,
     context,
 }) => {
-    const { parentPathwayId, allPathways } = context;
+    const { parentPathwayId, allPathways, onCreateNestedPathway } = context;
     const [pickerOpen, setPickerOpen] = useState(false);
 
     // Without the cross-pathway context we can't safely edit
@@ -160,6 +160,19 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
                     allPathways={allPathways}
                     currentRef={value.pathwayRef || undefined}
                     onPick={handlePick}
+                    onCreateNew={
+                        onCreateNestedPathway
+                            ? () => {
+                                  // Default title mirrors the OutlinePane's
+                                  // "Nest a pathway" affordance for
+                                  // consistency. The author can rename
+                                  // from the nested pathway's Identity
+                                  // section after drill-in.
+                                  onCreateNestedPathway('New nested pathway');
+                                  setPickerOpen(false);
+                              }
+                            : undefined
+                    }
                     onClose={() => setPickerOpen(false)}
                 />
             )}

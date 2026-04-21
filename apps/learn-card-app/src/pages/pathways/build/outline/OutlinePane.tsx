@@ -23,16 +23,20 @@
 import React from 'react';
 
 import { IonIcon } from '@ionic/react';
+import { Reorder } from 'framer-motion';
 import {
     addOutline,
+    alertCircleOutline,
     arrowBackOutline,
     cloudDownloadOutline,
     gitBranchOutline,
+    warningOutline,
 } from 'ionicons/icons';
 
 import type { PathwayMap } from '../../core/composition';
 import type { Pathway, PathwayNode } from '../../types';
 import type { SummarizeContext } from '../summarize/summarizePolicy';
+import type { Issue } from '../validate/validatePathway';
 import NodeRow from './NodeRow';
 
 interface OutlinePaneProps {
@@ -49,6 +53,24 @@ interface OutlinePaneProps {
      */
     onDrillIn: (pathwayId: string, nodeId?: string) => void;
     summarizeContext?: SummarizeContext;
+
+    /**
+     * All issues for this pathway — used to render a count pill in
+     * the header so authors know at a glance whether the pathway
+     * needs attention.
+     *
+     * `ValidationBanner` (in the inspector) shows the detail. The
+     * outline's job is just to surface "there's something to fix"
+     * from 30,000 feet — error-first, then warning count.
+     */
+    issues?: Issue[];
+
+    /**
+     * "Reorder the steps" — commits a new ordering of the
+     * top-level nodes array. Omit to disable drag-to-reorder (e.g.
+     * in read-only review surfaces).
+     */
+    onReorder?: (orderedIds: string[]) => void;
 }
 
 // Find the first pathway that embeds `childId` as a composite child.
@@ -106,10 +128,19 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
     onOpenImport,
     onDrillIn,
     summarizeContext,
+    issues = [],
+    onReorder,
 }) => {
     const destinationId = pathway.destinationNodeId ?? null;
     const parent = findParentOf(pathway.id, allPathways);
     const nestedChildren = buildNestedChildMap(pathway, allPathways);
+
+    // Count issues for the outline pill. We don't include other-node
+    // issues (same filter the ValidationBanner uses) because those
+    // don't belong to this pathway's surface — they belong to the
+    // nested pathways the author drills into.
+    const errorCount = issues.filter(i => i.level === 'error').length;
+    const warningCount = issues.filter(i => i.level === 'warning').length;
 
     return (
         <aside className="space-y-3 font-poppins" aria-label="Pathway outline">
@@ -136,14 +167,28 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                 </button>
             )}
 
-            <header className="flex items-center justify-between px-1">
-                <h2 className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
-                    Steps
-                </h2>
+            <header className="flex items-center justify-between gap-2 px-1">
+                <div className="flex items-center gap-2 min-w-0">
+                    <h2 className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
+                        Steps
+                    </h2>
 
-                <span className="text-xs text-grayscale-500 tabular-nums">
-                    {pathway.nodes.length}
-                </span>
+                    <span className="text-xs text-grayscale-500 tabular-nums">
+                        {pathway.nodes.length}
+                    </span>
+                </div>
+
+                {/* Validation pill — errors win over warnings when both
+                    exist; no pill when the pathway is clean. */}
+                {errorCount > 0 ? (
+                    <IssuePill
+                        level="error"
+                        count={errorCount}
+                        extraWarnings={warningCount}
+                    />
+                ) : warningCount > 0 ? (
+                    <IssuePill level="warning" count={warningCount} />
+                ) : null}
             </header>
 
             {pathway.nodes.length === 0 ? (
@@ -153,31 +198,17 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                     </p>
                 </div>
             ) : (
-                <ul className="space-y-1.5">
-                    {pathway.nodes.map(n => {
-                        const nested = nestedChildren.get(n.id);
-
-                        return (
-                            <li key={n.id}>
-                                <NodeRow
-                                    node={n}
-                                    isSelected={n.id === selectedId}
-                                    isDestination={n.id === destinationId}
-                                    onSelect={() => onSelect(n.id)}
-                                    summarizeContext={summarizeContext}
-                                />
-
-                                {nested && (
-                                    <NestedSubtree
-                                        childPathway={nested}
-                                        onDrillIn={onDrillIn}
-                                        summarizeContext={summarizeContext}
-                                    />
-                                )}
-                            </li>
-                        );
-                    })}
-                </ul>
+                <NodesList
+                    pathway={pathway}
+                    nestedChildren={nestedChildren}
+                    allPathways={allPathways}
+                    destinationId={destinationId}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    onDrillIn={onDrillIn}
+                    onReorder={onReorder}
+                    summarizeContext={summarizeContext}
+                />
             )}
 
             <div className="space-y-1.5 pt-1">
@@ -217,14 +248,229 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
 };
 
 // ---------------------------------------------------------------------------
-// NestedSubtree — indented child rows for inline-expandable composites.
+// IssuePill — small coloured count next to the "Steps" header.
 // ---------------------------------------------------------------------------
+
+const IssuePill: React.FC<{
+    level: 'error' | 'warning';
+    count: number;
+    /** Extra warnings when the pill is already showing errors. */
+    extraWarnings?: number;
+}> = ({ level, count, extraWarnings = 0 }) => {
+    const isError = level === 'error';
+
+    // When errors exist alongside warnings, fold the total into a
+    // single pill — two pills would be noisy at this zoom level.
+    // ValidationBanner in the inspector still breaks them out per
+    // issue, which is where the detail belongs.
+    const labelN = count + extraWarnings;
+    const labelSuffix = labelN === 1 ? '' : 's';
+
+    return (
+        <span
+            className={`
+                shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full
+                text-[10px] font-semibold uppercase tracking-wide
+                ${
+                    isError
+                        ? 'bg-red-50 text-red-700'
+                        : 'bg-amber-50 text-amber-800'
+                }
+            `}
+            aria-label={`${labelN} ${isError ? 'error' : 'warning'}${labelSuffix}`}
+        >
+            <IonIcon
+                icon={isError ? alertCircleOutline : warningOutline}
+                aria-hidden
+                className="text-[11px]"
+            />
+            {labelN}
+        </span>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// NodesList — drag-to-reorder list, or static list when `onReorder`
+// is omitted.
+//
+// We use framer-motion's `Reorder.Group` + `Reorder.Item` rather than
+// adding `@dnd-kit/*`: it ships with the app already, handles touch /
+// mouse / keyboard (hold space → arrow keys), and integrates with our
+// layout animations.
+//
+// The group hands us the reordered values on drop; we map them back
+// to ids and delegate to the caller's `onReorder(ids)` which typically
+// threads into `buildOps.setNodeOrder`.
+//
+// NodeRow inside a Reorder.Item is a whole-row drag affordance —
+// there's no dedicated "handle" because the outline rows are short
+// enough that the handle would eat more space than it's worth. Tap
+// still selects (Reorder only starts drag on pointer-move).
+// ---------------------------------------------------------------------------
+
+const NodesList: React.FC<{
+    pathway: Pathway;
+    nestedChildren: Map<string, Pathway>;
+    allPathways: PathwayMap;
+    destinationId: string | null;
+    selectedId: string | null;
+    onSelect: (nodeId: string) => void;
+    onDrillIn: (pathwayId: string, nodeId?: string) => void;
+    onReorder?: (orderedIds: string[]) => void;
+    summarizeContext?: SummarizeContext;
+}> = ({
+    pathway,
+    nestedChildren,
+    allPathways,
+    destinationId,
+    selectedId,
+    onSelect,
+    onDrillIn,
+    onReorder,
+    summarizeContext,
+}) => {
+    // Static render when reordering is disabled — keeps the DOM
+    // identical to pre-M5 in surfaces that opt out (e.g. tests,
+    // read-only review).
+    if (!onReorder) {
+        return (
+            <ul className="space-y-1.5">
+                {pathway.nodes.map(n => (
+                    <NodeListItem
+                        key={n.id}
+                        node={n}
+                        nestedChildren={nestedChildren}
+                        allPathways={allPathways}
+                        destinationId={destinationId}
+                        selectedId={selectedId}
+                        onSelect={onSelect}
+                        onDrillIn={onDrillIn}
+                        summarizeContext={summarizeContext}
+                    />
+                ))}
+            </ul>
+        );
+    }
+
+    return (
+        <Reorder.Group
+            axis="y"
+            values={pathway.nodes}
+            onReorder={nodes => onReorder(nodes.map(n => n.id))}
+            className="space-y-1.5 list-none"
+            /* framer-motion stamps an inline style; ensure the UL
+               has no default padding/margin so the visual layout
+               matches the static branch. */
+            style={{ paddingInlineStart: 0, margin: 0 }}
+        >
+            {pathway.nodes.map(n => (
+                <Reorder.Item
+                    key={n.id}
+                    value={n}
+                    className="list-none"
+                    /* whileDrag styling is additive — a subtle shadow
+                       while the row is being moved gives the author
+                       the "picking up" affordance without a full
+                       skeuomorphic hand-off. */
+                    whileDrag={{
+                        scale: 1.01,
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+                        zIndex: 1,
+                    }}
+                >
+                    <NodeListItemBody
+                        node={n}
+                        nestedChildren={nestedChildren}
+                        allPathways={allPathways}
+                        destinationId={destinationId}
+                        selectedId={selectedId}
+                        onSelect={onSelect}
+                        onDrillIn={onDrillIn}
+                        summarizeContext={summarizeContext}
+                    />
+                </Reorder.Item>
+            ))}
+        </Reorder.Group>
+    );
+};
+
+const NodeListItem: React.FC<{
+    node: PathwayNode;
+    nestedChildren: Map<string, Pathway>;
+    allPathways: PathwayMap;
+    destinationId: string | null;
+    selectedId: string | null;
+    onSelect: (nodeId: string) => void;
+    onDrillIn: (pathwayId: string, nodeId?: string) => void;
+    summarizeContext?: SummarizeContext;
+}> = props => (
+    <li>
+        <NodeListItemBody {...props} />
+    </li>
+);
+
+const NodeListItemBody: React.FC<{
+    node: PathwayNode;
+    nestedChildren: Map<string, Pathway>;
+    allPathways: PathwayMap;
+    destinationId: string | null;
+    selectedId: string | null;
+    onSelect: (nodeId: string) => void;
+    onDrillIn: (pathwayId: string, nodeId?: string) => void;
+    summarizeContext?: SummarizeContext;
+}> = ({
+    node,
+    nestedChildren,
+    allPathways,
+    destinationId,
+    selectedId,
+    onSelect,
+    onDrillIn,
+    summarizeContext,
+}) => {
+    const nested = nestedChildren.get(node.id);
+
+    return (
+        <>
+            <NodeRow
+                node={node}
+                isSelected={node.id === selectedId}
+                isDestination={node.id === destinationId}
+                onSelect={() => onSelect(node.id)}
+                summarizeContext={summarizeContext}
+            />
+
+            {nested && (
+                <NestedSubtree
+                    childPathway={nested}
+                    allPathways={allPathways}
+                    onDrillIn={onDrillIn}
+                    summarizeContext={summarizeContext}
+                    depth={1}
+                />
+            )}
+        </>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// NestedSubtree — indented child rows for inline-expandable composites.
+//
+// Recursive with a depth cap so deeply-nested graphs don't render an
+// infinite tree. Past the cap we collapse to a "drill in" hint — the
+// author can still navigate into deeper levels; we just don't try to
+// render them all inline. Keeps the outline scannable.
+// ---------------------------------------------------------------------------
+
+const MAX_NESTED_DEPTH = 2;
 
 const NestedSubtree: React.FC<{
     childPathway: Pathway;
+    allPathways: PathwayMap;
     onDrillIn: (pathwayId: string, nodeId?: string) => void;
     summarizeContext?: SummarizeContext;
-}> = ({ childPathway, onDrillIn, summarizeContext }) => {
+    depth: number;
+}> = ({ childPathway, allPathways, onDrillIn, summarizeContext, depth }) => {
     // Destination of the nested pathway — we surface its flag on
     // the child rows just like the top-level outline does. This
     // keeps visual semantics consistent across nesting depth.
@@ -242,20 +488,45 @@ const NestedSubtree: React.FC<{
         );
     }
 
+    const grandchildren = buildNestedChildMap(childPathway, allPathways);
+
     return (
         <ul className="ml-4 pl-3 mt-1 space-y-0.5 border-l-2 border-grayscale-200">
-            {childPathway.nodes.map((n: PathwayNode) => (
-                <li key={n.id}>
-                    <NodeRow
-                        node={n}
-                        isSelected={false}
-                        isDestination={n.id === destId}
-                        onSelect={() => onDrillIn(childPathway.id, n.id)}
-                        nested
-                        summarizeContext={summarizeContext}
-                    />
-                </li>
-            ))}
+            {childPathway.nodes.map((n: PathwayNode) => {
+                const grandchild = grandchildren.get(n.id);
+                const canRecurse = !!grandchild && depth < MAX_NESTED_DEPTH;
+
+                return (
+                    <li key={n.id}>
+                        <NodeRow
+                            node={n}
+                            isSelected={false}
+                            isDestination={n.id === destId}
+                            onSelect={() => onDrillIn(childPathway.id, n.id)}
+                            nested
+                            summarizeContext={summarizeContext}
+                        />
+
+                        {canRecurse && grandchild && (
+                            <NestedSubtree
+                                childPathway={grandchild}
+                                allPathways={allPathways}
+                                onDrillIn={onDrillIn}
+                                summarizeContext={summarizeContext}
+                                depth={depth + 1}
+                            />
+                        )}
+
+                        {grandchild && !canRecurse && (
+                            <div className="ml-4 pl-3 mt-0.5 text-[11px] text-grayscale-400 leading-snug">
+                                Has {grandchild.nodes.length}{' '}
+                                {grandchild.nodes.length === 1 ? 'more step' : 'more steps'} —
+                                drill in to see them.
+                            </div>
+                        )}
+                    </li>
+                );
+            })}
         </ul>
     );
 };

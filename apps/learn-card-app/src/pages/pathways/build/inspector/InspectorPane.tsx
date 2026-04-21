@@ -45,6 +45,14 @@ interface InspectorPaneProps {
      * gains features (e.g. jump-to-section).
      */
     issues?: Issue[];
+
+    /**
+     * "Create a new nested pathway in place" — forwarded to
+     * WhatSection → PolicyEditor → CompositeSpec. Passed in from
+     * BuildMode so the commit + drill-in side-effects live at the
+     * top of the tree, not buried in a leaf editor.
+     */
+    onCreateNestedPathway?: (title: string) => void;
 }
 
 const InspectorPane: React.FC<InspectorPaneProps> = ({
@@ -53,6 +61,7 @@ const InspectorPane: React.FC<InspectorPaneProps> = ({
     onChangePathway,
     onDeleted,
     issues = [],
+    onCreateNestedPathway,
 }) => (
     <section
         /*
@@ -87,6 +96,7 @@ const InspectorPane: React.FC<InspectorPaneProps> = ({
             pathway={pathway}
             node={node}
             onChangePathway={onChangePathway}
+            onCreateNestedPathway={onCreateNestedPathway}
         />
 
         <DoneSection
