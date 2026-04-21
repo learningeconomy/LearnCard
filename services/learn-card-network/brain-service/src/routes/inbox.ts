@@ -125,7 +125,7 @@ export const inboxRouter = t.router({
                     guardianEmail,
                     ttlHours
                 );
-                const approvalUrl = generateGuardianApprovalUrl(token);
+                const approvalUrl = generateGuardianApprovalUrl(token, ctx.tenant?.emailBranding?.appUrl);
 
                 // Send email via delivery service
                 const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });

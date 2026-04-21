@@ -399,7 +399,10 @@ export const issueToInbox = async (
                 inboxCredential.id,
                 guardianEmail
             );
-            const approvalUrl = generateGuardianCredentialApprovalUrl(approvalToken);
+            const approvalUrl = generateGuardianCredentialApprovalUrl(
+                approvalToken,
+                ctx.tenant?.emailBranding?.appUrl
+            );
 
             const guardianDeliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
             await guardianDeliveryService.send({
@@ -494,7 +497,10 @@ export const issueToInbox = async (
                             inboxCredential.id,
                             guardianVerifiedEmail.value
                         );
-                        const approvalUrl = generateGuardianCredentialApprovalUrl(approvalToken);
+                        const approvalUrl = generateGuardianCredentialApprovalUrl(
+                            approvalToken,
+                            ctx.tenant?.emailBranding?.appUrl
+                        );
 
                         const guardianDeliveryService = getDeliveryService({
                             type: 'email',
