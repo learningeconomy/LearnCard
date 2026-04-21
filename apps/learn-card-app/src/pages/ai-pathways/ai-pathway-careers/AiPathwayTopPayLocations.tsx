@@ -6,32 +6,48 @@ import {
     type OccupationDetailsResponse,
     type CareerOneStopLocationResult,
 } from 'learn-card-base';
-import { getYearlyWages } from './ai-pathway-careers.helpers';
+import { getWagesBySalaryType, getYearlyWages } from './ai-pathway-careers.helpers';
 import AiPathwayCareerSection from './AiPathwayCareerSection';
 
 export const AiPathwayTopPayLocations: React.FC<{
     occupation: OccupationDetailsResponse;
     compact?: boolean;
-}> = ({ occupation, compact = false }) => {
+    salaryType?: 'per_year' | 'per_hour';
+}> = ({ occupation, compact = false, salaryType = 'per_year' }) => {
     const { data, isLoading } = useSalariesForKeyword({
         keyword: occupation.OnetTitle,
     });
 
     type LocationSalary = { location: string; salary: number };
 
+    const formatLocationSalary = (value: number): string => {
+        if (salaryType === 'per_hour') {
+            return `$${new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+            }).format(value)}`;
+        }
+
+        return numeral(value).format('$0a');
+    };
+
     const topPaidLocations: LocationSalary[] = (
         (data?.LocationsList ?? []) as CareerOneStopLocationResult[]
     )
         .map((l): LocationSalary => {
-            const yearly = getYearlyWages(l.OccupationList?.[0]?.WageInfo || []);
+            const selectedWages =
+                getWagesBySalaryType(l.OccupationList?.[0]?.WageInfo || [], salaryType) ||
+                getYearlyWages(l.OccupationList?.[0]?.WageInfo || []);
 
             return {
                 location: l.LocationName,
-                salary: Number(yearly?.Pct90) || 0,
+                salary: Number(selectedWages?.Pct90) || 0,
             };
         })
         .filter((l): l is LocationSalary => l.salary > 0)
         .sort((a, b) => b.salary - a.salary);
+
+    const salaryTypeLabel = salaryType === 'per_hour' ? '/hr' : '/yr';
 
     const sectionTitle = 'Top Pay Locations';
 
@@ -51,9 +67,9 @@ export const AiPathwayTopPayLocations: React.FC<{
                                     {l.location}
                                 </p>
                                 <p className="text-grayscale-900 text-[14px] leading-[18px]">
-                                    {numeral(l.salary).format('$0a')}
+                                    {formatLocationSalary(l.salary)}
                                     <span className="text-grayscale-600 text-[12px] font-[400] leading-[16px] tracking-[0.72px]">
-                                        /yr
+                                        {salaryTypeLabel}
                                     </span>
                                 </p>
                             </div>

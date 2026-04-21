@@ -1,33 +1,54 @@
 import React from 'react';
-import numeral from 'numeral';
 
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
 import { type Wages } from 'learn-card-base';
-import { buildSalaryPipeData, getYearlyWages } from './ai-pathway-careers.helpers';
+import {
+    buildSalaryPipeData,
+    getWagesBySalaryType,
+    getYearlyWages,
+} from './ai-pathway-careers.helpers';
 
 const MEDIAN_BUCKET = 4;
+
+const formatSalary = (value: string | number, salaryType: 'per_year' | 'per_hour'): string => {
+    const numericValue = typeof value === 'number' ? value : Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+        return '$0';
+    }
+
+    return `$${new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: salaryType === 'per_hour' ? 0 : 0,
+        maximumFractionDigits: salaryType === 'per_hour' ? 2 : 0,
+    }).format(numericValue)}`;
+};
 
 export const AiPathwayCareerPipeChart: React.FC<{
     wages: Wages;
     showMedianOverlay?: boolean;
-}> = ({ wages, showMedianOverlay = true }) => {
+    salaryType?: 'per_year' | 'per_hour';
+}> = ({ wages, showMedianOverlay = true, salaryType = 'per_year' }) => {
     const { NationalWagesList = [] } = wages;
-    const yearly = getYearlyWages(NationalWagesList);
+    const selectedWages =
+        salaryType === 'per_hour'
+            ? getWagesBySalaryType(NationalWagesList, 'per_hour')
+            : getYearlyWages(NationalWagesList);
 
-    if (!yearly) return null;
+    if (!selectedWages) return null;
 
-    const data = buildSalaryPipeData(yearly);
+    const data = buildSalaryPipeData(selectedWages);
 
-    const minSalary = yearly?.Pct10 ?? 0;
-    const medianSalary = yearly?.Median ?? 0;
-    const maxSalary = yearly?.Pct90 ?? 0;
+
+    const minSalary = selectedWages?.Pct10 ?? 0;
+    const medianSalary = selectedWages?.Median ?? 0;
+    const maxSalary = selectedWages?.Pct90 ?? 0;
 
     return (
         <div className="w-full relative">
             {showMedianOverlay && (
                 <div className="absolute top-[8px] left-[50%] transform translate-x-[-50%] flex items-center gap-[6px] text-[14px] text-grayscale-600">
                     <span className="w-[6px] h-[6px] rounded-full bg-grayscale-900" />
-                    <span>Median: ${numeral(medianSalary).format('0,0')}</span>
+                    <span>Median: {formatSalary(medianSalary, salaryType)}</span>
                 </div>
             )}
 
@@ -51,8 +72,8 @@ export const AiPathwayCareerPipeChart: React.FC<{
 
             {/* Min / Max labels */}
             <div className="flex justify-between px-[8px] py-[0] mt-[2px] text-[14px] text-grayscale-600">
-                <span>${numeral(minSalary).format('0,0')}</span>
-                <span>${numeral(maxSalary).format('0,0')}</span>
+                <span>{formatSalary(minSalary, salaryType)}</span>
+                <span>{formatSalary(maxSalary, salaryType)}</span>
             </div>
         </div>
     );

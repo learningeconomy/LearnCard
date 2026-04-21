@@ -3,24 +3,39 @@ import React from 'react';
 import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
 import type { SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
-import { getYearlyWages } from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
+import {
+    getWagesBySalaryType,
+    getYearlyWages,
+} from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
 
 type AiInsightsMarketComparisonBoxProps = {
     professionalTitle: string;
     occupation?: OccupationDetailsResponse;
     salaryData?: SkillProfileSalaryData;
     isLoading?: boolean;
+    salaryType?: SkillProfileSalaryData['salaryType'];
 };
 
-const HOURS_PER_YEAR = 2080;
-
-const formatCurrency = (value: number): string => {
+const formatCurrency = (
+    value: number,
+    salaryType: SkillProfileSalaryData['salaryType']
+): string => {
     return `$${new Intl.NumberFormat('en-US', {
-        maximumFractionDigits: 0,
+        minimumFractionDigits: salaryType === 'per_hour' ? 0 : 0,
+        maximumFractionDigits: salaryType === 'per_hour' ? 2 : 0,
     }).format(value)}`;
 };
 
-const formatScaleLabel = (value: number): string => {
+const formatScaleLabel = (
+    value: number,
+    salaryType: SkillProfileSalaryData['salaryType']
+): string => {
+    if (salaryType === 'per_hour') {
+        return new Intl.NumberFormat('en-US', {
+            maximumFractionDigits: 2,
+        }).format(value);
+    }
+
     return Math.round(value / 1000).toLocaleString('en-US');
 };
 
@@ -32,17 +47,6 @@ const parseSalaryValue = (value: string | undefined): number | undefined => {
     const numericValue = Number(value.replace(/[$,]/g, '').trim());
 
     return Number.isFinite(numericValue) ? numericValue : undefined;
-};
-
-const annualizeSalary = (
-    salary: number | undefined,
-    salaryType?: SkillProfileSalaryData['salaryType']
-): number | undefined => {
-    if (salary === undefined) {
-        return undefined;
-    }
-
-    return salaryType === 'per_hour' ? salary * HOURS_PER_YEAR : salary;
 };
 
 const clampPercent = (value: number): number => {
@@ -64,19 +68,18 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     occupation,
     salaryData,
     isLoading = false,
+    salaryType = 'per_year',
 }) => {
-    const yearlyWages = occupation
-        ? getYearlyWages(occupation.Wages.NationalWagesList || [])
+    const selectedWages = occupation
+        ? getWagesBySalaryType(occupation.Wages.NationalWagesList || [], salaryType) ||
+          getYearlyWages(occupation.Wages.NationalWagesList || [])
         : undefined;
 
-    const marketLow = yearlyWages?.Pct10 ? parseSalaryValue(yearlyWages.Pct10) : undefined;
-    const marketAvg = yearlyWages?.Median ? parseSalaryValue(yearlyWages.Median) : undefined;
-    const marketHigh = yearlyWages?.Pct90 ? parseSalaryValue(yearlyWages.Pct90) : undefined;
+    const marketLow = selectedWages?.Pct10 ? parseSalaryValue(selectedWages.Pct10) : undefined;
+    const marketAvg = selectedWages?.Median ? parseSalaryValue(selectedWages.Median) : undefined;
+    const marketHigh = selectedWages?.Pct90 ? parseSalaryValue(selectedWages.Pct90) : undefined;
 
-    const currentSalary = annualizeSalary(
-        parseSalaryValue(salaryData?.salary),
-        salaryData?.salaryType
-    );
+    const currentSalary = parseSalaryValue(salaryData?.salary);
 
     const scaleMax = Math.max(marketHigh ?? 0, currentSalary ?? 0, 1);
     const getPositionFromValue = (value: number): number => {
@@ -99,9 +102,10 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         comparisonPercent !== undefined ? Math.round(comparisonPercent) : undefined;
     const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const titlePlural = toTitleCase(pluralizeTitle(title));
-    const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow) : '$0';
-    const marketAvgLabel = marketAvg !== undefined ? formatCurrency(marketAvg) : '$0';
-    const marketHighLabel = marketHigh !== undefined ? formatCurrency(marketHigh) : '$0';
+    const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow, salaryType) : '$0';
+    const marketAvgLabel = marketAvg !== undefined ? formatCurrency(marketAvg, salaryType) : '$0';
+    const marketHighLabel =
+        marketHigh !== undefined ? formatCurrency(marketHigh, salaryType) : '$0';
 
     if (isLoading) {
         return (
@@ -114,7 +118,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         );
     }
 
-    if (!occupation || !yearlyWages || currentSalary === undefined) {
+    if (!occupation || !selectedWages || currentSalary === undefined) {
         return (
             <div className="w-full rounded-[18px] border border-grayscale-200 bg-grayscale-10 px-4 py-4 font-poppins">
                 <h3 className="text-[18px] font-semibold text-grayscale-900">
@@ -149,7 +153,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                             className="absolute top-0 -translate-x-1/2 text-[14px] leading-[14px] tracking-[0.32px] text-grayscale-600"
                             style={{ left: `${getPositionFromValue(tickValue)}%` }}
                         >
-                            {formatScaleLabel(tickValue)}
+                            {formatScaleLabel(tickValue, salaryType)}
                         </span>
                     ))}
                 </div>

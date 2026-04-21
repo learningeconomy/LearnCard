@@ -5,15 +5,23 @@ import type { OccupationDetailsResponse } from 'learn-card-base';
 
 import CaretDown from 'src/components/svgs/CaretDown';
 import AiPathwayCareerPipeChart from '../ai-pathways/ai-pathway-careers/AiPathwayCareerPipeChart';
-import { getYearlyWages } from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
+import {
+    getWagesBySalaryType,
+    getYearlyWages,
+} from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
 
 type AiInsightsAverageSalaryBoxProps = {
     professionalTitle: string;
     occupation?: OccupationDetailsResponse;
     isLoading?: boolean;
+    salaryType?: 'per_year' | 'per_hour';
 };
 
-const formatSalaryAmount = (value: string | number | undefined, compact = false): string => {
+const formatSalaryAmount = (
+    value: string | number | undefined,
+    compact = false,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): string => {
     if (value === undefined || value === null || value === '') {
         return compact ? '$0' : '$0';
     }
@@ -23,6 +31,13 @@ const formatSalaryAmount = (value: string | number | undefined, compact = false)
 
     if (!Number.isFinite(numericValue)) {
         return typeof value === 'string' && value.startsWith('$') ? value : `$${value}`;
+    }
+
+    if (salaryType === 'per_hour') {
+        return `$${new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(numericValue)}`;
     }
 
     if (!compact) {
@@ -55,23 +70,26 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
     professionalTitle,
     occupation,
     isLoading = false,
+    salaryType = 'per_year',
 }) => {
-    const yearlyWages = occupation
-        ? getYearlyWages(occupation?.Wages?.NationalWagesList || [])
+    const selectedWages = occupation
+        ? getWagesBySalaryType(occupation?.Wages?.NationalWagesList || [], salaryType) ||
+          getYearlyWages(occupation?.Wages?.NationalWagesList || [])
         : undefined;
     const projection = occupation?.Projections?.Projections?.[0];
 
-    const minSalary = yearlyWages?.Pct10;
-    const medianSalary = yearlyWages?.Median;
-    const maxSalary = yearlyWages?.Pct90;
-    const formattedMedianSalary = formatSalaryAmount(medianSalary, false);
-    const formattedMinSalary = formatSalaryAmount(minSalary, true);
-    const formattedMaxSalary = formatSalaryAmount(maxSalary, true);
+    const minSalary = selectedWages?.Pct10;
+    const medianSalary = selectedWages?.Median;
+    const maxSalary = selectedWages?.Pct90;
+    const formattedMedianSalary = formatSalaryAmount(medianSalary, false, salaryType);
+    const formattedMinSalary = formatSalaryAmount(minSalary, true, salaryType);
+    const formattedMaxSalary = formatSalaryAmount(maxSalary, true, salaryType);
     const employmentCount = formatAboutCount(projection?.EstimatedEmployment);
     const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const pluralizedTitle = title.toLowerCase().endsWith('s')
         ? title.toLowerCase()
         : `${title.toLowerCase()}s`;
+    const salaryTypeLabel = salaryType === 'per_hour' ? '/hr' : '/yr';
 
     return (
         <div className="flex flex-col gap-[30px] w-full max-w-[600px] mx-auto rounded-[15px] bg-white py-[25px] px-[15px] shadow-bottom-4-4">
@@ -89,14 +107,14 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
 
                 {isLoading ? (
                     <p className="text-sm text-grayscale-600">Finding salary data...</p>
-                ) : occupation && yearlyWages ? (
+                ) : occupation && selectedWages ? (
                     <>
                         <p className="flex flex-wrap items-end gap-1 leading-none">
                             <span className="text-[21px] font-bold bg-[linear-gradient(90deg,#6366F1_0%,#818CF8_98.7%)] bg-clip-text text-transparent [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]">
                                 {formattedMedianSalary}
                             </span>
                             <span className="text-[12px] text-grayscale-700 leading-[16px]">
-                                /yr average
+                                {salaryTypeLabel} average
                             </span>
                         </p>
 
@@ -119,7 +137,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                 )}
             </div>
 
-            {occupation && yearlyWages && (
+            {occupation && selectedWages && (
                 <div className="flex flex-col">
                     <div className="flex flex-col items-center justify-center gap-1 text-grayscale-600 pt-2">
                         <div className="flex items-center justify-center gap-1.5 text-[14px] leading-none">
@@ -136,7 +154,11 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                         )}
                     </div>
 
-                    <AiPathwayCareerPipeChart wages={occupation.Wages} showMedianOverlay={false} />
+                    <AiPathwayCareerPipeChart
+                        wages={occupation.Wages}
+                        showMedianOverlay={false}
+                        salaryType={salaryType}
+                    />
                 </div>
             )}
         </div>

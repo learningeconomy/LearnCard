@@ -1,4 +1,4 @@
-import { WageItem, Wages } from 'learn-card-base/types/careerOneStop';
+import { type WageItem } from 'learn-card-base';
 
 export type AiPathwayCareer = {
     id: number;
@@ -38,6 +38,15 @@ export const buildSalaryPipeData = (wages: WageItem) => {
         { bucket: 6, value: Number(wages.Pct75) },
         { bucket: 7, value: Number(wages.Pct90) },
     ];
+};
+
+export const getWagesBySalaryType = (
+    wages: WageItem[],
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+) => {
+    const rateType = salaryType === 'per_hour' ? 'Hourly' : 'Annual';
+
+    return wages.find(wage => wage.RateType === rateType);
 };
 
 export const getFirstAvailableKeywords = (
@@ -92,5 +101,5 @@ export const getAllKeywords = (
 };
 
 export const getYearlyWages = (wages: WageItem[]) => {
-    return wages.find(wage => wage.RateType === 'Annual');
+    return getWagesBySalaryType(wages, 'per_year');
 };

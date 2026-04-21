@@ -91,6 +91,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                             professionalTitle={professionalTitle}
                             occupation={occupation}
                             salaryData={salaryData}
+                            salaryType={salaryData?.salaryType}
                         />
 
                         {occupation.Projections?.Projections?.[0] && (
@@ -113,7 +114,11 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                             <div className="h-[1px] w-full bg-grayscale-200" />
                         )}
 
-                        <AiPathwayTopPayLocations occupation={occupation} compact />
+                        <AiPathwayTopPayLocations
+                            occupation={occupation}
+                            compact
+                            salaryType={salaryData?.salaryType}
+                        />
                     </>
                 ) : (
                     <div className="py-2">
@@ -130,6 +135,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                 professionalTitle={professionalTitle}
                 occupation={occupation}
                 isLoading={occupationLoading}
+                salaryType={salaryData?.salaryType}
             />
         </React.Fragment>
     );
