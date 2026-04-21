@@ -134,6 +134,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
             <AiInsightsAverageSalaryBox
                 professionalTitle={professionalTitle}
                 occupation={occupation}
+                suggestedOccupations={occupations}
                 isLoading={occupationLoading}
                 salaryType={salaryData?.salaryType}
             />

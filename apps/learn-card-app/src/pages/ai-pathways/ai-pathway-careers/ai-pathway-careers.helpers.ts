@@ -1,3 +1,5 @@
+import numeral from 'numeral';
+
 import { type WageItem } from 'learn-card-base';
 
 export type AiPathwayCareer = {
@@ -102,4 +104,75 @@ export const getAllKeywords = (
 
 export const getYearlyWages = (wages: WageItem[]) => {
     return getWagesBySalaryType(wages, 'per_year');
+};
+
+export const getSelectedWagesBySalaryType = (
+    wages: WageItem[],
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+) => {
+    return getWagesBySalaryType(wages, salaryType) || getYearlyWages(wages);
+};
+
+export const formatSalaryAmount = (
+    value: string | number | undefined,
+    compact = false,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): string => {
+    if (value === undefined || value === null || value === '') {
+        return compact ? '$0' : '$0';
+    }
+
+    const numericValue =
+        typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+
+    if (!Number.isFinite(numericValue)) {
+        return typeof value === 'string' && value.startsWith('$') ? value : `$${value}`;
+    }
+
+    if (salaryType === 'per_hour') {
+        return `$${new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(numericValue)}`;
+    }
+
+    if (!compact) {
+        return `$${new Intl.NumberFormat('en-US').format(numericValue)}`;
+    }
+
+    return numeral(numericValue)
+        .format('$0a')
+        .replace(/k/g, 'K')
+        .replace(/m/g, 'M')
+        .replace(/b/g, 'B');
+};
+
+export const formatAboutCount = (value: string | number | undefined): string => {
+    if (value === undefined || value === null || value === '') {
+        return '';
+    }
+
+    const numericValue =
+        typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+
+    if (!Number.isFinite(numericValue)) {
+        return '';
+    }
+
+    return numeral(numericValue).format('0a');
+};
+
+export const formatEstimatedSalary = (
+    wages: WageItem[] | undefined,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): string => {
+    const selectedWages = getSelectedWagesBySalaryType(wages ?? [], salaryType);
+
+    if (!selectedWages?.Median) {
+        return '';
+    }
+
+    const salarySuffix = salaryType === 'per_hour' ? '/hr' : '/yr';
+
+    return `~ ${formatSalaryAmount(selectedWages.Median, false, salaryType)}${salarySuffix}`;
 };
