@@ -12,6 +12,7 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
     getContractUriFromLaunchConfig,
@@ -96,9 +97,10 @@ import {
     getContractTermsForProfile,
     getContractDetailsByUri,
 } from '@accesslayer/consentflowcontract/relationships/read';
-import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
+import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
+import { neogma } from '@instance';
 import {
     handleIncrementCounterEvent,
     handleGetCounterEvent,
@@ -984,7 +986,53 @@ const handleGetTemplateRecipientsEvent = async (
         });
     }
 
-    const recipients = await getBoostRecipients(boost, {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[sent:CREDENTIAL_SENT]->(credential:Credential)
+         MATCH (credential)-[:INSTANCE_OF]->(boost:Boost {id: $boostId})
+         WHERE ${cursor ? 'sent.date < $cursor' : 'true'}
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile {profileId: sent.to})
+         OPTIONAL MATCH (target:Profile {profileId: sent.to})
+         RETURN sent, received, credential.id AS credentialId, target.profileId AS recipientProfileId, target.displayName AS recipientDisplayName
+         ORDER BY sent.date DESC
+         LIMIT ${limit + 1}`,
+        {
+            listingId,
+            boostId: boost.id,
+            cursor: cursor ?? null,
+        }
+    );
+
+    const rawRecords = result.records.map((record: { get: (key: string) => unknown }) => {
+        const sent = inflateObject<Record<string, unknown>>(
+            ((record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {})
+        );
+        const receivedNode = record.get('received') as { properties?: Record<string, unknown> } | null;
+        const received = receivedNode?.properties
+            ? inflateObject<Record<string, unknown>>(receivedNode.properties)
+            : undefined;
+
+        return {
+            recipientProfileId: record.get('recipientProfileId') as string | undefined,
+            recipientDisplayName: record.get('recipientDisplayName') as string | undefined,
+            sentDate: sent.date as string,
+            claimedDate: received?.date as string | undefined,
+            credentialUri: getCredentialUri(record.get('credentialId') as string, ctx.domain),
+            status: received ? ('claimed' as const) : ('pending' as const),
+        };
+    }).filter(
+        (
+            record
+        ): record is {
+            recipientProfileId: string;
+            recipientDisplayName: string | undefined;
+            sentDate: string;
+            claimedDate: string | undefined;
+            credentialUri: string;
+            status: 'pending' | 'claimed';
+        } => Boolean(record.recipientProfileId)
+    );
+
+    const directProfileRecords = await getBoostRecipients(boost, {
         limit: limit + 1,
         cursor,
         includeUnacceptedBoosts: true,
@@ -992,33 +1040,35 @@ const handleGetTemplateRecipientsEvent = async (
         from: profile.profileId,
     });
 
-    const hasMore = recipients.length > limit;
-    const records = hasMore ? recipients.slice(0, limit) : recipients;
+    const combinedRecords = [
+        ...rawRecords,
+        ...directProfileRecords.map(record => ({
+            recipientProfileId: record.to.profileId,
+            recipientDisplayName: record.to.displayName,
+            sentDate: record.sent,
+            claimedDate: record.received,
+            credentialUri: record.uri,
+            status: record.received ? ('claimed' as const) : ('pending' as const),
+        })),
+    ]
+        .filter(record => Boolean(record.credentialUri))
+        .filter(
+            (record, index, self) =>
+                index ===
+                self.findIndex(existing => existing.credentialUri === record.credentialUri)
+        )
+        .sort((a, b) => b.sentDate.localeCompare(a.sentDate));
 
-    const formattedRecords = records.map(
-        (r: {
-            to: { profileId: string; displayName?: string };
-            sent: string;
-            received?: string;
-            uri?: string;
-        }) => ({
-            recipientProfileId: r.to.profileId,
-            recipientDisplayName: r.to.displayName,
-            sentDate: r.sent,
-            claimedDate: r.received,
-            credentialUri: r.uri,
-            status: r.received ? 'claimed' : 'pending',
-        })
-    );
-
+    const hasMore = combinedRecords.length > limit;
+    const records = hasMore ? combinedRecords.slice(0, limit) : combinedRecords;
     const lastRecord = records.length > 0 ? records[records.length - 1] : undefined;
-    const nextCursor = hasMore && lastRecord ? (lastRecord as { sent: string }).sent : undefined;
+    const nextCursor = hasMore && lastRecord ? lastRecord.sentDate : undefined;
 
     return {
-        records: formattedRecords,
+        records,
         hasMore,
         cursor: nextCursor,
-        total: formattedRecords.length,
+        total: records.length,
     };
 };
 

@@ -2183,6 +2183,16 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            associateBoostWithListing: async (_learnCard, listingId, boostUri, templateAlias) => {
+                await ensureUser();
+
+                return client.appStore.addBoostToListing.mutate({
+                    listingId,
+                    boostUri,
+                    templateAlias,
+                });
+            },
+
             removeBoostFromApp: async (_learnCard, listingId, templateAlias) => {
                 await ensureUser();
 
@@ -2198,6 +2208,133 @@ export async function getLearnCardNetworkPlugin(
             // Generic App Event
             sendAppEvent: async (_learnCard, listingId, event) => {
                 await ensureUser();
+
+                 const legacyEvent = event as Record<string, unknown>;
+                 const eventType = legacyEvent.type;
+
+                 if (eventType === 'sendCredential') {
+                     return client.appStore.appEvent.mutate({
+                         listingId,
+                         event: {
+                             type: 'send-credential',
+                             templateAlias: String(legacyEvent.templateAlias ?? ''),
+                             templateData:
+                                 typeof legacyEvent.templateData === 'object' &&
+                                 legacyEvent.templateData !== null
+                                     ? (legacyEvent.templateData as Record<string, unknown>)
+                                     : undefined,
+                             preventDuplicateClaim:
+                                 typeof legacyEvent.preventDuplicateClaim === 'boolean'
+                                     ? legacyEvent.preventDuplicateClaim
+                                     : undefined,
+                         },
+                     });
+                 }
+
+                 if (eventType === 'checkCredential') {
+                     return client.appStore.appEvent.mutate({
+                         listingId,
+                         event: {
+                             type: 'check-credential',
+                             templateAlias:
+                                 typeof legacyEvent.templateAlias === 'string'
+                                     ? legacyEvent.templateAlias
+                                     : undefined,
+                             boostUri:
+                                 typeof legacyEvent.boostUri === 'string'
+                                     ? legacyEvent.boostUri
+                                     : undefined,
+                         },
+                     });
+                 }
+
+                 if (eventType === 'checkIssuanceStatus') {
+                     return client.appStore.appEvent.mutate({
+                         listingId,
+                         event: {
+                             type: 'check-issuance-status',
+                             templateAlias:
+                                 typeof legacyEvent.templateAlias === 'string'
+                                     ? legacyEvent.templateAlias
+                                     : undefined,
+                             boostUri:
+                                 typeof legacyEvent.boostUri === 'string'
+                                     ? legacyEvent.boostUri
+                                     : undefined,
+                             recipient: String(legacyEvent.recipient ?? ''),
+                         },
+                     });
+                 }
+
+                 if (eventType === 'getTemplateRecipients') {
+                     return client.appStore.appEvent.mutate({
+                         listingId,
+                         event: {
+                             type: 'get-template-recipients',
+                             templateAlias:
+                                 typeof legacyEvent.templateAlias === 'string'
+                                     ? legacyEvent.templateAlias
+                                     : undefined,
+                             boostUri:
+                                 typeof legacyEvent.boostUri === 'string'
+                                     ? legacyEvent.boostUri
+                                     : undefined,
+                             limit:
+                                 typeof legacyEvent.limit === 'number'
+                                     ? legacyEvent.limit
+                                     : undefined,
+                             cursor:
+                                 typeof legacyEvent.cursor === 'string'
+                                     ? legacyEvent.cursor
+                                     : undefined,
+                         },
+                     });
+                 }
+
+                 if (eventType === 'requestLearnerContext') {
+                     return client.appStore.appEvent.mutate({
+                         listingId,
+                         event: {
+                             type: 'request-learner-context',
+                             includeCredentials:
+                                 typeof legacyEvent.includeCredentials === 'boolean'
+                                     ? legacyEvent.includeCredentials
+                                     : undefined,
+                             includePersonalData:
+                                 typeof legacyEvent.includePersonalData === 'boolean'
+                                     ? legacyEvent.includePersonalData
+                                     : undefined,
+                             instructions:
+                                 typeof legacyEvent.instructions === 'string'
+                                     ? legacyEvent.instructions
+                                     : undefined,
+                             detailLevel:
+                                 typeof legacyEvent.detailLevel === 'string'
+                                     ? legacyEvent.detailLevel
+                                     : undefined,
+                         },
+                     });
+                 }
+
+                 if (eventType === 'sendAiSessionCredential') {
+                     return client.appStore.appEvent.mutate({
+                         listingId,
+                         event: {
+                             type: 'send-ai-session-credential',
+                             sessionTitle: String(legacyEvent.sessionTitle ?? ''),
+                             summaryData:
+                                 typeof legacyEvent.summaryData === 'object' &&
+                                 legacyEvent.summaryData !== null
+                                     ? legacyEvent.summaryData
+                                     : {},
+                             metadata:
+                                 typeof legacyEvent.metadata === 'object' &&
+                                 legacyEvent.metadata !== null
+                                     ? legacyEvent.metadata
+                                     : undefined,
+                         },
+                     });
+                 }
 
                 return client.appStore.appEvent.mutate({ listingId, event });
             },

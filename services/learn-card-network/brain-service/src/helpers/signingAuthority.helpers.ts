@@ -1,8 +1,14 @@
 import dotenv from 'dotenv';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
-import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
-import { SigningAuthorityForUserType } from 'types/profile';
-import { CredentialIssuer, getIssuerDid, getIssuerProfileId } from '../types/issuer';
+import { getDidWeb } from '@helpers/did.helpers';
+import { VCValidator, JWEValidator } from '@learncard/types';
+import type { UnsignedVC, VC, JWE } from '@learncard/types';
+import type { SigningAuthorityForUserType } from 'types/profile';
+import {
+    getIssuerOwnerProfile,
+    getIssuerProfileId,
+} from '../types/issuer';
+import type { CredentialIssuer } from '../types/issuer';
 import { trace, traceCrypto, traceHttp } from '@tracing';
 
 dotenv.config();
@@ -22,13 +28,14 @@ export async function issueCredentialWithSigningAuthority(
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
     domain: string,
-    encrypt: boolean = true,
+    encrypt = true,
     ownerDidOverride?: string
 ): Promise<VC | JWE> {
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
-    const ownerDid = ownerDidOverride ?? getIssuerDid(issuer, domain ?? 'network.learncard.com');
+    const ownerProfile = getIssuerOwnerProfile(issuer);
+    const ownerDid = ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
 
     const logContext = {
         issuer: getIssuerProfileId(issuer),
@@ -152,16 +159,16 @@ export async function issueCredentialWithSigningAuthority(
                     }
 
                     return validationResult.data;
-                } else {
-                    const validationResult = await VCValidator.spa(res);
-
-                    if (!validationResult.success) {
-                        console.error('[SA Helper] VC validation failed:', validationResult.error);
-                        throw new Error('Signing Authority returned malformed VC');
-                    }
-
-                    return validationResult.data;
                 }
+
+                const validationResult = await VCValidator.spa(res);
+
+                if (!validationResult.success) {
+                    console.error('[SA Helper] VC validation failed:', validationResult.error);
+                    throw new Error('Signing Authority returned malformed VC');
+                }
+
+                return validationResult.data;
             } catch (error) {
                 const errMsg = error instanceof Error ? error.message : String(error);
                 const errStack = error instanceof Error ? error.stack : undefined;
