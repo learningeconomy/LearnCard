@@ -21,6 +21,7 @@ import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/qu
 import X from 'learn-card-base/svgs/X';
 import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
 import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import AddToLearnCardQuickNav from '../../../components/svgs/quicknav/AddToLearnCardQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
 import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
@@ -77,8 +78,11 @@ import {
     useGetCredentialList,
     CredentialCategoryEnum,
     switchedProfileStore,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
+import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
 
 const getIconForActionButton = (
     label: string,
@@ -143,6 +147,8 @@ const getIconForActionButton = (
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'Request Learner Insights':
             return <RequestInsightsQuickNav className="w-[50px] h-auto" />;
+        case 'Add to LearnCard':
+            return <AddToLearnCardQuickNav className="w-[50px] h-auto" />;
         case 'Boost Child':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
         case 'Create API Token':
@@ -432,6 +438,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { familyCredential } = useGetFamilyCredential();
     const { data: familyList } = useGetCredentialList(CredentialCategoryEnum.family);
     const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
+    const { isDesktop } = useDeviceTypeByWidth();
 
     type ConsentFlowContractLike = { name?: string; uri?: string };
 
@@ -617,6 +624,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
+            'Add to LearnCard',
             'New AI Tutoring Session',
             'Understand My Skills',
             'Customize AI Sessions',
@@ -624,6 +632,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Build My LearnCard',
         ],
         [LearnCardRolesEnum.teacher]: [
+            'Add to LearnCard',
             'View Learner Insights',
             'Request Learner Insights',
             'Issue Credential',
@@ -631,6 +640,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Edit Skills Frameworks',
         ],
         [LearnCardRolesEnum.guardian]: [
+            'Add to LearnCard',
             'Create Family',
             'Boost Child',
             'Add Child',
@@ -638,6 +648,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'View Child Insights',
         ],
         [LearnCardRolesEnum.developer]: [
+            'Add to LearnCard',
             'Create API Token',
             'Create Signing Authority',
             'Create ConsentFlow',
@@ -645,6 +656,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Read Docs',
         ],
         [LearnCardRolesEnum.admin]: [
+            'Add to LearnCard',
             'Edit Skills Frameworks',
             'Import Credentials',
             'Create Organization',
@@ -652,6 +664,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Switch Account',
         ],
         [LearnCardRolesEnum.counselor]: [
+            'Add to LearnCard',
             'Manage Skills Frameworks',
             'Import Credentials',
             'Create Organization',
@@ -726,6 +739,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Create ConsentFlow': 'bg-[var(--ion-color-lime-300)]',
         'Switch Network': 'bg-[var(--ion-color-yellow-300)]',
         'Read Docs': 'bg-[var(--ion-color-teal-200)]',
+        'Add to LearnCard': 'bg-[var(--ion-color-grayscale-100)]',
     };
 
     const handleViewChildInsights = () => {
@@ -789,6 +803,24 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+        }
+    };
+
+    const handleAddToLearnCard = () => {
+        if (isDesktop) {
+            newModal(
+                <AddToLearnCardMenuWrapper />,
+                {
+                    sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+            );
+        } else {
+            newModal(
+                <AddToLearnCardMenu />,
+                { sectionClassName: '!max-w-[500px]' },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            );
         }
     };
 
@@ -972,6 +1004,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                 ? handleEditSkillsFrameworks
                                 : label === 'Request Learner Insights'
                                 ? () => void handleRequestLearnerInsights()
+                                : label === 'Add to LearnCard'
+                                ? handleAddToLearnCard
                                 : undefined
                         }
                     />
