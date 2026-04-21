@@ -64,6 +64,8 @@ export const AnalyticsEvents = {
     PATHWAYS_PATHWAY_REMOVED: 'pathways.pathway.removed',
     PATHWAYS_COMPOSITE_OPENED: 'pathways.composite.opened',
     PATHWAYS_CTDL_IMPORTED: 'pathways.ctdl.imported',
+    PATHWAYS_CATALOG_BROWSED: 'pathways.catalog.browsed',
+    PATHWAYS_CATALOG_SEARCHED: 'pathways.catalog.searched',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -305,6 +307,27 @@ export interface AnalyticsEventPayloads {
         nodeCount: number;
         warningCount: number;
         hasDestination: boolean;
+        /**
+         * Where the import originated — the curated catalog card the
+         * learner clicked, or a direct CTID / URL they pasted. Lets us
+         * measure whether the browse UX is actually getting used vs.
+         * power users bypassing it.
+         */
+        importSource: 'catalog' | 'direct';
+    };
+
+    [AnalyticsEvents.PATHWAYS_CATALOG_BROWSED]: {
+        /** Total entries visible at landing (after featured filter). */
+        entryCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_CATALOG_SEARCHED]: {
+        /** Length of the query string (not the string itself — no PII). */
+        queryLength: number;
+        /** Active tag-filter chips at search time. */
+        tagCount: number;
+        /** How many entries survived the filter + query. */
+        resultCount: number;
     };
 }
 
