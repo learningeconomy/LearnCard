@@ -30,12 +30,18 @@ import { useIsCollapsed } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 
 import { getAiPassportAppByContractUri } from '../ai-passport-apps/aiPassport-apps.helpers';
+import { chatBotStore } from '../../stores/chatBotStore';
+import {
+    NewAiSessionButton,
+    NewAiSessionButtonEnum,
+} from '../new-ai-session/NewAiSessionButton/NewAiSessionButton';
 import { NewAiSessionStepEnum } from '../new-ai-session/newAiSession.helpers';
 import {
     AiAssessmentQuestion,
     finishedAssessmentText,
 } from '../ai-assessment/AiAssessment/ai-assessment.helpers';
 import { useTheme } from '../../theme/hooks/useTheme';
+import X from '../svgs/X';
 
 export const AiSessionsContainer: React.FC<{
     topicUri?: string;
@@ -111,17 +117,23 @@ export const AiSessionsContainer: React.FC<{
     const styles = isDesktop ? 'pt-[150px] ion-padding' : '';
 
     const leftColumn = (
-        <div className="h-full w-full flex flex-col bg-white">
+        <div className="h-full w-full flex flex-col bg-white relative">
             <AiSessionsHeader
                 topicTitle={topicsTitle}
                 appContractUri={appContractUri}
                 isLoading={isLoadingEnrichedSessions}
-                handleGoBack={handleGoBack}
+                handleGoBack={() => {
+                    chatBotStore.set.resetStore();
+                    if (handleGoBack) handleGoBack();
+                    else history.push('/ai/topics');
+                }}
             />
 
             <GenericErrorBoundary>
                 <div
-                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles}`}
+                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${
+                        !isDesktop ? 'pb-[90px]' : ''
+                    }`}
                 >
                     <div className="w-full ml-2 px-2 py-0">
                         {isDesktop && (
@@ -169,6 +181,30 @@ export const AiSessionsContainer: React.FC<{
                     </GenericErrorBoundary>
                 </div>
             </GenericErrorBoundary>
+
+            {!isDesktop && (
+                <div
+                    className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-3 px-4 py-4 bg-white border-t border-grayscale-200 safe-area-bottom-margin"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <button
+                        onClick={e => {
+                            e.stopPropagation();
+                            chatBotStore.set.resetStore();
+                            history.goBack();
+                        }}
+                        className="rounded-full bg-white shadow-3xl p-4 mt-2"
+                    >
+                        <X className="text-grayscale-800 w-[20px] h-auto" strokeWidth="5" />
+                    </button>
+
+                    <NewAiSessionButton
+                        iconType="light"
+                        type={NewAiSessionButtonEnum.mobile}
+                        className="!bg-indigo-500 !text-center !flex !items-center !justify-center !flex-row-reverse !text-white !rounded-full"
+                    />
+                </div>
+            )}
         </div>
     );
 
