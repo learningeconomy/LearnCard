@@ -167,9 +167,9 @@ export const NewAiSessionButton: React.FC<{
                           }
                         : () => handleNewSession(undefined, NewAiSessionStepEnum.newTopic)
                 }
-                className="text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid border-grayscale-200 p-[10px] w-full flex items-center justify-between pl-[20px] mt-[10px] "
+                className="text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid !bg-grayscale-200 border-grayscale-200 p-[10px] w-full flex items-center justify-start mt-[10px] gap-1"
             >
-                <NewAiSessionIcon version="3" />
+                <NewAiSessionIcon version="4" />
                 New Session
             </button>
         );

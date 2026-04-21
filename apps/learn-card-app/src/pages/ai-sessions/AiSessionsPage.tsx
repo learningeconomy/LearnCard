@@ -11,6 +11,7 @@ import {
     NewAiSessionButton,
     NewAiSessionButtonEnum,
 } from '../../components/new-ai-session/NewAiSessionButton/NewAiSessionButton';
+import X from '../../components/svgs/X';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
@@ -91,7 +92,7 @@ const AiSessionsPage: React.FC = () => {
                         <div className="flex justify-center w-full">
                             <div className="w-full max-w-[600px] px-4 pt-5 pb-[120px]">
                                 {/* Stats + search row */}
-                                <div className="flex items-start justify-between mb-1 pt-6">
+                                <div className="flex items-center justify-between mb-1 pt-6">
                                     <div>
                                         <h2 className="text-grayscale-800 font-poppins font-bold text-[22px] leading-tight">
                                             {isLoading ? (
@@ -124,9 +125,7 @@ const AiSessionsPage: React.FC = () => {
                                         }}
                                     >
                                         {showSearch ? (
-                                            <span className="text-[22px] leading-none font-light">
-                                                ×
-                                            </span>
+                                            <X className="w-[24px] h-[24px]" />
                                         ) : (
                                             <Search className="w-[24px] h-[24px]" />
                                         )}
@@ -142,6 +141,7 @@ const AiSessionsPage: React.FC = () => {
                                         setFilterBy={setFilterBy}
                                         sortBy={sortBy}
                                         setSortBy={setSortBy}
+                                        className="!bg-grayscale-200"
                                     />
                                 )}
 
