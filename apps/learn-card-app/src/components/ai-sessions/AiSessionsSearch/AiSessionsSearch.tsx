@@ -20,6 +20,7 @@ export const AiSessionsSearch: React.FC<{
     setSortBy: React.Dispatch<React.SetStateAction<AiSessionsSortOptionsEnum>>;
     showFilterOptions?: boolean;
     className?: string;
+    hidePopover?: boolean;
 }> = ({
     searchInput,
     setSearchInput,
@@ -30,6 +31,7 @@ export const AiSessionsSearch: React.FC<{
     setSortBy,
     showFilterOptions,
     className,
+    hidePopover = false,
 }) => {
     return (
         <div className="w-full flex items-center justify-center mt-4">
@@ -47,14 +49,16 @@ export const AiSessionsSearch: React.FC<{
                     />
                 </div>
 
-                <AiSessionsPopOverButton
-                    filterBy={filterBy}
-                    setFilterBy={setFilterBy}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    showFilteringOptions={showFilterOptions}
-                    filteringType={filteringType}
-                />
+                {!hidePopover && (
+                    <AiSessionsPopOverButton
+                        filterBy={filterBy}
+                        setFilterBy={setFilterBy}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                        showFilteringOptions={showFilterOptions}
+                        filteringType={filteringType}
+                    />
+                )}
             </div>
         </div>
     );

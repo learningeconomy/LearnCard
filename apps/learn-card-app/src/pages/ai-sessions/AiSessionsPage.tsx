@@ -138,6 +138,7 @@ const AiSessionsPage: React.FC = () => {
                                         sortBy={sortBy}
                                         setSortBy={setSortBy}
                                         className="!bg-grayscale-200"
+                                        hidePopover={true}
                                     />
                                 )}
 
