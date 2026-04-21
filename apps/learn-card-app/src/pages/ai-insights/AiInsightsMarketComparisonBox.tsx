@@ -20,10 +20,12 @@ const formatCurrency = (
     value: number,
     salaryType: SkillProfileSalaryData['salaryType']
 ): string => {
-    return `$${new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: salaryType === 'per_hour' ? 0 : 0,
-        maximumFractionDigits: salaryType === 'per_hour' ? 2 : 0,
-    }).format(value)}`;
+    const formattedValue = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value);
+
+    return `$${formattedValue.replace(/\.00$/, '')}`;
 };
 
 const formatScaleLabel = (
@@ -31,12 +33,20 @@ const formatScaleLabel = (
     salaryType: SkillProfileSalaryData['salaryType']
 ): string => {
     if (salaryType === 'per_hour') {
-        return new Intl.NumberFormat('en-US', {
+        const formattedValue = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(value);
+
+        return formattedValue.replace(/\.00$/, '');
     }
 
-    return Math.round(value / 1000).toLocaleString('en-US');
+    const formattedValue = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value / 1000);
+
+    return formattedValue.replace(/\.00$/, '');
 };
 
 const parseSalaryValue = (value: string | undefined): number | undefined => {
@@ -99,7 +109,9 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             : undefined;
 
     const comparisonPercentLabel =
-        comparisonPercent !== undefined ? Math.round(comparisonPercent) : undefined;
+        comparisonPercent !== undefined
+            ? comparisonPercent.toFixed(2).replace(/\.00$/, '')
+            : undefined;
     const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const titlePlural = toTitleCase(pluralizeTitle(title));
     const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow, salaryType) : '$0';
@@ -131,7 +143,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         );
     }
 
-    const tickValues = [0, scaleMax * 0.3, scaleMax * 0.53, scaleMax * 0.77, scaleMax];
+    const tickValues = [0, scaleMax * 0.25, scaleMax * 0.5, scaleMax * 0.75, scaleMax];
 
     return (
         <div className="w-full font-poppins flex flex-col gap-4">
@@ -146,11 +158,19 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             </div>
 
             <div className="space-y-2">
-                <div className="relative h-[16px] px-[1px]">
+                <div className="relative h-[16px] px-[15px]">
                     {tickValues.map((tickValue, index) => (
                         <span
                             key={`${tickValue}-${index}`}
-                            className="absolute top-0 -translate-x-1/2 text-[14px] leading-[14px] tracking-[0.32px] text-grayscale-600"
+                            className={`absolute top-0 whitespace-nowrap text-[14px] leading-[14px] tracking-[0.32px] text-grayscale-600 ${
+                                index === 0
+                                    ? 'translate-x-0 text-left'
+                                    : index === tickValues.length - 1
+                                    ? '-translate-x-full text-right'
+                                    : index === 2
+                                    ? '-translate-x-1/2 text-center'
+                                    : '-translate-x-1/2 text-center'
+                            }`}
                             style={{ left: `${getPositionFromValue(tickValue)}%` }}
                         >
                             {formatScaleLabel(tickValue, salaryType)}
@@ -166,8 +186,16 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
 
                     {markerLeft !== undefined && (
                         <div
-                            className="absolute top-1/2 z-10 -translate-y-1/2 -translate-x-1/2"
-                            style={{ left: `${markerLeft}%` }}
+                            className="absolute top-1/2 z-10 -translate-y-1/2"
+                            style={{
+                                left: `${markerLeft}%`,
+                                transform:
+                                    markerLeft <= 0
+                                        ? 'translate(0, -50%)'
+                                        : markerLeft >= 100
+                                        ? 'translate(calc(-100% + 4px), -50%)'
+                                        : 'translate(-50%, -50%)',
+                            }}
                         >
                             <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
                                 <div className="h-4 w-4 rounded-full border-4 border-emerald-500 bg-white" />
