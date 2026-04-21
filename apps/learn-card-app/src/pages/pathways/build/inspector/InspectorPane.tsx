@@ -22,7 +22,9 @@
 import React from 'react';
 
 import type { Pathway, PathwayNode } from '../../types';
+import type { Issue } from '../validate/validatePathway';
 
+import ValidationBanner from './ValidationBanner';
 import ConnectionsSection from './sections/ConnectionsSection';
 import DangerSection from './sections/DangerSection';
 import DoneSection from './sections/DoneSection';
@@ -34,6 +36,15 @@ interface InspectorPaneProps {
     node: PathwayNode;
     onChangePathway: (next: Pathway) => void;
     onDeleted?: () => void;
+
+    /**
+     * All validation issues for the pathway. The banner filters
+     * down to the current node + pathway-level. Passing the whole
+     * list (rather than pre-filtering at the call site) keeps the
+     * filter logic beside the UI, where it can evolve as the banner
+     * gains features (e.g. jump-to-section).
+     */
+    issues?: Issue[];
 }
 
 const InspectorPane: React.FC<InspectorPaneProps> = ({
@@ -41,6 +52,7 @@ const InspectorPane: React.FC<InspectorPaneProps> = ({
     node,
     onChangePathway,
     onDeleted,
+    issues = [],
 }) => (
     <section
         /*
@@ -62,6 +74,8 @@ const InspectorPane: React.FC<InspectorPaneProps> = ({
                 Changes save as you type.
             </p>
         </header>
+
+        <ValidationBanner issues={issues} currentNodeId={node.id} />
 
         <IdentitySection
             pathway={pathway}

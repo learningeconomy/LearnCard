@@ -12,6 +12,7 @@ import {
     removeEdge,
     removeNode,
     setCompositePolicy,
+    setDestinationNode,
     setPolicy,
     setTermination,
     updateNode,
@@ -391,5 +392,56 @@ describe('addPathwayRefNode', () => {
         );
 
         expect(result).toEqual({ ok: false, reason: 'self' });
+    });
+});
+
+describe('setDestinationNode', () => {
+    it('sets destinationNodeId and bumps updatedAt', () => {
+        const before = pathway([node('a'), node('b')]);
+        const after = setDestinationNode(before, 'a', opts);
+
+        expect(after.destinationNodeId).toBe('a');
+        expect(after.updatedAt).toBe(LATER);
+        expect(after).not.toBe(before);
+    });
+
+    it('replaces an existing destination atomically (no "unset" needed on the prior node)', () => {
+        const before = {
+            ...pathway([node('a'), node('b')]),
+            destinationNodeId: 'a' as string | undefined,
+        };
+        const after = setDestinationNode(before, 'b', opts);
+
+        expect(after.destinationNodeId).toBe('b');
+    });
+
+    it('clears the destination when passed null', () => {
+        const before = {
+            ...pathway([node('a')]),
+            destinationNodeId: 'a' as string | undefined,
+        };
+        const after = setDestinationNode(before, null, opts);
+
+        expect(after.destinationNodeId).toBeUndefined();
+    });
+
+    it('is a no-op (same object identity) when the id is already the destination', () => {
+        // Preserving identity lets callers use `===` to detect real
+        // change events — important for history/offline-queue which
+        // should not record phantom transactions.
+        const before = {
+            ...pathway([node('a')]),
+            destinationNodeId: 'a' as string | undefined,
+        };
+        const after = setDestinationNode(before, 'a', opts);
+
+        expect(after).toBe(before);
+    });
+
+    it('is a no-op when the id does not belong to the pathway', () => {
+        const before = pathway([node('a')]);
+        const after = setDestinationNode(before, 'ghost', opts);
+
+        expect(after).toBe(before);
     });
 });

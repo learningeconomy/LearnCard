@@ -64,6 +64,69 @@ export const CATALOG: ReadonlyArray<CatalogEntry> = [
     // non-featured block so diffs read naturally; featured entries can
     // sit at the top in editorial order (most important first).
     // -----------------------------------------------------------------
+
+    // -----------------------------------------------------------------
+    // Chaffey College · Critical Thinking
+    // -----------------------------------------------------------------
+    //
+    // Higher-ed workforce-skill badge. Description is lifted straight
+    // from the registry (it's a full sentence there, which is rare).
+    // Single-node pathway in the registry — learners who import it
+    // get a one-step pathway wrapping the skill attestation.
+    {
+        ctid: 'ce-0c42a2fe-3b36-40e3-b177-e1c5ceba257e',
+        name: 'Critical Thinking',
+        description:
+            'Awarded to Chaffey College learners who understand and demonstrate the importance of being a problem solver in the workplace.',
+        issuer: 'Chaffey College',
+        issuerUrl: 'https://www.chaffey.edu/',
+        credentialType: 'Workforce Skill',
+        tags: ['Workforce Skills', 'Higher Education'],
+        featured: false,
+    },
+
+    // -----------------------------------------------------------------
+    // NYC Public Schools · Future Ready NYC (career pathways)
+    // -----------------------------------------------------------------
+    //
+    // Three career pathways from NYC DOE's Future Ready NYC initiative
+    // for high-school students. The registry records carry only the
+    // pathway name in `ceterms:description`, so the copy below is
+    // kept deliberately minimal and grounded in the pathway name +
+    // owner — no fabricated program details.
+    {
+        ctid: 'ce-0209da38-3aa8-4e9d-8b51-93e16fc9cb9a',
+        name: 'Future Ready NYC — Cybersecurity',
+        description:
+            'A NYC Public Schools high-school career pathway preparing students for Information Security Analyst roles through work-based learning.',
+        issuer: 'New York City Public Schools',
+        issuerUrl: 'https://www.schools.nyc.gov/',
+        credentialType: 'Career Pathway',
+        tags: ['Cybersecurity', 'K-12', 'Career Readiness'],
+        featured: false,
+    },
+    {
+        ctid: 'ce-5a76a624-21b3-4c7e-9495-0b8c913cad37',
+        name: 'Future Ready NYC — Data Science',
+        description:
+            'A NYC Public Schools high-school career pathway introducing students to data-science roles and early-career credentials.',
+        issuer: 'New York City Public Schools',
+        issuerUrl: 'https://www.schools.nyc.gov/',
+        credentialType: 'Career Pathway',
+        tags: ['Data Science', 'K-12', 'Career Readiness'],
+        featured: false,
+    },
+    {
+        ctid: 'ce-0f0af1dd-35c7-43e2-9363-6bc079508747',
+        name: 'Future Ready NYC — Software Development',
+        description:
+            'A NYC Public Schools high-school career pathway introducing students to software-development roles and early-career credentials.',
+        issuer: 'New York City Public Schools',
+        issuerUrl: 'https://www.schools.nyc.gov/',
+        credentialType: 'Career Pathway',
+        tags: ['Technology', 'K-12', 'Career Readiness'],
+        featured: false,
+    },
 ];
 
 /**

@@ -180,6 +180,47 @@ export const setTermination = (
 };
 
 // -----------------------------------------------------------------
+// Destination
+// -----------------------------------------------------------------
+
+/**
+ * Set (or clear) the pathway's destination node — the terminal the
+ * learner is ultimately earning.
+ *
+ * Passing `null` clears `destinationNodeId`; passing a node id that
+ * doesn't belong to this pathway is a no-op (returns the input
+ * unchanged). The uniqueness constraint lives in the schema
+ * (`destinationNodeId` is a single optional field, not a boolean on
+ * each node), so we don't need to "unset" anyone else here — writing
+ * to this one field is the atomic flip.
+ */
+export const setDestinationNode = (
+    pathway: Pathway,
+    nodeId: string | null,
+    opts?: BuildOpOptions,
+): Pathway => {
+    const { now } = resolve(opts);
+
+    // Defensive: ignore node ids that don't exist in this pathway.
+    // A stale id here would silently persist an unreachable
+    // destination; returning unchanged makes the bug louder.
+    if (nodeId !== null && !pathway.nodes.some(n => n.id === nodeId)) {
+        return pathway;
+    }
+
+    // No-op if the destination is already what we were asked for.
+    // Preserves object identity so callers that use `===` to detect
+    // changes don't trigger spurious re-renders.
+    if ((pathway.destinationNodeId ?? null) === nodeId) return pathway;
+
+    return {
+        ...pathway,
+        destinationNodeId: nodeId ?? undefined,
+        updatedAt: now,
+    };
+};
+
+// -----------------------------------------------------------------
 // Composite (nesting + composition) ops
 //
 // A "composite" node represents completion of another pathway. We

@@ -1,18 +1,26 @@
 /**
- * IdentitySection — node title + description.
+ * IdentitySection — node title, description, and destination flag.
  *
  * Short and always-on: we pass `defaultOpen` and disable `sticky`
- * because the content is two fields tall and pinning a header over
- * two inputs reads as busywork. The summary is the node title itself
- * so the author always sees what they're editing at a glance.
+ * because the content fits on-screen comfortably. The summary shows
+ * the node title in quotes (or "Untitled step") plus a destination
+ * marker so the author always sees what they're editing *and*
+ * whether it's the pathway's end.
+ *
+ * The destination toggle lives here rather than in its own section
+ * because "is this step the pathway's end?" reads as part of the
+ * step's identity within the pathway. The uniqueness constraint
+ * (one destination per pathway) is enforced structurally by
+ * `setDestinationNode` writing to a single pathway-level field.
  */
 
 import React from 'react';
 
-import { createOutline } from 'ionicons/icons';
+import { IonIcon } from '@ionic/react';
+import { createOutline, flagOutline } from 'ionicons/icons';
 
 import type { Pathway, PathwayNode } from '../../../types';
-import { updateNode } from '../../buildOps';
+import { setDestinationNode, updateNode } from '../../buildOps';
 import Section from '../Section';
 
 interface IdentitySectionProps {
@@ -33,15 +41,29 @@ const IdentitySection: React.FC<IdentitySectionProps> = ({
     node,
     onChangePathway,
 }) => {
+    const isDestination = pathway.destinationNodeId === node.id;
+
     const handleTitle = (title: string) =>
         onChangePathway(updateNode(pathway, node.id, { title }));
 
     const handleDescription = (description: string) =>
         onChangePathway(updateNode(pathway, node.id, { description }));
 
-    // Short, honest summary. If the node has no title yet, nudge the
-    // author rather than showing an empty quote.
-    const summary = node.title.trim() ? `"${node.title}"` : 'Untitled step';
+    /**
+     * Toggle this node as the destination. Setting implicitly clears
+     * whichever node previously held the flag — the schema stores the
+     * id in a single pathway-level field, so the atomic flip is a
+     * one-line write.
+     */
+    const handleToggleDestination = () => {
+        onChangePathway(setDestinationNode(pathway, isDestination ? null : node.id));
+    };
+
+    // Short, honest summary. When this step is the destination we
+    // surface a small flag glyph so collapsed rows in the inspector
+    // reflect the pathway's shape.
+    const summaryText = node.title.trim() ? `"${node.title}"` : 'Untitled step';
+    const summary = isDestination ? `${summaryText} · destination` : summaryText;
 
     return (
         <Section
@@ -80,6 +102,63 @@ const IdentitySection: React.FC<IdentitySectionProps> = ({
                         value={node.description ?? ''}
                         onChange={e => handleDescription(e.target.value)}
                     />
+                </div>
+
+                {/*
+                    Destination toggle. Implemented as a styled
+                    aria-pressed button — cleaner than a native
+                    checkbox here because we want the whole row to
+                    feel tappable and the emerald state needs to
+                    read as "this is the end-goal".
+                */}
+                <div className="pt-1">
+                    <button
+                        type="button"
+                        onClick={handleToggleDestination}
+                        aria-pressed={isDestination}
+                        className={`
+                            group w-full flex items-start gap-3 p-3 rounded-xl border
+                            transition-colors text-left
+                            ${
+                                isDestination
+                                    ? 'border-emerald-500 bg-emerald-50'
+                                    : 'border-grayscale-200 bg-white hover:bg-grayscale-10'
+                            }
+                        `}
+                    >
+                        <span
+                            className={`
+                                shrink-0 inline-flex items-center justify-center
+                                w-8 h-8 rounded-lg
+                                ${
+                                    isDestination
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'bg-grayscale-100 text-grayscale-500 group-hover:bg-grayscale-200'
+                                }
+                            `}
+                        >
+                            <IonIcon icon={flagOutline} aria-hidden className="text-base" />
+                        </span>
+
+                        <span className="min-w-0 flex-1">
+                            <span
+                                className={`block text-sm font-semibold ${
+                                    isDestination ? 'text-emerald-800' : 'text-grayscale-900'
+                                }`}
+                            >
+                                {isDestination ? 'This is the destination' : 'Mark as destination'}
+                            </span>
+
+                            <span
+                                className={`block text-xs leading-relaxed mt-0.5 ${
+                                    isDestination ? 'text-emerald-700' : 'text-grayscale-500'
+                                }`}
+                            >
+                                The step the learner is ultimately earning. Only one
+                                step per pathway.
+                            </span>
+                        </span>
+                    </button>
                 </div>
             </div>
         </Section>

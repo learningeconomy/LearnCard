@@ -6,20 +6,26 @@
  * The render-style radio picks which experience the learner sees;
  * the underlying data is identical.
  *
- * The current `<select>` pathway picker is a placeholder — M3
- * replaces it with a searchable, image-rich picker reusing the
- * catalog modal's patterns. The cycle-detection filter applied here
- * is identical to what the existing NodeEditor used.
+ * M3 replaces the old bare `<select>` of UUIDs with
+ * `PathwayPickerModal` — a searchable picker showing title, step
+ * count, destination, and provenance. Cycle detection still
+ * applies (candidates that would create a loop are omitted).
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 
-import { gitBranchOutline } from 'ionicons/icons';
+import { IonIcon } from '@ionic/react';
+import {
+    gitBranchOutline,
+    searchOutline,
+    swapHorizontalOutline,
+} from 'ionicons/icons';
 
 import { wouldCreateCycle } from '../../core/composition';
-import type { CompositeRenderStyle, Policy } from '../../types';
-import { INPUT, LABEL } from '../shared/inputs';
+import type { CompositeRenderStyle, Pathway, Policy } from '../../types';
+import { LABEL } from '../shared/inputs';
 
+import PathwayPickerModal from './PathwayPickerModal';
 import type { PolicyEditorProps, PolicyKindSpec } from './types';
 
 const RENDER_STYLE_LABELS: Record<
@@ -44,10 +50,11 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
     context,
 }) => {
     const { parentPathwayId, allPathways } = context;
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     // Without the cross-pathway context we can't safely edit
-    // composite refs (no way to filter out cycles). Render a gentle
-    // explainer instead of a broken picker.
+    // composite refs (no way to filter cycles). Render an
+    // explainer instead of a half-working picker.
     if (!parentPathwayId || !allPathways) {
         return (
             <p className="text-xs text-grayscale-500 leading-relaxed">
@@ -56,72 +63,47 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
         );
     }
 
-    const candidates = Object.values(allPathways).filter(p => {
-        if (p.id === parentPathwayId) return false;
-        if (wouldCreateCycle(allPathways, parentPathwayId, p.id)) return false;
+    const selected: Pathway | null = value.pathwayRef
+        ? (allPathways[value.pathwayRef] ?? null)
+        : null;
 
-        return true;
-    });
-
-    const selected = value.pathwayRef ? (allPathways[value.pathwayRef] ?? null) : null;
-
-    // Defensive: the picker filters out cycle-creators, but
-    // imports/proposals could produce an invalid composite after
-    // the fact. Flagging the state is better than silently rendering it.
+    // Defensive: the picker filters out cycle-creators, but imports
+    // or proposals could produce an invalid composite after the fact.
+    // Surface the state honestly rather than silently render it.
     const invalidSelected =
-        value.pathwayRef &&
+        !!value.pathwayRef &&
         (value.pathwayRef === parentPathwayId ||
             wouldCreateCycle(allPathways, parentPathwayId, value.pathwayRef));
+
+    const handlePick = (pathway: Pathway) => {
+        onChange({ ...value, pathwayRef: pathway.id });
+        setPickerOpen(false);
+    };
 
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <label className={LABEL} htmlFor="policy-composite-ref">
-                    Nested pathway
-                </label>
+                <p className={LABEL}>Nested pathway</p>
 
-                {candidates.length === 0 ? (
-                    <p className="text-xs text-grayscale-500 leading-relaxed">
-                        No other pathways available yet. Import one from the
-                        Credential Engine Registry or create another pathway first.
-                    </p>
+                {selected ? (
+                    <SelectedCard
+                        pathway={selected}
+                        invalid={invalidSelected}
+                        onChange={() => setPickerOpen(true)}
+                    />
                 ) : (
-                    <select
-                        id="policy-composite-ref"
-                        className={INPUT}
-                        value={value.pathwayRef}
-                        onChange={e =>
-                            onChange({ ...value, pathwayRef: e.target.value })
-                        }
+                    <button
+                        type="button"
+                        onClick={() => setPickerOpen(true)}
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-grayscale-300 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors"
                     >
-                        <option value="">Pick a pathway…</option>
-
-                        {candidates.map(p => (
-                            <option key={p.id} value={p.id}>
-                                {p.title}
-                            </option>
-                        ))}
-                    </select>
-                )}
-
-                {selected && (
-                    <p className="text-xs text-grayscale-500">
-                        {selected.nodes.length}{' '}
-                        {selected.nodes.length === 1 ? 'step' : 'steps'}
-                        {selected.destinationNodeId
-                            ? ` · ends with ${
-                                  selected.nodes.find(
-                                      n => n.id === selected.destinationNodeId,
-                                  )?.title ?? 'destination'
-                              }`
-                            : ''}
-                    </p>
-                )}
-
-                {invalidSelected && (
-                    <p className="text-xs text-red-700 leading-relaxed">
-                        This would create a loop between pathways. Pick a different one.
-                    </p>
+                        <IonIcon
+                            icon={searchOutline}
+                            aria-hidden
+                            className="text-base"
+                        />
+                        Pick a pathway…
+                    </button>
                 )}
             </div>
 
@@ -171,6 +153,81 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
                     )}
                 </div>
             </div>
+
+            {pickerOpen && (
+                <PathwayPickerModal
+                    parentPathwayId={parentPathwayId}
+                    allPathways={allPathways}
+                    currentRef={value.pathwayRef || undefined}
+                    onPick={handlePick}
+                    onClose={() => setPickerOpen(false)}
+                />
+            )}
+        </div>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// SelectedCard — compact summary of the current reference with a
+// "change" button. Keeps the picker modal out of the way 99% of the
+// time; most authors pick once and tweak other fields afterwards.
+// ---------------------------------------------------------------------------
+
+const SelectedCard: React.FC<{
+    pathway: Pathway;
+    invalid: boolean;
+    onChange: () => void;
+}> = ({ pathway, invalid, onChange }) => {
+    const destination = pathway.destinationNodeId
+        ? pathway.nodes.find(n => n.id === pathway.destinationNodeId)
+        : null;
+
+    return (
+        <div
+            className={`
+                flex items-start gap-3 p-3 rounded-xl border
+                ${invalid ? 'border-red-200 bg-red-50' : 'border-grayscale-300 bg-white'}
+            `}
+        >
+            <IonIcon
+                icon={gitBranchOutline}
+                aria-hidden
+                className={`
+                    text-base mt-0.5 shrink-0
+                    ${invalid ? 'text-red-600' : 'text-emerald-600'}
+                `}
+            />
+
+            <div className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-grayscale-900 truncate">
+                    {pathway.title}
+                </span>
+
+                <span className="block text-xs text-grayscale-500 mt-0.5">
+                    {pathway.nodes.length}{' '}
+                    {pathway.nodes.length === 1 ? 'step' : 'steps'}
+                    {destination ? ` · ends with ${destination.title}` : ''}
+                </span>
+
+                {invalid && (
+                    <span className="block text-xs text-red-700 mt-1 leading-relaxed">
+                        This creates a loop between pathways. Pick a different one.
+                    </span>
+                )}
+            </div>
+
+            <button
+                type="button"
+                onClick={onChange}
+                className="shrink-0 inline-flex items-center gap-1 py-1.5 px-3 rounded-full border border-grayscale-300 text-xs font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors"
+            >
+                <IonIcon
+                    icon={swapHorizontalOutline}
+                    aria-hidden
+                    className="text-xs"
+                />
+                Change
+            </button>
         </div>
     );
 };
