@@ -280,7 +280,8 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
                     <div className="flex flex-col items-center gap-3">
                         <AiPathwayCareerGauge
                             title="Work Life Balance"
-                            score={workLifeBalanceUserScore ?? workLifeBalanceBenchmarkScore}
+                            score={workLifeBalanceBenchmarkScore}
+                            userScore={workLifeBalanceUserScore}
                         />
                         <GaugeDescription copy={workLifeBalanceCopy} />
                     </div>
@@ -288,7 +289,8 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
                     <div className="flex flex-col items-center gap-3">
                         <AiPathwayCareerGauge
                             title="Job Stability"
-                            score={jobStabilityBenchmarkScore ?? jobStabilityUserScore ?? 0}
+                            score={jobStabilityBenchmarkScore}
+                            userScore={jobStabilityUserScore}
                         />
                         <GaugeDescription copy={jobStabilityCopy} />
                     </div>

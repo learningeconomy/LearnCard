@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell } from 'recharts';
 type CareerGaugeProps = {
     title: string;
     score: number; // 0–100
+    userScore?: number;
 };
 
 const GAUGE_ZONES = [
@@ -38,8 +39,9 @@ const getLabel = (score: number) => {
     return 'Excellent';
 };
 
-export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
+export const AiPathwayCareerGauge = ({ title, score, userScore }: CareerGaugeProps) => {
     const angle = 180 - (score / 100) * 180;
+    const userAngle = userScore === undefined ? undefined : 180 - (userScore / 100) * 180;
     const mainNeedleLength = 94;
     const label = getLabel(score);
 
@@ -134,6 +136,18 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                         strokeWidth="2"
                         strokeDasharray="6 6"
                     />
+
+                    {userAngle !== undefined && (
+                        <circle
+                            cx={130 + 121 * Math.cos((Math.PI * userAngle) / 180)}
+                            cy={131 - 121 * Math.sin((Math.PI * userAngle) / 180)}
+                            r="9"
+                            fill="#ffffff"
+                            fillOpacity={1}
+                            stroke="#222"
+                            strokeWidth="5"
+                        />
+                    )}
                 </svg>
                 {/* SVG 2: Needle */}
                 <svg
