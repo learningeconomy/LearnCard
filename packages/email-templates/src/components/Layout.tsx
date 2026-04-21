@@ -36,6 +36,9 @@ export const Layout: React.FC<LayoutProps> = ({ branding, preview, children, sho
         <Preview>{preview}</Preview>
 
         <Body style={body}>
+            {/* Top spacer — Gmail strips <body> padding, so use an inline div */}
+            <div style={topSpacer}>&nbsp;</div>
+
             {/* Wordmark — sits above the white card like the Postmark layout */}
             <Container style={wordmarkContainer}>
                 <Text style={wordmark}>
@@ -98,9 +101,15 @@ const body: React.CSSProperties = {
     padding: 0,
 };
 
+const topSpacer: React.CSSProperties = {
+    height: 56,
+    lineHeight: '56px',
+    fontSize: 1,
+};
+
 const wordmarkContainer: React.CSSProperties = {
     maxWidth: 560,
-    margin: '40px auto 0',
+    margin: '0 auto',
     padding: '0 40px',
     textAlign: 'center' as const,
 };
@@ -110,7 +119,8 @@ const wordmark: React.CSSProperties = {
     fontWeight: 600,
     letterSpacing: 4,
     color: '#52597A',
-    margin: '0 0 24px',
+    margin: '0 0 32px',
+    padding: '8px 0 0',
 };
 
 const wordmarkLink: React.CSSProperties = {

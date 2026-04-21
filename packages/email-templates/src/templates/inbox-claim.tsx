@@ -43,10 +43,12 @@ export const InboxClaim: React.FC<InboxClaimProps> = ({
     const credentialType = credential?.type ?? 'record';
     const greeting = recipient?.name ? `Hello ${recipient.name},` : 'Hello,';
     const issuerName = issuer?.name;
-
+    const issuerLogo = issuer?.logoUrl;
+    const showHeaderLogo = !issuerLogo;
+    
     return (
-        <Layout branding={branding} preview={`Your digital ${credentialType}${issuerName ? ` from ${issuerName}` : ''} is ready`} showHeaderLogo={false}>
-            <IssuerLogo logoUrl={issuer?.logoUrl} alt={issuerName ? `${issuerName} logo` : undefined} />
+        <Layout branding={branding} preview={`Your digital ${credentialType}${issuerName ? ` from ${issuerName}` : ''} is ready`} showHeaderLogo={showHeaderLogo}>
+            <IssuerLogo logoUrl={issuerLogo} alt={issuerName ? `${issuerName} logo` : undefined} />
 
             <Text style={heading}>Your digital {credentialType} is ready</Text>
 
