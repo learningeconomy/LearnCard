@@ -60,6 +60,10 @@ export const AnalyticsEvents = {
     PATHWAYS_ENDORSEMENT_RECEIVED: 'pathways.endorsement.received',
     PATHWAYS_ENDORSEMENT_DECLINED: 'pathways.endorsement.declined',
     PATHWAYS_OFFLINE_CONFLICT: 'pathways.offline.conflict',
+    PATHWAYS_PATHWAY_SWITCHED: 'pathways.pathway.switched',
+    PATHWAYS_PATHWAY_REMOVED: 'pathways.pathway.removed',
+    PATHWAYS_COMPOSITE_OPENED: 'pathways.composite.opened',
+    PATHWAYS_CTDL_IMPORTED: 'pathways.ctdl.imported',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -276,6 +280,31 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PATHWAYS_OFFLINE_CONFLICT]: {
         mutationType: string;
         resolution: 'client-wins' | 'server-wins' | 'last-write-wins' | 'learner-prompt';
+    };
+
+    [AnalyticsEvents.PATHWAYS_PATHWAY_SWITCHED]: {
+        fromPathwayId: string | null;
+        toPathwayId: string;
+        subscribedCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PATHWAY_REMOVED]: {
+        pathwayId: string;
+        remainingCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_COMPOSITE_OPENED]: {
+        parentPathwayId: string;
+        parentNodeId: string;
+        nestedPathwayId: string;
+        renderStyle: 'inline-expandable' | 'link-out';
+    };
+
+    [AnalyticsEvents.PATHWAYS_CTDL_IMPORTED]: {
+        ctid: string;
+        nodeCount: number;
+        warningCount: number;
+        hasDestination: boolean;
     };
 }
 

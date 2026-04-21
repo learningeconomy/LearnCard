@@ -7,8 +7,11 @@ import {
     DEFAULT_TERMINATION,
     addEdge,
     addNode,
+    addPathwayRefNode,
+    makeCompositeStage,
     removeEdge,
     removeNode,
+    setCompositePolicy,
     setPolicy,
     setTermination,
     updateNode,
@@ -196,5 +199,197 @@ describe('addEdge / removeEdge', () => {
         const after = removeEdge(before, 'e1', opts);
 
         expect(after.edges).toEqual([]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Composite ops — nesting + composition via pathway refs
+// ---------------------------------------------------------------------------
+
+const uuidFor = (suffix: string) =>
+    `${suffix.padEnd(8, '0').slice(0, 8)}-0000-4000-8000-000000000000`;
+
+const makeChildPathway = (id: string, title = 'Child'): Pathway => ({
+    id,
+    ownerDid: 'did:test:learner',
+    title,
+    goal: 'child goal',
+    nodes: [],
+    edges: [],
+    status: 'active',
+    visibility: { self: true, mentors: false, guardians: false, publicProfile: false },
+    source: 'authored',
+    createdAt: NOW,
+    updatedAt: NOW,
+});
+
+describe('makeCompositeStage', () => {
+    it('pairs a composite policy with a matching pathway-completed termination', () => {
+        const ref = uuidFor('ref');
+        const stage = makeCompositeStage(ref);
+
+        expect(stage.policy.kind).toBe('composite');
+
+        if (stage.policy.kind !== 'composite') throw new Error('unreachable');
+        expect(stage.policy.pathwayRef).toBe(ref);
+        expect(stage.policy.renderStyle).toBe('inline-expandable');
+
+        expect(stage.termination).toEqual({ kind: 'pathway-completed', pathwayRef: ref });
+    });
+
+    it('honors an explicit renderStyle override', () => {
+        const ref = uuidFor('ref');
+        const stage = makeCompositeStage(ref, 'link-out');
+
+        if (stage.policy.kind !== 'composite') throw new Error('unreachable');
+        expect(stage.policy.renderStyle).toBe('link-out');
+    });
+});
+
+describe('setCompositePolicy', () => {
+    it('flips a node to composite + pathway-completed in one atomic operation', () => {
+        const childId = uuidFor('child');
+        const child = makeChildPathway(childId);
+
+        const before = pathway([node('a')]);
+        const result = setCompositePolicy(
+            before,
+            'a',
+            childId,
+            { [before.id]: before, [childId]: child },
+            'inline-expandable',
+            opts,
+        );
+
+        expect(result.ok).toBe(true);
+
+        if (!result.ok) throw new Error('unreachable');
+
+        const n = result.pathway.nodes[0];
+
+        expect(n.stage.policy.kind).toBe('composite');
+        expect(n.stage.termination.kind).toBe('pathway-completed');
+
+        if (n.stage.policy.kind !== 'composite') throw new Error('unreachable');
+        expect(n.stage.policy.pathwayRef).toBe(childId);
+
+        if (n.stage.termination.kind !== 'pathway-completed') throw new Error('unreachable');
+        expect(n.stage.termination.pathwayRef).toBe(childId);
+    });
+
+    it('refuses to embed the parent pathway in itself', () => {
+        const before = pathway([node('a')]);
+        const result = setCompositePolicy(
+            before,
+            'a',
+            before.id,
+            { [before.id]: before },
+            'inline-expandable',
+            opts,
+        );
+
+        expect(result).toEqual({ ok: false, reason: 'self' });
+    });
+
+    it('refuses to embed a pathway that is not loaded', () => {
+        const before = pathway([node('a')]);
+        const result = setCompositePolicy(
+            before,
+            'a',
+            uuidFor('ghost'),
+            { [before.id]: before },
+            'inline-expandable',
+            opts,
+        );
+
+        expect(result).toEqual({ ok: false, reason: 'missing-target' });
+    });
+
+    it('refuses to create a cycle across pathway refs', () => {
+        const parentId = uuidFor('par');
+        const childId = uuidFor('chi');
+
+        const parent: Pathway = {
+            ...pathway([node('a')]),
+            id: parentId,
+        };
+
+        const child: Pathway = {
+            ...makeChildPathway(childId),
+            nodes: [
+                {
+                    ...node('b'),
+                    pathwayId: childId,
+                    stage: {
+                        initiation: [],
+                        policy: {
+                            kind: 'composite',
+                            pathwayRef: parentId,
+                            renderStyle: 'inline-expandable',
+                        },
+                        termination: { kind: 'pathway-completed', pathwayRef: parentId },
+                    },
+                },
+            ],
+        };
+
+        const result = setCompositePolicy(
+            parent,
+            'a',
+            childId,
+            { [parent.id]: parent, [child.id]: child },
+            'inline-expandable',
+            opts,
+        );
+
+        expect(result).toEqual({ ok: false, reason: 'cycle' });
+    });
+});
+
+describe('addPathwayRefNode', () => {
+    it('creates a new node and wires it as a composite reference in one call', () => {
+        resetIds();
+
+        const childId = uuidFor('child');
+        const child = makeChildPathway(childId, 'AI in Finance');
+        const before = pathway();
+
+        const result = addPathwayRefNode(
+            before,
+            {
+                title: 'Earn AI in Finance',
+                pathwayRef: childId,
+                renderStyle: 'link-out',
+            },
+            { [before.id]: before, [childId]: child },
+            opts,
+        );
+
+        expect(result.ok).toBe(true);
+
+        if (!result.ok) throw new Error('unreachable');
+
+        expect(result.pathway.nodes).toHaveLength(1);
+
+        const n = result.pathway.nodes[0];
+
+        expect(n.title).toBe('Earn AI in Finance');
+        expect(n.stage.policy.kind).toBe('composite');
+
+        if (n.stage.policy.kind !== 'composite') throw new Error('unreachable');
+        expect(n.stage.policy.renderStyle).toBe('link-out');
+    });
+
+    it('propagates the cycle-detection refusal from setCompositePolicy', () => {
+        const before = pathway();
+
+        const result = addPathwayRefNode(
+            before,
+            { title: 'Self', pathwayRef: before.id },
+            { [before.id]: before },
+            opts,
+        );
+
+        expect(result).toEqual({ ok: false, reason: 'self' });
     });
 });

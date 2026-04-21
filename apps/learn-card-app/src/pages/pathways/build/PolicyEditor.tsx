@@ -8,7 +8,16 @@
 
 import React from 'react';
 
-import type { ArtifactType, Policy, Rubric } from '../types';
+import {
+    wouldCreateCycle,
+    type PathwayMap,
+} from '../core/composition';
+import type {
+    ArtifactType,
+    CompositeRenderStyle,
+    Policy,
+    Rubric,
+} from '../types';
 
 // -----------------------------------------------------------------
 // Defaults per variant — used when switching `kind`
@@ -31,6 +40,7 @@ const POLICY_KIND_LABELS: Record<Policy['kind'], string> = {
     assessment: 'Assessment (rubric)',
     artifact: 'Artifact (one-shot)',
     external: 'External tool (MCP)',
+    composite: 'Nested pathway (composite)',
 };
 
 const defaultForKind = (kind: Policy['kind']): Policy => {
@@ -57,6 +67,18 @@ const defaultForKind = (kind: Policy['kind']): Policy => {
             return {
                 kind: 'external',
                 mcp: { serverId: '', toolName: '' },
+            };
+        case 'composite':
+            // Intentionally invalid-by-Zod: `pathwayRef` must be a uuid,
+            // and '' isn't. NodeEditor holds this incomplete state until
+            // the author picks a target pathway — only THEN is it
+            // committed upstream. Keeping the placeholder here means the
+            // kind-switch feels instantaneous and the picker renders
+            // immediately next to the dropdown.
+            return {
+                kind: 'composite',
+                pathwayRef: '',
+                renderStyle: 'inline-expandable',
             };
     }
 };
@@ -397,19 +419,187 @@ const ExternalFields: React.FC<{
 );
 
 // -----------------------------------------------------------------
+// Composite — points a node at another pathway (nesting/composition)
+// -----------------------------------------------------------------
+
+const RENDER_STYLE_LABELS: Record<CompositeRenderStyle, { title: string; blurb: string }> = {
+    'inline-expandable': {
+        title: 'Inline (nesting)',
+        blurb:
+            "Show the referenced pathway's steps inside this node. Best when it feels like a chunk of this pathway.",
+    },
+    'link-out': {
+        title: 'Link out (composition)',
+        blurb:
+            "Show a 'Complete X to unlock' card that jumps to the other pathway. Best when it has its own identity.",
+    },
+};
+
+const CompositeFields: React.FC<{
+    value: Extract<Policy, { kind: 'composite' }>;
+    onChange: (next: Policy) => void;
+    allPathways: PathwayMap;
+    parentPathwayId: string;
+}> = ({ value, onChange, allPathways, parentPathwayId }) => {
+    // Pathways the learner can embed: every subscribed pathway except
+    // the one being edited AND any that would close a composite cycle.
+    // We compute it once per render; the set is small.
+    const candidates = Object.values(allPathways).filter(p => {
+        if (p.id === parentPathwayId) return false;
+        if (wouldCreateCycle(allPathways, parentPathwayId, p.id)) return false;
+
+        return true;
+    });
+
+    const selected = value.pathwayRef ? allPathways[value.pathwayRef] ?? null : null;
+
+    // Render-aware warning: if the user has a selected ref and it IS
+    // the parent or WOULD cycle, flag it rather than silently allowing
+    // an invalid state. Defensive — the picker already filters them,
+    // but imports/proposals can sneak composite policies in.
+    const invalidSelected =
+        value.pathwayRef &&
+        (value.pathwayRef === parentPathwayId ||
+            wouldCreateCycle(allPathways, parentPathwayId, value.pathwayRef));
+
+    return (
+        <div className="space-y-4">
+            {/* Pathway picker */}
+            <div className="space-y-1.5">
+                <label className={label} htmlFor="policy-composite-ref">
+                    Referenced pathway
+                </label>
+
+                {candidates.length === 0 ? (
+                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                        No other pathways available. Import one from the Credential
+                        Engine Registry or add another pathway first.
+                    </p>
+                ) : (
+                    <select
+                        id="policy-composite-ref"
+                        className={input}
+                        value={value.pathwayRef}
+                        onChange={e =>
+                            onChange({ ...value, pathwayRef: e.target.value })
+                        }
+                    >
+                        <option value="">Pick a pathway…</option>
+
+                        {candidates.map(p => (
+                            <option key={p.id} value={p.id}>
+                                {p.title}
+                            </option>
+                        ))}
+                    </select>
+                )}
+
+                {selected && (
+                    <p className="text-xs text-grayscale-500">
+                        {selected.nodes.length}{' '}
+                        {selected.nodes.length === 1 ? 'step' : 'steps'}
+                        {selected.destinationNodeId
+                            ? ` · ends with ${
+                                  selected.nodes.find(
+                                      n => n.id === selected.destinationNodeId,
+                                  )?.title ?? 'destination'
+                              }`
+                            : ''}
+                    </p>
+                )}
+
+                {invalidSelected && (
+                    <p className="text-xs text-red-700 leading-relaxed">
+                        This would create a cycle between pathways. Pick a different one.
+                    </p>
+                )}
+            </div>
+
+            {/* Render style radio */}
+            <div className="space-y-2">
+                <p className={label}>How should this node show up?</p>
+
+                <div className="space-y-2">
+                    {(Object.keys(RENDER_STYLE_LABELS) as CompositeRenderStyle[]).map(
+                        style => {
+                            const meta = RENDER_STYLE_LABELS[style];
+                            const isActive = value.renderStyle === style;
+
+                            return (
+                                <label
+                                    key={style}
+                                    className={`block cursor-pointer rounded-xl border p-3 transition-colors ${
+                                        isActive
+                                            ? 'border-emerald-500 bg-emerald-50'
+                                            : 'border-grayscale-300 bg-white hover:border-grayscale-400'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-2.5">
+                                        <input
+                                            type="radio"
+                                            name="policy-composite-render-style"
+                                            value={style}
+                                            checked={isActive}
+                                            onChange={() =>
+                                                onChange({
+                                                    ...value,
+                                                    renderStyle: style,
+                                                })
+                                            }
+                                            className="mt-0.5 accent-emerald-600"
+                                        />
+
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-sm font-medium text-grayscale-900">
+                                                {meta.title}
+                                            </span>
+
+                                            <span className="block text-xs text-grayscale-600 leading-relaxed mt-0.5">
+                                                {meta.blurb}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </label>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// -----------------------------------------------------------------
 // Editor
 // -----------------------------------------------------------------
 
 interface PolicyEditorProps {
     value: Policy;
     onChange: (next: Policy) => void;
+
+    /**
+     * Context needed only for the `composite` variant — the pathway
+     * ref picker filters out cycle-creating candidates and the
+     * current pathway itself. Safely optional: when not provided,
+     * composite editing is hidden behind a "not available here"
+     * message rather than crashing.
+     */
+    parentPathwayId?: string;
+    allPathways?: PathwayMap;
 }
 
-const PolicyEditor: React.FC<PolicyEditorProps> = ({ value, onChange }) => {
+const PolicyEditor: React.FC<PolicyEditorProps> = ({
+    value,
+    onChange,
+    parentPathwayId,
+    allPathways,
+}) => {
     const handleKindChange = (nextKind: Policy['kind']) => {
         if (nextKind === value.kind) return;
         onChange(defaultForKind(nextKind));
     };
+
+    const canEditComposite = !!(parentPathwayId && allPathways);
 
     return (
         <div className="space-y-4">
@@ -448,6 +638,21 @@ const PolicyEditor: React.FC<PolicyEditorProps> = ({ value, onChange }) => {
 
             {value.kind === 'external' && (
                 <ExternalFields value={value} onChange={onChange} />
+            )}
+
+            {value.kind === 'composite' && (
+                canEditComposite ? (
+                    <CompositeFields
+                        value={value}
+                        onChange={onChange}
+                        parentPathwayId={parentPathwayId!}
+                        allPathways={allPathways!}
+                    />
+                ) : (
+                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                        Composite editing isn't available in this context.
+                    </p>
+                )
             )}
         </div>
     );

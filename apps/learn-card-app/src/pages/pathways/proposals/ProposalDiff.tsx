@@ -30,6 +30,11 @@ const policySummary = (policy: Policy): string => {
             return `artifact · ${policy.expectedArtifact}`;
         case 'external':
             return `external · ${policy.mcp.serverId}`;
+        case 'composite':
+            // Show the render style so authors reading a diff can
+            // distinguish nesting (inline) from composition (link-out)
+            // without opening each node.
+            return `nested pathway · ${policy.renderStyle}`;
     }
 };
 
@@ -45,6 +50,11 @@ const terminationSummary = (termination: Termination): string => {
             return `score ≥ ${termination.min}`;
         case 'composite':
             return `${termination.require} of ${termination.of.length} sub-goals`;
+        case 'pathway-completed':
+            // Paired with a composite policy; the pair is always set
+            // together, so showing the same term here keeps the diff
+            // from looking like a double-change.
+            return 'completion of nested pathway';
     }
 };
 

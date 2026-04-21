@@ -32,6 +32,7 @@ import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
 import { canProject } from '../projection/toAchievementCredential';
 
+import CompositeNodeBody from './CompositeNodeBody';
 import CredentialPreview from './CredentialPreview';
 import EndorsementPanel from './EndorsementPanel';
 import EvidencePanel from './EvidencePanel';
@@ -246,10 +247,23 @@ const NodeDetail: React.FC = () => {
         });
     };
 
-    const view = computeTerminationView(node.stage.termination, node);
+    // Termination context — needed so `pathway-completed` terminations
+    // on composite nodes can resolve against the live pathway store
+    // and produce a meaningful progress ring instead of "unsupported".
+    const allPathways = pathwayStore.use.pathways();
+
+    const view = computeTerminationView(node.stage.termination, node, {
+        pathways: allPathways,
+    });
     const isCompleted = node.progress.status === 'completed';
     const canComplete = terminationDone(view) && !completing;
     const expectedArtifactType = pickExpectedArtifactType(node.stage.policy, node);
+
+    // Composite nodes ("completion of another pathway") get a
+    // dedicated body that replaces the evidence uploader / reviews
+    // panel. The author's render-style flag decides whether it looks
+    // like nesting or a separate-pathway link.
+    const isComposite = node.stage.policy.kind === 'composite';
 
     // For `artifact` policies the prompt lives next to the title as an
     // italic opening line — it's context, not a separate section. Only
@@ -305,7 +319,7 @@ const NodeDetail: React.FC = () => {
                 </motion.header>
 
                 {/* -------------------------------------------------- */}
-                {/* Working state: chips + uploader-or-reviews + commit */}
+                {/* Working state: composite body OR evidence/review    */}
                 {/* -------------------------------------------------- */}
                 {!isCompleted && (
                     <motion.div
@@ -313,33 +327,55 @@ const NodeDetail: React.FC = () => {
                         transition={{ ...SECTION_MOTION.transition, delay: 0.12 }}
                         className="space-y-3"
                     >
-                        <EvidencePanel evidence={node.progress.artifacts} />
-
-                        {/*
-                            For `review` policies, show FSRS grading rather
-                            than an evidence uploader — the node asks you to
-                            recall, not to attach. Every other policy kind
-                            flows through the same uploader.
-                        */}
-                        {node.stage.policy.kind === 'review' ? (
-                            <ReviewsPanel
-                                pathwayId={pathway.id}
-                                node={
+                        {isComposite ? (
+                            // Composite node: delegate the body to
+                            // CompositeNodeBody, which picks between
+                            // inline-expandable (nesting) and link-out
+                            // (composition) based on renderStyle.
+                            <CompositeNodeBody
+                                parentPathway={pathway}
+                                parentNode={
                                     node as typeof node & {
-                                        stage: {
-                                            policy: {
-                                                kind: 'review';
-                                                fsrs: typeof node.stage.policy.fsrs;
-                                            };
+                                        stage: typeof node.stage & {
+                                            policy: Extract<
+                                                typeof node.stage.policy,
+                                                { kind: 'composite' }
+                                            >;
                                         };
                                     }
                                 }
                             />
                         ) : (
-                            <EvidenceUploader
-                                onSubmit={handleAttach}
-                                expectedType={expectedArtifactType}
-                            />
+                            <>
+                                <EvidencePanel evidence={node.progress.artifacts} />
+
+                                {/*
+                                    For `review` policies, show FSRS grading rather
+                                    than an evidence uploader — the node asks you to
+                                    recall, not to attach. Every other non-composite
+                                    policy kind flows through the same uploader.
+                                */}
+                                {node.stage.policy.kind === 'review' ? (
+                                    <ReviewsPanel
+                                        pathwayId={pathway.id}
+                                        node={
+                                            node as typeof node & {
+                                                stage: {
+                                                    policy: {
+                                                        kind: 'review';
+                                                        fsrs: typeof node.stage.policy.fsrs;
+                                                    };
+                                                };
+                                            }
+                                        }
+                                    />
+                                ) : (
+                                    <EvidenceUploader
+                                        onSubmit={handleAttach}
+                                        expectedType={expectedArtifactType}
+                                    />
+                                )}
+                            </>
                         )}
                     </motion.div>
                 )}

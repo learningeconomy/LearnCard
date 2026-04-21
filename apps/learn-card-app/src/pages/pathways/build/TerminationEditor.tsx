@@ -27,7 +27,25 @@ const TERMINATION_KIND_LABELS: Record<Termination['kind'], string> = {
     'self-attest': 'Self-attest',
     'assessment-score': 'Reach a score',
     composite: 'All / any of sub-goals',
+    // Pathway-completed terminations are owned by the composite
+    // policy invariant (see NodeEditor). Authors can't construct them
+    // by hand, but the label is still required by the types and is
+    // shown when an existing composite node is inspected in a
+    // read-only surface.
+    'pathway-completed': 'Completion of a nested pathway',
 };
+
+// Kinds the author can actually pick from the dropdown. Pathway-
+// completed is excluded: it's always paired with a composite policy
+// and flipped atomically by the composite invariant, so letting the
+// user set it manually would only create orphan terminations.
+const SELECTABLE_KINDS: ReadonlyArray<Termination['kind']> = [
+    'artifact-count',
+    'endorsement',
+    'self-attest',
+    'assessment-score',
+    'composite',
+];
 
 const defaultForKind = (kind: Termination['kind']): Termination => {
     switch (kind) {
@@ -45,6 +63,11 @@ const defaultForKind = (kind: Termination['kind']): Termination => {
                 require: 'all',
                 of: [{ kind: 'self-attest', prompt: 'Sub-goal 1' }],
             };
+        case 'pathway-completed':
+            // Unreachable from the UI (filtered out of the dropdown)
+            // but the discriminant requires us to handle it. Return a
+            // placeholder ref that Zod will reject if somehow emitted.
+            return { kind: 'pathway-completed', pathwayRef: '' };
     }
 };
 
@@ -295,9 +318,10 @@ const TerminationEditor: React.FC<TerminationEditorProps> = ({ value, onChange, 
 
     // Composite sub-goals can't themselves be composite (keep depth finite
     // and the UI readable). Filter it out of the options when nested.
-    const kinds = (Object.keys(TERMINATION_KIND_LABELS) as Termination['kind'][]).filter(
-        k => !(nested && k === 'composite'),
-    );
+    // We start from SELECTABLE_KINDS (which already excludes the
+    // composite-owned `pathway-completed` kind) rather than the full
+    // label map, so authors only see the kinds they can pick.
+    const kinds = SELECTABLE_KINDS.filter(k => !(nested && k === 'composite'));
 
     return (
         <div className="space-y-3">

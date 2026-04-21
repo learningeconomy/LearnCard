@@ -7,6 +7,7 @@ import {
     makeDeterministicIds,
 } from '../import/fixtures';
 import { fromCtdlPathway } from '../import/fromCtdlPathway';
+import type { Pathway } from '../types';
 
 import { toCtdlPathway } from './toCtdlPathway';
 
@@ -221,5 +222,73 @@ describe('toCtdlPathway — round-trip', () => {
         for (const [uri, original] of Object.entries(fanInFixture.components)) {
             expect(projected.components[uri]?.['@type']).toBe(original['@type']);
         }
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Composite projection (lossy — nested pathway export not yet supported)
+// ---------------------------------------------------------------------------
+
+describe('toCtdlPathway — composite nodes', () => {
+    const OWNER = 'did:key:z-owner';
+    const REF = '00000000-0000-4000-8000-00000000000a';
+
+    const compositePathway = (): Pathway => ({
+        id: '00000000-0000-4000-8000-000000000001',
+        ownerDid: OWNER,
+        title: 'Parent pathway',
+        goal: 'Test composite export',
+        nodes: [
+            {
+                id: '00000000-0000-4000-8000-000000000010',
+                pathwayId: '00000000-0000-4000-8000-000000000001',
+                title: 'Earn the nested credential',
+                stage: {
+                    initiation: [],
+                    policy: {
+                        kind: 'composite',
+                        pathwayRef: REF,
+                        renderStyle: 'inline-expandable',
+                    },
+                    termination: {
+                        kind: 'pathway-completed',
+                        pathwayRef: REF,
+                    },
+                },
+                endorsements: [],
+                progress: {
+                    status: 'not-started',
+                    artifacts: [],
+                    reviewsDue: 0,
+                    streak: { current: 0, longest: 0 },
+                },
+                createdBy: 'learner',
+                createdAt: NOW,
+                updatedAt: NOW,
+            },
+        ],
+        edges: [],
+        status: 'active',
+        visibility: { self: true, mentors: false, guardians: false, publicProfile: false },
+        source: 'authored',
+        createdAt: NOW,
+        updatedAt: NOW,
+    });
+
+    it('emits composite nodes as BasicComponent (lossy fallback)', () => {
+        const { graph } = toCtdlPathway({ pathway: compositePathway() });
+
+        const component = Object.values(graph.components)[0];
+
+        expect(component['@type']).toBe('ceterms:BasicComponent');
+    });
+
+    it('warns that the nested pathway reference is dropped', () => {
+        const { warnings } = toCtdlPathway({ pathway: compositePathway() });
+
+        // Warnings must name both the node and the referenced pathway
+        // id so authors can trace exactly what was lost.
+        expect(warnings.some(w => w.includes('composites pathway'))).toBe(true);
+        expect(warnings.some(w => w.includes(REF))).toBe(true);
     });
 });

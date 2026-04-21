@@ -10,7 +10,12 @@
 
 import { v4 as uuid } from 'uuid';
 
+import {
+    wouldCreateCycle,
+    type PathwayMap,
+} from '../core/composition';
 import type {
+    CompositeRenderStyle,
     Edge,
     EdgeType,
     Pathway,
@@ -172,6 +177,109 @@ export const setTermination = (
         ),
         updatedAt: now,
     };
+};
+
+// -----------------------------------------------------------------
+// Composite (nesting + composition) ops
+//
+// A "composite" node represents completion of another pathway. We
+// model it with *paired* policy + termination — authoring flips both
+// atomically so we can never store a composite policy alongside an
+// unrelated termination.
+// -----------------------------------------------------------------
+
+export const DEFAULT_COMPOSITE_RENDER_STYLE: CompositeRenderStyle =
+    'inline-expandable';
+
+/**
+ * Build the `(policy, termination)` pair for a composite node that
+ * references `pathwayRef`. Co-located so authoring tools don't need
+ * to know the invariant "composite policy ⇔ pathway-completed
+ * termination" — they just call this helper.
+ */
+export const makeCompositeStage = (
+    pathwayRef: string,
+    renderStyle: CompositeRenderStyle = DEFAULT_COMPOSITE_RENDER_STYLE,
+): { policy: Policy; termination: Termination } => ({
+    policy: { kind: 'composite', pathwayRef, renderStyle },
+    termination: { kind: 'pathway-completed', pathwayRef },
+});
+
+/**
+ * Structured result from attempting to turn a node into a composite
+ * reference. Callers render the refusal reason rather than silently
+ * no-op'ing.
+ */
+export type SetCompositeResult =
+    | { ok: true; pathway: Pathway }
+    | { ok: false; reason: 'cycle' | 'self' | 'missing-target' };
+
+/**
+ * Convert a node into a composite reference pointing at `pathwayRef`.
+ * Enforces that embedding doesn't create a cycle across the pathway
+ * reference graph (see `core/composition#wouldCreateCycle`).
+ *
+ * Returns a tagged result so UI can render the rejection reason —
+ * "would create a cycle" is a legitimate author-facing message, not an
+ * assertion failure.
+ */
+export const setCompositePolicy = (
+    pathway: Pathway,
+    nodeId: string,
+    pathwayRef: string,
+    pathways: PathwayMap,
+    renderStyle: CompositeRenderStyle = DEFAULT_COMPOSITE_RENDER_STYLE,
+    opts?: BuildOpOptions,
+): SetCompositeResult => {
+    if (pathway.id === pathwayRef) return { ok: false, reason: 'self' };
+
+    if (!pathways[pathwayRef]) return { ok: false, reason: 'missing-target' };
+
+    if (wouldCreateCycle(pathways, pathway.id, pathwayRef)) {
+        return { ok: false, reason: 'cycle' };
+    }
+
+    const { policy, termination } = makeCompositeStage(pathwayRef, renderStyle);
+
+    const withPolicy = setPolicy(pathway, nodeId, policy, opts);
+    const withTermination = setTermination(withPolicy, nodeId, termination, opts);
+
+    return { ok: true, pathway: withTermination };
+};
+
+/**
+ * Add a new node pre-wired as a composite reference. Convenience so
+ * "Import from Credential Engine as a sub-step" and "Insert nested
+ * pathway" flows don't have to call `addNode` + `setCompositePolicy`
+ * back-to-back.
+ */
+export const addPathwayRefNode = (
+    pathway: Pathway,
+    draft: {
+        title: string;
+        description?: string;
+        pathwayRef: string;
+        renderStyle?: CompositeRenderStyle;
+    },
+    pathways: PathwayMap,
+    opts?: BuildOpOptions,
+): SetCompositeResult => {
+    const withNode = addNode(
+        pathway,
+        { title: draft.title, description: draft.description },
+        opts,
+    );
+
+    const newNode = withNode.nodes[withNode.nodes.length - 1];
+
+    return setCompositePolicy(
+        withNode,
+        newNode.id,
+        draft.pathwayRef,
+        pathways,
+        draft.renderStyle,
+        opts,
+    );
 };
 
 // -----------------------------------------------------------------

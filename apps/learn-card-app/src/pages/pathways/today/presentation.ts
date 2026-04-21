@@ -113,6 +113,10 @@ const POLICY_LABELS: Record<Policy['kind'], string> = {
     assessment: 'Check',
     artifact: 'Make',
     external: 'External',
+    // Composite nodes point at another pathway. Today mode surfaces
+    // them as "Nested" so the chip reads honestly — the work itself
+    // lives inside the referenced pathway, not in this node.
+    composite: 'Nested',
 };
 
 /**
@@ -128,6 +132,11 @@ const POLICY_CALLS: Record<Policy['kind'], string> = {
     assessment: 'Start the assessment',
     artifact: 'Work on the artifact',
     external: 'Open the external tool',
+    // Composite fallback CTA — the final copy is resolved in
+    // `resolvePolicyCallToAction` from the referenced pathway's
+    // title ("Open Algebra I"). This generic stays honest when the
+    // nested pathway hasn't loaded yet.
+    composite: 'Open nested pathway',
 };
 
 /**

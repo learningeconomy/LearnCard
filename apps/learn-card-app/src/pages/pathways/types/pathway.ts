@@ -86,9 +86,37 @@ export const McpToolRefSchema = z.object({
 export type McpToolRef = z.infer<typeof McpToolRefSchema>;
 
 /**
+ * Render-style for composite nodes. Composition and nesting are the
+ * same primitive (a node that represents "completion of a sub-graph");
+ * this flag picks the UX:
+ *
+ *   - `inline-expandable` — nesting: render a mini map/list of the
+ *     referenced pathway inline inside the parent's NodeDetail.
+ *   - `link-out`          — composition: render a small card that
+ *     jumps the learner to that pathway's Today view.
+ *
+ * Defaulting to `inline-expandable` matches author intent most of the
+ * time ("chunk this node into sub-steps"). Authors flip to `link-out`
+ * when the referenced pathway has its own strong identity the learner
+ * should feel ("Complete AI Fundamentals first").
+ */
+export const CompositeRenderStyleSchema = z.enum([
+    'inline-expandable',
+    'link-out',
+]);
+export type CompositeRenderStyle = z.infer<typeof CompositeRenderStyleSchema>;
+
+/**
  * Policy — what the learner does during the stage. Discriminated union so
  * "daily writing for 30 days" and "pass an assessment" share the same
  * primitive without stringly-typed fields.
+ *
+ * `composite` is load-bearing: it lets a single node represent the
+ * completion of another pathway. Combined with a `pathway-completed`
+ * termination, a composite node says "you're done with me when you
+ * finish pathway X". This is how we get both **nesting** (substeps
+ * inside a node) and **composition** (cross-pathway dependencies) out
+ * of one primitive — see `CompositeRenderStyleSchema`.
  */
 export const PolicySchema = z.discriminatedUnion('kind', [
     z.object({
@@ -113,6 +141,12 @@ export const PolicySchema = z.discriminatedUnion('kind', [
         kind: z.literal('external'),
         mcp: McpToolRefSchema,
     }),
+    z.object({
+        kind: z.literal('composite'),
+        /** The pathway whose completion satisfies this node. */
+        pathwayRef: z.string().uuid(),
+        renderStyle: CompositeRenderStyleSchema.default('inline-expandable'),
+    }),
 ]);
 export type Policy = z.infer<typeof PolicySchema>;
 
@@ -136,6 +170,17 @@ const BaseTerminationSchema = z.union([
     z.object({
         kind: z.literal('assessment-score'),
         min: z.number(),
+    }),
+    /**
+     * `pathway-completed` — the natural partner of a `composite` policy.
+     * Termination is satisfied iff the referenced pathway has its
+     * destination marked complete. Stored as a pathway id (not a node
+     * id) because completion semantics live at the pathway level, and
+     * the termination should survive a destination-node swap.
+     */
+    z.object({
+        kind: z.literal('pathway-completed'),
+        pathwayRef: z.string().uuid(),
     }),
 ]);
 

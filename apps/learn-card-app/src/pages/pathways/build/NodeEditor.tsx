@@ -10,8 +10,10 @@
 
 import React from 'react';
 
+import { pathwayStore } from '../../../stores/pathways';
 import type { Pathway, PathwayNode } from '../types';
 import {
+    DEFAULT_TERMINATION,
     addEdge as addEdgeOp,
     removeEdge as removeEdgeOp,
     removeNode as removeNodeOp,
@@ -51,11 +53,46 @@ const NodeEditor: React.FC<NodeEditorProps> = ({
     const handleDescription = (description: string) =>
         onChangePathway(updateNode(pathway, node.id, { description }));
 
-    const handlePolicyChange = (policy: PathwayNode['stage']['policy']) =>
-        onChangePathway(setPolicy(pathway, node.id, policy));
+    // PolicyEditor needs the full pathway store (for the composite
+    // ref picker) and the parent pathway id (for cycle detection).
+    // We subscribe to it here rather than passing through props so
+    // NodeEditor's existing props stay focused.
+    const allPathways = pathwayStore.use.pathways();
+
+    const handlePolicyChange = (policy: PathwayNode['stage']['policy']) => {
+        // Composite invariant: policy.kind === 'composite' must be
+        // paired with `termination.kind === 'pathway-completed'` and
+        // both must point at the same pathwayRef. NodeEditor enforces
+        // this so PolicyEditor + TerminationEditor stay decoupled.
+        let next = setPolicy(pathway, node.id, policy);
+
+        const wasComposite = node.stage.policy.kind === 'composite';
+        const isComposite = policy.kind === 'composite';
+
+        if (isComposite && policy.pathwayRef) {
+            // Auto-pair the termination so the learner experiences
+            // the node correctly the moment a ref is selected.
+            next = setTermination(next, node.id, {
+                kind: 'pathway-completed',
+                pathwayRef: policy.pathwayRef,
+            });
+        } else if (wasComposite && !isComposite) {
+            // Switching away from composite: drop the now-orphaned
+            // pathway-completed termination back to a sane default.
+            next = setTermination(next, node.id, DEFAULT_TERMINATION);
+        }
+
+        onChangePathway(next);
+    };
 
     const handleTerminationChange = (termination: PathwayNode['stage']['termination']) =>
         onChangePathway(setTermination(pathway, node.id, termination));
+
+    // Composite nodes own their termination via the policy invariant
+    // above — exposing the manual termination editor would let the
+    // learner break that invariant. Hide it for composite nodes; the
+    // pathway-completed termination is implicit and well-explained.
+    const isComposite = node.stage.policy.kind === 'composite';
 
     const handleAddPrereq = (fromId: string) => {
         if (!fromId) return;
@@ -120,15 +157,38 @@ const NodeEditor: React.FC<NodeEditorProps> = ({
             </div>
 
             <div className="pt-4 border-t border-grayscale-200">
-                <PolicyEditor value={node.stage.policy} onChange={handlePolicyChange} />
-            </div>
-
-            <div className="pt-4 border-t border-grayscale-200">
-                <TerminationEditor
-                    value={node.stage.termination}
-                    onChange={handleTerminationChange}
+                <PolicyEditor
+                    value={node.stage.policy}
+                    onChange={handlePolicyChange}
+                    parentPathwayId={pathway.id}
+                    allPathways={allPathways}
                 />
             </div>
+
+            {/*
+                Composite nodes own their termination via the policy ⇔
+                termination invariant in `handlePolicyChange`. Hiding
+                the manual editor prevents the learner from breaking
+                that invariant by hand. We surface a small explainer so
+                the absence is intentional rather than confusing.
+            */}
+            {isComposite ? (
+                <div className="pt-4 border-t border-grayscale-200 space-y-1">
+                    <p className={label}>Termination</p>
+
+                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                        This node finishes automatically when the referenced
+                        pathway's destination is completed. No manual rule needed.
+                    </p>
+                </div>
+            ) : (
+                <div className="pt-4 border-t border-grayscale-200">
+                    <TerminationEditor
+                        value={node.stage.termination}
+                        onChange={handleTerminationChange}
+                    />
+                </div>
+            )}
 
             <div className="pt-4 border-t border-grayscale-200 space-y-2">
                 <p className={label}>Prerequisites</p>

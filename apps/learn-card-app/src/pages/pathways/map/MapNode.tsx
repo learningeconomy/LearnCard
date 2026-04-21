@@ -20,9 +20,15 @@ import React from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { Handle, Position } from '@xyflow/react';
-import { chevronForwardOutline } from 'ionicons/icons';
+import {
+    chevronForwardOutline,
+    gitBranchOutline,
+    openOutline,
+} from 'ionicons/icons';
 import { motion } from 'motion/react';
 
+import { pathwayStore } from '../../../stores/pathways';
+import { computePathwayProgress, resolveCompositeChild } from '../core/composition';
 import type { PathwayNode } from '../types';
 
 export type MapNodeData = {
@@ -63,6 +69,41 @@ const STATUS_LABEL: Record<Status, string> = {
 const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
     const { node, inFocus, isFocusNode } = data;
     const status = node.progress.status;
+
+    // Composite-node affordance: if this node references another
+    // pathway, we show a tiny "chunk" pill in the top-left corner so
+    // the map reads as "these three nodes are steps of X pathway".
+    // The pill distinguishes the two render styles — inline (part of
+    // this pathway) vs. link-out (a separate, linked pathway) — using
+    // the same icon/copy language as NodeDetail's CompositeNodeBody so
+    // the map and detail feel like the same object.
+    const isComposite = node.stage.policy.kind === 'composite';
+
+    // We subscribe narrowly: the composite badge only needs the
+    // referenced pathway and progress. Subscribing to the whole
+    // `pathways` record is cheap here (Zustand is shallow-compare per
+    // selector and this component is already remounted by React Flow
+    // on graph changes).
+    const allPathways = pathwayStore.use.pathways();
+
+    const childInfo = (() => {
+        if (!isComposite) return null;
+
+        const child = resolveCompositeChild(allPathways, node);
+        if (!child) return { missing: true as const };
+
+        const progress = computePathwayProgress(child);
+
+        return {
+            missing: false as const,
+            child,
+            progress,
+            renderStyle:
+                node.stage.policy.kind === 'composite'
+                    ? node.stage.policy.renderStyle
+                    : 'inline-expandable',
+        };
+    })();
 
     return (
         <motion.div
@@ -117,6 +158,54 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-sm"
                     >
                         ✓
+                    </span>
+                )}
+
+                {/*
+                    Composite pill — top-left. Two render styles:
+                      - inline-expandable → shows a progress count
+                        (3/5) so the learner can see depth at a glance.
+                      - link-out → shows the open-out icon to telegraph
+                        that tapping this jumps to another pathway.
+                    Missing child (ref exists but pathway not loaded)
+                    degrades gracefully to a neutral "Linked pathway"
+                    pill rather than crashing or hiding.
+                */}
+                {childInfo && (
+                    <span
+                        aria-hidden
+                        title={
+                            childInfo.missing
+                                ? 'Linked pathway (not loaded)'
+                                : childInfo.renderStyle === 'link-out'
+                                    ? `Links to ${childInfo.child.title}`
+                                    : `${childInfo.progress.completed}/${childInfo.progress.total} · ${childInfo.child.title}`
+                        }
+                        className={`absolute -top-1.5 -left-1.5 h-5 px-1.5
+                                    inline-flex items-center gap-1
+                                    rounded-full border
+                                    text-[10px] font-medium
+                                    shadow-sm
+                                    ${childInfo.missing
+                                        ? 'bg-grayscale-100 border-grayscale-200 text-grayscale-500'
+                                        : 'bg-white border-emerald-200 text-emerald-700'
+                                    }
+                                  `}
+                    >
+                        <IonIcon
+                            icon={
+                                childInfo.missing || childInfo.renderStyle === 'inline-expandable'
+                                    ? gitBranchOutline
+                                    : openOutline
+                            }
+                            className="text-[11px]"
+                        />
+
+                        {!childInfo.missing && childInfo.renderStyle === 'inline-expandable' && (
+                            <span>
+                                {childInfo.progress.completed}/{childInfo.progress.total}
+                            </span>
+                        )}
                     </span>
                 )}
 

@@ -7,6 +7,7 @@
 
 import { createStore } from '@udecode/zustood';
 
+import { rollupCompositeProgress } from '../../pages/pathways/core/composition';
 import type { Evidence, Pathway, PathwayNode } from '../../pages/pathways/types';
 
 interface RecentCompletion {
@@ -35,6 +36,34 @@ const initialState: PathwayStoreState = {
     recentCompletion: null,
 };
 
+/**
+ * Composite progress rollup — re-run after every mutation that can
+ * affect node completion. The helper is idempotent and returns the
+ * same identity when no composite flip is needed, so calling it
+ * unconditionally is cheap in the common case (no composite nodes,
+ * or no nested pathway just finished).
+ *
+ * It's wired into `upsertPathway`, `editNode`, and
+ * `completeTermination` because those are the only actions that can
+ * either (a) change a node's completion status or (b) introduce a
+ * new composite node whose nested pathway is already complete.
+ * `removePathway` / `setActivePathway` / `clearRecentCompletion`
+ * can't affect rollup and are left untouched.
+ *
+ * Inlined into each action's `set.state` callback so observers see
+ * the primary mutation and the rollup as a single committed state,
+ * never an interstitial "parent not yet rolled up" flash.
+ */
+const rollupInDraft = (draft: PathwayStoreState): void => {
+    const rolled = rollupCompositeProgress(draft.pathways);
+
+    // Identity-preserving fast path: when nothing flipped, skip the
+    // assignment so Immer doesn't allocate a new pathways record.
+    if (rolled === draft.pathways) return;
+
+    draft.pathways = rolled;
+};
+
 export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
     initialState,
     { persist: { name: 'pathwayStore', enabled: false } },
@@ -50,6 +79,11 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
             if (draft.activePathwayId === null) {
                 draft.activePathwayId = pathway.id;
             }
+
+            // Composite rollup: if this upsert introduces a composite
+            // node whose nested pathway is already complete, flip the
+            // parent to completed so dependents can unblock.
+            rollupInDraft(draft);
         });
     },
 
@@ -78,6 +112,9 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
 
             Object.assign(node, patch, { updatedAt: new Date().toISOString() });
             pathway.updatedAt = new Date().toISOString();
+
+            // Edits can flip progress.status directly; re-roll.
+            rollupInDraft(draft);
         });
     },
 
@@ -111,6 +148,10 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
                     completedAt: now,
                 };
             }
+
+            // Completing a destination node can cascade up through one
+            // or more composite references in other pathways.
+            rollupInDraft(draft);
         });
     },
 

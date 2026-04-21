@@ -12,7 +12,7 @@ import React, { useEffect, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { AnimatePresence } from 'framer-motion';
-import { cloudDownloadOutline } from 'ionicons/icons';
+import { cloudDownloadOutline, gitBranchOutline } from 'ionicons/icons';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLearnerDid } from '../hooks/useLearnerDid';
@@ -20,7 +20,11 @@ import ImportCtdlModal from '../import/ImportCtdlModal';
 import type { Pathway } from '../types';
 
 import NodeEditor from './NodeEditor';
-import { addNode as addNodeOp } from './buildOps';
+import {
+    addNode as addNodeOp,
+    setPolicy,
+    setTermination,
+} from './buildOps';
 
 const BuildMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
@@ -105,6 +109,34 @@ const BuildMode: React.FC = () => {
         setSelectedId(justAdded.id);
     };
 
+    // "Add nested pathway" — seed a node with a composite policy +
+    // pathway-completed termination, both with empty refs. The state
+    // is Zod-invalid in-flight, but NodeEditor's PolicyEditor holds
+    // the composite picker in that state and upgrades both refs
+    // atomically when the author picks a target pathway (via the
+    // composite invariant in `handlePolicyChange`). We commit the
+    // incomplete composite so the author can see their in-progress
+    // work; it would fail publication but that's intentional — the
+    // picker nudges them to complete it before leaving Build.
+    const handleAddNestedPathway = () => {
+        let next = addNodeOp(activePathway, { title: 'Nested pathway' });
+        const justAdded = next.nodes[next.nodes.length - 1];
+
+        next = setPolicy(next, justAdded.id, {
+            kind: 'composite',
+            pathwayRef: '',
+            renderStyle: 'inline-expandable',
+        });
+
+        next = setTermination(next, justAdded.id, {
+            kind: 'pathway-completed',
+            pathwayRef: '',
+        });
+
+        commit(next);
+        setSelectedId(justAdded.id);
+    };
+
     const handleDeleted = () => {
         // After delete, select the first remaining node.
         setSelectedId(null);
@@ -162,9 +194,28 @@ const BuildMode: React.FC = () => {
                         + Add node
                     </button>
 
+                    {/*
+                        "Add nested pathway" — peer action to Add node.
+                        Same border/weight so discoverability is high, but
+                        iconned so the two actions read as distinct. The
+                        author picks a target pathway in the inline
+                        composite picker that mounts on the right.
+                    */}
+                    <button
+                        type="button"
+                        onClick={handleAddNestedPathway}
+                        className="w-full inline-flex items-center justify-center gap-1.5
+                                   py-2.5 px-3 rounded-[20px] border border-grayscale-300
+                                   text-sm font-medium text-grayscale-700
+                                   hover:bg-grayscale-10 transition-colors"
+                    >
+                        <IonIcon icon={gitBranchOutline} className="text-base" />
+                        Add nested pathway
+                    </button>
+
                     {/* Secondary action — import another pathway alongside
                         the active one. Kept subtle so it doesn't compete
-                        with "Add node" visually. */}
+                        with the two primary add actions visually. */}
                     <button
                         type="button"
                         onClick={() => setImportOpen(true)}

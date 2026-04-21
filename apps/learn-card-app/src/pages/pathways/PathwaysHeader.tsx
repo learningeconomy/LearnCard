@@ -11,6 +11,8 @@ import { NavLink, useRouteMatch } from 'react-router-dom';
 
 import { proposalStore } from '../../stores/pathways';
 
+import PathwaySwitcher from './PathwaySwitcher';
+
 type ModeDef = {
     to: string;
     label: string;
@@ -48,21 +50,32 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = ({ title, subtitle }) => {
                         )}
                     </div>
 
-                    <NavLink
-                        to="/pathways/proposals"
-                        className={`shrink-0 py-2 px-3 rounded-full text-sm font-medium transition-colors ${
-                            isOnProposals
-                                ? 'bg-grayscale-900 text-white'
-                                : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
-                        }`}
-                    >
-                        Proposals
-                        {openProposalCount > 0 && (
-                            <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-emerald-600 text-white text-xs">
-                                {openProposalCount}
-                            </span>
-                        )}
-                    </NavLink>
+                    <div className="shrink-0 flex items-center gap-2">
+                        {/*
+                            PathwaySwitcher — compact chip that surfaces
+                            multi-pathway navigation without taking over
+                            the header. Keeps the h1 authoritative
+                            while giving learners a way to jump between
+                            goals they've subscribed to.
+                        */}
+                        <PathwaySwitcher />
+
+                        <NavLink
+                            to="/pathways/proposals"
+                            className={`shrink-0 py-2 px-3 rounded-full text-sm font-medium transition-colors ${
+                                isOnProposals
+                                    ? 'bg-grayscale-900 text-white'
+                                    : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                            }`}
+                        >
+                            Proposals
+                            {openProposalCount > 0 && (
+                                <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-emerald-600 text-white text-xs">
+                                    {openProposalCount}
+                                </span>
+                            )}
+                        </NavLink>
+                    </div>
                 </div>
 
                 <nav className="flex gap-2 overflow-x-auto no-scrollbar">

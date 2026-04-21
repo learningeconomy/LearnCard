@@ -277,6 +277,22 @@ const pickCtdlType = (node: PathwayNode, warnings: string[]): string => {
 
             return 'ceterms:CompetencyComponent';
 
+        case 'composite':
+            // Composite nodes point at another LearnCard pathway. The
+            // current CTDL export pass is flat — we project the node
+            // as a BasicComponent so the graph stays connected, but
+            // the reference to the nested pathway is *lost*. Emitting
+            // a specific warning (rather than swallowing it in the
+            // default case) makes the loss visible to authors at
+            // publish time, and serves as a pin for the nested-export
+            // follow-up (todo pE-ctdl).
+            warnings.push(
+                `Node "${node.title}" composites pathway ${node.stage.policy.pathwayRef}; ` +
+                    `nested pathway export is not yet supported, so the reference is dropped from the CTDL projection.`,
+            );
+
+            return 'ceterms:BasicComponent';
+
         case 'practice':
         case 'external':
         default:

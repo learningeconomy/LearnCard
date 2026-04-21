@@ -293,3 +293,151 @@ describe('materializeNewPathway — cross-pathway proposals', () => {
         ).toThrow(ProposalApplyError);
     });
 });
+
+// ---------------------------------------------------------------------------
+// Composite invariant + cycle guard
+// ---------------------------------------------------------------------------
+
+describe('applyProposal — composite guard', () => {
+    // Compose-ready ids that satisfy the uuid shape used by the Zod
+    // schema. Keeping them as constants makes the intent obvious.
+    const REF_A = '00000000-0000-4000-8000-00000000000a';
+    const REF_B = '00000000-0000-4000-8000-00000000000b';
+
+    const compositeNode = (id: string, ref: string): PathwayNode =>
+        node(id, {
+            stage: {
+                initiation: [],
+                policy: {
+                    kind: 'composite',
+                    pathwayRef: ref,
+                    renderStyle: 'inline-expandable',
+                },
+                termination: { kind: 'pathway-completed', pathwayRef: ref },
+            },
+        });
+
+    it('accepts a well-formed composite node add', () => {
+        const before = pathway();
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ addNodes: [compositeNode('c1', REF_B)] })),
+            LATER,
+        );
+
+        expect(after.nodes[0].stage.policy.kind).toBe('composite');
+    });
+
+    it('rejects a composite policy without paired pathway-completed termination', () => {
+        const broken = node('c1', {
+            stage: {
+                initiation: [],
+                policy: {
+                    kind: 'composite',
+                    pathwayRef: REF_B,
+                    renderStyle: 'inline-expandable',
+                },
+                termination: { kind: 'self-attest', prompt: 'x' },
+            },
+        });
+
+        expect(() =>
+            applyProposal(pathway(), proposal(emptyDiff({ addNodes: [broken] })), LATER),
+        ).toThrow(/composite policy must be paired/);
+    });
+
+    it('rejects a pathway-completed termination without composite policy', () => {
+        const broken = node('c1', {
+            stage: {
+                initiation: [],
+                policy: { kind: 'artifact', prompt: 'x', expectedArtifact: 'text' },
+                termination: { kind: 'pathway-completed', pathwayRef: REF_B },
+            },
+        });
+
+        expect(() =>
+            applyProposal(pathway(), proposal(emptyDiff({ addNodes: [broken] })), LATER),
+        ).toThrow(/composite policy must be paired/);
+    });
+
+    it('rejects a composite whose policy ref mismatches its termination ref', () => {
+        const broken = node('c1', {
+            stage: {
+                initiation: [],
+                policy: {
+                    kind: 'composite',
+                    pathwayRef: REF_A,
+                    renderStyle: 'inline-expandable',
+                },
+                // Mismatch: termination points at a different pathway.
+                termination: { kind: 'pathway-completed', pathwayRef: REF_B },
+            },
+        });
+
+        expect(() =>
+            applyProposal(pathway(), proposal(emptyDiff({ addNodes: [broken] })), LATER),
+        ).toThrow(/reference different pathways/);
+    });
+
+    it('rejects self-reference (composite pointing at its own pathway)', () => {
+        const selfRefParent = pathway([], [], { id: REF_A });
+        const selfRef = node('c1', {
+            pathwayId: REF_A,
+            stage: {
+                initiation: [],
+                policy: {
+                    kind: 'composite',
+                    pathwayRef: REF_A,
+                    renderStyle: 'inline-expandable',
+                },
+                termination: { kind: 'pathway-completed', pathwayRef: REF_A },
+            },
+        });
+
+        expect(() =>
+            applyProposal(
+                selfRefParent,
+                proposal(emptyDiff({ addNodes: [selfRef] }), { pathwayId: REF_A }),
+                LATER,
+            ),
+        ).toThrow(/self-reference/);
+    });
+
+    it('rejects a composite ref that closes a cross-pathway cycle', () => {
+        // B already composites A. Proposing that A composites B would
+        // close A→B→A. We feed the current map so wouldCreateCycle can
+        // see B's existing composite edge.
+        const b = pathway([compositeNode('n-b', REF_A)], [], { id: REF_B });
+        const a = pathway([], [], { id: REF_A });
+
+        expect(() =>
+            applyProposal(
+                a,
+                proposal(
+                    emptyDiff({ addNodes: [compositeNode('n-a', REF_B)] }),
+                    { pathwayId: REF_A },
+                ),
+                LATER,
+                { allPathways: { [REF_A]: a, [REF_B]: b } },
+            ),
+        ).toThrow(/composition cycle/);
+    });
+
+    it('accepts a composite ref that does NOT create a cycle', () => {
+        const b = pathway([], [], { id: REF_B });
+        const a = pathway([], [], { id: REF_A });
+
+        const after = applyProposal(
+            a,
+            proposal(
+                emptyDiff({ addNodes: [compositeNode('n-a', REF_B)] }),
+                { pathwayId: REF_A },
+            ),
+            LATER,
+            { allPathways: { [REF_A]: a, [REF_B]: b } },
+        );
+
+        expect(after.nodes[0].stage.policy.kind).toBe('composite');
+    });
+});

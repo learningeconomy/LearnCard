@@ -14,6 +14,7 @@
  * `Pathway` instead of patching an existing one.
  */
 
+import { wouldCreateCycle, type PathwayMap } from '../core/composition';
 import type {
     Edge,
     NodePatch,
@@ -32,6 +33,48 @@ export class ProposalApplyError extends Error {
         this.name = 'ProposalApplyError';
     }
 }
+
+// -----------------------------------------------------------------
+// Composite invariant guard
+// -----------------------------------------------------------------
+
+/**
+ * Enforce the composite policy ⇔ pathway-completed termination pairing
+ * on a single node. The invariant is:
+ *
+ *   - if `policy.kind === 'composite'` then `termination.kind` must be
+ *     `'pathway-completed'` AND both `pathwayRef`s must match.
+ *   - if `termination.kind === 'pathway-completed'` then
+ *     `policy.kind` must be `'composite'` (and refs must match).
+ *
+ * This is the one place in the system that validates the invariant
+ * after a proposal-origin mutation. NodeEditor already enforces it for
+ * learner-origin edits via `handlePolicyChange`. Proposals (which
+ * bypass the editor) would otherwise be free to produce orphan
+ * compositions, so we reject them here.
+ */
+const enforceCompositeInvariant = (node: PathwayNode): void => {
+    const { policy, termination } = node.stage;
+
+    const policyIsComposite = policy.kind === 'composite';
+    const terminationIsPathwayCompleted = termination.kind === 'pathway-completed';
+
+    if (policyIsComposite !== terminationIsPathwayCompleted) {
+        throw new ProposalApplyError(
+            `Node ${node.id}: composite policy must be paired with pathway-completed ` +
+                `termination (got policy=${policy.kind}, termination=${termination.kind})`,
+        );
+    }
+
+    if (policyIsComposite && terminationIsPathwayCompleted) {
+        if (policy.pathwayRef !== termination.pathwayRef) {
+            throw new ProposalApplyError(
+                `Node ${node.id}: composite policy and pathway-completed termination ` +
+                    `reference different pathways (${policy.pathwayRef} vs ${termination.pathwayRef})`,
+            );
+        }
+    }
+};
 
 // -----------------------------------------------------------------
 // In-pathway diff application
@@ -59,6 +102,18 @@ const mergeNodePatch = (node: PathwayNode, patch: NodePatch, now: string): Pathw
     updatedAt: now,
 });
 
+export interface ApplyProposalOptions {
+    /**
+     * Full pathway map for cross-pathway cycle detection. When a
+     * proposal introduces or edits a composite node, we verify the
+     * target pathway reference would not close a cycle against the
+     * rest of the learner's graph. Omitting this falls back to a
+     * same-pathway identity check — still correct for self-ref, but
+     * can't catch A→B→A cycles.
+     */
+    allPathways?: PathwayMap;
+}
+
 /**
  * Apply an agent-origin diff to an existing pathway.
  *
@@ -66,11 +121,14 @@ const mergeNodePatch = (node: PathwayNode, patch: NodePatch, now: string): Pathw
  *   - the proposal targets a different pathway
  *   - updateNodes references a node id that doesn't exist
  *   - a node add would collide with an existing node id
+ *   - any resulting node violates the composite ⇔ pathway-completed
+ *     invariant, or a composite reference would create a cycle
  */
 export const applyProposal = (
     pathway: Pathway,
     proposal: Proposal,
     now: string = new Date().toISOString(),
+    options: ApplyProposalOptions = {},
 ): Pathway => {
     if (proposal.pathwayId !== null && proposal.pathwayId !== pathway.id) {
         throw new ProposalApplyError(
@@ -153,12 +211,53 @@ export const applyProposal = (
 
     const nextEdges = [...cleanSurviving, ...newEdges];
 
-    return {
+    const nextPathway: Pathway = {
         ...pathway,
         nodes: nextNodes,
         edges: nextEdges,
         updatedAt: now,
     };
+
+    // -- Composite invariants (post-merge) --------------------------------
+    //
+    // Run after the final pathway shape is known so we validate the
+    // effective state, not intermediate values. Violations here
+    // indicate a broken agent proposal (or a corrupt replay) — reject
+    // rather than silently committing an orphan composite.
+
+    for (const node of nextPathway.nodes) {
+        enforceCompositeInvariant(node);
+    }
+
+    // Composite cycle check — each composite node's `pathwayRef` must
+    // not be reachable back to the parent pathway via other composite
+    // edges. We fold the post-merge pathway into the caller's map so
+    // the DFS sees the would-be state. Self-reference (ref === parent)
+    // is always rejected, even without the broader map.
+    const postMergeMap: PathwayMap = {
+        ...(options.allPathways ?? {}),
+        [nextPathway.id]: nextPathway,
+    };
+
+    for (const node of nextPathway.nodes) {
+        if (node.stage.policy.kind !== 'composite') continue;
+
+        const ref = node.stage.policy.pathwayRef;
+
+        if (ref === nextPathway.id) {
+            throw new ProposalApplyError(
+                `Node ${node.id} composites the same pathway it lives in — self-reference not allowed`,
+            );
+        }
+
+        if (wouldCreateCycle(postMergeMap, nextPathway.id, ref)) {
+            throw new ProposalApplyError(
+                `Node ${node.id} composites pathway ${ref}, which would create a composition cycle`,
+            );
+        }
+    }
+
+    return nextPathway;
 };
 
 // -----------------------------------------------------------------

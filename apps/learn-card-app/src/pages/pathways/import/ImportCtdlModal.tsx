@@ -31,6 +31,7 @@ import {
     warningOutline,
 } from 'ionicons/icons';
 
+import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import type { Pathway } from '../types';
 
 import {
@@ -125,6 +126,8 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     onImport,
     onClose,
 }) => {
+    const analytics = useAnalytics();
+
     const [inputValue, setInputValue] = useState('');
     const [preview, setPreview] = useState<PreviewState>({ status: 'idle' });
 
@@ -166,6 +169,19 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
 
     const handleConfirm = () => {
         if (preview.status !== 'ready') return;
+
+        // Fire telemetry BEFORE commit so we capture the event even
+        // if `onImport` later triggers a navigation that unmounts
+        // this component. `sourceCtid` is the canonical identifier
+        // for the imported pathway; fall back to empty string if a
+        // future fixture shape somehow lacks it (schema requires it
+        // today, but we'd rather still emit the event than crash).
+        analytics.track(AnalyticsEvents.PATHWAYS_CTDL_IMPORTED, {
+            ctid: preview.pathway.sourceCtid ?? '',
+            nodeCount: preview.pathway.nodes.length,
+            warningCount: preview.warnings.length,
+            hasDestination: !!preview.pathway.destinationNodeId,
+        });
 
         onImport(preview.pathway);
     };

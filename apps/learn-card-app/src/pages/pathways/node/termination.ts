@@ -8,6 +8,10 @@
  * reads progress numbers and copy, never recomputing them.
  */
 
+import {
+    computePathwayProgress,
+    type PathwayMap,
+} from '../core/composition';
 import type { PathwayNode, Termination } from '../types';
 
 /**
@@ -76,9 +80,21 @@ const countMatchingArtifacts = (
     artifactType: string,
 ): number => node.progress.artifacts.filter(a => a.artifactType === artifactType).length;
 
+/**
+ * Context bundle for termination kinds that need to reach outside the
+ * node itself. Right now only `pathway-completed` uses this, but
+ * threading a single `ctx` object forward means future kinds (e.g.
+ * endorser-trust-tier lookups) won't force signature churn.
+ */
+export interface TerminationContext {
+    /** Active pathways in the store — used to resolve composite refs. */
+    pathways: PathwayMap;
+}
+
 export const computeTerminationView = (
     termination: Termination,
     node: PathwayNode,
+    ctx?: TerminationContext,
 ): TerminationView => {
     switch (termination.kind) {
         case 'artifact-count': {
@@ -132,6 +148,46 @@ export const computeTerminationView = (
                 requirement: `Score at least ${termination.min}`,
                 unmetHint: 'Scored assessments arrive in a later release.',
             };
+
+        case 'pathway-completed': {
+            // A composite node is "done" when its referenced pathway's
+            // destination is marked complete. We expose this as a
+            // count-style view so the overlay gets a progress ring
+            // instead of a binary lock — "3/7 steps" reads better than
+            // "not yet" when you're mid-pathway.
+            const nested = ctx?.pathways?.[termination.pathwayRef];
+
+            if (!nested) {
+                // Nested pathway isn't loaded — surface that honestly
+                // rather than pretending it's just "in progress".
+                return {
+                    kind: 'unsupported',
+                    requirement: 'Nested pathway completion',
+                    unmetHint:
+                        "We couldn't find the referenced pathway. Open Build to relink it.",
+                };
+            }
+
+            const progress = computePathwayProgress(nested);
+            const done = progress.destinationCompleted;
+            const total = Math.max(progress.total, 1);
+            const current = progress.destinationCompleted
+                ? total
+                : Math.min(progress.completed, total - 1);
+
+            return {
+                kind: 'count',
+                current,
+                total,
+                done,
+                requirement: `Finish "${nested.title}"`,
+                unmetHint: done
+                    ? ''
+                    : progress.total === 0
+                        ? "The nested pathway has no steps yet — add some in Build."
+                        : `Complete the destination of "${nested.title}" to unlock.`,
+            };
+        }
 
         case 'composite': {
             const which = termination.require === 'all' ? 'All' : 'Any';
