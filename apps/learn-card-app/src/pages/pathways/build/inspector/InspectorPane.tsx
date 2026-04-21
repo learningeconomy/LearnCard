@@ -1,0 +1,99 @@
+/**
+ * InspectorPane — right side of the Builder. Stitches together the
+ * five collapsible sections for the currently-selected node.
+ *
+ * Rules:
+ *   - Stays a dumb layout: every section owns its own editing
+ *     affordances + commit path. InspectorPane just hands each
+ *     section the same `onChangePathway` callback that BuildMode
+ *     passes down.
+ *   - Keeps the composite ⇔ pathway-completed invariant inside
+ *     `WhatSection` (it has the policy surface) rather than here,
+ *     so we don't get two places to edit the same rule.
+ *   - Section ordering reflects the author's mental model:
+ *
+ *       Identity      — what am I editing?
+ *       What happens  — what does the learner do?
+ *       Done when     — how do they finish?
+ *       Connections   — what unlocks this, what does it unlock?
+ *       Danger zone   — destructive actions, always last.
+ */
+
+import React from 'react';
+
+import type { Pathway, PathwayNode } from '../../types';
+
+import ConnectionsSection from './sections/ConnectionsSection';
+import DangerSection from './sections/DangerSection';
+import DoneSection from './sections/DoneSection';
+import IdentitySection from './sections/IdentitySection';
+import WhatSection from './sections/WhatSection';
+
+interface InspectorPaneProps {
+    pathway: Pathway;
+    node: PathwayNode;
+    onChangePathway: (next: Pathway) => void;
+    onDeleted?: () => void;
+}
+
+const InspectorPane: React.FC<InspectorPaneProps> = ({
+    pathway,
+    node,
+    onChangePathway,
+    onDeleted,
+}) => (
+    <section
+        /*
+            `key` on the node id: force a remount when the author
+            switches to a different node. This resets each Section's
+            uncontrolled open state so a long-opened rubric editor
+            doesn't leak across nodes.
+        */
+        key={node.id}
+        className="space-y-3 font-poppins"
+        aria-label={`Edit step ${node.title || 'untitled'}`}
+    >
+        <header className="space-y-1 px-1">
+            <h2 className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
+                Edit step
+            </h2>
+
+            <p className="text-xs text-grayscale-500">
+                Changes save as you type.
+            </p>
+        </header>
+
+        <IdentitySection
+            pathway={pathway}
+            node={node}
+            onChangePathway={onChangePathway}
+        />
+
+        <WhatSection
+            pathway={pathway}
+            node={node}
+            onChangePathway={onChangePathway}
+        />
+
+        <DoneSection
+            pathway={pathway}
+            node={node}
+            onChangePathway={onChangePathway}
+        />
+
+        <ConnectionsSection
+            pathway={pathway}
+            node={node}
+            onChangePathway={onChangePathway}
+        />
+
+        <DangerSection
+            pathway={pathway}
+            node={node}
+            onChangePathway={onChangePathway}
+            onDeleted={onDeleted}
+        />
+    </section>
+);
+
+export default InspectorPane;

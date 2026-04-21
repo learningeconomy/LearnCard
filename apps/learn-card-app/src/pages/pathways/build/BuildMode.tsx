@@ -1,25 +1,37 @@
 /**
- * BuildMode — author or edit a pathway (docs § 5, § 10).
+ * BuildMode — author or edit a pathway.
  *
- * Two panels: the node list on the left, the selected node's editor on
- * the right. All mutations are pure `buildOps` calls — the result is
- * committed to `pathwayStore.upsertPathway` in one place so history and
- * offline-queueing can intercept it later without touching every edit
- * site.
+ * Two-pane shell:
+ *
+ *   ┌─────────────────┬──────────────────────────┐
+ *   │ OUTLINE         │ INSPECTOR                │
+ *   │ (steps, add,    │ (Identity, What, Done,   │
+ *   │  nest, import)  │  Connections, Danger)    │
+ *   └─────────────────┴──────────────────────────┘
+ *
+ * All pathway mutations still go through pure `buildOps` helpers and
+ * commit through `pathwayStore.upsertPathway` at one call site — this
+ * preserves the history / offline-queue integration point and keeps
+ * the test surface stable. Inspector + sections only *build* new
+ * Pathway values; they never write to the store directly.
+ *
+ * Preview pane (M4) will slot in as a third column behind a media
+ * query on wide viewports. Kept out of M1 so the layout ships first.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { AnimatePresence } from 'framer-motion';
-import { cloudDownloadOutline, gitBranchOutline } from 'ionicons/icons';
+import { cloudDownloadOutline } from 'ionicons/icons';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLearnerDid } from '../hooks/useLearnerDid';
 import ImportCtdlModal from '../import/ImportCtdlModal';
 import type { Pathway } from '../types';
 
-import NodeEditor from './NodeEditor';
+import InspectorPane from './inspector/InspectorPane';
+import OutlinePane from './outline/OutlinePane';
 import {
     addNode as addNodeOp,
     setPolicy,
@@ -28,12 +40,15 @@ import {
 
 const BuildMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
+    const allPathways = pathwayStore.use.pathways();
     const learnerDid = useLearnerDid();
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [importOpen, setImportOpen] = useState(false);
 
     // Auto-select the first node when the pathway becomes available.
+    // Preserves a prior selection if the node still exists (switching
+    // pathways should land on something even if the ids don't line up).
     useEffect(() => {
         if (!activePathway) {
             setSelectedId(null);
@@ -46,9 +61,24 @@ const BuildMode: React.FC = () => {
         });
     }, [activePathway]);
 
-    // Commit a freshly-imported pathway: persist, focus it, pick its
-    // first node, close the modal. The selected-id wiring via the
-    // effect above picks up automatically once `activePathway` changes.
+    // Build the summary-context map once per render. Used by the
+    // outline's `NodeRow`s so composite refs resolve to real titles
+    // ("Complete AI in Finance") rather than the generic fallback.
+    // Memoised on the pathways object identity — rebuilds are cheap
+    // but React-renders aren't, so we skip the work when nothing
+    // changed.
+    const summarizeContext = useMemo(
+        () => ({
+            pathwayTitleById: Object.fromEntries(
+                Object.values(allPathways).map(p => [p.id, p.title]),
+            ),
+        }),
+        [allPathways],
+    );
+
+    // Commit a freshly-imported pathway: persist, focus it, close the
+    // modal. The selected-id wiring via the effect above picks up
+    // automatically once `activePathway` changes.
     const handleImported = (pathway: Pathway) => {
         pathwayStore.set.upsertPathway(pathway);
         pathwayStore.set.setActivePathway(pathway.id);
@@ -71,11 +101,9 @@ const BuildMode: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => setImportOpen(true)}
-                        className="inline-flex items-center gap-2 py-3 px-4 rounded-[20px]
-                                   bg-grayscale-900 text-white font-medium text-sm
-                                   hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                     >
-                        <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                        <IonIcon icon={cloudDownloadOutline} aria-hidden className="text-base" />
                         Import from Credential Engine
                     </button>
                 </div>
@@ -109,15 +137,15 @@ const BuildMode: React.FC = () => {
         setSelectedId(justAdded.id);
     };
 
-    // "Add nested pathway" — seed a node with a composite policy +
-    // pathway-completed termination, both with empty refs. The state
-    // is Zod-invalid in-flight, but NodeEditor's PolicyEditor holds
-    // the composite picker in that state and upgrades both refs
-    // atomically when the author picks a target pathway (via the
-    // composite invariant in `handlePolicyChange`). We commit the
-    // incomplete composite so the author can see their in-progress
-    // work; it would fail publication but that's intentional — the
-    // picker nudges them to complete it before leaving Build.
+    /**
+     * Seed a node already-wired for compositing: a `composite` policy
+     * with no ref selected yet + the paired `pathway-completed`
+     * termination. The `composite` invariant in `WhatSection` flips
+     * both refs atomically when the author later picks a target
+     * pathway. The in-flight state is Zod-invalid, but committing
+     * it lets the author see their in-progress work; publish-time
+     * validation catches the incomplete ref separately.
+     */
     const handleAddNestedPathway = () => {
         let next = addNodeOp(activePathway, { title: 'Nested pathway' });
         const justAdded = next.nodes[next.nodes.length - 1];
@@ -138,111 +166,37 @@ const BuildMode: React.FC = () => {
     };
 
     const handleDeleted = () => {
-        // After delete, select the first remaining node.
+        // After delete, let the auto-select effect re-run and pick
+        // the first remaining node (if any).
         setSelectedId(null);
     };
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-6 font-poppins">
-            <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-5">
-                <aside className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
-                            Nodes
-                        </h3>
-
-                        <span className="text-xs text-grayscale-500">
-                            {activePathway.nodes.length}
-                        </span>
-                    </div>
-
-                    <ul className="space-y-1.5">
-                        {activePathway.nodes.map(n => {
-                            const isSelected = n.id === selectedId;
-
-                            return (
-                                <li key={n.id}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedId(n.id)}
-                                        className={`w-full text-left py-2.5 px-3 rounded-xl text-sm transition-colors ${
-                                            isSelected
-                                                ? 'bg-grayscale-900 text-white'
-                                                : 'bg-white border border-grayscale-200 text-grayscale-800 hover:bg-grayscale-10'
-                                        }`}
-                                    >
-                                        <span className="block truncate">{n.title || 'Untitled'}</span>
-
-                                        <span
-                                            className={`block text-[10px] mt-0.5 uppercase tracking-wide ${
-                                                isSelected ? 'text-grayscale-300' : 'text-grayscale-500'
-                                            }`}
-                                        >
-                                            {n.stage.policy.kind} · {n.stage.termination.kind}
-                                        </span>
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
-
-                    <button
-                        type="button"
-                        onClick={handleAddNode}
-                        className="w-full py-2.5 px-3 rounded-[20px] border border-grayscale-300 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors"
-                    >
-                        + Add node
-                    </button>
-
-                    {/*
-                        "Add nested pathway" — peer action to Add node.
-                        Same border/weight so discoverability is high, but
-                        iconned so the two actions read as distinct. The
-                        author picks a target pathway in the inline
-                        composite picker that mounts on the right.
-                    */}
-                    <button
-                        type="button"
-                        onClick={handleAddNestedPathway}
-                        className="w-full inline-flex items-center justify-center gap-1.5
-                                   py-2.5 px-3 rounded-[20px] border border-grayscale-300
-                                   text-sm font-medium text-grayscale-700
-                                   hover:bg-grayscale-10 transition-colors"
-                    >
-                        <IonIcon icon={gitBranchOutline} className="text-base" />
-                        Add nested pathway
-                    </button>
-
-                    {/* Secondary action — import another pathway alongside
-                        the active one. Kept subtle so it doesn't compete
-                        with the two primary add actions visually. */}
-                    <button
-                        type="button"
-                        onClick={() => setImportOpen(true)}
-                        className="w-full inline-flex items-center justify-center gap-1.5
-                                   py-2.5 px-3 rounded-[20px] text-sm font-medium
-                                   text-grayscale-600 hover:text-grayscale-900 hover:bg-grayscale-10
-                                   transition-colors"
-                    >
-                        <IonIcon icon={cloudDownloadOutline} className="text-base" />
-                        Import from Credential Engine
-                    </button>
-                </aside>
+        <div className="max-w-6xl mx-auto px-4 py-6 font-poppins">
+            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+                <OutlinePane
+                    pathway={activePathway}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    onAddNode={handleAddNode}
+                    onAddNestedPathway={handleAddNestedPathway}
+                    onOpenImport={() => setImportOpen(true)}
+                    summarizeContext={summarizeContext}
+                />
 
                 <main className="min-w-0">
                     {selectedNode ? (
-                        <div className="p-5 rounded-[24px] border border-grayscale-200 bg-white">
-                            <NodeEditor
-                                pathway={activePathway}
-                                node={selectedNode}
-                                onChangePathway={commit}
-                                onDeleted={handleDeleted}
-                            />
-                        </div>
+                        <InspectorPane
+                            pathway={activePathway}
+                            node={selectedNode}
+                            onChangePathway={commit}
+                            onDeleted={handleDeleted}
+                        />
                     ) : (
-                        <div className="p-6 rounded-[20px] bg-grayscale-100 border border-grayscale-200 text-center">
+                        <div className="p-6 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center">
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Pick a node on the left to edit its details, or add a new one.
+                                Pick a step on the left to edit its details, or add
+                                a new one.
                             </p>
                         </div>
                     )}
