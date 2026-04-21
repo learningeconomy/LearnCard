@@ -26,16 +26,32 @@ import { useHistory } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
 import {
+    findParentCompositeNode,
+    findParentPathway,
+} from '../core/composition';
+import {
     availableNodes,
     buildAdjacency,
     neighborhood,
 } from '../core/graphOps';
 
+import CollectionMapNode, {
+    type CollectionMapNodeData,
+} from './CollectionMapNode';
 import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
+import NestedPathwayContext from './NestedPathwayContext';
+import {
+    buildCollectionIndex,
+    computeCollectionProgress,
+    detectCollections,
+} from './collectionDetection';
 import { NODE_HEIGHT, NODE_WIDTH, layoutPathway } from './layout';
 
-const NODE_TYPES = { pathwayNode: MapNode } as const;
+const NODE_TYPES = {
+    pathwayNode: MapNode,
+    collectionNode: CollectionMapNode,
+} as const;
 
 /**
  * FocusPanner — nested inside ReactFlow so it can grab `useReactFlow()`.
@@ -89,7 +105,30 @@ const MapMode: React.FC = () => (
 
 const MapModeInner: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
+    const allPathways = pathwayStore.use.pathways();
     const history = useHistory();
+
+    // Sub-pathway context — if the active pathway is embedded inside
+    // another pathway as a composite reference, render the breadcrumb
+    // + "unlocks X" chips. Pure lookup, O(pathways × nodes); tiny in
+    // practice since learners rarely have more than a handful of
+    // pathways loaded at once.
+    const parentContext = useMemo(() => {
+        if (!activePathway) return null;
+
+        const parent = findParentPathway(allPathways, activePathway.id);
+        if (!parent) return null;
+
+        const parentNode = findParentCompositeNode(parent, activePathway.id);
+        if (!parentNode) return null;
+
+        return { parent, parentNode };
+    }, [activePathway, allPathways]);
+
+    const handleBackToParent = React.useCallback(() => {
+        if (!parentContext) return;
+        pathwayStore.set.setActivePathway(parentContext.parent.id);
+    }, [parentContext]);
 
     // Focus node: first available node (the same one Today would pick by
     // default), or the pathway's first node if everything is completed.
@@ -112,6 +151,52 @@ const MapModeInner: React.FC = () => {
         () => (activePathway ? layoutPathway(activePathway) : []),
         [activePathway],
     );
+
+    // ------------------------------------------------------------------
+    // M6.c.3 — Collection collapsing.
+    //
+    // 1. `detectCollections` finds fan-in sibling groups (≥4 nodes, all
+    //    pointing at the same target). Purely topological, runs every
+    //    time the pathway changes.
+    // 2. `expandedGroupIds` tracks which groups the user has
+    //    manually expanded on the canvas. Default: all collapsed.
+    //    Clicking a collection card toggles the group into/out of the
+    //    set; clicking a member's "Collapse" chip removes its group.
+    // 3. Downstream consumers (rfNodes, rfEdges) use this state to
+    //    decide whether to render individual member cards + member
+    //    edges OR a single synthetic collection card + one rolled-up
+    //    edge.
+    // ------------------------------------------------------------------
+    const collections = useMemo(
+        () => (activePathway ? detectCollections(activePathway) : []),
+        [activePathway],
+    );
+
+    const collectionIndex = useMemo(
+        () => buildCollectionIndex(collections),
+        [collections],
+    );
+
+    const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
+        () => new Set(),
+    );
+
+    // Reset expansion when the active pathway changes — expansion is a
+    // per-pathway affordance, not a global preference.
+    useEffect(() => {
+        setExpandedGroupIds(new Set());
+    }, [activePathway?.id]);
+
+    const toggleGroupExpansion = React.useCallback((groupId: string) => {
+        setExpandedGroupIds(prev => {
+            const next = new Set(prev);
+
+            if (next.has(groupId)) next.delete(groupId);
+            else next.add(groupId);
+
+            return next;
+        });
+    }, []);
 
     const nb = useMemo(
         () => (activePathway && focusId ? neighborhood(activePathway, focusId, 2) : null),
@@ -165,10 +250,28 @@ const MapModeInner: React.FC = () => {
         [activePathway, history],
     );
 
-    const rfNodes: RfNode<MapNodeData>[] = useMemo(() => {
+    const rfNodes: Array<RfNode<MapNodeData> | RfNode<CollectionMapNodeData>> = useMemo(() => {
         if (!activePathway) return [];
 
-        return positions.map(pos => {
+        const positionById = new Map(positions.map(p => [p.id, p]));
+
+        // Member ids whose group is currently collapsed — we skip
+        // rendering these as individual cards and render a single
+        // collection card in their place.
+        const collapsedMemberIds = new Set<string>();
+
+        for (const group of collections) {
+            if (!expandedGroupIds.has(group.id)) {
+                for (const mid of group.memberIds) collapsedMemberIds.add(mid);
+            }
+        }
+
+        const nodes: Array<RfNode<MapNodeData> | RfNode<CollectionMapNodeData>> = [];
+
+        // 1. Regular pathway nodes (skipping collapsed members).
+        for (const pos of positions) {
+            if (collapsedMemberIds.has(pos.id)) continue;
+
             const node = activePathway.nodes.find(n => n.id === pos.id)!;
             const inFocus = nb ? nb.nodeIds.has(pos.id) : true;
             const isFocusNode = pos.id === focusId;
@@ -178,7 +281,7 @@ const MapModeInner: React.FC = () => {
                 gated: false,
             };
 
-            return {
+            nodes.push({
                 id: pos.id,
                 type: 'pathwayNode',
                 position: { x: pos.x, y: pos.y },
@@ -186,9 +289,75 @@ const MapModeInner: React.FC = () => {
                 width: NODE_WIDTH,
                 height: NODE_HEIGHT,
                 draggable: false,
-            };
-        });
-    }, [activePathway, positions, nb, focusId, prereqByNode]);
+            });
+        }
+
+        // 2. Collapsed-collection synthetic nodes.
+        //    Position: same row as the original members (they all
+        //    share a level by detection rules), horizontally aligned
+        //    with the target above so the funnel reads cleanly.
+        for (const group of collections) {
+            if (expandedGroupIds.has(group.id)) continue;
+
+            // Reference member to inherit y (they all share a level).
+            const anchorMember = group.memberIds
+                .map(id => positionById.get(id))
+                .find(Boolean);
+            const targetPos = positionById.get(group.targetNodeId);
+
+            if (!anchorMember || !targetPos) continue;
+
+            // Members' y is the shared row; target's x aligns the
+            // funnel. Fall back to the anchor's x if the target isn't
+            // laid out (shouldn't happen, but cheap defensive).
+            const x = targetPos.x ?? anchorMember.x;
+            const y = anchorMember.y;
+
+            const members = group.memberIds
+                .map(id => activePathway.nodes.find(n => n.id === id))
+                .filter((n): n is NonNullable<typeof n> => Boolean(n));
+
+            const progress = computeCollectionProgress(group, activePathway);
+
+            // A collection is "in focus" if any of its members would
+            // have been in focus — otherwise we'd artificially dim the
+            // collection just because none of its members is the
+            // current focus node. `inFocus` governs the depth fade,
+            // so inheriting it from members keeps the neighborhood
+            // read consistent.
+            const inFocus = nb
+                ? group.memberIds.some(mid => nb.nodeIds.has(mid))
+                : true;
+
+            nodes.push({
+                id: group.id,
+                type: 'collectionNode',
+                position: { x, y },
+                data: {
+                    group,
+                    members,
+                    progress,
+                    inFocus,
+                    onExpand: toggleGroupExpansion,
+                },
+                width: NODE_WIDTH,
+                height: NODE_HEIGHT,
+                draggable: false,
+                selectable: false,
+            });
+        }
+
+        return nodes;
+    }, [
+        activePathway,
+        positions,
+        nb,
+        focusId,
+        prereqByNode,
+        collections,
+        expandedGroupIds,
+        toggleGroupExpansion,
+    ]);
 
     // Track which edges have already been seen as "completed" so we can
     // flag *newly* completed ones for the draw-in animation exactly
@@ -203,7 +372,24 @@ const MapModeInner: React.FC = () => {
         const seen = seenCompletedEdgesRef.current;
         const currentlyCompleted = new Set<string>();
 
-        const edges = activePathway.edges.map(e => {
+        // Which edges are folded into a (currently collapsed)
+        // collection? Those get dropped; a single synthetic
+        // collection→target edge stands in for the whole bundle.
+        const collapsedEdgeIds = new Set<string>();
+        const collapsedGroupIds = new Set<string>();
+
+        for (const group of collections) {
+            if (expandedGroupIds.has(group.id)) continue;
+
+            collapsedGroupIds.add(group.id);
+            for (const eid of group.edgeIds) collapsedEdgeIds.add(eid);
+        }
+
+        const edges: RfEdge[] = [];
+
+        for (const e of activePathway.edges) {
+            if (collapsedEdgeIds.has(e.id)) continue;
+
             const inFocus = nb ? nb.edgeIds.has(e.id) : true;
 
             const sourceNode = activePathway.nodes.find(n => n.id === e.from);
@@ -217,7 +403,7 @@ const MapModeInner: React.FC = () => {
             // every old edge redraw every time they open the map.
             const isFreshlyCompleted = fromCompleted && !seen.has(e.id);
 
-            return {
+            edges.push({
                 id: e.id,
                 source: e.from,
                 target: e.to,
@@ -237,15 +423,51 @@ const MapModeInner: React.FC = () => {
                     strokeWidth: inFocus ? 1.5 : 1,
                     opacity: inFocus ? 1 : 0.7,
                 },
-            } satisfies RfEdge;
-        });
+            } satisfies RfEdge);
+        }
+
+        // Synthetic rolled-up edges: one per collapsed collection.
+        // Source = synthetic collection node id; target = the shared
+        // downstream target. Styled like a completed edge when every
+        // member is completed (the collection itself acts "done"),
+        // otherwise a neutral gray so it reads as a pending funnel.
+        for (const groupId of collapsedGroupIds) {
+            const group = collectionIndex.byId.get(groupId);
+            if (!group) continue;
+
+            const progress = computeCollectionProgress(group, activePathway);
+            const allDone = progress.total > 0 && progress.completed === progress.total;
+
+            // In-focus if the target is in focus — the funnel lines
+            // up with the target visually, so depth-fade should agree.
+            const inFocus = nb ? nb.nodeIds.has(group.targetNodeId) : true;
+
+            edges.push({
+                id: `${group.id}-edge`,
+                source: group.id,
+                target: group.targetNodeId,
+                type: 'default',
+                animated: false,
+                style: {
+                    stroke: allDone
+                        ? inFocus
+                            ? '#10B981'
+                            : '#A7F3D0'
+                        : inFocus
+                            ? '#9CA3AF'
+                            : '#E5E7EB',
+                    strokeWidth: inFocus ? 1.5 : 1,
+                    opacity: inFocus ? 1 : 0.7,
+                },
+            } satisfies RfEdge);
+        }
 
         // Mark this render's set as "seen" for the next render so the
         // same edge doesn't animate twice.
         seenCompletedEdgesRef.current = currentlyCompleted;
 
         return edges;
-    }, [activePathway, nb]);
+    }, [activePathway, nb, collections, collectionIndex, expandedGroupIds]);
 
     if (!activePathway) {
         return (
@@ -298,6 +520,22 @@ const MapModeInner: React.FC = () => {
             }}
         >
             <style>{MAP_EDGE_STYLE}</style>
+
+            {/*
+                Sub-pathway wayfinding — only rendered when the current
+                pathway is embedded inside another. Top-left placement
+                keeps the back affordance out of the centered goal
+                pill's visual lane. Motion and frosted-glass treatment
+                match the goal pill so the chrome reads as a family.
+            */}
+            {parentContext && (
+                <NestedPathwayContext
+                    parent={parentContext.parent}
+                    parentNode={parentContext.parentNode}
+                    onBack={handleBackToParent}
+                />
+            )}
+
             {/*
                 Goal anchor — a floating frosted pill centered above the
                 canvas. Reads like Apple's Dynamic Island: calm, obvious
@@ -334,6 +572,15 @@ const MapModeInner: React.FC = () => {
                 panOnDrag
                 proOptions={{ hideAttribution: true }}
                 onNodeClick={(_event, node) => {
+                    // Collection nodes handle their own click (the
+                    // inner <button> stops propagation and calls
+                    // `toggleGroupExpansion`). If React Flow still
+                    // fires onNodeClick for them (e.g. keyboard
+                    // activation), we bail out so we don't try to
+                    // re-focus a synthetic id that isn't a pathway
+                    // node.
+                    if (node.type === 'collectionNode') return;
+
                     // Click on a non-focus node → re-focus (pan/center
                     // on it). Click on the already-focused node → open
                     // NodeDetail. This mirrors Google Maps' pin behavior:
@@ -373,6 +620,32 @@ const MapModeInner: React.FC = () => {
                     nodeColor={minimapNodeColor}
                 />
             </ReactFlow>
+
+            {/*
+                "Collapse all" affordance — only rendered when the
+                learner has manually expanded one or more collections.
+                Sits above the FocusActionBar on the right edge of the
+                viewport so it never competes with the primary Open
+                action. One click regroups every expanded collection
+                at once — simpler than tracking per-group collapse
+                targets on the canvas and matches the "undo a zoom"
+                mental model.
+            */}
+            {expandedGroupIds.size > 0 && (
+                <button
+                    type="button"
+                    onClick={() => setExpandedGroupIds(new Set())}
+                    className="absolute bottom-24 right-4 z-10 font-poppins
+                               py-2 px-3 rounded-full
+                               bg-white/80 backdrop-blur-md border border-white/60
+                               shadow-lg shadow-grayscale-900/10
+                               text-xs font-medium text-grayscale-700
+                               hover:bg-white transition-colors
+                               animate-fade-in-up"
+                >
+                    Regroup {expandedGroupIds.size === 1 ? 'collection' : 'collections'}
+                </button>
+            )}
 
             {/*
                 Bottom action sheet — persistent, docked affordance for

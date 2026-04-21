@@ -22,16 +22,19 @@ import { IonIcon } from '@ionic/react';
 import { Handle, Position } from '@xyflow/react';
 import {
     chevronForwardOutline,
+    documentTextOutline,
     gitBranchOutline,
     lockClosedOutline,
     openOutline,
+    refreshOutline,
+    repeatOutline,
     ribbonOutline,
 } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { computePathwayProgress, resolveCompositeChild } from '../core/composition';
-import type { PathwayNode } from '../types';
+import type { PathwayNode, Policy } from '../types';
 
 /**
  * Per-node prerequisite fold. Produced once in `MapMode` and handed to
@@ -87,20 +90,109 @@ const STATUS_CARD: Record<Status, string> = {
     skipped: 'bg-grayscale-50 border-grayscale-200 opacity-70',
 };
 
-const STATUS_DOT: Record<Status, string> = {
-    'not-started': 'bg-grayscale-300',
-    'in-progress': 'bg-amber-500',
-    stalled: 'bg-red-500',
-    completed: 'bg-emerald-600',
-    skipped: 'bg-grayscale-300',
-};
-
 const STATUS_LABEL: Record<Status, string> = {
     'not-started': 'Up next',
     'in-progress': 'In progress',
     stalled: 'Needs attention',
     completed: 'Done',
     skipped: 'Skipped',
+};
+
+// ---------------------------------------------------------------------------
+// M6.d — Kind color tokens for the node avatar.
+//
+// Each node carries a `policy.kind` discriminant. Before M6 the map
+// used a single ribbon/sparkle for every node; at real-world density
+// that reads as a wall of identical cards. Tinting the avatar by kind
+// restores the "taxonomy you can scan" affordance from the Figma
+// mobile designs (green course cap / orange trophy / blue briefcase)
+// while staying inside the app's emerald + amber + grayscale palette
+// per the LearnCard UI/UX guidelines.
+//
+// Mapping:
+//   practice/artifact/composite → emerald  (earning, progress, nesting)
+//   assessment                  → amber    (challenge, attention)
+//   review                      → grayscale (revisit, not new ground)
+//   external                    → grayscale (out-of-system action)
+// ---------------------------------------------------------------------------
+
+type PolicyKind = Policy['kind'];
+
+const KIND_TONE: Record<PolicyKind, { bg: string; fg: string }> = {
+    practice: { bg: 'bg-emerald-100', fg: 'text-emerald-700' },
+    artifact: { bg: 'bg-emerald-100', fg: 'text-emerald-700' },
+    composite: { bg: 'bg-emerald-100', fg: 'text-emerald-700' },
+    assessment: { bg: 'bg-amber-100', fg: 'text-amber-800' },
+    review: { bg: 'bg-grayscale-100', fg: 'text-grayscale-600' },
+    external: { bg: 'bg-grayscale-100', fg: 'text-grayscale-600' },
+};
+
+const KIND_ICON: Record<PolicyKind, string> = {
+    practice: repeatOutline,
+    artifact: documentTextOutline,
+    composite: gitBranchOutline,
+    assessment: ribbonOutline,
+    review: refreshOutline,
+    external: openOutline,
+};
+
+/**
+ * M6.b — Node avatar.
+ *
+ * Three-tier visual fallback, picked in order:
+ *
+ *   1. `credentialProjection.image` — the badge/certificate art from
+ *      the CTDL import. This is the richest signal on a learner's
+ *      map: seeing the actual badge you'll earn makes the card feel
+ *      like a real reward, not a todo list row.
+ *   2. Otherwise, a kind-tinted bubble with a `KIND_ICON` glyph (see
+ *      the KIND_TONE / KIND_ICON maps above). This gives every card a
+ *      recognizable anchor point even when no art exists.
+ *
+ * Locked/gated nodes render the avatar desaturated + slightly
+ * transparent. Completed nodes render at full saturation regardless
+ * of gating (you can't un-complete a step).
+ */
+const NodeAvatar: React.FC<{
+    node: PathwayNode;
+    status: Status;
+    isGated: boolean;
+}> = ({ node, status, isGated }) => {
+    const image = node.credentialProjection?.image;
+    const kind = node.stage.policy.kind;
+    const tone = KIND_TONE[kind];
+    const glyph = KIND_ICON[kind];
+
+    const isCompleted = status === 'completed';
+    // Gated avatars desaturate + dim — "this is a thing you'll earn,
+    // but it isn't available yet." Completed wins over gating.
+    const dimClass = isGated && !isCompleted ? 'opacity-60 grayscale' : '';
+
+    if (image) {
+        return (
+            <span
+                aria-hidden
+                className={`shrink-0 w-8 h-8 rounded-full overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
+            >
+                <img
+                    src={image}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    draggable={false}
+                />
+            </span>
+        );
+    }
+
+    return (
+        <span
+            aria-hidden
+            className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${tone.bg} ${tone.fg} ${dimClass}`}
+        >
+            <IonIcon icon={glyph} className="text-base" />
+        </span>
+    );
 };
 
 const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
@@ -267,109 +359,141 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                     </span>
                 )}
 
-                <p className={`text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 mb-1.5 ${
-                    isFocusNode && status !== 'completed' && status !== 'skipped' ? 'pr-6' : ''
-                }`}>
-                    {node.title}
-                </p>
-
                 {/*
-                    Bottom meta row. Three concerns packed into one line:
+                    M6.b + M6.d — avatar + content layout.
 
-                      1. **Credential affordance** (optional) — when the
-                         node carries a `credentialProjection` (every
-                         CredentialComponent from a CTDL import does),
-                         lead with a ribbon icon + credential type
-                         chip ("Badge" / "Certificate" / …). This
-                         flips the card from "generic task" to
-                         "something you earn" without eating the title.
+                    Avatar on the left anchors the card visually the
+                    way the Figma mobile designs do (a colored glyph
+                    or the actual badge image you can recognize from
+                    across the canvas). Content column to the right
+                    packs the title, an optional progress bar for
+                    composite nodes, and the meta row.
 
-                      2. **Gated state** — if the node has unmet
-                         prerequisites, the row swaps its status
-                         label to `Locked · {met}/{total}` with a lock
-                         glyph. This is the honest counter-signal to
-                         "Up next" on gated destinations: the IMA
-                         Certificate node now reads "Certificate ·
-                         Locked · 0/6" instead of the misleading
-                         "Up next".
-
-                      3. **Status label** — the existing `STATUS_LABEL`
-                         copy still drives the tail of the row when
-                         nothing gates the node. `"Your next step"`
-                         still wins on the focus-node + not-started
-                         case for tight coupling with the focus halo.
+                    Card width stays at 200px; the avatar is 32px +
+                    10px gap, leaving ~134px for the title — still
+                    comfortable for two lines at text-sm.
                 */}
-                {(() => {
-                    const projection = node.credentialProjection;
-                    const typeLabel = projection
-                        ? credentialTypeChip(projection.achievementType)
-                        : null;
+                <div className="flex items-start gap-2.5">
+                    <NodeAvatar
+                        node={node}
+                        status={status}
+                        isGated={data.prereq.gated}
+                    />
 
-                    // Gated wins over any status label — "Up next" is
-                    // false when you can't start yet.
-                    const isGated = data.prereq.gated;
+                    <div className="min-w-0 flex-1">
+                        <p
+                            className={`text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 ${
+                                isFocusNode &&
+                                status !== 'completed' &&
+                                status !== 'skipped'
+                                    ? 'pr-5'
+                                    : ''
+                            }`}
+                        >
+                            {node.title}
+                        </p>
 
-                    const tailLabel = isGated
-                        ? `Locked · ${data.prereq.met}/${data.prereq.total}`
-                        : isFocusNode && status === 'not-started'
-                            ? 'Your next step'
-                            : STATUS_LABEL[status];
+                        {/*
+                            M6.d — Composite progress bar.
 
-                    // Gated reads as grayscale; otherwise keep the
-                    // emerald accent on the credential ribbon so the
-                    // card visually separates "earnable" from "locked".
-                    const ribbonTone = isGated
-                        ? 'text-grayscale-400'
-                        : status === 'completed'
-                            ? 'text-emerald-600'
-                            : 'text-emerald-500';
-
-                    return (
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            {projection && (
-                                <>
-                                    <IonIcon
-                                        aria-hidden
-                                        icon={ribbonOutline}
-                                        className={`shrink-0 text-[11px] ${ribbonTone}`}
-                                    />
-
-                                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-grayscale-500">
-                                        {typeLabel}
-                                    </span>
-
-                                    <span
-                                        aria-hidden
-                                        className="shrink-0 text-grayscale-300 text-[10px]"
-                                    >
-                                        ·
-                                    </span>
-                                </>
-                            )}
-
-                            {!projection && (
-                                <span
-                                    aria-hidden
-                                    className={`shrink-0 inline-block w-1.5 h-1.5 rounded-full ${
-                                        isGated ? 'bg-grayscale-300' : STATUS_DOT[status]
+                            Only rendered when the node references a
+                            loaded nested pathway. The bar reflects
+                            the nested pathway's completion fraction
+                            so a learner sees "halfway through this
+                            chunk" at a glance without drilling in.
+                            For link-out composites (not loaded) and
+                            non-composite nodes this is skipped so the
+                            card height doesn't shift.
+                        */}
+                        {childInfo && !childInfo.missing && (
+                            <div
+                                className="mt-1.5 h-1 w-full rounded-full bg-grayscale-100 overflow-hidden"
+                                role="progressbar"
+                                aria-label={`${childInfo.progress.completed} of ${childInfo.progress.total} steps complete`}
+                                aria-valuenow={childInfo.progress.completed}
+                                aria-valuemin={0}
+                                aria-valuemax={childInfo.progress.total}
+                            >
+                                <div
+                                    className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                                        data.prereq.gated
+                                            ? 'bg-grayscale-300'
+                                            : 'bg-emerald-500'
                                     }`}
+                                    style={{
+                                        width: `${Math.round(
+                                            childInfo.progress.fraction * 100,
+                                        )}%`,
+                                    }}
                                 />
-                            )}
+                            </div>
+                        )}
 
-                            {isGated && (
-                                <IonIcon
-                                    aria-hidden
-                                    icon={lockClosedOutline}
-                                    className="shrink-0 text-[10px] text-grayscale-400"
-                                />
-                            )}
+                        {/*
+                            Bottom meta row:
+                              - Credential type chip ("Badge" /
+                                "Certificate" / …) when the node has a
+                                `credentialProjection`.
+                              - "Locked · met/total" with a lock glyph
+                                when the node has unmet prerequisites
+                                (wins over the status label — "Up
+                                next" is false when you can't start).
+                              - Status label otherwise. "Your next
+                                step" wins on the focus-node +
+                                not-started case so the halo and copy
+                                agree.
 
-                            <span className="text-[10px] font-medium uppercase tracking-wide text-grayscale-500 truncate">
-                                {tailLabel}
-                            </span>
-                        </div>
-                    );
-                })()}
+                            The pre-M6 standalone status dot is gone:
+                            the avatar + card tint + completion
+                            checkmark already encode status; the dot
+                            was redundant.
+                        */}
+                        {(() => {
+                            const projection = node.credentialProjection;
+                            const typeLabel = projection
+                                ? credentialTypeChip(projection.achievementType)
+                                : null;
+                            const isGated = data.prereq.gated;
+
+                            const tailLabel = isGated
+                                ? `Locked · ${data.prereq.met}/${data.prereq.total}`
+                                : isFocusNode && status === 'not-started'
+                                    ? 'Your next step'
+                                    : STATUS_LABEL[status];
+
+                            return (
+                                <div className="mt-1 flex items-center gap-1.5 min-w-0">
+                                    {typeLabel && (
+                                        <>
+                                            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-grayscale-500">
+                                                {typeLabel}
+                                            </span>
+
+                                            <span
+                                                aria-hidden
+                                                className="shrink-0 text-grayscale-300 text-[10px]"
+                                            >
+                                                ·
+                                            </span>
+                                        </>
+                                    )}
+
+                                    {isGated && (
+                                        <IonIcon
+                                            aria-hidden
+                                            icon={lockClosedOutline}
+                                            className="shrink-0 text-[10px] text-grayscale-400"
+                                        />
+                                    )}
+
+                                    <span className="text-[10px] font-medium uppercase tracking-wide text-grayscale-500 truncate">
+                                        {tailLabel}
+                                    </span>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
             </div>
 
             <Handle

@@ -246,6 +246,69 @@ export const resolveCompositeChild = (
     return pathways[node.stage.policy.pathwayRef] ?? null;
 };
 
+/**
+ * The inverse of `resolveCompositeChild`: given a child pathway id,
+ * find the pathway that embeds it as a composite reference.
+ *
+ * Returns `null` when the pathway is top-level (no parent) or when
+ * the parent isn't loaded into the map. Pathways embedded in multiple
+ * parents are rare but legal; we return the first hit by object-key
+ * order — good enough for breadcrumb-style UI since the learner sees
+ * exactly one "back to" destination at a time.
+ *
+ * Used by the Map's sub-pathway context chip so the learner always
+ * knows "I'm inside X" and "this unlocks node Y in X" without the
+ * engine having to plumb pathway-parentage through navigation state.
+ */
+export const findParentPathway = (
+    pathways: PathwayMap,
+    childPathwayId: string,
+): Pathway | null => {
+    for (const p of Object.values(pathways)) {
+        if (p.id === childPathwayId) continue;
+
+        for (const node of p.nodes) {
+            if (
+                node.stage.policy.kind === 'composite' &&
+                node.stage.policy.pathwayRef === childPathwayId
+            ) {
+                return p;
+            }
+        }
+    }
+
+    return null;
+};
+
+/**
+ * Given a parent pathway and a child pathway id, return the specific
+ * node inside the parent that embeds that child as a composite ref.
+ *
+ * Pairs with `findParentPathway`: first locate the parent, then pick
+ * out the node that's going to "unlock" when the learner finishes the
+ * child. The context chip copy ("Unlocks X") is driven off of the
+ * returned node's title.
+ *
+ * Returns `null` when no such reference exists (shouldn't happen if
+ * the caller got the parent from `findParentPathway`, but fail-safe
+ * anyway so a stale cache can't crash the chip).
+ */
+export const findParentCompositeNode = (
+    parent: Pathway,
+    childPathwayId: string,
+): PathwayNode | null => {
+    for (const node of parent.nodes) {
+        if (
+            node.stage.policy.kind === 'composite' &&
+            node.stage.policy.pathwayRef === childPathwayId
+        ) {
+            return node;
+        }
+    }
+
+    return null;
+};
+
 // ---------------------------------------------------------------------------
 // Progress rollup
 // ---------------------------------------------------------------------------
