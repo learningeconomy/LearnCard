@@ -40,6 +40,7 @@ import CollectionMapNode, {
 } from './CollectionMapNode';
 import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
+import NavigateMode from './NavigateMode';
 import NestedPathwayContext from './NestedPathwayContext';
 import {
     buildCollectionIndex,
@@ -47,6 +48,12 @@ import {
     detectCollections,
 } from './collectionDetection';
 import { NODE_HEIGHT, NODE_WIDTH, layoutPathway } from './layout';
+import {
+    buildRouteIndex,
+    computeSuggestedRoute,
+    formatEta,
+    nodeEffortMinutes,
+} from './route';
 
 const NODE_TYPES = {
     pathwayNode: MapNode,
@@ -198,6 +205,74 @@ const MapModeInner: React.FC = () => {
         });
     }, []);
 
+    // ------------------------------------------------------------------
+    // Waze-style suggested route.
+    //
+    // The pathway is a dependency DAG; a learner's *journey through it*
+    // is a single linear chain from where they are to where they're
+    // going. We compute that chain once per (pathway, focus) pair and
+    // use it to drive three pieces of chrome:
+    //
+    //   - **Route ribbon** — edges on the route render as a thicker
+    //     emerald line, edges ahead-of-you dashed, edges behind-you
+    //     solid. Off-route edges fade to a subtle gray.
+    //   - **"You are here" pin** — rendered on the focus MapNode when
+    //     a route exists (see `isYourPosition` in MapNodeData).
+    //   - **ETA** — the goal pill shows "~4 weeks · 6 steps" so the
+    //     learner has a felt sense of distance-to-destination.
+    //
+    // If the pathway has no destinationNodeId or the focus is off the
+    // subtree that leads to the destination, `route` is null and the
+    // Map renders in its pre-M7 state (no ribbon / no ETA).
+    // ------------------------------------------------------------------
+    const route = useMemo(() => {
+        if (!activePathway || !focusId) return null;
+        return computeSuggestedRoute(activePathway, focusId);
+    }, [activePathway, focusId]);
+
+    const routeIndex = useMemo(() => {
+        if (!route || !activePathway) return null;
+        return buildRouteIndex(route, activePathway);
+    }, [route, activePathway]);
+
+    /** The node the learner is "at" right now on the route. */
+    const yourNodeId = useMemo(() => {
+        if (!route || routeIndex?.yourIndex == null) return null;
+        return route.nodeIds[routeIndex.yourIndex] ?? null;
+    }, [route, routeIndex]);
+
+    /** The node immediately after you on the route — used for "Next up" peek. */
+    const nextNodeOnRoute = useMemo(() => {
+        if (!route || routeIndex?.yourIndex == null) return null;
+        const nextIdx = routeIndex.yourIndex + 1;
+        const nid = route.nodeIds[nextIdx];
+        if (!nid || !activePathway) return null;
+        return activePathway.nodes.find(n => n.id === nid) ?? null;
+    }, [route, routeIndex, activePathway]);
+
+    /** The node the learner is currently at (first uncompleted on route). */
+    const yourNode = useMemo(() => {
+        if (!yourNodeId || !activePathway) return null;
+        return activePathway.nodes.find(n => n.id === yourNodeId) ?? null;
+    }, [yourNodeId, activePathway]);
+
+    // ------------------------------------------------------------------
+    // Browse vs Navigate mode.
+    //
+    // Browse = the existing graph view. Navigate = a full-screen
+    // Waze-style journey overlay that hides the graph and puts the
+    // current step front and center. The two modes share the same
+    // underlying state (focus, route, ETA) — Navigate is purely a
+    // different *presentation* of what Browse already knows.
+    // ------------------------------------------------------------------
+    const [isNavigating, setIsNavigating] = useState<boolean>(false);
+
+    // Reset mode when the pathway changes — re-entering a different
+    // pathway shouldn't drop you into navigation without you asking.
+    useEffect(() => {
+        setIsNavigating(false);
+    }, [activePathway?.id]);
+
     const nb = useMemo(
         () => (activePathway && focusId ? neighborhood(activePathway, focusId, 2) : null),
         [activePathway, focusId],
@@ -281,11 +356,25 @@ const MapModeInner: React.FC = () => {
                 gated: false,
             };
 
+            // Route membership is a lookup, not a scan: `routeIndex`
+            // maps node id → position on the route. The "you are here"
+            // flag is only true for the single `yourNodeId`, so across
+            // the entire canvas exactly one pin pulses.
+            const isOnRoute = routeIndex?.nodeIndex.has(pos.id) ?? false;
+            const isYourPosition = yourNodeId === pos.id;
+
             nodes.push({
                 id: pos.id,
                 type: 'pathwayNode',
                 position: { x: pos.x, y: pos.y },
-                data: { node, inFocus, isFocusNode, prereq },
+                data: {
+                    node,
+                    inFocus,
+                    isFocusNode,
+                    prereq,
+                    isOnRoute,
+                    isYourPosition,
+                },
                 width: NODE_WIDTH,
                 height: NODE_HEIGHT,
                 draggable: false,
@@ -357,6 +446,8 @@ const MapModeInner: React.FC = () => {
         collections,
         expandedGroupIds,
         toggleGroupExpansion,
+        routeIndex,
+        yourNodeId,
     ]);
 
     // Track which edges have already been seen as "completed" so we can
@@ -403,6 +494,54 @@ const MapModeInner: React.FC = () => {
             // every old edge redraw every time they open the map.
             const isFreshlyCompleted = fromCompleted && !seen.has(e.id);
 
+            // ----------------------------------------------------------
+            // Route ribbon styling.
+            //
+            // Each edge falls into one of four visual buckets:
+            //
+            //   - **Trail** (route edge, source completed) — solid
+            //     emerald-500, 2.5px. "The road you've already driven."
+            //   - **Projected** (route edge, source not completed) —
+            //     dashed emerald-500, 2px. "The road you haven't
+            //     reached yet." Dash matches Google Maps' "route
+            //     ahead of you" treatment.
+            //   - **Off-route completed** — solid emerald-200, thin.
+            //     A side trail you've walked but isn't the current
+            //     suggested route. Stays visible so progress in
+            //     adjacent branches isn't hidden.
+            //   - **Off-route pending** — neutral gray, thin. The
+            //     grayed-out surrounding street network in Maps.
+            //
+            // `inFocus` still dims everything outside the depth-2
+            // neighborhood so the route ribbon peaks in the area the
+            // learner is actually looking at.
+            // ----------------------------------------------------------
+            const onRoute = routeIndex?.edgeOnRoute.has(e.id) ?? false;
+
+            let stroke: string;
+            let strokeWidth: number;
+            let strokeDasharray: string | undefined;
+
+            if (onRoute && fromCompleted) {
+                stroke = inFocus ? '#10B981' : '#6EE7B7';
+                strokeWidth = inFocus ? 2.5 : 2;
+                strokeDasharray = undefined;
+            } else if (onRoute) {
+                stroke = inFocus ? '#10B981' : '#A7F3D0';
+                strokeWidth = inFocus ? 2.25 : 1.75;
+                // 6/5 dash reads as motion without being busy — slightly
+                // longer dash than gap so the line still feels directional.
+                strokeDasharray = '6 5';
+            } else if (fromCompleted) {
+                stroke = inFocus ? '#A7F3D0' : '#D1FAE5';
+                strokeWidth = 1;
+                strokeDasharray = undefined;
+            } else {
+                stroke = inFocus ? '#CBD5E1' : '#E5E7EB';
+                strokeWidth = 1;
+                strokeDasharray = undefined;
+            }
+
             edges.push({
                 id: e.id,
                 source: e.from,
@@ -413,15 +552,12 @@ const MapModeInner: React.FC = () => {
                 animated: false,
                 className: isFreshlyCompleted ? 'pathway-edge-drawing' : undefined,
                 style: {
-                    stroke: fromCompleted
-                        ? inFocus
-                            ? '#10B981' // emerald-500
-                            : '#A7F3D0' // emerald-200
-                        : inFocus
-                            ? '#9CA3AF' // neutral gray
-                            : '#E5E7EB',
-                    strokeWidth: inFocus ? 1.5 : 1,
-                    opacity: inFocus ? 1 : 0.7,
+                    stroke,
+                    strokeWidth,
+                    strokeDasharray,
+                    // Route edges stay crisp regardless of focus so the
+                    // ribbon reads end-to-end; off-route fade via inFocus.
+                    opacity: onRoute ? 1 : inFocus ? 0.8 : 0.55,
                 },
             } satisfies RfEdge);
         }
@@ -467,7 +603,7 @@ const MapModeInner: React.FC = () => {
         seenCompletedEdgesRef.current = currentlyCompleted;
 
         return edges;
-    }, [activePathway, nb, collections, collectionIndex, expandedGroupIds]);
+    }, [activePathway, nb, collections, collectionIndex, expandedGroupIds, routeIndex]);
 
     if (!activePathway) {
         return (
@@ -540,23 +676,91 @@ const MapModeInner: React.FC = () => {
                 Goal anchor — a floating frosted pill centered above the
                 canvas. Reads like Apple's Dynamic Island: calm, obvious
                 destination, doesn't steal a full row of vertical space.
+
+                Post-M7: when a route is computed, the pill grows a
+                second line with the Waze-style ETA ("~4 weeks · 6
+                steps"). If the learner is already at the destination
+                the ETA reads "Arrived"; if no route exists (no
+                destination set, or focus is off-subtree), we fall
+                back to just the goal — never showing a misleading
+                ETA.
             */}
             <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-10 font-poppins animate-fade-in-up">
-                <div className="pointer-events-auto flex items-center gap-2 py-2 px-4 rounded-full bg-white/70 backdrop-blur-md border border-white shadow-lg shadow-grayscale-900/5">
-                    <span
-                        aria-hidden
-                        className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
-                    />
+                <div className="pointer-events-auto flex flex-col items-center gap-0.5 py-2 px-4 rounded-[20px] bg-white/70 backdrop-blur-md border border-white shadow-lg shadow-grayscale-900/5">
+                    <div className="flex items-center gap-2">
+                        <span
+                            aria-hidden
+                            className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
+                        />
 
-                    <span className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-wide">
-                        On your way to
-                    </span>
+                        <span className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-wide">
+                            On your way to
+                        </span>
 
-                    <span className="text-sm font-semibold text-grayscale-900 max-w-[260px] truncate">
-                        {activePathway.goal}
-                    </span>
+                        <span className="text-sm font-semibold text-grayscale-900 max-w-[260px] truncate">
+                            {activePathway.goal}
+                        </span>
+                    </div>
+
+                    {route && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-grayscale-600">
+                            <span>
+                                {route.etaMinutes > 0
+                                    ? formatEta(route.etaMinutes)
+                                    : 'Arrived'}
+                            </span>
+
+                            {route.remainingSteps > 0 && (
+                                <>
+                                    <span
+                                        aria-hidden
+                                        className="text-grayscale-300"
+                                    >
+                                        ·
+                                    </span>
+
+                                    <span>
+                                        {route.remainingSteps === 1
+                                            ? '1 step to go'
+                                            : `${route.remainingSteps} steps to go`}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/*
+                Navigate-mode launcher — the Waze "Start" button.
+                Only rendered when we have a route to navigate; on a
+                destination-less or unreachable pathway there's
+                nothing to navigate and the button would be a lie.
+
+                Placed top-right so it's obvious without fighting the
+                centered goal pill's visual lane. Mirrors the pill's
+                glass treatment so the two chrome surfaces read as a
+                family.
+            */}
+            {route && route.remainingSteps > 0 && (
+                <button
+                    type="button"
+                    onClick={() => setIsNavigating(true)}
+                    className="absolute top-4 right-4 z-10 font-poppins
+                               flex items-center gap-1.5 py-2 px-3.5 rounded-full
+                               bg-emerald-600 text-white text-xs font-semibold
+                               shadow-lg shadow-emerald-600/30
+                               hover:bg-emerald-700 transition-colors
+                               animate-fade-in-up"
+                    aria-label="Start guided navigation"
+                >
+                    <span
+                        aria-hidden
+                        className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
+                    />
+                    <span>Navigate</span>
+                </button>
+            )}
 
             <ReactFlow
                 nodes={rfNodes}
@@ -660,8 +864,32 @@ const MapModeInner: React.FC = () => {
                         ? activePathway.nodes.find(n => n.id === focusId) ?? null
                         : null
                 }
+                nextOnRoute={nextNodeOnRoute}
                 onOpen={openNode}
             />
+
+            {/*
+                Navigate-mode overlay — the full-screen Waze view.
+                Owns no state of its own; MapMode passes down the
+                route + focus + nextOnRoute and NavigateMode presents
+                them. Exiting or tapping the primary CTA
+                (routes to NodeDetail) cleanly returns to Browse on
+                the learner's next map visit.
+            */}
+            {isNavigating && route && (
+                <NavigateMode
+                    pathway={activePathway}
+                    route={route}
+                    yourIndex={routeIndex?.yourIndex ?? null}
+                    currentNode={yourNode}
+                    nextNode={nextNodeOnRoute}
+                    onOpen={nodeId => {
+                        setIsNavigating(false);
+                        openNode(nodeId);
+                    }}
+                    onExit={() => setIsNavigating(false)}
+                />
+            )}
         </div>
     );
 };

@@ -52,6 +52,19 @@ export type MapNodeData = {
     inFocus: boolean;
     isFocusNode: boolean;
     prereq: MapNodePrereq;
+    /**
+     * True when this node sits on the currently-computed suggested
+     * route (focus → destination). Off-route nodes render at reduced
+     * saturation so the route ribbon visually pops. See
+     * `map/route.ts` for how the route is derived.
+     */
+    isOnRoute?: boolean;
+    /**
+     * True only for the *single* "you are here" node — the first
+     * uncompleted node on the route. Drives the pulsing Maps-style
+     * pin that sits above the card's top handle.
+     */
+    isYourPosition?: boolean;
 } & Record<string, unknown>;
 
 /**
@@ -279,8 +292,35 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                                 ? 'shadow-sm'
                                 : ''
                     }
+                    ${data.isOnRoute === false ? 'opacity-80' : ''}
                 `}
             >
+                {/*
+                    "You are here" pin — the Waze/Maps-style dot that
+                    tells the learner their current *position on the
+                    route*, not just which card has the focus halo.
+                    Renders above the card's top edge (which is the
+                    source handle's side; the handle itself is a small
+                    gray dot, so the pin reads as sitting *on* the
+                    road that leaves this node).
+
+                    Two stacked layers: a pulsing halo ring that
+                    breathes outward, and a solid emerald dot in the
+                    center. The halo never scales the card itself
+                    because `pointer-events-none` keeps it out of the
+                    hit test — learners click the card, not the pin.
+                */}
+                {data.isYourPosition && (
+                    <span
+                        aria-hidden
+                        className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3.5 flex items-center justify-center"
+                        style={{ width: 20, height: 20 }}
+                    >
+                        <span className="absolute inset-0 rounded-full bg-emerald-400/40 animate-ping" />
+                        <span className="relative w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-[0_2px_6px_rgba(16,185,129,0.55)]" />
+                    </span>
+                )}
+
                 {status === 'completed' && (
                     <span
                         aria-hidden
@@ -382,6 +422,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
 
                     <div className="min-w-0 flex-1">
                         <p
+                            title={node.title}
                             className={`text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 ${
                                 isFocusNode &&
                                 status !== 'completed' &&

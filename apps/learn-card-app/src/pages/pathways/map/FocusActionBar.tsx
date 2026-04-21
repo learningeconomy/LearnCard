@@ -42,6 +42,8 @@ import {
 } from '../today/presentation';
 import type { PathwayNode } from '../types';
 
+import { formatEta, nodeEffortMinutes } from './route';
+
 interface FocusActionBarProps {
     /**
      * The currently-focused node. `null` when nothing is focused (empty
@@ -49,10 +51,21 @@ interface FocusActionBarProps {
      * abruptly unmounts so focus switches feel continuous.
      */
     node: PathwayNode | null;
+
+    /**
+     * The node immediately after the focus on the suggested route, if
+     * any. Used to render a small "THEN: …" peek under the primary
+     * CTA — the Waze "next turn in 0.5 mi" affordance applied to
+     * pathways so learners never wonder what comes after this step.
+     * `null` when no route exists or the focus is the route's last
+     * uncompleted step.
+     */
+    nextOnRoute?: PathwayNode | null;
+
     onOpen: (nodeId: string) => void;
 }
 
-const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, onOpen }) => {
+const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, nextOnRoute, onOpen }) => {
     // Reactive lookup of the MCP server label so `external` policies
     // render "Open in Figma" / "Open in Notion" rather than the generic
     // fallback. Matches NextActionCard on Today for consistency.
@@ -79,10 +92,11 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, onOpen }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 8 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.7 }}
-                        className="pointer-events-auto flex items-center gap-3 p-2.5 pl-4
+                        className="pointer-events-auto flex flex-col gap-0 p-2.5 pl-4
                                    rounded-[28px] bg-white/80 backdrop-blur-xl
                                    border border-white shadow-xl shadow-grayscale-900/10"
                     >
+                      <div className="flex items-center gap-3">
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 mb-0.5">
                                 <span
@@ -190,6 +204,51 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, onOpen }) => {
                                 </motion.button>
                             );
                         })()}
+                      </div>
+
+                      {/*
+                          "Then" peek — the Waze next-turn preview.
+                          Renders a second row beneath the main CTA
+                          with the next uncompleted node on the
+                          route plus a rough ETA, so the learner
+                          always sees *what comes after this step*
+                          before they commit to opening it. The row
+                          animates in gently so it doesn't feel like
+                          a new thing every focus switch — more like
+                          the pill "expanding" to show the next
+                          instruction.
+                      */}
+                      {nextOnRoute && (
+                          <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.25, ease: 'easeOut' }}
+                              className="mt-2 pt-2 pr-2 border-t border-grayscale-100 flex items-center gap-2 overflow-hidden"
+                          >
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-400 shrink-0">
+                                  Then
+                              </span>
+
+                              <span
+                                  title={nextOnRoute.title}
+                                  className="text-xs text-grayscale-700 truncate flex-1 min-w-0"
+                              >
+                                  {nextOnRoute.title}
+                              </span>
+
+                              <span
+                                  aria-hidden
+                                  className="text-grayscale-300 text-[10px] shrink-0"
+                              >
+                                  ·
+                              </span>
+
+                              <span className="text-[10px] font-medium text-grayscale-500 shrink-0">
+                                  {formatEta(nodeEffortMinutes(nextOnRoute))}
+                              </span>
+                          </motion.div>
+                      )}
                     </motion.div>
                 )}
             </AnimatePresence>

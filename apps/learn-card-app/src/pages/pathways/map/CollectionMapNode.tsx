@@ -33,7 +33,6 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { Handle, Position } from '@xyflow/react';
 import {
-    chevronForwardOutline,
     documentTextOutline,
     gitBranchOutline,
     layersOutline,
@@ -159,19 +158,32 @@ const StackedAvatar: React.FC<{
     members: PathwayNode[];
     kind: PolicyKind;
 }> = ({ members, kind }) => {
-    const MAX_SLOTS = 3;
+    // Tactical tuning (post-M6 screenshots): at 3 visible + 14px
+    // overlap the stack was eating ~98px of a 200px card, forcing
+    // titles to wrap on the 3rd character ("Ear n…"). Cap at 2
+    // visible avatars with a tighter 12px overlap; overflow always
+    // renders so the count is still honest. Whole stack is 52px max
+    // — leaves plenty of room for the title and a progress bar.
+    const MAX_SLOTS = 2;
+    const OVERLAP_PX = 12;
+    const AVATAR_PX = 28;
+
     const visible = members.slice(0, MAX_SLOTS);
     const overflow = Math.max(0, members.length - visible.length);
     const tone = KIND_TONE[kind];
     const glyph = KIND_ICON[kind];
 
+    // Width = first avatar + overlapped siblings + overflow chip.
+    const stackWidth =
+        AVATAR_PX +
+        Math.max(0, visible.length - 1) * OVERLAP_PX +
+        (overflow > 0 ? OVERLAP_PX + 4 : 0);
+
     return (
         <span
             aria-hidden
-            className="shrink-0 relative h-8 flex items-center"
-            // Width = first avatar (32) + overlap increments (20 × N).
-            // Trailing "+N" chip sits in its own slot after the stack.
-            style={{ width: 32 + (visible.length - 1) * 20 + (overflow > 0 ? 26 : 0) }}
+            className="shrink-0 relative flex items-center"
+            style={{ width: stackWidth, height: AVATAR_PX }}
         >
             {visible.map((member, i) => {
                 const image = member.credentialProjection?.image;
@@ -179,8 +191,13 @@ const StackedAvatar: React.FC<{
                 return (
                     <span
                         key={member.id}
-                        className="absolute top-0 w-8 h-8 rounded-full ring-2 ring-white bg-white shadow-sm overflow-hidden flex items-center justify-center"
-                        style={{ left: i * 20, zIndex: visible.length - i }}
+                        className="absolute top-0 rounded-full ring-2 ring-white bg-white shadow-sm overflow-hidden flex items-center justify-center"
+                        style={{
+                            left: i * OVERLAP_PX,
+                            width: AVATAR_PX,
+                            height: AVATAR_PX,
+                            zIndex: visible.length - i,
+                        }}
                     >
                         {image ? (
                             <img
@@ -194,7 +211,7 @@ const StackedAvatar: React.FC<{
                             <span
                                 className={`w-full h-full flex items-center justify-center ${tone.bg} ${tone.fg}`}
                             >
-                                <IonIcon icon={glyph} className="text-base" />
+                                <IonIcon icon={glyph} className="text-sm" />
                             </span>
                         )}
                     </span>
@@ -203,8 +220,15 @@ const StackedAvatar: React.FC<{
 
             {overflow > 0 && (
                 <span
-                    className="absolute top-0 h-8 px-1.5 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-[10px] font-semibold flex items-center justify-center shadow-sm"
-                    style={{ left: visible.length * 20, zIndex: 0 }}
+                    className="absolute top-0 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-[10px] font-semibold flex items-center justify-center shadow-sm"
+                    style={{
+                        left: visible.length * OVERLAP_PX,
+                        height: AVATAR_PX,
+                        minWidth: AVATAR_PX,
+                        paddingLeft: 4,
+                        paddingRight: 4,
+                        zIndex: 0,
+                    }}
                 >
                     +{overflow}
                 </span>
@@ -303,11 +327,23 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                     </span>
                 )}
 
-                <div className="flex items-start gap-2.5">
+                {/*
+                    Tactical tuning: dropped the trailing chevron — the
+                    whole card is already a single <button>, so the
+                    chevron was both redundant and stealing ~16px of
+                    title width. Without it, a 200px card (minus p-3
+                    and the ~52px stacked avatar) leaves ~108px for
+                    the title, enough for "Earn 10 Badges" on one line
+                    or a clean two-line wrap.
+                */}
+                <div className="flex items-start gap-2">
                     <StackedAvatar members={members} kind={group.policyKind} />
 
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 pr-4">
+                        <p
+                            title={title}
+                            className="text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2"
+                        >
                             {title}
                         </p>
 
@@ -347,12 +383,6 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                             </span>
                         </div>
                     </div>
-
-                    <IonIcon
-                        aria-hidden
-                        icon={chevronForwardOutline}
-                        className="shrink-0 mt-1 text-grayscale-400"
-                    />
                 </div>
             </button>
 
