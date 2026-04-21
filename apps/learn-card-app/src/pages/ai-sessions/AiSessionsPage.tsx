@@ -60,11 +60,7 @@ const AiSessionsPage: React.FC = () => {
         [topics]
     );
     const unfinishedCount = useMemo(
-        () =>
-            topics?.reduce(
-                (acc, t) => acc + (t.sessions?.filter((s: any) => !s?.vc?.completed).length || 0),
-                0
-            ) ?? 0,
+        () => topics?.reduce((acc, t) => acc + (t.unfinishedSessionsCount ?? 0), 0) ?? 0,
         [topics]
     );
 
@@ -163,10 +159,8 @@ const AiSessionsPage: React.FC = () => {
                                             topicBoost={t.topicBoost}
                                             topicRecord={t.topicRecord}
                                             topicSessionsCount={t.sessions?.length || 0}
-                                            hasNewSessions={
-                                                (t.sessions?.filter((s: any) => !s?.vc?.completed)
-                                                    .length || 0) > 0
-                                            }
+                                            hasUnfinishedSessions={t.hasUnfinishedSessions}
+                                            hasFinishedSessions={t.hasFinishedSessions}
                                         />
                                     ))
                                 ) : (

@@ -13,8 +13,16 @@ export const AiSessionTopicItem: React.FC<{
     topicBoost?: Boost;
     topicVc?: VC;
     topicSessionsCount: number;
-    hasNewSessions?: boolean;
-}> = ({ topicRecord, topicBoost, topicVc, topicSessionsCount, hasNewSessions }) => {
+    hasUnfinishedSessions?: boolean;
+    hasFinishedSessions?: boolean;
+}> = ({
+    topicRecord,
+    topicBoost,
+    topicVc,
+    topicSessionsCount,
+    hasUnfinishedSessions,
+    hasFinishedSessions,
+}) => {
     const history = useHistory();
 
     const app = aiPassportApps?.find(app => app?.contractUri === topicRecord?.contractUri);
@@ -46,7 +54,7 @@ export const AiSessionTopicItem: React.FC<{
             </div>
 
             <div className="flex items-center justify-end gap-1 shrink-0 ml-3 text-grayscale-600 font-poppins text-sm">
-                {hasNewSessions && (
+                {hasUnfinishedSessions && !hasFinishedSessions && (
                     <span className="w-[8px] h-[8px] rounded-full bg-red-500 shrink-0" />
                 )}
                 <span>{topicSessionsCount}</span>
