@@ -8,6 +8,10 @@ import {
     SKILL_PROFILE_SALARY_KEY,
     SkillProfileSalaryData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
+import {
+    SKILL_PROFILE_JOB_SATISFACTION_KEY,
+    SkillProfileJobSatisfactionData,
+} from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep4';
 import { useOccupationForProfessionalTitle } from './useOccupationForProfessionalTitle';
 import AiInsightsMarketComparisonBox from './AiInsightsMarketComparisonBox';
 import AiPathwayTopPayLocations from '../ai-pathways/ai-pathway-careers/AiPathwayTopPayLocations';
@@ -30,6 +34,13 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
         {
             name: 'Salary Information',
             description: 'Current salary and compensation type',
+        }
+    );
+    const { data: jobSatisfactionData } = useVerifiableData<SkillProfileJobSatisfactionData>(
+        SKILL_PROFILE_JOB_SATISFACTION_KEY,
+        {
+            name: 'Job Satisfaction',
+            description: 'Work-life balance and job stability preferences',
         }
     );
 
@@ -60,6 +71,15 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
 
     const hasOccupationData = occupations.length > 0 && Boolean(occupation);
 
+    const hasProfessionalTitle = Boolean(professionalTitle);
+    const hasSalary = Boolean(salaryValue);
+    const workLifeBalanceExists = Boolean(jobSatisfactionData?.workLifeBalance);
+    const jobStabilityExists = Boolean(jobSatisfactionData?.jobStability);
+
+    if (!hasProfessionalTitle) {
+        return null;
+    }
+
     return (
         <React.Fragment>
             <div className="flex flex-col gap-[30px] bg-white rounded-[15px] py-[25px] px-[15px] w-full max-w-[600px] shadow-bottom-4-4">
@@ -71,14 +91,16 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                         </button> */}
                     </div>
 
-                    <p className="flex items-end gap-[3px]">
-                        <span className="text-[21px] font-bold leading-[18px] bg-[linear-gradient(90deg,#6366F1_0%,#818CF8_98.7%)] bg-clip-text text-transparent [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]">
-                            {formattedSalary}
-                        </span>
-                        <span className="text-grayscale-600 text-[12px] leading-[16px] tracking-[0.72px]">
-                            {salaryTypeLabel}
-                        </span>
-                    </p>
+                    {hasSalary && (
+                        <p className="flex items-end gap-[3px]">
+                            <span className="text-[21px] font-bold leading-[18px] bg-[linear-gradient(90deg,#6366F1_0%,#818CF8_98.7%)] bg-clip-text text-transparent [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]">
+                                {formattedSalary}
+                            </span>
+                            <span className="text-grayscale-600 text-[12px] leading-[16px] tracking-[0.72px]">
+                                {salaryTypeLabel}
+                            </span>
+                        </p>
+                    )}
                 </div>
 
                 {occupationLoading ? (
@@ -87,15 +109,19 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                     </div>
                 ) : hasOccupationData && occupation ? (
                     <>
-                        <AiInsightsMarketComparisonBox
-                            professionalTitle={professionalTitle}
-                            occupation={occupation}
-                            salaryData={salaryData}
-                            salaryType={salaryData?.salaryType}
-                        />
+                        {hasSalary && (
+                            <>
+                                <AiInsightsMarketComparisonBox
+                                    professionalTitle={professionalTitle}
+                                    occupation={occupation}
+                                    salaryData={salaryData}
+                                    salaryType={salaryData?.salaryType}
+                                />
 
-                        {occupation.Projections?.Projections?.[0] && (
-                            <div className="h-[1px] w-full bg-grayscale-200" />
+                                {occupation.Projections?.Projections?.[0] && (
+                                    <div className="h-[1px] w-full bg-grayscale-200" />
+                                )}
+                            </>
                         )}
 
                         {occupation.Projections?.Projections?.[0] && (
@@ -104,14 +130,18 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
 
                         <div className="h-[1px] w-full bg-grayscale-200" />
 
-                        <AiInsightsQualitativeFactorsBox
-                            professionalTitle={professionalTitle}
-                            occupation={occupation}
-                            isLoading={occupationLoading}
-                        />
+                        {workLifeBalanceExists && jobStabilityExists && (
+                            <>
+                                <AiInsightsQualitativeFactorsBox
+                                    professionalTitle={professionalTitle}
+                                    occupation={occupation}
+                                    isLoading={occupationLoading}
+                                />
 
-                        {occupation.Projections?.Projections?.[0] && (
-                            <div className="h-[1px] w-full bg-grayscale-200" />
+                                {occupation.Projections?.Projections?.[0] && (
+                                    <div className="h-[1px] w-full bg-grayscale-200" />
+                                )}
+                            </>
                         )}
 
                         <AiPathwayTopPayLocations
