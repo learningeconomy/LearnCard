@@ -153,21 +153,39 @@ const getWorkLifeBalanceCopy = (
 
     const delta = benchmarkScore - userScore;
 
-    if (delta >= 20) {
+    if (delta >= 33) {
         return {
-            leadingText: 'Your current work life balance is ',
-            highlightText: 'very low',
+            leadingText: 'Your current work life balance ',
+            highlightText: 'is very low',
             trailingText: ' compared to others.',
-            highlightClassName: 'text-red-500',
+            highlightClassName: 'text-rose-600',
         };
     }
 
-    if (delta <= -20) {
+    if (delta >= 15) {
         return {
-            leadingText: 'Your current work life balance is ',
-            highlightText: 'stronger than others',
-            trailingText: '.',
-            highlightClassName: 'text-emerald-600',
+            leadingText: 'Your current work life balance ',
+            highlightText: 'is low',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-rose-600',
+        };
+    }
+
+    if (delta <= -15) {
+        return {
+            leadingText: 'Your current work life balance ',
+            highlightText: 'is strong',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-emerald-601',
+        };
+    }
+
+    if (delta <= -33) {
+        return {
+            leadingText: 'Your current work life balance ',
+            highlightText: 'is very strong',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-emerald-601',
         };
     }
 
@@ -194,37 +212,55 @@ const getJobStabilityCopy = (
 
     const delta = benchmarkScore - userScore;
 
-    if (delta >= 20) {
+    if (delta >= 33) {
         return {
-            leadingText: 'Others felt their jobs are ',
-            highlightText: 'decently stable',
-            trailingText: ', as compared to yours.',
-            highlightClassName: 'text-emerald-600',
+            leadingText: 'Your current job stability ',
+            highlightText: 'is very low',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-rose-600',
         };
     }
 
-    if (delta <= -20) {
+    if (delta >= 15) {
         return {
-            leadingText: 'Your job stability looks ',
-            highlightText: 'stronger than the market',
-            trailingText: '.',
-            highlightClassName: 'text-emerald-600',
+            leadingText: 'Your current job stability ',
+            highlightText: 'is low',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-rose-600',
+        };
+    }
+
+    if (delta <= -33) {
+        return {
+            leadingText: 'Your current job stability ',
+            highlightText: 'is very strong',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-emerald-601',
+        };
+    }
+
+    if (delta <= -15) {
+        return {
+            leadingText: 'Your current job stability ',
+            highlightText: 'is strong',
+            trailingText: ' compared to others.',
+            highlightClassName: 'text-emerald-601',
         };
     }
 
     return {
-        leadingText: 'Your job stability feels ',
-        highlightText: 'about in line with others',
-        trailingText: '.',
+        leadingText: 'Your current job stability is ',
+        highlightText: 'about in line',
+        trailingText: ' with others.',
         highlightClassName: 'text-grayscale-900',
     };
 };
 
 const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => {
     return (
-        <p className="text-sm text-grayscale-600 leading-relaxed text-center max-w-[250px] mx-auto">
+        <p className="text-sm font-poppins text-grayscale-600 text-center max-w-[250px] mx-auto">
             {copy.leadingText}
-            <span className={`font-semibold ${copy.highlightClassName}`}>{copy.highlightText}</span>
+            <span className={`font-bold ${copy.highlightClassName}`}>{copy.highlightText}</span>
             {copy.trailingText}
         </p>
     );
