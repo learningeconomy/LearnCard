@@ -6,6 +6,7 @@ import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 import CaretDown from 'src/components/svgs/CaretDown';
 import AiPathwayCareerPipeChart from '../ai-pathways/ai-pathway-careers/AiPathwayCareerPipeChart';
 import {
+    buildSalaryDistributionData,
     formatAboutCount,
     formatSalaryAmount,
     getSelectedWagesBySalaryType,
@@ -66,6 +67,18 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
         ? getSelectedWagesBySalaryType(activeOccupation?.Wages?.NationalWagesList || [], salaryType)
         : undefined;
     const projection = activeOccupation?.Projections?.Projections?.[0];
+    const salaryDistributionData =
+        activeOccupation && selectedWages
+            ? buildSalaryDistributionData(
+                  selectedWages,
+                  projection?.EstimatedEmployment,
+                  salaryType
+              )
+            : [];
+    const medianBucketEmployment = salaryDistributionData.find(
+        bucket => bucket.isMedianBucket
+    )?.estimatedPeople;
+    const totalEmploymentCount = formatAboutCount(projection?.EstimatedEmployment);
 
     const minSalary = selectedWages?.Pct10;
     const medianSalary = selectedWages?.Median;
@@ -73,7 +86,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
     const formattedMedianSalary = formatSalaryAmount(medianSalary, false, salaryType);
     const formattedMinSalary = formatSalaryAmount(minSalary, true, salaryType);
     const formattedMaxSalary = formatSalaryAmount(maxSalary, true, salaryType);
-    const employmentCount = formatAboutCount(projection?.EstimatedEmployment);
+    const medianBucketEmploymentCount = formatAboutCount(medianBucketEmployment);
     const title = activeOccupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const pluralizedTitle = title.toLowerCase().endsWith('s')
         ? title.toLowerCase()
@@ -170,9 +183,9 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                                 Range: {formattedMinSalary} - {formattedMaxSalary}
                             </p>
 
-                            {employmentCount && (
+                            {totalEmploymentCount && (
                                 <p className="text-left">
-                                    About {employmentCount} {pluralizedTitle} worldwide
+                                    About {totalEmploymentCount} {pluralizedTitle} worldwide
                                 </p>
                             )}
                         </div>
@@ -194,15 +207,16 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                             </span>
                         </div>
 
-                        {employmentCount && (
+                        {medianBucketEmploymentCount && (
                             <p className="text-sm font-medium text-grayscale-500">
-                                ~ {employmentCount} people
+                                ~ {medianBucketEmploymentCount} people
                             </p>
                         )}
                     </div>
 
                     <AiPathwayCareerPipeChart
                         wages={activeOccupation.Wages}
+                        estimatedEmployment={projection?.EstimatedEmployment}
                         showMedianOverlay={false}
                         salaryType={salaryType}
                     />

@@ -176,3 +176,143 @@ export const formatEstimatedSalary = (
 
     return `~ ${formatSalaryAmount(selectedWages.Median, false, salaryType)}${salarySuffix}`;
 };
+
+type SalaryDistributionAnchor = {
+    probability: number;
+    value: number;
+};
+
+type SalaryDistributionBucket = {
+    bucket: number;
+    bucketLabel: string;
+    estimatedPeople: number;
+    lowerBound: number;
+    upperBound: number;
+    isMedianBucket: boolean;
+};
+
+const toNumericValue = (value: string | number | undefined): number | null => {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+
+    const numericValue =
+        typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+
+    return Number.isFinite(numericValue) ? numericValue : null;
+};
+
+const getProbabilityAtValue = (value: number, anchors: SalaryDistributionAnchor[]): number => {
+    if (anchors.length === 0) {
+        return 0;
+    }
+
+    if (value <= anchors[0].value) {
+        return anchors[0].probability;
+    }
+
+    const lastAnchor = anchors[anchors.length - 1];
+
+    if (value >= lastAnchor.value) {
+        return lastAnchor.probability;
+    }
+
+    for (let index = 1; index < anchors.length; index += 1) {
+        const previousAnchor = anchors[index - 1];
+        const currentAnchor = anchors[index];
+
+        if (value <= currentAnchor.value) {
+            const valueSpan = currentAnchor.value - previousAnchor.value;
+
+            if (valueSpan <= 0) {
+                return currentAnchor.probability;
+            }
+
+            const ratio = (value - previousAnchor.value) / valueSpan;
+
+            return (
+                previousAnchor.probability +
+                ratio * (currentAnchor.probability - previousAnchor.probability)
+            );
+        }
+    }
+
+    return lastAnchor.probability;
+};
+
+export const buildSalaryDistributionData = (
+    wages: WageItem,
+    estimatedEmployment?: string | number,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): SalaryDistributionBucket[] => {
+    const pct10 = toNumericValue(wages.Pct10);
+    const pct25 = toNumericValue(wages.Pct25);
+    const median = toNumericValue(wages.Median);
+    const pct75 = toNumericValue(wages.Pct75);
+    const pct90 = toNumericValue(wages.Pct90);
+    const totalEmployment = toNumericValue(estimatedEmployment) ?? 100000;
+
+    if (pct10 === null || pct25 === null || median === null || pct75 === null || pct90 === null) {
+        return [];
+    }
+
+    const lowerTail = Math.max(0, pct10 - Math.max(pct25 - pct10, 1));
+    const upperTail = Math.max(pct90 + Math.max(pct90 - pct75, 1), pct90 + 1);
+
+    const anchors: SalaryDistributionAnchor[] = [
+        { probability: 0, value: lowerTail },
+        { probability: 0.1, value: pct10 },
+        { probability: 0.25, value: pct25 },
+        { probability: 0.5, value: median },
+        { probability: 0.75, value: pct75 },
+        { probability: 0.9, value: pct90 },
+        { probability: 1, value: upperTail },
+    ];
+
+    const lowerBound = anchors[0].value;
+    const upperBound = anchors[anchors.length - 1].value;
+    const bucketCount = 9;
+    const bucketWidth = (upperBound - lowerBound) / bucketCount;
+
+    const buckets = Array.from({ length: bucketCount }, (_value, index) => {
+        const bucketLower = lowerBound + index * bucketWidth;
+        const bucketUpper =
+            index === bucketCount - 1 ? upperBound : lowerBound + (index + 1) * bucketWidth;
+
+        return {
+            bucket: index + 1,
+            bucketLabel: `${formatSalaryAmount(bucketLower, true, salaryType)}–${formatSalaryAmount(
+                bucketUpper,
+                true,
+                salaryType
+            )}`,
+            estimatedPeople: 0,
+            lowerBound: bucketLower,
+            upperBound: bucketUpper,
+            isMedianBucket: index === Math.floor(bucketCount / 2),
+        } satisfies SalaryDistributionBucket;
+    });
+
+    let allocatedPeople = 0;
+
+    for (let index = 0; index < buckets.length; index += 1) {
+        const bucket = buckets[index];
+
+        if (index === buckets.length - 1) {
+            bucket.estimatedPeople = Math.max(0, Math.round(totalEmployment - allocatedPeople));
+            continue;
+        }
+
+        const lowerProbability = getProbabilityAtValue(bucket.lowerBound, anchors);
+        const upperProbability = getProbabilityAtValue(bucket.upperBound, anchors);
+        const estimatedPeople = Math.max(
+            0,
+            Math.round((upperProbability - lowerProbability) * totalEmployment)
+        );
+
+        bucket.estimatedPeople = estimatedPeople;
+        allocatedPeople += estimatedPeople;
+    }
+
+    return buckets;
+};

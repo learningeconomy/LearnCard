@@ -29,7 +29,14 @@ export const AiPathwayCareerSalaries: React.FC<{
                         minSalary={minSalary || ''}
                         maxSalary={maxSalary || ''}
                     />
-                    {!compact && <AiPathwayCareerPipeChart wages={occupation.Wages} />}
+                    {!compact && (
+                        <AiPathwayCareerPipeChart
+                            wages={occupation.Wages}
+                            estimatedEmployment={
+                                occupation.Projections?.Projections?.[0]?.EstimatedEmployment
+                            }
+                        />
+                    )}
                 </>
             ) : (
                 <p className="text-sm text-grayscale-600">
