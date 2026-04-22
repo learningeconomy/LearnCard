@@ -1,23 +1,449 @@
 /**
  * WhatIfMode — simulate alternative pathways with explicit tradeoffs.
  *
- * Phase 0 stub. Phase 4 lands the simulation runner + tradeoff tables
- * (docs § 5, § 17).
+ * Phase 4 surface (docs § 5, § 17). Shows the learner two things:
+ *
+ *   1. The **baseline** summary — how their current pathway plays
+ *      out from where they are right now (ETA, remaining step count,
+ *      destination).
+ *   2. A small set of honest **scenarios** — alternative shapes of
+ *      the same pathway (fast-track, deep practice, external-light)
+ *      with their ETA deltas and explicit tradeoffs across the
+ *      shared `{time | cost | effort | difficulty |
+ *      external-dependency}` vocabulary.
+ *
+ * All the simulation work is pure and lives in `./simulator.ts` and
+ * `./generators.ts`; this component is a renderer only. No network,
+ * no mutation — What-If is a "look, don't touch" surface so the
+ * learner can reason about alternatives without committing to one.
+ * A future Phase 4+ extension will let a learner accept a scenario
+ * and produce a `Proposal` they can commit through the existing
+ * proposals pipeline, but that mutation seam is explicitly out of
+ * scope for v1.
+ *
+ * ## Empty states
+ *
+ *   - No active pathway → gentle prompt back to onboard/today.
+ *   - No destination / unroutable → honest "can't simulate this
+ *     yet" message. Reaching the destination is a structural
+ *     precondition for comparing ETAs.
+ *   - No non-trivial scenarios → "your path is already lean"
+ *     affirmation. Not every pathway has review / external /
+ *     practice-multipliable shape, and saying so is more useful
+ *     than fabricating options.
+ *
+ * ## Visual language
+ *
+ * Mirrors Today/Map: page-wide emerald top gradient, cards on a
+ * neutral surface, rounded-[20px] pill shapes for interactive
+ * elements. Tradeoff directions render as small colored arrows
+ * (better=emerald, worse=amber, neutral=grayscale) — we
+ * deliberately avoid red for "worse" because the point of What-If
+ * is honesty without scaremongering.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
-const WhatIfMode: React.FC = () => (
-    <div className="max-w-4xl mx-auto px-4 py-8 font-poppins">
-        <div className="p-6 rounded-[20px] bg-grayscale-100 border border-grayscale-200 text-center">
-            <h2 className="text-lg font-semibold text-grayscale-900 mb-2">What-if</h2>
+import { IonIcon } from '@ionic/react';
+import { useHistory } from 'react-router-dom';
+import {
+    arrowDownOutline,
+    arrowUpOutline,
+    barbellOutline,
+    cashOutline,
+    compassOutline,
+    flashOutline,
+    layersOutline,
+    linkOutline,
+    removeOutline,
+    timeOutline,
+} from 'ionicons/icons';
 
-            <p className="text-sm text-grayscale-600 leading-relaxed">
-                Phase 4 lands the simulation runner and honest cost/time/effort tradeoff
-                tables. Alternative paths surface here alongside the path you're on today.
+import { pathwayStore } from '../../../stores/pathways';
+import { formatEta } from '../map/route';
+import type { Tradeoff } from '../types';
+
+import { generateScenarios } from './generators';
+import { simulateAll, simulateBaseline } from './simulator';
+import type { ScenarioResult, SimulationSummary } from './types';
+
+// -----------------------------------------------------------------
+// Tradeoff glyph + label
+// -----------------------------------------------------------------
+
+const DIMENSION_ICON: Record<Tradeoff['dimension'], string> = {
+    time: timeOutline,
+    cost: cashOutline,
+    effort: flashOutline,
+    difficulty: barbellOutline,
+    'external-dependency': linkOutline,
+};
+
+const DIMENSION_LABEL: Record<Tradeoff['dimension'], string> = {
+    time: 'Time',
+    cost: 'Cost',
+    effort: 'Effort',
+    difficulty: 'Difficulty',
+    'external-dependency': 'External modules',
+};
+
+/**
+ * Color tokens per tradeoff direction. Kept as Tailwind class
+ * fragments rather than inline styles so they tree-shake and
+ * obey the tenant theme when the palette evolves.
+ */
+const DIRECTION_CLASSES: Record<
+    Tradeoff['direction'],
+    { chip: string; icon: string; label: string }
+> = {
+    better: {
+        chip: 'bg-emerald-50 border-emerald-100',
+        icon: 'text-emerald-600',
+        label: 'text-emerald-700',
+    },
+    worse: {
+        chip: 'bg-amber-50 border-amber-100',
+        icon: 'text-amber-600',
+        label: 'text-amber-700',
+    },
+    neutral: {
+        chip: 'bg-grayscale-100 border-grayscale-200',
+        icon: 'text-grayscale-500',
+        label: 'text-grayscale-700',
+    },
+};
+
+const DIRECTION_ICON: Record<Tradeoff['direction'], string> = {
+    better: arrowDownOutline,
+    worse: arrowUpOutline,
+    neutral: removeOutline,
+};
+
+const TradeoffRow: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
+    const tone = DIRECTION_CLASSES[tradeoff.direction];
+
+    return (
+        <li
+            className={`flex items-start gap-3 rounded-2xl border px-3 py-2.5 ${tone.chip}`}
+        >
+            <IonIcon
+                icon={DIMENSION_ICON[tradeoff.dimension]}
+                className={`text-base mt-0.5 shrink-0 ${tone.icon}`}
+            />
+
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-grayscale-500">
+                        {DIMENSION_LABEL[tradeoff.dimension]}
+                    </p>
+
+                    <IonIcon
+                        icon={DIRECTION_ICON[tradeoff.direction]}
+                        className={`text-[10px] ${tone.icon}`}
+                    />
+                </div>
+
+                <p className={`text-sm leading-snug ${tone.label}`}>
+                    {tradeoff.deltaDescription}
+                </p>
+            </div>
+        </li>
+    );
+};
+
+// -----------------------------------------------------------------
+// Delta chips
+// -----------------------------------------------------------------
+
+const DeltaChip: React.FC<{
+    label: string;
+    value: string;
+    tone: 'better' | 'worse' | 'neutral';
+}> = ({ label, value, tone }) => {
+    const classes = DIRECTION_CLASSES[tone];
+
+    return (
+        <div
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${classes.chip}`}
+        >
+            <IonIcon
+                icon={DIRECTION_ICON[tone]}
+                className={`text-xs ${classes.icon}`}
+            />
+
+            <span className={`text-xs font-medium ${classes.label}`}>
+                {value} {label}
+            </span>
+        </div>
+    );
+};
+
+/**
+ * Pick a tone for a numeric delta. Negative deltas lean "better"
+ * for ETA and step-count (less is usually good); zero is neutral;
+ * positive is "worse". Tradeoffs carry their own directions and
+ * don't pass through this helper.
+ */
+const toneForDelta = (delta: number): 'better' | 'worse' | 'neutral' => {
+    if (delta < 0) return 'better';
+    if (delta > 0) return 'worse';
+    return 'neutral';
+};
+
+const formatMinutesDelta = (minutes: number): string => {
+    const abs = Math.abs(minutes);
+    if (abs < 60) return `${Math.round(abs)}m`;
+    const hours = Math.round((abs / 60) * 10) / 10;
+    return `${hours}h`;
+};
+
+// -----------------------------------------------------------------
+// Baseline + scenario cards
+// -----------------------------------------------------------------
+
+const BaselineCard: React.FC<{
+    goal: string;
+    baseline: SimulationSummary;
+}> = ({ goal, baseline }) => (
+    <section className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
+
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+                Your path today
             </p>
         </div>
+
+        <h2 className="text-lg font-semibold text-grayscale-900 leading-snug">
+            {goal}
+        </h2>
+
+        <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
+                <IonIcon
+                    icon={timeOutline}
+                    className="text-sm text-grayscale-500"
+                />
+                <span className="text-xs font-medium text-grayscale-700">
+                    {baseline.etaMinutes !== null
+                        ? formatEta(baseline.etaMinutes)
+                        : 'No ETA yet'}
+                </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
+                <IonIcon
+                    icon={layersOutline}
+                    className="text-sm text-grayscale-500"
+                />
+                <span className="text-xs font-medium text-grayscale-700">
+                    {baseline.remainingSteps !== null
+                        ? `${baseline.remainingSteps} ${baseline.remainingSteps === 1 ? 'step' : 'steps'} left`
+                        : 'No route yet'}
+                </span>
+            </div>
+        </div>
+
+        <p className="text-xs text-grayscale-500 leading-relaxed">
+            Everything below is compared against this baseline. Scenarios never
+            change your real pathway — this is a look, not a commitment.
+        </p>
+    </section>
+);
+
+const ScenarioCard: React.FC<{ result: ScenarioResult }> = ({ result }) => {
+    const { scenario, simulation, deltas, tradeoffs } = result;
+
+    const etaChip =
+        deltas.etaMinutes !== null && deltas.etaMinutes !== 0 ? (
+            <DeltaChip
+                label={deltas.etaMinutes < 0 ? 'less time' : 'more time'}
+                value={formatMinutesDelta(deltas.etaMinutes)}
+                tone={toneForDelta(deltas.etaMinutes)}
+            />
+        ) : null;
+
+    const stepsChip =
+        deltas.steps !== null && deltas.steps !== 0 ? (
+            <DeltaChip
+                label={Math.abs(deltas.steps) === 1 ? 'step' : 'steps'}
+                value={`${deltas.steps < 0 ? '\u2212' : '+'}${Math.abs(deltas.steps)}`}
+                tone={toneForDelta(deltas.steps)}
+            />
+        ) : null;
+
+    return (
+        <article className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-sm space-y-4">
+            <header className="space-y-1">
+                <h3 className="text-base font-semibold text-grayscale-900 leading-snug">
+                    {scenario.title}
+                </h3>
+
+                <p className="text-sm text-grayscale-600 leading-relaxed">
+                    {scenario.subtitle}
+                </p>
+            </header>
+
+            {(etaChip || stepsChip || simulation.etaMinutes !== null) && (
+                <div className="flex flex-wrap gap-2">
+                    {simulation.etaMinutes !== null && (
+                        <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
+                            <IonIcon
+                                icon={timeOutline}
+                                className="text-sm text-grayscale-500"
+                            />
+                            <span className="text-xs font-medium text-grayscale-700">
+                                {formatEta(simulation.etaMinutes)} total
+                            </span>
+                        </div>
+                    )}
+                    {etaChip}
+                    {stepsChip}
+                </div>
+            )}
+
+            {tradeoffs.length > 0 && (
+                <ul className="space-y-2">
+                    {tradeoffs.map((t, i) => (
+                        <TradeoffRow key={`${t.dimension}-${i}`} tradeoff={t} />
+                    ))}
+                </ul>
+            )}
+        </article>
+    );
+};
+
+// -----------------------------------------------------------------
+// Empty states
+// -----------------------------------------------------------------
+
+const EmptyFrame: React.FC<{
+    title: string;
+    body: string;
+    ctaLabel?: string;
+    onCta?: () => void;
+}> = ({ title, body, ctaLabel, onCta }) => (
+    <div className="p-8 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center space-y-3">
+        <div className="inline-flex w-11 h-11 items-center justify-center rounded-full bg-white border border-grayscale-200">
+            <IonIcon icon={compassOutline} className="text-xl text-grayscale-500" />
+        </div>
+
+        <h2 className="text-lg font-semibold text-grayscale-900">{title}</h2>
+
+        <p className="text-sm text-grayscale-600 leading-relaxed max-w-sm mx-auto">
+            {body}
+        </p>
+
+        {ctaLabel && onCta && (
+            <button
+                type="button"
+                onClick={onCta}
+                className="inline-flex mt-1 py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+            >
+                {ctaLabel}
+            </button>
+        )}
     </div>
 );
+
+// -----------------------------------------------------------------
+// WhatIfMode
+// -----------------------------------------------------------------
+
+const WhatIfMode: React.FC = () => {
+    const activePathway = pathwayStore.use.activePathway();
+    const history = useHistory();
+
+    // All the heavy lifting is pure and synchronous — safe to memoize
+    // on the pathway reference. Node-status changes already bump
+    // `updatedAt`, which is part of the pathway identity the store
+    // returns, so memo invalidation lines up with real state change.
+    const baseline = useMemo(
+        () => (activePathway ? simulateBaseline(activePathway) : null),
+        [activePathway],
+    );
+
+    const results = useMemo<ScenarioResult[]>(() => {
+        if (!activePathway) return [];
+
+        const scenarios = generateScenarios(activePathway);
+        return simulateAll(activePathway, scenarios);
+    }, [activePathway]);
+
+    if (!activePathway) {
+        return (
+            <div className="max-w-2xl mx-auto px-4 py-8 font-poppins">
+                <EmptyFrame
+                    title="Pick a pathway first"
+                    body="What-if compares alternative shapes against your current pathway. Start or choose one and come back."
+                    ctaLabel="Start a pathway"
+                    onCta={() => history.push('/pathways/onboard')}
+                />
+            </div>
+        );
+    }
+
+    const routable = baseline !== null && baseline.etaMinutes !== null;
+
+    return (
+        <div
+            className="relative min-h-full"
+            style={{
+                background:
+                    'linear-gradient(180deg, rgba(236, 253, 245, 0.4) 0%, rgba(251, 251, 252, 1) 40%, rgba(251, 251, 252, 1) 100%)',
+            }}
+        >
+            <div className="max-w-2xl mx-auto px-4 py-8 font-poppins space-y-5">
+                <header className="space-y-1">
+                    <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
+                        What-if
+                    </p>
+                    <h1 className="text-xl font-semibold text-grayscale-900">
+                        See other ways this could go
+                    </h1>
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        Honest alternatives to your path today — with the costs
+                        spelled out.
+                    </p>
+                </header>
+
+                {baseline && (
+                    <BaselineCard goal={activePathway.goal} baseline={baseline} />
+                )}
+
+                {!routable ? (
+                    <EmptyFrame
+                        title="Can't simulate this pathway yet"
+                        body="Scenarios compare routes to a destination. Set a destination in Build, then come back here to see alternatives."
+                        ctaLabel="Open Build"
+                        onCta={() => history.push('/pathways/build')}
+                    />
+                ) : results.length === 0 ? (
+                    <EmptyFrame
+                        title="Your path is already lean"
+                        body="There are no review, practice, or external steps here that a scenario could reshape. That's often a good thing."
+                    />
+                ) : (
+                    <section className="space-y-3">
+                        <h2 className="text-sm font-semibold text-grayscale-700 px-1">
+                            Other paths
+                        </h2>
+
+                        <div className="space-y-3">
+                            {results.map(r => (
+                                <ScenarioCard key={r.scenario.id} result={r} />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                <p className="text-xs text-grayscale-400 leading-relaxed text-center pt-2">
+                    Scenarios are generated from the shape of your pathway — nothing
+                    here is committed or shared.
+                </p>
+            </div>
+        </div>
+    );
+};
 
 export default WhatIfMode;
