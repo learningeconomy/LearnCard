@@ -34,10 +34,34 @@ import {
 } from 'ionicons/icons';
 
 import type { PathwayMap } from '../../core/composition';
+import { detectCollections } from '../../map/collectionDetection';
 import type { Pathway, PathwayNode } from '../../types';
 import type { SummarizeContext } from '../summarize/summarizePolicy';
 import type { Issue } from '../validate/validatePathway';
 import NodeRow from './NodeRow';
+
+/**
+ * Per-node lookup: "is this node part of a detected collection, and
+ * what position does it occupy?" Used by NodeRow to render the small
+ * `1/5` chip next to the row title. Mirrors `collectionDetection`'s
+ * outputs without the renderer having to re-run detection itself.
+ */
+interface CollectionLookup {
+    [nodeId: string]: { index: number; size: number } | undefined;
+}
+
+const buildCollectionLookup = (pathway: Pathway): CollectionLookup => {
+    const lookup: CollectionLookup = {};
+    const groups = detectCollections(pathway);
+
+    for (const g of groups) {
+        g.memberIds.forEach((mid, i) => {
+            lookup[mid] = { index: i + 1, size: g.memberIds.length };
+        });
+    }
+
+    return lookup;
+};
 
 interface OutlinePaneProps {
     pathway: Pathway;
@@ -135,6 +159,11 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
     const parent = findParentOf(pathway.id, allPathways);
     const nestedChildren = buildNestedChildMap(pathway, allPathways);
 
+    // Collection-aware chip data. Re-runs on every edit; cheap
+    // (O(V+E)) and keeps the chips in sync when the author adds or
+    // removes a shared prereq from a collection member.
+    const collectionLookup = buildCollectionLookup(pathway);
+
     // Count issues for the outline pill. We don't include other-node
     // issues (same filter the ValidationBanner uses) because those
     // don't belong to this pathway's surface — they belong to the
@@ -208,6 +237,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                     onDrillIn={onDrillIn}
                     onReorder={onReorder}
                     summarizeContext={summarizeContext}
+                    collectionLookup={collectionLookup}
                 />
             )}
 
@@ -318,6 +348,7 @@ const NodesList: React.FC<{
     onDrillIn: (pathwayId: string, nodeId?: string) => void;
     onReorder?: (orderedIds: string[]) => void;
     summarizeContext?: SummarizeContext;
+    collectionLookup: CollectionLookup;
 }> = ({
     pathway,
     nestedChildren,
@@ -328,6 +359,7 @@ const NodesList: React.FC<{
     onDrillIn,
     onReorder,
     summarizeContext,
+    collectionLookup,
 }) => {
     // Static render when reordering is disabled — keeps the DOM
     // identical to pre-M5 in surfaces that opt out (e.g. tests,
@@ -346,6 +378,7 @@ const NodesList: React.FC<{
                         onSelect={onSelect}
                         onDrillIn={onDrillIn}
                         summarizeContext={summarizeContext}
+                        collectionLookup={collectionLookup}
                     />
                 ))}
             </ul>
@@ -387,6 +420,7 @@ const NodesList: React.FC<{
                         onSelect={onSelect}
                         onDrillIn={onDrillIn}
                         summarizeContext={summarizeContext}
+                        collectionLookup={collectionLookup}
                     />
                 </Reorder.Item>
             ))}
@@ -403,6 +437,7 @@ const NodeListItem: React.FC<{
     onSelect: (nodeId: string) => void;
     onDrillIn: (pathwayId: string, nodeId?: string) => void;
     summarizeContext?: SummarizeContext;
+    collectionLookup: CollectionLookup;
 }> = props => (
     <li>
         <NodeListItemBody {...props} />
@@ -418,6 +453,7 @@ const NodeListItemBody: React.FC<{
     onSelect: (nodeId: string) => void;
     onDrillIn: (pathwayId: string, nodeId?: string) => void;
     summarizeContext?: SummarizeContext;
+    collectionLookup: CollectionLookup;
 }> = ({
     node,
     nestedChildren,
@@ -427,6 +463,7 @@ const NodeListItemBody: React.FC<{
     onSelect,
     onDrillIn,
     summarizeContext,
+    collectionLookup,
 }) => {
     const nested = nestedChildren.get(node.id);
 
@@ -438,6 +475,7 @@ const NodeListItemBody: React.FC<{
                 isDestination={node.id === destinationId}
                 onSelect={() => onSelect(node.id)}
                 summarizeContext={summarizeContext}
+                collectionInfo={collectionLookup[node.id]}
             />
 
             {nested && (

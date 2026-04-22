@@ -150,7 +150,17 @@ const BuildMode: React.FC = () => {
     // the modal. Imports bypass the history stack intentionally —
     // an imported pathway represents a new session, not a reversible
     // edit.
-    const handleImported = (pathway: Pathway) => {
+    //
+    // `supporting` is the showcase-bundle channel: when a learner
+    // picks the demo showcase, the modal passes N child pathways
+    // that must land in the store *before* the primary pathway
+    // activates, so composite refs resolve on first render of the
+    // Map. Upstream order is: supporting → primary → activate.
+    const handleImported = (pathway: Pathway, supporting: Pathway[] = []) => {
+        for (const supportingPathway of supporting) {
+            pathwayStore.set.upsertPathway(supportingPathway);
+        }
+
         pathwayStore.set.upsertPathway(pathway);
         pathwayStore.set.setActivePathway(pathway.id);
         setImportOpen(false);

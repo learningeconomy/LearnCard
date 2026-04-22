@@ -28,7 +28,7 @@
 import React from 'react';
 
 import { IonIcon } from '@ionic/react';
-import { flagOutline, flashOutline, gitBranchOutline } from 'ionicons/icons';
+import { flagOutline, flashOutline, gitBranchOutline, peopleOutline } from 'ionicons/icons';
 
 import type { PathwayNode } from '../../types';
 import { summarizePolicy, type SummarizeContext } from '../summarize/summarizePolicy';
@@ -53,6 +53,19 @@ interface NodeRowProps {
      * resolve composite refs into real titles.
      */
     summarizeContext?: SummarizeContext;
+
+    /**
+     * Optional: when this node is part of a detected collection,
+     * describe its position so the row can render a subtle "1 of 5"
+     * chip. Mirrors the Map's collapsed collection card so an author
+     * browsing the outline can see which steps share a group
+     * without drilling in. Omit for non-collection nodes (most
+     * rows).
+     */
+    collectionInfo?: {
+        index: number;
+        size: number;
+    };
 }
 
 const NodeRow: React.FC<NodeRowProps> = ({
@@ -62,6 +75,7 @@ const NodeRow: React.FC<NodeRowProps> = ({
     onSelect,
     nested = false,
     summarizeContext,
+    collectionInfo,
 }) => {
     const isComposite = node.stage.policy.kind === 'composite';
 
@@ -101,6 +115,16 @@ const NodeRow: React.FC<NodeRowProps> = ({
                             {subtitle}
                         </span>
                     </div>
+
+                    {collectionInfo && (
+                        <span
+                            title={`Part of a ${collectionInfo.size}-step group`}
+                            className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-semibold"
+                        >
+                            <IonIcon icon={peopleOutline} aria-hidden className="text-[10px]" />
+                            {collectionInfo.index}/{collectionInfo.size}
+                        </span>
+                    )}
 
                     {isDestination && (
                         <IonIcon
@@ -161,6 +185,25 @@ const NodeRow: React.FC<NodeRowProps> = ({
                     </span>
                 </div>
             </div>
+
+            {collectionInfo && (
+                <span
+                    title={`Part of a ${collectionInfo.size}-step shared group`}
+                    className={`
+                        absolute bottom-2 right-2 inline-flex items-center gap-0.5
+                        px-1.5 py-0.5 rounded-full
+                        text-[10px] font-semibold
+                        ${
+                            isSelected
+                                ? 'bg-white/15 text-white'
+                                : 'bg-emerald-50 text-emerald-700'
+                        }
+                    `}
+                >
+                    <IonIcon icon={peopleOutline} aria-hidden className="text-[11px]" />
+                    {collectionInfo.index}/{collectionInfo.size}
+                </span>
+            )}
 
             {isDestination && (
                 <span

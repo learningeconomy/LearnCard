@@ -59,6 +59,7 @@ import {
 } from './fetchCtdlPathway';
 import { fromCtdlPathway } from './fromCtdlPathway';
 import { makeCorsProxiedFetch } from './makeCorsProxiedFetch';
+import { SHOWCASE_PREVIEW, buildShowcase } from './showcase/buildShowcase';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,7 +67,15 @@ import { makeCorsProxiedFetch } from './makeCorsProxiedFetch';
 
 interface ImportCtdlModalProps {
     ownerDid: string;
-    onImport: (pathway: Pathway) => void;
+
+    /**
+     * Commit an imported pathway. `supporting` carries extra
+     * pathways that must be persisted *before* the primary pathway
+     * activates — used by the showcase bundle so composite refs
+     * resolve on first render. Defaults to an empty array for
+     * catalog / direct imports (single pathway, no sub-pathways).
+     */
+    onImport: (pathway: Pathway, supporting?: Pathway[]) => void;
     onClose: () => void;
 }
 
@@ -303,6 +312,36 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
         onImport(view.pathway);
     };
 
+    /**
+     * Showcase import — instantiate the hand-authored multi-pathway
+     * bundle and commit it in one shot. We skip the fetching /
+     * preview states because the bundle is always-local and always
+     * valid; sending the author through a two-step preview would
+     * add friction for a flow whose whole point is "see everything
+     * working end-to-end in one click."
+     *
+     * The primary pathway is the "Senior Year" plan the learner
+     * lands on; the three supporting pathways (Future Ready NYC —
+     * SD, AI in Finance, Capstone) are upserted first so the
+     * composite refs resolve on first render of the Map.
+     */
+    const handleShowcaseImport = () => {
+        const { primary, supporting } = buildShowcase({
+            ownerDid,
+            now: new Date().toISOString(),
+        });
+
+        track(AnalyticsEvents.PATHWAYS_CTDL_IMPORTED, {
+            ctid: 'showcase',
+            nodeCount: primary.nodes.length,
+            warningCount: 0,
+            hasDestination: !!primary.destinationNodeId,
+            importSource: 'catalog',
+        });
+
+        onImport(primary, supporting);
+    };
+
     const backToBrowse = () => setView({ kind: 'browse' });
 
     const toggleTag = (tag: string) =>
@@ -347,6 +386,20 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                                 becomes public unless you publish it back.
                             </p>
                         </header>
+
+                        {/*
+                            Showcase — a hand-authored demo bundle that
+                            sits above the CE catalog. Shown first so
+                            reviewers / new users can see every
+                            advanced feature (composite sub-pathways,
+                            nested drill-in, shared-prereq collections,
+                            routes, ETA) without stitching imports
+                            together themselves. Visually distinct from
+                            the CE cards (emerald gradient, "Demo" tag)
+                            so it's not confused with a real registry
+                            record.
+                        */}
+                        <ShowcaseCard onImport={handleShowcaseImport} />
 
                         {/* Search input */}
                         <div className="relative">
@@ -589,6 +642,72 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
         </OverlayFrame>
     );
 };
+
+// ---------------------------------------------------------------------------
+// ShowcaseCard — hand-authored demo bundle entry, shown at the top of
+// the browse view. Purposefully distinct from the CE catalog cards:
+// emerald gradient + "Demo" pill + feature tags (rather than CE tags)
+// so nobody mistakes it for a real registry import.
+// ---------------------------------------------------------------------------
+
+const ShowcaseCard: React.FC<{ onImport: () => void }> = ({ onImport }) => (
+    <button
+        type="button"
+        onClick={onImport}
+        className="w-full text-left p-4 rounded-2xl
+                   bg-gradient-to-br from-emerald-50 via-white to-emerald-50
+                   border border-emerald-200 hover:border-emerald-400
+                   hover:shadow-md transition-all duration-150
+                   flex gap-3 items-start group"
+    >
+        <div
+            aria-hidden
+            className="shrink-0 w-14 h-14 rounded-xl
+                       bg-gradient-to-br from-emerald-500 to-emerald-700
+                       text-white flex items-center justify-center
+                       shadow-sm shadow-emerald-700/20
+                       group-hover:shadow-md group-hover:shadow-emerald-700/30
+                       transition-shadow"
+        >
+            <IonIcon icon={layersOutline} className="text-2xl" />
+        </div>
+
+        <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+                    Demo · Try everything
+                </span>
+            </div>
+
+            <div className="text-sm font-semibold text-grayscale-900 leading-tight">
+                {SHOWCASE_PREVIEW.title}
+            </div>
+
+            <div className="text-xs text-grayscale-500">
+                <span className="inline-flex items-center gap-0.5">
+                    <IonIcon icon={layersOutline} className="text-[11px]" />
+                    {SHOWCASE_PREVIEW.totalStepCount} steps · {SHOWCASE_PREVIEW.subPathwayCount} sub-pathways
+                </span>
+            </div>
+
+            <div className="text-xs text-grayscale-600 leading-relaxed">
+                {SHOWCASE_PREVIEW.description}
+            </div>
+
+            <div className="flex flex-wrap gap-1 pt-0.5">
+                {SHOWCASE_PREVIEW.featureTags.map(tag => (
+                    <span
+                        key={tag}
+                        className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800
+                                   text-[10px] font-medium"
+                    >
+                        {tag}
+                    </span>
+                ))}
+            </div>
+        </div>
+    </button>
+);
 
 // ---------------------------------------------------------------------------
 // CatalogCard — one row in the browse grid
