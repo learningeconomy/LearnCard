@@ -123,42 +123,55 @@ const OverlayFrame: React.FC<{
     children: React.ReactNode;
     onClose: () => void;
 }> = ({ children, onClose }) => (
+    // Backdrop — a separate, full-viewport scroll container. The inner
+    // flex wrapper uses `min-h-full` so short modals still center
+    // vertically while tall modals (like the catalog list, which can
+    // exceed viewport height on desktop) grow the flex item past the
+    // viewport — and because the SCROLL lives on this outer div, the
+    // top of the modal stays reachable. Previously the wrapper itself
+    // was both the flex container AND the scroll container, so
+    // `items-center` pushed the top of a tall modal off-screen where
+    // overflow scroll couldn't reach it. Classic Tailwind modal bug.
     <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
-                   flex items-start sm:items-center justify-center
-                   p-0 sm:p-6 overflow-y-auto font-poppins"
+                   overflow-y-auto font-poppins"
         onClick={onClose}
     >
-        <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
-            onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-xl min-h-screen sm:min-h-0
-                       bg-white/95 backdrop-blur-xl
-                       sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
-                       border border-white/60"
+        <div
+            className="flex min-h-full items-start sm:items-center justify-center
+                       p-0 sm:p-6"
         >
-            <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="absolute top-3 right-3 w-10 h-10 rounded-full
-                           bg-white/80 hover:bg-white hover:shadow-md
-                           border border-grayscale-200
-                           flex items-center justify-center
-                           transition-all duration-200 z-10"
+            <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
+                onClick={e => e.stopPropagation()}
+                className="relative w-full max-w-xl
+                           bg-white/95 backdrop-blur-xl
+                           sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
+                           border border-white/60"
             >
-                <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
-            </button>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="sticky top-3 float-right mr-3 w-10 h-10 rounded-full
+                               bg-white/80 hover:bg-white hover:shadow-md
+                               border border-grayscale-200
+                               flex items-center justify-center
+                               transition-all duration-200 z-10"
+                >
+                    <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
+                </button>
 
-            {children}
-        </motion.div>
+                {children}
+            </motion.div>
+        </div>
     </motion.div>
 );
 

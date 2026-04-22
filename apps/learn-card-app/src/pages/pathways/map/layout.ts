@@ -191,6 +191,28 @@ export const layoutPathway = (pathway: Pathway): NodePosition[] => {
 export const layoutPathwayNavigate = (
     pathway: Pathway,
     route: readonly string[],
+    /**
+     * Map of route-step id → collapsed collection id. When provided,
+     * consecutive route ids belonging to the same collection share
+     * a single spine slot (same `y`). This keeps the spine compact
+     * when a route traverses a shared-prereq collection — e.g. a
+     * route like `[orientation, b1, b2, b3, b4, capstone, cert]`
+     * where b1..b4 share a "Earn 4 Badges" collection renders as
+     * 4 visible slots (`orientation → collection → capstone → cert`)
+     * instead of 7, eliminating the 3 empty spine rows that would
+     * correspond to hidden members.
+     *
+     * Non-consecutive appearances of the same collection in a route
+     * (unusual, but possible if the seed interleaves unrelated steps
+     * between siblings) each get their own slot — the compression is
+     * run-length-style, not a global dedupe — because visually they
+     * represent two distinct "pass through this collection" stops.
+     *
+     * Leaving the map undefined (the default) produces the original
+     * one-slot-per-route-id layout, preserving existing test behavior
+     * and the no-collections case.
+     */
+    collapsedMemberToGroup?: ReadonlyMap<string, string>,
 ): NodePosition[] => {
     if (route.length < 2) return layoutPathway(pathway);
 
@@ -201,16 +223,59 @@ export const layoutPathwayNavigate = (
     const validRoute = route.filter(id => nodeIds.has(id));
     if (validRoute.length < 2) return layoutPathway(pathway);
 
-    const maxLevel = validRoute.length - 1;
+    // -----------------------------------------------------------------
+    // Slot assignment.
+    //
+    // Each route id gets a `slot` index. Non-collapsed ids always
+    // advance to a new slot. Collapsed ids share the previous slot
+    // iff the previous id belonged to the same collection (run-length
+    // compression).
+    //
+    // Example with collapsedMemberToGroup { b1→G, b2→G, b3→G, b4→G }:
+    //
+    //   route        : orientation  b1  b2  b3  b4  capstone  cert
+    //   group        : —            G   G   G   G   —         —
+    //   slot         : 0            1   1   1   1   2         3
+    //
+    // When the map is absent or empty, each id gets its own slot and
+    // the behavior reduces to the pre-compression layout exactly.
+    // -----------------------------------------------------------------
+    const slotByIndex: number[] = [];
+    let currentSlot = 0;
+    let prevGroup: string | undefined;
+
+    for (let i = 0; i < validRoute.length; i++) {
+        const id = validRoute[i]!;
+        const group = collapsedMemberToGroup?.get(id);
+
+        const sameCollapsedRun = group !== undefined && group === prevGroup;
+
+        if (i === 0) {
+            // First id anchors slot 0 regardless.
+            slotByIndex.push(0);
+        } else if (sameCollapsedRun) {
+            // Still inside the same collapsed-collection run — share
+            // the previous slot so hidden members don't claim spine
+            // height.
+            slotByIndex.push(currentSlot);
+        } else {
+            currentSlot += 1;
+            slotByIndex.push(currentSlot);
+        }
+
+        prevGroup = group;
+    }
+
+    const maxSlot = currentSlot;
 
     // Step 1 (index 0) lands at the largest y (bottom); destination
-    // (last index) lands at y = 0 (top). Off-route nodes are not
+    // (last slot) lands at y = 0 (top). Off-route nodes are not
     // included in the result — Navigate = route only.
     return validRoute.map((id, i) => ({
         id,
         level: i,
         x: 0,
-        y: (maxLevel - i) * Y_SPACING,
+        y: (maxSlot - slotByIndex[i]!) * Y_SPACING,
         onRoute: true,
     }));
 };

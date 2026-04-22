@@ -246,23 +246,6 @@ const MapModeInner: React.FC = () => {
         setLayoutOverride(null);
     }, [activePathway]);
 
-    const positions = useMemo(() => {
-        if (!activePathway) return [];
-
-        if (
-            effectiveLayout === 'navigate' &&
-            activePathway.chosenRoute &&
-            activePathway.chosenRoute.length >= 2
-        ) {
-            return layoutPathwayNavigate(
-                activePathway,
-                activePathway.chosenRoute,
-            );
-        }
-
-        return layoutPathway(activePathway);
-    }, [activePathway, effectiveLayout]);
-
     // ------------------------------------------------------------------
     // M6.c.3 — Collection collapsing.
     //
@@ -273,10 +256,12 @@ const MapModeInner: React.FC = () => {
     //    manually expanded on the canvas. Default: all collapsed.
     //    Clicking a collection card toggles the group into/out of the
     //    set; clicking a member's "Collapse" chip removes its group.
-    // 3. Downstream consumers (rfNodes, rfEdges) use this state to
-    //    decide whether to render individual member cards + member
-    //    edges OR a single synthetic collection card + one rolled-up
-    //    edge.
+    // 3. Downstream consumers (rfNodes, rfEdges, positions) use this
+    //    state to decide whether to render individual member cards +
+    //    member edges OR a single synthetic collection card + one
+    //    rolled-up edge. `positions` reads it to compress consecutive
+    //    collapsed route members into a single spine slot so the
+    //    Navigate spine doesn't reserve empty rows for hidden members.
     // ------------------------------------------------------------------
     const collections = useMemo(
         () => (activePathway ? detectCollections(activePathway) : []),
@@ -308,6 +293,42 @@ const MapModeInner: React.FC = () => {
             return next;
         });
     }, []);
+
+    // Member-id → collapsed-group-id lookup. Drives:
+    //   - `layoutPathwayNavigate` spine compression (consecutive
+    //     route members of the same collection share one slot).
+    //   - `rfEdges` Navigate-mode route-spine edge remapping (so
+    //     edges land on the rendered collection node instead of
+    //     hidden individual members).
+    // Only collapsed (non-expanded) groups contribute. Expanded
+    // groups behave exactly like plain nodes in both layout and
+    // edge passes.
+    const collapsedMemberToGroup = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const group of collections) {
+            if (expandedGroupIds.has(group.id)) continue;
+            for (const mid of group.memberIds) map.set(mid, group.id);
+        }
+        return map;
+    }, [collections, expandedGroupIds]);
+
+    const positions = useMemo(() => {
+        if (!activePathway) return [];
+
+        if (
+            effectiveLayout === 'navigate' &&
+            activePathway.chosenRoute &&
+            activePathway.chosenRoute.length >= 2
+        ) {
+            return layoutPathwayNavigate(
+                activePathway,
+                activePathway.chosenRoute,
+                collapsedMemberToGroup,
+            );
+        }
+
+        return layoutPathway(activePathway);
+    }, [activePathway, effectiveLayout, collapsedMemberToGroup]);
 
     // ------------------------------------------------------------------
     // Waze-style suggested route.
@@ -506,7 +527,24 @@ const MapModeInner: React.FC = () => {
             if (collapsedMemberIds.has(pos.id)) continue;
 
             const node = activePathway.nodes.find(n => n.id === pos.id)!;
-            const inFocus = nb ? nb.nodeIds.has(pos.id) : true;
+
+            // In Navigate mode, the **entire committed walk** reads at
+            // equal prominence — the depth-2 neighborhood fade is an
+            // Explore affordance ("what's near what I'm looking at"),
+            // but when you're navigating, every step of your walk is
+            // equally relevant no matter how far ahead. Using the
+            // layout's `pos.onRoute` flag (set only by
+            // `layoutPathwayNavigate`, and only for on-route ids)
+            // keeps this switch scoped: Explore still fades, and
+            // any non-route node in Navigate mode (none today, but a
+            // future extension might add detour nodes) would still
+            // obey the neighborhood fade.
+            const baseInFocus = nb ? nb.nodeIds.has(pos.id) : true;
+            const inFocus =
+                effectiveLayout === 'navigate' && pos.onRoute === true
+                    ? true
+                    : baseInFocus;
+
             const isFocusNode = pos.id === focusId;
             const prereq = prereqByNode.get(pos.id) ?? {
                 met: 0,
@@ -593,9 +631,21 @@ const MapModeInner: React.FC = () => {
             // current focus node. `inFocus` governs the depth fade,
             // so inheriting it from members keeps the neighborhood
             // read consistent.
-            const inFocus = nb
-                ? group.memberIds.some(mid => nb.nodeIds.has(mid))
-                : true;
+            //
+            // Navigate-mode override: if any member is on the
+            // committed route, the collection is part of the walk and
+            // reads at equal prominence (matching the per-node
+            // override above). In Explore, the neighborhood-derived
+            // answer still governs so distant collections fade.
+            const anyMemberOnRoute = group.memberIds.some(
+                mid => routeIndex?.nodeIndex.has(mid) ?? false,
+            );
+            const inFocus =
+                effectiveLayout === 'navigate' && anyMemberOnRoute
+                    ? true
+                    : nb
+                        ? group.memberIds.some(mid => nb.nodeIds.has(mid))
+                        : true;
 
             nodes.push({
                 id: group.id,
@@ -665,17 +715,23 @@ const MapModeInner: React.FC = () => {
             for (const eid of group.incomingEdgeIds) collapsedEdgeIds.add(eid);
         }
 
-        // Navigate mode renders a route-only canvas — off-route nodes
-        // don't exist in `rfNodes`, so any edge pointing to one would
-        // dangle (React Flow warns; visually it just draws nothing,
-        // which is worse than a clean omission). Pre-compute the set
-        // of node ids that *will* be rendered so we can filter the
-        // edge pass.
+        // Set of ids that are actually *rendered* on the canvas.
         //
-        // In Explore mode the layout returns every node, so this set
-        // is the full pathway — the filter becomes a no-op. We still
-        // compute it uniformly to keep the edge-pass branchless.
-        const renderedNodeIds = new Set(positions.map(p => p.id));
+        // In Explore this is every node in `positions` — the full
+        // pathway — so the filter becomes a no-op.
+        //
+        // In Navigate, `positions` contains only route nodes, **and**
+        // collapsed-collection members don't produce individual
+        // render nodes: rfNodes skips them and renders one synthetic
+        // collection card in their place. So `renderedNodeIds` needs
+        // to reflect that substitution — swap collapsed member ids
+        // for their collection id — or every edge pointing at a
+        // hidden member would silently disappear.
+        const renderedNodeIds = new Set<string>();
+        for (const pos of positions) {
+            const groupId = collapsedMemberToGroup.get(pos.id);
+            renderedNodeIds.add(groupId ?? pos.id);
+        }
 
         const edges: RfEdge[] = [];
 
@@ -686,53 +742,85 @@ const MapModeInner: React.FC = () => {
         // Navigate-mode spine edges — the continuous ribbon.
         //
         // The learner's committed walk is a sequence of node ids.
-        // Adjacent ids on that sequence may NOT have a direct graph
-        // edge (e.g. the structural connection from Review → Compile
-        // passes through an off-route "Complete your WEF Smart…"
-        // node). Using only real graph edges would break the ribbon
-        // into disconnected segments, which defeats the whole point
-        // of a Navigate view — you can't see your walk as a walk.
+        // Adjacent ids on that sequence may not have a direct graph
+        // edge, and individual ids may be hidden behind a collapsed
+        // collection card. Using only real graph edges — or emitting
+        // spine edges between raw route ids — both produce visual
+        // holes wherever the rendered canvas diverges from the
+        // literal route sequence.
         //
-        // The fix: in Navigate, synthesize one edge per consecutive
-        // route pair. The spine reads as a single continuous polyline
-        // top-to-bottom, always. We also SKIP the real-graph-edge pass
-        // below so we don't double-draw when a real edge happens to
-        // exist for some pairs (it'd visually overlap but with
-        // different curves / opacity, reading as a duplicate).
+        // The fix: walk the route and emit one edge per *rendered*
+        // transition. That means:
+        //
+        //   1. Remap each route id to its **render id** — the
+        //      collapsed collection id if the id is a hidden member,
+        //      otherwise the id itself.
+        //   2. Walk consecutive route ids. Skip pairs that map to the
+        //      same render id (both members of the same collection —
+        //      an intra-collection traversal is an internal fan-in,
+        //      not a spine step).
+        //   3. Emit one edge per distinct render-id transition, from
+        //      the previous distinct render id to the current one.
+        //
+        // This produces a continuous polyline top-to-bottom with
+        // exactly one edge per visible-node transition, regardless of
+        // collapsing or missing direct graph edges.
         //
         // Styling rules:
-        //   - source completed → emerald trail (walked).
-        //   - source not completed → indigo dashed (projected ahead).
-        // Identical to the route-ribbon rules in Explore, but applied
-        // unconditionally to every consecutive pair.
+        //   - Source "completed enough to show trail" → emerald.
+        //     For a plain node, that's `progress.status === 'completed'`.
+        //     For a collection, it's **all members completed** — the
+        //     AND-gate semantics of a fan-in collection mean
+        //     completing just one member doesn't unlock the target,
+        //     so emerald would misrepresent progress.
+        //   - Otherwise → indigo dashed (projected ahead).
         //
-        // Edge id is deterministic (`route-spine-from→to`) so the
-        // trail draw-in animation bookkeeping via `seenCompletedEdgesRef`
-        // can still tell "first paint" from "just-flipped-to-completed"
-        // exactly once per freshly-walked spine step.
+        // Edge id is deterministic (`route-spine-from→to` using
+        // render ids) so the trail draw-in animation bookkeeping
+        // via `seenCompletedEdgesRef` fires exactly once per
+        // visible-transition completion.
         // -------------------------------------------------------------
         if (navigatingMode && chosenRoute.length >= 2) {
-            for (let i = 0; i < chosenRoute.length - 1; i++) {
-                const fromId = chosenRoute[i]!;
-                const toId = chosenRoute[i + 1]!;
+            // Tiny helper: is this render id "completed enough" for
+            // the emerald trail color? Plain node checks progress;
+            // collection checks all-members-done.
+            const isRenderSourceCompleted = (renderId: string): boolean => {
+                if (collapsedGroupIds.has(renderId)) {
+                    const group = collections.find(g => g.id === renderId);
+                    if (!group) return false;
+                    return group.memberIds.every(mid => {
+                        const m = activePathway.nodes.find(n => n.id === mid);
+                        return m?.progress.status === 'completed';
+                    });
+                }
+                const src = activePathway.nodes.find(n => n.id === renderId);
+                return src?.progress.status === 'completed';
+            };
 
-                // Defensive: skip when either endpoint isn't in the
-                // rendered set (shouldn't happen — layoutPathwayNavigate
-                // returns the valid route — but catches stale ids).
-                if (
-                    !renderedNodeIds.has(fromId) ||
-                    !renderedNodeIds.has(toId)
-                ) {
+            // Walk the route and emit one edge per distinct
+            // render-id transition.
+            let prevRenderId: string | null = null;
+
+            for (const routeId of chosenRoute) {
+                const renderId =
+                    collapsedMemberToGroup.get(routeId) ?? routeId;
+
+                // Skip when this id isn't actually rendered (the
+                // defensive branch — shouldn't trigger for a valid
+                // route, but swallows stale ids gracefully).
+                if (!renderedNodeIds.has(renderId)) continue;
+
+                if (prevRenderId === null) {
+                    prevRenderId = renderId;
                     continue;
                 }
 
-                const sourceNode = activePathway.nodes.find(
-                    n => n.id === fromId,
-                );
-                const fromCompleted =
-                    sourceNode?.progress.status === 'completed';
+                // Still inside the same collection run — no visible
+                // transition, so no edge.
+                if (prevRenderId === renderId) continue;
 
-                const spineEdgeId = `route-spine-${fromId}-${toId}`;
+                const fromCompleted = isRenderSourceCompleted(prevRenderId);
+                const spineEdgeId = `route-spine-${prevRenderId}-${renderId}`;
 
                 if (fromCompleted) currentlyCompleted.add(spineEdgeId);
 
@@ -755,8 +843,8 @@ const MapModeInner: React.FC = () => {
 
                 edges.push({
                     id: spineEdgeId,
-                    source: fromId,
-                    target: toId,
+                    source: prevRenderId,
+                    target: renderId,
                     type: 'default',
                     animated: false,
                     className: isFreshlyCompleted
@@ -769,13 +857,15 @@ const MapModeInner: React.FC = () => {
                         opacity: 1,
                     },
                 } satisfies RfEdge);
+
+                prevRenderId = renderId;
             }
 
             // In Navigate mode we've replaced the graph-edge pass
             // entirely. Skip the remaining loops — no real graph
-            // edges, no collapsed-collection synthetic edges
-            // (collections don't render in Navigate since their
-            // off-route members aren't in positions).
+            // edges, no separate collection-in/out synthetic edges
+            // (the route-spine edges we just emitted already funnel
+            // through the collection card correctly).
             seenCompletedEdgesRef.current = currentlyCompleted;
             return edges;
         }
@@ -1012,6 +1102,7 @@ const MapModeInner: React.FC = () => {
         routeIndex,
         effectiveLayout,
         positions,
+        collapsedMemberToGroup,
     ]);
 
     if (!activePathway) {

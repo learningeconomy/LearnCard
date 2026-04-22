@@ -269,4 +269,160 @@ describe('layoutPathwayNavigate', () => {
 
         expect(positions.a.onRoute).toBeUndefined();
     });
+
+    // -------------------------------------------------------------
+    // Spine compression with collapsed-collection members.
+    //
+    // When the route traverses a shared-prereq collection (e.g.
+    // orientation → [4 badges] → capstone), rfNodes renders ONE
+    // collection card in place of the 4 members. Without spine
+    // compression the layout would still reserve 4 spine rows,
+    // leaving 3 blank slots in the middle of the spine and making
+    // the ribbon look broken.
+    //
+    // These tests pin down the compression contract:
+    //   - consecutive route ids in the same collapsed group share
+    //     one slot (uniform y, no blank rows);
+    //   - unrelated consecutive ids get their own slot;
+    //   - passing an empty / undefined map is a no-op.
+    // -------------------------------------------------------------
+    describe('spine compression via collapsedMemberToGroup', () => {
+        it('collapses a run of same-group members into a single spine slot', () => {
+            // Route: orientation → b1 → b2 → b3 → b4 → capstone → cert
+            // b1..b4 are all in the "badges" collection.
+            const p = pathway(
+                [
+                    node('orientation'),
+                    node('b1'),
+                    node('b2'),
+                    node('b3'),
+                    node('b4'),
+                    node('capstone'),
+                    node('cert'),
+                ],
+                [],
+            );
+
+            const collapsedMemberToGroup = new Map([
+                ['b1', 'badges'],
+                ['b2', 'badges'],
+                ['b3', 'badges'],
+                ['b4', 'badges'],
+            ]);
+
+            const positions = byId(
+                layoutPathwayNavigate(
+                    p,
+                    ['orientation', 'b1', 'b2', 'b3', 'b4', 'capstone', 'cert'],
+                    collapsedMemberToGroup,
+                ),
+            );
+
+            // Four visible slots: orientation, collection (shared by
+            // b1..b4), capstone, cert. The bottom is orientation at
+            // y = 3 * Y_SPACING; cert at y = 0.
+            expect(positions.orientation.y).toBe(3 * Y_SPACING);
+            expect(positions.capstone.y).toBe(1 * Y_SPACING);
+            expect(positions.cert.y).toBe(0);
+
+            // All four badges share the one collection slot —
+            // y = 2 * Y_SPACING, the second-from-bottom row.
+            expect(positions.b1.y).toBe(2 * Y_SPACING);
+            expect(positions.b2.y).toBe(2 * Y_SPACING);
+            expect(positions.b3.y).toBe(2 * Y_SPACING);
+            expect(positions.b4.y).toBe(2 * Y_SPACING);
+
+            // Consecutive slot gaps are uniform Y_SPACING — no blank
+            // rows where hidden members used to sit.
+            expect(positions.orientation.y - positions.b1.y).toBe(Y_SPACING);
+            expect(positions.b1.y - positions.capstone.y).toBe(Y_SPACING);
+            expect(positions.capstone.y - positions.cert.y).toBe(Y_SPACING);
+        });
+
+        it('only compresses members of the same group, not unrelated neighbors', () => {
+            // Route: a → m1 → m2 → x → m3 → b
+            // m1, m2 are in group G1; m3 is in G2 (different group).
+            // x is unrelated. The compression is run-length; only
+            // the m1-m2 consecutive run compresses.
+            const p = pathway(
+                [
+                    node('a'),
+                    node('m1'),
+                    node('m2'),
+                    node('x'),
+                    node('m3'),
+                    node('b'),
+                ],
+                [],
+            );
+
+            const collapsedMemberToGroup = new Map([
+                ['m1', 'G1'],
+                ['m2', 'G1'],
+                ['m3', 'G2'],
+            ]);
+
+            const positions = byId(
+                layoutPathwayNavigate(
+                    p,
+                    ['a', 'm1', 'm2', 'x', 'm3', 'b'],
+                    collapsedMemberToGroup,
+                ),
+            );
+
+            // Slots: a=0, {m1,m2}=1, x=2, m3=3, b=4. maxSlot=4.
+            expect(positions.a.y).toBe(4 * Y_SPACING);
+            expect(positions.m1.y).toBe(3 * Y_SPACING);
+            expect(positions.m2.y).toBe(3 * Y_SPACING); // shared with m1
+            expect(positions.x.y).toBe(2 * Y_SPACING);
+            expect(positions.m3.y).toBe(1 * Y_SPACING); // own slot
+            expect(positions.b.y).toBe(0);
+        });
+
+        it('treats two separated runs of the same group as separate slots', () => {
+            // Route: a → g1 → x → g2 → b, where g1 and g2 are both
+            // in group G. Not a consecutive run (x separates them),
+            // so each gets its own slot. This is the honest visual —
+            // the learner visits the collection twice, not once.
+            const p = pathway(
+                [node('a'), node('g1'), node('x'), node('g2'), node('b')],
+                [],
+            );
+
+            const collapsedMemberToGroup = new Map([
+                ['g1', 'G'],
+                ['g2', 'G'],
+            ]);
+
+            const positions = byId(
+                layoutPathwayNavigate(
+                    p,
+                    ['a', 'g1', 'x', 'g2', 'b'],
+                    collapsedMemberToGroup,
+                ),
+            );
+
+            // 5 distinct slots; each id's y is unique.
+            const ys = Object.values(positions).map(p => p.y).sort();
+            expect(new Set(ys).size).toBe(5);
+        });
+
+        it('reduces to the pre-compression behavior when the map is undefined', () => {
+            const p = pathway(
+                [node('a'), node('b'), node('c')],
+                [],
+            );
+
+            const withMap = byId(
+                layoutPathwayNavigate(p, ['a', 'b', 'c'], new Map()),
+            );
+            const withoutMap = byId(
+                layoutPathwayNavigate(p, ['a', 'b', 'c']),
+            );
+
+            expect(withMap.a.y).toBe(withoutMap.a.y);
+            expect(withMap.b.y).toBe(withoutMap.b.y);
+            expect(withMap.c.y).toBe(withoutMap.c.y);
+        });
+    });
 });
