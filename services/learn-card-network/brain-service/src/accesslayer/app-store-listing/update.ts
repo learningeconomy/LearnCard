@@ -27,7 +27,6 @@ export const updateAppStoreListing = async (
     if (typeof updates.launch_config_json !== 'undefined')
         updatesToPersist.launch_config_json = updates.launch_config_json;
     if (typeof updates.category !== 'undefined') updatesToPersist.category = updates.category;
-    if (typeof updates.is_plugin !== 'undefined') updatesToPersist.is_plugin = updates.is_plugin;
     if (typeof updates.promo_video_url !== 'undefined')
         updatesToPersist.promo_video_url = updates.promo_video_url;
     if (typeof updates.promotion_level !== 'undefined')

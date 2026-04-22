@@ -19,7 +19,6 @@ export const createAppStoreListing = async (
         launch_type: input.launch_type,
         launch_config_json: input.launch_config_json,
         category: input.category,
-        is_plugin: input.is_plugin,
         promo_video_url: input.promo_video_url,
         promotion_level: input.promotion_level,
         ios_app_store_id: input.ios_app_store_id,

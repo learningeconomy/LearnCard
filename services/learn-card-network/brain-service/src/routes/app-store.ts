@@ -215,7 +215,6 @@ const AppStoreListingBaseSchema = z.object({
     launch_type: LaunchType,
     launch_config_json: jsonStringValidator,
     category: z.string().max(50).optional(),
-    is_plugin: z.boolean().optional(),
     promo_video_url: z.string().url().optional(),
     promotion_level: PromotionLevel.optional(),
     ios_app_store_id: z.string().max(20).optional(),

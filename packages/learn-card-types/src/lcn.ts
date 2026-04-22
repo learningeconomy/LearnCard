@@ -1823,7 +1823,6 @@ export const AppStoreListingValidator = z.object({
     launch_type: LaunchTypeValidator,
     launch_config_json: z.string(),
     category: z.string().optional(),
-    is_plugin: z.boolean().optional(),
     promo_video_url: z.string().optional(),
     promotion_level: PromotionLevelValidator.optional(),
     ios_app_store_id: z.string().optional(),
