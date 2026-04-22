@@ -24,7 +24,7 @@ import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, mapOutline, openOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
@@ -41,6 +41,26 @@ import EvidenceUploader from './EvidenceUploader';
 import ReviewsPanel from './ReviewsPanel';
 import TerminationProgress from './TerminationProgress';
 import { computeTerminationView, terminationDone } from './termination';
+
+/**
+ * Router state understood by `NodeDetail` when another surface opens
+ * it via `history.push(..., state)`.
+ *
+ * - `returnTo` — where the dismiss / complete buttons should send the
+ *   learner. Defaults to `/pathways/today` for back-compat (Today
+ *   never populated router state before) so old direct-link entries
+ *   still behave the way they used to.
+ * - `restoreFocusId` — on dismissal, passed back to the destination
+ *   route as `initialFocusId` so surfaces like the Map can re-focus
+ *   the same pin the learner was looking at ("exactly where I was").
+ *   Intentionally *not* forwarded on completion — completion lets the
+ *   destination re-derive its default (Map advances to the next
+ *   uncompleted step, Today picks the next daily action).
+ */
+export interface NodeDetailLocationState {
+    returnTo?: string;
+    restoreFocusId?: string;
+}
 
 /**
  * Pick an `ArtifactType` to pre-bias the uploader toward, matching
@@ -120,6 +140,7 @@ const SECTION_MOTION = {
 const NodeDetail: React.FC = () => {
     const params = useParams<{ pathwayId: string; nodeId: string }>();
     const history = useHistory();
+    const location = useLocation<NodeDetailLocationState | undefined>();
     const analytics = useAnalytics();
 
     const pathway = pathwayStore.use.pathways()[params.pathwayId] ?? null;
@@ -127,7 +148,25 @@ const NodeDetail: React.FC = () => {
 
     const [completing, setCompleting] = useState(false);
 
-    const close = () => history.replace('/pathways/today');
+    // Where to send the learner when they dismiss or complete.
+    // Defaults to Today for back-compat (direct deep-links and
+    // Today's own open path never populated router state before).
+    // Map-originated opens pass `/pathways/map` here so the canvas
+    // stays the hero.
+    const returnTo = location.state?.returnTo ?? '/pathways/today';
+
+    // On *dismissal*, forward `restoreFocusId` back to the return
+    // route as `initialFocusId` so the canvas re-focuses the pin the
+    // learner was looking at. On *completion* we deliberately drop
+    // it (see `handleComplete`) — the return surface should
+    // auto-advance, not restore.
+    const close = () =>
+        history.replace(
+            returnTo,
+            location.state?.restoreFocusId
+                ? { initialFocusId: location.state.restoreFocusId }
+                : undefined,
+        );
 
     if (!pathway) {
         return (
@@ -239,7 +278,13 @@ const NodeDetail: React.FC = () => {
             offlineQueued: wasQueuedOffline,
         });
 
-        history.replace('/pathways/today');
+        // Completion: return to whichever surface opened us, but do
+        // NOT pass `initialFocusId`. The destination's natural focus
+        // derivation (e.g. Map's `defaultFocusId` picks the next
+        // uncompleted node on the route; Today picks the next daily
+        // action) will advance focus to the step that comes after
+        // the one the learner just finished.
+        history.replace(returnTo);
     };
 
     const handleEndorsementRequested = (pending: EndorsementRef) => {

@@ -90,7 +90,13 @@ const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({
             renderStyle: style,
         });
 
-        history.replace('/pathways/today');
+        // Drop the learner on the Map of the newly-activated sub-
+        // pathway. "Start X" is a *traversal* action — the learner
+        // wants to see the sub-pathway's terrain, not a daily action
+        // feed for it. Previously we replaced to Today, which felt
+        // like a context collapse; the sub-pathway would show up
+        // there too, but out of spatial context.
+        history.replace('/pathways/map');
     };
 
     const handleImport = () => {

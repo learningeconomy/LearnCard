@@ -22,7 +22,7 @@ import {
     type Node as RfNode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
 import {
@@ -34,6 +34,8 @@ import {
     buildAdjacency,
     neighborhood,
 } from '../core/graphOps';
+
+import type { NodeDetailLocationState } from '../node/NodeDetail';
 
 import CollectionMapNode, {
     type CollectionMapNodeData,
@@ -134,10 +136,24 @@ const MapMode: React.FC = () => (
     </ReactFlowProvider>
 );
 
+/**
+ * Router state understood by MapMode when the user returns from
+ * another route (currently only NodeDetail). NodeDetail dismissal
+ * passes `initialFocusId` back here so the canvas re-opens with the
+ * same pin focused / panned — matching "exactly where I was" UX.
+ * Completion navigations deliberately *omit* `initialFocusId` so the
+ * natural `defaultFocusId` recomputation advances focus to the next
+ * uncompleted step.
+ */
+interface MapModeLocationState {
+    initialFocusId?: string;
+}
+
 const MapModeInner: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
     const allPathways = pathwayStore.use.pathways();
     const history = useHistory();
+    const location = useLocation<MapModeLocationState | undefined>();
 
     // Sub-pathway context — if the active pathway is embedded inside
     // another pathway as a composite reference, render the breadcrumb
@@ -171,10 +187,28 @@ const MapModeInner: React.FC = () => {
         return avail[0]?.id ?? activePathway.nodes[0]?.id ?? null;
     }, [activePathway]);
 
-    const [focusId, setFocusId] = useState<string | null>(defaultFocusId);
+    // Router-provided initial focus — takes precedence over
+    // `defaultFocusId` on mount so NodeDetail dismissal can restore
+    // the pin the learner was looking at. Read once via `useState`
+    // initializer so later `history.replace` calls from other code
+    // paths don't fight this.
+    const [focusId, setFocusId] = useState<string | null>(
+        () => location.state?.initialFocusId ?? defaultFocusId,
+    );
 
-    // Keep the focus in sync when the pathway changes.
+    // Re-sync focus to the new `defaultFocusId` only when it *actually
+    // changes* (e.g. the active pathway flipped to a different
+    // pathway, or the current step was completed so the first
+    // uncompleted node shifted forward). On plain re-renders where
+    // the memo returns the same id, we skip — otherwise a router-
+    // state initial focus or a manual pan/click would be overwritten
+    // every render.
+    const prevDefaultFocusIdRef = useRef<string | null>(defaultFocusId);
+
     React.useEffect(() => {
+        if (prevDefaultFocusIdRef.current === defaultFocusId) return;
+
+        prevDefaultFocusIdRef.current = defaultFocusId;
         setFocusId(defaultFocusId);
     }, [defaultFocusId]);
 
@@ -294,6 +328,34 @@ const MapModeInner: React.FC = () => {
         });
     }, []);
 
+    // Effective expansion = manual `expandedGroupIds` UNION the
+    // group that currently contains `focusId`, if any. The auto-
+    // expand is what keeps navigation through a collection coherent
+    // across completions: when the learner completes a badge inside
+    // "Earn 4 Badges", focus advances to the next uncompleted badge
+    // on remount, which is still a member of the same group — so
+    // the group stays visually expanded without any state being
+    // persisted across the NodeDetail round-trip. Once focus moves
+    // to a node *outside* any group (e.g. every badge completed, focus
+    // advances to the capstone), the group naturally collapses back.
+    //
+    // We keep `expandedGroupIds` itself as the manual-toggle record
+    // so the "Regroup" button has something concrete to clear, and
+    // so CollectionMapNode's toggle still round-trips cleanly when
+    // focus isn't inside the group. Derivation is cheap: O(groups).
+    const effectivelyExpandedGroupIds = useMemo(() => {
+        if (!focusId) return expandedGroupIds;
+
+        const containingGroupId = collectionIndex.memberToGroupId.get(focusId);
+        if (!containingGroupId) return expandedGroupIds;
+
+        if (expandedGroupIds.has(containingGroupId)) return expandedGroupIds;
+
+        const next = new Set(expandedGroupIds);
+        next.add(containingGroupId);
+        return next;
+    }, [expandedGroupIds, focusId, collectionIndex]);
+
     // Member-id → collapsed-group-id lookup. Drives:
     //   - `layoutPathwayNavigate` spine compression (consecutive
     //     route members of the same collection share one slot).
@@ -302,15 +364,17 @@ const MapModeInner: React.FC = () => {
     //     hidden individual members).
     // Only collapsed (non-expanded) groups contribute. Expanded
     // groups behave exactly like plain nodes in both layout and
-    // edge passes.
+    // edge passes. Uses the *effective* expansion set so a group
+    // containing the focused node is treated as expanded (members
+    // rendered individually, no spine compression).
     const collapsedMemberToGroup = useMemo(() => {
         const map = new Map<string, string>();
         for (const group of collections) {
-            if (expandedGroupIds.has(group.id)) continue;
+            if (effectivelyExpandedGroupIds.has(group.id)) continue;
             for (const mid of group.memberIds) map.set(mid, group.id);
         }
         return map;
-    }, [collections, expandedGroupIds]);
+    }, [collections, effectivelyExpandedGroupIds]);
 
     const positions = useMemo(() => {
         if (!activePathway) return [];
@@ -444,11 +508,24 @@ const MapModeInner: React.FC = () => {
     // Memoized navigation handler so the MapNode data object identity is
     // stable across re-renders (React Flow treats a changed `data` as a
     // node update — not a correctness bug, but cheap to avoid).
+    //
+    // We stamp `returnTo: '/pathways/map'` into the router state so
+    // NodeDetail dismissal/completion returns the learner to the Map
+    // instead of Today. `restoreFocusId` carries the pin we were
+    // looking at so dismissal re-opens the canvas on the same node
+    // (completion deliberately omits it on the return leg so focus
+    // auto-advances to the next uncompleted step).
     const openNode = React.useCallback(
         (nodeId: string) => {
             if (!activePathway) return;
 
-            history.push(`/pathways/node/${activePathway.id}/${nodeId}`);
+            history.push(
+                `/pathways/node/${activePathway.id}/${nodeId}`,
+                {
+                    returnTo: '/pathways/map',
+                    restoreFocusId: nodeId,
+                } satisfies NodeDetailLocationState,
+            );
         },
         [activePathway, history],
     );
@@ -515,7 +592,7 @@ const MapModeInner: React.FC = () => {
         const collapsedMemberIds = new Set<string>();
 
         for (const group of collections) {
-            if (!expandedGroupIds.has(group.id)) {
+            if (!effectivelyExpandedGroupIds.has(group.id)) {
                 for (const mid of group.memberIds) collapsedMemberIds.add(mid);
             }
         }
@@ -603,7 +680,7 @@ const MapModeInner: React.FC = () => {
         //    share a level by detection rules), horizontally aligned
         //    with the target above so the funnel reads cleanly.
         for (const group of collections) {
-            if (expandedGroupIds.has(group.id)) continue;
+            if (effectivelyExpandedGroupIds.has(group.id)) continue;
 
             // Reference member to inherit y (they all share a level).
             const anchorMember = group.memberIds
@@ -673,7 +750,7 @@ const MapModeInner: React.FC = () => {
         focusId,
         prereqByNode,
         collections,
-        expandedGroupIds,
+        effectivelyExpandedGroupIds,
         toggleGroupExpansion,
         routeIndex,
         yourNodeId,
@@ -705,7 +782,7 @@ const MapModeInner: React.FC = () => {
         const collapsedGroupIds = new Set<string>();
 
         for (const group of collections) {
-            if (expandedGroupIds.has(group.id)) continue;
+            if (effectivelyExpandedGroupIds.has(group.id)) continue;
 
             collapsedGroupIds.add(group.id);
             for (const eid of group.edgeIds) collapsedEdgeIds.add(eid);
@@ -1098,7 +1175,7 @@ const MapModeInner: React.FC = () => {
         nb,
         collections,
         collectionIndex,
-        expandedGroupIds,
+        effectivelyExpandedGroupIds,
         routeIndex,
         effectiveLayout,
         positions,
@@ -1435,10 +1512,25 @@ const MapModeInner: React.FC = () => {
                 targets on the canvas and matches the "undo a zoom"
                 mental model.
             */}
-            {expandedGroupIds.size > 0 && (
+            {effectivelyExpandedGroupIds.size > 0 && (
                 <button
                     type="button"
-                    onClick={() => setExpandedGroupIds(new Set())}
+                    onClick={() => {
+                        // If focus sits inside a (possibly auto-)expanded
+                        // group, move it to the group's card id first so
+                        // the auto-expand derivation doesn't immediately
+                        // re-expand the group the learner just asked to
+                        // regroup. Also fixes a latent bug where the
+                        // FocusPanner would pan to a now-hidden member.
+                        if (focusId) {
+                            const containingGroupId =
+                                collectionIndex.memberToGroupId.get(focusId);
+
+                            if (containingGroupId) setFocusId(containingGroupId);
+                        }
+
+                        setExpandedGroupIds(new Set());
+                    }}
                     className="absolute bottom-24 right-4 z-10 font-poppins
                                py-2 px-3 rounded-full
                                bg-white/80 backdrop-blur-md border border-white/60
@@ -1447,7 +1539,7 @@ const MapModeInner: React.FC = () => {
                                hover:bg-white transition-colors
                                animate-fade-in-up"
                 >
-                    Regroup {expandedGroupIds.size === 1 ? 'collection' : 'collections'}
+                    Regroup {effectivelyExpandedGroupIds.size === 1 ? 'collection' : 'collections'}
                 </button>
             )}
 
