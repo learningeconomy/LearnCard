@@ -69,12 +69,26 @@ const NODE_TYPES = {
  * FocusPanner — nested inside ReactFlow so it can grab `useReactFlow()`.
  * Every time the focus node shifts, smoothly pans + zooms the viewport
  * to center the node. 500 ms feels physical; much longer reads as lag.
+ *
+ * The first pan of a mount uses `duration: 0` so the learner doesn't
+ * see the "fit everything" intermediate state before settling on the
+ * focus node — important for Navigate mode, where we want the step
+ * you're on to be the first thing you see, not the whole route
+ * zoomed out.
  */
 const FocusPanner: React.FC<{
     focusId: string | null;
     positions: ReturnType<typeof layoutPathway>;
-}> = ({ focusId, positions }) => {
+    /**
+     * Zoom level to center at. Navigate mode uses a tighter zoom
+     * (~1.1) so the current step feels "here, now"; Explore uses
+     * a looser zoom (~1) so neighbor cards remain legible around
+     * the focus.
+     */
+    zoom: number;
+}> = ({ focusId, positions, zoom }) => {
     const rf = useReactFlow();
+    const hasPannedRef = useRef(false);
 
     useEffect(() => {
         if (!focusId) return;
@@ -83,11 +97,16 @@ const FocusPanner: React.FC<{
 
         if (!pos) return;
 
-        rf.setCenter(pos.x + NODE_WIDTH / 2, pos.y + NODE_HEIGHT / 2, {
-            zoom: 1,
-            duration: 500,
+        rf.setCenter(pos.x, pos.y, {
+            zoom,
+            // First pan per mount is instant (duration 0) to suppress
+            // the `fitView`-then-recenter flicker. Subsequent focus
+            // changes animate so the learner sees the pan as motion.
+            duration: hasPannedRef.current ? 500 : 0,
         });
-    }, [focusId, positions, rf]);
+
+        hasPannedRef.current = true;
+    }, [focusId, positions, rf, zoom]);
 
     return null;
 };
@@ -660,6 +679,107 @@ const MapModeInner: React.FC = () => {
 
         const edges: RfEdge[] = [];
 
+        const navigatingMode = effectiveLayout === 'navigate';
+        const chosenRoute = activePathway.chosenRoute ?? [];
+
+        // -------------------------------------------------------------
+        // Navigate-mode spine edges — the continuous ribbon.
+        //
+        // The learner's committed walk is a sequence of node ids.
+        // Adjacent ids on that sequence may NOT have a direct graph
+        // edge (e.g. the structural connection from Review → Compile
+        // passes through an off-route "Complete your WEF Smart…"
+        // node). Using only real graph edges would break the ribbon
+        // into disconnected segments, which defeats the whole point
+        // of a Navigate view — you can't see your walk as a walk.
+        //
+        // The fix: in Navigate, synthesize one edge per consecutive
+        // route pair. The spine reads as a single continuous polyline
+        // top-to-bottom, always. We also SKIP the real-graph-edge pass
+        // below so we don't double-draw when a real edge happens to
+        // exist for some pairs (it'd visually overlap but with
+        // different curves / opacity, reading as a duplicate).
+        //
+        // Styling rules:
+        //   - source completed → emerald trail (walked).
+        //   - source not completed → indigo dashed (projected ahead).
+        // Identical to the route-ribbon rules in Explore, but applied
+        // unconditionally to every consecutive pair.
+        //
+        // Edge id is deterministic (`route-spine-from→to`) so the
+        // trail draw-in animation bookkeeping via `seenCompletedEdgesRef`
+        // can still tell "first paint" from "just-flipped-to-completed"
+        // exactly once per freshly-walked spine step.
+        // -------------------------------------------------------------
+        if (navigatingMode && chosenRoute.length >= 2) {
+            for (let i = 0; i < chosenRoute.length - 1; i++) {
+                const fromId = chosenRoute[i]!;
+                const toId = chosenRoute[i + 1]!;
+
+                // Defensive: skip when either endpoint isn't in the
+                // rendered set (shouldn't happen — layoutPathwayNavigate
+                // returns the valid route — but catches stale ids).
+                if (
+                    !renderedNodeIds.has(fromId) ||
+                    !renderedNodeIds.has(toId)
+                ) {
+                    continue;
+                }
+
+                const sourceNode = activePathway.nodes.find(
+                    n => n.id === fromId,
+                );
+                const fromCompleted =
+                    sourceNode?.progress.status === 'completed';
+
+                const spineEdgeId = `route-spine-${fromId}-${toId}`;
+
+                if (fromCompleted) currentlyCompleted.add(spineEdgeId);
+
+                const isFreshlyCompleted =
+                    fromCompleted && !seen.has(spineEdgeId);
+
+                let stroke: string;
+                let strokeWidth: number;
+                let strokeDasharray: string | undefined;
+
+                if (fromCompleted) {
+                    stroke = '#10B981';
+                    strokeWidth = 2.5;
+                    strokeDasharray = undefined;
+                } else {
+                    stroke = '#6366F1';
+                    strokeWidth = 2.25;
+                    strokeDasharray = '6 5';
+                }
+
+                edges.push({
+                    id: spineEdgeId,
+                    source: fromId,
+                    target: toId,
+                    type: 'default',
+                    animated: false,
+                    className: isFreshlyCompleted
+                        ? 'pathway-edge-drawing'
+                        : undefined,
+                    style: {
+                        stroke,
+                        strokeWidth,
+                        strokeDasharray,
+                        opacity: 1,
+                    },
+                } satisfies RfEdge);
+            }
+
+            // In Navigate mode we've replaced the graph-edge pass
+            // entirely. Skip the remaining loops — no real graph
+            // edges, no collapsed-collection synthetic edges
+            // (collections don't render in Navigate since their
+            // off-route members aren't in positions).
+            seenCompletedEdgesRef.current = currentlyCompleted;
+            return edges;
+        }
+
         for (const e of activePathway.edges) {
             if (collapsedEdgeIds.has(e.id)) continue;
 
@@ -1145,7 +1265,13 @@ const MapModeInner: React.FC = () => {
                 nodes={rfNodes}
                 edges={rfEdges}
                 nodeTypes={NODE_TYPES}
-                fitView
+                // Navigate mode centers on the current step via
+                // FocusPanner (see below) rather than fitting the
+                // whole route — the learner is *walking*, they want
+                // to see where they are, not where they'll end up.
+                // Explore keeps fitView so the full graph lands on
+                // screen when you swing out to browse.
+                fitView={effectiveLayout !== 'navigate'}
                 fitViewOptions={{ padding: 0.3 }}
                 minZoom={0.3}
                 maxZoom={1.5}
@@ -1181,7 +1307,11 @@ const MapModeInner: React.FC = () => {
                     openNode(node.id);
                 }}
             >
-                <FocusPanner focusId={focusId} positions={positions} />
+                <FocusPanner
+                    focusId={focusId}
+                    positions={positions}
+                    zoom={effectiveLayout === 'navigate' ? 1.1 : 1}
+                />
 
                 <Background
                     variant={BackgroundVariant.Dots}
