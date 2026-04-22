@@ -13,6 +13,7 @@ import {
 import { type Wages } from 'learn-card-base';
 import {
     buildSalaryDistributionData,
+    formatAboutCount,
     getSelectedWagesBySalaryType,
 } from './ai-pathway-careers.helpers';
 
@@ -113,10 +114,22 @@ export const AiPathwayCareerPipeChart: React.FC<{
                     <BarChart
                         data={data}
                         barCategoryGap="20%"
-                        margin={{ top: showMedianOverlay ? 28 : 12, left: 8, right: 8, bottom: 8 }}
+                        margin={{ top: showMedianOverlay ? 28 : 12, left: 0, right: 8, bottom: 8 }}
                     >
                         <XAxis dataKey="bucketLabel" hide />
-                        <YAxis hide />
+                        <YAxis
+                            width={40}
+                            tickMargin={8}
+                            tickFormatter={value => formatAboutCount(value)}
+                            tick={{
+                                fill: '#8B91A7',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                fontFamily: 'Poppins, sans-serif',
+                            }}
+                            axisLine={{ stroke: '#E2E3E9' }}
+                            tickLine={{ stroke: '#E2E3E9' }}
+                        />
 
                         {medianBucket && (
                             <ReferenceLine
@@ -159,7 +172,7 @@ export const AiPathwayCareerPipeChart: React.FC<{
 
             {/* Min / Max labels */}
             <div className="flex justify-between px-[8px] py-[0] mt-[2px] text-[14px] leading-[16px] text-grayscale-900">
-                <span>{formatSalary(minSalary, salaryType)}</span>
+                <span className="ml-[34px]">{formatSalary(minSalary, salaryType)}</span>
                 <span>{formatSalary(maxSalary, salaryType)}</span>
             </div>
         </div>
