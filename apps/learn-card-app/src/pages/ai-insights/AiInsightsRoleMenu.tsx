@@ -209,7 +209,7 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
                     : 'flex flex-col overflow-hidden rounded-[20px] border border-grayscale-200 bg-white shadow-bottom-2-4 max-h-[420px]'
             }
         >
-            <div className="min-h-0 overflow-y-auto">
+            <div className="min-h-0 overflow-y-auto hide-scrollbar">
                 <div className="sticky top-0 z-10 border-b border-grayscale-100 bg-white/95 px-[12px] py-[12px] backdrop-blur">
                     <SearchInput
                         placeholder="Search roles..."
