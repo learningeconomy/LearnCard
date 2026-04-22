@@ -191,12 +191,30 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
                             </li>
                         ))}
 
-                        {diff.removeEdgeIds.map(id => (
-                            <li key={id} className="text-xs text-grayscale-500 line-through">
-                                <span className="mr-1">−</span>
-                                {id}
-                            </li>
-                        ))}
+                        {diff.removeEdgeIds.map(id => {
+                            // Resolve the edge id to human-readable
+                            // endpoints via the live pathway's edge
+                            // list. When the pathway isn't loaded or
+                            // the edge has already been pruned
+                            // (e.g. the diff was authored against a
+                            // stale pathway), fall back to the raw
+                            // id so the learner still sees *something*
+                            // auditable rather than silently nothing.
+                            const edge = pathway?.edges.find(x => x.id === id);
+                            const label = edge
+                                ? `${titleFor(edge.from)} \u2192 ${titleFor(edge.to)}`
+                                : id;
+
+                            return (
+                                <li
+                                    key={id}
+                                    className="text-xs text-grayscale-500 line-through"
+                                >
+                                    <span className="mr-1">−</span>
+                                    {label}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </section>
             )}

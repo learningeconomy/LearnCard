@@ -27,7 +27,8 @@ import IdentityBanner from './IdentityBanner';
 import NextActionCard from './NextActionCard';
 import StreakRibbon from './StreakRibbon';
 import { buildIdentityBanner, buildJourney, getGreeting } from './presentation';
-import { getNextAction, rankCandidates } from './ranking';
+import { rankCandidates } from './ranking';
+import { selectNextAction } from './selectNextAction';
 
 const HOURS_12 = 12 * 60 * 60 * 1000;
 
@@ -109,26 +110,49 @@ const TodayMode: React.FC = () => {
         }));
     }, [activePathway]);
 
-    const scored = useMemo(() => {
-        if (!context) return null;
+    // Today consults `selectNextAction` rather than `getNextAction`
+    // directly so the committed `chosenRoute` (when present) drives the
+    // turn-by-turn experience, and the scoring pipeline kicks in only
+    // when no route is set / the route is exhausted. The two sources
+    // flow through the same `ScoredCandidate` shape so the downstream
+    // card renders uniformly; the `source` discriminant is preserved
+    // only for telemetry.
+    const pick = useMemo(() => {
+        if (!activePathway || !context) return null;
 
-        return getNextAction(candidates, context);
-    }, [candidates, context]);
+        return selectNextAction({
+            pathway: activePathway,
+            candidates,
+            context,
+        });
+    }, [activePathway, candidates, context]);
+
+    const scored = pick?.scored ?? null;
 
     // -- Telemetry: emit `nextActionShown` when the card renders ----------
 
     useEffect(() => {
-        if (!scored || !context) return;
+        if (!pick || !context) return;
 
         const allScored = rankCandidates(candidates, context);
 
         analytics.track(AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_SHOWN, {
-            nodeId: scored.node.nodeId,
-            reasons: scored.reasons,
-            topScore: scored.score,
+            nodeId: pick.scored.node.nodeId,
+            reasons: pick.scored.reasons,
+            topScore: pick.scored.score,
             runnerUpScores: allScored.slice(1, 4).map(s => s.score),
+            // `source` lets us compare route-based picks vs. ranking-based
+            // picks at the aggregate level — a useful proxy for how often
+            // learners are actually on a committed route.
+            source: pick.source,
+            ...(pick.routeStep
+                ? {
+                      routePosition: pick.routeStep.position,
+                      routeTotal: pick.routeStep.total,
+                  }
+                : {}),
         });
-    }, [scored, context, candidates, analytics]);
+    }, [pick, context, candidates, analytics]);
 
     // -- Render ------------------------------------------------------------
 
@@ -271,6 +295,7 @@ const TodayMode: React.FC = () => {
                         node={nodeById}
                         scored={scored}
                         journey={journey}
+                        routeStep={pick?.routeStep}
                         onOpen={() => {
                             pathwayStore.set.clearRecentCompletion();
                             history.push(

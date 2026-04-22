@@ -248,6 +248,181 @@ describe('applyProposal — in-pathway diffs', () => {
 
         expect(before).toEqual(snapshot);
     });
+
+    // -----------------------------------------------------------------
+    // chosenRoute pruning
+    //
+    // `applyProposal` is the only commit seam, so it's the right place
+    // to keep chosenRoute honest when a diff removes nodes. Re-seeding
+    // is intentionally *not* done here — callers who want that layer it
+    // on top.
+    // -----------------------------------------------------------------
+
+    it('prunes chosenRoute ids that reference removed nodes', () => {
+        const before = pathway(
+            [node('a'), node('b'), node('c'), node('d')],
+            [],
+            { chosenRoute: ['a', 'b', 'c', 'd'] },
+        );
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ removeNodeIds: ['b'] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toEqual(['a', 'c', 'd']);
+    });
+
+    it('preserves chosenRoute when the diff removes nothing on it', () => {
+        const before = pathway(
+            [node('a'), node('b'), node('c')],
+            [],
+            { chosenRoute: ['a', 'b', 'c'] },
+        );
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ addNodes: [node('d')] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toEqual(['a', 'b', 'c']);
+    });
+
+    it('drops chosenRoute entirely when pruning leaves fewer than two ids', () => {
+        // Route = [a, b]; remove b → route would degenerate to [a].
+        // pruneChosenRoute returns undefined in that case so Today
+        // falls back to ranking rather than committing to a one-node
+        // "route."
+        const before = pathway(
+            [node('a'), node('b')],
+            [],
+            { chosenRoute: ['a', 'b'] },
+        );
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ removeNodeIds: ['b'] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toBeUndefined();
+    });
+
+    it('leaves chosenRoute absent when it was absent to begin with', () => {
+        const before = pathway([node('a'), node('b')]);
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ addNodes: [node('c')] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toBeUndefined();
+    });
+
+    // -----------------------------------------------------------------
+    // setChosenRoute (route-swap diffs)
+    //
+    // `diff.setChosenRoute` is the What-If / Router route-swap
+    // channel: a proposal that changes *which walk* the learner
+    // commits to, without touching the graph. It also wins over the
+    // prune-from-existing-route path below when both are applicable.
+    // -----------------------------------------------------------------
+
+    it('applies setChosenRoute onto a pathway that had no prior route', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ setChosenRoute: ['a', 'b', 'c'] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toEqual(['a', 'b', 'c']);
+        // Graph intact.
+        expect(after.nodes).toHaveLength(3);
+    });
+
+    it('setChosenRoute overwrites an existing chosenRoute', () => {
+        const before = pathway(
+            [node('a'), node('b'), node('c')],
+            [],
+            { chosenRoute: ['a', 'b', 'c'] },
+        );
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ setChosenRoute: ['a', 'c'] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toEqual(['a', 'c']);
+    });
+
+    it('setChosenRoute wins over prune-of-existing-route when both apply', () => {
+        // Proposal removes node `b` AND supplies a brand-new route.
+        // The setChosenRoute wins — we use the proposal's explicit
+        // route as the source-of-truth, not pathway.chosenRoute minus
+        // removed ids. Both paths then filter against the survivor
+        // set, so the explicit route is still pruned for safety.
+        const before = pathway(
+            [node('a'), node('b'), node('c'), node('d')],
+            [],
+            { chosenRoute: ['a', 'b', 'c', 'd'] },
+        );
+
+        const after = applyProposal(
+            before,
+            proposal(
+                emptyDiff({
+                    removeNodeIds: ['b'],
+                    setChosenRoute: ['a', 'd'],
+                }),
+            ),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toEqual(['a', 'd']);
+    });
+
+    it('setChosenRoute is filtered against survivor ids so stale entries are dropped', () => {
+        // Pathological case: the proposal names a route id that the
+        // same proposal also removes. Filter through the same pruning
+        // pipeline so the route can't reference a vanished node.
+        const before = pathway([node('a'), node('b'), node('c')]);
+
+        const after = applyProposal(
+            before,
+            proposal(
+                emptyDiff({
+                    removeNodeIds: ['b'],
+                    // b is removed; a, c survive.
+                    setChosenRoute: ['a', 'b', 'c'],
+                }),
+            ),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toEqual(['a', 'c']);
+    });
+
+    it('an empty setChosenRoute clears the field (honors the learner intent)', () => {
+        const before = pathway(
+            [node('a'), node('b')],
+            [],
+            { chosenRoute: ['a', 'b'] },
+        );
+
+        const after = applyProposal(
+            before,
+            proposal(emptyDiff({ setChosenRoute: [] })),
+            LATER,
+        );
+
+        expect(after.chosenRoute).toBeUndefined();
+    });
 });
 
 describe('materializeNewPathway — cross-pathway proposals', () => {

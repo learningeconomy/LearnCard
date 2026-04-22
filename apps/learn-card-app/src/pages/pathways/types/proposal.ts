@@ -53,6 +53,26 @@ export const PathwayDiffSchema = z.object({
     addEdges: z.array(EdgeSchema).default([]),
     removeEdgeIds: z.array(z.string().uuid()).default([]),
 
+    /**
+     * **Route swap** — overwrite the pathway's `chosenRoute` with the
+     * supplied ordered list of node ids. Applied *after* any
+     * structural add/remove work, so a single diff can legitimately
+     * remove a node *and* supply a new route that reflects the
+     * removal.
+     *
+     * The most important use is What-If scenario acceptance: a
+     * "fast-track" scenario is a **route swap, not graph surgery** —
+     * the review nodes stay in the graph (still available in Map,
+     * still visible in the record) but drop off the committed walk.
+     * This is more honest and reversible than destructive removal.
+     *
+     * Callers pass ids only; `applyProposal` filters against the
+     * surviving node set and drops the field entirely (same
+     * semantics as `pruneChosenRoute`) if the result can't form a
+     * walk. Pass an empty array to clear chosenRoute.
+     */
+    setChosenRoute: z.array(z.string().uuid()).optional(),
+
     // For Planner drafting an entire new pathway.
     newPathway: z
         .object({

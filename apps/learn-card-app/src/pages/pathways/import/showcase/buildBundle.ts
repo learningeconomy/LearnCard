@@ -18,6 +18,7 @@
  * specs, slugs, edges — without re-writing the plumbing.
  */
 
+import { seedChosenRoute } from '../../core/chosenRoute';
 import type {
     AchievementProjection,
     Edge,
@@ -335,7 +336,7 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
             ? nodeIdByKey[nodeIdKey(spec.slug, spec.destinationSlug)]
             : undefined;
 
-        return {
+        const pathway: Pathway = {
             id: pathwayId,
             ownerDid,
             title: spec.title,
@@ -357,6 +358,18 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
             createdAt: now,
             updatedAt: now,
         };
+
+        // Seed chosenRoute now that the pathway shape is final. Showcases
+        // always name a destination (that's the point — a destination is
+        // what makes a showcase narratively coherent), so the seed will
+        // typically produce a non-empty route covering every ancestor of
+        // the destination. Authoring a showcase without a destination
+        // falls back to no route, matching `instantiateTemplate`.
+        const seededRoute = seedChosenRoute(pathway);
+
+        return seededRoute.length > 0
+            ? { ...pathway, chosenRoute: seededRoute }
+            : pathway;
     };
 
     const primary = realize(primarySpec);

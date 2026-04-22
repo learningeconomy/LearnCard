@@ -427,6 +427,36 @@ export const PathwaySchema = z.object({
      */
     intentAltitude: AltitudeSchema.optional(),
 
+    /**
+     * **Chosen route** — the learner's committed linear walk through
+     * the pathway graph. An ordered list of `PathwayNode.id`s, where
+     * the first id is typically the entry point and the last is the
+     * destination. Completed nodes stay in the route (it's a *route*,
+     * not a cursor) so surfaces can render "step N of M" honestly.
+     *
+     * The field is the single source of truth shared by the three
+     * pathway surfaces:
+     *
+     *   - **Today** — picks the first uncompleted, available id as
+     *     the "next action" (turn-by-turn).
+     *   - **Map** — draws the chosenRoute emerald-solid; every other
+     *     edge stays visible but desaturated.
+     *   - **What-If** — proposes alternate chosenRoutes (route swaps),
+     *     not destructive graph edits.
+     *
+     * Why optional:
+     *   1. Backwards compatibility — pathways created before this
+     *      field existed keep working; consumers fall back to ranking.
+     *   2. Pathways without a destination (question- /
+     *      exploration-altitude) don't have a terminal, so committing
+     *      to a route doesn't apply.
+     *
+     * See `core/chosenRoute.ts` for `seedChosenRoute`,
+     * `pruneChosenRoute`, and `pickNextOnRoute` — the pure algebra
+     * callers use to derive, maintain, and consume the field.
+     */
+    chosenRoute: z.array(z.string().uuid()).optional(),
+
     // -------------------------------------------------------------
     // Provenance (optional) — see `PathwayNodeSchema` for rationale.
     // When a pathway was imported from the Credential Engine Registry,

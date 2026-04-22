@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { Edge, Pathway, PathwayNode } from '../types';
 
-import { X_SPACING, Y_SPACING, layoutPathway } from './layout';
+import {
+    X_SPACING,
+    Y_SPACING,
+    layoutPathway,
+    layoutPathwayNavigate,
+} from './layout';
 
 const NOW = '2026-04-20T00:00:00.000Z';
 
@@ -114,5 +119,154 @@ describe('layoutPathway (bottom-up)', () => {
 
         expect(positions).toHaveLength(2);
         expect(positions.every(p => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// layoutPathwayNavigate — linear spine with side-branches
+// ---------------------------------------------------------------------------
+
+describe('layoutPathwayNavigate', () => {
+    it('falls back to layoutPathway when the route has fewer than two ids', () => {
+        const p = pathway(
+            [node('a'), node('b')],
+            [edge('1', 'a', 'b')],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, []));
+        const explore = byId(layoutPathway(p));
+
+        // Same positions as Explore; no onRoute flag on any entry.
+        expect(positions.a.x).toBe(explore.a.x);
+        expect(positions.a.y).toBe(explore.a.y);
+        expect(positions.a.onRoute).toBeUndefined();
+    });
+
+    it('places route nodes on a vertical spine at x = 0, step 1 at bottom', () => {
+        const p = pathway(
+            [node('a'), node('b'), node('c')],
+            [edge('1', 'a', 'b'), edge('2', 'b', 'c')],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, ['a', 'b', 'c']));
+
+        expect(positions.a.x).toBe(0);
+        expect(positions.b.x).toBe(0);
+        expect(positions.c.x).toBe(0);
+
+        // Bottom-up: `a` (first) at largest y, `c` (destination) at 0.
+        expect(positions.a.y).toBeGreaterThan(positions.b.y);
+        expect(positions.b.y).toBeGreaterThan(positions.c.y);
+        expect(positions.c.y).toBe(0);
+    });
+
+    it('tags route nodes with onRoute=true', () => {
+        const p = pathway(
+            [node('a'), node('b'), node('c')],
+            [edge('1', 'a', 'b'), edge('2', 'b', 'c')],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, ['a', 'b', 'c']));
+
+        expect(positions.a.onRoute).toBe(true);
+        expect(positions.b.onRoute).toBe(true);
+        expect(positions.c.onRoute).toBe(true);
+    });
+
+    it('assigns level = route position for on-route nodes', () => {
+        const p = pathway(
+            [node('a'), node('b'), node('c')],
+            [edge('1', 'a', 'b'), edge('2', 'b', 'c')],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, ['a', 'b', 'c']));
+
+        expect(positions.a.level).toBe(0);
+        expect(positions.b.level).toBe(1);
+        expect(positions.c.level).toBe(2);
+    });
+
+    // Core invariant for Navigate mode: off-route nodes must not
+    // appear in the result. This is what makes the Navigate canvas
+    // a *route-only* view — any context about side-branches or
+    // orphans is surfaced by MapMode chrome (detour chips, "View
+    // full map"), never by the layout itself.
+
+    it('omits off-route nodes entirely (structurally between route nodes)', () => {
+        // Route: a → c. Structural graph: a → b → c, so `b` exists
+        // in the pathway but isn't on the committed walk.
+        const p = pathway(
+            [node('a'), node('b'), node('c')],
+            [edge('1', 'a', 'b'), edge('2', 'b', 'c'), edge('3', 'a', 'c')],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, ['a', 'c']));
+
+        // `b` is present in the pathway but must not appear in the
+        // Navigate layout — it's a side-branch.
+        expect(positions.a).toBeDefined();
+        expect(positions.c).toBeDefined();
+        expect(positions.b).toBeUndefined();
+        expect(Object.keys(positions)).toHaveLength(2);
+    });
+
+    it('omits off-route nodes that are siblings of a route step', () => {
+        // Route: a → c. Off-route: b, d, e (all prereqs of a).
+        const p = pathway(
+            [node('a'), node('b'), node('c'), node('d'), node('e')],
+            [
+                edge('1', 'b', 'a'),
+                edge('2', 'd', 'a'),
+                edge('3', 'e', 'a'),
+                edge('4', 'a', 'c'),
+            ],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, ['a', 'c']));
+
+        // Only the route steps are present.
+        expect(Object.keys(positions).sort()).toEqual(['a', 'c']);
+    });
+
+    it('omits orphans (unreachable nodes) from the Navigate layout', () => {
+        // Route: a → c. Orphan: z (no edges).
+        const p = pathway(
+            [node('a'), node('c'), node('z')],
+            [edge('1', 'a', 'c')],
+        );
+
+        const positions = byId(layoutPathwayNavigate(p, ['a', 'c']));
+
+        expect(positions.z).toBeUndefined();
+        expect(Object.keys(positions).sort()).toEqual(['a', 'c']);
+    });
+
+    it('defensively drops stale route ids that do not exist in the pathway', () => {
+        const p = pathway(
+            [node('a'), node('b')],
+            [edge('1', 'a', 'b')],
+        );
+
+        // Route references ghost id; pruning would leave only [a, b]
+        // from the valid ones — that's fine, a full route.
+        const positions = byId(
+            layoutPathwayNavigate(p, ['a', 'ghost', 'b']),
+        );
+
+        expect(positions.a.onRoute).toBe(true);
+        expect(positions.b.onRoute).toBe(true);
+        // No throw; a and b both placed, ghost id is silently dropped.
+        expect(Object.keys(positions)).toHaveLength(2);
+    });
+
+    it('falls back to layoutPathway when the only valid route ids leave < 2', () => {
+        const p = pathway([node('a')], []);
+
+        // All ids except `a` are ghosts; valid route ends up as [a].
+        const positions = byId(
+            layoutPathwayNavigate(p, ['a', 'ghost-1', 'ghost-2']),
+        );
+
+        expect(positions.a.onRoute).toBeUndefined();
     });
 });

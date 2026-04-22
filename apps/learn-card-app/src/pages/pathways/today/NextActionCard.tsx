@@ -40,6 +40,16 @@ interface NextActionCardProps {
     scored: ScoredCandidate;
     journey: Journey;
     onOpen: () => void;
+    /**
+     * When the learner's committed `chosenRoute` drove the pick,
+     * `routeStep` carries the 1-indexed position and total length.
+     * The card then renders a subtle "N of M" route pill in the
+     * header, swapping the policy kind for route framing so the
+     * learner reads "you're on step 3 of 7" rather than "this is
+     * an artifact task." When absent, the card falls back to its
+     * policy-kind chrome (ranking-sourced picks).
+     */
+    routeStep?: { position: number; total: number };
 }
 
 const NextActionCard: React.FC<NextActionCardProps> = ({
@@ -47,6 +57,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
     scored,
     journey,
     onOpen,
+    routeStep,
 }) => {
     const primaryReason = scored.reasons[0];
     const policy = node.stage.policy;
@@ -72,18 +83,54 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                        border border-white shadow-xl shadow-grayscale-900/5
                        transition-shadow duration-300 hover:shadow-2xl hover:shadow-grayscale-900/10"
         >
-            {/* Header row: policy chip on the left, journey chip on the right. */}
+            {/* Header row: left chip (route or policy), right chip (journey).
+                When we have a `routeStep`, the left chip becomes a subtle
+                "STEP N OF M · ROUTE" pill + thin progress rail, replacing
+                the policy-kind framing. The route framing wins because
+                that's the learner's committed plan — the policy kind is
+                a detail of *how* step N is done; the route tells them
+                *where they are.*
+                Uses emerald accents (same color family as the Map's
+                chosenRoute ribbon) so the two surfaces feel connected
+                without shouting. */}
             <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-1.5">
-                    <span
-                        aria-hidden
-                        className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-                    />
+                {routeStep ? (
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span
+                            aria-hidden
+                            className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                        />
 
-                    <span className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-[0.08em]">
-                        {policyLabel(policyKind)}
-                    </span>
-                </div>
+                        <span className="text-[10px] font-semibold text-emerald-700 uppercase tracking-[0.08em] whitespace-nowrap">
+                            Step {routeStep.position} of {routeStep.total}
+                        </span>
+
+                        <span
+                            aria-hidden
+                            className="relative w-14 h-[3px] rounded-full bg-emerald-100 overflow-hidden"
+                        >
+                            <span
+                                className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full"
+                                style={{
+                                    width: `${Math.round(
+                                        (routeStep.position / routeStep.total) * 100,
+                                    )}%`,
+                                }}
+                            />
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5">
+                        <span
+                            aria-hidden
+                            className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                        />
+
+                        <span className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-[0.08em]">
+                            {policyLabel(policyKind)}
+                        </span>
+                    </div>
+                )}
 
                 <span className="text-[10px] font-medium text-grayscale-400 uppercase tracking-wider">
                     {journeyLabel(journey)}

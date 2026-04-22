@@ -142,6 +142,34 @@ describe('buildWhatIfShowcase', () => {
         expect(kinds.has('destination-only')).toBe(true);
     });
 
+    it('seeds a chosenRoute that starts at an entry and ends at the destination', () => {
+        // Seeding chosenRoute at instantiation is what makes Today
+        // render turn-by-turn against the showcase instead of falling
+        // back to ranking. This assertion catches regressions where a
+        // future edit drops the seed call from `assembleBundle`.
+        const { primary, supporting } = buildWhatIfShowcase({
+            ownerDid: 'did:example:learner',
+            now: NOW,
+            generateId: makeDeterministicFactory(),
+        });
+
+        for (const p of [primary, ...supporting]) {
+            expect(p.chosenRoute).toBeDefined();
+            expect(p.chosenRoute!.length).toBeGreaterThanOrEqual(2);
+
+            // Last id must be the destination.
+            expect(p.chosenRoute![p.chosenRoute!.length - 1]).toBe(
+                p.destinationNodeId,
+            );
+
+            // Every id must be a real node in the pathway.
+            const nodeIdSet = new Set(p.nodes.map(n => n.id));
+            for (const id of p.chosenRoute!) {
+                expect(nodeIdSet.has(id)).toBe(true);
+            }
+        }
+    });
+
     it('preview totals match the realized bundle', () => {
         const { primary, supporting } = buildWhatIfShowcase({
             ownerDid: 'did:example:learner',

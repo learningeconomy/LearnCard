@@ -14,6 +14,7 @@
  * `Pathway` instead of patching an existing one.
  */
 
+import { pruneChosenRoute } from '../core/chosenRoute';
 import { wouldCreateCycle, type PathwayMap } from '../core/composition';
 import type {
     Edge,
@@ -211,11 +212,42 @@ export const applyProposal = (
 
     const nextEdges = [...cleanSurviving, ...newEdges];
 
+    // Resolve the next chosenRoute. Priority order:
+    //
+    //   1. `diff.setChosenRoute` — an explicit route swap from the
+    //      proposal itself. This is what What-If emits when the
+    //      learner picks an alternative walk ("fast track", "skip
+    //      externals", etc.) — non-destructive route editing in its
+    //      purest form.
+    //   2. Prune `pathway.chosenRoute` — a structural diff (add/remove
+    //      nodes) that didn't name a new route: preserve what's still
+    //      walkable, drop the rest.
+    //
+    // Either path runs through the same filter-by-surviving-ids
+    // pipeline so the route can't reference a vanished node, and
+    // either falls back to `undefined` when the result can't form a
+    // walk. Re-seeding is intentionally *not* done here; the
+    // `proposalActions` layer owns that decision (it knows the user's
+    // intent — a Planner removing a node is different from a Router
+    // swapping routes).
+    const sourceRoute =
+        diff.setChosenRoute !== undefined
+            ? diff.setChosenRoute
+            : pathway.chosenRoute;
+
+    const nextChosenRoute = pruneChosenRoute(sourceRoute, nextNodeIdSet);
+
     const nextPathway: Pathway = {
         ...pathway,
         nodes: nextNodes,
         edges: nextEdges,
         updatedAt: now,
+        // Only write the field when we have a usable route; otherwise
+        // `...pathway` already carried the original, and we need to
+        // actively strip it.
+        ...(nextChosenRoute
+            ? { chosenRoute: nextChosenRoute }
+            : { chosenRoute: undefined }),
     };
 
     // -- Composite invariants (post-merge) --------------------------------

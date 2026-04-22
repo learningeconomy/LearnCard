@@ -8,6 +8,7 @@
 
 import { AnalyticsEvents, type EventPayload } from '../../../analytics';
 import { pathwayStore, proposalStore } from '../../../stores/pathways';
+import { reseedChosenRoute } from '../core/chosenRoute';
 import type { Proposal } from '../types';
 
 import {
@@ -73,7 +74,31 @@ export const acceptProposal = (proposal: Proposal, opts: AcceptOptions = {}): vo
             );
         }
 
-        const next = applyProposal(existing, proposal, now);
+        const applied = applyProposal(existing, proposal, now);
+
+        // If the pre-diff pathway had a committed route but
+        // applyProposal pruned it away (every route id was a casualty
+        // of `removeNodeIds`), try to recover by seeding a fresh
+        // route from the post-diff graph. This keeps Today's turn-
+        // by-turn experience alive across structural proposals that
+        // happen to wipe out the route — Planner adding a wholly new
+        // chain, Router proposing a radical restructure, etc.
+        //
+        // Intentionally scoped: we never re-seed a pathway that
+        // lacked a route to begin with (no-op on legacy pathways),
+        // never re-seed when the proposal supplied its own
+        // `setChosenRoute` (that's the learner's explicit choice —
+        // honor it verbatim, even if it was empty), never override
+        // a surviving route. The check is the cheapest way to
+        // capture all three.
+        const diffNamedRoute = proposal.diff.setChosenRoute !== undefined;
+        const hadRouteBefore = (existing.chosenRoute?.length ?? 0) >= 2;
+        const lostRouteAfter = (applied.chosenRoute?.length ?? 0) < 2;
+
+        const next =
+            !diffNamedRoute && hadRouteBefore && lostRouteAfter
+                ? reseedChosenRoute(applied)
+                : applied;
 
         pathwayStore.set.upsertPathway(next);
     }

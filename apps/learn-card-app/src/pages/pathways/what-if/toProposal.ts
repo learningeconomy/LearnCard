@@ -6,54 +6,61 @@
  * the learner wants to try into a real proposal they can accept via
  * the existing `/pathways/proposals` pipeline.
  *
+ * ## Route swaps, not graph surgery
+ *
+ * Every accepted scenario ships as a **route swap**: the proposal's
+ * `diff.setChosenRoute` overwrites the pathway's committed walk so
+ * the learner now traverses the alternative the scenario described.
+ * The underlying graph stays intact — review nodes, external nodes,
+ * composite sub-pathways remain available in the Map's depth-2
+ * surface; they've simply dropped off the committed route.
+ *
+ * This is deliberately more honest than destructive removal:
+ *
+ *   - **Non-destructive.** The learner's record still includes every
+ *     node the pathway was authored with. A fast-track decision
+ *     today doesn't erase the deep-practice option tomorrow.
+ *   - **Reversible.** Swap back to the original walk with another
+ *     route-swap proposal; no structural re-creation required.
+ *   - **Map analogy holds.** The Map renders the chosen route
+ *     emerald-solid and the alternates in grayscale — exactly like
+ *     Google Maps offering "2 alternate routes" that you can toggle
+ *     between without rebuilding the map.
+ *
  * ## What converts, and what doesn't
  *
  * A scenario reduces to a pure `NodeSelector`. Two of the three
- * selector levers have schema-backed proposal diffs:
+ * selector levers produce meaningful route swaps:
  *
- *   - `skipPolicyKinds` → node removals (elide whole nodes of a kind)
- *   - `skipNodeIds`     → node removals (elide specific nodes)
+ *   - `skipPolicyKinds` → drop every uncompleted route node whose
+ *                         policy matches from the committed walk.
+ *   - `skipNodeIds`     → drop specific ids from the committed walk.
  *
- * The third lever, `effortMultiplierByKind`, doesn't map onto
- * `PathwayDiff`: our `Policy` schema is a discriminated union with
- * per-kind fields and `NodePatch`'s shallow `stage`-merge would
- * strip the other fields of the policy if we tried to patch
- * `estimatedMinutes` in place. Rather than silently lose data, we
- * refuse the conversion and surface that to the UI as "this
- * scenario is preview-only for now." Keeping the refusal honest
- * is better than shipping a proposal that mutates more than the
- * learner saw in the preview.
+ * The third lever, `effortMultiplierByKind`, doesn't map onto a
+ * route swap: changing *how long* a node takes is a node-level
+ * policy edit, not a walk selection. For the MVP it stays
+ * preview-only, and `classifyScenarioForProposal` says so
+ * explicitly — better to refuse honestly than ship a proposal that
+ * can't deliver what the preview promised.
  *
- * Scenarios that mix skip + multiplier are also preview-only for
- * the same reason.
+ * Scenarios that mix skip + multiplier are preview-only for the
+ * same reason.
  *
- * ## Edge bridging
+ * ## Baseline route
  *
- * When we remove a node mid-graph we bridge its incoming edges to
- * its outgoing edges so dependency chains stay connected. Without
- * that, removing an interior review node would orphan its
- * dependents from their ancestors and the destination could
- * silently become unreachable. Bridging is conservative — we only
- * add edges whose endpoints survive the removal (i.e. neither
- * endpoint is itself being skipped).
- *
- * The bridging edges are stamped with a `prerequisite` type; that's
- * the most honest default given the removed node was a prerequisite
- * of its dependents. A future revision could preserve the original
- * edge type when the remove-and-replace is 1-to-1, but it's not
- * necessary for correctness.
+ * The scenario operates against the pathway's `chosenRoute`. When
+ * the pathway already has one, we filter. When it doesn't (pathways
+ * created before chosenRoute existed, or pathways without a
+ * destination), we derive a baseline via `seedChosenRoute` — the
+ * same helper `instantiateTemplate` / `assembleBundle` use — and
+ * filter *that*. If no baseline can be derived (no destination, no
+ * reachable entry), the scenario is reported as `no-effect`.
  */
 
 import { v4 as uuid } from 'uuid';
 
-import { buildAdjacency } from '../core/graphOps';
-import type {
-    Edge,
-    Pathway,
-    PathwayDiff,
-    Proposal,
-    Tradeoff,
-} from '../types';
+import { seedChosenRoute } from '../core/chosenRoute';
+import type { Pathway, PathwayDiff, Proposal, Tradeoff } from '../types';
 
 import type { Scenario } from './types';
 
@@ -104,16 +111,17 @@ export const classifyScenarioForProposal = (
         };
     }
 
-    // Pure-skip selector — compute the effective skip set against the
-    // live pathway so we can say "no effect" honestly when the
-    // targeted nodes don't exist here.
-    const skipIds = resolveSkipIds(pathway, scenario);
+    // Pure-skip selector — the honest "will accepting this change
+    // anything?" check uses the committed walk, not the whole graph.
+    // Computing the target route also doubles as a dry-run of the
+    // diff builder; any mismatch would be a bug.
+    const targetRoute = computeTargetRoute(pathway, scenario);
 
-    if (skipIds.size === 0) {
+    if (!targetRoute) {
         return {
             kind: 'no-effect',
             message:
-                'Nothing in this pathway matches the scenario\u2019s filters today.',
+                'Nothing on your route matches the scenario\u2019s filters today.',
         };
     }
 
@@ -155,96 +163,80 @@ export const resolveSkipIds = (
 };
 
 // -----------------------------------------------------------------
-// Diff builder
+// Target route computation
 // -----------------------------------------------------------------
 
 /**
- * Build the `PathwayDiff` that implements a pure-skip scenario.
+ * Compute the route the scenario *proposes the learner walk* after
+ * accepting. Returns `null` when the scenario would produce no
+ * change (filters don't overlap the committed walk, or the
+ * remainder can't form a valid walk of two-plus nodes).
  *
- * Returns `null` when the scenario isn't convertible — mirrors the
- * same check `classifyScenarioForProposal` performs so callers can
- * use either entry point interchangeably.
+ * The baseline is the pathway's `chosenRoute` when set; otherwise
+ * we derive one via `seedChosenRoute` so What-If works against
+ * pathways that haven't committed to a route yet (legacy pathways,
+ * pathways where the route was pruned away). Filtering then drops
+ * every skipped id in place, preserving order.
  *
- * The returned diff is expressed purely in terms of node/edge
- * add/remove operations so `applyProposal` consumes it without
- * needing any What-If specific code.
+ * Exposed for tests and for the UI's "skips N route steps" preview.
  */
-export const buildScenarioDiff = (
+export const computeTargetRoute = (
     pathway: Pathway,
     scenario: Scenario,
-    makeId: () => string = uuid,
-): PathwayDiff | null => {
-    const classification = classifyScenarioForProposal(pathway, scenario);
-    if (classification.kind !== 'ok') return null;
+): string[] | null => {
+    const baseline = pathway.chosenRoute ?? seedChosenRoute(pathway);
+    if (baseline.length < 2) return null;
 
     const skipIds = resolveSkipIds(pathway, scenario);
     if (skipIds.size === 0) return null;
 
-    // ---- Edge plumbing ------------------------------------------------
-    //
-    // 1. Every edge touching a skipped node is removed (applyProposal
-    //    would drop it anyway; being explicit keeps the diff
-    //    auditable).
-    // 2. For each skipped node S, add bridging edges from each of
-    //    its prereqs that *survives* to each of its dependents that
-    //    *survives*. This keeps dependency chains intact.
-    // 3. Bridging edges are deduped so a diamond-shaped skip doesn't
-    //    produce multiple parallel edges between the same endpoints.
+    const target = baseline.filter(id => !skipIds.has(id));
 
-    const { prereqs, dependents } = buildAdjacency(pathway);
+    // No overlap → nothing to swap.
+    if (target.length === baseline.length) return null;
 
-    const removeEdgeIds: string[] = [];
-    for (const edge of pathway.edges) {
-        if (skipIds.has(edge.from) || skipIds.has(edge.to)) {
-            removeEdgeIds.push(edge.id);
-        }
-    }
+    // Swapping to a one-node walk is degenerate; treat it as
+    // "no meaningful swap" and let the UI fall back to preview-only.
+    if (target.length < 2) return null;
 
-    const bridgeKey = (from: string, to: string) => `${from}->${to}`;
-    const bridgeSet = new Set<string>();
+    return target;
+};
 
-    // Seed with existing edges so a bridging edge that already exists
-    // (because a prereq → dependent link is present directly) isn't
-    // re-added. Skipped-touching edges aren't in the surviving set,
-    // so they don't poison this seed.
-    for (const edge of pathway.edges) {
-        if (skipIds.has(edge.from) || skipIds.has(edge.to)) continue;
-        bridgeSet.add(bridgeKey(edge.from, edge.to));
-    }
+// -----------------------------------------------------------------
+// Diff builder
+// -----------------------------------------------------------------
 
-    const addEdges: Edge[] = [];
+/**
+ * Build the `PathwayDiff` that implements a scenario acceptance.
+ *
+ * The diff is **non-structural**: no nodes are added or removed,
+ * no edges are touched. The entire change is expressed as a
+ * `setChosenRoute` route swap — `applyProposal` overwrites the
+ * pathway's committed walk with the new route while leaving every
+ * node and edge in place.
+ *
+ * Returns `null` when the scenario isn't convertible (same semantics
+ * as `classifyScenarioForProposal`).
+ */
+export const buildScenarioDiff = (
+    pathway: Pathway,
+    scenario: Scenario,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _makeId: () => string = uuid,
+): PathwayDiff | null => {
+    const classification = classifyScenarioForProposal(pathway, scenario);
+    if (classification.kind !== 'ok') return null;
 
-    for (const id of skipIds) {
-        const upstreams = prereqs.get(id) ?? [];
-        const downstreams = dependents.get(id) ?? [];
-
-        for (const from of upstreams) {
-            if (skipIds.has(from)) continue;
-
-            for (const to of downstreams) {
-                if (skipIds.has(to)) continue;
-                if (from === to) continue;
-
-                const key = bridgeKey(from, to);
-                if (bridgeSet.has(key)) continue;
-                bridgeSet.add(key);
-
-                addEdges.push({
-                    id: makeId(),
-                    from,
-                    to,
-                    type: 'prerequisite',
-                });
-            }
-        }
-    }
+    const target = computeTargetRoute(pathway, scenario);
+    if (!target) return null;
 
     return {
         addNodes: [],
         updateNodes: [],
-        removeNodeIds: [...skipIds],
-        addEdges,
-        removeEdgeIds,
+        removeNodeIds: [],
+        addEdges: [],
+        removeEdgeIds: [],
+        setChosenRoute: target,
     };
 };
 

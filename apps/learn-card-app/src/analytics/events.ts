@@ -207,6 +207,18 @@ export interface AnalyticsEventPayloads {
         reasons: string[];
         topScore: number;
         runnerUpScores: number[];
+        /**
+         * Which selector produced this pick — `'route'` means the
+         * learner's committed `chosenRoute` drove the answer (turn-
+         * by-turn), `'ranking'` means the weighted scorer did. We
+         * break these out so we can measure how often learners are
+         * actually walking a route vs. bouncing through availability.
+         */
+        source?: 'route' | 'detour' | 'ranking';
+        /** 1-indexed position of the pick on the chosenRoute; only set when `source === 'route'`. */
+        routePosition?: number;
+        /** Total chosenRoute length; only set when `source === 'route'`. */
+        routeTotal?: number;
     };
 
     [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_DISMISSED]: {

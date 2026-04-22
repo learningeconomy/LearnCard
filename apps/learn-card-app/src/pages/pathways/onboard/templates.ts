@@ -12,6 +12,7 @@
 
 import { v4 as uuid } from 'uuid';
 
+import { seedChosenRoute } from '../core/chosenRoute';
 import type {
     AchievementProjection,
     Altitude,
@@ -63,6 +64,21 @@ export interface PathwayTemplate {
      * (the pre-altitude behavior) when unset.
      */
     altitude?: Altitude;
+    /**
+     * Slug of the template's **destination** node — the final step
+     * whose completion marks the pathway as done. When set, the
+     * instantiated pathway carries a concrete `destinationNodeId`
+     * and a seeded `chosenRoute` (entry → destination) so Today,
+     * Map, and What-If all have the committed linear walk to
+     * consult. Optional: older templates without a terminal still
+     * work, they just miss out on turn-by-turn.
+     *
+     * Conventionally the destination slug is the node that carries
+     * a `credentialProjection` — the "this is the artifact that
+     * proves the pathway" step — because that's what the learner
+     * is walking *toward*.
+     */
+    destinationSlug?: string;
 }
 
 // -----------------------------------------------------------------
@@ -108,6 +124,7 @@ const PORTFOLIO_OF_TRANSFERABLE_SKILLS: PathwayTemplate = {
     ],
     tags: ['career-transition', 'portfolio', 'self-assessment'],
     altitude: 'aspiration',
+    destinationSlug: 'write-the-story',
     nodes: [
         {
             slug: 'name-three-skills',
@@ -178,6 +195,7 @@ const PREPARE_FOR_INTERVIEWS: PathwayTemplate = {
     ],
     tags: ['interview-prep', 'job-search'],
     altitude: 'aspiration',
+    destinationSlug: 'mentor-sign-off',
     nodes: [
         {
             slug: 'pick-target-roles',
@@ -254,6 +272,7 @@ const SHIP_A_PUBLIC_ARTIFACT: PathwayTemplate = {
     ],
     tags: ['portfolio', 'output', 'publishing'],
     altitude: 'aspiration',
+    destinationSlug: 'publish',
     nodes: [
         {
             slug: 'scope-the-artifact',
@@ -334,6 +353,7 @@ const FOLLOW_A_QUESTION: PathwayTemplate = {
     ],
     tags: ['inquiry', 'research', 'question'],
     altitude: 'question',
+    destinationSlug: 'write-what-you-found',
     nodes: [
         {
             slug: 'sharpen-the-question',
@@ -397,6 +417,7 @@ const CAPTURE_TODAYS_WORK: PathwayTemplate = {
     ],
     tags: ['doing', 'session', 'action'],
     altitude: 'action',
+    destinationSlug: 'note-what-you-noticed',
     nodes: [
         {
             slug: 'name-the-thing',
@@ -461,6 +482,7 @@ const EXPLORE_AND_NOTICE: PathwayTemplate = {
     ],
     tags: ['exploration', 'noticing', 'curiosity'],
     altitude: 'exploration',
+    destinationSlug: 'name-the-shape',
     nodes: [
         {
             slug: 'sample-the-area',
@@ -608,7 +630,17 @@ export const instantiateTemplate = (
     const resolvedAltitude: Altitude | undefined =
         intentAltitude ?? template.altitude;
 
-    return {
+    // Resolve the template's destination slug to a concrete node id.
+    // Templates without a named destination produce a pathway with no
+    // `destinationNodeId`, which in turn produces no seeded
+    // `chosenRoute` — Today falls back to ranking, Map hides the
+    // route ribbon. That's the honest shape for a
+    // "no-terminal-authored" template.
+    const destinationNodeId = template.destinationSlug
+        ? slugToId[template.destinationSlug]
+        : undefined;
+
+    const pathway: Pathway = {
         id: pathwayId,
         ownerDid,
         title: template.title,
@@ -620,7 +652,17 @@ export const instantiateTemplate = (
         visibility: { self: true, mentors: false, guardians: false, publicProfile: false },
         source: 'template',
         templateRef: template.id,
+        ...(destinationNodeId ? { destinationNodeId } : {}),
         createdAt: now,
         updatedAt: now,
     };
+
+    // Seed chosenRoute now that the pathway shape is final. Templates
+    // that name a `destinationSlug` produce a seeded walk from entry
+    // to destination; templates without one fall back to `undefined`
+    // so Today uses ranking rather than committing to a route the
+    // graph can't honestly derive.
+    const seededRoute = seedChosenRoute(pathway);
+
+    return seededRoute.length > 0 ? { ...pathway, chosenRoute: seededRoute } : pathway;
 };

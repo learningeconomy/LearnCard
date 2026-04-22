@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { Edge, Pathway, PathwayNode, Policy, Termination } from '../types';
 
 import {
+    buildRouteFromChosen,
     buildRouteIndex,
     computeSuggestedRoute,
     formatEta,
+    getPathwayRoute,
     nodeEffortMinutes,
 } from './route';
 
@@ -460,5 +462,164 @@ describe('buildRouteIndex', () => {
         const idx = buildRouteIndex(route, p);
 
         expect(idx.yourIndex).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// buildRouteFromChosen
+// ---------------------------------------------------------------------------
+
+describe('buildRouteFromChosen', () => {
+    it('returns null when the pathway has no chosenRoute', () => {
+        resetIds();
+        const a = makeNode();
+        const b = makeNode();
+        const p = makePathway([a, b], [edge(a.id, b.id)], b.id);
+
+        expect(buildRouteFromChosen(p)).toBeNull();
+    });
+
+    it('returns null when chosenRoute is empty', () => {
+        resetIds();
+        const a = makeNode();
+        const p: Pathway = {
+            ...makePathway([a], [], a.id),
+            chosenRoute: [],
+        };
+
+        expect(buildRouteFromChosen(p)).toBeNull();
+    });
+
+    it('drops stale ids and returns null when fewer than two survive', () => {
+        resetIds();
+        const a = makeNode();
+        const p: Pathway = {
+            ...makePathway([a], [], a.id),
+            chosenRoute: [a.id, 'ghost-id'],
+        };
+
+        expect(buildRouteFromChosen(p)).toBeNull();
+    });
+
+    it('builds a SuggestedRoute shape from a valid chosenRoute', () => {
+        resetIds();
+        const a = makeNode({ title: 'A' });
+        const b = makeNode({ title: 'B' });
+        const c = makeNode({ title: 'C' });
+
+        const e1 = edge(a.id, b.id);
+        const e2 = edge(b.id, c.id);
+
+        const p: Pathway = {
+            ...makePathway([a, b, c], [e1, e2], c.id),
+            chosenRoute: [a.id, b.id, c.id],
+        };
+
+        const route = buildRouteFromChosen(p)!;
+
+        expect(route).not.toBeNull();
+        expect(route.nodeIds).toEqual([a.id, b.id, c.id]);
+        expect(route.edgeIds).toEqual([e1.id, e2.id]);
+        expect(route.destinationId).toBe(c.id);
+        // All three uncompleted → three remaining steps.
+        expect(route.remainingSteps).toBe(3);
+        // Practice default = 30 min/node.
+        expect(route.etaMinutes).toBe(90);
+    });
+
+    it('excludes completed nodes from etaMinutes and remainingSteps', () => {
+        resetIds();
+        const completed = {
+            status: 'completed' as const,
+            artifacts: [],
+            reviewsDue: 0,
+            streak: { current: 0, longest: 0 },
+            completedAt: NOW,
+        };
+
+        const a = makeNode({ title: 'A', progress: completed });
+        const b = makeNode({ title: 'B' });
+        const c = makeNode({ title: 'C' });
+
+        const p: Pathway = {
+            ...makePathway([a, b, c], [edge(a.id, b.id), edge(b.id, c.id)], c.id),
+            chosenRoute: [a.id, b.id, c.id],
+        };
+
+        const route = buildRouteFromChosen(p)!;
+
+        // a is completed; b and c still uncompleted.
+        expect(route.remainingSteps).toBe(2);
+        expect(route.etaMinutes).toBe(60);
+        // nodeIds still carries every route position so "Step N of M"
+        // math stays honest.
+        expect(route.nodeIds).toEqual([a.id, b.id, c.id]);
+    });
+
+    it('falls back to the last chosenRoute id for destinationId when pathway.destinationNodeId is absent', () => {
+        // Edge case: a chosenRoute exists but the pathway lost its
+        // destination somehow. Rare but defensive — we prefer "route
+        // ends at the final id" to "crash the Map."
+        resetIds();
+        const a = makeNode();
+        const b = makeNode();
+        const p: Pathway = {
+            ...makePathway([a, b], [edge(a.id, b.id)], undefined),
+            chosenRoute: [a.id, b.id],
+        };
+
+        const route = buildRouteFromChosen(p)!;
+        expect(route.destinationId).toBe(b.id);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getPathwayRoute
+// ---------------------------------------------------------------------------
+
+describe('getPathwayRoute', () => {
+    it('prefers chosenRoute when the pathway has one', () => {
+        resetIds();
+        const a = makeNode();
+        const b = makeNode();
+        const c = makeNode();
+
+        const p: Pathway = {
+            ...makePathway([a, b, c], [edge(a.id, b.id), edge(b.id, c.id)], c.id),
+            chosenRoute: [a.id, b.id, c.id],
+        };
+
+        // Focus on `b`, but chosenRoute should still win.
+        const route = getPathwayRoute(p, b.id)!;
+
+        expect(route.nodeIds).toEqual([a.id, b.id, c.id]);
+    });
+
+    it('falls back to focus-derived computeSuggestedRoute when chosenRoute is absent', () => {
+        resetIds();
+        const a = makeNode();
+        const b = makeNode();
+        const p = makePathway([a, b], [edge(a.id, b.id)], b.id);
+
+        // No chosenRoute on p; should delegate to computeSuggestedRoute.
+        const route = getPathwayRoute(p, a.id)!;
+
+        expect(route).not.toBeNull();
+        expect(route.nodeIds).toEqual([a.id, b.id]);
+    });
+
+    it('returns null when both chosenRoute is absent and focus is off-subtree', () => {
+        resetIds();
+        const focus = makeNode();
+        const other = makeNode();
+        const dest = makeNode();
+
+        const p = makePathway(
+            [focus, other, dest],
+            [edge(other.id, dest.id)],
+            dest.id,
+        );
+
+        expect(getPathwayRoute(p, focus.id)).toBeNull();
     });
 });

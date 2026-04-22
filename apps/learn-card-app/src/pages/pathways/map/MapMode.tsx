@@ -47,11 +47,16 @@ import {
     computeCollectionProgress,
     detectCollections,
 } from './collectionDetection';
-import { NODE_HEIGHT, NODE_WIDTH, layoutPathway } from './layout';
+import {
+    NODE_HEIGHT,
+    NODE_WIDTH,
+    layoutPathway,
+    layoutPathwayNavigate,
+} from './layout';
 import {
     buildRouteIndex,
-    computeSuggestedRoute,
     formatEta,
+    getPathwayRoute,
     nodeEffortMinutes,
 } from './route';
 
@@ -154,10 +159,90 @@ const MapModeInner: React.FC = () => {
         setFocusId(defaultFocusId);
     }, [defaultFocusId]);
 
-    const positions = useMemo(
-        () => (activePathway ? layoutPathway(activePathway) : []),
-        [activePathway],
-    );
+    // ------------------------------------------------------------------
+    // Map layout mode — Navigate vs Explore.
+    //
+    // The Map has two layouts and one source of truth for each:
+    //
+    //   - **Effective layout** — what the canvas actually renders as.
+    //     Derived from (`layoutOverride`, `pathway.chosenRoute`) via:
+    //       - `layoutOverride !== null` → honor the override.
+    //       - otherwise → navigate when chosenRoute exists, else
+    //         explore. This gives committed pathways a Navigate-first
+    //         default (the mental model is "I've chosen my walk, show
+    //         me the walk") while keeping legacy pathways in Explore.
+    //
+    //   - **Override** — an explicit user gesture to see the other
+    //     layout without clearing the route. "View full map" from
+    //     Navigate sets override to 'explore'; "Resume navigation"
+    //     clears it. Clearing `chosenRoute` outright (via the
+    //     "Exit navigation" affordance) also resets the override —
+    //     the pathway is now in Explore for real, there's nothing to
+    //     override back to.
+    //
+    // The override is intentionally per-session, not persisted. It's
+    // a "peek" gesture, not a preference — switching pathways or
+    // reloading the Map resets to the Navigate-first default.
+    // ------------------------------------------------------------------
+    const [layoutOverride, setLayoutOverride] = useState<
+        'navigate' | 'explore' | null
+    >(null);
+
+    // Reset override when the pathway changes — each pathway deserves
+    // a fresh peek-at-nothing start.
+    useEffect(() => {
+        setLayoutOverride(null);
+    }, [activePathway?.id]);
+
+    const hasChosenRoute =
+        (activePathway?.chosenRoute?.length ?? 0) >= 2;
+
+    const effectiveLayout: 'navigate' | 'explore' =
+        layoutOverride ?? (hasChosenRoute ? 'navigate' : 'explore');
+
+    /**
+     * Clear the committed route entirely. This is the "End navigation"
+     * gesture in Google Maps — the learner is abandoning this walk,
+     * not peeking at the graph. Side effects:
+     *
+     *   - `pathway.chosenRoute` → `undefined` (via store upsert).
+     *   - `layoutOverride` → `null` so the derivation swings us to
+     *     Explore automatically (no chosenRoute + null override =
+     *     explore).
+     *
+     * The route can be restored later via any route-seeding surface
+     * (What-If's "Return to original walk" card, a Router proposal,
+     * or `reseedChosenRoute` on a template reinstantiation). The
+     * learner isn't stranded — they've simply chosen to browse.
+     */
+    const clearRoute = React.useCallback(() => {
+        if (!activePathway) return;
+
+        pathwayStore.set.upsertPathway({
+            ...activePathway,
+            chosenRoute: undefined,
+            updatedAt: new Date().toISOString(),
+        });
+
+        setLayoutOverride(null);
+    }, [activePathway]);
+
+    const positions = useMemo(() => {
+        if (!activePathway) return [];
+
+        if (
+            effectiveLayout === 'navigate' &&
+            activePathway.chosenRoute &&
+            activePathway.chosenRoute.length >= 2
+        ) {
+            return layoutPathwayNavigate(
+                activePathway,
+                activePathway.chosenRoute,
+            );
+        }
+
+        return layoutPathway(activePathway);
+    }, [activePathway, effectiveLayout]);
 
     // ------------------------------------------------------------------
     // M6.c.3 — Collection collapsing.
@@ -227,7 +312,10 @@ const MapModeInner: React.FC = () => {
     // ------------------------------------------------------------------
     const route = useMemo(() => {
         if (!activePathway || !focusId) return null;
-        return computeSuggestedRoute(activePathway, focusId);
+        // Prefer the learner's committed `chosenRoute` over
+        // focus-derived topology. `getPathwayRoute` falls back to
+        // `computeSuggestedRoute(focus)` when no chosenRoute exists.
+        return getPathwayRoute(activePathway, focusId);
     }, [activePathway, focusId]);
 
     const routeIndex = useMemo(() => {
@@ -325,6 +413,57 @@ const MapModeInner: React.FC = () => {
         [activePathway, history],
     );
 
+    // ------------------------------------------------------------------
+    // Detour counts per spine node (Navigate mode).
+    //
+    // For each node on the committed route, count how many of its
+    // graph neighbors (prereqs + dependents, deduplicated) are **not**
+    // on the route. That number becomes the "N detours" chip on the
+    // node in Navigate mode — a Google-Maps-style signal that there's
+    // more here without rendering the off-route cards on the spine
+    // canvas (which was the whole distraction problem with the
+    // previous side-branch layout).
+    //
+    // Computed only when the pathway has a committed route AND the
+    // effective layout is `navigate` — in Explore the full graph is
+    // already visible, so the chip would be redundant / noisy.
+    // Explore mode gets an empty map.
+    // ------------------------------------------------------------------
+    const detourCountByNodeId = useMemo(() => {
+        const acc = new Map<string, number>();
+
+        if (!activePathway) return acc;
+        if (effectiveLayout !== 'navigate') return acc;
+
+        const chosen = activePathway.chosenRoute ?? [];
+        if (chosen.length < 2) return acc;
+
+        const routeSet = new Set(chosen);
+        const { prereqs, dependents } = buildAdjacency(activePathway);
+
+        for (const routeId of chosen) {
+            const neighbors = new Set<string>();
+            for (const id of prereqs.get(routeId) ?? []) neighbors.add(id);
+            for (const id of dependents.get(routeId) ?? []) neighbors.add(id);
+
+            let count = 0;
+            for (const id of neighbors) {
+                if (!routeSet.has(id)) count += 1;
+            }
+
+            acc.set(routeId, count);
+        }
+
+        return acc;
+    }, [activePathway, effectiveLayout]);
+
+    // Detour chip tap handler — flip into Explore without clearing the
+    // route. "Resume navigation" in the top-right chrome swings back.
+    // Stable identity via useCallback so MapNodeData doesn't churn.
+    const peekDetours = React.useCallback(() => {
+        setLayoutOverride('explore');
+    }, []);
+
     const rfNodes: Array<RfNode<MapNodeData> | RfNode<CollectionMapNodeData>> = useMemo(() => {
         if (!activePathway) return [];
 
@@ -363,6 +502,23 @@ const MapModeInner: React.FC = () => {
             const isOnRoute = routeIndex?.nodeIndex.has(pos.id) ?? false;
             const isYourPosition = yourNodeId === pos.id;
 
+            // In Navigate layout, `pos.onRoute === false` means this
+            // node is a side-branch off the spine — tell MapNode so it
+            // can dim aggressively. We trust the position's own flag
+            // rather than `!isOnRoute` because the route-index view of
+            // membership (focus-derived) can disagree with the
+            // layout's view (chosenRoute-derived) during transitions.
+            // Explore layout doesn't set `pos.onRoute` at all, so this
+            // defaults to undefined/false and the existing depth fade
+            // stays the governing emphasis.
+            const isSideBranch =
+                effectiveLayout === 'navigate' && pos.onRoute === false;
+
+            // Detour count — non-zero only in Navigate mode (the memo
+            // is empty in Explore). Undefined in Explore so the chip
+            // stays hidden; the graph itself is already the answer.
+            const detourCount = detourCountByNodeId.get(pos.id);
+
             nodes.push({
                 id: pos.id,
                 type: 'pathwayNode',
@@ -374,6 +530,10 @@ const MapModeInner: React.FC = () => {
                     prereq,
                     isOnRoute,
                     isYourPosition,
+                    isSideBranch,
+                    detourCount,
+                    onDetourTap:
+                        detourCount && detourCount > 0 ? peekDetours : undefined,
                 },
                 width: NODE_WIDTH,
                 height: NODE_HEIGHT,
@@ -448,6 +608,9 @@ const MapModeInner: React.FC = () => {
         toggleGroupExpansion,
         routeIndex,
         yourNodeId,
+        effectiveLayout,
+        detourCountByNodeId,
+        peekDetours,
     ]);
 
     // Track which edges have already been seen as "completed" so we can
@@ -483,10 +646,34 @@ const MapModeInner: React.FC = () => {
             for (const eid of group.incomingEdgeIds) collapsedEdgeIds.add(eid);
         }
 
+        // Navigate mode renders a route-only canvas — off-route nodes
+        // don't exist in `rfNodes`, so any edge pointing to one would
+        // dangle (React Flow warns; visually it just draws nothing,
+        // which is worse than a clean omission). Pre-compute the set
+        // of node ids that *will* be rendered so we can filter the
+        // edge pass.
+        //
+        // In Explore mode the layout returns every node, so this set
+        // is the full pathway — the filter becomes a no-op. We still
+        // compute it uniformly to keep the edge-pass branchless.
+        const renderedNodeIds = new Set(positions.map(p => p.id));
+
         const edges: RfEdge[] = [];
 
         for (const e of activePathway.edges) {
             if (collapsedEdgeIds.has(e.id)) continue;
+
+            // Skip edges whose endpoints aren't in the rendered node
+            // set (Navigate mode only drops these in practice). The
+            // committed route is still visible — we don't filter
+            // *route* edges here — because both of its endpoints are
+            // on-route and therefore rendered.
+            if (
+                !renderedNodeIds.has(e.from) ||
+                !renderedNodeIds.has(e.to)
+            ) {
+                continue;
+            }
 
             const inFocus = nb ? nb.edgeIds.has(e.id) : true;
 
@@ -504,37 +691,50 @@ const MapModeInner: React.FC = () => {
             // ----------------------------------------------------------
             // Route ribbon styling.
             //
-            // Each edge falls into one of four visual buckets:
+            // Navigate and Explore modes share the same four buckets
+            // below — trail / projected / off-route-completed /
+            // off-route-pending — but differ on the **projected**
+            // color:
             //
-            //   - **Trail** (route edge, source completed) — solid
-            //     emerald-500, 2.5px. "The road you've already driven."
-            //   - **Projected** (route edge, source not completed) —
-            //     dashed emerald-500, 2px. "The road you haven't
-            //     reached yet." Dash matches Google Maps' "route
-            //     ahead of you" treatment.
-            //   - **Off-route completed** — solid emerald-200, thin.
-            //     A side trail you've walked but isn't the current
-            //     suggested route. Stays visible so progress in
-            //     adjacent branches isn't hidden.
-            //   - **Off-route pending** — neutral gray, thin. The
-            //     grayed-out surrounding street network in Maps.
+            //   - **Explore** uses emerald for the whole ribbon. The
+            //     route is one visual idea ("your suggested path")
+            //     layered over the DAG you're browsing.
+            //   - **Navigate** splits the ribbon: emerald for the
+            //     **trail behind you**, **indigo** for the
+            //     **projected ahead**. This mirrors Google / Apple
+            //     Maps' "driven = gray, ahead = blue" convention and
+            //     makes the committed walk's direction legible at a
+            //     glance. Side-branches simultaneously fade (see
+            //     `MapNode.isSideBranch`) so the indigo spine carries
+            //     the eye end-to-end.
             //
             // `inFocus` still dims everything outside the depth-2
             // neighborhood so the route ribbon peaks in the area the
             // learner is actually looking at.
             // ----------------------------------------------------------
             const onRoute = routeIndex?.edgeOnRoute.has(e.id) ?? false;
+            const navigating = effectiveLayout === 'navigate';
 
             let stroke: string;
             let strokeWidth: number;
             let strokeDasharray: string | undefined;
 
             if (onRoute && fromCompleted) {
+                // Trail behind — always emerald, in both modes. In
+                // Navigate mode this is the "you've driven this"
+                // portion of the polyline.
                 stroke = inFocus ? '#10B981' : '#6EE7B7';
                 strokeWidth = inFocus ? 2.5 : 2;
                 strokeDasharray = undefined;
             } else if (onRoute) {
-                stroke = inFocus ? '#10B981' : '#A7F3D0';
+                // Projected ahead — indigo in Navigate (wayfinding
+                // palette), emerald in Explore (matches the rest of
+                // the ribbon). Dashed in both to read as motion.
+                if (navigating) {
+                    stroke = inFocus ? '#6366F1' : '#A5B4FC';
+                } else {
+                    stroke = inFocus ? '#10B981' : '#A7F3D0';
+                }
                 strokeWidth = inFocus ? 2.25 : 1.75;
                 // 6/5 dash reads as motion without being busy — slightly
                 // longer dash than gap so the line still feels directional.
@@ -683,7 +883,16 @@ const MapModeInner: React.FC = () => {
         seenCompletedEdgesRef.current = currentlyCompleted;
 
         return edges;
-    }, [activePathway, nb, collections, collectionIndex, expandedGroupIds, routeIndex]);
+    }, [
+        activePathway,
+        nb,
+        collections,
+        collectionIndex,
+        expandedGroupIds,
+        routeIndex,
+        effectiveLayout,
+        positions,
+    ]);
 
     if (!activePathway) {
         return (
@@ -812,34 +1021,124 @@ const MapModeInner: React.FC = () => {
             </div>
 
             {/*
-                Navigate-mode launcher — the Waze "Start" button.
-                Only rendered when we have a route to navigate; on a
-                destination-less or unreachable pathway there's
-                nothing to navigate and the button would be a lie.
+                Top-right mode chrome.
+                ──────────────────────────────────────────────────────
+                Google-Maps-style controls for the committed route.
+                Only rendered when the pathway has a chosenRoute —
+                on a destination-less or explore-only pathway there's
+                nothing to navigate and these buttons would be a lie.
 
-                Placed top-right so it's obvious without fighting the
-                centered goal pill's visual lane. Mirrors the pill's
-                glass treatment so the two chrome surfaces read as a
-                family.
+                Stacked vertically so each affordance gets its own
+                row with a clear label:
+
+                  1. **Mode indicator** — compact pill that mirrors
+                     the goal-pill's glass treatment. Indigo dot +
+                     "Navigating" in navigate mode, grayscale dot +
+                     "Exploring" in explore mode (when peeking).
+                  2. **Toggle** — "View full map" switches the canvas
+                     to Explore layout temporarily (keeps the route
+                     committed); "Resume navigation" swings back.
+                     The two labels live on the same button, swapped
+                     by mode, so there's never both visible at once.
+                  3. **Exit navigation** — clears the chosen route
+                     outright. Equivalent to Google Maps'
+                     "End navigation" — the route is gone, the Map
+                     drops to Explore for real, the learner can
+                     restart via What-If or a Router proposal.
+                  4. **Guide me** — launches the Waze single-card
+                     drill-in. Kept as its own row so it's clearly
+                     an *action* (open the turn-by-turn view), not a
+                     *mode*.
+
+                When there's no chosenRoute we skip all four buttons —
+                the pathway is in Explore by default and there's no
+                route to manage.
             */}
-            {route && route.remainingSteps > 0 && (
-                <button
-                    type="button"
-                    onClick={() => setIsNavigating(true)}
+            {hasChosenRoute && (
+                <div
                     className="absolute top-4 right-4 z-10 font-poppins
-                               flex items-center gap-1.5 py-2 px-3.5 rounded-full
-                               bg-emerald-600 text-white text-xs font-semibold
-                               shadow-lg shadow-emerald-600/30
-                               hover:bg-emerald-700 transition-colors
+                               flex flex-col items-end gap-2
                                animate-fade-in-up"
-                    aria-label="Start guided navigation"
                 >
                     <span
-                        aria-hidden
-                        className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
-                    />
-                    <span>Navigate</span>
-                </button>
+                        className={`flex items-center gap-1.5 py-1 px-2.5 rounded-full
+                                    bg-white/70 backdrop-blur-md border border-white
+                                    shadow-sm text-[10px] font-semibold uppercase tracking-wide ${
+                                        effectiveLayout === 'navigate'
+                                            ? 'text-indigo-700'
+                                            : 'text-grayscale-600'
+                                    }`}
+                    >
+                        <span
+                            aria-hidden
+                            className={`w-1.5 h-1.5 rounded-full ${
+                                effectiveLayout === 'navigate'
+                                    ? 'bg-indigo-500 animate-pulse'
+                                    : 'bg-grayscale-400'
+                            }`}
+                        />
+                        <span>
+                            {effectiveLayout === 'navigate'
+                                ? 'Navigating'
+                                : 'Exploring'}
+                        </span>
+                    </span>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setLayoutOverride(
+                                effectiveLayout === 'navigate'
+                                    ? 'explore'
+                                    : null,
+                            )
+                        }
+                        className="py-1.5 px-3 rounded-full
+                                   bg-white/80 backdrop-blur-md border border-white/60
+                                   shadow-sm hover:bg-white transition-colors
+                                   text-xs font-medium text-grayscale-700"
+                        aria-label={
+                            effectiveLayout === 'navigate'
+                                ? 'View the full map'
+                                : 'Resume navigation'
+                        }
+                    >
+                        {effectiveLayout === 'navigate'
+                            ? 'View full map'
+                            : 'Resume navigation'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={clearRoute}
+                        className="py-1.5 px-3 rounded-full
+                                   bg-white/80 backdrop-blur-md border border-white/60
+                                   shadow-sm hover:bg-white transition-colors
+                                   text-xs font-medium text-grayscale-500
+                                   hover:text-grayscale-900"
+                        aria-label="Exit navigation and clear the committed route"
+                    >
+                        Exit navigation
+                    </button>
+
+                    {route && route.remainingSteps > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setIsNavigating(true)}
+                            className="flex items-center gap-1.5 py-2 px-3.5 rounded-full
+                                       bg-indigo-600 text-white text-xs font-semibold
+                                       shadow-lg shadow-indigo-600/30
+                                       hover:bg-indigo-700 transition-colors"
+                            aria-label="Start turn-by-turn guidance"
+                        >
+                            <span
+                                aria-hidden
+                                className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
+                            />
+                            <span>Guide me</span>
+                        </button>
+                    )}
+                </div>
             )}
 
             <ReactFlow

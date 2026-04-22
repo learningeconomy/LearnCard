@@ -13,6 +13,7 @@ import {
     buildProposalFromScenario,
     buildScenarioDiff,
     classifyScenarioForProposal,
+    computeTargetRoute,
     resolveSkipIds,
 } from './toProposal';
 import type { Scenario } from './types';
@@ -102,6 +103,7 @@ const makePathway = (
     nodes: PathwayNode[],
     edges: Edge[],
     destinationNodeId?: string,
+    chosenRoute?: string[],
 ): Pathway => ({
     id: '00000000-0000-4000-8000-00000000aaaa',
     ownerDid: OWNER,
@@ -113,6 +115,7 @@ const makePathway = (
     visibility: { self: true, mentors: false, guardians: false, publicProfile: false },
     source: 'authored',
     destinationNodeId,
+    chosenRoute,
     createdAt: NOW,
     updatedAt: NOW,
 });
@@ -166,16 +169,31 @@ describe('classifyScenarioForProposal', () => {
         );
     });
 
-    it('classifies a pure-skip scenario with no matching nodes as no-effect', () => {
-        // Fast-track skips reviews; this pathway has none.
-        const pathway = makePathway([makeNode()], []);
+    it('classifies a pure-skip scenario with no matching nodes on the route as no-effect', () => {
+        // Fast-track skips reviews; this pathway has none on its route.
+        const a = makeNode();
+        const b = makeNode({
+            stage: {
+                initiation: [],
+                policy: assessmentPolicy(),
+                termination: baseTermination(),
+            },
+        });
+        const pathway = makePathway(
+            [a, b],
+            [edge(a.id, b.id)],
+            b.id,
+            [a.id, b.id],
+        );
 
         expect(
             classifyScenarioForProposal(pathway, fastTrackScenario()).kind,
         ).toBe('no-effect');
     });
 
-    it('classifies a pure-skip scenario with matching nodes as ok', () => {
+    it('classifies a pure-skip scenario with matching route nodes as ok', () => {
+        // practice → review → assessment, chosenRoute covers all three.
+        const p = makeNode();
         const r = makeNode({
             stage: {
                 initiation: [],
@@ -183,8 +201,20 @@ describe('classifyScenarioForProposal', () => {
                 termination: baseTermination(),
             },
         });
+        const a = makeNode({
+            stage: {
+                initiation: [],
+                policy: assessmentPolicy(),
+                termination: baseTermination(),
+            },
+        });
 
-        const pathway = makePathway([r], []);
+        const pathway = makePathway(
+            [p, r, a],
+            [edge(p.id, r.id), edge(r.id, a.id)],
+            a.id,
+            [p.id, r.id, a.id],
+        );
 
         expect(
             classifyScenarioForProposal(pathway, fastTrackScenario()).kind,
@@ -296,6 +326,138 @@ describe('resolveSkipIds', () => {
 // buildScenarioDiff
 // ---------------------------------------------------------------------------
 
+describe('computeTargetRoute', () => {
+    it('returns null when the pathway has no baseline route and no destination', () => {
+        // No chosenRoute; no destination either, so seedChosenRoute
+        // returns nothing. Nothing to swap to.
+        const r = makeNode({
+            stage: {
+                initiation: [],
+                policy: reviewPolicy(),
+                termination: baseTermination(),
+            },
+        });
+        const pathway = makePathway([r], []);
+
+        expect(computeTargetRoute(pathway, fastTrackScenario())).toBeNull();
+    });
+
+    it('filters the pathway chosenRoute against skipIds, preserving order', () => {
+        // practice → review → assessment; route covers all three; fast-track
+        // drops review.
+        const p = makeNode();
+        const r = makeNode({
+            stage: {
+                initiation: [],
+                policy: reviewPolicy(),
+                termination: baseTermination(),
+            },
+        });
+        const a = makeNode({
+            stage: {
+                initiation: [],
+                policy: assessmentPolicy(),
+                termination: baseTermination(),
+            },
+        });
+
+        const pathway = makePathway(
+            [p, r, a],
+            [edge(p.id, r.id), edge(r.id, a.id)],
+            a.id,
+            [p.id, r.id, a.id],
+        );
+
+        expect(computeTargetRoute(pathway, fastTrackScenario())).toEqual([
+            p.id,
+            a.id,
+        ]);
+    });
+
+    it('derives a baseline via seedChosenRoute when chosenRoute is absent', () => {
+        // No explicit chosenRoute, but a destination is set so seedChosenRoute
+        // produces an entry→dest route. Fast-track then drops the review.
+        const p = makeNode();
+        const r = makeNode({
+            stage: {
+                initiation: [],
+                policy: reviewPolicy(),
+                termination: baseTermination(),
+            },
+        });
+        const a = makeNode({
+            stage: {
+                initiation: [],
+                policy: assessmentPolicy(),
+                termination: baseTermination(),
+            },
+        });
+
+        const pathway = makePathway(
+            [p, r, a],
+            [edge(p.id, r.id), edge(r.id, a.id)],
+            a.id,
+        );
+
+        const target = computeTargetRoute(pathway, fastTrackScenario());
+
+        expect(target).not.toBeNull();
+        expect(target!.includes(r.id)).toBe(false);
+        expect(target![target!.length - 1]).toBe(a.id);
+    });
+
+    it('returns null when skipIds do not overlap the route', () => {
+        // Review exists in the pathway but is NOT on the chosenRoute —
+        // the scenario therefore has no route-level effect.
+        const p = makeNode();
+        const r = makeNode({
+            stage: {
+                initiation: [],
+                policy: reviewPolicy(),
+                termination: baseTermination(),
+            },
+        });
+        const a = makeNode({
+            stage: {
+                initiation: [],
+                policy: assessmentPolicy(),
+                termination: baseTermination(),
+            },
+        });
+
+        // Route skips the review.
+        const pathway = makePathway(
+            [p, r, a],
+            [edge(p.id, r.id), edge(r.id, a.id), edge(p.id, a.id)],
+            a.id,
+            [p.id, a.id],
+        );
+
+        expect(computeTargetRoute(pathway, fastTrackScenario())).toBeNull();
+    });
+
+    it('returns null when the target would be fewer than two nodes', () => {
+        // Route is [p, r]; skipping r leaves only [p] — not a walk.
+        const p = makeNode();
+        const r = makeNode({
+            stage: {
+                initiation: [],
+                policy: reviewPolicy(),
+                termination: baseTermination(),
+            },
+        });
+
+        const pathway = makePathway(
+            [p, r],
+            [edge(p.id, r.id)],
+            r.id,
+            [p.id, r.id],
+        );
+
+        expect(computeTargetRoute(pathway, fastTrackScenario())).toBeNull();
+    });
+});
+
 describe('buildScenarioDiff', () => {
     it('returns null for unsupported scenarios', () => {
         const pathway = makePathway([makeNode()], []);
@@ -305,17 +467,31 @@ describe('buildScenarioDiff', () => {
         ).toBeNull();
     });
 
-    it('returns null when no nodes match the skip filter', () => {
-        // Fast-track with no reviews present.
-        const pathway = makePathway([makeNode()], []);
+    it('returns null when no route nodes match the skip filter', () => {
+        const a = makeNode();
+        const b = makeNode({
+            stage: {
+                initiation: [],
+                policy: assessmentPolicy(),
+                termination: baseTermination(),
+            },
+        });
+        const pathway = makePathway(
+            [a, b],
+            [edge(a.id, b.id)],
+            b.id,
+            [a.id, b.id],
+        );
 
         expect(
             buildScenarioDiff(pathway, fastTrackScenario(), makeIds()),
         ).toBeNull();
     });
 
-    it('removes the skipped nodes and their adjacent edges', () => {
-        // practice → review → assessment (dest)
+    it('emits a non-structural diff that only sets chosenRoute', () => {
+        // practice → review → assessment (dest), route covers all three.
+        // A fast-track acceptance should leave the graph intact and only
+        // swap the route.
         const p = makeNode();
         const r = makeNode({
             stage: {
@@ -332,10 +508,12 @@ describe('buildScenarioDiff', () => {
             },
         });
 
-        const e1 = edge(p.id, r.id);
-        const e2 = edge(r.id, a.id);
-
-        const pathway = makePathway([p, r, a], [e1, e2], a.id);
+        const pathway = makePathway(
+            [p, r, a],
+            [edge(p.id, r.id), edge(r.id, a.id)],
+            a.id,
+            [p.id, r.id, a.id],
+        );
 
         const diff = buildScenarioDiff(
             pathway,
@@ -344,12 +522,17 @@ describe('buildScenarioDiff', () => {
         )!;
 
         expect(diff).not.toBeNull();
-        expect(diff.removeNodeIds).toEqual([r.id]);
-        expect(new Set(diff.removeEdgeIds)).toEqual(new Set([e1.id, e2.id]));
+        // Non-structural: nothing added, nothing removed.
+        expect(diff.addNodes).toEqual([]);
+        expect(diff.updateNodes).toEqual([]);
+        expect(diff.removeNodeIds).toEqual([]);
+        expect(diff.addEdges).toEqual([]);
+        expect(diff.removeEdgeIds).toEqual([]);
+        // The entire change is the route swap.
+        expect(diff.setChosenRoute).toEqual([p.id, a.id]);
     });
 
-    it('bridges incoming edges of a skipped node to its outgoing edges', () => {
-        // practice → review → assessment (dest)
+    it('produces a diff applyProposal consumes into a route swap with intact graph', () => {
         const p = makeNode();
         const r = makeNode({
             stage: {
@@ -370,123 +553,7 @@ describe('buildScenarioDiff', () => {
             [p, r, a],
             [edge(p.id, r.id), edge(r.id, a.id)],
             a.id,
-        );
-
-        const diff = buildScenarioDiff(
-            pathway,
-            fastTrackScenario(),
-            makeIds(),
-        )!;
-
-        expect(diff.addEdges).toHaveLength(1);
-        expect(diff.addEdges[0]!.from).toBe(p.id);
-        expect(diff.addEdges[0]!.to).toBe(a.id);
-        expect(diff.addEdges[0]!.type).toBe('prerequisite');
-    });
-
-    it('does not add a bridging edge that already exists', () => {
-        // practice → review → assessment, plus a direct practice → assessment
-        // edge. Removing review shouldn't double-add the existing direct edge.
-        const p = makeNode();
-        const r = makeNode({
-            stage: {
-                initiation: [],
-                policy: reviewPolicy(),
-                termination: baseTermination(),
-            },
-        });
-        const a = makeNode({
-            stage: {
-                initiation: [],
-                policy: assessmentPolicy(),
-                termination: baseTermination(),
-            },
-        });
-
-        const pathway = makePathway(
-            [p, r, a],
-            [edge(p.id, r.id), edge(r.id, a.id), edge(p.id, a.id)],
-            a.id,
-        );
-
-        const diff = buildScenarioDiff(
-            pathway,
-            fastTrackScenario(),
-            makeIds(),
-        )!;
-
-        expect(diff.addEdges).toEqual([]);
-    });
-
-    it('does not bridge through a sequence of multiple skipped nodes', () => {
-        // practice → reviewA → reviewB → assessment. Both reviews skipped.
-        // Bridging only connects an immediate prereq to an immediate
-        // dependent; a chain of skips doesn't produce a "transitive"
-        // bridge because reviewA's only dependent (reviewB) is itself
-        // skipped, and reviewB's only prereq (reviewA) is skipped. A
-        // follow-up improvement could chain these; for MVP we refuse
-        // to invent connectivity.
-        const p = makeNode();
-        const r1 = makeNode({
-            stage: {
-                initiation: [],
-                policy: reviewPolicy(),
-                termination: baseTermination(),
-            },
-        });
-        const r2 = makeNode({
-            stage: {
-                initiation: [],
-                policy: reviewPolicy(),
-                termination: baseTermination(),
-            },
-        });
-        const a = makeNode({
-            stage: {
-                initiation: [],
-                policy: assessmentPolicy(),
-                termination: baseTermination(),
-            },
-        });
-
-        const pathway = makePathway(
-            [p, r1, r2, a],
-            [edge(p.id, r1.id), edge(r1.id, r2.id), edge(r2.id, a.id)],
-            a.id,
-        );
-
-        const diff = buildScenarioDiff(
-            pathway,
-            fastTrackScenario(),
-            makeIds(),
-        )!;
-
-        expect(diff.addEdges).toEqual([]);
-    });
-
-    it('produces a diff that applyProposal accepts without errors', () => {
-        // End-to-end sanity: the diff should round-trip through the
-        // proposals pipeline and produce a pathway without the review.
-        const p = makeNode();
-        const r = makeNode({
-            stage: {
-                initiation: [],
-                policy: reviewPolicy(),
-                termination: baseTermination(),
-            },
-        });
-        const a = makeNode({
-            stage: {
-                initiation: [],
-                policy: assessmentPolicy(),
-                termination: baseTermination(),
-            },
-        });
-
-        const pathway = makePathway(
-            [p, r, a],
-            [edge(p.id, r.id), edge(r.id, a.id)],
-            a.id,
+            [p.id, r.id, a.id],
         );
 
         const proposal = buildProposalFromScenario(
@@ -498,12 +565,12 @@ describe('buildScenarioDiff', () => {
 
         const next = applyProposal(pathway, proposal, NOW);
 
-        expect(next.nodes).toHaveLength(2);
-        expect(next.nodes.map(n => n.id).includes(r.id)).toBe(false);
-        // Bridging edge survives → practice directly gates the assessment.
-        expect(
-            next.edges.some(e => e.from === p.id && e.to === a.id),
-        ).toBe(true);
+        // Graph intact — review still a real node, edges untouched.
+        expect(next.nodes).toHaveLength(3);
+        expect(next.nodes.map(n => n.id).includes(r.id)).toBe(true);
+        expect(next.edges).toHaveLength(2);
+        // Route swapped — review dropped from the committed walk.
+        expect(next.chosenRoute).toEqual([p.id, a.id]);
     });
 });
 
@@ -529,10 +596,13 @@ describe('buildProposalFromScenario', () => {
             },
         });
 
+        // Route covers all three nodes so a fast-track scenario
+        // (skip reviews) has something to swap.
         return makePathway(
             [p, r, a],
             [edge(p.id, r.id), edge(r.id, a.id)],
             a.id,
+            [p.id, r.id, a.id],
         );
     };
 

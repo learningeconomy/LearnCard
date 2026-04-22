@@ -437,3 +437,93 @@ export const buildRouteIndex = (
 
     return { nodeIndex, edgeOnRoute, yourIndex };
 };
+
+// ---------------------------------------------------------------------------
+// chosenRoute-backed route
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a `SuggestedRoute` from a pathway's committed `chosenRoute`
+ * rather than from the focus-derived topology.
+ *
+ * This is the other half of the Map's route renderer. When the
+ * learner has committed to a linear walk, the Map draws *that* walk
+ * emerald-solid — not whatever the current focus implies. The whole
+ * point of chosenRoute is that it outlives individual focus changes:
+ * moving the focus pin around the Map shouldn't redraw the route
+ * ribbon.
+ *
+ * Returns `null` when:
+ *   - the pathway has no `chosenRoute` (empty or undefined)
+ *   - pruning stale ids would leave fewer than two nodes (a
+ *     route of one isn't a walk — see `pruneChosenRoute` for the
+ *     same invariant)
+ *
+ * Consumers should call `getPathwayRoute` rather than this helper
+ * directly; that wrapper handles the fall-through to focus-based
+ * routing.
+ */
+export const buildRouteFromChosen = (pathway: Pathway): SuggestedRoute | null => {
+    const chosen = pathway.chosenRoute;
+    if (!chosen || chosen.length === 0) return null;
+
+    const nodeById = new Map(pathway.nodes.map(n => [n.id, n]));
+
+    // Filter stale ids defensively — a future diff that removes
+    // nodes but forgets to prune the route shouldn't crash the Map.
+    // `applyProposal` prunes already, so this is belt-and-suspenders.
+    const validIds = chosen.filter(id => nodeById.has(id));
+    if (validIds.length < 2) return null;
+
+    const destinationId =
+        pathway.destinationNodeId ?? validIds[validIds.length - 1]!;
+
+    // Highlight every edge whose endpoints both live on the route —
+    // the Map's edge styler then paints trail-vs-projected based on
+    // source completion. A chosenRoute is expected to be walk-shaped
+    // (consecutive pairs connected), but we don't enforce that here;
+    // any route-internal edge gets the ribbon treatment honestly.
+    const validSet = new Set(validIds);
+    const edgeIds = pathway.edges
+        .filter(e => validSet.has(e.from) && validSet.has(e.to))
+        .map(e => e.id);
+
+    let etaMinutes = 0;
+    let remainingSteps = 0;
+
+    for (const id of validIds) {
+        const node = nodeById.get(id)!;
+        if (node.progress.status !== 'completed') {
+            etaMinutes += nodeEffortMinutes(node);
+            remainingSteps += 1;
+        }
+    }
+
+    return {
+        nodeIds: validIds,
+        edgeIds,
+        etaMinutes,
+        remainingSteps,
+        destinationId,
+    };
+};
+
+/**
+ * The Map's route entry point. Prefers the learner's committed
+ * `chosenRoute` when one exists; falls back to `computeSuggestedRoute`
+ * (focus-derived topology) otherwise.
+ *
+ * This is the function the Map and Navigate surfaces should call —
+ * consumers that want explicit control (e.g. `seedChosenRoute`
+ * deriving the initial walk from the graph itself) keep calling
+ * `computeSuggestedRoute` directly to avoid the circular case.
+ */
+export const getPathwayRoute = (
+    pathway: Pathway,
+    focusId: string,
+): SuggestedRoute | null => {
+    const fromChosen = buildRouteFromChosen(pathway);
+    if (fromChosen) return fromChosen;
+
+    return computeSuggestedRoute(pathway, focusId);
+};

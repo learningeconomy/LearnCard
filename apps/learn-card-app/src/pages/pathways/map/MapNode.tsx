@@ -65,6 +65,42 @@ export type MapNodeData = {
      * pin that sits above the card's top handle.
      */
     isYourPosition?: boolean;
+    /**
+     * Navigate-mode side-branch flag. True when the node is laid out
+     * as a side-branch off the spine (i.e. off the chosenRoute) while
+     * the Map is in Navigate layout. Drives aggressive dimming so the
+     * spine reads as the hero and side-branches recede. Set only by
+     * `MapMode` when `effectiveLayout === 'navigate'`; left undefined
+     * (treated as false) in Explore layout so the existing dimming
+     * story is unchanged.
+     *
+     * Note: with the route-only Navigate layout, off-route nodes
+     * aren't rendered at all — this flag is retained for Explore
+     * mode's partial uses and potential future overlays, but
+     * MapMode no longer sets it to `true` in practice.
+     */
+    isSideBranch?: boolean;
+    /**
+     * Count of off-route neighbors (prereqs + dependents combined,
+     * deduplicated) that exist in the pathway but aren't on the
+     * committed walk. Rendered as a compact "N detours" chip on
+     * spine nodes in Navigate mode so learners can see at-a-glance
+     * that this step has alternative paths they're currently
+     * skipping. Tap (via `onDetourTap`) peeks Explore mode.
+     *
+     * Only populated by `MapMode` in Navigate layout for on-route
+     * nodes. Undefined in Explore layout — the full graph is already
+     * visible there, so the chip would be redundant.
+     */
+    detourCount?: number;
+    /**
+     * Tap handler for the detour chip. Invoked when the learner taps
+     * the "N detours" affordance on a spine node. MapMode wires this
+     * to its layoutOverride setter so the tap flips the canvas into
+     * Explore — the detours become visible without clearing the
+     * committed route. "Resume navigation" in the chrome swings back.
+     */
+    onDetourTap?: () => void;
 } & Record<string, unknown>;
 
 /**
@@ -256,8 +292,19 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
             // calm rather than busy.
             initial={{ opacity: 0, y: 6 }}
             animate={{
-                // Target opacity honors the depth-fade (out-of-focus = 0.4).
-                opacity: inFocus ? 1 : 0.4,
+                // Target opacity honors two layers of emphasis:
+                //   - **Depth fade** (Explore): out-of-focus nodes drop
+                //     to 0.4 so the neighborhood in focus reads.
+                //   - **Side-branch fade** (Navigate): nodes that aren't
+                //     on the committed route recede to 0.35 so the
+                //     spine carries the eye. Overrides depth fade
+                //     because Navigate mode's hierarchy is "route vs
+                //     not," not "near vs far from focus."
+                opacity: data.isSideBranch
+                    ? 0.35
+                    : inFocus
+                        ? 1
+                        : 0.4,
                 y: 0,
                 // Spring the scale when the focus node shifts — feels springy
                 // rather than flipped.
@@ -376,6 +423,57 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             </span>
                         )}
                     </span>
+                )}
+
+                {/*
+                    Detour chip (Navigate mode only).
+                    ─────────────────────────────────
+                    Bottom-right of the card — a small pill showing
+                    "N detours" when this spine node has off-route
+                    neighbors. Google-Maps-style signal that the
+                    graph has more to offer here without rendering
+                    the off-route cards on the Navigate canvas
+                    (which would clutter the spine).
+
+                    Tapping the chip invokes `onDetourTap`, which
+                    MapMode wires to a layoutOverride='explore'
+                    flip. The route stays committed; the canvas
+                    just swings to Explore so the learner can see
+                    the alternatives. "Resume navigation" in the
+                    top-right chrome swings back.
+
+                    Bottom-right placement avoids clashing with the
+                    top-left composite pill, top-right completed
+                    check / focus chevron, and the top-center
+                    "you are here" pin. On the focus card the
+                    bottom edge is otherwise empty.
+                */}
+                {data.detourCount !== undefined && data.detourCount > 0 && (
+                    <button
+                        type="button"
+                        onClick={e => {
+                            e.stopPropagation();
+                            data.onDetourTap?.();
+                        }}
+                        aria-label={`View ${data.detourCount} ${
+                            data.detourCount === 1 ? 'detour' : 'detours'
+                        } from this step`}
+                        className="absolute -bottom-2 -right-2 h-5 px-1.5
+                                   inline-flex items-center gap-1
+                                   rounded-full border border-grayscale-200
+                                   bg-white/90 backdrop-blur-sm
+                                   text-[10px] font-medium text-grayscale-600
+                                   shadow-sm
+                                   hover:bg-white hover:text-grayscale-900
+                                   hover:border-grayscale-300
+                                   transition-colors"
+                    >
+                        <IonIcon icon={gitBranchOutline} className="text-[11px]" />
+                        <span>
+                            {data.detourCount}{' '}
+                            {data.detourCount === 1 ? 'detour' : 'detours'}
+                        </span>
+                    </button>
                 )}
 
                 {/*
