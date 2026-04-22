@@ -71,7 +71,28 @@ const ProgressBadge: React.FC<{ completed: number; total: number }> = ({
 // Main switcher
 // ---------------------------------------------------------------------------
 
-const PathwaySwitcher: React.FC = () => {
+/**
+ * Visual variants for the switcher.
+ *
+ * - `chip` (default) — the original compact grey pill. Still used on
+ *   surfaces outside the header where we want a calm secondary
+ *   affordance (e.g. the dev seed panel).
+ * - `title` — the switcher *is* the header's h1. Renders as a large
+ *   tappable title with a chevron suffix; dropdown opens on click.
+ *   Matches the Linear / Notion / Slack / GitHub pattern where the
+ *   workspace / org title is both the identity and the switcher.
+ *   Used by `PathwaysHeader` so the pathway title is read *once*
+ *   per page rather than twice (h1 and chip).
+ */
+type SwitcherVariant = 'chip' | 'title';
+
+interface PathwaySwitcherProps {
+    variant?: SwitcherVariant;
+}
+
+const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
+    variant = 'chip',
+}) => {
     const history = useHistory();
     const analytics = useAnalytics();
 
@@ -160,40 +181,77 @@ const PathwaySwitcher: React.FC = () => {
         history.push('/pathways/onboard');
     };
 
-    // Single-pathway learners get a calm, non-interactive pill. Keeps
-    // the layout identical so adding a second pathway doesn't change
-    // where the eye lands.
+    // Variant-dependent class tokens.
+    // ────────────────────────────────────────────────────────────────
+    // `chip` — the legacy grey pill (xs font, px-3 py-2, bg-grayscale-100).
+    //          Used outside the header as a calm secondary affordance.
+    // `title` — a tappable h1. Larger (lg/xl font, semibold, grayscale-900),
+    //          no pill background, with a subtle chevron suffix. Hover
+    //          deepens to grayscale-900 so the button affordance reads,
+    //          but at rest it looks like plain text so it feels like
+    //          the page title it actually is. Mirrors Linear / Notion /
+    //          GitHub / Slack's "workspace title is the switcher" idiom.
+    const isTitle = variant === 'title';
+
+    const triggerClass = isTitle
+        ? `shrink min-w-0 inline-flex items-center gap-1.5 -ml-1 py-1 px-1
+           rounded-lg
+           text-lg sm:text-xl font-semibold text-grayscale-900
+           hover:bg-grayscale-10 transition-colors
+           max-w-full`
+        : `shrink-0 inline-flex items-center gap-1.5 py-2 px-3
+           rounded-full text-xs font-medium
+           bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200
+           transition-colors max-w-[240px]`;
+
+    const chevronSizeClass = isTitle ? 'text-sm' : 'text-xs';
+    const addIconColorClass = isTitle
+        ? 'text-grayscale-400'
+        : '';
+
+    // Dropdown anchors differently per variant: the title variant sits
+    // on the left edge of the header, so the popover opens flush-left
+    // (title's left edge ≈ popover's left edge). The chip variant
+    // lives top-right, so the popover opens flush-right. Width is
+    // unchanged so the list layout is identical in either anchor.
+    const popoverAnchorClass = isTitle
+        ? 'absolute z-30 top-full left-0 mt-2 w-[320px] max-w-[calc(100vw-2rem)]'
+        : 'absolute z-30 top-full right-0 mt-2 w-[320px]';
+
+    // Single-pathway learners get a calm affordance that's read as
+    // identity first. In `chip` variant this is a grey pill; in
+    // `title` variant it's the h1 itself. In both cases clicking
+    // jumps to onboarding (the one affordance that still makes sense
+    // when there's nothing to switch *between*).
     if (ordered.length <= 1) {
         return (
             <button
                 type="button"
                 onClick={handleAdd}
-                className="shrink-0 inline-flex items-center gap-1.5 py-2 px-3
-                           rounded-full text-xs font-medium
-                           bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200
-                           transition-colors max-w-[200px]"
+                className={triggerClass}
                 title="Add another pathway"
             >
                 <span className="truncate">
                     {activePathway?.title ?? 'No pathways yet'}
                 </span>
 
-                <IonIcon icon={addOutline} className="text-sm shrink-0" aria-hidden />
+                <IonIcon
+                    icon={addOutline}
+                    className={`text-sm shrink-0 ${addIconColorClass}`}
+                    aria-hidden
+                />
             </button>
         );
     }
 
     return (
-        <div className="relative" ref={containerRef}>
+        <div className={isTitle ? 'relative min-w-0' : 'relative'} ref={containerRef}>
             <button
                 type="button"
                 onClick={() => setOpen(v => !v)}
                 aria-expanded={open}
                 aria-haspopup="listbox"
-                className="shrink-0 inline-flex items-center gap-1.5 py-2 px-3
-                           rounded-full text-xs font-medium
-                           bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200
-                           transition-colors max-w-[240px]"
+                className={triggerClass}
             >
                 <span className="truncate">
                     {activePathway?.title ?? 'Pathways'}
@@ -201,9 +259,9 @@ const PathwaySwitcher: React.FC = () => {
 
                 <IonIcon
                     icon={chevronDownOutline}
-                    className={`text-xs shrink-0 transition-transform ${
-                        open ? 'rotate-180' : ''
-                    }`}
+                    className={`${chevronSizeClass} shrink-0 transition-transform ${
+                        isTitle ? 'text-grayscale-400' : ''
+                    } ${open ? 'rotate-180' : ''}`}
                     aria-hidden
                 />
             </button>
@@ -216,9 +274,9 @@ const PathwaySwitcher: React.FC = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -4, scale: 0.98 }}
                         transition={{ duration: 0.16, ease: 'easeOut' }}
-                        className="absolute z-30 top-full right-0 mt-2 w-[320px]
+                        className={`${popoverAnchorClass}
                                    rounded-[20px] bg-white border border-grayscale-200
-                                   shadow-xl shadow-grayscale-900/10 overflow-hidden"
+                                   shadow-xl shadow-grayscale-900/10 overflow-hidden`}
                     >
                         <div className="px-3 py-2 border-b border-grayscale-200">
                             <div className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-wide">

@@ -3,6 +3,32 @@
  *
  * Docs § 10: "Four modes, one shell. Switching modes is a viewport change,
  * never a data fetch." The header is the continuity signal.
+ *
+ * ## Information architecture
+ *
+ * Three jobs, one row of supporting chrome + one row of mode tabs:
+ *
+ *   1. **Identity + switch** — the pathway title reads as an h1 and
+ *      *is* the switcher trigger. Click the title to open the
+ *      dropdown of subscribed pathways. Single source of truth for
+ *      "which pathway am I in"; zero duplication with a separate
+ *      chip.
+ *   2. **Alerts** — the `Proposals` pill is an alert surface. It
+ *      renders only when there's at least one open proposal *or*
+ *      when the learner is already on the Proposals route (so they
+ *      can back out). Nothing to alert about → no pixels spent.
+ *   3. **Mode nav** — Today / Map / What-if / Build pill tabs.
+ *
+ * The sticky backdrop-blur ("liquid glass") treatment persists across
+ * breakpoints so the shell reads as one continuous chrome rather than
+ * two different components.
+ *
+ * The legacy `title` / `subtitle` props are kept on the component
+ * signature for backward compat with `PathwaysShell.tsx`'s call-site
+ * (the `title` is already surfaced by `PathwaySwitcher` reading the
+ * active pathway from the store, and the `subtitle` is restated by
+ * each mode's own body copy — "YOU ARE BECOMING" on Today, etc.).
+ * Callers can omit them.
  */
 
 import React from 'react';
@@ -26,34 +52,33 @@ const MODES: ModeDef[] = [
 ];
 
 interface PathwaysHeaderProps {
+    /**
+     * @deprecated The title is now surfaced by `PathwaySwitcher`
+     * reading the active pathway directly from `pathwayStore`.
+     * Preserved for call-site compatibility; ignored.
+     */
     title?: string;
+    /**
+     * @deprecated The pathway goal is restated in each mode's body
+     * (e.g. Today's "YOU ARE BECOMING" line), which carries the
+     * framing better than a truncated persistent subtitle.
+     * Preserved for call-site compatibility; ignored.
+     */
     subtitle?: string;
 }
 
-const PathwaysHeader: React.FC<PathwaysHeaderProps> = ({ title, subtitle }) => {
+const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
     const openProposalCount = proposalStore.use.openProposalCount();
     const isOnProposals = !!useRouteMatch('/pathways/proposals');
 
+    // Proposals alert visibility — render when there's something to
+    // alert about *or* when the learner is already on the Proposals
+    // route (so the "escape hatch" back to the pathway is always
+    // reachable). At zero-count on any other route the pill is
+    // hidden entirely; the tabs claim the freed horizontal space.
+    const showProposals = openProposalCount > 0 || isOnProposals;
+
     return (
-        /*
-            Responsive strategy — the header is the *continuity signal*
-            across the four modes, but on a 375-wide iPhone SE the
-            vertical budget is brutal. The title + subtitle is the
-            first thing to go on narrow screens because:
-              1. `PathwaySwitcher` already surfaces the active
-                 pathway's title (truncated but tappable, and tapping
-                 opens the full name + a switcher for multi-pathway
-                 learners), so the h1 is literal duplication.
-              2. The subtitle ("Earn an industry-recognized …") is
-                 restated in-page on Today as the "YOU ARE BECOMING"
-                 line, and the Map / What-if / Build surfaces each
-                 carry their own scene-setting copy.
-            On >=sm viewports we keep the h1 + subtitle because
-            horizontal real-estate is cheap and a dedicated title
-            anchors the shell visually. The sticky-top backdrop-blur
-            treatment ("liquid glass") carries across both breakpoints
-            so the header doesn't feel like two different components.
-        */
         <header
             className="sticky top-0 z-20 w-full font-poppins
                        bg-white/80 backdrop-blur-xl
@@ -61,34 +86,22 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = ({ title, subtitle }) => {
                        px-4 pt-3 pb-2 sm:pt-4"
         >
             <div className="max-w-4xl mx-auto flex flex-col gap-2.5 sm:gap-3">
-                <div className="flex items-start justify-between gap-3">
-                    {title || subtitle ? (
-                        <div className="min-w-0 hidden sm:block">
-                            <h1 className="text-xl font-semibold text-grayscale-900 truncate">
-                                {title ?? 'Pathways'}
-                            </h1>
+                <div className="flex items-center justify-between gap-3">
+                    {/*
+                        Title-as-switcher. PathwaySwitcher in the
+                        `title` variant renders as a tappable h1 with
+                        a subtle chevron suffix. On mobile it shrinks
+                        to `text-lg`; on sm+ to `text-xl`.
+                    */}
+                    <PathwaySwitcher variant="title" />
 
-                            {subtitle && (
-                                <p className="text-sm text-grayscale-600 leading-relaxed mt-0.5 truncate">
-                                    {subtitle}
-                                </p>
-                            )}
-                        </div>
-                    ) : null}
-
-                    <div className="min-w-0 flex-1 sm:flex-none sm:shrink-0 flex items-center gap-2 sm:justify-end">
-                        {/*
-                            PathwaySwitcher — compact chip that surfaces
-                            multi-pathway navigation without taking over
-                            the header. On mobile it *is* the title
-                            (the dedicated h1 is hidden); on desktop it
-                            sits next to Proposals as a supporting
-                            affordance while the h1 anchors identity.
-                        */}
-                        <div className="min-w-0 flex-1 sm:flex-none">
-                            <PathwaySwitcher />
-                        </div>
-
+                    {/*
+                        Alerts slot. Only occupies horizontal space
+                        when there's a reason to. When hidden the
+                        title gets the full header width (minus edge
+                        padding).
+                    */}
+                    {showProposals && (
                         <NavLink
                             to="/pathways/proposals"
                             className={`shrink-0 py-2 px-3 rounded-full text-sm font-medium transition-colors ${
@@ -104,7 +117,7 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = ({ title, subtitle }) => {
                                 </span>
                             )}
                         </NavLink>
-                    </div>
+                    )}
                 </div>
 
                 <nav className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
