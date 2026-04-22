@@ -375,34 +375,20 @@ export const keysRouter = t.router({
             await cache.set(cacheKey, JSON.stringify({ code, email: input.email }), RECOVERY_EMAIL_CODE_TTL_SECS);
 
             try {
-                await getDeliveryService().send(
-                    RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS
-                        ? {
-                            to: input.email,
-                            templateAlias: RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS,
-                            templateModel: {
-                                verificationCode: code,
-                                verificationEmail: input.email,
-                            },
-                            branding: ctx.tenant?.emailBranding,
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
-                        }
-                        : {
-                            to: input.email,
-                            subject: 'Verify Your Recovery Email',
-                            textBody: [
-                                'Verify Your Recovery Email',
-                                '',
-                                `Your verification code is: ${code}`,
-                                '',
-                                'Enter this code in the app to verify your recovery email address.',
-                                'This code expires in 15 minutes.',
-                                '',
-                                'If you did not request this, you can safely ignore this email.',
-                            ].join('\n'),
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
-                        }
-                );
+                // Always render locally via @learncard/email-templates for
+                // tenant-branded output. Falls back to the 'recovery-email-code'
+                // sentinel when no Postmark alias is configured — the adapter
+                // maps sentinels to the matching local template ID.
+                await getDeliveryService().send({
+                    to: input.email,
+                    templateAlias: RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS || 'recovery-email-code',
+                    templateModel: {
+                        verificationCode: code,
+                        verificationEmail: input.email,
+                    },
+                    branding: ctx.tenant?.emailBranding,
+                    from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
+                });
             } catch (emailError) {
                 console.error('[addRecoveryEmail] Failed to send verification email:', emailError);
                 throw new TRPCError({
@@ -541,39 +527,19 @@ export const keysRouter = t.router({
             const brandName = ctx.tenant?.emailBranding?.brandName || process.env.POSTMARK_BRAND_NAME || 'LearnCard';
 
             try {
-                await getDeliveryService().send(
-                    RECOVERY_KEY_TEMPLATE_ALIAS
-                        ? {
-                            to: targetEmail,
-                            templateAlias: RECOVERY_KEY_TEMPLATE_ALIAS,
-                            templateModel: {
-                                brandName,
-                                recoveryKey: input.emailShare,
-                            },
-                            branding: ctx.tenant?.emailBranding,
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
-                        }
-                        : {
-                            to: targetEmail,
-                            subject: `Your ${brandName} Recovery Key`,
-                            textBody: [
-                                `Your ${brandName} Recovery Key`,
-                                '',
-                                'Keep this email safe. You can use the recovery key below to regain',
-                                `access to your ${brandName} account if you lose your device.`,
-                                '',
-                                '--- RECOVERY KEY (do NOT share this with anyone) ---',
-                                input.emailShare,
-                                '--- END RECOVERY KEY ---',
-                                '',
-                                'To recover your account, choose "Recover via Email" in the app and',
-                                'paste the recovery key above when prompted.',
-                                '',
-                                'If you did not request this, you can safely ignore this email.',
-                            ].join('\n'),
-                            from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
-                        }
-                );
+                // Always render locally via @learncard/email-templates for
+                // tenant-branded output. Falls back to the 'recovery-key'
+                // sentinel when no Postmark alias is configured.
+                await getDeliveryService().send({
+                    to: targetEmail,
+                    templateAlias: RECOVERY_KEY_TEMPLATE_ALIAS || 'recovery-key',
+                    templateModel: {
+                        brandName,
+                        recoveryKey: input.emailShare,
+                    },
+                    branding: ctx.tenant?.emailBranding,
+                    from: getFrom({ mailbox: 'recovery', branding: ctx.tenant?.emailBranding }),
+                });
             } catch (emailError) {
                 // Non-fatal: log but still return success so the client doesn't retry
                 console.error('[email-backup] Failed to send backup share email:', emailError);

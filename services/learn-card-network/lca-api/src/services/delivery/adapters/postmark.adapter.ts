@@ -22,8 +22,27 @@ import {
  *
  * lca-api uses env vars for template aliases (e.g. POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS).
  * We detect the *purpose* from the templateModel shape since the alias string varies per deploy.
+ *
+ * The map is also pre-populated with sentinel aliases matching the local template IDs
+ * themselves. Service routes can pass these sentinels directly as `templateAlias`
+ * (e.g. `'recovery-key'`) when no Postmark alias is configured, guaranteeing the
+ * correct local React Email template is rendered regardless of env var state.
  */
-const LOCAL_TEMPLATE_ALIASES: Record<string, TemplateId> = {};
+const LOCAL_TEMPLATE_ALIASES: Record<string, TemplateId> = {
+    'login-verification-code': 'login-verification-code',
+    'recovery-email-code': 'recovery-email-code',
+    'recovery-key': 'recovery-key',
+    'embed-email-verification': 'embed-email-verification',
+    'endorsement-request': 'endorsement-request',
+    'inbox-claim': 'inbox-claim',
+    'guardian-approval': 'guardian-approval',
+    'account-approved': 'account-approved',
+    'contact-method-verification': 'contact-method-verification',
+};
+
+/** Whether the given alias is a sentinel we registered (vs. a real Postmark alias). */
+const isLocalSentinelAlias = (alias: string): boolean =>
+    LOCAL_TEMPLATE_ALIASES[alias] === alias;
 
 /** Infer the local template ID from the template alias and model shape. */
 function inferLocalTemplateId(
@@ -90,13 +109,21 @@ export class PostmarkAdapter implements DeliveryService {
                     return;
                 } catch (renderError) {
                     console.error(
-                        `[PostmarkAdapter] Local render failed for "${notification.templateAlias}", falling back to Postmark template:`,
+                        `[PostmarkAdapter] Local render failed for "${notification.templateAlias}":`,
                         renderError,
                     );
+
+                    // If the alias is one of our sentinels (e.g. 'recovery-key'),
+                    // Postmark has no matching template — re-throw so callers see
+                    // the real render error instead of a confusing "template not
+                    // found" from Postmark.
+                    if (isLocalSentinelAlias(notification.templateAlias)) {
+                        throw renderError;
+                    }
                 }
             }
 
-            // Fallback: Postmark template engine
+            // Fallback: Postmark template engine (real Postmark alias only)
             await this.client.sendEmailWithTemplate({
                 From: from,
                 To: notification.to,
