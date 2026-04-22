@@ -55,126 +55,18 @@
  * each one before pinning the primary as active.
  */
 
-import type {
-    AchievementProjection,
-    Edge,
-    Pathway,
-    PathwayNode,
-    Policy,
-    Termination,
-} from '../../types';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-interface IdFactory {
-    (): string;
-}
-
-const defaultGenerateId: IdFactory = () => {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-        return crypto.randomUUID();
-    }
-    // Node-less fallback — in practice we always have crypto.randomUUID
-    // in the browser and jsdom/vitest test environment.
-    // eslint-disable-next-line no-console
-    console.warn('[showcase] crypto.randomUUID unavailable; falling back to Math.random id');
-    const part = () => Math.random().toString(16).slice(2, 10);
-    return `${part()}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part()}${part().slice(0, 4)}`;
-};
-
-/**
- * Describe a node in slug-keyed form so we can wire edges by human
- * name, then resolve slugs → UUIDs in one pass. Mirrors the shape
- * `onboard/templates.ts` uses for simple templates, extended with
- * optional provenance (to mark a supporting pathway as CE-sourced).
- */
-interface NodeSpec {
-    slug: string;
-    title: string;
-    description?: string;
-    policy: Policy | PolicyBuilder;
-    termination: Termination | TerminationBuilder;
-    credentialProjection?: AchievementProjection;
-    sourceUri?: string;
-    sourceCtid?: string;
-}
-
-interface EdgeSpec {
-    from: string;
-    to: string;
-}
-
-/**
- * Allow the composite policy + termination to reference another
- * pathway by its local slug rather than UUID. The assembler resolves
- * slugs to the concrete ids at the end.
- */
-type PolicyBuilder = { __kind: 'composite-ref'; pathwaySlug: string; renderStyle?: 'inline-expandable' | 'link-out' };
-type TerminationBuilder = { __kind: 'pathway-completed-ref'; pathwaySlug: string };
-
-const compositeRef = (pathwaySlug: string, renderStyle: 'inline-expandable' | 'link-out' = 'inline-expandable'): PolicyBuilder => ({
-    __kind: 'composite-ref',
-    pathwaySlug,
-    renderStyle,
-});
-
-const pathwayCompletedRef = (pathwaySlug: string): TerminationBuilder => ({
-    __kind: 'pathway-completed-ref',
-    pathwaySlug,
-});
-
-// ---------------------------------------------------------------------------
-// Policy / termination shorthands
-// ---------------------------------------------------------------------------
-
-const artifactPolicy = (
-    prompt: string,
-    expectedArtifact: 'text' | 'link' | 'pdf' = 'text',
-): Policy => ({
-    kind: 'artifact',
-    prompt,
-    expectedArtifact,
-});
-
-const practicePolicy = (
-    frequency: 'daily' | 'weekly' | 'monthly' | 'ad-hoc',
-    perPeriod: number = 1,
-): Policy => ({
-    kind: 'practice',
-    cadence: { frequency, perPeriod },
-    artifactTypes: ['text'],
-});
-
-const selfAttest = (prompt: string): Termination => ({ kind: 'self-attest', prompt });
-
-const artifactCount = (count: number, artifactType: 'text' | 'link' | 'pdf' = 'text'): Termination => ({
-    kind: 'artifact-count',
-    count,
-    artifactType,
-});
-
-const endorsement = (minEndorsers: number): Termination => ({
-    kind: 'endorsement',
-    minEndorsers,
-});
-
-// ---------------------------------------------------------------------------
-// Pathway specs (slug-keyed, resolved by assemble())
-// ---------------------------------------------------------------------------
-
-interface PathwaySpec {
-    slug: string;
-    title: string;
-    goal: string;
-    nodes: NodeSpec[];
-    edges: EdgeSpec[];
-    destinationSlug?: string;
-    /** CE provenance — set when a pathway mirrors a real CTDL resource. */
-    sourceUri?: string;
-    sourceCtid?: string;
-}
+import {
+    artifactCount,
+    artifactPolicy,
+    assembleBundle,
+    compositeRef,
+    endorsement,
+    pathwayCompletedRef,
+    practicePolicy,
+    selfAttest,
+    type PathwaySpec,
+} from './buildBundle';
+import type { BuildShowcaseOptions, ShowcaseBundle, ShowcaseDefinition } from './types';
 
 // -----------------------------------------------------------------
 // Pathway D — "Capstone Software Project" (deepest nest, 4 steps)
@@ -570,179 +462,30 @@ const PRIMARY_SPEC: PathwaySpec = {
 };
 
 // ---------------------------------------------------------------------------
-// Assembler
+// Assembler (delegates to the shared `assembleBundle` helper)
 // ---------------------------------------------------------------------------
 
 /** Identifier of this showcase bundle, used by `templateRef`. */
 export const SHOWCASE_TEMPLATE_REF = 'showcase-senior-year-ai-finance';
 
-export interface BuildShowcaseOptions {
-    ownerDid: string;
-    /** ISO timestamp — stamped onto `createdAt` / `updatedAt`. */
-    now?: string;
-    /** UUID factory; defaults to `crypto.randomUUID`. Pass in tests. */
-    generateId?: IdFactory;
-}
-
-export interface ShowcaseBundle {
-    /** The pathway the learner lands on after import. */
-    primary: Pathway;
-    /** Sub-pathways referenced (composite / nested). Upsert before primary. */
-    supporting: Pathway[];
-}
+const ALL_SPECS: PathwaySpec[] = [
+    PRIMARY_SPEC,
+    FUTURE_READY_SPEC,
+    AI_FINANCE_SPEC,
+    CAPSTONE_SPEC,
+];
 
 /**
  * Build the four-pathway demo. Pure function — safe to call many
  * times, always emits fresh UUIDs so two imports don't clash.
  */
-export const buildShowcase = (opts: BuildShowcaseOptions): ShowcaseBundle => {
-    const {
-        ownerDid,
-        now = new Date().toISOString(),
-        generateId = defaultGenerateId,
-    } = opts;
-
-    // Two-phase resolution:
-    //   1. Allocate a pathway id per spec (slug → id).
-    //   2. Allocate a node id per (pathway, slug) (namespaced key → id).
-    // Then realize specs → concrete Pathway objects, rewriting any
-    // composite / pathway-completed refs from slug to uuid.
-    const specs: PathwaySpec[] = [
-        PRIMARY_SPEC,
-        FUTURE_READY_SPEC,
-        AI_FINANCE_SPEC,
-        CAPSTONE_SPEC,
-    ];
-
-    const pathwayIdBySlug: Record<string, string> = {};
-    for (const s of specs) pathwayIdBySlug[s.slug] = generateId();
-
-    const nodeIdKey = (pathwaySlug: string, nodeSlug: string) => `${pathwaySlug}::${nodeSlug}`;
-    const nodeIdByKey: Record<string, string> = {};
-    for (const s of specs) {
-        for (const n of s.nodes) nodeIdByKey[nodeIdKey(s.slug, n.slug)] = generateId();
-    }
-
-    const resolvePolicy = (builderOrPolicy: Policy | PolicyBuilder): Policy => {
-        if ('__kind' in builderOrPolicy && builderOrPolicy.__kind === 'composite-ref') {
-            const refPathwayId = pathwayIdBySlug[builderOrPolicy.pathwaySlug];
-            if (!refPathwayId) {
-                throw new Error(
-                    `[showcase] composite ref to unknown pathway slug: ${builderOrPolicy.pathwaySlug}`,
-                );
-            }
-
-            return {
-                kind: 'composite',
-                pathwayRef: refPathwayId,
-                renderStyle: builderOrPolicy.renderStyle ?? 'inline-expandable',
-            };
-        }
-        return builderOrPolicy as Policy;
-    };
-
-    const resolveTermination = (
-        builderOrTermination: Termination | TerminationBuilder,
-    ): Termination => {
-        if (
-            '__kind' in builderOrTermination
-            && builderOrTermination.__kind === 'pathway-completed-ref'
-        ) {
-            const refPathwayId = pathwayIdBySlug[builderOrTermination.pathwaySlug];
-            if (!refPathwayId) {
-                throw new Error(
-                    `[showcase] pathway-completed ref to unknown pathway slug: ${builderOrTermination.pathwaySlug}`,
-                );
-            }
-
-            return { kind: 'pathway-completed', pathwayRef: refPathwayId };
-        }
-        return builderOrTermination as Termination;
-    };
-
-    const realize = (spec: PathwaySpec): Pathway => {
-        const pathwayId = pathwayIdBySlug[spec.slug]!;
-
-        const nodes: PathwayNode[] = spec.nodes.map(n => ({
-            id: nodeIdByKey[nodeIdKey(spec.slug, n.slug)]!,
-            pathwayId,
-            title: n.title,
-            description: n.description,
-            stage: {
-                initiation: [],
-                policy: resolvePolicy(n.policy),
-                termination: resolveTermination(n.termination),
-            },
-            credentialProjection: n.credentialProjection,
-            endorsements: [],
-            progress: {
-                status: 'not-started',
-                artifacts: [],
-                reviewsDue: 0,
-                streak: { current: 0, longest: 0 },
-            },
-            createdBy: 'template',
-            createdAt: now,
-            updatedAt: now,
-            sourceUri: n.sourceUri,
-            sourceCtid: n.sourceCtid,
-        }));
-
-        const edges: Edge[] = spec.edges.map(e => {
-            const fromId = nodeIdByKey[nodeIdKey(spec.slug, e.from)];
-            const toId = nodeIdByKey[nodeIdKey(spec.slug, e.to)];
-
-            if (!fromId || !toId) {
-                throw new Error(
-                    `[showcase] edge references unknown slug in pathway "${spec.slug}": ${e.from} → ${e.to}`,
-                );
-            }
-
-            return {
-                id: generateId(),
-                from: fromId,
-                to: toId,
-                type: 'prerequisite',
-            };
-        });
-
-        const destinationNodeId = spec.destinationSlug
-            ? nodeIdByKey[nodeIdKey(spec.slug, spec.destinationSlug)]
-            : undefined;
-
-        return {
-            id: pathwayId,
-            ownerDid,
-            title: spec.title,
-            goal: spec.goal,
-            nodes,
-            edges,
-            status: 'active',
-            visibility: {
-                self: true,
-                mentors: false,
-                guardians: false,
-                publicProfile: false,
-            },
-            source: spec.sourceCtid ? 'ctdl-imported' : 'template',
-            templateRef: SHOWCASE_TEMPLATE_REF,
-            destinationNodeId,
-            sourceUri: spec.sourceUri,
-            sourceCtid: spec.sourceCtid,
-            createdAt: now,
-            updatedAt: now,
-        };
-    };
-
-    const primary = realize(PRIMARY_SPEC);
-    const supporting: Pathway[] = [
-        realize(FUTURE_READY_SPEC),
-        realize(AI_FINANCE_SPEC),
-        realize(CAPSTONE_SPEC),
-    ];
-
-    return { primary, supporting };
-};
+export const buildShowcase = (opts: BuildShowcaseOptions): ShowcaseBundle =>
+    assembleBundle({
+        ...opts,
+        specs: ALL_SPECS,
+        primarySlug: PRIMARY_SPEC.slug,
+        templateRef: SHOWCASE_TEMPLATE_REF,
+    });
 
 /**
  * Lightweight metadata used by the import modal to render the
@@ -755,6 +498,7 @@ export const SHOWCASE_PREVIEW = {
     title: 'Senior Year: AI / Finance College Track',
     description:
         'A realistic senior-year student journey that combines two Credential Engine sub-pathways, a nested capstone, and shared-prereq badge collections — end-to-end.',
+    audience: 'Higher ed',
     subPathwayCount: 3,
     totalStepCount:
         PRIMARY_SPEC.nodes.length
@@ -768,3 +512,15 @@ export const SHOWCASE_PREVIEW = {
         'Credential Engine refs',
     ] as const,
 } as const;
+
+/**
+ * Structured definition used by the showcase registry / import modal.
+ * Wraps `buildShowcase` + `SHOWCASE_PREVIEW` so the card can render
+ * the metadata without instantiating the bundle, and the iterator in
+ * `ImportCtdlModal` can treat every showcase uniformly.
+ */
+export const SENIOR_YEAR_SHOWCASE: ShowcaseDefinition = {
+    id: SHOWCASE_TEMPLATE_REF,
+    preview: SHOWCASE_PREVIEW,
+    build: buildShowcase,
+};

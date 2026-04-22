@@ -59,7 +59,8 @@ import {
 } from './fetchCtdlPathway';
 import { fromCtdlPathway } from './fromCtdlPathway';
 import { makeCorsProxiedFetch } from './makeCorsProxiedFetch';
-import { SHOWCASE_PREVIEW, buildShowcase } from './showcase/buildShowcase';
+import { SHOWCASES } from './showcase';
+import type { ShowcaseDefinition, ShowcasePreview } from './showcase';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -314,25 +315,25 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
 
     /**
      * Showcase import — instantiate the hand-authored multi-pathway
-     * bundle and commit it in one shot. We skip the fetching /
-     * preview states because the bundle is always-local and always
-     * valid; sending the author through a two-step preview would
-     * add friction for a flow whose whole point is "see everything
-     * working end-to-end in one click."
+     * bundle for the chosen showcase and commit it in one shot. We
+     * skip the fetching / preview states because these bundles are
+     * always-local and always valid; sending the author through a
+     * two-step preview would add friction for a flow whose whole
+     * point is "see everything working end-to-end in one click."
      *
-     * The primary pathway is the "Senior Year" plan the learner
-     * lands on; the three supporting pathways (Future Ready NYC —
-     * SD, AI in Finance, Capstone) are upserted first so the
-     * composite refs resolve on first render of the Map.
+     * The primary pathway is the plan the learner lands on; any
+     * supporting pathways are upserted first so composite refs
+     * resolve on first render of the Map (see
+     * `BuildMode.handleImported`).
      */
-    const handleShowcaseImport = () => {
-        const { primary, supporting } = buildShowcase({
+    const handleShowcaseImport = (showcase: ShowcaseDefinition) => {
+        const { primary, supporting } = showcase.build({
             ownerDid,
             now: new Date().toISOString(),
         });
 
         track(AnalyticsEvents.PATHWAYS_CTDL_IMPORTED, {
-            ctid: 'showcase',
+            ctid: `showcase:${showcase.id}`,
             nodeCount: primary.nodes.length,
             warningCount: 0,
             hasDestination: !!primary.destinationNodeId,
@@ -388,18 +389,31 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                         </header>
 
                         {/*
-                            Showcase — a hand-authored demo bundle that
-                            sits above the CE catalog. Shown first so
+                            Showcases — hand-authored demo bundles that
+                            sit above the CE catalog. Shown first so
                             reviewers / new users can see every
                             advanced feature (composite sub-pathways,
                             nested drill-in, shared-prereq collections,
                             routes, ETA) without stitching imports
                             together themselves. Visually distinct from
                             the CE cards (emerald gradient, "Demo" tag)
-                            so it's not confused with a real registry
-                            record.
+                            so they're not confused with real registry
+                            records. Each showcase tells a different
+                            narrative — higher-ed, workforce, etc. —
+                            so reviewers can pick whichever arc lands
+                            best with their audience.
                         */}
-                        <ShowcaseCard onImport={handleShowcaseImport} />
+                        {SHOWCASES.length > 0 && (
+                            <div className="space-y-2.5">
+                                {SHOWCASES.map(showcase => (
+                                    <ShowcaseCard
+                                        key={showcase.id}
+                                        preview={showcase.preview}
+                                        onImport={() => handleShowcaseImport(showcase)}
+                                    />
+                                ))}
+                            </div>
+                        )}
 
                         {/* Search input */}
                         <div className="relative">
@@ -647,10 +661,13 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
 // ShowcaseCard — hand-authored demo bundle entry, shown at the top of
 // the browse view. Purposefully distinct from the CE catalog cards:
 // emerald gradient + "Demo" pill + feature tags (rather than CE tags)
-// so nobody mistakes it for a real registry import.
+// so nobody mistakes it for a real registry record.
 // ---------------------------------------------------------------------------
 
-const ShowcaseCard: React.FC<{ onImport: () => void }> = ({ onImport }) => (
+const ShowcaseCard: React.FC<{
+    preview: ShowcasePreview;
+    onImport: () => void;
+}> = ({ preview, onImport }) => (
     <button
         type="button"
         onClick={onImport}
@@ -677,25 +694,31 @@ const ShowcaseCard: React.FC<{ onImport: () => void }> = ({ onImport }) => (
                 <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
                     Demo · Try everything
                 </span>
+
+                {preview.audience && (
+                    <span className="text-[10px] font-medium text-emerald-900/70">
+                        · {preview.audience}
+                    </span>
+                )}
             </div>
 
             <div className="text-sm font-semibold text-grayscale-900 leading-tight">
-                {SHOWCASE_PREVIEW.title}
+                {preview.title}
             </div>
 
             <div className="text-xs text-grayscale-500">
                 <span className="inline-flex items-center gap-0.5">
                     <IonIcon icon={layersOutline} className="text-[11px]" />
-                    {SHOWCASE_PREVIEW.totalStepCount} steps · {SHOWCASE_PREVIEW.subPathwayCount} sub-pathways
+                    {preview.totalStepCount} steps · {preview.subPathwayCount} sub-pathways
                 </span>
             </div>
 
             <div className="text-xs text-grayscale-600 leading-relaxed">
-                {SHOWCASE_PREVIEW.description}
+                {preview.description}
             </div>
 
             <div className="flex flex-wrap gap-1 pt-0.5">
-                {SHOWCASE_PREVIEW.featureTags.map(tag => (
+                {preview.featureTags.map(tag => (
                     <span
                         key={tag}
                         className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800
