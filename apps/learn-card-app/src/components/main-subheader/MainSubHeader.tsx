@@ -6,15 +6,17 @@ import useBoostModal from '../boost/hooks/useBoostModal';
 
 import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/components/sharecreds/ShareCredentialsModal';
 import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
+import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 import Plus from 'learn-card-base/svgs/Plus';
 
-import { CredentialCategoryEnum } from 'learn-card-base';
+import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
 
 import useTheme from '../../theme/hooks/useTheme';
 import newCredsStore from 'learn-card-base/stores/newCredsStore';
+import { usePersonalizationQA } from '../ai-passport/usePersonalizationQA';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -40,6 +42,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     count,
     countLoading,
 }) => {
+    const { newModal } = useModal();
+    const { completionPercentage } = usePersonalizationQA();
     const { getThemedCategoryColors, getThemedCategoryIcons, theme } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
     const { Icon } = getThemedCategoryIcons(category as CredentialCategoryEnum);
@@ -74,6 +78,14 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     const { handlePresentBoostModal } = useBoostModal(history, category as CredentialCategoryEnum);
 
+    const handlePersonalizeMyAi = () => {
+        newModal(
+            <AiPassportPersonalizationContainer />,
+            { className: '!bg-transparent' },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
     let titleDisplay = labels?.plural;
     if (count !== undefined) {
         titleDisplay = `${formatCount(count)} ${titleDisplay}`;
@@ -88,6 +100,36 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 <DotIcon className="w-[10px] h-[10px]" /> {newCredsCount} New
             </span>
         ) : null;
+
+    let helperTextComponent = (
+        <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
+            <span>{helperText}</span>{' '}
+            {helperTextClickable && (
+                <button
+                    className="font-[600] underline"
+                    onClick={() => presentCategoryDescriptorModal()}
+                >
+                    {helperTextClickable}.
+                </button>
+            )}
+        </span>
+    );
+
+    if (subheaderType === SubheaderTypeEnum.AiSessions) {
+        helperTextComponent = (
+            <span className={`font-poppins text-[12px]`}>
+                <button
+                    className={`font-semibold !text-${colors?.indicatorColor || ''}`}
+                    onClick={() => handlePersonalizeMyAi()}
+                >
+                    {helperTextClickable}
+                </button>{' '}
+                <span className={`${helperTextColor || ''} font-medium text-[12px]`}>
+                    • {completionPercentage}% Optimized
+                </span>
+            </span>
+        );
+    }
 
     return (
         <IonRow className="max-w-[700px] mx-auto">
@@ -117,17 +159,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         )}
                         {newCredsCountDisplay}
                     </span>
-                    <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
-                        <span>{helperText}</span>{' '}
-                        {helperTextClickable && (
-                            <button
-                                className="font-[600] underline"
-                                onClick={() => presentCategoryDescriptorModal()}
-                            >
-                                {helperTextClickable}.
-                            </button>
-                        )}
-                    </span>
+                    {helperText && helperTextComponent}
                 </h2>
             </IonCol>
 
