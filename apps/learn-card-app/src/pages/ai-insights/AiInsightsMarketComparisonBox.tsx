@@ -3,7 +3,10 @@ import React from 'react';
 import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
 import type { SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
-import { getSelectedWagesBySalaryType } from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
+import {
+    getSalaryPercentileAtValue,
+    getSelectedWagesBySalaryType,
+} from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
 
 type AiInsightsMarketComparisonBoxProps = {
     professionalTitle: string;
@@ -51,7 +54,7 @@ const parseSalaryValue = (value: string | undefined): number | undefined => {
         return undefined;
     }
 
-    const numericValue = Number(value.replace(/[$,]/g, '').trim());
+    const numericValue = Number(value.replace(/[$,+]/g, '').trim());
 
     return Number.isFinite(numericValue) ? numericValue : undefined;
 };
@@ -96,18 +99,12 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         currentSalary !== undefined ? getPositionFromValue(currentSalary) : undefined;
 
     const comparisonPercent =
-        currentSalary !== undefined && marketLow !== undefined && marketHigh !== undefined
-            ? clampPercent(
-                  marketHigh > marketLow
-                      ? ((currentSalary - marketLow) / (marketHigh - marketLow)) * 100
-                      : 0
-              )
+        currentSalary !== undefined && selectedWages
+            ? getSalaryPercentileAtValue(currentSalary, selectedWages, salaryType)
             : undefined;
 
     const comparisonPercentLabel =
-        comparisonPercent !== undefined
-            ? comparisonPercent.toFixed(2).replace(/\.00$/, '')
-            : undefined;
+        comparisonPercent !== undefined ? Math.round(comparisonPercent).toString() : undefined;
     const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const titlePlural = toTitleCase(pluralizeTitle(title));
     const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow, salaryType) : '$0';

@@ -232,7 +232,7 @@ export const formatEstimatedSalary = (
     return `~ ${formatSalaryAmount(selectedWages.Median, false, salaryType)}${salarySuffix}`;
 };
 
-type SalaryDistributionAnchor = {
+export type SalaryDistributionAnchor = {
     probability: number;
     value: number;
 };
@@ -252,12 +252,15 @@ const toNumericValue = (value: string | number | undefined): number | null => {
     }
 
     const numericValue =
-        typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+        typeof value === 'number' ? value : Number(String(value).replace(/[,+]/g, '').trim());
 
     return Number.isFinite(numericValue) ? numericValue : null;
 };
 
-const getProbabilityAtValue = (value: number, anchors: SalaryDistributionAnchor[]): number => {
+export const getProbabilityAtValue = (
+    value: number,
+    anchors: SalaryDistributionAnchor[]
+): number => {
     if (anchors.length === 0) {
         return 0;
     }
@@ -295,17 +298,15 @@ const getProbabilityAtValue = (value: number, anchors: SalaryDistributionAnchor[
     return lastAnchor.probability;
 };
 
-export const buildSalaryDistributionData = (
+export const getSalaryDistributionAnchors = (
     wages: WageItem,
-    estimatedEmployment?: string | number,
-    salaryType: 'per_year' | 'per_hour' = 'per_year'
-): SalaryDistributionBucket[] => {
+    _salaryType: 'per_year' | 'per_hour' = 'per_year'
+): SalaryDistributionAnchor[] => {
     const pct10 = toNumericValue(wages.Pct10);
     const pct25 = toNumericValue(wages.Pct25);
     const median = toNumericValue(wages.Median);
     const pct75 = toNumericValue(wages.Pct75);
     const pct90 = toNumericValue(wages.Pct90);
-    const totalEmployment = toNumericValue(estimatedEmployment) ?? 100000;
 
     if (pct10 === null || pct25 === null || median === null || pct75 === null || pct90 === null) {
         return [];
@@ -314,7 +315,7 @@ export const buildSalaryDistributionData = (
     const lowerTail = Math.max(0, pct10 - Math.max(pct25 - pct10, 1));
     const upperTail = Math.max(pct90 + Math.max(pct90 - pct75, 1), pct90 + 1);
 
-    const anchors: SalaryDistributionAnchor[] = [
+    return [
         { probability: 0, value: lowerTail },
         { probability: 0.1, value: pct10 },
         { probability: 0.25, value: pct25 },
@@ -323,6 +324,40 @@ export const buildSalaryDistributionData = (
         { probability: 0.9, value: pct90 },
         { probability: 1, value: upperTail },
     ];
+};
+
+export const getSalaryPercentileAtValue = (
+    value: number,
+    wages: WageItem,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): number | undefined => {
+    const anchors = getSalaryDistributionAnchors(wages, salaryType);
+
+    if (anchors.length === 0) {
+        return undefined;
+    }
+
+    return getProbabilityAtValue(value, anchors) * 100;
+};
+
+export const buildSalaryDistributionData = (
+    wages: WageItem,
+    estimatedEmployment?: string | number,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): SalaryDistributionBucket[] => {
+    const totalEmployment = toNumericValue(estimatedEmployment) ?? 100000;
+
+    const anchors = getSalaryDistributionAnchors(wages, salaryType);
+
+    if (anchors.length === 0) {
+        return [];
+    }
+
+    const median = toNumericValue(wages.Median);
+
+    if (median === null) {
+        return [];
+    }
 
     const lowerBound = anchors[0].value;
     const upperBound = anchors[anchors.length - 1].value;
