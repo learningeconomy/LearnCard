@@ -7,6 +7,7 @@ import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import { useGetCredentialList } from 'learn-card-base';
 
+import AiSessionsPage from '../../pages/ai-sessions/AiSessionsPage';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 import AiSessionsLayout from './layout/AiSessionsLayout';
@@ -130,7 +131,7 @@ export const AiSessionTopicsContainer: React.FC = () => {
 
     const styles = isDesktop ? 'pt-[150px] ion-padding' : 'pt-[103px]';
 
-    const leftColumn = (
+    const leftColumn = isDesktop ? (
         <div className="h-full w-full relative flex items-center justify-center">
             <AiSessionTopicsHeader activeTab={activeTab} />
 
@@ -151,6 +152,8 @@ export const AiSessionTopicsContainer: React.FC = () => {
                 </GenericErrorBoundary>
             </div>
         </div>
+    ) : (
+        <AiSessionsPage />
     );
 
     let rightColumn = <AiSessionSuggestions handleSetChatBotSelected={handleSetChatBotSelected} />;
