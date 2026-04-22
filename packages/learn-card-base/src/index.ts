@@ -117,6 +117,7 @@ export * from './hooks/useQrLogin';
 export * from './components/qr-login';
 export * from './hooks/usePrivacyGate';
 export * from './hooks/useAiFeatureGate';
+export * from './helpers/aiFeatureGate';
 export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
