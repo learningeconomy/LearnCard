@@ -26,6 +26,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
     clearIconClassName = 'text-grayscale-500 h-[25px] w-[25px]',
     disabled = false,
     placeholder = 'Search',
+    autoFocus = false,
     ...textInputProps
 }) => {
     const handleClear = () => {
@@ -42,6 +43,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             onChange={onChange}
             placeholder={placeholder}
             disabled={disabled}
+            autoFocus={autoFocus}
             type="search"
             startIcon={<Search className={searchIconClassName} />}
             endButton={

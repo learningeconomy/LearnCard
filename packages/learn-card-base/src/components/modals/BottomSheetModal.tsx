@@ -92,7 +92,7 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
                 options?.hideDimmer ? 'hide-dimmer' : ''
             }`}
             style={{
-                paddingBottom: `${safeAreaBottom + 12}px`,
+                paddingBottom: `${safeAreaBottom}px`,
             }}
         >
             {!options?.hideDimmer && (
