@@ -1,49 +1,173 @@
 # Pathways v2
 
-Greenfield implementation of the Pathways product. See
-[`apps/learn-card-app/docs/pathways-architecture.md`](../../docs/pathways-architecture.md)
-for the full architecture and phased roadmap.
+Learner-owned, agent-orchestrated graph of commitments and evidence, with every
+node projectable to an Open Badges 3.0 credential.
 
-## Status
+Full architecture: [`apps/learn-card-app/docs/pathways-architecture.md`](../../../docs/pathways-architecture.md).
 
-**Phase 0 — Scaffolding.** Route, shell, four mode stubs, types, stores, and
-analytics event stubs are in place. Nothing is wired to real data yet.
+## Status (April 2026)
+
+The architecture document's phase plan is a useful map, but we have moved well
+past the Phase 0 snapshot the earlier README described. Roughly:
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **0** — Scaffolding | Route, shell, types, stores, analytics stubs | **Complete** |
+| **1** — Cold start + Today | Onboard flow, Today ranking + chosenRoute, offline queue, FSRS scheduler, OBv3 projection | **Complete client-side** — VC issuance not signed end-to-end |
+| **2** — Map + Build | React Flow map, node detail, Build mode (outline + inspector + policy/termination editors), composition (inline + link-out) | **Complete** |
+| **3a** — Agent infrastructure | Proxy with swap-ready dispatch, 4-cap budget enforcement, cost ledger, mock agent, proposals UI, full telemetry taxonomy | **Complete with mock dispatch** |
+| **3b** — First real capability (Interpretation) | Real brain-service LLM proxy behind `AgentDispatch` seam | **Not started** — no brain-service routes exist yet |
+| **4** — Rest + What-If | What-If mode (simulator, generators, tradeoffs, toProposal). Matching / MCP / Routing / Nudging still mock | **What-If done, others pending** |
+| **5** — FSRS reviews, social, sunset | Scheduler + review queue UI exist; endorsement fulfilment + sunset scaffolded, not wired | **Partial** |
+
+**Beyond the original spec:** Credential Engine Registry round-trip
+(`import/` + `projection/toCtdlPathway.ts`), altitude-aware arrival intent
+(`Altitude` enum), and `chosenRoute` as the single source of truth shared by
+Today / Map / What-If. All documented inline where they live.
+
+## What's blocking production
+
+1. **`persist.enabled` is `false`** on `pathwayStore` and `proposalStore`
+   (`stores/pathways/pathwayStore.ts`, `proposalStore.ts`). A page refresh
+   loses every pathway the learner authored. Three-character fix, gated on a
+   schema-migration story.
+2. **No brain-service routes.** The spec calls for 11 tRPC procedures
+   (§ 9 in the architecture doc); `services/learn-card-network/brain-service/src/routes/pathways.ts`
+   does not exist.
+3. **Mock agent dispatch** is still the default (`agents/proxy.ts`).
+   Swapping to real is a single `setAgentDispatch(brainServiceDispatch)` call.
+4. **No Playwright E2E coverage** for the two flows the spec requires
+   (cold-start → Today < 10 s, accept-proposal → next-action-changes).
+
+See `docs/pathways-architecture.md` § 17 for the retrospective status column
+and recommended sequencing.
 
 ## Mount point
 
-- Route: `/pathways` (redirects to `/pathways/today` if there's an active
-  pathway, else `/pathways/onboard`).
-- Gating: `features.pathways` in the tenant config (default `false`). Enable
-  per-tenant in `environments/<tenant>/config.json`.
+- Route: `/pathways` (redirects to `/pathways/today` when an active pathway
+  exists, else `/pathways/onboard`).
+- Sub-routes: `/today`, `/map`, `/what-if`, `/build`, `/proposals`,
+  `/onboard`, `/node/:pathwayId/:nodeId`.
+- Gating: tenant-level feature flag (not yet wired to tenant config — route
+  is registered unconditionally today).
 
 ## Folder layout
 
 ```
 src/pages/pathways/
-├── PathwaysShell.tsx         # router + IonPage wrapper, owns all /pathways/* routes
-├── PathwaysHeader.tsx        # mode tabs + proposal count badge
-├── types/                    # Zod schemas + inferred TS types (Pathway, Proposal, Ranking)
-├── today/                    # Mode 1 — one node, one action, zero distraction
-├── map/                      # Mode 2 — zoomed-out graph (React Flow, Phase 2)
-├── what-if/                  # Mode 3 — simulate alternatives (Phase 4)
-├── build/                    # Mode 4 — author/edit, upload artifacts (Phase 2)
-├── onboard/                  # cold-start / first-mile (Phase 1)
-└── proposals/                # agent-origin change queue (Phase 3a)
+├── PathwaysShell.tsx           # router + IonPage wrapper
+├── PathwaysHeader.tsx          # mode tabs + proposal count + switcher
+├── PathwaySwitcher.tsx         # active-pathway dropdown (tree view over roots + composite children)
+│
+├── types/                      # Zod schemas + inferred TS types
+│   ├── pathway.ts              # Stage, Policy, Termination, Pathway, Edge, Altitude
+│   ├── proposal.ts             # Proposal, PathwayDiff, Tradeoff
+│   └── ranking.ts              # ScoredCandidate, RankingContext, RankingWeights
+│
+├── core/                       # Pure algebra — no React, no store access
+│   ├── chosenRoute.ts          # seed / prune / pickNextOnRoute
+│   ├── composition.ts          # findParentPathway, rollupCompositeProgress
+│   └── graphOps.ts             # adjacency, availability, reachability
+│
+├── today/                      # Mode 1
+│   ├── TodayMode.tsx, NextActionCard, IdentityBanner, StreakRibbon, CompletionMoment
+│   ├── selectNextAction.ts     # route-first, ranking-fallback picker with source discriminant
+│   ├── ranking.ts              # scoreCandidate + getNextAction
+│   ├── rankingWeights.ts       # versioned, A/B-able
+│   └── presentation.ts         # derives banner copy / CTA / hint from a ScoredCandidate
+│
+├── map/                        # Mode 2 (React Flow)
+│   ├── MapMode.tsx             # viewport + controls
+│   ├── MapNode.tsx, CollectionMapNode.tsx, FocusActionBar.tsx, NavigateMode.tsx
+│   ├── layout.ts, route.ts, collectionDetection.ts    # pure layout + collection fan-in
+│   └── NestedPathwayContext.tsx
+│
+├── what-if/                    # Mode 3
+│   ├── WhatIfMode.tsx
+│   ├── simulator.ts, generators.ts, toProposal.ts
+│   └── types.ts
+│
+├── build/                      # Mode 4
+│   ├── BuildMode.tsx, PolicyEditor.tsx, TerminationEditor.tsx
+│   ├── buildOps.ts             # pure diff-applying operations
+│   ├── outline/, inspector/, policy/, termination/, validate/, summarize/, templates/, history/, preview/
+│
+├── node/                       # Focused node detail (overlays current mode)
+│   ├── NodeDetail.tsx, CompositeNodeBody, EvidencePanel, EvidenceUploader
+│   ├── EndorsementPanel, ReviewsPanel, TerminationProgress, CredentialPreview
+│   └── termination.ts          # progress computation
+│
+├── onboard/                    # Cold-start
+│   ├── OnboardRoute.tsx, GoalCapture, CredentialScan, SuggestionGrid
+│   ├── classifyAltitude.ts     # heuristic; no LLM
+│   ├── suggestPathways.ts      # vector lookup over templates
+│   ├── templates.ts            # hand-authored templates
+│   └── instantiateTemplate.ts
+│
+├── proposals/                  # Agent proposal queue
+│   ├── ProposalsRoute, ProposalCard, ProposalDiff, RouteDiffSummary
+│   ├── applyProposal.ts        # structural diff applier (the ONE write path)
+│   ├── proposalActions.ts, proposalKind.ts, pathwayDiffImpact.ts, routeDiff.ts
+│
+├── agents/                     # Client-side agent layer
+│   ├── proxy.ts                # swap-ready AgentDispatch; currentDispatch = mock today
+│   ├── budgets.ts              # 4-cap enforcement, pure decideBudget
+│   ├── costAccounting.ts, costStore.ts
+│   └── mockAgent.ts            # deterministic proposals for 5 capabilities
+│
+├── projection/                 # Pathway → external formats (read-only projections)
+│   ├── toAchievementCredential.ts    # OBv3 AchievementCredential, unsigned
+│   └── toCtdlPathway.ts              # Credential Engine Registry JSON-LD
+│
+├── import/                     # CTDL ingestion
+│   ├── ImportCtdlModal.tsx, fetchCtdlPathway.ts, fromCtdlPathway.ts
+│   ├── ctdlTypes.ts, fixtures.ts, makeCorsProxiedFetch.ts
+│   ├── catalog/                # curated CTDL pathway catalog UI
+│   └── showcase/               # derived showcase builder
+│
+├── scheduler/                  # FSRS spaced-review scheduler
+│   └── fsrsScheduler.ts
+│
+├── offline/                    # Offline queue reconciliation
+│   └── reconcileOnReconnect.ts # pure; returns a replay/discard/prompt plan
+│
+├── hooks/                      # React-facing hooks (see file names inside)
+└── dev/                        # Dev-only seed panel
 ```
 
-Cross-cutting state lives in `src/stores/pathways/`.
+Cross-cutting state: [`src/stores/pathways/`](../../stores/pathways/) —
+`pathwayStore` (active graphs), `proposalStore` (agent proposals), `offlineQueueStore`
+(queued mutations, persist **enabled**), `mcpRegistryStore` (stub).
 
-## Phase 0 → Phase 1 promotion
+## Design invariants (load-bearing; do not casually violate)
 
-At the end of Phase 1, stable shapes (`types/`, graph ops, FSRS scheduler,
-ranking function) get promoted to workspace packages per the three gates in
-`docs/pathways-architecture.md § 15`:
+- **Agent proposes, learner commits.** Agents never call `pathwayStore.upsertPathway`
+  or `editNode` directly. The only path from agent output to structural state is
+  `agents/proxy.ts` → `proposalStore.addProposal` → learner tap → `applyProposal`.
+- **Four surfaces, one data source.** Today / Map / What-If / Build all read
+  the same `pathwayStore` and agree on "what's next" via `chosenRoute` +
+  `selectNextAction`. Switching modes is a `history.push`, never a data fetch.
+- **Projection, not mutation.** A node never stores a VC; it stores an
+  `AchievementProjection`. A pathway never stores its CTDL form. Crypto +
+  serialization happen at the moment of issuance / export.
+- **Composition = nesting.** `policy.kind === 'composite'` + a
+  `pathway-completed` termination + a `renderStyle` flag covers both
+  "substeps inside this node" and "complete Pathway X first". One primitive.
+- **Degradation without agents.** Today / Map / Build / What-If must render
+  with `agentSignals: null`. Nothing blocks on an LLM call.
 
-1. External consumer exists or is concretely planned.
-2. ≥ 2 weeks of API stability.
-3. Tests pass without app-layer mocks.
+## Testing
 
-Until then, everything lives in-app to keep the churn cost low.
+```bash
+# All pathways Vitest suites (703 tests across 41 files as of this writing)
+pnpm exec vitest run src/pages/pathways
+
+# A single suite
+pnpm exec vitest run src/pages/pathways/core/chosenRoute.test.ts
+```
+
+Playwright E2E coverage is **not yet written** — two flows are required by the
+architecture doc § 16 before v1 merges. See "What's blocking production" above.
 
 ## What Pathways is not
 

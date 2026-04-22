@@ -18,6 +18,33 @@ The goal is a _foundation_: a data model, state shape, route surface, agent pipe
 - Audience wedge v1: workforce transitioners (pending product sign-off).
 - Biggest risks: Phase 3 (split 3a / 3b with kill criteria).
 
+## Current state (April 2026)
+
+The phase plan below is still the right map. We have moved well past Phase 0.
+A quick snapshot — full detail in § 17:
+
+- **Phases 0, 1, 2, 3a complete client-side.** Scaffolding, Today + ranking +
+  `chosenRoute`, Map (React Flow) + Build (outline + inspector + policy /
+  termination editors + validation), agent infrastructure (swap-ready proxy,
+  four-cap budget enforcement, cost ledger, mock agent for five capabilities,
+  proposals queue + diff applier, full telemetry taxonomy).
+- **What-If is built ahead of schedule.** The Phase 4 simulator, generators,
+  tradeoff tables, and `toProposal` path are all in place; What-If is pure
+  over graph state so it did not need to wait on the agent wiring.
+- **Beyond the original scope:** Credential Engine Registry round-trip
+  (`import/` + `projection/toCtdlPathway.ts`), altitude-aware arrival intent
+  (see `AltitudeSchema`), and `chosenRoute` as the single source of truth
+  shared by Today / Map / What-If.
+- **Not done.** Phase 3b — the swap from mock dispatch to a real
+  brain-service LLM proxy (the seam exists; the server side does not).
+  Neo4j-backed tRPC routes from § 9 are **not yet implemented**. MCP server
+  integration is a store stub. VC issuance, endorsement fulfilment, pathway
+  sunset, Playwright E2E coverage, and `persist.enabled = true` on the two
+  primary Zustand stores are all outstanding.
+
+The app-side README at `apps/learn-card-app/src/pages/pathways/README.md`
+mirrors this section with folder-level detail and is kept in lockstep.
+
 ## 1. North‑star in one paragraph
 
 A learner opens Pathways, sees **one thing to do today** that is obviously connected to who they're becoming. They can zoom out to a **graph** of everything they're working on, run a **"what‑if"** against a proposed alternative path, or **build/edit** a pathway by uploading evidence. Every node they complete can become a Verifiable Credential they own; every significant step can be endorsed by a mentor. The AI proposes, the learner commits. No silent re‑routing, no arbitrary points.
@@ -671,6 +698,12 @@ Two flows must exist before merging v1:
 
 Each phase ships end‑to‑end user value. No "foundation‑only" phases that don't render anything.
 
+> **Status (April 2026).** Original phase scope is preserved below for
+> historical clarity. Completion status is annotated per phase. The summary:
+> 0 / 1 / 2 / 3a done (mock-only for 3a); What-If (scheduled in Phase 4)
+> shipped early; 3b + backend work + the rest of Phase 4 + 5 remain. See
+> "Current state" at the top of this document for the one-paragraph version.
+
 ### Audience wedge (required product decision before Phase 1)
 
 The architecture supports multiple learner audiences, but v1 should be aimed at one. The three hand‑authored templates, the ranking weights in `today/rankingWeights.ts`, the MCP tool priorities in Matching, and which capability we instrument most aggressively all tune to a chosen audience.
@@ -684,41 +717,44 @@ The architecture supports multiple learner audiences, but v1 should be aimed at 
 
 **Status: product sign‑off required before Phase 1 templates are authored.** The architecture doesn't care which is picked; the content of the templates, the copy in onboarding, and the ranking weights all do.
 
-**Phase 0 — Scaffolding (1 sprint)**
+**Phase 0 — Scaffolding (1 sprint)** — **Status: complete.**
 - Pathways types + Zod validators (in‑app first; promoted to `packages/pathways-types` at end of Phase 1 — see Section 15)
 - Route registration, `PathwaysShell`, four empty mode screens with consistent header
 - Zustand stores with mock data
-- Feature flag in tenant config (default off)
-- Analytics event stubs for the core taxonomy
+- Feature flag in tenant config (default off) — *route is registered unconditionally today; tenant gate not yet wired*
+- Analytics event stubs for the core taxonomy — *full taxonomy emitting, not just stubs*
 
-**Phase 1 — Cold start + Today (2 sprints)**
-- Onboarding flow (goal capture + wallet scan + 3 hand‑authored templates; vector lookup, no LLM yet)
-- Today mode with `scoreCandidate` / `getNextAction` ranking (explicit weights + reasons)
-- Streak ribbon + identity banner
-- Evidence upload → termination completion → VC issuance (projection path)
-- Offline queue with conflict policy from Section 11
-- Graceful degradation test suite (agents‑offline mode)
-- Playwright coverage of both required flows
-- **End of Phase 1:** promote stable types/core/scheduler to packages per Section 15
+**Phase 1 — Cold start + Today (2 sprints)** — **Status: complete client-side; VC signing + Playwright outstanding.**
+- Onboarding flow (goal capture + wallet scan + 3 hand‑authored templates; vector lookup, no LLM yet) — *done, plus an altitude classifier for non-aspirational arrivals*
+- Today mode with `scoreCandidate` / `getNextAction` ranking (explicit weights + reasons) — *done, extended with a `chosenRoute`-first selector (`today/selectNextAction.ts`)*
+- Streak ribbon + identity banner — *done*
+- Evidence upload → termination completion → VC issuance (projection path) — **partial:** evidence + termination + projection (`projection/toAchievementCredential.ts`) done; **VC signing + wallet write not wired**
+- Offline queue with conflict policy from Section 11 — *queue store persisted; pure reconciler in `offline/reconcileOnReconnect.ts`; server to drain against does not exist yet*
+- Graceful degradation test suite (agents‑offline mode) — **not written**
+- Playwright coverage of both required flows — **not written**
+- **End of Phase 1:** promote stable types/core/scheduler to packages per Section 15 — **deferred** pending an external consumer (criterion #1)
 
-**Phase 2 — Map + Build (2 sprints)**
-- React Flow viewport, depth‑2 progressive disclosure
-- Node detail overlay with evidence + endorsement panels
-- Build mode: node editor, stage editor, artifact uploader
-- Endorsement request flow wired to existing endorsement store
+**Phase 2 — Map + Build (2 sprints)** — **Status: complete; endorsement fulfilment pending a server.**
+- React Flow viewport, depth‑2 progressive disclosure — *done, plus collection fan-in detection, `chosenRoute` ribbon, navigate/explore layouts*
+- Node detail overlay with evidence + endorsement panels — *done*
+- Build mode: node editor, stage editor, artifact uploader — *done, expanded into outline + inspector + policy/termination editors + validate + summarize + templates + history + preview (`build/`)*
+- Endorsement request flow wired to existing endorsement store — *UI + store wired; fulfilment requires server-side routing to an endorser, not yet implemented*
 
 **Phase 3 is split because it's the riskiest phase.** Three sprints trying to stand up the proxy, audit logs, rate limits, three agents, the proposals route, diff renderer, budget enforcement, and full telemetry at once is how one phase becomes five. Split it:
 
-**Phase 3a — Agent infrastructure, no agents yet (1.5 sprints)**
-- Brain‑service LLM proxy endpoint (one provider, one endpoint)
-- Server‑side audit log of every prompt/response with learner DID + capability tag
-- Rate limits: per‑invocation, per‑learner monthly cap, per‑tenant monthly cap
-- Budget enforcement on both sides (client throttle + server rate limit)
-- `/pathways/proposals` route with diff renderer, accept / reject / modify UX
-- Full Phase 13 telemetry taxonomy emitting — including `pathways.learnerCost.snapshot`
-- Mock agent that generates scripted proposals, to prove the whole pipeline end‑to‑end without an LLM in the loop
+**Phase 3a — Agent infrastructure, no agents yet (1.5 sprints)** — **Status: complete client-side; server half of the proxy not yet built.**
+- Brain‑service LLM proxy endpoint (one provider, one endpoint) — **not started server-side;** client-side `AgentDispatch` seam in `agents/proxy.ts` is swap-ready
+- Server‑side audit log of every prompt/response with learner DID + capability tag — **not started**
+- Rate limits: per‑invocation, per‑learner monthly cap, per‑tenant monthly cap — *client-side enforced via pure `decideBudget` in `agents/budgets.ts`; server-side mirror pending*
+- Budget enforcement on both sides (client throttle + server rate limit) — *client done; server pending*
+- `/pathways/proposals` route with diff renderer, accept / reject / modify UX — *done (`proposals/`); diff applier in `applyProposal.ts`*
+- Full Phase 13 telemetry taxonomy emitting — including `pathways.learnerCost.snapshot` — *done*
+- Mock agent that generates scripted proposals, to prove the whole pipeline end‑to‑end without an LLM in the loop — *done (`agents/mockAgent.ts`); all five capabilities produce deterministic proposals*
 
-**Phase 3b — First real capability: Interpretation only (1.5 sprints)**
+**Phase 3b — First real capability: Interpretation only (1.5 sprints)** — **Status: not started.**
+
+Gated on the brain-service LLM proxy (Phase 3a server half) existing. Once it does, flipping `setAgentDispatch(brainServiceDispatch)` at app boot swaps the whole app from mocks to real Interpretation in one call site.
+
 - RecorderAgent implementation (Interpretation capability) behind the proxy
 - Read/write split enforced (Section 7.1): inline enrichment during upload (read) vs "maps to node X" (proposal)
 - Dogfood internally for one full sprint before any learners see it
@@ -732,18 +768,20 @@ The architecture supports multiple learner audiences, but v1 should be aimed at 
 
 These are hard to write post‑hoc and trivial to write now.
 
-**Phase 4 — Remaining capabilities + What‑if (2 sprints)**
-- Planning, Nudging, Routing, Matching capabilities enabled (pending Phase 3 kill criteria passing)
-- Simulation runner
-- Tradeoff tables with honest cost/time/effort ranges
-- MCP tool discovery
-- External opportunity surfacing (jobs, courses, communities)
+**Phase 4 — Remaining capabilities + What‑if (2 sprints)** — **Status: What-If shipped early; the rest pending 3b.**
+- Planning, Nudging, Routing, Matching capabilities enabled (pending Phase 3 kill criteria passing) — **not started** (mock only)
+- Simulation runner — *done (`what-if/simulator.ts`)*
+- Tradeoff tables with honest cost/time/effort ranges — *done (`WhatIfMode.tsx`)*
+- MCP tool discovery — **not started** (`mcpRegistryStore` is a stub)
+- External opportunity surfacing (jobs, courses, communities) — **not started** (requires Matching + MCP)
 
-**Phase 5 — FSRS reviews, social, sunset (2 sprints)**
-- `scheduler/fsrsScheduler.ts` integration, review queue in Today mode
-- Mentor/guardian sharing surfaces
-- Pathway sunset flow (addresses pathway decay open question)
-- Full Playwright regression
+What-If was pulled ahead because it is pure over graph state (`what-if/generators.ts`, `simulator.ts`, `toProposal.ts`) and did not need to wait on the agent wiring. Simulating alternative routes does not require an LLM — it reshuffles `chosenRoute` and asks the ranker what changes.
+
+**Phase 5 — FSRS reviews, social, sunset (2 sprints)** — **Status: scheduler + review UI in place; social + sunset scaffolded but not wired.**
+- `scheduler/fsrsScheduler.ts` integration, review queue in Today mode — *scheduler + `ReviewsPanel.tsx` exist; surfacing reviews in Today’s ranker is wired via the `review` policy kind*
+- Mentor/guardian sharing surfaces — **not started** (visibility schema exists; no share UI)
+- Pathway sunset flow (addresses pathway decay open question) — **not started** (`status: 'sunset'` exists on the schema; no UX)
+- Full Playwright regression — **not started**
 
 Beyond v1: TEE‑backed unstructured ingestion, true local‑first CRDT sync, open pathway marketplace/Designer, automated curriculum pruning — all explicitly deferred per the synthesis doc.
 
@@ -778,6 +816,7 @@ _End of v0.3. This document is meant to be edited in place as Phase 0 lands and 
 
 ## Changelog
 
+- **v0.4** — Retrospective + current-state pass. Added the "Current state (April 2026)" callout near the top summarizing that phases 0 / 1 / 2 / 3a are complete client-side (with VC signing, graceful-degradation + Playwright tests, and tenant gating as the Phase 1 gaps), that What-If shipped ahead of schedule because it is pure over graph state, and that Phase 3b is gated on a brain-service LLM proxy whose seam (`agents/proxy.ts:setAgentDispatch`) already exists. Annotated every phase in § 17 with per-bullet completion status. Called out three additions beyond the original scope that are now load-bearing: Credential Engine Registry round-trip (`import/` + `projection/toCtdlPathway.ts`), `intentAltitude` for non-aspirational arrivals, and `chosenRoute` as the single source of truth shared by Today / Map / What-If. No changes to architectural commitments; this release is purely reconciling the document with the code.
 - **v0.3** — Incorporated second review round. Added prime metric (WCL) at top of telemetry with product sign‑off callout (Section 13.0). Added endorsement lifecycle events + daily cost snapshot event (Section 13.1). Strengthened cost control with per‑learner and per‑tenant monthly caps (Section 7.3). Added cross‑device stale‑proposal row to offline conflict table (Section 11). Reframed Section 7.2 as **capabilities** (contracts) rather than named agents (implementations). Added three‑gate package promotion criteria (Section 15). Split Phase 3 into 3a (infrastructure, mock agent) + 3b (Interpretation only) with explicit kill criteria. Added audience wedge as a required product decision at the top of the roadmap.
 - **v0.2** — Incorporated first review round. Added "what Pathways is not" (Section 1). Moved `Proposal` out of `Pathway` into a sibling collection (Section 3.5). Committed to LLM-proxy-through-brain-service and added read/write distinction for agents (Section 7.1), plus an explicit "boundaries not final" note (Section 7.2). Reframed `getNextAction` as a scoring function with `reasons[]` (Section 8.1). Made cold-start vector-first, LLM-maybe (Section 6). Added a React Flow spike to Phase 2 (Section 10). New sections: Offline conflict policy (11), Telemetry (13), Graceful degradation (14), Package vs in-app decision (15). Roadmap updated accordingly.
 - **v0.1** — Initial draft.
