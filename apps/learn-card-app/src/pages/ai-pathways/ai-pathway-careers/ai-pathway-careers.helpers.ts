@@ -178,21 +178,28 @@ export const formatSalaryAmount = (
     }
 
     if (salaryType === 'per_hour') {
+        const roundedHourlyValue = Math.round(numericValue * 100) / 100;
+
+        if (Number.isInteger(roundedHourlyValue)) {
+            return `$${new Intl.NumberFormat('en-US').format(roundedHourlyValue)}`;
+        }
+
         return `$${new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 0,
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(numericValue)}`;
+        }).format(roundedHourlyValue)}`;
     }
+
+    const roundedYearlyValue = Math.round(numericValue);
 
     if (!compact) {
-        return `$${new Intl.NumberFormat('en-US').format(numericValue)}`;
+        return `$${new Intl.NumberFormat('en-US').format(roundedYearlyValue)}`;
     }
 
-    return numeral(numericValue)
-        .format('$0a')
-        .replace(/k/g, 'K')
-        .replace(/m/g, 'M')
-        .replace(/b/g, 'B');
+    return `$${new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 0,
+    }).format(roundedYearlyValue)}`;
 };
 
 export const formatAboutCount = (value: string | number | undefined): string => {

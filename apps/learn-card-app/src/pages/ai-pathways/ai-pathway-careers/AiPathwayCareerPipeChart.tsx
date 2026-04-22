@@ -15,21 +15,9 @@ import { type Wages } from 'learn-card-base';
 import {
     buildSalaryDistributionData,
     formatAboutCount,
+    formatSalaryAmount,
     getSelectedWagesBySalaryType,
 } from './ai-pathway-careers.helpers';
-
-const formatSalary = (value: string | number, salaryType: 'per_year' | 'per_hour'): string => {
-    const numericValue = typeof value === 'number' ? value : Number(value);
-
-    if (!Number.isFinite(numericValue)) {
-        return '$0';
-    }
-
-    return `$${new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: salaryType === 'per_hour' ? 0 : 0,
-        maximumFractionDigits: salaryType === 'per_hour' ? 2 : 0,
-    }).format(numericValue)}`;
-};
 
 const LIGHT_BAR_COLOR = '#DCE4FF';
 const DARK_BAR_COLOR = '#5B63F6';
@@ -137,7 +125,7 @@ export const AiPathwayCareerPipeChart: React.FC<{
     const minSalary = selectedWages?.Pct10 ?? 0;
     const medianSalary = selectedWages?.Median ?? 0;
     const maxSalary = selectedWages?.Pct90 ?? 0;
-    const formattedMedianSalary = formatSalary(medianSalary, salaryType);
+    const formattedMedianSalary = formatSalaryAmount(medianSalary, false, salaryType);
     const medianBucketEmploymentCount = medianBucket
         ? formatAboutCount(medianBucket.estimatedPeople)
         : '';
@@ -242,8 +230,10 @@ export const AiPathwayCareerPipeChart: React.FC<{
 
             {/* Min / Max labels */}
             <div className="flex justify-between px-[8px] py-[0] mt-[2px] text-[14px] leading-[16px] text-grayscale-900">
-                <span className="ml-[34px]">{formatSalary(minSalary, salaryType)}</span>
-                <span>{formatSalary(maxSalary, salaryType)}</span>
+                <span className="ml-[34px]">
+                    {formatSalaryAmount(minSalary, false, salaryType)}
+                </span>
+                <span>{formatSalaryAmount(maxSalary, false, salaryType)}</span>
             </div>
         </div>
     );
