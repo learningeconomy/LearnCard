@@ -13,8 +13,7 @@ import {
 import { type Wages } from 'learn-card-base';
 import {
     buildSalaryDistributionData,
-    getWagesBySalaryType,
-    getYearlyWages,
+    getSelectedWagesBySalaryType,
 } from './ai-pathway-careers.helpers';
 
 const formatSalary = (value: string | number, salaryType: 'per_year' | 'per_hour'): string => {
@@ -71,10 +70,7 @@ export const AiPathwayCareerPipeChart: React.FC<{
     salaryType?: 'per_year' | 'per_hour';
 }> = ({ wages, estimatedEmployment, showMedianOverlay = true, salaryType = 'per_year' }) => {
     const { NationalWagesList = [] } = wages;
-    const selectedWages =
-        salaryType === 'per_hour'
-            ? getWagesBySalaryType(NationalWagesList, 'per_hour')
-            : getYearlyWages(NationalWagesList);
+    const selectedWages = getSelectedWagesBySalaryType(NationalWagesList, salaryType);
 
     if (!selectedWages) return null;
 

@@ -3,10 +3,7 @@ import React from 'react';
 import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
 import type { SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
-import {
-    getWagesBySalaryType,
-    getYearlyWages,
-} from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
+import { getSelectedWagesBySalaryType } from '../ai-pathways/ai-pathway-careers/ai-pathway-careers.helpers';
 
 type AiInsightsMarketComparisonBoxProps = {
     professionalTitle: string;
@@ -81,8 +78,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     salaryType = 'per_year',
 }) => {
     const selectedWages = occupation
-        ? getWagesBySalaryType(occupation.Wages.NationalWagesList || [], salaryType) ||
-          getYearlyWages(occupation.Wages.NationalWagesList || [])
+        ? getSelectedWagesBySalaryType(occupation.Wages.NationalWagesList || [], salaryType)
         : undefined;
 
     const marketLow = selectedWages?.Pct10 ? parseSalaryValue(selectedWages.Pct10) : undefined;

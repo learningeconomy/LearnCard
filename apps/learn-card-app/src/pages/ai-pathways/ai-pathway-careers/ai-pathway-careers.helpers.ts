@@ -2,6 +2,8 @@ import numeral from 'numeral';
 
 import { type WageItem } from 'learn-card-base';
 
+const FULL_TIME_HOURS_PER_YEAR = 2080;
+
 export type AiPathwayCareer = {
     id: number;
     title: string;
@@ -49,6 +51,50 @@ export const getWagesBySalaryType = (
     const rateType = salaryType === 'per_hour' ? 'Hourly' : 'Annual';
 
     return wages.find(wage => wage.RateType === rateType);
+};
+
+const convertWageValue = (
+    value: string,
+    fromRateType: WageItem['RateType'],
+    salaryType: 'per_year' | 'per_hour'
+): string => {
+    const numericValue = Number(String(value).replace(/,/g, ''));
+
+    if (!Number.isFinite(numericValue)) {
+        return value;
+    }
+
+    if (fromRateType === 'Annual' && salaryType === 'per_hour') {
+        return (numericValue / FULL_TIME_HOURS_PER_YEAR).toFixed(2);
+    }
+
+    if (fromRateType === 'Hourly' && salaryType === 'per_year') {
+        return String(numericValue * FULL_TIME_HOURS_PER_YEAR);
+    }
+
+    return String(numericValue);
+};
+
+export const normalizeWageForSalaryType = (
+    wage: WageItem,
+    salaryType: 'per_year' | 'per_hour' = 'per_year'
+): WageItem => {
+    if (
+        (salaryType === 'per_hour' && wage.RateType === 'Hourly') ||
+        (salaryType === 'per_year' && wage.RateType === 'Annual')
+    ) {
+        return wage;
+    }
+
+    return {
+        ...wage,
+        RateType: salaryType === 'per_hour' ? 'Hourly' : 'Annual',
+        Pct10: convertWageValue(wage.Pct10, wage.RateType, salaryType),
+        Pct25: convertWageValue(wage.Pct25, wage.RateType, salaryType),
+        Median: convertWageValue(wage.Median, wage.RateType, salaryType),
+        Pct75: convertWageValue(wage.Pct75, wage.RateType, salaryType),
+        Pct90: convertWageValue(wage.Pct90, wage.RateType, salaryType),
+    };
 };
 
 export const getFirstAvailableKeywords = (
@@ -110,7 +156,9 @@ export const getSelectedWagesBySalaryType = (
     wages: WageItem[],
     salaryType: 'per_year' | 'per_hour' = 'per_year'
 ) => {
-    return getWagesBySalaryType(wages, salaryType) || getYearlyWages(wages);
+    const selectedWages = getWagesBySalaryType(wages, salaryType) || getYearlyWages(wages);
+
+    return selectedWages ? normalizeWageForSalaryType(selectedWages, salaryType) : undefined;
 };
 
 export const formatSalaryAmount = (
