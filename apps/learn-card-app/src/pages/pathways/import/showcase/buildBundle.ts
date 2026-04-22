@@ -117,6 +117,45 @@ export const practicePolicy = (
     artifactTypes: ['text'],
 });
 
+/**
+ * `review` policy — spaced-repetition step. FSRS params default to
+ * zeros since the scheduler recalculates from learner activity; the
+ * showcase doesn't need to pin specific stability / difficulty.
+ */
+export const reviewPolicy = (): Policy => ({
+    kind: 'review',
+    fsrs: { stability: 0, difficulty: 0 },
+});
+
+/**
+ * `external` policy — reaches a tool outside the app via MCP.
+ * Showcase authors pass the server + tool names they want the
+ * learner's MCP client to launch.
+ */
+export const externalPolicy = (serverId: string, toolName: string): Policy => ({
+    kind: 'external',
+    mcp: { serverId, toolName },
+});
+
+/**
+ * `assessment` policy — rubric-based evaluation. Criteria default
+ * to an empty list since the showcase surfaces the framing, not the
+ * rubric, but we accept an override so authors can demonstrate
+ * weighted rubrics when that's the point of the pathway.
+ */
+export const assessmentPolicy = (
+    criteria: { id: string; description: string; weight?: number }[] = [],
+): Policy => ({
+    kind: 'assessment',
+    rubric: {
+        criteria: criteria.map(c => ({
+            id: c.id,
+            description: c.description,
+            weight: c.weight ?? 1,
+        })),
+    },
+});
+
 export const selfAttest = (prompt: string): Termination => ({
     kind: 'self-attest',
     prompt,

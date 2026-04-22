@@ -42,12 +42,13 @@
  * is honesty without scaremongering.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import {
     arrowDownOutline,
+    arrowForwardOutline,
     arrowUpOutline,
     barbellOutline,
     cashOutline,
@@ -59,12 +60,19 @@ import {
     timeOutline,
 } from 'ionicons/icons';
 
-import { pathwayStore } from '../../../stores/pathways';
+import { AnalyticsEvents, useAnalytics } from '../../../analytics';
+import { pathwayStore, proposalStore } from '../../../stores/pathways';
+import { useLearnerDid } from '../hooks/useLearnerDid';
 import { formatEta } from '../map/route';
-import type { Tradeoff } from '../types';
+import type { Pathway, Tradeoff } from '../types';
 
 import { generateScenarios } from './generators';
 import { simulateAll, simulateBaseline } from './simulator';
+import {
+    buildProposalFromScenario,
+    classifyScenarioForProposal,
+    type ToProposalReason,
+} from './toProposal';
 import type { ScenarioResult, SimulationSummary } from './types';
 
 // -----------------------------------------------------------------
@@ -251,7 +259,27 @@ const BaselineCard: React.FC<{
     </section>
 );
 
-const ScenarioCard: React.FC<{ result: ScenarioResult }> = ({ result }) => {
+interface ScenarioCardProps {
+    result: ScenarioResult;
+    /**
+     * Live classification of the scenario's convertibility. The
+     * parent computes this (so a pathway change re-memoizes both
+     * baseline and classifications in one pass) and passes it in.
+     * `null` means "no opinion yet" — renders as a non-actionable card.
+     */
+    convertibility: ToProposalReason | null;
+    /** Invoked when the learner asks to turn the scenario into a proposal. */
+    onAccept?: () => void;
+    /** Disables the accept button while a sibling card is being processed. */
+    busy?: boolean;
+}
+
+const ScenarioCard: React.FC<ScenarioCardProps> = ({
+    result,
+    convertibility,
+    onAccept,
+    busy = false,
+}) => {
     const { scenario, simulation, deltas, tradeoffs } = result;
 
     const etaChip =
@@ -271,6 +299,9 @@ const ScenarioCard: React.FC<{ result: ScenarioResult }> = ({ result }) => {
                 tone={toneForDelta(deltas.steps)}
             />
         ) : null;
+
+    const canAccept = convertibility?.kind === 'ok';
+    const preview = convertibility && convertibility.kind !== 'ok';
 
     return (
         <article className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-sm space-y-4">
@@ -308,6 +339,47 @@ const ScenarioCard: React.FC<{ result: ScenarioResult }> = ({ result }) => {
                         <TradeoffRow key={`${t.dimension}-${i}`} tradeoff={t} />
                     ))}
                 </ul>
+            )}
+
+            {/*
+                Commit seam — the Accept button routes through
+                `buildProposalFromScenario` and lands in the existing
+                proposals queue. We deliberately keep the action on
+                the card (not a top-level "pick a scenario" wizard)
+                because the tradeoff context the learner just read is
+                the reason they're committing; hiding the commit
+                affordance behind another click would separate
+                decision from action.
+
+                When the scenario isn't convertible today (effort-
+                multiplier-only, no-effect against the live pathway),
+                we surface a one-line reason instead of the button.
+                That's the honest degradation — no placeholder
+                button, no "coming soon" toast.
+            */}
+            {canAccept && onAccept && (
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <button
+                        type="button"
+                        onClick={onAccept}
+                        disabled={busy}
+                        className="inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        Try this path
+                        <IonIcon icon={arrowForwardOutline} className="text-base" />
+                    </button>
+
+                    <p className="text-xs text-grayscale-500 leading-relaxed sm:self-center">
+                        Sends a proposal to your queue — you choose whether to commit
+                        from there.
+                    </p>
+                </div>
+            )}
+
+            {preview && (
+                <p className="text-xs text-grayscale-500 leading-relaxed italic pt-1">
+                    {convertibility!.message}
+                </p>
             )}
         </article>
     );
@@ -353,6 +425,15 @@ const EmptyFrame: React.FC<{
 const WhatIfMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
     const history = useHistory();
+    const analytics = useAnalytics();
+    const learnerDid = useLearnerDid();
+
+    // Set while a scenario is being turned into a proposal. Single-
+    // flight so two rapid clicks don't produce two proposals with
+    // the same diff. Keyed by scenario id to disable just the card
+    // being processed.
+    const [acceptingId, setAcceptingId] = useState<string | null>(null);
+    const [acceptError, setAcceptError] = useState<string | null>(null);
 
     // All the heavy lifting is pure and synchronous — safe to memoize
     // on the pathway reference. Node-status changes already bump
@@ -369,6 +450,73 @@ const WhatIfMode: React.FC = () => {
         const scenarios = generateScenarios(activePathway);
         return simulateAll(activePathway, scenarios);
     }, [activePathway]);
+
+    // Convertibility per scenario — computed alongside results so
+    // the UI doesn't need to re-classify on every render, and so
+    // "no-effect" / "multiplier-unsupported" messages reflect the
+    // *current* pathway state (a scenario that was convertible
+    // yesterday may not be today once its target nodes are
+    // completed).
+    const convertibilityByScenarioId = useMemo(() => {
+        if (!activePathway) return new Map<string, ToProposalReason>();
+
+        const map = new Map<string, ToProposalReason>();
+        for (const r of results) {
+            map.set(
+                r.scenario.id,
+                classifyScenarioForProposal(activePathway, r.scenario),
+            );
+        }
+        return map;
+    }, [activePathway, results]);
+
+    const handleAccept = (pathway: Pathway, result: ScenarioResult) => {
+        if (acceptingId) return;
+
+        setAcceptingId(result.scenario.id);
+        setAcceptError(null);
+
+        try {
+            // Pipe the simulator-computed tradeoffs through so the
+            // proposal shows the live time delta, not just the
+            // scenario's authored defaults.
+            const proposal = buildProposalFromScenario(
+                pathway,
+                result.scenario,
+                result.tradeoffs,
+                { ownerDid: learnerDid },
+            );
+
+            if (!proposal) {
+                throw new Error(
+                    'This scenario can\u2019t be committed as a proposal right now.',
+                );
+            }
+
+            proposalStore.set.addProposal(proposal);
+
+            // `PATHWAYS_PROPOSAL_CREATED` is shared with the agent
+            // pipeline, which surfaces invocation latency + cost.
+            // What-If proposals are client-side and synchronous, so
+            // we record 0s honestly — the event still attributes the
+            // proposal to the `router` agent for telemetry roll-ups.
+            analytics.track(AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED, {
+                agent: proposal.agent,
+                pathwayId: proposal.pathwayId,
+                latencyMs: 0,
+                costCents: 0,
+            });
+
+            history.push('/pathways/proposals');
+        } catch (err) {
+            setAcceptError(
+                err instanceof Error
+                    ? err.message
+                    : 'Something went wrong. Please try again.',
+            );
+            setAcceptingId(null);
+        }
+    };
 
     if (!activePathway) {
         return (
@@ -429,9 +577,23 @@ const WhatIfMode: React.FC = () => {
                             Other paths
                         </h2>
 
+                        {acceptError && (
+                            <div className="p-3 rounded-2xl bg-red-50 border border-red-100 text-xs text-red-700 leading-relaxed">
+                                {acceptError}
+                            </div>
+                        )}
+
                         <div className="space-y-3">
                             {results.map(r => (
-                                <ScenarioCard key={r.scenario.id} result={r} />
+                                <ScenarioCard
+                                    key={r.scenario.id}
+                                    result={r}
+                                    convertibility={
+                                        convertibilityByScenarioId.get(r.scenario.id) ?? null
+                                    }
+                                    busy={acceptingId !== null}
+                                    onAccept={() => handleAccept(activePathway, r)}
+                                />
                             ))}
                         </div>
                     </section>

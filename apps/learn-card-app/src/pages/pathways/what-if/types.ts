@@ -31,16 +31,20 @@ import type { Policy, Tradeoff } from '../types';
 
 /**
  * Built-in scenario families. The set is intentionally small and
- * audit-able so the learner isn't drowning in hypotheticals — three
- * or four honest alternatives beat a dozen vague ones.
+ * audit-able so the learner isn't drowning in hypotheticals — four
+ * or five honest alternatives beat a dozen vague ones.
  *
- *   - `fast-track`       — elide `review` nodes to reduce ETA.
- *   - `deep-practice`    — scale `practice` effort up (2x) to buy
- *                          more reps at the cost of time.
- *   - `external-light`   — elide `external` nodes, reducing
- *                          outside-dependency exposure.
- *   - `destination-only` — work only on nodes on the shortest path
- *                          from focus → destination (breadth → depth).
+ *   - `fast-track`        — elide `review` nodes to reduce ETA.
+ *   - `deep-practice`     — scale `practice` effort up (2x) to buy
+ *                           more reps at the cost of time.
+ *   - `external-light`    — elide `external` nodes, reducing
+ *                           outside-dependency exposure.
+ *   - `composite-bypass`  — elide `composite` nodes so the learner
+ *                           stays on the main track and defers any
+ *                           nested sub-pathways.
+ *   - `destination-only`  — keep only nodes on the shortest path
+ *                           from focus → destination; skip siblings
+ *                           (breadth → depth).
  *
  * The `custom` kind is reserved for a future UI that lets authors
  * hand-tune a `NodeSelector` (e.g. "also skip this one review
@@ -50,6 +54,7 @@ export type ScenarioKind =
     | 'fast-track'
     | 'deep-practice'
     | 'external-light'
+    | 'composite-bypass'
     | 'destination-only'
     | 'custom';
 

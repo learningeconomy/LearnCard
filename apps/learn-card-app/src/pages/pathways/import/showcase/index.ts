@@ -19,11 +19,13 @@
 
 import { SENIOR_YEAR_SHOWCASE } from './buildShowcase';
 import { SMART_START_SHOWCASE } from './smartStartShowcase';
+import { WHAT_IF_SHOWCASE } from './whatIfShowcase';
 import type { ShowcaseDefinition } from './types';
 
 export const SHOWCASES: readonly ShowcaseDefinition[] = [
     SENIOR_YEAR_SHOWCASE,
     SMART_START_SHOWCASE,
+    WHAT_IF_SHOWCASE,
 ];
 
 export type { ShowcaseBundle, ShowcaseDefinition, ShowcasePreview } from './types';
