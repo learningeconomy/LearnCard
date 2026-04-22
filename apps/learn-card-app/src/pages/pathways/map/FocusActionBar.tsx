@@ -80,9 +80,31 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, nextOnRoute, onOp
         !!node && status !== 'completed' && status !== 'skipped';
 
     return (
+        /*
+            Docked bottom sheet positioning.
+            ────────────────────────────────
+            The bar sits absolutely inside the Map viewport, but on
+            mobile the app renders an `IonTabBar` along the bottom
+            edge of the window. `bottom-4` alone would slide the
+            bar *behind* the tab bar on iPhone SE / Android narrow.
+            We solve that with a responsive clearance:
+
+              - `bottom-4` on desktop / tablet (no tab bar).
+              - `bottom-24` below `sm` so the bar rides above the
+                ~56 px tab bar + the home-indicator safe area.
+              - `pb-[env(safe-area-inset-bottom)]` as an extra
+                cushion on devices reporting a non-zero inset (iOS
+                PWA, iPad split view) so the CTA is never clipped
+                by the rounded-corner home indicator.
+
+            The `px-4` inner gutter stays so the frosted card
+            doesn't butt against the viewport edge on narrow phones.
+        */
         <div
-            className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 z-10
-                       w-full max-w-md px-4 font-poppins"
+            className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-10
+                       w-full max-w-md px-4 font-poppins
+                       bottom-24 sm:bottom-4
+                       pb-[env(safe-area-inset-bottom,0px)]"
         >
             <AnimatePresence mode="wait">
                 {isActionable && node && (

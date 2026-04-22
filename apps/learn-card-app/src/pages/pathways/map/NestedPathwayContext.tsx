@@ -54,11 +54,18 @@ const NestedPathwayContext: React.FC<NestedPathwayContextProps> = ({
             the viewport still gets pan/drag under the empty margin;
             the inner chips re-enable their own pointer events so
             clicks work as expected.
+
+            Responsive width: on narrow phones the right-side
+            Navigate controls (`max-w-[50vw]`) take half the top
+            edge, so we cap this column at `45vw` to guarantee a
+            small gap between the two columns. Desktop keeps the
+            original 320 px absolute cap so long titles read fully
+            when horizontal real-estate is cheap.
         */
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: 'easeOut', delay: 0.05 }}
-        className="pointer-events-none absolute top-4 left-4 z-10 font-poppins flex flex-col items-start gap-1.5 max-w-[320px]"
+        className="pointer-events-none absolute top-3 left-3 sm:top-4 sm:left-4 z-10 font-poppins flex flex-col items-start gap-1.5 max-w-[45vw] sm:max-w-[320px]"
     >
         {/*
             Breadcrumb. Mirrors the back-link at the top of the Build
@@ -100,11 +107,21 @@ const NestedPathwayContext: React.FC<NestedPathwayContextProps> = ({
             target — so we render a div, not a button. Emerald accent
             on the sparkles icon signals the reward framing without
             turning the whole chip into a shouty CTA.
+
+            Hidden below `sm` because on a narrow phone the vertical
+            budget is precious and the reward framing is already
+            carried by (a) the breadcrumb above ("Back to <parent>"
+            implies "you're here because of <parent>") and (b) the
+            composite node's NodeDetail card on the parent pathway,
+            which names the unlock explicitly when the learner lands
+            there. On tablet+ we keep the pill because the extra
+            motivation is free real-estate.
         */}
         <div
             className="
+                hidden sm:inline-flex
                 pointer-events-auto
-                inline-flex items-center gap-1.5 py-1.5 px-3
+                items-center gap-1.5 py-1.5 px-3
                 rounded-full
                 bg-white/60 backdrop-blur-md
                 border border-white

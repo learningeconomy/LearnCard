@@ -42,7 +42,6 @@ import CollectionMapNode, {
 } from './CollectionMapNode';
 import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
-import NavigateMode from './NavigateMode';
 import NestedPathwayContext from './NestedPathwayContext';
 import {
     buildCollectionIndex,
@@ -55,17 +54,55 @@ import {
     layoutPathway,
     layoutPathwayNavigate,
 } from './layout';
-import {
-    buildRouteIndex,
-    formatEta,
-    getPathwayRoute,
-    nodeEffortMinutes,
-} from './route';
+import { buildRouteIndex, getPathwayRoute } from './route';
 
 const NODE_TYPES = {
     pathwayNode: MapNode,
     collectionNode: CollectionMapNode,
 } as const;
+
+/**
+ * useIsDesktop — reactive `>= sm` (640 px) media-query hook.
+ *
+ * Mobile / desktop split matters on the Map because several pieces of
+ * chrome that read as useful affordances on a laptop become noise on
+ * a 375-wide phone:
+ *
+ *   - The MiniMap is a "bird's-eye view" meant for orienting inside a
+ *     large pannable graph. On mobile its 200-ish-px footprint
+ *     occupies ~half the horizontal edge of the viewport, occludes
+ *     the canvas, and its details are too small to tap precisely.
+ *   - The FocusActionBar (bottom docked CTA) duplicates the
+ *     corner-chevron already on the focused node card; on a phone
+ *     the chevron tap is a single gesture that's both more compact
+ *     and better-aligned with mobile-map conventions (tap pin again
+ *     to dive in, à la Google Maps).
+ *
+ * Rendering them conditionally (rather than CSS-hiding) keeps them
+ * out of the DOM entirely on mobile so React Flow doesn't waste
+ * cycles mounting MiniMap's SVG scene graph on every focus change.
+ *
+ * SSR-safe via the `typeof window` guard on the initial state.
+ */
+const useIsDesktop = (): boolean => {
+    const [isDesktop, setIsDesktop] = React.useState<boolean>(() =>
+        typeof window !== 'undefined'
+            ? window.matchMedia('(min-width: 640px)').matches
+            : true,
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const mq = window.matchMedia('(min-width: 640px)');
+        const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
+
+    return isDesktop;
+};
 
 /**
  * FocusPanner — nested inside ReactFlow so it can grab `useReactFlow()`.
@@ -99,7 +136,18 @@ const FocusPanner: React.FC<{
 
         if (!pos) return;
 
-        rf.setCenter(pos.x, pos.y, {
+        // ReactFlow stores node positions as the *top-left corner* of
+        // the node's bounding box; `rf.setCenter(x, y)` centers the
+        // viewport on the coordinate (x, y). Calling it with raw
+        // (pos.x, pos.y) therefore anchors the viewport on the node's
+        // top-left corner — on a wide desktop the node is still
+        // mostly visible because of ambient padding, but on a
+        // 375-wide iPhone SE the node's left edge lands on the
+        // screen's horizontal center and the card appears shifted
+        // to the right. Offset by half the node's dimensions so we
+        // actually center on the node's visual center, independent
+        // of viewport width.
+        rf.setCenter(pos.x + NODE_WIDTH / 2, pos.y + NODE_HEIGHT / 2, {
             zoom,
             // First pan per mount is instant (duration 0) to suppress
             // the `fitView`-then-recenter flicker. Subsequent focus
@@ -154,6 +202,7 @@ const MapModeInner: React.FC = () => {
     const allPathways = pathwayStore.use.pathways();
     const history = useHistory();
     const location = useLocation<MapModeLocationState | undefined>();
+    const isDesktop = useIsDesktop();
 
     // Sub-pathway context — if the active pathway is embedded inside
     // another pathway as a composite reference, render the breadcrumb
@@ -441,29 +490,6 @@ const MapModeInner: React.FC = () => {
         if (!nid || !activePathway) return null;
         return activePathway.nodes.find(n => n.id === nid) ?? null;
     }, [route, routeIndex, activePathway]);
-
-    /** The node the learner is currently at (first uncompleted on route). */
-    const yourNode = useMemo(() => {
-        if (!yourNodeId || !activePathway) return null;
-        return activePathway.nodes.find(n => n.id === yourNodeId) ?? null;
-    }, [yourNodeId, activePathway]);
-
-    // ------------------------------------------------------------------
-    // Browse vs Navigate mode.
-    //
-    // Browse = the existing graph view. Navigate = a full-screen
-    // Waze-style journey overlay that hides the graph and puts the
-    // current step front and center. The two modes share the same
-    // underlying state (focus, route, ETA) — Navigate is purely a
-    // different *presentation* of what Browse already knows.
-    // ------------------------------------------------------------------
-    const [isNavigating, setIsNavigating] = useState<boolean>(false);
-
-    // Reset mode when the pathway changes — re-entering a different
-    // pathway shouldn't drop you into navigation without you asking.
-    useEffect(() => {
-        setIsNavigating(false);
-    }, [activePathway?.id]);
 
     const nb = useMemo(
         () => (activePathway && focusId ? neighborhood(activePathway, focusId, 2) : null),
@@ -1250,65 +1276,6 @@ const MapModeInner: React.FC = () => {
             )}
 
             {/*
-                Goal anchor — a floating frosted pill centered above the
-                canvas. Reads like Apple's Dynamic Island: calm, obvious
-                destination, doesn't steal a full row of vertical space.
-
-                Post-M7: when a route is computed, the pill grows a
-                second line with the Waze-style ETA ("~4 weeks · 6
-                steps"). If the learner is already at the destination
-                the ETA reads "Arrived"; if no route exists (no
-                destination set, or focus is off-subtree), we fall
-                back to just the goal — never showing a misleading
-                ETA.
-            */}
-            <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-10 font-poppins animate-fade-in-up">
-                <div className="pointer-events-auto flex flex-col items-center gap-0.5 py-2 px-4 rounded-[20px] bg-white/70 backdrop-blur-md border border-white shadow-lg shadow-grayscale-900/5">
-                    <div className="flex items-center gap-2">
-                        <span
-                            aria-hidden
-                            className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
-                        />
-
-                        <span className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-wide">
-                            On your way to
-                        </span>
-
-                        <span className="text-sm font-semibold text-grayscale-900 max-w-[260px] truncate">
-                            {activePathway.goal}
-                        </span>
-                    </div>
-
-                    {route && (
-                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-grayscale-600">
-                            <span>
-                                {route.etaMinutes > 0
-                                    ? formatEta(route.etaMinutes)
-                                    : 'Arrived'}
-                            </span>
-
-                            {route.remainingSteps > 0 && (
-                                <>
-                                    <span
-                                        aria-hidden
-                                        className="text-grayscale-300"
-                                    >
-                                        ·
-                                    </span>
-
-                                    <span>
-                                        {route.remainingSteps === 1
-                                            ? '1 step to go'
-                                            : `${route.remainingSteps} steps to go`}
-                                    </span>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/*
                 Top-right mode chrome.
                 ──────────────────────────────────────────────────────
                 Google-Maps-style controls for the committed route.
@@ -1319,10 +1286,9 @@ const MapModeInner: React.FC = () => {
                 Stacked vertically so each affordance gets its own
                 row with a clear label:
 
-                  1. **Mode indicator** — compact pill that mirrors
-                     the goal-pill's glass treatment. Indigo dot +
-                     "Navigating" in navigate mode, grayscale dot +
-                     "Exploring" in explore mode (when peeking).
+                  1. **Mode indicator** — compact pill. Indigo dot +
+                     "Navigating" in navigate layout, grayscale dot +
+                     "Exploring" when peeking at the full graph.
                   2. **Toggle** — "View full map" switches the canvas
                      to Explore layout temporarily (keeps the route
                      committed); "Resume navigation" swings back.
@@ -1333,19 +1299,24 @@ const MapModeInner: React.FC = () => {
                      "End navigation" — the route is gone, the Map
                      drops to Explore for real, the learner can
                      restart via What-If or a Router proposal.
-                  4. **Guide me** — launches the Waze single-card
-                     drill-in. Kept as its own row so it's clearly
-                     an *action* (open the turn-by-turn view), not a
-                     *mode*.
 
-                When there's no chosenRoute we skip all four buttons —
+                A prior "Guide me" CTA lived here too, launching a
+                full-screen Waze-style single-card drill-in. It was
+                removed because it duplicated the Today tab (no-graph
+                step feed) *and* the FocusActionBar at the bottom of
+                this very canvas (the primary "Open" CTA plus a Then
+                peek at the next step). Three affordances pointing at
+                the same act is noise, not choice.
+
+                When there's no chosenRoute we skip the whole stack —
                 the pathway is in Explore by default and there's no
                 route to manage.
             */}
             {hasChosenRoute && (
                 <div
-                    className="absolute top-4 right-4 z-10 font-poppins
-                               flex flex-col items-end gap-2
+                    className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 font-poppins
+                               flex flex-col items-end gap-1.5 sm:gap-2
+                               max-w-[50vw]
                                animate-fade-in-up"
                 >
                     <span
@@ -1384,7 +1355,8 @@ const MapModeInner: React.FC = () => {
                         className="py-1.5 px-3 rounded-full
                                    bg-white/80 backdrop-blur-md border border-white/60
                                    shadow-sm hover:bg-white transition-colors
-                                   text-xs font-medium text-grayscale-700"
+                                   text-[11px] sm:text-xs font-medium text-grayscale-700
+                                   whitespace-nowrap"
                         aria-label={
                             effectiveLayout === 'navigate'
                                 ? 'View the full map'
@@ -1402,30 +1374,14 @@ const MapModeInner: React.FC = () => {
                         className="py-1.5 px-3 rounded-full
                                    bg-white/80 backdrop-blur-md border border-white/60
                                    shadow-sm hover:bg-white transition-colors
-                                   text-xs font-medium text-grayscale-500
-                                   hover:text-grayscale-900"
+                                   text-[11px] sm:text-xs font-medium text-grayscale-500
+                                   hover:text-grayscale-900
+                                   whitespace-nowrap"
                         aria-label="Exit navigation and clear the committed route"
                     >
                         Exit navigation
                     </button>
 
-                    {route && route.remainingSteps > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setIsNavigating(true)}
-                            className="flex items-center gap-1.5 py-2 px-3.5 rounded-full
-                                       bg-indigo-600 text-white text-xs font-semibold
-                                       shadow-lg shadow-indigo-600/30
-                                       hover:bg-indigo-700 transition-colors"
-                            aria-label="Start turn-by-turn guidance"
-                        >
-                            <span
-                                aria-hidden
-                                className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
-                            />
-                            <span>Guide me</span>
-                        </button>
-                    )}
                 </div>
             )}
 
@@ -1493,13 +1449,24 @@ const MapModeInner: React.FC = () => {
                     className="!shadow-sm !bg-white/80 !backdrop-blur-md !border !border-white/50 !rounded-xl"
                 />
 
-                <MiniMap
-                    pannable
-                    zoomable
-                    className="!border !border-white/50 !rounded-xl !bg-white/60 !backdrop-blur-md"
-                    maskColor="rgba(236, 253, 245, 0.4)"
-                    nodeColor={minimapNodeColor}
-                />
+                {/*
+                    MiniMap — bird's-eye orient for the graph. Rendered
+                    only on tablet+ (`sm:` and above). On phones the
+                    ~180 px footprint fights the main canvas for
+                    every pixel and its targets are too small to
+                    tap precisely; learners orient via pan/pinch
+                    directly on the canvas instead, which is the
+                    standard mobile-map convention.
+                */}
+                {isDesktop && (
+                    <MiniMap
+                        pannable
+                        zoomable
+                        className="!border !border-white/50 !rounded-xl !bg-white/60 !backdrop-blur-md"
+                        maskColor="rgba(236, 253, 245, 0.4)"
+                        nodeColor={minimapNodeColor}
+                    />
+                )}
             </ReactFlow>
 
             {/*
@@ -1544,44 +1511,33 @@ const MapModeInner: React.FC = () => {
             )}
 
             {/*
-                Bottom action sheet — persistent, docked affordance for
-                opening the focused node. Bookends the top "On your way to"
-                pill: destination above, current action below. Lives in
-                the viewport chrome so it never overlaps the graph's
-                edges (the mistake the previous attached CTA made).
-            */}
-            <FocusActionBar
-                node={
-                    focusId
-                        ? activePathway.nodes.find(n => n.id === focusId) ?? null
-                        : null
-                }
-                nextOnRoute={nextNodeOnRoute}
-                onOpen={openNode}
-            />
+                Bottom action sheet — docked primary CTA for the
+                focused node. Lives in the viewport chrome so it
+                never overlaps the graph's edges (the mistake the
+                previous attached CTA made).
 
-            {/*
-                Navigate-mode overlay — the full-screen Waze view.
-                Owns no state of its own; MapMode passes down the
-                route + focus + nextOnRoute and NavigateMode presents
-                them. Exiting or tapping the primary CTA
-                (routes to NodeDetail) cleanly returns to Browse on
-                the learner's next map visit.
+                Rendered only on tablet+ (`sm:` and above). On phones
+                the sheet duplicates the chevron on the focused node
+                card (tap pin → focus, tap again → open, the Google
+                Maps pattern) *and* eats ~120 px of vertical
+                real-estate above the iOS tab bar that the learner
+                needs to actually see the graph. Mobile flow: first
+                tap centers + zooms via `FocusPanner`; second tap on
+                the same node calls `openNode` directly (handled in
+                `onNodeClick` below).
             */}
-            {isNavigating && route && (
-                <NavigateMode
-                    pathway={activePathway}
-                    route={route}
-                    yourIndex={routeIndex?.yourIndex ?? null}
-                    currentNode={yourNode}
-                    nextNode={nextNodeOnRoute}
-                    onOpen={nodeId => {
-                        setIsNavigating(false);
-                        openNode(nodeId);
-                    }}
-                    onExit={() => setIsNavigating(false)}
+            {isDesktop && (
+                <FocusActionBar
+                    node={
+                        focusId
+                            ? activePathway.nodes.find(n => n.id === focusId) ?? null
+                            : null
+                    }
+                    nextOnRoute={nextNodeOnRoute}
+                    onOpen={openNode}
                 />
             )}
+
         </div>
     );
 };
