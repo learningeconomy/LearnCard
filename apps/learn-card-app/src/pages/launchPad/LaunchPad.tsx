@@ -247,32 +247,17 @@ const LaunchPad: React.FC = () => {
         return withDemoFirst;
     }, [filteredAppsAndContracts, sortBy]);
 
-    // Check if we're viewing the Plugins tab
-    const isPluginsTab = tab === LaunchPadTabEnum.plugins;
-
     // Filter app store apps based on search and category
     const filteredInstalledApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
         return installedApps.filter(app => {
-            const appAny = app as any;
-
-            // Filter by plugins tab (is_plugin field)
-            if (isPluginsTab) {
-                if (!appAny.is_plugin) {
-                    return false;
-                }
-            } else {
-                // Filter by category/tab (exclude plugins from other tabs)
-                if (appAny.is_plugin) {
-                    return false;
-                }
-                if (
-                    appStoreCategory &&
-                    app.category?.toLowerCase() !== appStoreCategory.toLowerCase()
-                ) {
-                    return false;
-                }
+            // Filter by category/tab
+            if (
+                appStoreCategory &&
+                app.category?.toLowerCase() !== appStoreCategory.toLowerCase()
+            ) {
+                return false;
             }
 
             // Filter by search
@@ -285,7 +270,7 @@ const LaunchPad: React.FC = () => {
 
             return true;
         });
-    }, [installedApps, searchInput, appStoreCategory, isPluginsTab]);
+    }, [installedApps, searchInput, appStoreCategory]);
 
     // Set of featured carousel and curated app IDs (to avoid duplicates in regular browse)
     const featuredAndCuratedIds = useMemo(() => {
@@ -316,13 +301,6 @@ const LaunchPad: React.FC = () => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
         return curatedAppsNotInstalled.filter(app => {
-            const appAny = app as any;
-
-            // Exclude plugins from curated apps (they have their own section)
-            if (appAny.is_plugin) {
-                return false;
-            }
-
             // Filter by category if one is selected
             if (
                 appStoreCategory &&
@@ -340,37 +318,6 @@ const LaunchPad: React.FC = () => {
             return true;
         });
     }, [curatedAppsNotInstalled, searchInput, appStoreCategory]);
-
-    // Filtered plugins (for Plugins section - controlled by pluginVisibility flag)
-    const filteredPlugins = useMemo(() => {
-        if (!flags?.pluginVisibility) {
-            return [];
-        }
-
-        const lowerSearch = searchInput?.toLowerCase() || '';
-
-        return browseApps.filter(app => {
-            const appAny = app as any;
-
-            // Only include plugins
-            if (!appAny.is_plugin) {
-                return false;
-            }
-
-            // Exclude already installed plugins
-            if (installedListingIds.has(app.listing_id)) {
-                return false;
-            }
-
-            if (lowerSearch) {
-                const nameMatch = app.display_name?.toLowerCase().includes(lowerSearch);
-                const taglineMatch = app.tagline?.toLowerCase().includes(lowerSearch);
-                return nameMatch || taglineMatch;
-            }
-
-            return true;
-        });
-    }, [browseApps, searchInput, installedListingIds, flags?.pluginVisibility]);
 
     // Non-promoted available apps (for Discover More section)
     const nonPromotedAvailableApps = useMemo(() => {
@@ -572,66 +519,49 @@ const LaunchPad: React.FC = () => {
                                                         listing={app}
                                                         isInstalled={true}
                                                         onInstallSuccess={refetchInstalledApps}
-                                                        isPlugin={(app as any).is_plugin}
                                                     />
                                                 ))}
                                             </>
                                         )}
 
-                                        {/* Plugins */}
-                                        {isPluginsTab && filteredPlugins.length > 0 && (
-                                            <>
-                                                <div className="px-2 pt-4 pb-2">
-                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Plugins
-                                                    </p>
-                                                </div>
-                                                {filteredPlugins.map(app => (
-                                                    <AppStoreListItem
-                                                        key={`plugin-${app.listing_id}`}
-                                                        listing={app}
-                                                        isInstalled={false}
-                                                        onInstallSuccess={refetchInstalledApps}
-                                                        isPlugin={true}
-                                                    />
-                                                ))}
-                                            </>
-                                        )}
-
-                                        {/* Legacy Apps and Contracts - hide for Plugins tab */}
-                                        {!isPluginsTab &&
-                                            sortedAppsAndContracts?.map((item, index) => {
-                                                if (item?.data) {
-                                                    const data = item?.data;
-                                                    const isPending = item?.pending;
-
-                                                    return (
-                                                        <LaunchPadContractListItem
-                                                            key={`contract-${index}`}
-                                                            contract={data}
-                                                            isPending={isPending}
-                                                            filterBy={filterBy}
-                                                        />
-                                                    );
-                                                }
-
-                                                const app = item as LaunchPadAppListItemType;
+                                        {/* Legacy Apps and Contracts */}
+                                        {sortedAppsAndContracts?.map((item, index) => {
+                                            if (item?.data) {
+                                                const data = item?.data;
+                                                const isPending = item?.pending;
 
                                                 return (
-                                                    <LaunchPadAppListItem
-                                                        key={`app-${index}`}
-                                                        app={app}
+                                                    <LaunchPadContractListItem
+                                                        key={`contract-${index}`}
+                                                        contract={data}
+                                                        isPending={isPending}
                                                         filterBy={filterBy}
                                                     />
                                                 );
-                                            })}
+                                            }
 
-                                        {/* Available App Store Apps (discovery) - hide for Plugins tab */}
-                                        {filteredAvailableApps.length > 0 && !isPluginsTab && (
+                                            const app = item as LaunchPadAppListItemType;
+
+                                            return (
+                                                <LaunchPadAppListItem
+                                                    key={`app-${index}`}
+                                                    app={app}
+                                                    filterBy={filterBy}
+                                                />
+                                            );
+                                        })}
+
+                                        {/* Available App Store Apps (discovery) */}
+                                        {filteredAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-6 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Discover More Apps
+                                                        {tab === LaunchPadTabEnum.plugins ||
+                                                        filteredAvailableApps.every(
+                                                            app => app.category === 'plugin'
+                                                        )
+                                                            ? 'Plugins'
+                                                            : 'Discover More Apps'}
                                                     </p>
                                                 </div>
                                                 {filteredAvailableApps.map(app => (
@@ -681,14 +611,13 @@ const LaunchPad: React.FC = () => {
                                                     listing={app}
                                                     isInstalled={true}
                                                     onInstallSuccess={refetchInstalledApps}
-                                                    isPlugin={(app as any).is_plugin}
                                                 />
                                             ))}
                                         </>
                                     )}
 
                                     {/* Featured Apps (Curated List apps) */}
-                                    {filteredCuratedApps.length > 0 && !isPluginsTab && (
+                                    {filteredCuratedApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
@@ -706,52 +635,30 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Plugins Section - controlled by pluginVisibility flag */}
-                                    {flags?.pluginVisibility &&
-                                        filteredPlugins.length > 0 &&
-                                        !isPluginsTab && (
+                                    {/* Plugins section - show all available plugins when on Plugins tab */}
+                                    {tab === LaunchPadTabEnum.plugins &&
+                                        nonPromotedAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
                                                         Plugins
                                                     </p>
                                                 </div>
-                                                {filteredPlugins.map(app => (
+                                                {nonPromotedAvailableApps.map(app => (
                                                     <AppStoreListItem
                                                         key={`plugin-${app.listing_id}`}
                                                         listing={app}
                                                         isInstalled={false}
                                                         onInstallSuccess={refetchInstalledApps}
-                                                        isPlugin={true}
                                                     />
                                                 ))}
                                             </>
                                         )}
 
-                                    {/* Plugins Tab Content - show all plugins when Plugins tab is selected */}
-                                    {isPluginsTab && filteredPlugins.length > 0 && (
-                                        <>
-                                            <div className="px-2 pt-4 pb-2">
-                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Plugins
-                                                </p>
-                                            </div>
-                                            {filteredPlugins.map(app => (
-                                                <AppStoreListItem
-                                                    key={`plugin-${app.listing_id}`}
-                                                    listing={app}
-                                                    isInstalled={false}
-                                                    onInstallSuccess={refetchInstalledApps}
-                                                    isPlugin={true}
-                                                />
-                                            ))}
-                                        </>
-                                    )}
-
-                                    {/* Discover More (Standard apps - only show when searching, hide for Plugins tab) */}
+                                    {/* Discover More (Standard apps - only show when searching, not on Plugins tab) */}
                                     {searchInput.length > 0 &&
-                                        nonPromotedAvailableApps.length > 0 &&
-                                        !isPluginsTab && (
+                                        tab !== LaunchPadTabEnum.plugins &&
+                                        nonPromotedAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
@@ -784,8 +691,8 @@ const LaunchPad: React.FC = () => {
                                         />
                                     )}
 
-                                    {/* Legacy Apps and Contracts (non-coming-soon) - hide for Plugins tab */}
-                                    {filteredLegacyApps.length > 0 && !isPluginsTab && (
+                                    {/* Legacy Apps and Contracts (non-coming-soon) */}
+                                    {filteredLegacyApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
@@ -840,8 +747,8 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Coming Soon Apps (shown last) - hide for Plugins tab */}
-                                    {filteredComingSoonApps.length > 0 && !isPluginsTab && (
+                                    {/* Coming Soon Apps (shown last) */}
+                                    {filteredComingSoonApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
