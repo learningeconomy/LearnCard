@@ -16,6 +16,7 @@ export type AppStoreCategory =
     | 'Tools'
     | 'Employment'
     | 'Credentials'
+    | 'Plugins'
     | 'Other';
 
 export const APP_STORE_CATEGORIES: AppStoreCategory[] = [
@@ -26,13 +27,13 @@ export const APP_STORE_CATEGORIES: AppStoreCategory[] = [
     'Tools',
     'Employment',
     'Credentials',
+    'Plugins',
     'Other',
 ];
 
 // Map LaunchPad tab categories to app store categories
-// Note: 'Plugins' tab returns undefined because plugins are filtered by is_plugin field, not category
 export const mapTabToCategory = (tab: string): string | undefined => {
-    if (tab === 'All' || tab === 'Plugins') return undefined;
+    if (tab === 'All') return undefined;
 
     const mapping: Record<string, string> = {
         'AI': 'ai',
@@ -41,6 +42,7 @@ export const mapTabToCategory = (tab: string): string | undefined => {
         'Tools': 'tools',
         'Employment': 'employment',
         'Credentials': 'credentials',
+        'Plugins': 'plugin',
         'Other': 'other',
     };
 
