@@ -1633,6 +1633,21 @@ const MapModeInner: React.FC = () => {
                 at once — simpler than tracking per-group collapse
                 targets on the canvas and matches the "undo a zoom"
                 mental model.
+
+                Hidden on mobile (`< sm`) because the narrow viewport
+                has the button's right-edge lane crowded by:
+                  - the FocusActionBar card below it
+                  - the Navigating / Resume chip above it
+                  - the React Flow controls (+ / − / fit) left of it
+                On 375-wide phones those three pieces plus the Regroup
+                button fight for the same vertical column, and the
+                Regroup gesture is a "power move" on a canvas that
+                mobile users rarely manually expand anyway — a
+                collection card is usually one tap's worth of
+                information on mobile, not something you drill into
+                by hand. Desktop keeps it because the affordance
+                pairs naturally with the MiniMap / larger canvas
+                where manual expansion is common.
             */}
             {effectivelyExpandedGroupIds.size > 0 && (
                 <button
@@ -1653,7 +1668,7 @@ const MapModeInner: React.FC = () => {
 
                         setExpandedGroupIds(new Set());
                     }}
-                    className="absolute bottom-24 right-4 z-10 font-poppins
+                    className="hidden sm:inline-flex absolute bottom-24 right-4 z-10 font-poppins
                                py-2 px-3 rounded-full
                                bg-white/80 backdrop-blur-md border border-white/60
                                shadow-lg shadow-grayscale-900/10
