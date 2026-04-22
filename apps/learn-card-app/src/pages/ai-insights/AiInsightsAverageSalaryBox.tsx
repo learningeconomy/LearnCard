@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import type { OccupationDetailsResponse } from 'learn-card-base';
+import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
 import CaretDown from 'src/components/svgs/CaretDown';
 import AiPathwayCareerPipeChart from '../ai-pathways/ai-pathway-careers/AiPathwayCareerPipeChart';
@@ -31,6 +32,11 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
     >(occupation);
     const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
     const roleMenuRef = useRef<HTMLDivElement | null>(null);
+    const { isMobile } = useDeviceTypeByWidth();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.None,
+        mobile: ModalTypes.BottomSheet,
+    });
 
     useEffect(() => {
         setSelectedOccupation(occupation);
@@ -74,6 +80,40 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
         : `${title.toLowerCase()}s`;
     const salaryTypeLabel = salaryType === 'per_hour' ? '/hr' : '/yr';
 
+    const handleChooseRole = () => {
+        if (suggestedOccupations.length === 0) {
+            return;
+        }
+
+        if (isMobile) {
+            setIsRoleMenuOpen(true);
+
+            newModal(
+                <AiInsightsRoleMenu
+                    selectedOccupation={selectedOccupation ?? null}
+                    setSelectedOccupation={nextOccupation => {
+                        setSelectedOccupation(nextOccupation);
+                        closeModal();
+                    }}
+                    suggestedOccupations={suggestedOccupations}
+                    salaryType={salaryType}
+                    variant="sheet"
+                    onSelectOccupation={nextOccupation => {
+                        setSelectedOccupation(nextOccupation);
+                        closeModal();
+                    }}
+                />,
+                {
+                    onClose: () => setIsRoleMenuOpen(false),
+                }
+            );
+
+            return;
+        }
+
+        setIsRoleMenuOpen(open => !open);
+    };
+
     return (
         <div className="relative flex flex-col gap-[30px] w-full max-w-[600px] mx-auto rounded-[15px] bg-white py-[25px] px-[15px] shadow-bottom-4-4 overflow-visible">
             <h2 className="text-[18px] font-bold text-grayscale-900 font-poppins text-left leading-[24px] tracking-[0.32px]">
@@ -89,7 +129,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                         type="button"
                         aria-label="Choose role"
                         aria-expanded={isRoleMenuOpen}
-                        onClick={() => setIsRoleMenuOpen(open => !open)}
+                        onClick={handleChooseRole}
                         className={`ml-auto flex h-[30px] w-[30px] items-center justify-center rounded-full transition-colors p-[5px] ${
                             isRoleMenuOpen ? 'bg-grayscale-200' : 'bg-transparent'
                         }`}
@@ -97,7 +137,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                         <CaretDown className="h-[25px] w-[25px]" version="2" />
                     </button>
 
-                    {isRoleMenuOpen && suggestedOccupations.length > 0 && (
+                    {isRoleMenuOpen && suggestedOccupations.length > 0 && !isMobile && (
                         <div className="absolute right-0 top-full z-20 mt-[8px] w-[min(460px,calc(100vw-32px))]">
                             <AiInsightsRoleMenu
                                 selectedOccupation={selectedOccupation ?? null}

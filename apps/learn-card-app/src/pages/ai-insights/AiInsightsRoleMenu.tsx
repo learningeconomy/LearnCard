@@ -9,6 +9,8 @@ type AiInsightsRoleMenuProps = {
     setSelectedOccupation: (occupation: OccupationDetailsResponse) => void;
     suggestedOccupations: OccupationDetailsResponse[];
     salaryType?: 'per_year' | 'per_hour';
+    variant?: 'popover' | 'sheet';
+    onSelectOccupation?: (occupation: OccupationDetailsResponse) => void;
 };
 
 const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
@@ -16,11 +18,29 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
     setSelectedOccupation,
     suggestedOccupations,
     salaryType = 'per_year',
+    variant = 'popover',
+    onSelectOccupation,
 }) => {
     const [search, setSearch] = React.useState('');
+    const isSheet = variant === 'sheet';
+
+    const handleSelectOccupation = (occupation: OccupationDetailsResponse) => {
+        if (onSelectOccupation) {
+            onSelectOccupation(occupation);
+            return;
+        }
+
+        setSelectedOccupation(occupation);
+    };
 
     return (
-        <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-bottom-2-4 p-[12px] flex flex-col gap-[12px] max-h-[420px] overflow-y-auto">
+        <div
+            className={
+                isSheet
+                    ? 'flex w-full flex-col gap-[12px]'
+                    : 'bg-white rounded-[20px] border border-grayscale-200 shadow-bottom-2-4 p-[12px] flex flex-col gap-[12px] max-h-[420px] overflow-y-auto'
+            }
+        >
             <SearchInput
                 placeholder="Search roles..."
                 value={search}
@@ -31,12 +51,12 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
             <p className="text-[12px] font-[500] text-grayscale-500 leading-[16px] tracking-[0.72px] uppercase text-left">
                 Suggested Roles
             </p>
-            <div className="flex flex-col">
+            <div className={isSheet ? 'flex w-full flex-col' : 'flex flex-col'}>
                 {suggestedOccupations.map(occupation => (
                     <button
                         type="button"
                         key={occupation.OnetCode}
-                        onClick={() => setSelectedOccupation(occupation)}
+                        onClick={() => handleSelectOccupation(occupation)}
                         className={`flex items-center justify-between gap-[10px] w-full p-[10px] rounded-[12px] text-left hover:bg-grayscale-50 transition-colors cursor-pointer ${
                             selectedOccupation?.OnetCode === occupation.OnetCode
                                 ? 'bg-grayscale-100'
