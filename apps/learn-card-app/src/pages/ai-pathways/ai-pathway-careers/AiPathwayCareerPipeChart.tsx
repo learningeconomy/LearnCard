@@ -9,6 +9,7 @@ import {
     ResponsiveContainer,
     Tooltip,
     ReferenceLine,
+    Label,
 } from 'recharts';
 import { type Wages } from 'learn-card-base';
 import {
@@ -64,6 +65,61 @@ const mixColor = (start: string, end: string, ratio: number): string => {
     return `rgb(${r}, ${g}, ${b})`;
 };
 
+type MedianReferenceLabelProps = {
+    x?: number;
+    y?: number;
+    viewBox?: { x: number; y: number; width: number; height: number };
+    medianBucketEmploymentCount?: string;
+    medianSalary: string;
+};
+
+const MedianReferenceLabel: React.FC<MedianReferenceLabelProps> = ({
+    x,
+    y,
+    medianBucketEmploymentCount,
+    medianSalary,
+    viewBox,
+}) => {
+    const labelX = typeof x === 'number' ? x : viewBox ? viewBox.x + viewBox.width / 2 : undefined;
+    const labelY =
+        typeof y === 'number' ? Math.max(2, y - 60) : viewBox ? Math.max(2, viewBox.y - 28) : 2;
+
+    if (typeof labelX !== 'number') {
+        return null;
+    }
+
+    return (
+        <g pointerEvents="none">
+            <text
+                x={labelX}
+                y={labelY}
+                textAnchor="middle"
+                fill="#6F7590"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+                <tspan
+                    x={labelX}
+                    dy="0"
+                    fill="#353E64"
+                    style={{ fontSize: '14px', fontWeight: 500 }}
+                >
+                    Median: {medianSalary}
+                </tspan>
+                {medianBucketEmploymentCount && (
+                    <tspan
+                        x={labelX}
+                        dy="16"
+                        fill="#8B91A7"
+                        style={{ fontSize: '12px', fontWeight: 500 }}
+                    >
+                        ~ {medianBucketEmploymentCount} people
+                    </tspan>
+                )}
+            </text>
+        </g>
+    );
+};
+
 export const AiPathwayCareerPipeChart: React.FC<{
     wages: Wages;
     estimatedEmployment?: string | number;
@@ -76,11 +132,15 @@ export const AiPathwayCareerPipeChart: React.FC<{
     if (!selectedWages) return null;
 
     const data = buildSalaryDistributionData(selectedWages, estimatedEmployment, salaryType);
-    const medianBucket = data.find(bucket => bucket.isMedianBucket)?.bucketLabel;
+    const medianBucket = data.find(bucket => bucket.isMedianBucket);
 
     const minSalary = selectedWages?.Pct10 ?? 0;
     const medianSalary = selectedWages?.Median ?? 0;
     const maxSalary = selectedWages?.Pct90 ?? 0;
+    const formattedMedianSalary = formatSalary(medianSalary, salaryType);
+    const medianBucketEmploymentCount = medianBucket
+        ? formatAboutCount(medianBucket.estimatedPeople)
+        : '';
 
     const formatPeople = (value: number) =>
         new Intl.NumberFormat('en-US', {
@@ -101,20 +161,13 @@ export const AiPathwayCareerPipeChart: React.FC<{
 
     return (
         <div className="w-full relative">
-            {showMedianOverlay && (
-                <div className="absolute top-[8px] left-[50%] transform translate-x-[-50%] flex items-center gap-[6px] text-[14px] text-grayscale-600">
-                    <span className="w-[6px] h-[6px] rounded-full bg-grayscale-900" />
-                    <span>Median: {formatSalary(medianSalary, salaryType)}</span>
-                </div>
-            )}
-
             {/* Chart */}
             <div className="w-full h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={data}
                         barCategoryGap="20%"
-                        margin={{ top: showMedianOverlay ? 28 : 12, left: 0, right: 8, bottom: 8 }}
+                        margin={{ top: showMedianOverlay ? 48 : 12, left: 0, right: 8, bottom: 8 }}
                     >
                         <XAxis dataKey="bucketLabel" hide />
                         <YAxis
@@ -131,11 +184,28 @@ export const AiPathwayCareerPipeChart: React.FC<{
                             tickLine={{ stroke: '#E2E3E9' }}
                         />
 
-                        {medianBucket && (
+                        {medianBucket && showMedianOverlay && (
                             <ReferenceLine
-                                x={medianBucket}
+                                x={medianBucket.bucketLabel}
                                 stroke="#2d2d2d"
                                 strokeDasharray="4 4"
+                                label={
+                                    showMedianOverlay ? (
+                                        <Label
+                                            position="top"
+                                            offset={48}
+                                            content={labelProps => (
+                                                <MedianReferenceLabel
+                                                    {...labelProps}
+                                                    medianBucketEmploymentCount={
+                                                        medianBucketEmploymentCount
+                                                    }
+                                                    medianSalary={formattedMedianSalary}
+                                                />
+                                            )}
+                                        />
+                                    ) : undefined
+                                }
                             />
                         )}
 

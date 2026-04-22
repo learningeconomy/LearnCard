@@ -326,6 +326,9 @@ export const buildSalaryDistributionData = (
         const bucketLower = lowerBound + index * bucketWidth;
         const bucketUpper =
             index === bucketCount - 1 ? upperBound : lowerBound + (index + 1) * bucketWidth;
+        const isMedianBucket =
+            median >= bucketLower &&
+            (index === bucketCount - 1 ? median <= bucketUpper : median < bucketUpper);
 
         return {
             bucket: index + 1,
@@ -337,7 +340,7 @@ export const buildSalaryDistributionData = (
             estimatedPeople: 0,
             lowerBound: bucketLower,
             upperBound: bucketUpper,
-            isMedianBucket: index === Math.floor(bucketCount / 2),
+            isMedianBucket,
         } satisfies SalaryDistributionBucket;
     });
 
