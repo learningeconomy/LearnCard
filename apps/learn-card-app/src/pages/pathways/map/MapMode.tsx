@@ -25,6 +25,7 @@ import '@xyflow/react/dist/style.css';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
+import { seedChosenRoute } from '../core/chosenRoute';
 import {
     findParentCompositeNode,
     findParentPathway,
@@ -328,6 +329,76 @@ const MapModeInner: React.FC = () => {
 
         setLayoutOverride(null);
     }, [activePathway]);
+
+    /**
+     * The inverse of `clearRoute` — (re)commit a walk through the
+     * graph so the Map can swing back into Navigate layout.
+     *
+     * Two entry conditions, one callback:
+     *
+     *   1. **Resume** — the pathway already has a `destinationNodeId`
+     *      (the learner previously committed a walk, then hit "Exit
+     *      navigation"). We re-derive a route from the existing
+     *      destination via `seedChosenRoute` and commit it. No
+     *      graph edit — we're only restoring the walk the learner
+     *      had before.
+     *
+     *   2. **Start** — the pathway has no destination (authored
+     *      without one, or the learner's first time setting it on
+     *      the Map). We treat the *focused node* as the intended
+     *      destination: set it as `destinationNodeId` AND seed the
+     *      route. This matches the Google Maps mental model —
+     *      "tap a pin, hit Directions, the pin becomes your
+     *      destination."
+     *
+     * The focused node is what the canvas is already centered on
+     * (`FocusPanner` has panned + zoomed to it), so the learner's
+     * eye has already selected a target. Using that as the
+     * destination is what "navigate to here" *means*.
+     *
+     * Short-circuits:
+     *   - No active pathway → nothing to route.
+     *   - `seedChosenRoute` returns fewer than 2 ids (destination
+     *     unreachable from entry; e.g. the focused node IS the entry,
+     *     or the graph is disconnected) → bail without mutating. A
+     *     toast would be ideal here, but silent failure is
+     *     acceptable for v1 because the user can try a different
+     *     focus.
+     */
+    const startNavigation = React.useCallback(() => {
+        if (!activePathway) return;
+
+        // Establish the routing target: existing destination if set,
+        // otherwise the current focus node. If neither is available,
+        // there's nothing to route to.
+        const nextDestinationId =
+            activePathway.destinationNodeId ?? focusId ?? null;
+
+        if (!nextDestinationId) return;
+
+        const target =
+            activePathway.destinationNodeId === nextDestinationId
+                ? activePathway
+                : { ...activePathway, destinationNodeId: nextDestinationId };
+
+        const seeded = seedChosenRoute(target);
+
+        // Seeded < 2 means the entry can't reach this destination via
+        // the pathway's edges. Don't commit a phantom route.
+        if (seeded.length < 2) return;
+
+        pathwayStore.set.upsertPathway({
+            ...target,
+            chosenRoute: seeded,
+            updatedAt: new Date().toISOString(),
+        });
+
+        // Clear any outstanding explore-override so the derivation
+        // (chosenRoute present + null override) swings us to
+        // Navigate. Mirrors the cleanup `clearRoute` does on the
+        // opposite gesture.
+        setLayoutOverride(null);
+    }, [activePathway, focusId]);
 
     // ------------------------------------------------------------------
     // M6.c.3 — Collection collapsing.
@@ -1247,8 +1318,33 @@ const MapModeInner: React.FC = () => {
     };
 
     return (
+        /*
+            Viewport height math.
+            ──────────────────────────────────────────────────────────
+            The Map canvas claims the entire space between the shell's
+            header and the page bottom edge. The subtraction is
+            breakpoint-conditional because the mobile shell has
+            chrome the desktop shell doesn't:
+
+              - Mobile (< sm): subtract ~220 px for the two-row
+                `PathwaysHeader` (title + mode tabs = ~110 px), the
+                `IonTabBar` at the bottom (~56 px), and the
+                `FocusActionBar` clearance (~54 px).
+              - Desktop (sm+): subtract only ~140 px. There is no
+                `IonTabBar` on desktop breakpoints — Ionic hides it
+                above sm. Keeping the mobile `-220px` here produced
+                a ~80 px strip of dead whitespace below the canvas
+                on desktop because we were still reserving space
+                for a tab bar that wasn't there.
+
+            `min-h-[420px]` stays so hyper-short desktop windows
+            (landscape iPad split-view, tiny browser chrome) still
+            render a usable canvas.
+        */
         <div
-            className="relative w-full h-[calc(100vh-220px)] min-h-[420px] overflow-hidden"
+            className="relative w-full overflow-hidden
+                       h-[calc(100vh-220px)] sm:h-[calc(100vh-140px)]
+                       min-h-[420px]"
             style={{
                 // Subtle top-to-bottom wash: pale emerald at the top
                 // (where the goal lives) fading into neutral at the
@@ -1297,8 +1393,11 @@ const MapModeInner: React.FC = () => {
                   3. **Exit navigation** — clears the chosen route
                      outright. Equivalent to Google Maps'
                      "End navigation" — the route is gone, the Map
-                     drops to Explore for real, the learner can
-                     restart via What-If or a Router proposal.
+                     drops to Explore for real. The learner can
+                     restart immediately via the "Resume / Start
+                     navigation" pill (rendered below when
+                     `!hasChosenRoute`), or via any route-seeding
+                     surface (What-If, a Router proposal).
 
                 A prior "Guide me" CTA lived here too, launching a
                 full-screen Waze-style single-card drill-in. It was
@@ -1384,6 +1483,62 @@ const MapModeInner: React.FC = () => {
 
                 </div>
             )}
+
+            {/*
+                Empty-route affordance — the inverse of the chip stack
+                above. When there's no committed walk we still want a
+                way to (re)enter Navigate mode without shipping the
+                learner off to What-If. The button label and semantics
+                change with the pathway state:
+
+                  - **Resume navigation** — a `destinationNodeId` is
+                    already on the pathway. We re-seed from it
+                    (typically the case right after "Exit navigation":
+                    the destination is still there, only the
+                    committed walk got cleared).
+                  - **Start navigation** — no destination exists yet.
+                    The focused node becomes the destination (Google
+                    Maps pattern: tap a pin, hit Directions).
+
+                Rendered-absent when there's no focus to route toward
+                *and* no stored destination — the button would have
+                nothing to commit.
+            */}
+            {!hasChosenRoute &&
+                (activePathway?.destinationNodeId || focusId) && (
+                    <div
+                        className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 font-poppins
+                                   flex flex-col items-end gap-1.5 sm:gap-2
+                                   max-w-[50vw]
+                                   animate-fade-in-up"
+                    >
+                        <button
+                            type="button"
+                            onClick={startNavigation}
+                            className="flex items-center gap-1.5 py-1.5 px-3 rounded-full
+                                       bg-indigo-600 hover:bg-indigo-700
+                                       shadow-md shadow-indigo-900/20
+                                       transition-colors
+                                       text-[11px] sm:text-xs font-medium text-white
+                                       whitespace-nowrap"
+                            aria-label={
+                                activePathway?.destinationNodeId
+                                    ? 'Resume navigation toward the committed destination'
+                                    : 'Start navigation with the focused node as the destination'
+                            }
+                        >
+                            <span
+                                aria-hidden
+                                className="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"
+                            />
+                            <span>
+                                {activePathway?.destinationNodeId
+                                    ? 'Resume navigation'
+                                    : 'Start navigation'}
+                            </span>
+                        </button>
+                    </div>
+                )}
 
             <ReactFlow
                 nodes={rfNodes}
