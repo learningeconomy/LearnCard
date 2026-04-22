@@ -45,13 +45,16 @@ ion-tab-bar {
 .mobile-nav-notification-button {
     position: absolute;
     right: 20px;
-    top: 37%;
+    top: 49%;
     transform: translateY(-50%);
     z-index: 9999;
     background: none;
 
     @media (max-width: 500px) {
         right: 0px;
+    }
+    @media (max-width: 320px) {
+        right: -10px;
     }
 }
 

@@ -36,7 +36,9 @@ export const NewAiSessionButton: React.FC<{
     selectedApp?: LaunchPadAppListItem;
     text?: string;
     onClick?: () => void;
-}> = ({ type, shortCircuitStep, selectedApp, onClick }) => {
+    className?: string;
+    iconType?: 'dark' | 'light';
+}> = ({ type, shortCircuitStep, selectedApp, onClick, className, iconType = 'dark' }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -160,17 +162,21 @@ export const NewAiSessionButton: React.FC<{
             <button
                 onClick={
                     onClick
-                        ? async () => {
+                        ? async e => {
+                              e.stopPropagation();
                               const { prompted } = await gate();
                               if (prompted) return;
                               onClick();
                           }
-                        : () => handleNewSession(undefined, NewAiSessionStepEnum.newTopic)
+                        : e => {
+                              e.stopPropagation();
+                              handleNewSession(undefined, NewAiSessionStepEnum.newTopic);
+                          }
                 }
-                className="text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid border-grayscale-200 p-[10px] w-full max-w-[95%] flex items-center justify-between pl-[20px] mt-[10px] "
+                className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid !bg-grayscale-200 border-grayscale-200 p-[10px] w-full flex items-center justify-start mt-[10px] gap-1 ${className}`}
             >
-                New Topic
-                <NewAiSessionIcon version="3" />
+                {iconType && <NewAiSessionIcon version={iconType} />}
+                New Session
             </button>
         );
     }
@@ -186,4 +192,3 @@ export const NewAiSessionButton: React.FC<{
 };
 
 export default NewAiSessionButton;
-
