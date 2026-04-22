@@ -14,6 +14,7 @@ import { v4 as uuid } from 'uuid';
 
 import type {
     AchievementProjection,
+    Altitude,
     Edge,
     Pathway,
     PathwayNode,
@@ -53,6 +54,15 @@ export interface PathwayTemplate {
     tags: readonly string[];
     nodes: readonly TemplateNode[];
     edges: readonly TemplateEdge[];
+    /**
+     * Altitude this template is shaped for. Drives altitude-aware
+     * ranking in `suggestPathways` — a learner arriving with a
+     * question-altitude intent is offered the question-shaped
+     * template at the top of the grid, not an aspiration-shaped one
+     * that pattern-matched on a verb. Defaults to `'aspiration'`
+     * (the pre-altitude behavior) when unset.
+     */
+    altitude?: Altitude;
 }
 
 // -----------------------------------------------------------------
@@ -97,6 +107,7 @@ const PORTFOLIO_OF_TRANSFERABLE_SKILLS: PathwayTemplate = {
         'switch career',
     ],
     tags: ['career-transition', 'portfolio', 'self-assessment'],
+    altitude: 'aspiration',
     nodes: [
         {
             slug: 'name-three-skills',
@@ -166,6 +177,7 @@ const PREPARE_FOR_INTERVIEWS: PathwayTemplate = {
         'technical interview',
     ],
     tags: ['interview-prep', 'job-search'],
+    altitude: 'aspiration',
     nodes: [
         {
             slug: 'pick-target-roles',
@@ -241,6 +253,7 @@ const SHIP_A_PUBLIC_ARTIFACT: PathwayTemplate = {
         'side project',
     ],
     tags: ['portfolio', 'output', 'publishing'],
+    altitude: 'aspiration',
     nodes: [
         {
             slug: 'scope-the-artifact',
@@ -298,10 +311,210 @@ const SHIP_A_PUBLIC_ARTIFACT: PathwayTemplate = {
     ],
 };
 
+// -----------------------------------------------------------------
+// Non-aspiration altitudes — one template each so learners arriving
+// at question / action / exploration altitudes aren't force-funneled
+// into career-transition templates that don't match their shape.
+// -----------------------------------------------------------------
+
+const FOLLOW_A_QUESTION: PathwayTemplate = {
+    id: 'tpl-follow-a-question',
+    title: 'Follow a question',
+    goal: 'Chase a question down to a first answer',
+    summary:
+        'A short loop that takes a question you cannot stop thinking about, sharpens it, and produces a first written-up answer.',
+    keywords: [
+        'question',
+        'how',
+        'why',
+        'what',
+        'wonder',
+        'curious',
+        'inquiry',
+    ],
+    tags: ['inquiry', 'research', 'question'],
+    altitude: 'question',
+    nodes: [
+        {
+            slug: 'sharpen-the-question',
+            title: 'Sharpen the question',
+            description:
+                'The version you would ask a specialist — specific, answerable, worth the time to chase.',
+            policy: artifactPolicy(
+                'Write your question in one sentence. Then rewrite it once to make it sharper.',
+            ),
+            termination: selfAttest('Question is sharp enough to chase.'),
+        },
+        {
+            slug: 'chase-first-source',
+            title: 'Chase the first source',
+            description:
+                'A paper, a post, a chapter — whatever looks like it might have the answer or point at the next question.',
+            policy: artifactPolicy(
+                'Attach or cite the source you found and the part that actually addressed your question.',
+            ),
+            termination: {
+                kind: 'artifact-count',
+                count: 1,
+                artifactType: 'text',
+            },
+        },
+        {
+            slug: 'write-what-you-found',
+            title: 'Write up what you found',
+            description:
+                'A short write-up of what the source told you and what you still want to know next. The doubt-capture matters as much as the answer.',
+            policy: artifactPolicy(
+                'Write 100-200 words: what you asked, what you learned, and the next question it opened.',
+            ),
+            termination: selfAttest('Write-up complete.'),
+            credentialProjection: {
+                achievementType: 'inquiry-note',
+                criteria:
+                    'Sharpened a question, chased a first source, and captured the answer plus the next question.',
+            },
+        },
+    ],
+    edges: [
+        { from: 'sharpen-the-question', to: 'chase-first-source', type: 'prerequisite' },
+        { from: 'chase-first-source', to: 'write-what-you-found', type: 'prerequisite' },
+    ],
+};
+
+const CAPTURE_TODAYS_WORK: PathwayTemplate = {
+    id: 'tpl-capture-todays-work',
+    title: "Capture today's work",
+    goal: 'Do the thing today and record what happened',
+    summary:
+        'A lightweight pathway for when you already know what you want to do — support for the doing, plus a quick record of what came out of it.',
+    keywords: [
+        'today',
+        'tonight',
+        'this week',
+        'right now',
+        'session',
+        'work session',
+    ],
+    tags: ['doing', 'session', 'action'],
+    altitude: 'action',
+    nodes: [
+        {
+            slug: 'name-the-thing',
+            title: 'Name the thing you are going to do',
+            description:
+                'One sentence. Small enough to actually finish in one session.',
+            policy: artifactPolicy(
+                'What specifically are you doing? Write it as a single sentence.',
+            ),
+            termination: selfAttest('I know what I am doing.'),
+        },
+        {
+            slug: 'do-it',
+            title: 'Do it',
+            description:
+                'Show up. Keep whatever came out of the session — the draft, the notes, the screenshot, the commit link.',
+            policy: artifactPolicy(
+                'Attach whatever came out of the session. Unpolished is fine; proof of showing up is the point.',
+            ),
+            termination: {
+                kind: 'artifact-count',
+                count: 1,
+                artifactType: 'text',
+            },
+        },
+        {
+            slug: 'note-what-you-noticed',
+            title: 'Note one thing you noticed',
+            description:
+                'What worked, what didn\'t, what surprised you. One sentence is enough.',
+            policy: artifactPolicy(
+                'Write one sentence about what you noticed while doing the work.',
+            ),
+            termination: selfAttest('Noticed and noted.'),
+            credentialProjection: {
+                achievementType: 'work-session',
+                criteria:
+                    'Named a concrete task, did it, and captured one observation.',
+            },
+        },
+    ],
+    edges: [
+        { from: 'name-the-thing', to: 'do-it', type: 'prerequisite' },
+        { from: 'do-it', to: 'note-what-you-noticed', type: 'prerequisite' },
+    ],
+};
+
+const EXPLORE_AND_NOTICE: PathwayTemplate = {
+    id: 'tpl-explore-and-notice',
+    title: 'Explore and notice',
+    goal: 'Follow the curiosity and see what starts to take shape',
+    summary:
+        'No destination required. A small loop that lets you sample an area, capture reactions, and watch a shape emerge from your own notes.',
+    keywords: [
+        'curious',
+        'explore',
+        'interested',
+        'reading',
+        'lately',
+        'wondering',
+        'noticing',
+    ],
+    tags: ['exploration', 'noticing', 'curiosity'],
+    altitude: 'exploration',
+    nodes: [
+        {
+            slug: 'sample-the-area',
+            title: 'Sample the area',
+            description:
+                'Read, watch, or try something in the space you are drawn to. The goal is exposure, not mastery.',
+            policy: artifactPolicy(
+                'Attach what you looked at or link to it — a post, a paper, a tutorial, a conversation.',
+            ),
+            termination: {
+                kind: 'artifact-count',
+                count: 1,
+                artifactType: 'text',
+            },
+        },
+        {
+            slug: 'capture-a-reaction',
+            title: 'Capture a reaction',
+            description:
+                'What caught you? Bored you? Confused you? Write it down before it fades.',
+            policy: artifactPolicy(
+                'Write a short reaction: what pulled you in, what felt wrong, what you want more of.',
+            ),
+            termination: selfAttest('Reaction captured.'),
+        },
+        {
+            slug: 'name-the-shape',
+            title: 'Name the shape that is emerging',
+            description:
+                'After a few samples and reactions, what do you keep coming back to? No pressure to be right; pattern-naming is the practice.',
+            policy: artifactPolicy(
+                'Write one sentence that names the shape you are noticing in what you keep being drawn to.',
+            ),
+            termination: selfAttest('I can name the shape (for now).'),
+            credentialProjection: {
+                achievementType: 'exploration-note',
+                criteria:
+                    'Sampled an area of interest, captured reactions, and named the shape that was emerging.',
+            },
+        },
+    ],
+    edges: [
+        { from: 'sample-the-area', to: 'capture-a-reaction', type: 'prerequisite' },
+        { from: 'capture-a-reaction', to: 'name-the-shape', type: 'prerequisite' },
+    ],
+};
+
 export const CURATED_TEMPLATES: readonly PathwayTemplate[] = [
     PORTFOLIO_OF_TRANSFERABLE_SKILLS,
     PREPARE_FOR_INTERVIEWS,
     SHIP_A_PUBLIC_ARTIFACT,
+    FOLLOW_A_QUESTION,
+    CAPTURE_TODAYS_WORK,
+    EXPLORE_AND_NOTICE,
 ];
 
 // -----------------------------------------------------------------
@@ -325,11 +538,26 @@ export interface InstantiateOptions {
      * making the visible goal feel personal (docs § 6).
      */
     learnerGoalText?: string;
+    /**
+     * Altitude the learner's input resolved to. Optional so older
+     * call sites keep compiling; when omitted, falls back to the
+     * template's own altitude (existing aspiration-shaped behavior).
+     * Stored on the pathway so renderers — chiefly IdentityBanner —
+     * can pick altitude-appropriate phrasing without re-running the
+     * classifier.
+     */
+    intentAltitude?: Altitude;
 }
 
 export const instantiateTemplate = (
     template: PathwayTemplate,
-    { ownerDid, now, makeId = uuid, learnerGoalText }: InstantiateOptions,
+    {
+        ownerDid,
+        now,
+        makeId = uuid,
+        learnerGoalText,
+        intentAltitude,
+    }: InstantiateOptions,
 ): Pathway => {
     const pathwayId = makeId();
 
@@ -373,11 +601,19 @@ export const instantiateTemplate = (
 
     const learnerGoalTrimmed = learnerGoalText?.trim() ?? '';
 
+    // Prefer the classifier's live read of the learner's input, but
+    // fall back to the template's own altitude so pathways created
+    // without a classification (older call sites, seeds, tests) still
+    // carry a usable altitude for downstream renderers.
+    const resolvedAltitude: Altitude | undefined =
+        intentAltitude ?? template.altitude;
+
     return {
         id: pathwayId,
         ownerDid,
         title: template.title,
         goal: learnerGoalTrimmed.length > 0 ? learnerGoalTrimmed : template.goal,
+        ...(resolvedAltitude ? { intentAltitude: resolvedAltitude } : {}),
         nodes,
         edges,
         status: 'active',

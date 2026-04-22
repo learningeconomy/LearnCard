@@ -79,4 +79,84 @@ describe('suggestPathways', () => {
         expect(suggestions).toHaveLength(1);
         expect(suggestions[0].template.id).toBe(sole.id);
     });
+
+    // -----------------------------------------------------------------
+    // Altitude-aware ranking
+    // -----------------------------------------------------------------
+
+    describe('altitude-aware ranking', () => {
+        it('surfaces the question template first when altitude is "question"', () => {
+            const suggestions = suggestPathways({
+                goalText: '',
+                altitude: 'question',
+            });
+
+            expect(suggestions[0].template.id).toBe('tpl-follow-a-question');
+            expect(suggestions[0].reasons.some(r => r.includes('following a question'))).toBe(
+                true,
+            );
+        });
+
+        it('surfaces the action template first when altitude is "action"', () => {
+            const suggestions = suggestPathways({
+                goalText: '',
+                altitude: 'action',
+            });
+
+            expect(suggestions[0].template.id).toBe('tpl-capture-todays-work');
+            expect(
+                suggestions[0].reasons.some(r => r.includes('capturing the work')),
+            ).toBe(true);
+        });
+
+        it('surfaces the exploration template first when altitude is "exploration"', () => {
+            const suggestions = suggestPathways({
+                goalText: '',
+                altitude: 'exploration',
+            });
+
+            expect(suggestions[0].template.id).toBe('tpl-explore-and-notice');
+            expect(suggestions[0].reasons.some(r => r.includes('wandering'))).toBe(true);
+        });
+
+        it('still prefers aspiration templates when altitude is "aspiration"', () => {
+            const aspirationIds = new Set([
+                'tpl-portfolio-transferable-skills',
+                'tpl-interview-prep',
+                'tpl-ship-public-artifact',
+            ]);
+
+            const suggestions = suggestPathways({
+                goalText: '',
+                altitude: 'aspiration',
+            });
+
+            expect(aspirationIds.has(suggestions[0].template.id)).toBe(true);
+        });
+
+        it('lets a strong keyword match override a cross-altitude default', () => {
+            // Altitude is 'question' but the goal explicitly names interview
+            // prep (aspiration-shaped). The explicit keyword should win so
+            // we don't talk past the learner.
+            const suggestions = suggestPathways({
+                goalText: 'I want to prepare for technical interviews',
+                altitude: 'question',
+            });
+
+            expect(suggestions[0].template.id).toBe('tpl-interview-prep');
+        });
+
+        it('omits altitude boost/penalty when altitude is undefined (backcompat)', () => {
+            // Same input, once without and once with altitude. Without
+            // altitude, ranking matches the legacy keyword-only behavior.
+            const noAltitude = suggestPathways({
+                goalText: 'I want to prepare for technical interviews',
+            });
+
+            expect(noAltitude[0].template.id).toBe('tpl-interview-prep');
+            expect(
+                noAltitude[0].reasons.some(r => r.startsWith('Shaped for')),
+            ).toBe(false);
+        });
+    });
 });

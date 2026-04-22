@@ -368,6 +368,34 @@ export const PathwaySourceSchema = z.enum([
 ]);
 export type PathwaySource = z.infer<typeof PathwaySourceSchema>;
 
+// -----------------------------------------------------------------
+// Altitude — the altitude of the learner's arrival intent.
+//
+// A learner doesn't always arrive with a stated goal; sometimes they
+// arrive with a question ("how does neural network training work?"),
+// an immediate action intention ("I want to write a scene today"),
+// or pure curiosity ("I've been reading fiction lately"). The CST
+// primitive (Initiation / Policy / Termination) is altitude-agnostic,
+// but the UI surfaces (Today banner, onboarding suggestions,
+// next-action framing) currently force-aspirationalize everything.
+//
+// Recording the altitude that was *detected* at capture lets each
+// surface render honestly — a question-altitude pathway doesn't need
+// "Becoming what is conflict" on the Today banner; it can say
+// "Following a thread" instead.
+//
+// The field is optional on `Pathway` (pre-existing pathways have no
+// altitude) — callers fall back to a heuristic or default to
+// 'aspiration' when absent, preserving current behavior.
+// -----------------------------------------------------------------
+export const AltitudeSchema = z.enum([
+    'aspiration',
+    'question',
+    'action',
+    'exploration',
+]);
+export type Altitude = z.infer<typeof AltitudeSchema>;
+
 export const PathwaySchema = z.object({
     id: z.string().uuid(),
     ownerDid: z.string(),
@@ -390,6 +418,14 @@ export const PathwaySchema = z.object({
      * can't be violated by editing a second node's flag.
      */
     destinationNodeId: z.string().uuid().optional(),
+
+    /**
+     * The altitude of the learner's arrival intent. Set at capture
+     * from a heuristic classifier (`classifyAltitude`) over the
+     * learner's free-text input. Optional for backwards compatibility
+     * with pathways created before the field existed.
+     */
+    intentAltitude: AltitudeSchema.optional(),
 
     // -------------------------------------------------------------
     // Provenance (optional) — see `PathwayNodeSchema` for rationale.

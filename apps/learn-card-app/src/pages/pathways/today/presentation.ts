@@ -7,7 +7,7 @@
  * replaced without touching any rendering code.
  */
 
-import type { EarnUrlSource, Pathway, PathwayNode, Policy } from '../types';
+import type { Altitude, EarnUrlSource, Pathway, PathwayNode, Policy } from '../types';
 
 // ---------------------------------------------------------------------------
 // Greeting
@@ -408,4 +408,73 @@ export const identityPhrase = (goal: string): string => {
     const suffix = rest.length > 0 ? ` ${rest.join(' ')}` : '';
 
     return `someone ${gerund}${suffix}`;
+};
+
+// ---------------------------------------------------------------------------
+// Altitude-aware identity banner
+// ---------------------------------------------------------------------------
+
+/**
+ * Kicker + phrase that render at the top of Today.
+ *
+ * Separated from the React component so the altitude-sensitive copy
+ * logic is unit-testable and swappable without pulling a renderer.
+ */
+export interface IdentityBannerContent {
+    /** Short uppercase label above the phrase, e.g. "You are becoming". */
+    kicker: string;
+    /** The learner-facing line under the kicker. */
+    phrase: string;
+}
+
+/**
+ * Altitude-appropriate kickers. The aspiration kicker keeps the
+ * original habit-identity framing ("You are becoming"); the others
+ * honor what the learner actually wrote instead of forcing it into
+ * a becoming-someone shape.
+ *
+ *   aspiration  → "You are becoming"    — habit-identity framing
+ *   question    → "You are sitting with" — honors inquiry without resolving it
+ *   action      → "You are working on"   — present-tense, grounded in today
+ *   exploration → "You are exploring"    — open-ended noticing
+ */
+const KICKER_BY_ALTITUDE: Record<Altitude, string> = {
+    aspiration: 'You are becoming',
+    question: 'You are sitting with',
+    action: 'You are working on',
+    exploration: 'You are exploring',
+};
+
+/**
+ * Shape the IdentityBanner's kicker and phrase for a given goal +
+ * altitude. Pure, synchronous, no I/O — tests stamp strings in and
+ * assert on strings out.
+ *
+ *   - Empty goal → empty content, caller is expected to render nothing.
+ *   - Missing altitude → treat as 'aspiration' for backwards compat
+ *     with pre-altitude pathways.
+ *   - Aspiration → funnel through `identityPhrase()` for the
+ *     "someone ___ing ___" transformation.
+ *   - Non-aspiration → render the goal verbatim. Trying to gerund-ify
+ *     "why do interest rates matter?" produces nonsense; the kicker
+ *     alone carries the altitude framing.
+ */
+export const buildIdentityBanner = (
+    goal: string,
+    altitude?: Altitude,
+): IdentityBannerContent => {
+    const trimmed = goal.trim();
+
+    if (!trimmed) return { kicker: '', phrase: '' };
+
+    const resolved: Altitude = altitude ?? 'aspiration';
+    const kicker = KICKER_BY_ALTITUDE[resolved];
+
+    if (resolved === 'aspiration') {
+        // `identityPhrase` already handles its own fallback to the raw
+        // goal when it can't grammatically transform it.
+        return { kicker, phrase: identityPhrase(trimmed) };
+    }
+
+    return { kicker, phrase: trimmed };
 };

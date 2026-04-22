@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Edge, Pathway, PathwayNode } from '../types';
 
 import {
+    buildIdentityBanner,
     buildJourney,
     getGreeting,
     getNodeEarnLink,
@@ -459,5 +460,85 @@ describe('identityPhrase', () => {
         expect(identityPhrase('  write a novel  ')).toBe('someone writing a novel');
         expect(identityPhrase('')).toBe('');
         expect(identityPhrase('   ')).toBe('');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// buildIdentityBanner — altitude-aware kicker + phrase
+// ---------------------------------------------------------------------------
+
+describe('buildIdentityBanner', () => {
+    it('returns empty content for an empty goal, regardless of altitude', () => {
+        expect(buildIdentityBanner('', 'aspiration')).toEqual({
+            kicker: '',
+            phrase: '',
+        });
+        expect(buildIdentityBanner('   ', 'question')).toEqual({
+            kicker: '',
+            phrase: '',
+        });
+    });
+
+    it('treats missing altitude as aspiration (backwards compat)', () => {
+        expect(buildIdentityBanner('write a novel')).toEqual({
+            kicker: 'You are becoming',
+            phrase: 'someone writing a novel',
+        });
+    });
+
+    it('uses identity-tense for aspiration goals', () => {
+        expect(buildIdentityBanner('ship one artifact', 'aspiration')).toEqual({
+            kicker: 'You are becoming',
+            phrase: 'someone shipping one artifact',
+        });
+    });
+
+    it('preserves an already-identity aspiration phrase verbatim', () => {
+        expect(buildIdentityBanner('the next CEO', 'aspiration')).toEqual({
+            kicker: 'You are becoming',
+            phrase: 'the next CEO',
+        });
+    });
+
+    it('renders a question verbatim with a "sitting with" kicker', () => {
+        expect(
+            buildIdentityBanner('why do interest rates matter?', 'question'),
+        ).toEqual({
+            kicker: 'You are sitting with',
+            phrase: 'why do interest rates matter?',
+        });
+    });
+
+    it('renders an action verbatim with a "working on" kicker', () => {
+        expect(buildIdentityBanner('draft my essay today', 'action')).toEqual({
+            kicker: 'You are working on',
+            phrase: 'draft my essay today',
+        });
+    });
+
+    it('renders an exploration verbatim with an "exploring" kicker', () => {
+        expect(
+            buildIdentityBanner('look around climate tech', 'exploration'),
+        ).toEqual({
+            kicker: 'You are exploring',
+            phrase: 'look around climate tech',
+        });
+    });
+
+    it('does not gerund-ify non-aspiration phrases', () => {
+        // Leading verb would otherwise map to "someone drafting..." via
+        // identityPhrase, but at action altitude we keep the learner's
+        // own words intact so the banner reads as a commitment to
+        // today rather than a career identity.
+        const result = buildIdentityBanner('write the intro', 'action');
+
+        expect(result.phrase).toBe('write the intro');
+        expect(result.phrase.startsWith('someone ')).toBe(false);
+    });
+
+    it('trims surrounding whitespace on the phrase', () => {
+        expect(
+            buildIdentityBanner('  why does this matter?  ', 'question').phrase,
+        ).toBe('why does this matter?');
     });
 });

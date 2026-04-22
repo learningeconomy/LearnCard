@@ -1,19 +1,23 @@
 /**
- * IdentityBanner — "You are becoming __" framing at the top of Today.
+ * IdentityBanner — altitude-aware identity framing at the top of Today.
  *
  * Architecture §10, plus the synthesis doc's habit-identity research:
  * the most durable lever for keeping a learner engaged is reminding
- * them who they are *becoming*, not what tasks are pending. This
- * component is the only place on Today where the pathway's *identity*
- * shows up in past-progressive tense. The hero card below still talks
- * about the next concrete action; this whisper above it holds the
- * "why".
+ * them who they are *becoming*, not what tasks are pending. But
+ * "becoming" only reads honestly when the learner arrived with an
+ * aspiration. Learners who arrived with a question, an immediate
+ * action, or exploratory curiosity deserve phrasing that matches
+ * their altitude — see `buildIdentityBanner()` in `./presentation.ts`.
+ *
+ * This component is now purely a presenter: the caller (TodayMode)
+ * resolves the altitude-appropriate kicker + phrase and hands them in.
+ * That keeps the rendering code free of altitude branching.
  *
  * Visual language: a two-line typographic anchor — no frame, no pill,
- * just a small emerald kicker over the identity phrase itself. The
- * pathway title intentionally isn't repeated here (it already
- * appears in `PathwaysHeader` as the page H1); re-rendering it would
- * cause truncation on narrow screens for zero information gain.
+ * just a small emerald kicker over the phrase itself. The pathway
+ * title intentionally isn't repeated here (it already appears in
+ * `PathwaysHeader` as the page H1); re-rendering it would cause
+ * truncation on narrow screens for zero information gain.
  */
 
 import React from 'react';
@@ -21,12 +25,24 @@ import React from 'react';
 import { motion } from 'motion/react';
 
 interface IdentityBannerProps {
-    /** Already-transformed identity phrase. See `identityPhrase()`. */
+    /**
+     * Short uppercase label above the phrase, e.g. "You are becoming",
+     * "You are sitting with", "You are exploring". See `buildIdentityBanner`.
+     */
+    kicker: string;
+    /**
+     * The phrase rendered under the kicker — either an identity-tense
+     * transformation of the goal (aspiration) or the learner's input
+     * verbatim (question / action / exploration).
+     */
     phrase: string;
 }
 
-const IdentityBanner: React.FC<IdentityBannerProps> = ({ phrase }) => {
-    if (!phrase) return null;
+const IdentityBanner: React.FC<IdentityBannerProps> = ({ kicker, phrase }) => {
+    // Both must be present — `buildIdentityBanner` returns empty strings
+    // for empty goals, in which case we render nothing rather than an
+    // orphan kicker or a floating phrase.
+    if (!phrase || !kicker) return null;
 
     return (
         <motion.section
@@ -42,7 +58,7 @@ const IdentityBanner: React.FC<IdentityBannerProps> = ({ phrase }) => {
                 />
 
                 <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
-                    You are becoming
+                    {kicker}
                 </p>
             </div>
 

@@ -15,6 +15,7 @@ import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
 import { useLearnerDid } from '../hooks/useLearnerDid';
 
+import { classifyAltitude } from './classifyAltitude';
 import CredentialScan from './CredentialScan';
 import GoalCapture from './GoalCapture';
 import SuggestionGrid from './SuggestionGrid';
@@ -37,9 +38,25 @@ const OnboardRoute: React.FC = () => {
     const [wallet, setWallet] = useState<WalletSignal>({ tags: [] });
     const [renderStartedAt, setRenderStartedAt] = useState<number | null>(null);
 
+    // Run the altitude classifier once per goal-text change. Pure, fast,
+    // deterministic — no point memoizing against anything else.
+    const classification = useMemo(() => classifyAltitude(goalText), [goalText]);
+
+    // Only pass the classifier's altitude through to ranking when it's
+    // meaningfully confident. For empty or shapeless input the classifier
+    // falls back to 'aspiration' at low confidence; piping that in would
+    // over-penalize the non-aspiration templates we want on the default
+    // cold-start grid.
+    const rankingAltitude = useMemo(() => {
+        if (goalText.trim().length === 0) return undefined;
+        if (classification.confidence === 'low') return undefined;
+
+        return classification.altitude;
+    }, [goalText, classification]);
+
     const suggestions = useMemo(
-        () => suggestPathways({ goalText, wallet }),
-        [goalText, wallet],
+        () => suggestPathways({ goalText, wallet, altitude: rankingAltitude }),
+        [goalText, wallet, rankingAltitude],
     );
 
     const goToScan = (text: string) => {
@@ -73,10 +90,17 @@ const OnboardRoute: React.FC = () => {
 
     const handlePick = (suggestion: PathwaySuggestion, position: number) => {
         const now = new Date().toISOString();
+
+        // Persist the classifier's altitude on the created pathway so
+        // the Today-tab banner can render altitude-appropriate phrasing
+        // without re-running the classifier on every mount. Undefined
+        // when the learner skipped → instantiate falls back to the
+        // template's own altitude.
         const pathway = instantiateTemplate(suggestion.template, {
             ownerDid: learnerDid,
             now,
             learnerGoalText: goalText,
+            intentAltitude: rankingAltitude,
         });
 
         pathwayStore.set.upsertPathway(pathway);

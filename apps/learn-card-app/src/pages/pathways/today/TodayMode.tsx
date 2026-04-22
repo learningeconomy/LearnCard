@@ -26,7 +26,7 @@ import CompletionMoment from './CompletionMoment';
 import IdentityBanner from './IdentityBanner';
 import NextActionCard from './NextActionCard';
 import StreakRibbon from './StreakRibbon';
-import { buildJourney, getGreeting, identityPhrase } from './presentation';
+import { buildIdentityBanner, buildJourney, getGreeting } from './presentation';
 import { getNextAction, rankCandidates } from './ranking';
 
 const HOURS_12 = 12 * 60 * 60 * 1000;
@@ -216,12 +216,25 @@ const TodayMode: React.FC = () => {
         >
             <div className="relative max-w-md mx-auto px-4 py-8 font-poppins space-y-5">
                 {/*
-                    Identity banner — "Becoming X" whisper. The synthesis doc
-                    names habit-identity framing as load-bearing; this is
-                    where it lives on Today. Placed above the greeting so it
-                    anchors the whole page's "why".
+                    Identity banner — altitude-aware habit-identity whisper.
+                    The synthesis doc names habit-identity framing as
+                    load-bearing; this is where it lives on Today. Placed
+                    above the greeting so it anchors the whole page's "why".
+                    `buildIdentityBanner` picks the right kicker for the
+                    pathway's intent altitude — aspiration still reads
+                    "becoming", but a question-altitude pathway reads
+                    "sitting with" and so on (docs § altitude-awareness).
                 */}
-                <IdentityBanner phrase={identityPhrase(activePathway.goal)} />
+                {(() => {
+                    const banner = buildIdentityBanner(
+                        activePathway.goal,
+                        activePathway.intentAltitude,
+                    );
+
+                    return (
+                        <IdentityBanner kicker={banner.kicker} phrase={banner.phrase} />
+                    );
+                })()}
 
                 {/* Time-aware greeting — sets the emotional tone of the page. */}
                 <motion.header
