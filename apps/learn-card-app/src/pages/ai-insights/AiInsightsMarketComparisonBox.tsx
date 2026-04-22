@@ -21,8 +21,8 @@ const formatCurrency = (
     salaryType: SkillProfileSalaryData['salaryType']
 ): string => {
     const formattedValue = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: salaryType === 'per_hour' ? 2 : 0,
+        maximumFractionDigits: salaryType === 'per_hour' ? 2 : 0,
     }).format(value);
 
     return `$${formattedValue.replace(/\.00$/, '')}`;
@@ -42,8 +42,8 @@ const formatScaleLabel = (
     }
 
     const formattedValue = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     }).format(value / 1000);
 
     return formattedValue.replace(/\.00$/, '');
