@@ -23,43 +23,214 @@ import {
     TrustedBoostRegistryEntry,
 } from './types';
 
+/* -------------------------------------------------------------------------- *
+ * Boost template rendering helpers
+ * -------------------------------------------------------------------------- *
+ *
+ * A "boost" is stored on the server as a JSON string that may contain Mustache
+ * variables (e.g. `{{recipient_name}}`, `{{#evidence}}...{{/evidence}}`). When
+ * we send a boost to a recipient, we substitute those variables with values
+ * from `templateData` BEFORE the JSON is parsed back into a credential object.
+ *
+ * Because substitution happens against a raw JSON string, any user-supplied
+ * value (names, titles, descriptions, etc.) must be escaped so that control
+ * characters do not corrupt the JSON. The helpers below implement that
+ * escape-then-render pipeline, plus a small evidence-merging step for template
+ * data that carries an `evidence` field.
+ *
+ * The same behavior is implemented server-side in
+ * `brain-service/src/helpers/template.helpers.ts`. If you change the escaping
+ * rules here, mirror the change there (and vice versa) so that client-side
+ * and server-side rendering produce identical output.
+ * -------------------------------------------------------------------------- */
+
 /**
- * Escapes a string value for safe inclusion in a JSON string.
+ * Escapes a single scalar value so it can be safely inlined inside a JSON
+ * string literal.
+ *
+ * The order of replacements matters: backslashes MUST be escaped first,
+ * otherwise subsequent replacements (which themselves introduce backslashes)
+ * would be double-escaped and produce invalid JSON.
+ *
+ * Null / undefined coerce to an empty string so Mustache renders nothing
+ * rather than the literal text "null" / "undefined" inside the JSON.
+ *
+ * @param value - Any scalar value to be rendered into a JSON string position
+ * @returns A string whose characters are valid inside a JSON string literal
  */
 const escapeJsonStringValue = (value: unknown): string => {
     if (value === null || value === undefined) return '';
 
     return String(value)
-        .replace(/\\/g, '\\\\')
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t')
-        .replace(/\f/g, '\\f')
-        .replace(/[\b]/g, '\\b');
+        .replace(/\\/g, '\\\\') // backslash — must run first
+        .replace(/"/g, '\\"') // double quote — would close the JSON string
+        .replace(/\n/g, '\\n') // newline
+        .replace(/\r/g, '\\r') // carriage return
+        .replace(/\t/g, '\\t') // tab
+        .replace(/\f/g, '\\f') // form feed
+        .replace(/[\b]/g, '\\b'); // backspace (character class to dodge \b word-boundary)
 };
 
 /**
- * Prepares templateData for safe JSON rendering by escaping string values.
+ * Recursively walks a template-data value and escapes every string leaf for
+ * JSON safety, while preserving the original array / object shape.
+ *
+ * Keeping the structure intact is important because Mustache sections such as
+ * `{{#evidence}}...{{/evidence}}` iterate over arrays and read properties off
+ * the objects inside them — we cannot simply flatten everything to strings.
+ *
+ * Non-string primitives (numbers, booleans) are passed through untouched so
+ * that the template author can decide whether to render them quoted or bare.
  */
-const prepareTemplateData = (templateData: Record<string, unknown>): Record<string, string> => {
-    const prepared: Record<string, string> = {};
+const prepareTemplateValue = (value: unknown): unknown => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.map(prepareTemplateValue);
+    if (typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
+                key,
+                prepareTemplateValue(nestedValue),
+            ])
+        );
+    }
+    if (typeof value === 'string') return escapeJsonStringValue(value);
+
+    return value;
+};
+
+/**
+ * Top-level wrapper around {@link prepareTemplateValue} that returns a new
+ * object with every leaf string escaped for JSON safety.
+ *
+ * Only the direct top-level entries are enumerated here; deeper recursion is
+ * delegated to {@link prepareTemplateValue}.
+ */
+const prepareTemplateData = (templateData: Record<string, unknown>): Record<string, unknown> => {
+    const prepared: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(templateData)) {
-        prepared[key] = escapeJsonStringValue(value);
+        prepared[key] = prepareTemplateValue(value);
     }
 
     return prepared;
 };
 
 /**
- * Renders a Mustache template with JSON-safe escaping.
+ * Renders a Mustache-templated JSON string using `templateData`, with two
+ * LearnCard-specific adjustments on top of stock Mustache:
+ *
+ * 1. `templateData` is pre-escaped via {@link prepareTemplateData} so that
+ *    user-supplied strings do not break the surrounding JSON.
+ * 2. Plain `{{var}}` tags are rewritten to triple-mustache `{{{var}}}` to
+ *    disable Mustache's built-in HTML escaping. We want our own JSON escaping
+ *    (from step 1), not `&amp;` / `&quot;` HTML entities.
+ *
+ * Section / comment / partial / unescaped tags — anything starting with
+ * `#`, `^`, `/`, `!`, `>`, `&`, or `=` — are left alone; Mustache already
+ * handles those correctly.
+ *
+ * @param jsonString - The raw boost JSON string containing `{{variables}}`
+ * @param templateData - Values to substitute, keyed by variable name
+ * @returns The rendered JSON string, ready to be `JSON.parse`'d
  */
 const renderTemplateJson = (jsonString: string, templateData: Record<string, unknown>): string => {
     const preparedData = prepareTemplateData(templateData);
-    const unescapedTemplate = jsonString.replace(/\{\{([^{}]+)\}\}/g, '{{{$1}}}');
+
+    // Rewrite `{{var}}` → `{{{var}}}` so Mustache skips its HTML escaping.
+    // Anything with a control sigil (#, ^, /, !, >, &, =) is a section /
+    // comment / partial / unescaped tag and must be passed through verbatim.
+    const unescapedTemplate = jsonString.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (match, tag) => {
+        const trimmedTag = tag.trim();
+
+        return /^[#^/!>&=]/.test(trimmedTag) ? match : `{{{${trimmedTag}}}}`;
+    });
 
     return Mustache.render(unescapedTemplate, preparedData);
+};
+
+/**
+ * Returns `true` if the boost template itself already references `evidence`
+ * as a Mustache variable / section (e.g. `{{evidence}}`, `{{#evidence}}`,
+ * `{{evidence.id}}`).
+ *
+ * The trailing `[.\s}]|$` boundary prevents false positives on tokens that
+ * merely START with the word `evidence`, such as `{{evidenceList}}` or
+ * `{{evidenceItem.foo}}` — those should NOT count as the author handling
+ * evidence themselves.
+ *
+ * When this returns `true` the caller should skip the auto-append step in
+ * {@link appendTemplateEvidence} to avoid duplicating entries (the template
+ * author is already placing evidence wherever they want it in the output).
+ */
+const hasDynamicEvidenceTemplate = (jsonString: string): boolean => {
+    return /\{\{\s*[#^/]?\s*evidence(?:[.\s}]|$)/.test(jsonString);
+};
+
+/**
+ * Merges any `evidence` entries supplied in `templateData` onto the boost's
+ * top-level `evidence` array.
+ *
+ * This exists because not every boost template opts into rendering evidence
+ * via a `{{evidence}}` section. For those templates we still want evidence
+ * supplied at send-time (e.g. a recipient-specific media attachment) to land
+ * on the final credential — so we append it as a post-render step.
+ *
+ * Behavior:
+ * - Skipped entirely when `allowAutoAppend` is `false`. The caller typically
+ *   derives that flag from {@link hasDynamicEvidenceTemplate} — if the
+ *   template renders evidence itself, we must NOT also append it here, or the
+ *   recipient would see the same evidence twice.
+ * - Accepts either a single evidence object or an array of them under
+ *   `templateData.evidence` and normalizes to an array.
+ * - Strips the internal `last` marker used by upstream list-rendering code;
+ *   that field is a rendering hint and should never land on the credential.
+ * - Preserves any evidence already present on the boost and appends the new
+ *   entries after it.
+ *
+ * @param boost - The parsed credential object produced by `JSON.parse`
+ * @param templateData - The same template data used for rendering; may contain an `evidence` field
+ * @param allowAutoAppend - Set to `false` when the template already renders evidence itself
+ * @returns A new boost object (or the original reference when nothing changed)
+ */
+const appendTemplateEvidence = (
+    boost: any,
+    templateData?: Record<string, unknown>,
+    allowAutoAppend: boolean = true
+) => {
+    if (!allowAutoAppend) return boost;
+
+    const templateEvidence = templateData?.evidence;
+
+    if (!templateEvidence) return boost;
+
+    // Accept either a single evidence object or an array; drop the `last`
+    // marker that upstream rendering code uses for iteration hints.
+    const normalizedTemplateEvidence = (
+        Array.isArray(templateEvidence) ? templateEvidence : [templateEvidence]
+    ).map(evidenceItem => {
+        if (evidenceItem && typeof evidenceItem === 'object' && 'last' in evidenceItem) {
+            const { last, ...rest } = evidenceItem as Record<string, unknown>;
+
+            return rest;
+        }
+
+        return evidenceItem;
+    });
+
+    if (normalizedTemplateEvidence.length === 0) return boost;
+
+    // Preserve any evidence the template already baked in, normalizing a
+    // single-object shape to an array so we can spread it.
+    const existingEvidence = boost.evidence
+        ? Array.isArray(boost.evidence)
+            ? boost.evidence
+            : [boost.evidence]
+        : [];
+
+    return {
+        ...boost,
+        evidence: [...existingEvidence, ...normalizedTemplateEvidence],
+    };
 };
 
 const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
@@ -112,19 +283,19 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
         : await getClient(
-            url,
-            async challenge => {
-                const jwt = await learnCard.invoke.getDidAuthVp({
-                    proofFormat: 'jwt',
-                    challenge,
-                });
+              url,
+              async challenge => {
+                  const jwt = await learnCard.invoke.getDidAuthVp({
+                      proofFormat: 'jwt',
+                      challenge,
+                  });
 
-                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                return jwt;
-            },
-            guardianApprovalGetter
-        );
+                  return jwt;
+              },
+              guardianApprovalGetter
+          );
 
     let userData: LCNProfile | undefined;
 
@@ -455,7 +626,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -1122,15 +1293,23 @@ export async function getLearnCardNetworkPlugin(
                     options.templateData &&
                     Object.keys(options.templateData).length > 0
                 ) {
+                    const boostString = JSON.stringify(boost);
+                    const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
+
                     try {
-                        const boostString = JSON.stringify(boost);
                         const rendered = renderTemplateJson(boostString, options.templateData);
                         boost = JSON.parse(rendered);
+                        boost = appendTemplateEvidence(
+                            boost,
+                            options.templateData,
+                            allowAutoAppendEvidence
+                        );
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1240,11 +1419,17 @@ export async function getLearnCardNetworkPlugin(
                     if (isRemoteDidWebRecipient && input.templateUri) {
                         const boostRecord = await _learnCard.invoke.getBoost(input.templateUri);
                         let boost = boostRecord.boost;
+                        const boostString = JSON.stringify(boost);
+                        const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
 
                         if (input.templateData && Object.keys(input.templateData).length > 0) {
-                            const boostString = JSON.stringify(boost);
                             const rendered = renderTemplateJson(boostString, input.templateData);
                             boost = JSON.parse(rendered);
+                            boost = appendTemplateEvidence(
+                                boost,
+                                input.templateData,
+                                allowAutoAppendEvidence
+                            );
                         }
 
                         if (isVC2Format(boost)) {
@@ -1314,19 +1499,27 @@ export async function getLearnCardNetworkPlugin(
                             }
 
                             let boost = data.data;
+                            const boostString = JSON.stringify(boost);
+                            const allowAutoAppendEvidence =
+                                !hasDynamicEvidenceTemplate(boostString);
 
                             // Apply templateData if provided
                             if (input.templateData && Object.keys(input.templateData).length > 0) {
                                 try {
-                                    const boostString = JSON.stringify(boost);
                                     const rendered = renderTemplateJson(
                                         boostString,
                                         input.templateData
                                     );
                                     boost = JSON.parse(rendered);
+                                    boost = appendTemplateEvidence(
+                                        boost,
+                                        input.templateData,
+                                        allowAutoAppendEvidence
+                                    );
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -2311,8 +2504,9 @@ export const getVerifyBoostPlugin = async (
                 const boostCredential = credential?.boostCredential;
                 try {
                     if (boostCredential) {
-                        const verifyBoostCredential =
-                            await learnCard.invoke.verifyCredential(boostCredential);
+                        const verifyBoostCredential = await learnCard.invoke.verifyCredential(
+                            boostCredential
+                        );
                         if (!boostCredential?.boostId && !credential?.boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
