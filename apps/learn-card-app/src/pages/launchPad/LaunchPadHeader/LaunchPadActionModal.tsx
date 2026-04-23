@@ -818,13 +818,13 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 {
                     sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
                 },
-                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                { desktop: ModalTypes.Center }
             );
         } else {
             newModal(
                 <AddToLearnCardMenu />,
                 { sectionClassName: '!max-w-[500px]' },
-                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                { mobile: ModalTypes.BottomSheet }
             );
         }
     };
