@@ -294,14 +294,14 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
         [jobSatisfactionData?.jobStability]
     );
 
-    const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
     const isBusy = isLoading || jobSatisfactionLoading;
 
-    const workLifeBalanceCopy = getWorkLifeBalanceCopy(
-        workLifeBalanceUserScore,
-        workLifeBalanceBenchmarkScore
-    );
-    const jobStabilityCopy = getJobStabilityCopy(jobStabilityUserScore, jobStabilityBenchmarkScore);
+    const workLifeBalanceCopy = useMemo(() => {
+        return getWorkLifeBalanceCopy(workLifeBalanceUserScore, workLifeBalanceBenchmarkScore);
+    }, [workLifeBalanceUserScore, workLifeBalanceBenchmarkScore]);
+    const jobStabilityCopy = useMemo(() => {
+        return getJobStabilityCopy(jobStabilityUserScore, jobStabilityBenchmarkScore);
+    }, [jobStabilityUserScore, jobStabilityBenchmarkScore]);
 
     return (
         <div className="flex flex-col gap-5 w-full">

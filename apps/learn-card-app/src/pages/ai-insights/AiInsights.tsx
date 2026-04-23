@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -82,27 +82,41 @@ const AiInsights: React.FC = () => {
         currentLCNUser?.profileId ?? ''
     );
 
-    const pendingRequests =
-        contractRequests?.filter(request => request?.status === 'pending') || [];
+    const pendingRequests = useMemo(() => {
+        return contractRequests?.filter(request => request?.status === 'pending') || [];
+    }, [contractRequests]);
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
     useLoadingLine(credentialsBackgroundFetching || createAiInsightCredentialLoading);
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+    const skillsMap = useMemo(() => {
+        return mapBoostsToSkills(allResolvedCreds);
+    }, [allResolvedCreds]);
 
-    const categorizedSkills: [
-        string,
-        RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
-    ][] = Object.entries(skillsMap);
+    const categorizedSkills = useMemo(
+        () =>
+            Object.entries(skillsMap) as [
+                string,
+                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+            ][],
+        [skillsMap]
+    );
 
-    const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
+    const aggregatedSkills = useMemo(() => {
+        return aggregateCategorizedEntries(categorizedSkills);
+    }, [categorizedSkills]);
 
-    const topSkills = getTopSkills(aggregatedSkills, 3);
+    const topSkills = useMemo(() => {
+        return getTopSkills(aggregatedSkills, 3);
+    }, [aggregatedSkills]);
 
-    let contractRequest = null;
-    if (pendingRequests?.length > 0) {
-        contractRequest = pendingRequests?.map((request, index) => (
+    const contractRequest = useMemo(() => {
+        if (pendingRequests.length === 0) {
+            return null;
+        }
+
+        return pendingRequests.map((request, index) => (
             <AiInsightsUserRequestsToast
                 key={`request-${index}`}
                 contractUri={request?.contract?.uri}
@@ -114,7 +128,7 @@ const AiInsights: React.FC = () => {
                 }}
             />
         ));
-    }
+    }, [pendingRequests]);
 
     const myInsights = (
         <>
