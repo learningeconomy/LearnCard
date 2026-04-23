@@ -41,6 +41,8 @@ const node = (id: string, overrides: Partial<PathwayNode> = {}): PathwayNode => 
 const pathway = (overrides: Partial<Pathway> = {}): Pathway => ({
     id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     ownerDid: 'did:test:learner',
+    revision: 0,
+    schemaVersion: 1,
     title: 'Test',
     goal: 'Test goal',
     nodes: [],

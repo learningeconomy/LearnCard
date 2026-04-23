@@ -15,11 +15,66 @@
 
 import { pathwayStore } from '../../../stores/pathways';
 import { addEdge, addNode, setAction, setPolicy, setTermination } from '../build/buildOps';
-import type { OutcomeSignal, Pathway } from '../types';
+import {
+    buildAppListingSnapshot,
+    type ListingSnapshotInput,
+} from '../core/appListingSnapshot';
+import type { AppListingSnapshot, OutcomeSignal, Pathway } from '../types';
+import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
 import { CURATED_TEMPLATES, instantiateTemplate } from '../onboard/templates';
 
 import { AWS_DEMO_LISTING_IDS } from './presetListings';
+
+// ---------------------------------------------------------------------------
+// Preset snapshots — mirror of `PATHWAY_DEMO_PRESET` in the brain-service
+// seed script. Hand-keyed rather than fetched so the dev seed path stays
+// fully offline. When the seed script changes the listing metadata, bump
+// this table (and add semanticTags once that field ships on AppStoreListing).
+//
+// If these drift from the live listing the UI fall-back still works: the
+// listing fetch in `useListingForNode` eventually refreshes. The snapshot
+// just lets the Map + NodeDetail render the right name/tagline/icon
+// *immediately*, and gives agents something to reason about without a hop.
+// ---------------------------------------------------------------------------
+
+const AWS_DEMO_PRESET_LISTINGS: Record<string, ListingSnapshotInput> = {
+    [AWS_DEMO_LISTING_IDS.courseraEssentials]: {
+        name: 'Coursera — AWS Cloud Essentials',
+        category: 'Learning',
+        launch_type: 'DIRECT_LINK',
+        tagline: 'Learn the fundamentals of AWS cloud.',
+        icon_url: 'https://cdn.filestackcontent.com/RXaNgRHTHCNr3meO1G0A',
+    },
+    [AWS_DEMO_LISTING_IDS.practiceStudio]: {
+        name: 'AWS Practice Studio',
+        category: 'Practice',
+        launch_type: 'EMBEDDED_IFRAME',
+        tagline: 'In-app AWS CCP practice questions.',
+        icon_url: 'https://cdn.filestackcontent.com/erbcRQfTG2TktX2hcmLu',
+    },
+    [AWS_DEMO_LISTING_IDS.cloudCoach]: {
+        name: 'Cloud Coach',
+        category: 'Tutor',
+        launch_type: 'AI_TUTOR',
+        tagline: 'One-on-one AI tutor for AWS deep-dives.',
+        icon_url: 'https://cdn.filestackcontent.com/aWUPGBPRFenRT9taokA6',
+    },
+};
+
+/**
+ * Build an `AppListingSnapshot` for a preset listing. Returns `null`
+ * when the id isn't in the preset table or when the snapshot builder
+ * refuses (missing display name). `null` is handled upstream: we
+ * simply skip the snapshot and let the UI's live fetch fill in.
+ */
+const presetSnapshot = (listingId: string, now: string): AppListingSnapshot | null => {
+    const preset = AWS_DEMO_PRESET_LISTINGS[listingId];
+
+    if (!preset) return null;
+
+    return buildAppListingSnapshot(preset, { now });
+};
 
 /**
  * Build a small parent pathway that references `child` via a composite
@@ -33,6 +88,8 @@ const buildCompositeParent = (child: Pathway, ownerDid: string, now: string): Pa
     const seed: Pathway = {
         id: crypto.randomUUID(),
         ownerDid,
+        revision: 0,
+        schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
         title: 'Demo: Nested pathway parent',
         goal: `Complete "${child.title}" and reflect on it`,
         nodes: [],
@@ -142,6 +199,8 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
     let pathway: Pathway = {
         id: crypto.randomUUID(),
         ownerDid,
+        revision: 0,
+        schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
         title: 'AWS Cloud Practitioner',
         // `goal` is the Pathway-level narrative (no separate `description`
         // field on the schema — that lives on individual nodes). Keep this
@@ -174,10 +233,18 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         count: 1,
         artifactType: 'image',
     });
-    pathway = setAction(pathway, n1.id, {
-        kind: 'app-listing',
-        listingId: AWS_DEMO_LISTING_IDS.courseraEssentials,
-    });
+    {
+        // Snapshot so the Map renders the right icon/name on first
+        // paint (before the listing fetch resolves) and agents can
+        // reason about this node without an RPC hop.
+        const snap = presetSnapshot(AWS_DEMO_LISTING_IDS.courseraEssentials, now);
+
+        pathway = setAction(pathway, n1.id, {
+            kind: 'app-listing',
+            listingId: AWS_DEMO_LISTING_IDS.courseraEssentials,
+            ...(snap ? { snapshot: snap } : {}),
+        });
+    }
 
     // --- Node 2: practice exam (iframe) ----------------------------------
     pathway = addNode(pathway, {
@@ -197,10 +264,15 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         count: 5,
         artifactType: 'text',
     });
-    pathway = setAction(pathway, n2.id, {
-        kind: 'app-listing',
-        listingId: AWS_DEMO_LISTING_IDS.practiceStudio,
-    });
+    {
+        const snap = presetSnapshot(AWS_DEMO_LISTING_IDS.practiceStudio, now);
+
+        pathway = setAction(pathway, n2.id, {
+            kind: 'app-listing',
+            listingId: AWS_DEMO_LISTING_IDS.practiceStudio,
+            ...(snap ? { snapshot: snap } : {}),
+        });
+    }
 
     // --- Node 3: AI coach deep dive --------------------------------------
     pathway = addNode(pathway, {
@@ -219,10 +291,15 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         kind: 'self-attest',
         prompt: 'I used Cloud Coach to close my weakest topics.',
     });
-    pathway = setAction(pathway, n3.id, {
-        kind: 'app-listing',
-        listingId: AWS_DEMO_LISTING_IDS.cloudCoach,
-    });
+    {
+        const snap = presetSnapshot(AWS_DEMO_LISTING_IDS.cloudCoach, now);
+
+        pathway = setAction(pathway, n3.id, {
+            kind: 'app-listing',
+            listingId: AWS_DEMO_LISTING_IDS.cloudCoach,
+            ...(snap ? { snapshot: snap } : {}),
+        });
+    }
 
     // --- Node 4: schedule proctored exam (external) ----------------------
     pathway = addNode(pathway, {

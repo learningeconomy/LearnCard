@@ -5,9 +5,11 @@ import type { Pathway, PathwayNode } from '../types';
 import {
     DEFAULT_POLICY,
     DEFAULT_TERMINATION,
+    PathwayOwnershipError,
     addEdge,
     addNode,
     addPathwayRefNode,
+    assertOwnerDidMatches,
     createNestedPathway,
     makeCompositeStage,
     removeEdge,
@@ -19,6 +21,7 @@ import {
     setNodeOrder,
     setPolicy,
     setTermination,
+    stampRevision,
     updateNode,
 } from './buildOps';
 
@@ -58,6 +61,8 @@ const node = (id: string, title = id): PathwayNode => ({
 const pathway = (nodes: PathwayNode[] = [], edges: Pathway['edges'] = []): Pathway => ({
     id: 'p1',
     ownerDid: 'did:test:learner',
+    revision: 0,
+    schemaVersion: 1,
     title: 'Test',
     goal: 'Test',
     nodes,
@@ -293,6 +298,8 @@ const uuidFor = (suffix: string) =>
 const makeChildPathway = (id: string, title = 'Child'): Pathway => ({
     id,
     ownerDid: 'did:test:learner',
+    revision: 0,
+    schemaVersion: 1,
     title,
     goal: 'child goal',
     nodes: [],
@@ -671,5 +678,255 @@ describe('createNestedPathway', () => {
         const result = createNestedPathway(before, 'ghost', { title: 'X' }, opts);
 
         expect(result).toBeNull();
+    });
+
+    it('seeds nested pathway at revision 0 with the current schemaVersion', () => {
+        // Fresh pathways start at revision 0 — not 1 — so a subsequent
+        // mutation (e.g. addNode on the nested pathway) produces a
+        // discernible revision bump even for brand-new documents.
+        const before = pathway([node('a')]);
+        const result = createNestedPathway(
+            before,
+            'a',
+            { title: 'Nested' },
+            opts,
+        );
+
+        expect(result).not.toBeNull();
+        if (!result) return;
+
+        expect(result.nested.revision).toBe(0);
+        expect(result.nested.schemaVersion).toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Revision bumping — the CAS hinge every mutation must participate in
+// ---------------------------------------------------------------------------
+
+describe('stampRevision + per-op revision bumping', () => {
+    it('stampRevision increments revision and sets updatedAt together', () => {
+        // The helper exists precisely so the two fields can't drift.
+        // A mutation that bumps revision without updatedAt (or vice
+        // versa) would silently decouple the CAS hinge from what
+        // users see.
+        const before = pathway();
+        const after = stampRevision(before, LATER);
+
+        expect(after.revision).toBe(before.revision + 1);
+        expect(after.updatedAt).toBe(LATER);
+    });
+
+    it('stampRevision tolerates legacy pathways missing a revision field', () => {
+        // Documents persisted before the field shipped lack revision
+        // entirely. Treating absence as 0 means the first mutation
+        // after upgrade produces revision 1 rather than NaN.
+        const legacy = { ...pathway() } as Partial<Pathway> as Pathway;
+        delete (legacy as Partial<Pathway>).revision;
+
+        const after = stampRevision(legacy, LATER);
+
+        expect(after.revision).toBe(1);
+    });
+
+    it('addNode bumps revision exactly once per call', () => {
+        const before = pathway();
+        const after = addNode(before, { title: 'a' }, opts);
+
+        expect(after.revision).toBe(before.revision + 1);
+    });
+
+    it('removeNode bumps revision on hit, skips on miss (identity-preserving)', () => {
+        const before = pathway([node('a')]);
+
+        const hit = removeNode(before, 'a', opts);
+        expect(hit.revision).toBe(before.revision + 1);
+
+        const miss = removeNode(before, 'ghost', opts);
+        expect(miss).toBe(before); // no-op — same identity, same revision
+    });
+
+    it('updateNode bumps revision on hit, skips on miss', () => {
+        const before = pathway([node('a')]);
+
+        const hit = updateNode(before, 'a', { title: 'A' }, opts);
+        expect(hit.revision).toBe(before.revision + 1);
+
+        const miss = updateNode(before, 'ghost', { title: 'X' }, opts);
+        expect(miss).toBe(before);
+    });
+
+    it('setPolicy + setTermination each bump revision once', () => {
+        const before = pathway([node('a')]);
+
+        const afterPolicy = setPolicy(
+            before,
+            'a',
+            { kind: 'review', fsrs: { stability: 0, difficulty: 0 } },
+            opts,
+        );
+        expect(afterPolicy.revision).toBe(before.revision + 1);
+
+        const afterBoth = setTermination(
+            afterPolicy,
+            'a',
+            { kind: 'artifact-count', count: 1, artifactType: 'text' },
+            opts,
+        );
+        expect(afterBoth.revision).toBe(afterPolicy.revision + 1);
+    });
+
+    it('setAction bumps revision on hit, skips on miss', () => {
+        const before = pathway([node('a')]);
+
+        const hit = setAction(before, 'a', { kind: 'none' }, opts);
+        expect(hit.revision).toBe(before.revision + 1);
+
+        const miss = setAction(before, 'ghost', { kind: 'none' }, opts);
+        expect(miss).toBe(before);
+    });
+
+    it('setAction preserves an inline `snapshot` payload on the action', () => {
+        // The snapshot is the "agents don't need to re-fetch" field; a
+        // setter that silently dropped it would defeat the whole point.
+        const before = pathway([node('a')]);
+        const after = setAction(
+            before,
+            'a',
+            {
+                kind: 'app-listing',
+                listingId: 'listing-xyz',
+                snapshot: {
+                    displayName: 'Coursera',
+                    category: 'Learning',
+                    launchType: 'DIRECT_LINK',
+                    tagline: 'Learn AWS basics',
+                    iconUrl: 'https://example.com/icon.png',
+                    snapshottedAt: LATER,
+                },
+            },
+            opts,
+        );
+
+        const action = after.nodes[0].action;
+        expect(action?.kind).toBe('app-listing');
+        if (action?.kind !== 'app-listing') throw new Error('unreachable');
+        expect(action.snapshot?.displayName).toBe('Coursera');
+        expect(action.snapshot?.iconUrl).toBe('https://example.com/icon.png');
+    });
+
+    it('setDestinationNode bumps revision on change, skips when already set to the same value', () => {
+        const before = {
+            ...pathway([node('a'), node('b')]),
+            destinationNodeId: 'a' as string | undefined,
+        };
+
+        const changed = setDestinationNode(before, 'b', opts);
+        expect(changed.revision).toBe(before.revision + 1);
+
+        const noop = setDestinationNode(before, 'a', opts);
+        expect(noop).toBe(before);
+    });
+
+    it('reorderNodes bumps revision on real move, skips on identity-preserving cases', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+
+        const moved = reorderNodes(before, 'a', 2, opts);
+        expect(moved.revision).toBe(before.revision + 1);
+
+        const noop = reorderNodes(before, 'b', 1, opts);
+        expect(noop).toBe(before);
+    });
+
+    it('setNodeOrder bumps revision on reorder, skips on no-op and on rejection', () => {
+        const before = pathway([node('a'), node('b'), node('c')]);
+
+        const reordered = setNodeOrder(before, ['c', 'b', 'a'], opts);
+        expect(reordered.revision).toBe(before.revision + 1);
+
+        const sameOrder = setNodeOrder(before, ['a', 'b', 'c'], opts);
+        expect(sameOrder).toBe(before);
+
+        const wrongLength = setNodeOrder(before, ['a', 'b'], opts);
+        expect(wrongLength).toBe(before);
+    });
+
+    it('addEdge bumps revision on insert, skips on dedup / self-loop', () => {
+        const before = pathway([node('a'), node('b')]);
+
+        const added = addEdge(before, 'a', 'b', 'prerequisite', opts);
+        expect(added.revision).toBe(before.revision + 1);
+
+        const dup = addEdge(added, 'a', 'b', 'prerequisite', opts);
+        expect(dup).toBe(added);
+
+        const selfLoop = addEdge(before, 'a', 'a', 'prerequisite', opts);
+        expect(selfLoop).toBe(before);
+    });
+
+    it('removeEdge bumps revision on hit, skips on miss', () => {
+        const before = pathway(
+            [node('a'), node('b')],
+            [{ id: 'e1', from: 'a', to: 'b', type: 'prerequisite' }],
+        );
+
+        const removed = removeEdge(before, 'e1', opts);
+        expect(removed.revision).toBe(before.revision + 1);
+
+        const miss = removeEdge(before, 'nonexistent', opts);
+        expect(miss).toBe(before);
+    });
+
+    it('chained mutations produce a strictly monotonic revision sequence', () => {
+        // Integration test for the whole story: every mutation the
+        // module exposes bumps revision by exactly one. Any regression
+        // where a mutation forgets to stamp will show up here as a
+        // non-monotonic sequence.
+        let p = pathway();
+
+        p = addNode(p, { title: 'a' }, opts);
+        const v1 = p.revision;
+
+        p = addNode(p, { title: 'b' }, opts);
+        const v2 = p.revision;
+
+        p = updateNode(p, p.nodes[0].id, { title: 'A' }, opts);
+        const v3 = p.revision;
+
+        p = addEdge(p, p.nodes[0].id, p.nodes[1].id, 'prerequisite', opts);
+        const v4 = p.revision;
+
+        expect(v1).toBe(1);
+        expect(v2).toBe(2);
+        expect(v3).toBe(3);
+        expect(v4).toBe(4);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Owner invariants
+// ---------------------------------------------------------------------------
+
+describe('assertOwnerDidMatches', () => {
+    it('is a no-op when the DID matches', () => {
+        const p = pathway();
+        expect(() => assertOwnerDidMatches(p, p.ownerDid)).not.toThrow();
+    });
+
+    it('throws PathwayOwnershipError when the DID does not match', () => {
+        const p = pathway();
+        expect(() => assertOwnerDidMatches(p, 'did:test:someone-else')).toThrow(
+            PathwayOwnershipError,
+        );
+    });
+
+    it('is an exact string compare — no case folding', () => {
+        // DID equality is byte-exact. Normalizing here would silently
+        // accept authz mismatches upstream callers are trying to
+        // catch; keep it strict.
+        const p = pathway();
+        const upper = p.ownerDid.toUpperCase();
+
+        expect(() => assertOwnerDidMatches(p, upper)).toThrow(PathwayOwnershipError);
     });
 });

@@ -289,6 +289,8 @@ const nestedPathway = (
     return {
         id: NESTED_ID,
         ownerDid: 'did:key:z-owner',
+        revision: 0,
+        schemaVersion: 1,
         title: 'AI in Finance',
         goal: 'master AI',
         nodes,

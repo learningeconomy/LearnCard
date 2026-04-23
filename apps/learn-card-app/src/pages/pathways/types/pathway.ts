@@ -411,9 +411,54 @@ export const AltitudeSchema = z.enum([
 ]);
 export type Altitude = z.infer<typeof AltitudeSchema>;
 
+// -----------------------------------------------------------------
+// Schema version + revision — see `pathways-storage-and-sync.md` § 5.1
+//
+// `schemaVersion` is the document-level migration hinge: the number
+// we stamp on every pathway so `deserializePathway` can fan into the
+// right migrator when shapes change. It is NOT bumped on content
+// edits — it is bumped only when `PathwaySchema` itself changes in a
+// way that needs a migration. Currently 1.
+//
+// `revision` is a monotonic counter bumped on *every* write (learner
+// edit, proposal acceptance, composite rollup — anything that
+// mutates the pathway). When the server wire-up lands, this is the
+// CAS hinge that lets us do optimistic-concurrency writes: the
+// client sends `ifRevision = current`, the server rejects with
+// `conflict: { currentRevision }` if the value has moved, and the
+// client re-applies its local intent as a fresh diff or spills it
+// into the proposal queue.
+//
+// Neither field is surfaced to authoring UI; both are plumbing.
+// They're required rather than optional because the sync story gets
+// harder if we have to tolerate `revision: undefined`.
+// -----------------------------------------------------------------
+
+/**
+ * The current `schemaVersion` value — bump this (and add a migrator
+ * in `core/serialize.ts`) whenever `PathwaySchema` changes shape in
+ * a way that existing persisted documents can't satisfy. Purely
+ * additive changes (new optional fields) do NOT require a bump.
+ */
+export const CURRENT_PATHWAY_SCHEMA_VERSION = 1 as const;
+
 export const PathwaySchema = z.object({
     id: z.string().uuid(),
     ownerDid: z.string(),
+    /**
+     * Monotonic revision counter bumped on every mutation. Starts at
+     * 0 for a freshly-created pathway. See `bumpRevision` in
+     * `build/buildOps.ts` and the sync docs for how this flows
+     * through learner edits, proposal acceptance, and (future)
+     * server-side optimistic-concurrency writes.
+     */
+    revision: z.number().int().nonnegative().default(0),
+    /**
+     * Document-level migration hinge. Distinct from `revision` —
+     * `schemaVersion` tracks the *shape* of this JSON, not how many
+     * times it's been written. See `CURRENT_PATHWAY_SCHEMA_VERSION`.
+     */
+    schemaVersion: z.number().int().positive().default(CURRENT_PATHWAY_SCHEMA_VERSION),
     title: z.string(),
     goal: z.string(),
     nodes: z.array(PathwayNodeSchema),

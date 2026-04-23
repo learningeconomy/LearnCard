@@ -22,6 +22,7 @@ import type {
     Policy,
     Termination,
 } from '../types';
+import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
 // -----------------------------------------------------------------
 // Template shape
@@ -643,6 +644,8 @@ export const instantiateTemplate = (
     const pathway: Pathway = {
         id: pathwayId,
         ownerDid,
+        revision: 0,
+        schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
         title: template.title,
         goal: learnerGoalTrimmed.length > 0 ? learnerGoalTrimmed : template.goal,
         ...(resolvedAltitude ? { intentAltitude: resolvedAltitude } : {}),

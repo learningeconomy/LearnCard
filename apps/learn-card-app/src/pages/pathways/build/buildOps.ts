@@ -24,6 +24,7 @@ import type {
     Policy,
     Termination,
 } from '../types';
+import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
 // -----------------------------------------------------------------
 // Timestamps — injectable for deterministic tests
@@ -38,6 +39,83 @@ const resolve = (opts?: BuildOpOptions) => ({
     now: opts?.now ?? new Date().toISOString(),
     makeId: opts?.makeId ?? uuid,
 });
+
+// -----------------------------------------------------------------
+// Revision + updatedAt — the two fields every mutation must bump
+// together.
+//
+// `revision` is the monotonic counter future server-side
+// optimistic-concurrency writes key off of. `updatedAt` is the
+// human-readable timestamp surfaces show. The pair is ALWAYS moved
+// together: any write that changes `revision` without `updatedAt`
+// leaves the UI confused, and any timestamp bump without a revision
+// bump silently decouples the CAS hinge from content changes.
+//
+// Legacy pathway shapes (pre-revision) are tolerated: the `??` falls
+// back to 0 so a mutation of a legacy document upgrades it to
+// revision 1 without blowing up.
+//
+// Identity-preserving no-ops (a reorder to the same slot, a setter
+// that doesn't change anything) MUST skip `stampRevision` so
+// `useHistory`'s reference-equality skip keeps working. The pattern
+// throughout this file is `if (nothingChanged) return pathway;`
+// above the `stampRevision` call.
+// -----------------------------------------------------------------
+
+/**
+ * Stamp the pathway with the next revision and the supplied
+ * `updatedAt`. Callers that return a mutated pathway should always
+ * spread this at the end:
+ *
+ * ```ts
+ * return stampRevision({ ...pathway, nodes: next }, now);
+ * ```
+ *
+ * Keeps the single bump site honest — we never want to `revision + 1`
+ * in two places.
+ */
+export const stampRevision = <P extends Pathway>(pathway: P, now: string): P => ({
+    ...pathway,
+    revision: (pathway.revision ?? 0) + 1,
+    updatedAt: now,
+});
+
+// -----------------------------------------------------------------
+// Owner invariants
+//
+// Every write path should either take the pathway from a trusted
+// source (the store, which guarantees ownerDid) or call
+// `assertOwnerDidMatches` at the boundary. When the RPC layer lands,
+// these become the server-side authorization checks; plumbing them
+// in now means the call sites already know which owner they're
+// acting on.
+// -----------------------------------------------------------------
+
+export class PathwayOwnershipError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'PathwayOwnershipError';
+    }
+}
+
+/**
+ * Throw if the pathway's `ownerDid` doesn't match the caller's
+ * identity. Call sites that route through a specific actor (accept
+ * a proposal on behalf of DID X, apply a build-op authored by DID Y)
+ * should invoke this before mutating.
+ *
+ * Intentionally strict: no "anonymous" bypass, no case-folding. A
+ * DID comparison is an exact string compare. If the caller doesn't
+ * know the expected owner, that's a design bug, not a call site to
+ * soften.
+ */
+export const assertOwnerDidMatches = (pathway: Pathway, ownerDid: string): void => {
+    if (pathway.ownerDid !== ownerDid) {
+        throw new PathwayOwnershipError(
+            `Pathway ${pathway.id} is owned by ${pathway.ownerDid}, not ${ownerDid}`,
+        );
+    }
+};
 
 // -----------------------------------------------------------------
 // Default stages — the blank form for a fresh node
@@ -87,11 +165,13 @@ export const addNode = (
         updatedAt: now,
     };
 
-    return {
-        ...pathway,
-        nodes: [...pathway.nodes, newNode],
-        updatedAt: now,
-    };
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: [...pathway.nodes, newNode],
+        },
+        now,
+    );
 };
 
 /**
@@ -105,12 +185,16 @@ export const removeNode = (
 ): Pathway => {
     const { now } = resolve(opts);
 
-    return {
-        ...pathway,
-        nodes: pathway.nodes.filter(n => n.id !== nodeId),
-        edges: pathway.edges.filter(e => e.from !== nodeId && e.to !== nodeId),
-        updatedAt: now,
-    };
+    if (!pathway.nodes.some(n => n.id === nodeId)) return pathway;
+
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: pathway.nodes.filter(n => n.id !== nodeId),
+            edges: pathway.edges.filter(e => e.from !== nodeId && e.to !== nodeId),
+        },
+        now,
+    );
 };
 
 export const updateNode = (
@@ -121,13 +205,17 @@ export const updateNode = (
 ): Pathway => {
     const { now } = resolve(opts);
 
-    return {
-        ...pathway,
-        nodes: pathway.nodes.map(n =>
-            n.id === nodeId ? { ...n, ...patch, updatedAt: now } : n,
-        ),
-        updatedAt: now,
-    };
+    if (!pathway.nodes.some(n => n.id === nodeId)) return pathway;
+
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: pathway.nodes.map(n =>
+                n.id === nodeId ? { ...n, ...patch, updatedAt: now } : n,
+            ),
+        },
+        now,
+    );
 };
 
 // -----------------------------------------------------------------
@@ -142,19 +230,23 @@ export const setPolicy = (
 ): Pathway => {
     const { now } = resolve(opts);
 
-    return {
-        ...pathway,
-        nodes: pathway.nodes.map(n =>
-            n.id === nodeId
-                ? {
-                      ...n,
-                      stage: { ...n.stage, policy },
-                      updatedAt: now,
-                  }
-                : n,
-        ),
-        updatedAt: now,
-    };
+    if (!pathway.nodes.some(n => n.id === nodeId)) return pathway;
+
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: pathway.nodes.map(n =>
+                n.id === nodeId
+                    ? {
+                          ...n,
+                          stage: { ...n.stage, policy },
+                          updatedAt: now,
+                      }
+                    : n,
+            ),
+        },
+        now,
+    );
 };
 
 export const setTermination = (
@@ -165,19 +257,23 @@ export const setTermination = (
 ): Pathway => {
     const { now } = resolve(opts);
 
-    return {
-        ...pathway,
-        nodes: pathway.nodes.map(n =>
-            n.id === nodeId
-                ? {
-                      ...n,
-                      stage: { ...n.stage, termination },
-                      updatedAt: now,
-                  }
-                : n,
-        ),
-        updatedAt: now,
-    };
+    if (!pathway.nodes.some(n => n.id === nodeId)) return pathway;
+
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: pathway.nodes.map(n =>
+                n.id === nodeId
+                    ? {
+                          ...n,
+                          stage: { ...n.stage, termination },
+                          updatedAt: now,
+                      }
+                    : n,
+            ),
+        },
+        now,
+    );
 };
 
 /**
@@ -204,24 +300,27 @@ export const setAction = (
 
     if (!pathway.nodes.some(n => n.id === nodeId)) return pathway;
 
-    return {
-        ...pathway,
-        nodes: pathway.nodes.map(n => {
-            if (n.id !== nodeId) return n;
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: pathway.nodes.map(n => {
+                if (n.id !== nodeId) return n;
 
-            if (action === null) {
-                // Clearing: build a shallow copy without the `action` key so
-                // downstream reference checks see the change and the schema
-                // validator treats it as truly absent (not `undefined`).
-                const { action: _discard, ...rest } = n;
+                if (action === null) {
+                    // Clearing: build a shallow copy without the `action` key
+                    // so downstream reference checks see the change and the
+                    // schema validator treats it as truly absent (not
+                    // `undefined`).
+                    const { action: _discard, ...rest } = n;
 
-                return { ...rest, updatedAt: now } as PathwayNode;
-            }
+                    return { ...rest, updatedAt: now } as PathwayNode;
+                }
 
-            return { ...n, action, updatedAt: now };
-        }),
-        updatedAt: now,
-    };
+                return { ...n, action, updatedAt: now };
+            }),
+        },
+        now,
+    );
 };
 
 // -----------------------------------------------------------------
@@ -258,11 +357,13 @@ export const setDestinationNode = (
     // changes don't trigger spurious re-renders.
     if ((pathway.destinationNodeId ?? null) === nodeId) return pathway;
 
-    return {
-        ...pathway,
-        destinationNodeId: nodeId ?? undefined,
-        updatedAt: now,
-    };
+    return stampRevision(
+        {
+            ...pathway,
+            destinationNodeId: nodeId ?? undefined,
+        },
+        now,
+    );
 };
 
 // -----------------------------------------------------------------
@@ -305,11 +406,13 @@ export const reorderNodes = (
     const [moved] = next.splice(fromIndex, 1);
     next.splice(clamped, 0, moved);
 
-    return {
-        ...pathway,
-        nodes: next,
-        updatedAt: now,
-    };
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: next,
+        },
+        now,
+    );
 };
 
 /**
@@ -345,11 +448,13 @@ export const setNodeOrder = (
     const sameOrder = reordered.every((n, i) => n === pathway.nodes[i]);
     if (sameOrder) return pathway;
 
-    return {
-        ...pathway,
-        nodes: reordered,
-        updatedAt: now,
-    };
+    return stampRevision(
+        {
+            ...pathway,
+            nodes: reordered,
+        },
+        now,
+    );
 };
 
 // -----------------------------------------------------------------
@@ -484,6 +589,8 @@ export const createNestedPathway = (
     const nested: Pathway = {
         id: nestedId,
         ownerDid: pathway.ownerDid,
+        revision: 0,
+        schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
         title: draft.title,
         goal: draft.goal ?? '',
         nodes: [],
@@ -568,11 +675,13 @@ export const addEdge = (
 
     const edge: Edge = { id: makeId(), from, to, type };
 
-    return {
-        ...pathway,
-        edges: [...pathway.edges, edge],
-        updatedAt: now,
-    };
+    return stampRevision(
+        {
+            ...pathway,
+            edges: [...pathway.edges, edge],
+        },
+        now,
+    );
 };
 
 export const removeEdge = (
@@ -582,9 +691,13 @@ export const removeEdge = (
 ): Pathway => {
     const { now } = resolve(opts);
 
-    return {
-        ...pathway,
-        edges: pathway.edges.filter(e => e.id !== edgeId),
-        updatedAt: now,
-    };
+    if (!pathway.edges.some(e => e.id === edgeId)) return pathway;
+
+    return stampRevision(
+        {
+            ...pathway,
+            edges: pathway.edges.filter(e => e.id !== edgeId),
+        },
+        now,
+    );
 };

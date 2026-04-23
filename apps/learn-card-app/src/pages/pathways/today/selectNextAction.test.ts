@@ -83,6 +83,8 @@ const makePathway = (
 ): Pathway => ({
     id: '00000000-0000-4000-8000-00000000aaaa',
     ownerDid: 'did:example:learner',
+    revision: 0,
+    schemaVersion: 1,
     title: 'P',
     goal: 'G',
     nodes,

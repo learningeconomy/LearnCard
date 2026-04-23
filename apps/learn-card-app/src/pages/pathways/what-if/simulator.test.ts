@@ -90,6 +90,8 @@ const makePathway = (
 ): Pathway => ({
     id: 'p1',
     ownerDid: 'did:example:1',
+    revision: 0,
+    schemaVersion: 1,
     title: 'P',
     goal: 'G',
     nodes,

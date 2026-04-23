@@ -236,6 +236,8 @@ describe('toCtdlPathway — composite nodes', () => {
     const compositePathway = (): Pathway => ({
         id: '00000000-0000-4000-8000-000000000001',
         ownerDid: OWNER,
+        revision: 0,
+        schemaVersion: 1,
         title: 'Parent pathway',
         goal: 'Test composite export',
         nodes: [

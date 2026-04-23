@@ -44,6 +44,7 @@ import type {
     Policy,
     Termination,
 } from '../types';
+import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
 import {
     extractCtidFromUri,
@@ -212,6 +213,8 @@ export const fromCtdlPathway = (opts: FromCtdlOptions): FromCtdlResult => {
     const pathway: Pathway = {
         id: pathwayId,
         ownerDid,
+        revision: 0,
+        schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
         title,
         goal,
         nodes,

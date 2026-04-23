@@ -43,6 +43,8 @@ const node = (
 const pathway = (nodes: PathwayNode[], edges: Edge[] = []): Pathway => ({
     id: 'p1',
     ownerDid: 'did:test:learner',
+    revision: 0,
+    schemaVersion: 1,
     title: 'Test',
     goal: 'Test',
     nodes,

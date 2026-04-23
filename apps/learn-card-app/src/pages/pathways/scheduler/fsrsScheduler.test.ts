@@ -37,6 +37,8 @@ const reviewNode = (
 const pathway = (nodes: PathwayNode[]): Pathway => ({
     id: 'p1',
     ownerDid: 'did:test:learner',
+    revision: 0,
+    schemaVersion: 1,
     title: 'Test',
     goal: 'Test',
     nodes,

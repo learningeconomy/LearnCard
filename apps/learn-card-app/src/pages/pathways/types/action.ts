@@ -75,6 +75,64 @@ export type InAppRouteAction = z.infer<typeof InAppRouteActionSchema>;
 // -----------------------------------------------------------------
 
 /**
+ * Minimal snapshot of an AppStoreListing, captured at **bind time** and
+ * stored inline on the action. Two reasons to keep the snapshot here
+ * instead of re-hydrating from the listing registry on every read:
+ *
+ *   1. **Agents can read pathways without a network hop.** Planner,
+ *      Coach, Recorder all need to reason about what a node *means*
+ *      to produce useful proposals. `listingId: 'uuid'` alone is
+ *      opaque; the snapshot gives them enough to distinguish "passive
+ *      video-lecture" from "timed practice exam" without a listing
+ *      fetch per prompt.
+ *
+ *   2. **Author intent survives listing drift.** If the target listing
+ *      mutates ("Coursera Plus — 2025 edition"), the original
+ *      authorial intent is preserved in the snapshot. A background job
+ *      can surface material drift as a proposal to the learner rather
+ *      than silently mutating their pathway.
+ *
+ *   3. **Pathways remain meaningful offline.** The snapshot is the
+ *      difference between "there's an app here" (unusable) and "open
+ *      Coursera — AWS Cloud Essentials" (honest copy) when the
+ *      network is down.
+ *
+ * The field is `optional()` — pre-existing nodes, imports from foreign
+ * systems, and programmatic authoring that doesn't have the listing
+ * metadata handy all remain valid. UI falls back to the live listing
+ * fetch when snapshot is absent (see `useListingForNode`).
+ *
+ * Keep it small. ~200 bytes per action is the sweet spot; anything
+ * larger should stay in the listing registry and be fetched on demand.
+ */
+export const AppListingSnapshotSchema = z.object({
+    /** Display name at bind time, e.g. "Coursera — AWS Cloud Essentials". */
+    displayName: z.string().min(1),
+    /** Category at bind time, e.g. "Learning", "Assessment", "Coaching". */
+    category: z.string().optional(),
+    /** Launch type at bind time, e.g. "DIRECT_LINK" | "EMBEDDED_IFRAME". */
+    launchType: z.string().optional(),
+    /** Short tagline for agent context and Map hover affordances. */
+    tagline: z.string().optional(),
+    /** Icon URL at bind time — lets Map nodes render without a listing fetch. */
+    iconUrl: z.string().url().optional(),
+    /**
+     * Author-provided (or LLM-filled) semantic tags carried from the
+     * listing registry. Agents use these to reason about node character
+     * (passive vs active, timed vs self-paced, …). Mirrored from
+     * `AppStoreListing.semanticTags` when available; empty otherwise.
+     */
+    semanticTags: z.array(z.string()).optional(),
+    /**
+     * ISO timestamp of when this snapshot was captured. A refresher
+     * job compares this to the listing's `updatedAt` to decide whether
+     * to propose a refresh.
+     */
+    snapshottedAt: z.string().datetime(),
+});
+export type AppListingSnapshot = z.infer<typeof AppListingSnapshotSchema>;
+
+/**
  * Deep-link into a registered App Store listing. Covers every
  * first-party app that issues credentials, plus external providers
  * we register with `launch_type: DIRECT_LINK` (Khan, Coursera, ETS,
@@ -88,11 +146,15 @@ export type InAppRouteAction = z.infer<typeof InAppRouteActionSchema>;
  * `deepLinkSection` is an optional opaque string the listing's own
  * launcher can use to route inside the app ("courses/statistics",
  * "tutor/biology"). Unrecognized values degrade to the app's home.
+ *
+ * `snapshot` freezes a minimal view of the listing's metadata at bind
+ * time — see `AppListingSnapshotSchema` for the why.
  */
 export const AppListingActionSchema = z.object({
     kind: z.literal('app-listing'),
     listingId: z.string().min(1),
     deepLinkSection: z.string().optional(),
+    snapshot: AppListingSnapshotSchema.optional(),
 });
 export type AppListingAction = z.infer<typeof AppListingActionSchema>;
 

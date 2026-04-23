@@ -99,6 +99,11 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
 
     /**
      * Learner-initiated edit. Agent edits must go through `applyProposal`.
+     *
+     * Bumps `pathway.revision` and `pathway.updatedAt` together — every
+     * mutation path must participate in the CAS hinge the future
+     * server-side optimistic-concurrency write will key off of. `?? 0`
+     * tolerates legacy shapes that pre-date the field.
      */
     editNode: (pathwayId: string, nodeId: string, patch: Partial<PathwayNode>) => {
         set.state(draft => {
@@ -110,8 +115,11 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
 
             if (!node) return;
 
-            Object.assign(node, patch, { updatedAt: new Date().toISOString() });
-            pathway.updatedAt = new Date().toISOString();
+            const now = new Date().toISOString();
+
+            Object.assign(node, patch, { updatedAt: now });
+            pathway.updatedAt = now;
+            pathway.revision = (pathway.revision ?? 0) + 1;
 
             // Edits can flip progress.status directly; re-roll.
             rollupInDraft(draft);
@@ -136,6 +144,12 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
             node.progress.completedAt = now;
             node.updatedAt = now;
             pathway.updatedAt = now;
+            // Completion is a mutation; bump revision so server-side
+            // CAS writes see the change. Skipping the bump when the
+            // node was already completed would be a nice purity win
+            // but complicates the UX contract — the evidence array
+            // still grew, so the revision should move.
+            pathway.revision = (pathway.revision ?? 0) + 1;
 
             // Only emit the completion signal on the real transition —
             // re-calls on an already-completed node shouldn't retrigger

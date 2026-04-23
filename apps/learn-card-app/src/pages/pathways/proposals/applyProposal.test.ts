@@ -55,6 +55,8 @@ const pathway = (
 ): Pathway => ({
     id: 'p1',
     ownerDid: 'did:test:learner',
+    revision: 0,
+    schemaVersion: 1,
     title: 'Test',
     goal: 'Test',
     nodes,
@@ -748,5 +750,107 @@ describe('applyProposal — outcome bindings', () => {
 
         expect(after.outcomes?.[0].binding?.credentialUri).toBe('urn:uuid:vc-1');
         expect(after.outcomes?.[1].binding?.credentialUri).toBe('urn:uuid:vc-b');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Owner invariants + revision bumping — the CAS hinge proposals must
+// participate in alongside learner-origin mutations.
+// ---------------------------------------------------------------------------
+
+describe('applyProposal — owner invariants', () => {
+    it('refuses a proposal whose ownerDid does not match the target pathway', () => {
+        // A cross-owner apply is the client-side check that becomes the
+        // server-side authorization check at wire-up. Catches a mentor
+        // proposal routed into the wrong learner's store, or a replay
+        // bug that re-targets a proposal at someone else's pathway.
+        const target = pathway([node('a')]);
+        const misrouted = proposal(emptyDiff({ addNodes: [node('b')] }), {
+            ownerDid: 'did:test:someone-else',
+        });
+
+        expect(() => applyProposal(target, misrouted, LATER)).toThrow(ProposalApplyError);
+        // Sanity-check the error message mentions both DIDs so
+        // debugging has something actionable.
+        try {
+            applyProposal(target, misrouted, LATER);
+        } catch (err) {
+            const message = (err as Error).message;
+            expect(message).toContain('did:test:learner');
+            expect(message).toContain('did:test:someone-else');
+        }
+    });
+
+    it('accepts a proposal whose ownerDid matches', () => {
+        const target = pathway([node('a')]);
+        const matching = proposal(emptyDiff({ addNodes: [node('b')] }));
+
+        expect(() => applyProposal(target, matching, LATER)).not.toThrow();
+    });
+});
+
+describe('applyProposal — revision bumping', () => {
+    it('bumps the target pathway revision by exactly one on a structural apply', () => {
+        // Proposals are structural edits — they must participate in
+        // the same CAS hinge as learner-origin mutations, so
+        // server-side optimistic-concurrency writes see a monotonic
+        // sequence regardless of who authored the change.
+        const target = pathway([node('a')], [], { revision: 7 });
+        const p = proposal(emptyDiff({ addNodes: [node('b')] }));
+
+        const after = applyProposal(target, p, LATER);
+
+        expect(after.revision).toBe(8);
+    });
+
+    it('bumps revision even on a no-op diff (a proposal acceptance is itself an event)', () => {
+        // Honest contract: "the learner accepted a proposal" is
+        // something we want to be able to tell happened by looking at
+        // the revision sequence, even if the diff ultimately didn't
+        // mutate content (e.g. an endorse-only proposal).
+        const target = pathway([node('a')], [], { revision: 3 });
+        const p = proposal(emptyDiff());
+
+        const after = applyProposal(target, p, LATER);
+
+        expect(after.revision).toBe(4);
+    });
+
+    it('tolerates legacy pathways that pre-date the revision field', () => {
+        // `?? 0` fallback exists precisely for this: a pre-field
+        // document should upgrade to revision 1 on first post-field
+        // write rather than blowing up with NaN.
+        const target = {
+            ...pathway([node('a')]),
+        } as Partial<Pathway> as Pathway;
+        delete (target as Partial<Pathway>).revision;
+
+        const p = proposal(emptyDiff({ addNodes: [node('b')] }));
+        const after = applyProposal(target, p, LATER);
+
+        expect(after.revision).toBe(1);
+    });
+});
+
+describe('materializeNewPathway — versioning', () => {
+    const OWNER = 'did:test:learner';
+
+    it('stamps revision 0 and current schemaVersion on cross-pathway materialization', () => {
+        // A brand-new pathway produced from a Matcher proposal should
+        // start at revision 0 — the same baseline as a freshly-authored
+        // pathway — so the first subsequent mutation produces a
+        // discernible bump.
+        const hintDiff = emptyDiff({
+            addNodes: [node('a')],
+            newPathway: { title: 'Fresh', goal: 'test' },
+        });
+
+        const fresh = materializeNewPathway(
+            proposal(hintDiff, { pathwayId: null, agent: 'matcher', capability: 'matching' }),
+            { ownerDid: OWNER, now: LATER },
+        );
+
+        expect(fresh.revision).toBe(0);
+        expect(fresh.schemaVersion).toBe(1);
     });
 });

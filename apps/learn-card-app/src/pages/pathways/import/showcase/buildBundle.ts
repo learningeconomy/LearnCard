@@ -27,6 +27,7 @@ import type {
     Policy,
     Termination,
 } from '../../types';
+import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../../types';
 
 import type { BuildShowcaseOptions, ShowcaseBundle } from './types';
 
@@ -339,6 +340,8 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
         const pathway: Pathway = {
             id: pathwayId,
             ownerDid,
+            revision: 0,
+            schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
             title: spec.title,
             goal: spec.goal,
             nodes,

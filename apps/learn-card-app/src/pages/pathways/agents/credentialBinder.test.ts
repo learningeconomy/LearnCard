@@ -59,6 +59,8 @@ const emptyPathway = (
 ): Pathway => ({
     id,
     ownerDid: OWNER,
+    revision: 0,
+    schemaVersion: 1,
     title: 'Test pathway',
     goal: 'Goal',
     nodes: [],

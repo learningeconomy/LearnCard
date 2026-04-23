@@ -42,6 +42,8 @@ const pathway = (
     ({
         id: 'p1',
         ownerDid: 'did:test',
+        revision: 0,
+        schemaVersion: 1,
         title: 'Test',
         goal: 'test',
         nodes,

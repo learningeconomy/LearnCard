@@ -56,6 +56,8 @@ const makePathway = (
 ): Pathway => ({
     id,
     ownerDid: 'did:key:z-owner',
+    revision: 0,
+    schemaVersion: 1,
     title: `Pathway ${id.slice(0, 4)}`,
     goal: 'test',
     nodes: opts.nodes,

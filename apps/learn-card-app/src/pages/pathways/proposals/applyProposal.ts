@@ -24,6 +24,7 @@ import type {
     PathwayNode,
     Proposal,
 } from '../types';
+import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
 // -----------------------------------------------------------------
 // Errors
@@ -191,6 +192,22 @@ export const applyProposal = (
         );
     }
 
+    // Ownership invariant: a proposal's declared owner must match the
+    // pathway it's being applied to. This is the client-side check
+    // that becomes the server-side authorization check at wire-up.
+    // Catches two classes of bug:
+    //   - A mentor's propose-scoped edit routed into the wrong
+    //     learner's store.
+    //   - A replay / offline-queue bug that re-targets a proposal at
+    //     someone else's pathway.
+    // Exact string compare — no case folding, no anonymous bypass.
+    if (proposal.ownerDid !== pathway.ownerDid) {
+        throw new ProposalApplyError(
+            `Proposal ${proposal.id} owner (${proposal.ownerDid}) does not match ` +
+                `pathway ${pathway.id} owner (${pathway.ownerDid})`,
+        );
+    }
+
     const { diff } = proposal;
 
     // -- Validation --------------------------------------------------------
@@ -302,6 +319,13 @@ export const applyProposal = (
 
     const nextPathway: Pathway = {
         ...pathway,
+        // Bump the revision counter for every proposal acceptance.
+        // Proposals are structural edits — they must participate in
+        // the same CAS hinge as learner-origin mutations so the
+        // future server-side optimistic-concurrency write sees a
+        // monotonic sequence regardless of who authored the change.
+        // `?? 0` tolerates legacy pathways that pre-date the field.
+        revision: (pathway.revision ?? 0) + 1,
         nodes: nextNodes,
         edges: nextEdges,
         updatedAt: now,
@@ -401,6 +425,8 @@ export const materializeNewPathway = (
     return {
         id: pathwayId,
         ownerDid,
+        revision: 0,
+        schemaVersion: CURRENT_PATHWAY_SCHEMA_VERSION,
         title: hint.title,
         goal: hint.goal,
         nodes,
