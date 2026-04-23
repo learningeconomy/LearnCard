@@ -79,6 +79,11 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
         ? title.toLowerCase()
         : `${title.toLowerCase()}s`;
     const salaryTypeLabel = salaryType === 'per_hour' ? '/hr' : '/yr';
+    const handleSelectOccupation = (nextOccupation: OccupationDetailsResponse) => {
+        setSelectedOccupation(nextOccupation);
+        setIsRoleMenuOpen(false);
+        closeModal();
+    };
 
     const handleChooseRole = () => {
         if (suggestedOccupations.length === 0) {
@@ -91,17 +96,10 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
             newModal(
                 <AiInsightsRoleMenu
                     selectedOccupation={selectedOccupation ?? null}
-                    setSelectedOccupation={nextOccupation => {
-                        setSelectedOccupation(nextOccupation);
-                        closeModal();
-                    }}
+                    handleSelectOccupation={handleSelectOccupation}
                     suggestedOccupations={suggestedOccupations}
                     salaryType={salaryType}
                     variant="sheet"
-                    onSelectOccupation={nextOccupation => {
-                        setSelectedOccupation(nextOccupation);
-                        closeModal();
-                    }}
                 />,
                 {
                     onClose: () => setIsRoleMenuOpen(false),
@@ -141,10 +139,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                         <div className="absolute right-0 top-full z-20 mt-[8px] w-[min(460px,calc(100vw-32px))]">
                             <AiInsightsRoleMenu
                                 selectedOccupation={selectedOccupation ?? null}
-                                setSelectedOccupation={nextOccupation => {
-                                    setSelectedOccupation(nextOccupation);
-                                    setIsRoleMenuOpen(false);
-                                }}
+                                handleSelectOccupation={handleSelectOccupation}
                                 suggestedOccupations={suggestedOccupations}
                                 salaryType={salaryType}
                             />

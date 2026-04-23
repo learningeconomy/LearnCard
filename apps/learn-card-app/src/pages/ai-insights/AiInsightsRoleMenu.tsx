@@ -11,11 +11,10 @@ import { formatEstimatedSalary } from '../ai-pathways/ai-pathway-careers/ai-path
 
 type AiInsightsRoleMenuProps = {
     selectedOccupation: OccupationDetailsResponse | null;
-    setSelectedOccupation: (occupation: OccupationDetailsResponse) => void;
+    handleSelectOccupation: (occupation: OccupationDetailsResponse) => void;
     suggestedOccupations: OccupationDetailsResponse[];
     salaryType?: 'per_year' | 'per_hour';
     variant?: 'popover' | 'sheet';
-    onSelectOccupation?: (occupation: OccupationDetailsResponse) => void;
 };
 
 const MORE_ROLE_KEYWORDS = [
@@ -171,11 +170,10 @@ const RoleSection: React.FC<RoleSectionProps> = ({
 
 const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
     selectedOccupation,
-    setSelectedOccupation,
+    handleSelectOccupation,
     suggestedOccupations,
     salaryType = 'per_year',
     variant = 'popover',
-    onSelectOccupation,
 }) => {
     const [search, setSearch] = React.useState('');
     const isSheet = variant === 'sheet';
@@ -191,15 +189,6 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
     const { occupations: moreRoles, isLoading: moreRolesLoading } = useBrowseableRoles(
         !isSearchActive
     );
-
-    const handleSelectOccupation = (occupation: OccupationDetailsResponse) => {
-        if (onSelectOccupation) {
-            onSelectOccupation(occupation);
-            return;
-        }
-
-        setSelectedOccupation(occupation);
-    };
 
     return (
         <div
