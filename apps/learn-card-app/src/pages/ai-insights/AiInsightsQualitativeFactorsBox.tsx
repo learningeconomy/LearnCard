@@ -267,7 +267,6 @@ const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => 
 };
 
 const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxProps> = ({
-    professionalTitle,
     occupation,
     isLoading = false,
 }) => {
