@@ -81,10 +81,10 @@ export const AiSessionsContainer: React.FC<{
 
     const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
 
-    const topicUri = (_topicUri || (query.get('topicBoostUri') as string)).replace(
-        /localhost:/,
-        'localhost%3A'
-    );
+    const topicUri =
+        (_topicUri || query.get('topicBoostUri') || '')?.replace(/localhost:/, 'localhost%3A') ||
+        '';
+
     const { data: enrichedSessionData, isLoading: isLoadingEnrichedSessions } =
         useGetEnrichedSession(topicUri);
 
@@ -134,9 +134,8 @@ export const AiSessionsContainer: React.FC<{
 
             <GenericErrorBoundary>
                 <div
-                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${
-                        !isDesktop ? 'pb-[90px]' : ''
-                    }`}
+                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${!isDesktop ? 'pb-[90px]' : ''
+                        }`}
                 >
                     <div className="w-full ml-2 px-2 py-0">
                         {isDesktop && (
