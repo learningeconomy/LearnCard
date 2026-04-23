@@ -5,7 +5,7 @@ import AiInsightsExploreMoreButton from './ai-insights-explore-more-modal/AiInsi
 
 export const AiInsightsPromptBoxContainer: React.FC = () => {
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] gap-4 mt-4">
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-4-4 p-[15px] rounded-[15px] gap-4">
             <AiInsightsPromptBox />
             <AiInsightsExploreMoreButton />
         </div>
