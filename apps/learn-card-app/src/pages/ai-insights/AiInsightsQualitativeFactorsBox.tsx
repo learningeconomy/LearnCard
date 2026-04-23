@@ -171,19 +171,19 @@ const getWorkLifeBalanceCopy = (
         };
     }
 
-    if (delta <= -15) {
+    if (delta <= -33) {
         return {
             leadingText: 'Your current work life balance ',
-            highlightText: 'is strong',
+            highlightText: 'is very strong',
             trailingText: ' compared to others.',
             highlightClassName: 'text-emerald-601',
         };
     }
 
-    if (delta <= -33) {
+    if (delta <= -15) {
         return {
             leadingText: 'Your current work life balance ',
-            highlightText: 'is very strong',
+            highlightText: 'is strong',
             trailingText: ' compared to others.',
             highlightClassName: 'text-emerald-601',
         };
