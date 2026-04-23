@@ -111,6 +111,11 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     const marketAvgLabel = marketAvg !== undefined ? formatCurrency(marketAvg, salaryType) : '$0';
     const marketHighLabel =
         marketHigh !== undefined ? formatCurrency(marketHigh, salaryType) : '$0';
+    const currentSalaryLabel =
+        currentSalary !== undefined ? formatCurrency(currentSalary, salaryType) : '$0';
+    const marketComparisonAriaLabel = `Salary comparison for ${title}. Your salary is ${currentSalaryLabel}. Market range is ${marketLowLabel} to ${marketHighLabel}, with an average of ${marketAvgLabel}. You are above ${
+        comparisonPercentLabel ?? 0
+    }% of other ${titlePlural} in the market.`;
 
     if (isLoading) {
         return (
@@ -151,7 +156,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             </div>
 
             <div className="space-y-2">
-                <div className="relative h-[16px] px-[15px]">
+                <div className="relative h-[16px] px-[15px]" aria-hidden="true">
                     {tickValues.map((tickValue, index) => (
                         <span
                             key={`${tickValue}-${index}`}
@@ -171,10 +176,15 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                     ))}
                 </div>
 
-                <div className="relative h-4 rounded-full bg-grayscale-200 overflow-visible">
+                <div
+                    className="relative h-4 rounded-full bg-grayscale-200 overflow-visible"
+                    role="img"
+                    aria-label={marketComparisonAriaLabel}
+                >
                     <div
                         className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#D8E0FF_0%,#C8C3FF_55%,#4F46E5_100%)]"
                         style={{ width: '100%' }}
+                        aria-hidden="true"
                     />
 
                     {markerLeft !== undefined && (
@@ -189,6 +199,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                                         ? 'translate(calc(-100% + 4px), -50%)'
                                         : 'translate(-50%, -50%)',
                             }}
+                            aria-hidden="true"
                         >
                             <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
                                 <div className="h-4 w-4 rounded-full border-4 border-emerald-500 bg-white" />
