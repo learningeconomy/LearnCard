@@ -8,6 +8,8 @@ import { VC } from '@learncard/types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import CredentialCard from './CredentialCard';
+import AiSessionCard, { isAiSessionSummaryRecord } from './AiSessionCard';
+import AiTopicCard, { isAiTopicRecord } from './AiTopicCard';
 import { CredentialRecord } from './AppCredentialDashboard';
 
 type PanelTab = 'credentials' | 'notifications';
@@ -398,14 +400,38 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                             />
                         ) : (
                             <div className="space-y-4">
-                                {earnedCredentials.map((record, index) => (
-                                    <CredentialCard
-                                        key={record.uri}
-                                        record={record}
-                                        isNew={record.isNew}
-                                        index={index}
-                                    />
-                                ))}
+                                {earnedCredentials.map((record, index) => {
+                                    if (isAiSessionSummaryRecord(record)) {
+                                        return (
+                                            <AiSessionCard
+                                                key={record.uri}
+                                                record={record}
+                                                isNew={record.isNew}
+                                                index={index}
+                                            />
+                                        );
+                                    }
+
+                                    if (isAiTopicRecord(record)) {
+                                        return (
+                                            <AiTopicCard
+                                                key={record.uri}
+                                                record={record}
+                                                isNew={record.isNew}
+                                                index={index}
+                                            />
+                                        );
+                                    }
+
+                                    return (
+                                        <CredentialCard
+                                            key={record.uri}
+                                            record={record}
+                                            isNew={record.isNew}
+                                            index={index}
+                                        />
+                                    );
+                                })}
                             </div>
                         )}
                     </>
