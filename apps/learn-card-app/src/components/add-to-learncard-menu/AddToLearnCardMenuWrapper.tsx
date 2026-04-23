@@ -35,7 +35,7 @@ const AddToLearnCardMenuWrapper = () => {
                         className="flex items-center justify-center absolute right-2 h-[32px] w-[32px] rounded-full"
                         aria-label="Close"
                     >
-                        <X className="h-[40px] w-[40px] text-grayscale-600" />
+                        <X className="h-[32px] w-[32px] text-grayscale-600" />
                     </button>
                 </div>
             </div>
