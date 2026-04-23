@@ -23,11 +23,15 @@
     },
     "license": "MIT",
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "dependencies": {
+        "qrcode": "^1.5.4"
+    },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^22.0.2",
         "@rollup/plugin-node-resolve": "^13.3.0",
         "@rollup/plugin-replace": "^5.0.2",
         "@types/node": "^18.19.64",
+        "@types/qrcode": "^1.5.5",
         "rollup-plugin-delete": "^2.0.0",
         "rollup-plugin-dts": "^4.2.2",
         "rollup": "^2.79.1",

@@ -1,8 +1,28 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import base64url from 'base64url';
+import { gunzipSync } from 'zlib';
 
-import { VC, UnsignedVC, VP, VPValidator, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator } from '@learncard/types';
+import {
+    VC,
+    UnsignedVC,
+    VP,
+    VPValidator,
+    VCValidator,
+    UnsignedVCValidator,
+    LCNNotificationTypeEnumValidator,
+    LCNInboxStatusEnumValidator,
+} from '@learncard/types';
+
+import {
+    assertInlineSrcSafe,
+    InlineSrcUrlRejected,
+    isInlineSrcDevMode,
+} from '@helpers/inline-src.helpers';
+import {
+    reconcileAwardedByDomain,
+    type VerifiedAwardedByDomain,
+} from '@helpers/inline-origin.helpers';
 
 import { t, openRoute, Context } from '@routes';
 
@@ -41,7 +61,7 @@ import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { EXHAUSTED, exhaustExchangeChallengeForToken, getExchangeChallengeStateForToken, setValidExchangeChallengeForToken } from '@cache/exchanges';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -111,6 +131,18 @@ export const workflowsRouter = t.router({
                 } else {
                     return handleInboxClaimPresentation(localExchangeId, verifiablePresentation, ctx);
                 }
+            }
+
+            // Inline credential claim. Single workflow; the payload is auto-detected:
+            //   • base64url(https://...)  → fetch from partner host
+            //   • base64url(signed VC JSON) → wrap in VP and return (1-step)
+            //   • base64url(unsigned VC JSON) → DIDAuth 2-step, sign bound to holder DID
+            //
+            // The legacy workflow IDs `inline`, `inline-unsigned`, and `inline-src` all
+            // route to this handler for backward compatibility; new integrations should
+            // use the single `inline` ID.
+            if (INLINE_WORKFLOW_IDS.has(localWorkflowId)) {
+                return handleInlineExchange(localExchangeId, verifiablePresentation, domain);
             }
 
             // Check if this is an initiation request (empty body) or presentation request (contains VP)
@@ -783,8 +815,591 @@ async function handleInboxClaimPresentation(
     }
 
     return {
-        verifiablePresentation: responseVP
+        verifiablePresentation: responseVP,
     };
+}
+
+// =========================================================================
+// Inline credential claim (single unified workflow)
+// =========================================================================
+//
+// One workflow id (`inline`) handles all three source forms. Legacy ids
+// (`inline-unsigned`, `inline-src`) are still routed here for backward compat.
+// The localExchangeId encodes one of:
+//
+//   • base64url(httpsUrlToJson)       — URL the partner hosts the VC at
+//   • base64url([gzip(]signedVcJson[)])   — a fully-signed VC (1-step flow)
+//   • base64url([gzip(]unsignedVcJson[)]) — an unsigned VC template (DIDAuth flow)
+//
+// Signed VCs are returned as-is wrapped in a VP (partner took cryptographic
+// responsibility). Unsigned VCs require a DIDAuth round-trip so that the
+// resulting credential is cryptographically bound to the holder's DID; they
+// are never issued as unbound bearer credentials.
+//
+// URL shape at the edge:
+//   /interactions/inline/<base64url-encoded-payload>?iuv=1
+//
+// The edge function enforces a MAX_INLINE_ID_LEN; brain-service enforces a
+// decoded-bytes cap as a second line of defense.
+// =========================================================================
+
+const INLINE_WORKFLOW_IDS: ReadonlySet<string> = new Set([
+    'inline',
+    'inline-unsigned',
+    'inline-src',
+]);
+
+const MAX_INLINE_DECODED_BYTES = 64 * 1024;
+const INLINE_SRC_FETCH_TIMEOUT_MS = 10_000;
+
+type InlinePayload =
+    | { kind: 'signed'; vc: VC }
+    | { kind: 'unsigned'; vc: UnsignedVC };
+
+/**
+ * SDK-produced URL-source envelope. Small JSON object wrapping the partner-
+ * hosted JSON URL plus an optional `presenting` origin reported by the SDK at
+ * build time. The `v:1` discriminator disambiguates from raw VC JSON.
+ *
+ * Legacy shape (raw `https://...` string) is still accepted in `looksLikeHttpsUrl`
+ * for backward compat, but new SDK builds emit this envelope so the server can
+ * reconcile the two domain signals.
+ */
+type InlineSrcEnvelope = {
+    url: URL;
+    presenting?: string;
+};
+
+// -------------------------------------------------------------------------
+// Decode / classify
+// -------------------------------------------------------------------------
+
+/** Decode the base64url payload to its raw bytes (applying gzip if present). */
+function decodeInlineBytes(localExchangeId: string): Buffer {
+    let raw: Buffer;
+    try {
+        raw = base64url.toBuffer(localExchangeId);
+    } catch {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid inline payload encoding' });
+    }
+
+    // Detect gzip magic bytes (0x1f 0x8b) and inflate if present.
+    const decoded =
+        raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw;
+
+    if (decoded.byteLength > MAX_INLINE_DECODED_BYTES) {
+        throw new TRPCError({
+            code: 'PAYLOAD_TOO_LARGE',
+            message: 'Inline payload exceeds maximum decoded size',
+        });
+    }
+
+    return decoded;
+}
+
+/**
+ * True if the decoded bytes look like a URL string we should fetch.
+ *
+ * Default policy accepts only `https://` URLs. When `INLINE_SRC_DEV_MODE=1`
+ * is set, plain `http://` is also accepted so the local demo (partner HTML on
+ * http://localhost) can round-trip. The SSRF guard still runs afterwards and
+ * is likewise gated by dev mode.
+ */
+function looksLikeHttpsUrl(bytes: Buffer): string | null {
+    // Only consider payloads small enough to be a URL and that decode to ASCII.
+    if (bytes.byteLength > 4096) return null;
+    const text = bytes.toString('utf8').trim();
+    const lower = text.toLowerCase();
+    const devMode = isInlineSrcDevMode();
+    const hasAcceptedScheme =
+        lower.startsWith('https://') || (devMode && lower.startsWith('http://'));
+    if (!hasAcceptedScheme) return null;
+    try {
+        const url = new URL(text);
+        if (url.protocol === 'https:') return text;
+        if (devMode && url.protocol === 'http:') return text;
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Attempt to parse the decoded bytes as an SDK-produced inline-src envelope:
+ *   `{ "v": 1, "url": "https://...", "presenting"?: "https://..." }`
+ *
+ * Returns `null` when the bytes don't match the envelope shape (including all
+ * VC payloads, which will be handled by classifyJsonPayload downstream).
+ */
+function tryParseInlineSrcEnvelope(bytes: Buffer): InlineSrcEnvelope | null {
+    // Cap envelope size at 8 KiB — more than enough for a URL + origin + hash.
+    if (bytes.byteLength > 8192) return null;
+
+    const text = bytes.toString('utf8').trim();
+    if (!text.startsWith('{')) return null;
+
+    let obj: unknown;
+    try {
+        obj = JSON.parse(text);
+    } catch {
+        return null;
+    }
+    if (!obj || typeof obj !== 'object') return null;
+
+    const candidate = obj as Record<string, unknown>;
+    // Discriminator: envelope must have `v === 1`. Keeps us from accidentally
+    // matching any credential or other JSON that happens to have a `url` field.
+    if (candidate.v !== 1) return null;
+    if (typeof candidate.url !== 'string') return null;
+
+    let parsedUrl: URL;
+    try {
+        parsedUrl = new URL(candidate.url);
+    } catch {
+        return null;
+    }
+    // Production: https only. Dev mode: also accept http for local demos.
+    const devMode = isInlineSrcDevMode();
+    if (parsedUrl.protocol !== 'https:' && !(devMode && parsedUrl.protocol === 'http:')) {
+        return null;
+    }
+
+    const presenting =
+        typeof candidate.presenting === 'string' ? candidate.presenting : undefined;
+
+    return { url: parsedUrl, presenting };
+}
+
+/** Parse decoded bytes as JSON and classify as signed/unsigned VC. */
+function classifyJsonPayload(bytes: Buffer): InlinePayload {
+    let body: unknown;
+    try {
+        body = JSON.parse(bytes.toString('utf8'));
+    } catch {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid inline payload JSON' });
+    }
+    return classifyParsedPayload(body);
+}
+
+function classifyParsedPayload(body: unknown): InlinePayload {
+    // Signed first: VCValidator is a superset of UnsignedVCValidator (adds proof),
+    // so trying it first avoids misclassifying a signed VC as unsigned.
+    const signedParse = VCValidator.safeParse(body);
+    if (signedParse.success) return { kind: 'signed', vc: signedParse.data as VC };
+
+    const unsignedParse = UnsignedVCValidator.safeParse(body);
+    if (unsignedParse.success) return { kind: 'unsigned', vc: unsignedParse.data as UnsignedVC };
+
+    throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Inline payload is not a valid VC or Unsigned VC',
+    });
+}
+
+// -------------------------------------------------------------------------
+// inline-src fetch (hardened)
+// -------------------------------------------------------------------------
+
+/**
+ * Fetch partner-hosted JSON for an inline-src claim. Hardened against:
+ *   • non-https URLs (rejected before we get here, but defended in depth)
+ *   • non-allowlisted hosts (see isAllowedInlineSrc)
+ *   • redirects (`redirect: 'error'`) — an open redirect on any allowlisted
+ *     host would otherwise let an attacker get LearnCard to sign arbitrary
+ *     content
+ *   • non-JSON responses (content-type sniff)
+ *   • oversized bodies (content-length header check + streamed byte counter)
+ */
+async function fetchInlineSrc(parsedUrl: URL): Promise<unknown> {
+    let res: Response;
+    try {
+        res = await fetch(parsedUrl, {
+            headers: { Accept: 'application/json' },
+            redirect: 'error',
+            signal: AbortSignal.timeout(INLINE_SRC_FETCH_TIMEOUT_MS),
+        });
+    } catch (err) {
+        console.error('[fetchInlineSrc] network error:', err);
+        throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: 'Failed to fetch inline-src JSON',
+        });
+    }
+
+    if (!res.ok) {
+        throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: `Failed to fetch inline-src JSON (status ${res.status})`,
+        });
+    }
+
+    const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
+    if (
+        !contentType.includes('application/json') &&
+        !contentType.includes('application/ld+json')
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'inline-src response is not application/json',
+        });
+    }
+
+    const declaredLength = Number(res.headers.get('content-length') ?? 'NaN');
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_INLINE_DECODED_BYTES) {
+        throw new TRPCError({
+            code: 'PAYLOAD_TOO_LARGE',
+            message: 'inline-src JSON exceeds maximum size',
+        });
+    }
+
+    // Stream the body and enforce the size cap even when Content-Length is absent
+    // or lies. Abort the underlying connection as soon as the cap is exceeded.
+    const reader = res.body?.getReader();
+    if (!reader) {
+        throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: 'inline-src response has no body',
+        });
+    }
+
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    try {
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (!value) continue;
+            total += value.byteLength;
+            if (total > MAX_INLINE_DECODED_BYTES) {
+                await reader.cancel();
+                throw new TRPCError({
+                    code: 'PAYLOAD_TOO_LARGE',
+                    message: 'inline-src JSON exceeds maximum size',
+                });
+            }
+            chunks.push(value);
+        }
+    } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        console.error('[fetchInlineSrc] read error:', err);
+        throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: 'Failed to read inline-src response',
+        });
+    }
+
+    const buf = Buffer.concat(chunks.map(c => Buffer.from(c)));
+    try {
+        return JSON.parse(buf.toString('utf8'));
+    } catch {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'inline-src response is not valid JSON' });
+    }
+}
+
+// -------------------------------------------------------------------------
+// Issuer preservation + sign
+// -------------------------------------------------------------------------
+
+/**
+ * LearnCard signs inline unsigned credentials with its own DID, so the partner's
+ * declared `issuer` is necessarily overwritten. To avoid silent data loss, we
+ * preserve the partner's original issuer identity under
+ * `credentialSubject.awardedBy` (a custom convention the LearnCard wallet UI
+ * surfaces as "Awarded by X, signed by LearnCard"). This also matches the
+ * OBv3 semantic where a host signs on behalf of an awarding body.
+ *
+ * If the partner's declared issuer IS LearnCard's own DID (or empty), we
+ * overwrite silently without adding awardedBy.
+ */
+function preserveIssuer(vc: UnsignedVC, learnCardDid: string): UnsignedVC {
+    const originalIssuer = vc.issuer;
+    const originalIssuerDid =
+        typeof originalIssuer === 'string' ? originalIssuer : originalIssuer?.id;
+
+    // No meaningful issuer to preserve, or partner explicitly said LearnCard.
+    if (!originalIssuerDid || originalIssuerDid === learnCardDid) {
+        return { ...vc, issuer: learnCardDid };
+    }
+
+    const credentialSubject = vc.credentialSubject;
+    if (Array.isArray(credentialSubject)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Multi-subject unsigned credentials with a non-LearnCard issuer are not supported by the inline claim flow. ' +
+                'Either submit a pre-signed VC or restructure your credential to have a single credentialSubject.',
+        });
+    }
+
+    const awardedBy =
+        typeof originalIssuer === 'object' && originalIssuer !== null
+            ? originalIssuer
+            : { id: originalIssuerDid };
+
+    return {
+        ...vc,
+        issuer: learnCardDid,
+        credentialSubject: {
+            ...credentialSubject,
+            awardedBy: (credentialSubject as { awardedBy?: unknown }).awardedBy ?? awardedBy,
+        },
+    };
+}
+
+/**
+ * Attach a server-verified `awardedByDomain` claim to `credentialSubject`.
+ * This is a sidecar to the partner-declared `awardedBy` (which is user-
+ * provided metadata): `awardedByDomain` records the https origin the JSON was
+ * actually fetched from, plus the reconciled eTLD+1 when the SDK supplied a
+ * compatible presenting origin. Wallets should surface this as the
+ * authoritative issuing identity (partner self-declaration is untrusted, but
+ * domain control is provable).
+ */
+function attachVerifiedOrigin(
+    vc: UnsignedVC,
+    origin: VerifiedAwardedByDomain
+): UnsignedVC {
+    const cs = vc.credentialSubject;
+
+    if (Array.isArray(cs)) {
+        return {
+            ...vc,
+            credentialSubject: cs.map(s => ({
+                ...s,
+                awardedByDomain: origin,
+            })) as any,
+        };
+    }
+
+    // Respect an explicit value already set by the partner (unlikely; they'd
+    // have no way to know the server-observed origin at authoring time).
+    if ((cs as { awardedByDomain?: unknown })?.awardedByDomain !== undefined) {
+        return vc;
+    }
+
+    return {
+        ...vc,
+        credentialSubject: {
+            ...cs,
+            awardedByDomain: origin,
+        } as any,
+    };
+}
+
+/**
+ * Bind the unsigned VC to the holder's DID (one-shot DIDAuth exchange),
+ * preserve the partner's issuer identity, and sign with LearnCard's DID.
+ */
+async function bindAndSignInlineCredential(
+    unsigned: UnsignedVC,
+    holderDid: string
+): Promise<VC> {
+    const learnCard = await getLearnCard();
+    const learnCardDid = learnCard.id.did();
+
+    // Bind credentialSubject.id to the holder's DID so the resulting VC is not
+    // a bearer credential. Respect any pre-existing `did` override the partner
+    // may have set.
+    const subject = unsigned.credentialSubject;
+    const boundSubject = Array.isArray(subject)
+        ? subject.map(s => ({ ...s, id: (s as any).did || s.id || holderDid }))
+        : { ...subject, id: (subject as any).did || subject.id || holderDid };
+
+    const withSubject: UnsignedVC = { ...unsigned, credentialSubject: boundSubject as any };
+    const withIssuer = preserveIssuer(withSubject, learnCardDid);
+
+    return (await learnCard.invoke.issueCredential(withIssuer)) as VC;
+}
+
+// -------------------------------------------------------------------------
+// DIDAuth exchange cache
+// -------------------------------------------------------------------------
+
+/** A stable, bounded token for the exchange-challenge cache. */
+function inlineExchangeToken(localExchangeId: string): string {
+    const hash = createHash('sha256').update(localExchangeId).digest('hex');
+    return `inline:${hash}`;
+}
+
+// -------------------------------------------------------------------------
+// Unified handler
+// -------------------------------------------------------------------------
+
+async function handleInlineExchange(
+    localExchangeId: string,
+    verifiablePresentation: VP | undefined,
+    domain: string
+) {
+    const decoded = decodeInlineBytes(localExchangeId);
+
+    // Branch 1a: SDK-produced URL envelope `{v:1, url, presenting?}`. The
+    // presenting origin is reconciled against the fetch origin via eTLD+1
+    // to produce a server-verified `awardedByDomain`.
+    const envelope = tryParseInlineSrcEnvelope(decoded);
+    if (envelope) {
+        return handleInlineSrcClaim(envelope.url.href, envelope.presenting);
+    }
+
+    // Branch 1b: Legacy raw URL string. No presenting signal — fetch origin
+    // alone drives the verified domain. Kept for backward compatibility with
+    // older SDK builds and manual URL construction.
+    const srcUrl = looksLikeHttpsUrl(decoded);
+    if (srcUrl) {
+        return handleInlineSrcClaim(srcUrl, undefined);
+    }
+
+    // Branch 2: inline JSON. Classify, then route to signed (1-step) or
+    // unsigned (DIDAuth 2-step).
+    const payload = classifyJsonPayload(decoded);
+    if (payload.kind === 'signed') {
+        const vp = await issueResponsePresentationWithVcs([payload.vc]);
+        return { verifiablePresentation: vp };
+    }
+
+    // Unsigned JSON: require DIDAuth to bind the holder.
+    if (!verifiablePresentation) {
+        return initiateInlineDidAuth(localExchangeId, domain);
+    }
+    return completeInlineDidAuth(localExchangeId, payload.vc, verifiablePresentation, domain);
+}
+
+async function handleInlineSrcClaim(srcUrl: string, presenting?: string) {
+    const parsedUrl = new URL(srcUrl);
+
+    // SSRF guard (partner allowlist retired — trust is anchored on the
+    // verified fetch origin via awardedByDomain). Rejects internal hosts,
+    // private/loopback/link-local IPs, and hostnames that resolve into those
+    // ranges. See inline-src.helpers.ts for the full policy.
+    try {
+        await assertInlineSrcSafe(parsedUrl);
+    } catch (err: unknown) {
+        if (err instanceof InlineSrcUrlRejected) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+        }
+        throw err;
+    }
+
+    const body = await fetchInlineSrc(parsedUrl);
+    const payload = classifyParsedPayload(body);
+
+    // Two-signal domain reconciliation. For pre-signed VCs we do not mutate
+    // the credential (it would invalidate the partner's signature), so the
+    // verified origin is advisory for that branch. For unsigned VCs we attach
+    // it as `credentialSubject.awardedByDomain` before LearnCard signs.
+    const verifiedOrigin = reconcileAwardedByDomain(parsedUrl, presenting);
+
+    let vc: VC;
+    if (payload.kind === 'signed') {
+        vc = payload.vc;
+    } else {
+        // Unsigned VC fetched from partner: we don't have a holder DID here
+        // (this branch is 1-step for backward-compatibility). Sign with
+        // LearnCard DID, preserve partner's declared issuer as awardedBy,
+        // and attach the server-verified domain as awardedByDomain.
+        const learnCard = await getLearnCard();
+        const withIssuer = preserveIssuer(payload.vc, learnCard.id.did());
+        const withOrigin = attachVerifiedOrigin(withIssuer, verifiedOrigin);
+        vc = (await learnCard.invoke.issueCredential(withOrigin)) as VC;
+    }
+
+    const vp = await issueResponsePresentationWithVcs([vc]);
+    return { verifiablePresentation: vp };
+}
+
+async function initiateInlineDidAuth(localExchangeId: string, domain: string) {
+    const token = inlineExchangeToken(localExchangeId);
+    const challenge = randomUUID();
+    await setValidExchangeChallengeForToken(token, challenge);
+
+    return {
+        verifiablePresentationRequest: {
+            query: [
+                {
+                    type: 'DIDAuthentication',
+                    acceptedMethods: [{ method: 'key' }, { method: 'web' }],
+                },
+            ],
+            // Composite format so the wallet echoes our token back alongside
+            // the challenge (same convention as handleInboxClaimInitiation).
+            challenge: `${token}:${challenge}`,
+            domain,
+        },
+    };
+}
+
+async function completeInlineDidAuth(
+    localExchangeId: string,
+    unsigned: UnsignedVC,
+    verifiablePresentation: VP,
+    domain: string
+) {
+    // 1. Extract & parse the composite challenge.
+    const proofChallenge = Array.isArray(verifiablePresentation.proof)
+        ? verifiablePresentation.proof[0]?.challenge
+        : verifiablePresentation.proof?.challenge;
+
+    if (!proofChallenge) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Verifiable presentation must include challenge in proof',
+        });
+    }
+
+    const parts = proofChallenge.split(':');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid challenge format' });
+    }
+    const [echoedToken, challenge] = parts;
+
+    const expectedToken = inlineExchangeToken(localExchangeId);
+    if (echoedToken !== expectedToken) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Challenge does not belong to this exchange',
+        });
+    }
+
+    // 2. Check the challenge is still valid and not already exhausted.
+    const state = await getExchangeChallengeStateForToken(expectedToken, challenge);
+    if (!state || state === EXHAUSTED) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid or expired exchange challenge',
+        });
+    }
+
+    // 3. Cryptographically verify the DIDAuth VP.
+    const learnCard = await getEmptyLearnCard();
+    const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
+        challenge: proofChallenge,
+        domain,
+    });
+    if (
+        verificationResult.errors.length > 0 ||
+        !verificationResult.checks.includes('proof')
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Verifiable presentation verification failed',
+        });
+    }
+
+    const holderDid = verifiablePresentation.holder;
+    if (!holderDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Verifiable presentation must include holder DID',
+        });
+    }
+
+    // 4. Issue the VC bound to the holder.
+    const signed = await bindAndSignInlineCredential(unsigned, holderDid);
+
+    // 5. Exhaust the challenge so it can't be replayed.
+    await exhaustExchangeChallengeForToken(expectedToken, challenge);
+
+    const vp = await issueResponsePresentationWithVcs([signed]);
+    return { verifiablePresentation: vp };
 }
 
 export type WorkflowsRouter = typeof workflowsRouter;

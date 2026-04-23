@@ -87,6 +87,7 @@
         "neogma": "1.13.0",
         "postmark": "^4.0.5",
         "sift": "^17.0.1",
+        "tldts": "^6.1.48",
         "trpc-to-openapi": "^3.1.0",
         "tsc-alias": "^1.8.10",
         "zod-openapi": "^5.0.1",

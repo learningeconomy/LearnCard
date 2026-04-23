@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Badge Claim — Unsigned VC from data-src</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="./shared.css" />
+    </head>
+    <body>
+        <div class="shell">
+            <nav class="nav"><a href="./index.html">← All examples</a></nav>
+
+            <div id="host-switcher"></div>
+
+            <h1>Unsigned VC from <code>data-src</code></h1>
+            <p>
+                Partner hosts an unsigned credential template. LearnCard fetches it,
+                signs it with its issuer DID, and hands the signed VC to the wallet.
+                Simplest partner integration — no signing infrastructure required.
+            </p>
+
+            <div class="card">
+                <h2>The one line you paste</h2>
+                <pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/badge-claim.js" async
+        data-src="https://learncard.app/demo-badges/accountability-unsigned.json"
+        data-mode="both"&gt;&lt;/script&gt;</code></pre>
+                <p class="hint">
+                    Replace <code>data-src</code> with your own public HTTPS URL in
+                    production. This demo fixture lives on learncard.app so the claim
+                    completes end-to-end without any partner hosting.
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>Rendered widget</h2>
+                <div class="demo-mount" id="mount"></div>
+                <div class="hint">Generated claim URL:</div>
+                <code class="generated-url" data-testid="generated-url">loading…</code>
+            </div>
+        </div>
+
+        <!--
+          data-src       → default: deployed fixture, claim works end-to-end in prod.
+          data-src-local → host switcher swaps in this value when "Local" is selected,
+                           so the whole round-trip (fetch + sign) stays on localhost.
+        -->
+        <div
+            class="badge-claim-root"
+            data-src="https://learncard.app/demo-badges/accountability-unsigned.json"
+            data-src-local="/badges/accountability-unsigned.json"
+            data-mode="both"
+            data-target="#mount"
+        ></div>
+        <script src="./host-switcher.js"></script>
+        <script src="./capture-url.js"></script>
+    </body>
+</html>

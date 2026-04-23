@@ -1,0 +1,210 @@
+/* Shared styles for the badge-claim example demos. */
+:root {
+    --bg: #fbfbfc;
+    --card: #ffffff;
+    --text: #18224e;
+    --text-muted: #6f7590;
+    --text-hint: #8b91a7;
+    --border: #e2e3e9;
+    --border-subtle: #eff0f5;
+    --accent: #18224e;
+    --code-bg: #f7f8fb;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+}
+
+.nav {
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.nav a:hover {
+    color: var(--text);
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+}
+
+h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 32px 0 12px;
+}
+
+p {
+    color: var(--text-muted);
+    margin: 0 0 16px;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.demo-mount {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+}
+
+pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    color: #353e64;
+    margin: 0 0 16px;
+}
+
+code {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 1px 5px;
+}
+
+.generated-url {
+    display: block;
+    word-break: break-all;
+    padding: 12px 14px;
+    background: var(--code-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: #52597a;
+    margin-top: 12px;
+}
+
+.badge-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.badge-list li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.badge-list li:last-child {
+    border-bottom: none;
+}
+
+.badge-list a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.badge-list a:hover {
+    text-decoration: underline;
+}
+
+.badge-list p {
+    margin: 4px 0 0;
+    font-size: 13px;
+}
+
+.hint {
+    font-size: 13px;
+    color: var(--text-hint);
+    margin-top: 12px;
+}
+
+.host-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    font-size: 13px;
+}
+
+.host-switcher__label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.host-switcher__group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.host-switcher__btn {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.host-switcher__btn:hover {
+    background: #f7f8fb;
+    color: var(--text);
+}
+
+.host-switcher__btn--active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.host-switcher__btn--active:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.host-switcher__current {
+    margin-left: auto;
+    padding: 4px 10px;
+    background: var(--code-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #52597a;
+}

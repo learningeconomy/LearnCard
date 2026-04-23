@@ -24,6 +24,11 @@ const parseInteractionUrl = (url: string): { workflowId: string; interactionId: 
   return null;
 };
 
+// Workflows that encode their full payload in the interactionId (base64url).
+// These need an explicit size cap to prevent abuse / DoS via giant URLs.
+const INLINE_WORKFLOWS = new Set(['inline', 'inline-unsigned', 'inline-src']);
+const MAX_INLINE_ID_LEN = 4096; // ~3KB decoded; tune for QR density targets
+
 /**
  * Resolve the LCN API URL for the current tenant.
  * Priority: env override → tenant config → deploy-context fallback.
@@ -70,6 +75,17 @@ export default async (request: Request, context: Context) => {
   }
 
   const { workflowId, interactionId } = parsedData;
+
+  // Inline workflows (`inline`, `inline-unsigned`, `inline-src`) encode the full
+  // credential payload in the interactionId. Cap the length here at the edge so
+  // oversized URLs never reach brain-service.
+  if (INLINE_WORKFLOWS.has(workflowId) && interactionId.length > MAX_INLINE_ID_LEN) {
+    return new Response("Inline payload too large.", {
+      status: 413,
+      headers: { "Content-Type": "text/plain", ...corsHeaders },
+    });
+  }
+
   const vcapiUrl = `${LCN_API_URL}/workflows/${workflowId}/exchanges/${interactionId}`;
 
   const tenantOrigin = getTenantOrigin(interactionUrl);

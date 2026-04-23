@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Badge Claim — Custom target</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="./shared.css" />
+    </head>
+    <body>
+        <div class="shell">
+            <nav class="nav"><a href="./index.html">← All examples</a></nav>
+
+            <div id="host-switcher"></div>
+
+            <h1>Custom mount via <code>data-target</code></h1>
+            <p>
+                By default the widget is auto-placed where the <code>&lt;script&gt;</code> tag
+                appears. Passing <code>data-target="#selector"</code> mounts it inside an
+                existing element — useful when the script must live in <code>&lt;head&gt;</code>
+                or when the layout dictates a specific anchor.
+            </p>
+
+            <div class="card">
+                <h2>The one line you paste</h2>
+                <pre><code>&lt;div id="claim-here"&gt;&lt;/div&gt;
+
+&lt;script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/badge-claim.js" async
+        data-src="https://learncard.app/demo-badges/accountability-unsigned.json"
+        data-target="#claim-here"
+        data-mode="both"&gt;&lt;/script&gt;</code></pre>
+            </div>
+
+            <div class="card">
+                <h2>Rendered widget</h2>
+                <p class="hint">
+                    The script tag is at the bottom of <code>&lt;body&gt;</code>, but the widget
+                    renders into the <code>#claim-here</code> <code>&lt;div&gt;</code> below.
+                </p>
+                <div class="demo-mount">
+                    <div id="claim-here"></div>
+                </div>
+                <div class="hint">Generated claim URL:</div>
+                <code class="generated-url" data-testid="generated-url">loading…</code>
+            </div>
+        </div>
+
+        <div
+            class="badge-claim-root"
+            data-src="https://learncard.app/demo-badges/accountability-unsigned.json"
+            data-src-local="/badges/accountability-unsigned.json"
+            data-mode="both"
+            data-target="#claim-here"
+        ></div>
+        <script src="./host-switcher.js"></script>
+        <script src="./capture-url.js"></script>
+    </body>
+</html>

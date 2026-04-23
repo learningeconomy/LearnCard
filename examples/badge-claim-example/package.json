@@ -1,0 +1,14 @@
+{
+    "name": "badge-claim-example",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Static example pages demonstrating the LearnCard @learncard/embed-sdk badge-claim.js one-liner embed across every supported mode.",
+    "scripts": {
+        "start": "node serve.js",
+        "test:e2e": "playwright test",
+        "test:e2e:headed": "playwright test --headed"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.48.0"
+    }
+}

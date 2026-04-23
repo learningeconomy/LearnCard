@@ -1,0 +1,27 @@
+{
+    "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    ],
+    "id": "urn:uuid:demo-badge-accountability-unsigned",
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "issuer": {
+        "id": "https://partner.example.com/issuers/map-my-future",
+        "type": "Profile",
+        "name": "Map My Future"
+    },
+    "issuanceDate": "2024-09-01T00:00:00Z",
+    "name": "Accountability",
+    "credentialSubject": {
+        "type": "AchievementSubject",
+        "achievement": {
+            "id": "urn:uuid:achievement-accountability",
+            "type": "Achievement",
+            "name": "Accountability",
+            "description": "Awarded for demonstrating accountability in team collaboration exercises.",
+            "criteria": {
+                "narrative": "Recipient consistently followed through on commitments and communicated proactively across a six-week cohort."
+            }
+        }
+    }
+}

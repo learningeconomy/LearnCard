@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>LearnCard Badge Claim — Examples</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="./shared.css" />
+    </head>
+    <body>
+        <div class="shell">
+            <div id="host-switcher"></div>
+
+            <h1>Badge Claim SDK — Examples</h1>
+            <p>
+                Every demo below embeds <code>badge-claim.js</code> with a different set of
+                <code>data-*</code> attributes. View source on any page to see the exact
+                one-line <code>&lt;script&gt;</code> tag a partner would paste.
+            </p>
+
+            <div class="card">
+                <h2>Source modes</h2>
+                <ul class="badge-list">
+                    <li>
+                        <a href="./signed.html">Pre-signed VC from <code>data-src</code></a>
+                        <p>
+                            Partner hosts a pre-signed OBv3 credential; LearnCard wraps it in
+                            a VP at claim time. Cryptographic issuer of record: partner.
+                        </p>
+                    </li>
+                    <li>
+                        <a href="./unsigned.html">Unsigned VC from <code>data-src</code> (DIDAuth)</a>
+                        <p>
+                            Partner hosts an unsigned credential; LearnCard and the wallet
+                            perform a DIDAuth round-trip, then LearnCard signs with the
+                            holder's DID bound in as subject. Partner issuer is preserved as
+                            <code>credentialSubject.awardedBy</code>.
+                        </p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Display modes</h2>
+                <ul class="badge-list">
+                    <li>
+                        <a href="./qr-only.html"><code>data-mode="qr"</code></a>
+                        <p>QR code only — best for print or in-person display.</p>
+                    </li>
+                    <li>
+                        <a href="./button-only.html"><code>data-mode="button"</code></a>
+                        <p>Button only — best for mobile-first web flows.</p>
+                    </li>
+                    <li>
+                        <a href="./custom-target.html"
+                            >Custom mount point via <code>data-target</code></a
+                        >
+                        <p>Mount the widget into an existing element of your layout.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <p class="hint">
+                Use the host switcher at the top to flip every demo between Production,
+                Staging, VetPass, and a local Netlify dev server at
+                <code>http://localhost:8888</code>. Your selection is stored in
+                <code>localStorage</code> and persists across pages.
+            </p>
+        </div>
+
+        <script src="./host-switcher.js"></script>
+    </body>
+</html>

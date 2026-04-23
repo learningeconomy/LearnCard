@@ -65,4 +65,25 @@ export default [
     output: [{ file: pkg.types, format: 'es' }],
     plugins: [dts()],
   },
+  // Separate IIFE bundle for the one-line `<script src="...badge-claim.js">` embed.
+  // Self-executing: reads data-* attributes from its own <script> tag and renders
+  // a button/QR immediately. No global namespace footprint required.
+  {
+    input: 'src/badge-claim.ts',
+    output: {
+      file: 'dist/badge-claim.js',
+      format: 'iife',
+      name: 'LearnCardBadgeClaim',
+      sourcemap: true,
+    },
+    plugins: [
+      replace({
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+        preventAssignment: true,
+      }),
+      resolve({ browser: true }),
+      commonjs(),
+      esbuild({ target: 'es2019', minify: process.env.NODE_ENV === 'production' }),
+    ],
+  },
 ];
