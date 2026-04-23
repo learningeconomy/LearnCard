@@ -1,6 +1,12 @@
 import moment from 'moment';
-import { VerificationItem, BoostRecipientInfo, LCNBoostStatusEnum, VC } from '@learncard/types';
-import { BoostCMSAppearanceDisplayTypeEnum } from './boost';
+import {
+    VerificationItem,
+    BoostRecipientInfo,
+    LCNBoostStatusEnum,
+    UnsignedVC,
+    VC,
+} from '@learncard/types';
+import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSMediaAttachment } from './boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
 import {
@@ -19,6 +25,26 @@ import {
 } from 'learn-card-base';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from './boost-options/boostOptions';
 import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
+
+type SendBoostCredentialOptions = {
+    skipNotification?: boolean;
+    mediaAttachments?: BoostCMSMediaAttachment[];
+};
+
+const getRecipientMediaAttachmentSendOptions = (
+    mediaAttachments: BoostCMSMediaAttachment[] = []
+) => {
+    const evidence = convertAttachmentsToEvidence(mediaAttachments);
+
+    if (evidence.length === 0) return {};
+
+    return {
+        overideFn: (boost: UnsignedVC): UnsignedVC => ({
+            ...boost,
+            evidence: [...(boost.evidence ?? []), ...evidence],
+        }),
+    };
+};
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
     const fallbackName = isCustomBoostType(state.basicInfo.achievementType ?? '')
@@ -303,7 +329,7 @@ export const sendBoostCredential = async (
     wallet: BespokeLearnCard,
     profileId: string,
     boostUri: string,
-    options: { skipNotification: boolean } = {
+    options: SendBoostCredentialOptions = {
         skipNotification: false,
     }
 ) => {
@@ -311,8 +337,9 @@ export const sendBoostCredential = async (
     if (!boostUri) throw new Error('Send Boost Error, boostUri is required, but none provided');
     // send boost to profileId
     const sentBoostUri = await wallet?.invoke?.sendBoost(profileId, boostUri, {
-        skipNotification: options?.skipNotification,
+        skipNotification: options?.skipNotification ?? false,
         encrypt: true,
+        ...getRecipientMediaAttachmentSendOptions(options?.mediaAttachments),
     });
     // anytime you use sendboost the crednetial sent to other person is wrapped
 
@@ -345,13 +372,14 @@ export const addBoostSomeone = async (
     wallet: BespokeLearnCard,
     profileId: string,
     boostUri: string,
-    options: { skipNotification: boolean } = {
+    options: SendBoostCredentialOptions = {
         skipNotification: false,
     }
 ) => {
     const sentBoost = await wallet?.invoke?.sendBoost(profileId, boostUri, {
-        skipNotification: options?.skipNotification,
+        skipNotification: options?.skipNotification ?? false,
         encrypt: true,
+        ...getRecipientMediaAttachmentSendOptions(options?.mediaAttachments),
     });
     return sentBoost;
 };
