@@ -38,7 +38,7 @@ const RecipientMediaAttachmentsModal: React.FC<RecipientMediaAttachmentsModalPro
                     Media Attachments
                 </p>
             }
-            showCloseButton={false}
+            showCloseButton={true}
         />
     );
 };

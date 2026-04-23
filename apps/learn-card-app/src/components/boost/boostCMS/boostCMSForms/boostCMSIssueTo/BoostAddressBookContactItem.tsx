@@ -93,8 +93,9 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
             <RecipientMediaAttachmentsModal recipient={contact} setIssueTo={_setIssueTo} />,
             {
                 sectionClassName: '!max-w-[500px]',
-                hideButton: false,
+                hideButton: true,
                 usePortal: true,
+                portalClassName: '!max-w-[500px]',
             },
             {
                 desktop: ModalTypes.Cancel,
