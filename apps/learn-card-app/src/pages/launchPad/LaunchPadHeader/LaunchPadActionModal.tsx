@@ -676,12 +676,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     let actions = RoleActions[activeRole] ?? [];
     if (activeRole === LearnCardRolesEnum.guardian) {
         if (familyCredential) {
-            const filteredActions = actions.filter(a => a !== 'Create Family');
-            const addToLearnCard = filteredActions.find(a => a === 'Add to LearnCard');
-            const otherActions = filteredActions.filter(a => a !== 'Add to LearnCard');
-            actions = addToLearnCard
-                ? [addToLearnCard, 'View Family', ...otherActions]
-                : ['View Family', ...otherActions];
+            actions = [
+                'Add to LearnCard',
+                'View Family',
+                ...actions.filter(a => a !== 'Create Family' && a !== 'Add to LearnCard'),
+            ];
         } else {
             actions = actions.filter(a => a !== 'View Family');
         }
