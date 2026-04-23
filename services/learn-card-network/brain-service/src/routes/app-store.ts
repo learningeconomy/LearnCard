@@ -78,10 +78,23 @@ import type {
     AppStoreListingUpdateType,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import {
+    sendBoost,
+    isDraftBoost,
+    appendTemplateEvidenceToCredential,
+} from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
-import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
+import {
+    renderBoostTemplate,
+    parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
+} from '@helpers/template.helpers';
+import {
+    getAppDidWeb,
+    getDidWeb,
+    getProfileIdFromDid,
+    getProfileIdFromString,
+} from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import {
     getContractTermsForProfile,
@@ -612,12 +625,14 @@ const handleSendCredentialEvent = async (
 
     try {
         let boostJsonString = boost.boost;
+        const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
         if (templateData && Object.keys(templateData).length > 0) {
             boostJsonString = renderBoostTemplate(boostJsonString, templateData);
         }
 
         unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+        appendTemplateEvidenceToCredential(unsignedVc, templateData, allowAutoAppendEvidence);
 
         if (isVC2Format(unsignedVc)) {
             unsignedVc.validFrom = new Date().toISOString();
@@ -1046,10 +1061,7 @@ const handleRequestLearnerContextEvent = async (
             const contractDetails = await getContractDetailsByUri(contractUri);
 
             if (contractDetails?.contract) {
-                const terms = await getContractTermsForProfile(
-                    profile,
-                    contractDetails.contract
-                );
+                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
 
                 if (event.includeCredentials && terms?.terms?.read?.credentials) {
                     const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
@@ -2266,7 +2278,13 @@ export const appStoreRouter = t.router({
             }
 
             if (eventType === 'request-learner-context') {
-                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event, listing);
+                return handleRequestLearnerContextEvent(
+                    ctx,
+                    profile,
+                    resolvedListingId,
+                    event,
+                    listing
+                );
             }
 
             if (eventType === 'send-notification') {
