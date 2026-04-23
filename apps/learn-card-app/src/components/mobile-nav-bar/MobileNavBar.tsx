@@ -12,6 +12,7 @@ import CustomSpinner from '../svgs/CustomSpinner';
 import BurgerIcon from '../../components/svgs/Burger';
 import AddToLearnCardMenu from '../../components/add-to-learncard-menu/AddToLearnCardMenu';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 
 import {
     getNavBarColor,
@@ -62,7 +63,10 @@ const MobileNavBar: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const isWalletSyncing = walletStore.useTracked.syncState();
 
-    const { newModal } = useModal();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Freeform,
+        mobile: ModalTypes.Freeform,
+    });
     const { gate } = useLCNGatedAction();
     const { data } = useGetUnreadUserNotifications();
 
@@ -73,16 +77,10 @@ const MobileNavBar: React.FC = () => {
         const { prompted } = await gate();
         if (prompted) return;
 
-        newModal(
-            <AddToLearnCardMenu />,
-            {
-                sectionClassName: '!max-w-[500px]',
-            },
-            {
-                desktop: ModalTypes.Cancel,
-                mobile: ModalTypes.Cancel,
-            }
-        );
+        newModal(<LaunchPadActionModal />, {
+            className: 'w-full flex items-center justify-center !bg-white/70 !backdrop-blur-[5px]',
+            sectionClassName: '!max-w-[500px] !disable-scrollbars',
+        });
     };
 
     const activePathname = location.pathname;
