@@ -16,7 +16,7 @@ export const ShareInsightsCard: React.FC<{}> = () => {
 
     return (
         <div className="w-full flex items-center justify-center max-h-[100px] h-[100px]">
-            <div className="w-full h-full bg-white rounded-[16px] flex items-center justify-between relative shadow-bottom-2-4 overflow-hidden">
+            <div className="w-full h-full bg-white rounded-[16px] flex items-center justify-between relative shadow-bottom-4-4 overflow-hidden">
                 <div className="pl-4 flex items-center">
                     <ProfilePicture
                         customContainerClass="flex w-[70px] text-white min-w-[70px] h-[70px] min-h-[70px] items-center justify-center rounded-full overflow-hidden object-cover"
