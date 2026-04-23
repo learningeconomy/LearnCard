@@ -36,7 +36,7 @@ import EditGoalsModal from './EditGoalsModal';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import GrowSkillsModal from './GrowSkillsModal';
-import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
+import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard.types';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 import ExploreRoles from './ExploreRoles';
 
