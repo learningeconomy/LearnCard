@@ -153,6 +153,9 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
             topicBoost?: Boost;
             topicVc?: VC;
             sessions?: Boost[];
+            hasUnfinishedSessions?: boolean;
+            hasFinishedSessions?: boolean;
+            unfinishedSessionsCount?: number;
         }[]
     >({
         queryKey: ['useGetEnrichedTopicsList', credentials, switchedDid ?? ''],
@@ -185,11 +188,54 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                         })
                     )?.records;
 
+                    const sessionStatuses = await Promise.all(
+                        (sessions ?? []).map(async sessionBoost => {
+                            const sessionRecord = await getOrFetchCredentialRecordForBoost(
+                                sessionBoost.uri,
+                                initWallet,
+                                queryClient
+                            );
+                            const sessionVc = sessionRecord?.uri
+                                ? await getOrFetchResolvedCredential(
+                                      sessionRecord.uri,
+                                      initWallet,
+                                      queryClient
+                                  )
+                                : undefined;
+
+                            const assessmentChildren = (
+                                await wallet.invoke.getBoostChildren(sessionBoost.uri, {
+                                    query: {
+                                        category:
+                                            categoryMetadata[CredentialCategoryEnum.aiAssessment]
+                                                .contractCredentialTypeOverride,
+                                    },
+                                    limit: 1,
+                                })
+                            )?.records;
+
+                            const hasAssessment =
+                                (assessmentChildren?.length ?? 0) > 0 ||
+                                Boolean(sessionVc?.completed);
+
+                            return { hasAssessment, completed: Boolean(sessionVc?.completed) };
+                        })
+                    );
+
+                    const hasFinishedSessions = sessionStatuses.some(s => s.hasAssessment);
+                    const hasUnfinishedSessions = sessionStatuses.some(s => !s.hasAssessment);
+                    const unfinishedSessionsCount = sessionStatuses.filter(
+                        s => !s.hasAssessment
+                    ).length;
+
                     return {
                         topicRecord: record,
                         topicBoost,
                         topicVc,
                         sessions,
+                        hasUnfinishedSessions,
+                        hasFinishedSessions,
+                        unfinishedSessionsCount,
                     };
                 })
             );

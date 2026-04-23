@@ -12,11 +12,12 @@
                 "secondaryColor": "cyan-501",
                 "indicatorColor": "indigo-500",
                 "borderColor": "cyan-301",
-                "statusBarColor": "cyan-400",
+                "statusBarColor": "light",
                 "headerBrandingTextColor": "text-white",
-                "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-cyan-400",
-                "backgroundSecondaryColor": "cyan-200"
+                "headerTextColor": "text-grayscale-900",
+                "helperTextColor": "text-grayscale-600",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100"
             },
             "aiPathway": {
                 "primaryColor": "teal-300",
