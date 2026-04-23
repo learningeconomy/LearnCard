@@ -479,21 +479,19 @@ jobs:
             - name: Deploy LearnCloud Lambda
               run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  SERVER_URL: ${{ vars.SERVER_URL }}
-                  SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
+                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+                  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+                  SEED: ${{ secrets.SEED }}
+                  LEARN_CLOUD_CREDENTIALS: ${{ secrets.LEARN_CLOUD_CREDENTIALS }}
+                  LEARN_CLOUD_ROLE_ARN: ${{ secrets.LEARN_CLOUD_ROLE_ARN }}
                   LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
                   LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-                  XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
-                  XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
-                  XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
-                  RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
-                  RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
-                  JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+                  LEARN_CLOUD_AWS_REGION: ${{ secrets.LEARN_CLOUD_AWS_REGION }}
+                  LEARN_CLOUD_AWS_BUCKET: ${{ secrets.LEARN_CLOUD_AWS_BUCKET }}
+                  LEARN_CLOUD_DID_WEB_HOST: ${{ vars.LEARN_CLOUD_DID_WEB_HOST }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
                   SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -502,7 +500,7 @@ jobs:
 
     deploy-lca-api:
         name: Deploy LCA API Service
-        needs: [determine-affected, test-affected, build-native-plugin]
+        needs: [determine-affected, test-affected]
         if: |
             always() &&
             !cancelled() &&
@@ -516,12 +514,6 @@ jobs:
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
-
-            - name: Download native plugin binary
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -782,15 +774,18 @@ jobs:
                   echo "Project: $JIRA_PROJECT_KEY"
                   echo "Jira URL: $JIRA_BASE_URL"
 
-                  # Build the Basic auth header per Atlassian docs:
-                  # Base64-encode "email:api_token" and pass as Authorization header
-                  AUTH_HEADER="Authorization: Basic $(echo -n "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" | base64)"
-
                   # Look up the Jira project ID from the project key
-                  PROJECT_RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -H "${AUTH_HEADER}" \
+                  set +e
+                  PROJECT_RESPONSE=$(curl -sS -w "\n%{http_code}" \
+                    -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
                     -H "Content-Type: application/json" \
                     "${JIRA_BASE_URL}/rest/api/3/project/${JIRA_PROJECT_KEY}")
+                  CURL_EXIT=$?
+                  set -e
+                  if [[ "$CURL_EXIT" -ne 0 ]]; then
+                    echo "::warning::Failed to fetch Jira project due to curl error ${CURL_EXIT}"
+                    exit 0
+                  fi
 
                   HTTP_CODE=$(echo "$PROJECT_RESPONSE" | tail -n1)
                   PROJECT_BODY=$(echo "$PROJECT_RESPONSE" | sed '$d')
@@ -801,10 +796,15 @@ jobs:
                   fi
 
                   PROJECT_ID=$(echo "$PROJECT_BODY" | jq -r '.id')
+                  if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "null" ]]; then
+                    echo "::warning::Failed to extract Jira project ID from response: $PROJECT_BODY"
+                    exit 0
+                  fi
 
                   # Create the release version
-                  RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -H "${AUTH_HEADER}" \
+                  set +e
+                  RESPONSE=$(curl -sS -w "\n%{http_code}" \
+                    -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
                     -H "Content-Type: application/json" \
                     -X POST "${JIRA_BASE_URL}/rest/api/3/version" \
                     -d "{
@@ -814,6 +814,12 @@ jobs:
                       \"releaseDate\": \"$(date -u +%Y-%m-%d)\",
                       \"description\": \"Deployed from commit ${GITHUB_SHA} via GitHub Actions\"
                     }")
+                  CURL_EXIT=$?
+                  set -e
+                  if [[ "$CURL_EXIT" -ne 0 ]]; then
+                    echo "::warning::Failed to create Jira release due to curl error ${CURL_EXIT}"
+                    exit 0
+                  fi
 
                   HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
                   BODY=$(echo "$RESPONSE" | sed '$d')
