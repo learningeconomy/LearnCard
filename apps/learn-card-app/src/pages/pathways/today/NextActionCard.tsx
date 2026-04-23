@@ -23,12 +23,14 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { arrowForwardOutline, openOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
+import { useHistory } from 'react-router-dom';
 
+import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { mcpRegistryStore } from '../../../stores/pathways';
+import { buildInAppHref, resolveNodeAction } from '../core/action';
 import type { PathwayNode, ScoredCandidate } from '../types';
 
 import {
-    getNodeEarnLink,
     type Journey,
     journeyLabel,
     policyLabel,
@@ -62,6 +64,8 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
     const primaryReason = scored.reasons[0];
     const policy = node.stage.policy;
     const policyKind = policy.kind;
+    const history = useHistory();
+    const analytics = useAnalytics();
 
     // Look up the MCP server's human-readable label for `external`
     // policies so the CTA reads "Open in Figma" rather than "Open the
@@ -72,6 +76,12 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
         policy.kind === 'external'
             ? mcpServers[policy.mcp.serverId]?.label ?? null
             : null;
+
+    // Resolve the action once and dispatch on its kind. The resolver
+    // falls back from an explicit `node.action` to the legacy
+    // earn-url / policy-mcp signals, so pre-action pathways keep
+    // working. See `core/action.ts` for the precedence rules.
+    const resolved = resolveNodeAction(node);
 
     return (
         <motion.article
@@ -175,18 +185,22 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
             )}
 
             {(() => {
-                // Split label and external target: if the node carries a
-                // real `earnUrl` (CTDL-imported credential), render the
-                // CTA as an `<a target="_blank">` so clicking jumps to
-                // the issuer page. Still fire `onOpen` so the node
-                // detail is waiting in-app when the learner switches
-                // tabs back. Not-started only — once they're mid-flight,
-                // the in-app detail is the honest destination.
+                // Dispatch on the resolved action kind. Kinds we treat
+                // as "navigate out" render an `<a target="_blank">` and
+                // also fire `onOpen` so the in-app NodeDetail is waiting
+                // when the learner switches back. Kinds we treat as
+                // "navigate in" (in-app-route, app-listing) use
+                // `history.push`. Unsupported-at-the-CTA-layer kinds
+                // (mcp-tool, none) fall back to the plain onOpen path —
+                // NodeDetail is where the work actually happens.
+                //
+                // We suppress the earn-link redirect once the learner
+                // is mid-flight (status !== 'not-started'). The
+                // in-app detail is the honest destination from that
+                // point on; a re-click should reopen the overlay, not
+                // jump away.
                 const label = resolveNodeCallToAction(node, mcpLabel);
-                const earnLink =
-                    node.progress.status === 'not-started'
-                        ? getNodeEarnLink(node)
-                        : null;
+                const active = node.progress.status === 'not-started';
 
                 const ctaClass =
                     `group w-full py-3.5 px-5 rounded-[20px] bg-grayscale-900 text-white
@@ -194,21 +208,42 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                      flex items-center justify-center gap-2
                      shadow-md shadow-grayscale-900/20`;
 
+                // Swap the arrow icon for an "external" glyph only when
+                // the click will actually leave the app. `app-listing`
+                // and `in-app-route` stay internal — they navigate
+                // inside LearnCard — so they keep the forward arrow.
+                const leavesApp = active && resolved.kind === 'external-url';
+
                 const icon = (
                     <IonIcon
-                        icon={earnLink ? openOutline : arrowForwardOutline}
+                        icon={leavesApp ? openOutline : arrowForwardOutline}
                         className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
                         aria-hidden
                     />
                 );
 
-                if (earnLink) {
+                const track = (destination: string) =>
+                    analytics.track(AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED, {
+                        nodeId: node.id,
+                        kind: resolved.kind,
+                        source: resolved.source,
+                        destination,
+                    });
+
+                // `external-url` → anchor (real external target). Anchor
+                // still fires `onOpen` so NodeDetail loads in the
+                // background tab — same pattern the old earn-link CTA
+                // used, just driven by the resolver now.
+                if (active && resolved.kind === 'external-url') {
                     return (
                         <motion.a
-                            href={earnLink.href}
+                            href={resolved.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={onOpen}
+                            onClick={() => {
+                                track(resolved.url);
+                                onOpen();
+                            }}
                             whileTap={{ scale: 0.97 }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             className={ctaClass}
@@ -220,10 +255,62 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                     );
                 }
 
+                // `in-app-route` → navigate inside the app.
+                if (active && resolved.kind === 'in-app-route') {
+                    const href = buildInAppHref(resolved);
+
+                    return (
+                        <motion.button
+                            type="button"
+                            onClick={() => {
+                                track(href);
+                                onOpen();
+                                history.push(href);
+                            }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            className={ctaClass}
+                        >
+                            <span>{label}</span>
+                            {icon}
+                        </motion.button>
+                    );
+                }
+
+                // `app-listing` → learner-facing listing page.
+                if (active && resolved.kind === 'app-listing') {
+                    const href = `/app/${encodeURIComponent(resolved.listingId)}`;
+
+                    return (
+                        <motion.button
+                            type="button"
+                            onClick={() => {
+                                track(href);
+                                onOpen();
+                                history.push(href);
+                            }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            className={ctaClass}
+                        >
+                            <span>{label}</span>
+                            {icon}
+                        </motion.button>
+                    );
+                }
+
+                // Everything else (mcp-tool, none, already in-progress)
+                // — open the NodeDetail, where the work actually
+                // happens. We still emit a dispatch event so telemetry
+                // can distinguish "clicked in-app" from the external
+                // paths above.
                 return (
                     <motion.button
                         type="button"
-                        onClick={onOpen}
+                        onClick={() => {
+                            track('in-app:node-detail');
+                            onOpen();
+                        }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         className={ctaClass}

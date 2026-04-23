@@ -66,6 +66,20 @@ export const AnalyticsEvents = {
     PATHWAYS_CTDL_IMPORTED: 'pathways.ctdl.imported',
     PATHWAYS_CATALOG_BROWSED: 'pathways.catalog.browsed',
     PATHWAYS_CATALOG_SEARCHED: 'pathways.catalog.searched',
+
+    // Pathways — ActionDescriptor dispatch (docs § 3.7).
+    // Fires when a learner activates a node's primary CTA. `kind`
+    // carries the resolved `ActionDescriptor.kind` (including `none`
+    // for local-only nodes that fall back to the NodeDetail overlay);
+    // `source` is `'explicit' | 'earn-url' | 'mcp-policy' | 'none'`
+    // so we can measure how often authored descriptors drive dispatch
+    // versus legacy-field fallbacks.
+    PATHWAYS_ACTION_DISPATCHED: 'pathways.action.dispatched',
+
+    // Pathways — OutcomeSignal lifecycle (docs § 3.8).
+    PATHWAYS_OUTCOME_AUTOBIND_PROPOSED: 'pathways.outcome.autobindProposed',
+    PATHWAYS_OUTCOME_BOUND: 'pathways.outcome.bound',
+    PATHWAYS_OUTCOME_BINDING_CLEARED: 'pathways.outcome.bindingCleared',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -340,6 +354,51 @@ export interface AnalyticsEventPayloads {
         tagCount: number;
         /** How many entries survived the filter + query. */
         resultCount: number;
+    };
+
+    // -- Pathways — action dispatch (docs § 3.7) ----------------------------
+
+    [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
+        nodeId: string;
+        /** Resolved `ActionDescriptor.kind` at click time. */
+        kind: 'in-app-route' | 'app-listing' | 'external-url' | 'mcp-tool' | 'none';
+        /** How the resolver arrived at that kind. */
+        source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
+        /**
+         * Coarse destination label — a URL, route path, listing id,
+         * or literal like `'in-app:node-detail'`. Never carries learner
+         * PII (query strings are safe because our in-app hrefs don't
+         * embed identifiers, but callers should avoid building hrefs
+         * that do).
+         */
+        destination: string;
+    };
+
+    // -- Pathways — outcome signal lifecycle (docs § 3.8) -------------------
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_AUTOBIND_PROPOSED]: {
+        pathwayId: string;
+        outcomeId: string;
+        signalKind: string;
+        issuerTrustTier: 'self' | 'peer' | 'trusted' | 'institution';
+        /** The VC's numeric value when the signal is `score-threshold`. */
+        observedValue?: number | string;
+        outOfWindow: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_BOUND]: {
+        pathwayId: string;
+        outcomeId: string;
+        signalKind: string;
+        boundVia: 'auto' | 'manual';
+        outOfWindow: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_BINDING_CLEARED]: {
+        pathwayId: string;
+        outcomeId: string;
+        /** Why we cleared — learner disputed, issuer revoked, etc. */
+        reason?: string;
     };
 }
 

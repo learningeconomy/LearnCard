@@ -9,6 +9,7 @@
 import { z } from 'zod';
 
 import { PathwayNodeSchema, EdgeSchema } from './pathway';
+import { OutcomeBindingSchema } from './outcome';
 
 // -----------------------------------------------------------------
 // Agent capabilities (docs § 7.2) — what the agent layer must do.
@@ -72,6 +73,28 @@ export const PathwayDiffSchema = z.object({
      * walk. Pass an empty array to clear chosenRoute.
      */
     setChosenRoute: z.array(z.string().uuid()).optional(),
+
+    /**
+     * **Outcome bindings** — record (or clear) which wallet credential
+     * satisfied a pathway's `outcomes[i]`. The credential binder
+     * (`agents/credentialBinder.ts`) emits these when a new VC
+     * matches an outcome predicate; the learner still confirms the
+     * binding (agents never write outcome state directly).
+     *
+     * Each entry targets a single outcome by id. `binding === null`
+     * clears a previous binding (the learner disputed the match, or
+     * an issuer was revoked). Unknown outcome ids are silently
+     * ignored at apply time so a stale proposal can't wedge the
+     * pathway.
+     */
+    setOutcomeBindings: z
+        .array(
+            z.object({
+                outcomeId: z.string().uuid(),
+                binding: OutcomeBindingSchema.nullable(),
+            }),
+        )
+        .optional(),
 
     // For Planner drafting an entire new pathway.
     newPathway: z

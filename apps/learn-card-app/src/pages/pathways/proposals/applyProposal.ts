@@ -19,6 +19,7 @@ import { wouldCreateCycle, type PathwayMap } from '../core/composition';
 import type {
     Edge,
     NodePatch,
+    OutcomeSignal,
     Pathway,
     PathwayNode,
     Proposal,
@@ -102,6 +103,59 @@ const mergeNodePatch = (node: PathwayNode, patch: NodePatch, now: string): Pathw
     endorsements: node.endorsements,
     updatedAt: now,
 });
+
+// -----------------------------------------------------------------
+// Outcome binding application
+// -----------------------------------------------------------------
+
+type OutcomeBindingPatch = NonNullable<Proposal['diff']['setOutcomeBindings']>[number];
+
+/**
+ * Apply a set of outcome binding patches to the pathway's outcomes.
+ *
+ * Returns the *same* reference when nothing changes, so
+ * `applyProposal` can preserve reference equality (and not emit a
+ * phantom `outcomes` key) on proposals that don't touch outcomes.
+ *
+ * Unknown outcome ids are silently dropped — a stale proposal
+ * referring to a deleted signal shouldn't wedge the pathway. The UI
+ * that lists outcomes can separately surface "this proposal is
+ * stale" based on the proposal's own lifecycle.
+ */
+const applyOutcomeBindings = (
+    outcomes: readonly OutcomeSignal[] | undefined,
+    patches: readonly OutcomeBindingPatch[] | undefined,
+): OutcomeSignal[] | undefined => {
+    if (!patches || patches.length === 0) return outcomes as OutcomeSignal[] | undefined;
+    if (!outcomes || outcomes.length === 0) return outcomes as OutcomeSignal[] | undefined;
+
+    const byId = new Map<string, OutcomeBindingPatch>();
+    for (const patch of patches) byId.set(patch.outcomeId, patch);
+
+    let changed = false;
+
+    const next = outcomes.map(outcome => {
+        const patch = byId.get(outcome.id);
+
+        if (!patch) return outcome;
+
+        // `binding: null` clears; anything else replaces. Always
+        // produces a new reference so downstream equality checks
+        // detect the change even when the value is structurally the
+        // same as what was there.
+        changed = true;
+
+        if (patch.binding === null) {
+            const { binding: _discard, ...rest } = outcome;
+
+            return rest as OutcomeSignal;
+        }
+
+        return { ...outcome, binding: patch.binding } as OutcomeSignal;
+    });
+
+    return changed ? next : (outcomes as OutcomeSignal[]);
+};
 
 export interface ApplyProposalOptions {
     /**
@@ -237,6 +291,15 @@ export const applyProposal = (
 
     const nextChosenRoute = pruneChosenRoute(sourceRoute, nextNodeIdSet);
 
+    // Resolve the next outcome list. Outcome bindings are applied by id —
+    // entries for unknown ids are silently dropped (stale proposal, deleted
+    // outcome) so a cross-device replay can't wedge the pathway. `binding:
+    // null` clears a prior binding; any other value replaces it. Bindings
+    // are the only field `applyProposal` writes on an outcome — authoring
+    // of signals themselves happens through other paths (Build mode,
+    // import) because it's learner-owned, not agent-proposed state.
+    const nextOutcomes = applyOutcomeBindings(pathway.outcomes, diff.setOutcomeBindings);
+
     const nextPathway: Pathway = {
         ...pathway,
         nodes: nextNodes,
@@ -248,6 +311,7 @@ export const applyProposal = (
         ...(nextChosenRoute
             ? { chosenRoute: nextChosenRoute }
             : { chosenRoute: undefined }),
+        ...(nextOutcomes !== pathway.outcomes ? { outcomes: nextOutcomes } : {}),
     };
 
     // -- Composite invariants (post-merge) --------------------------------

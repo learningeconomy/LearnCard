@@ -15,6 +15,7 @@ import {
     type PathwayMap,
 } from '../core/composition';
 import type {
+    ActionDescriptor,
     CompositeRenderStyle,
     Edge,
     EdgeType,
@@ -175,6 +176,50 @@ export const setTermination = (
                   }
                 : n,
         ),
+        updatedAt: now,
+    };
+};
+
+/**
+ * Set (or clear) the node's `action` — the ActionDescriptor that tells
+ * the UI where the learner goes to act. Passing `null` clears the field,
+ * letting `resolveNodeAction` fall back to legacy signals (earn-url,
+ * MCP policy) or `none`.
+ *
+ * `action` is orthogonal to `policy` / `termination` / `credentialProjection`
+ * — a single node can declare all four axes independently. This helper
+ * only writes `action`; it never touches the other fields. See
+ * `core/action.ts` for dispatch semantics.
+ *
+ * No-op (returns the input unchanged) when the node id is unknown,
+ * preserving object identity for `useHistory`'s skip path.
+ */
+export const setAction = (
+    pathway: Pathway,
+    nodeId: string,
+    action: ActionDescriptor | null,
+    opts?: BuildOpOptions,
+): Pathway => {
+    const { now } = resolve(opts);
+
+    if (!pathway.nodes.some(n => n.id === nodeId)) return pathway;
+
+    return {
+        ...pathway,
+        nodes: pathway.nodes.map(n => {
+            if (n.id !== nodeId) return n;
+
+            if (action === null) {
+                // Clearing: build a shallow copy without the `action` key so
+                // downstream reference checks see the change and the schema
+                // validator treats it as truly absent (not `undefined`).
+                const { action: _discard, ...rest } = n;
+
+                return { ...rest, updatedAt: now } as PathwayNode;
+            }
+
+            return { ...n, action, updatedAt: now };
+        }),
         updatedAt: now,
     };
 };

@@ -25,6 +25,16 @@ past the Phase 0 snapshot the earlier README described. Roughly:
 (`Altitude` enum), and `chosenRoute` as the single source of truth shared by
 Today / Map / What-If. All documented inline where they live.
 
+**v0.5 — Action descriptors + outcome signals (April 2026):** Nodes now carry
+an optional `ActionDescriptor` (`in-app-route` / `app-listing` / `external-url`
+/ `mcp-tool` / `none`) that tells the UI where the learner goes to act, fully
+decoupled from `Policy` and `Termination`. Pathways carry optional
+`OutcomeSignal[]` — real-world results (score thresholds, enrollment,
+employment) measured separately from node termination. A deterministic
+credential binder (`agents/credentialBinder.ts`) proposes bindings when wallet
+VCs match a signal's predicate and clear its trust tier; the learner still
+confirms. See architecture doc § 3.7 / § 3.8.
+
 ## What's blocking production
 
 1. **`persist.enabled` is `false`** on `pathwayStore` and `proposalStore`
@@ -61,13 +71,17 @@ src/pages/pathways/
 │
 ├── types/                      # Zod schemas + inferred TS types
 │   ├── pathway.ts              # Stage, Policy, Termination, Pathway, Edge, Altitude
-│   ├── proposal.ts             # Proposal, PathwayDiff, Tradeoff
+│   ├── action.ts               # ActionDescriptor (in-app-route | app-listing | external-url | mcp-tool | none)
+│   ├── outcome.ts              # OutcomeSignal union + OutcomeBinding + trust tiers
+│   ├── proposal.ts             # Proposal, PathwayDiff (incl. setOutcomeBindings), Tradeoff
 │   └── ranking.ts              # ScoredCandidate, RankingContext, RankingWeights
 │
 ├── core/                       # Pure algebra — no React, no store access
 │   ├── chosenRoute.ts          # seed / prune / pickNextOnRoute
 │   ├── composition.ts          # findParentPathway, rollupCompositeProgress
-│   └── graphOps.ts             # adjacency, availability, reachability
+│   ├── graphOps.ts             # adjacency, availability, reachability
+│   ├── action.ts               # resolveNodeAction (+ legacy-field fallback), buildInAppHref
+│   └── outcomeMatcher.ts       # matchVcAgainstOutcome, checkWindow, classifyIssuerTrust
 │
 ├── today/                      # Mode 1
 │   ├── TodayMode.tsx, NextActionCard, IdentityBanner, StreakRibbon, CompletionMoment
@@ -113,7 +127,8 @@ src/pages/pathways/
 │   ├── proxy.ts                # swap-ready AgentDispatch; currentDispatch = mock today
 │   ├── budgets.ts              # 4-cap enforcement, pure decideBudget
 │   ├── costAccounting.ts, costStore.ts
-│   └── mockAgent.ts            # deterministic proposals for 5 capabilities
+│   ├── mockAgent.ts            # deterministic proposals for 5 capabilities
+│   └── credentialBinder.ts     # VC → OutcomeSignal binder (deterministic, no LLM)
 │
 ├── projection/                 # Pathway → external formats (read-only projections)
 │   ├── toAchievementCredential.ts    # OBv3 AchievementCredential, unsigned

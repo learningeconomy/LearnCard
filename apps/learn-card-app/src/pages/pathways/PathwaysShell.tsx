@@ -16,6 +16,12 @@ import { lazyWithRetry } from 'learn-card-base';
 import PathwaysHeader from './PathwaysHeader';
 import { pathwayStore } from '../../stores/pathways';
 import { useCostSnapshot } from './hooks/useCostSnapshot';
+import { installPathwaysDevGlobals } from './dev/pathwaysDevGlobals';
+
+// Attach `window.__pathwaysDev` once on first import. No-op in production
+// builds (guarded by `import.meta.env.DEV` inside the installer), idempotent
+// across hot-reloads. See the module doc for the demo flow.
+installPathwaysDevGlobals();
 
 const PathwaysErrorFallback: React.FC = () => (
     <div className="max-w-md mx-auto px-4 py-12 font-poppins text-center">

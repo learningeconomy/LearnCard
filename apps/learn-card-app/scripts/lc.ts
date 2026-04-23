@@ -220,21 +220,72 @@ const seedAppStoreListing = async () => {
     );
 };
 
+/**
+ * Seed the Pathways v0.5 demo bundle — three AppStoreListings with a mix of
+ * launch types (EMBEDDED_IFRAME, DIRECT_LINK, AI_TUTOR), using deterministic
+ * UUIDs so the in-app dev seed (`src/pages/pathways/dev/devSeed.ts`) can
+ * reference them by ID without a lookup round-trip.
+ *
+ * All defaults come from the preset itself; only the owner profile is
+ * promptable here so you can seed the bundle under a specific dev account.
+ */
+const seedPathwayDemoBundle = async () => {
+    const seedScript = resolve(BRAIN_SERVICE_ROOT, 'scripts/seed-dev-app.ts');
+
+    if (!existsSync(seedScript)) {
+        console.error(`\n❌ Seed script not found at ${seedScript}`);
+        rl.close();
+        process.exit(1);
+    }
+
+    console.log('');
+    console.log(bold('🌱 Seed Pathways demo bundle'));
+    console.log(dim('   Seeds 3 AppStoreListings for the AWS Cloud Practitioner demo pathway:'));
+    console.log(dim('     • Coursera — AWS Cloud Essentials  (DIRECT_LINK)'));
+    console.log(dim('     • AWS Practice Studio              (EMBEDDED_IFRAME)'));
+    console.log(dim('     • Cloud Coach                       (AI_TUTOR)'));
+    console.log(dim('   Idempotent — safe to re-run.'));
+    console.log('');
+
+    const ownerProfileId = await ask(`  Owner profile ID ${dim('(dev-owner)')}: `);
+    const installFor = await ask(`  Install for profile ${dim('(skip to not auto-install)')}: `);
+
+    const flagParts: string[] = ['--preset pathway-demo'];
+
+    if (ownerProfileId) flagParts.push(`--profile ${ownerProfileId}`);
+    if (installFor) flagParts.push(`--install-for ${installFor}`);
+
+    const flagStr = flagParts.join(' ');
+    const cmd = `npx tsx scripts/seed-dev-app.ts ${flagStr}`;
+
+    runCommand(
+        cmd,
+        'Seeding Pathways demo bundle into local database',
+        `pnpm lc seed pathway-demo${ownerProfileId ? ` --profile ${ownerProfileId}` : ''}`,
+        BRAIN_SERVICE_ROOT,
+    );
+};
+
 const seedTestData = async () => {
     console.log('');
     console.log(bold('  🌱 Seed Test Data'));
     console.log(dim('   Populate your local database with dev data.'));
     console.log('');
     console.log(`  ${cyan('a')}  ${bold('App store listing')}       ${dim('— dev partner app + profile + listing')}`);
+    console.log(`  ${cyan('b')}  ${bold('Pathways demo bundle')}    ${dim('— 3 listings for the AWS Cloud Practitioner pathway')}`);
     console.log('');
     console.log(dim('  Press Enter to go back'));
     console.log('');
 
-    const sub = await ask('Pick [a]: ');
+    const sub = await ask('Pick [a, b]: ');
 
     switch (sub) {
         case 'a':
             await seedAppStoreListing();
+            break;
+
+        case 'b':
+            await seedPathwayDemoBundle();
             break;
 
         default:

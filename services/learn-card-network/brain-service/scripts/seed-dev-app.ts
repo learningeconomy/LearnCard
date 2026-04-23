@@ -10,19 +10,29 @@
  *   - Neo4j running (e.g. `pnpm dev:services` from apps/learn-card-app)
  *   - OR a .env here with NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
  *
- * Usage:
- *   pnpm seed:dev-app
- *   pnpm seed:dev-app --app-url http://localhost:4321
- *   pnpm seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
- *   pnpm seed:dev-app --app-name "My Game" --domain localhost
- *   pnpm seed:dev-app --app-image https://example.com/my-icon.png
- *   pnpm seed:dev-app --template-alias my-badge
- *   pnpm seed:dev-app --sa-endpoint http://localhost:5100/api
- *   pnpm seed:dev-app --permissions request_identity,send_credential
- *   pnpm seed:dev-app --promotion FEATURED_CAROUSEL
- *   pnpm seed:dev-app --reset-rate-limits
+ * Two modes:
  *
- * Re-running is safe — the script is idempotent via slug-based lookup.
+ *   1. Single-app (default) — seeds one listing from CLI flags.
+ *      pnpm seed:dev-app
+ *      pnpm seed:dev-app --app-url http://localhost:4321
+ *      pnpm seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
+ *      pnpm seed:dev-app --app-name "My Game" --domain localhost
+ *      pnpm seed:dev-app --app-image https://example.com/my-icon.png
+ *      pnpm seed:dev-app --template-alias my-badge
+ *      pnpm seed:dev-app --sa-endpoint http://localhost:5100/api
+ *      pnpm seed:dev-app --permissions request_identity,send_credential
+ *      pnpm seed:dev-app --launch-type DIRECT_LINK        (default: EMBEDDED_IFRAME)
+ *      pnpm seed:dev-app --promotion FEATURED_CAROUSEL
+ *      pnpm seed:dev-app --reset-rate-limits
+ *
+ *   2. Preset bundle — seeds a curated set of listings in one go. Used to
+ *      scaffold the demo data the Pathways v0.5 ActionDescriptor flow depends
+ *      on (see `apps/learn-card-app/src/pages/pathways/dev/devSeed.ts`).
+ *      pnpm seed:dev-app --preset pathway-demo
+ *
+ * Preset listings use **deterministic UUIDs** (`uuidv5(slug, NAMESPACE)`) so
+ * the in-app dev seed can reference listing_ids without a lookup round-trip.
+ * Re-running is always safe — the script is idempotent via slug-based lookup.
  */
 
 import * as dotenv from 'dotenv';
@@ -32,9 +42,96 @@ import { MongoClient } from 'mongodb';
 import * as crypto from 'crypto';
 import * as nacl from 'tweetnacl';
 import * as bs58 from 'bs58';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuid, v5 as uuidv5 } from 'uuid';
 
 dotenv.config();
+
+// ---------------------------------------------------------------------------
+// Preset registry
+// ---------------------------------------------------------------------------
+//
+// Presets are curated bundles of listings we want seedable in a single call.
+// The `pathway-demo` preset backs the AWS Cloud Practitioner demo pathway in
+// `apps/learn-card-app/src/pages/pathways/dev/devSeed.ts`; its listing_ids are
+// derived from slugs so both sides can share constants without IPC.
+
+/**
+ * Fixed namespace UUID for `uuidv5`. Do not change — derived listing_ids are
+ * persisted to Neo4j and referenced by the in-app dev seed. Treat as an API.
+ */
+const PRESET_LISTING_NAMESPACE = '5b9f3a24-7c1e-4d6a-9f2b-8e4c3a1d5f6b';
+
+/**
+ * Helper: deterministic listing_id for preset entries. Exposed so the
+ * in-app dev seed can reproduce the same mapping from its own constants file.
+ */
+export const presetListingId = (slug: string): string =>
+    uuidv5(slug, PRESET_LISTING_NAMESPACE);
+
+interface PresetEntry {
+    slug: string;
+    appName: string;
+    appUrl: string;
+    launchType:
+        | 'EMBEDDED_IFRAME'
+        | 'SECOND_SCREEN'
+        | 'DIRECT_LINK'
+        | 'CONSENT_REDIRECT'
+        | 'SERVER_HEADLESS'
+        | 'AI_TUTOR';
+    category: string;
+    tagline: string;
+    fullDescription: string;
+    iconUrl: string;
+}
+
+/**
+ * AWS Cloud Practitioner demo bundle — exercises three of the six launch
+ * types so the Pathways ActionDescriptor dispatch can demo every meaningful
+ * in-app path (DIRECT_LINK leaves the app, EMBEDDED_IFRAME opens inline,
+ * AI_TUTOR renders the MCP-backed chat surface).
+ */
+const PATHWAY_DEMO_PRESET: PresetEntry[] = [
+    {
+        slug: 'demo-coursera-aws-essentials',
+        appName: 'Coursera — AWS Cloud Essentials',
+        appUrl: 'https://www.coursera.org/learn/aws-cloud-technical-essentials',
+        launchType: 'DIRECT_LINK',
+        category: 'Learning',
+        tagline: 'Learn the fundamentals of AWS cloud.',
+        fullDescription:
+            'A ~2-week Coursera course covering core AWS services: EC2, S3, IAM, VPC. Ideal preparation for the Cloud Practitioner exam.',
+        iconUrl: 'https://cdn.filestackcontent.com/RXaNgRHTHCNr3meO1G0A',
+    },
+    {
+        slug: 'demo-aws-practice-studio',
+        appName: 'AWS Practice Studio',
+        // Points at the local dev app shell so the iframe actually loads on
+        // a fresh clone. Override with --app-url when pointing at a real one.
+        appUrl: 'http://localhost:4321',
+        launchType: 'EMBEDDED_IFRAME',
+        category: 'Practice',
+        tagline: 'In-app AWS CCP practice questions.',
+        fullDescription:
+            'Timed practice questions for the AWS Certified Cloud Practitioner exam. Runs inline inside LearnCard.',
+        iconUrl: 'https://cdn.filestackcontent.com/erbcRQfTG2TktX2hcmLu',
+    },
+    {
+        slug: 'demo-aws-cloud-coach',
+        appName: 'Cloud Coach',
+        appUrl: 'https://learncard.local/ai-tutors/cloud-coach',
+        launchType: 'AI_TUTOR',
+        category: 'Tutor',
+        tagline: 'One-on-one AI tutor for AWS deep-dives.',
+        fullDescription:
+            'A Cloud Coach that helps you close specific gaps before your exam — ask about IAM roles, VPC peering, or anything the practice questions surfaced.',
+        iconUrl: 'https://cdn.filestackcontent.com/aWUPGBPRFenRT9taokA6',
+    },
+];
+
+const PRESETS: Record<string, PresetEntry[]> = {
+    'pathway-demo': PATHWAY_DEMO_PRESET,
+};
 
 // Fall back to local docker-compose defaults so the script works without a .env
 // when services are already running via `pnpm dev:services` from learn-card-app.
@@ -67,21 +164,6 @@ const getArg = (flag: string, fallback: string): string => {
     return fallback;
 };
 
-const appUrl = getArg('--app-url', 'http://localhost:4321');
-const appName = getArg('--app-name', 'Dev Partner App');
-const ownerProfileId = getArg('--profile', 'dev-owner');
-const installForProfileId = getArg('--install-for', '');
-
-const parsedUrl = new URL(appUrl);
-const domain = getArg('--domain', parsedUrl.hostname);
-const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-const appImage = getArg('--app-image', '');
-const templateAlias = getArg('--template-alias', 'default');
-const saEndpoint = getArg('--sa-endpoint', 'http://localhost:5100/api');
-const saSeed = getArg('--sa-seed', 'd'.repeat(64));
-const promotionLevel = getArg('--promotion', 'FEATURED_CAROUSEL');
-const resetRateLimits = args.includes('--reset-rate-limits');
-
 const ALL_PERMISSIONS = [
     'request_identity',
     'send_credential',
@@ -92,10 +174,127 @@ const ALL_PERMISSIONS = [
     'template_issuance',
 ];
 
-const permissionsRaw = getArg('--permissions', '');
-const permissions: string[] = permissionsRaw
-    ? permissionsRaw.split(',').map(p => p.trim())
-    : ALL_PERMISSIONS;
+/**
+ * Per-listing config. All the knobs that used to be module-level constants
+ * now live here; `buildSingleListingConfig` (CLI mode) and `buildPresetConfig`
+ * (preset mode) both produce this shape so `seedListing` never cares which
+ * mode kicked it off.
+ */
+interface ListingConfig {
+    /** Deterministic for presets (`presetListingId(slug)`); fresh uuid for single-CLI. */
+    listingId: string;
+    slug: string;
+    appName: string;
+    appUrl: string;
+    domain: string;
+    iconUrl: string;
+    launchType: PresetEntry['launchType'];
+    category: string;
+    tagline: string;
+    fullDescription: string;
+    promotionLevel: string;
+    permissions: string[];
+    templateAlias: string;
+    saEndpoint: string;
+    saSeed: string;
+    ownerProfileId: string;
+    /** Empty string disables install; keeping string (not `string | null`) preserves prior CLI semantics. */
+    installForProfileId: string;
+}
+
+// Flags that live outside any single listing (apply to the run itself):
+const presetName = getArg('--preset', '');
+const resetRateLimits = args.includes('--reset-rate-limits');
+
+/**
+ * Build a single ListingConfig from CLI flags. Mirrors the pre-refactor
+ * module-level constants exactly — fallbacks, derived domain/slug, permission
+ * expansion — so `--preset`-less invocations are bit-for-bit compatible.
+ */
+const buildSingleListingConfig = (): ListingConfig => {
+    const appUrl = getArg('--app-url', 'http://localhost:4321');
+    const appName = getArg('--app-name', 'Dev Partner App');
+    const parsedUrl = new URL(appUrl);
+    const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+    const permissionsRaw = getArg('--permissions', '');
+
+    return {
+        // Single-CLI mode keeps random UUIDs — no cross-process coordination
+        // needed, and re-runs still hit the idempotent slug-based MERGE.
+        listingId: uuid(),
+        slug,
+        appName,
+        appUrl,
+        domain: getArg('--domain', parsedUrl.hostname),
+        iconUrl: getArg('--app-image', ''),
+        launchType: getArg('--launch-type', 'EMBEDDED_IFRAME') as PresetEntry['launchType'],
+        category: getArg('--category', 'Learning'),
+        tagline: getArg('--tagline', `Dev app at ${appUrl}`),
+        fullDescription: getArg(
+            '--full-description',
+            `Locally seeded partner app pointing at ${appUrl}`,
+        ),
+        promotionLevel: getArg('--promotion', 'FEATURED_CAROUSEL'),
+        permissions: permissionsRaw
+            ? permissionsRaw.split(',').map(p => p.trim())
+            : ALL_PERMISSIONS,
+        templateAlias: getArg('--template-alias', 'default'),
+        saEndpoint: getArg('--sa-endpoint', 'http://localhost:5100/api'),
+        saSeed: getArg('--sa-seed', 'd'.repeat(64)),
+        ownerProfileId: getArg('--profile', 'dev-owner'),
+        installForProfileId: getArg('--install-for', ''),
+    };
+};
+
+/**
+ * Build the ListingConfig array for a named preset. Each preset entry is
+ * turned into a full config; shared fields (owner profile, SA endpoint,
+ * permissions) come from CLI flags so you can e.g. seed the demo bundle under
+ * a specific owner with `--preset pathway-demo --profile alice`.
+ */
+const buildPresetConfigs = (name: string): ListingConfig[] => {
+    const entries = PRESETS[name];
+
+    if (!entries) {
+        const known = Object.keys(PRESETS).join(', ') || '(none registered)';
+        throw new Error(`Unknown preset "${name}". Known presets: ${known}`);
+    }
+
+    const ownerProfileId = getArg('--profile', 'dev-owner');
+    const installForProfileId = getArg('--install-for', '');
+    const saEndpoint = getArg('--sa-endpoint', 'http://localhost:5100/api');
+    const saSeed = getArg('--sa-seed', 'd'.repeat(64));
+    const templateAlias = getArg('--template-alias', 'default');
+    const promotionLevel = getArg('--promotion', 'FEATURED_CAROUSEL');
+    const permissionsRaw = getArg('--permissions', '');
+    const permissions = permissionsRaw
+        ? permissionsRaw.split(',').map(p => p.trim())
+        : ALL_PERMISSIONS;
+
+    return entries.map(entry => {
+        const parsedUrl = new URL(entry.appUrl);
+
+        return {
+            listingId: presetListingId(entry.slug),
+            slug: entry.slug,
+            appName: entry.appName,
+            appUrl: entry.appUrl,
+            domain: parsedUrl.hostname,
+            iconUrl: entry.iconUrl,
+            launchType: entry.launchType,
+            category: entry.category,
+            tagline: entry.tagline,
+            fullDescription: entry.fullDescription,
+            promotionLevel,
+            permissions,
+            templateAlias,
+            saEndpoint,
+            saSeed,
+            ownerProfileId,
+            installForProfileId,
+        };
+    });
+};
 
 // ---------------------------------------------------------------------------
 // Helpers — mirrors the access-layer logic but uses raw Cypher to avoid
@@ -145,16 +344,56 @@ const buildCredentialTemplate = (name: string): string =>
     });
 
 // ---------------------------------------------------------------------------
-// Main
+// Main — dispatches single-CLI vs preset and drives the per-listing pipeline.
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
     const neogma = new Neogma({ url: NEO4J_URI, username: NEO4J_USERNAME, password: NEO4J_PASSWORD });
+
+    try {
+        const configs = presetName
+            ? buildPresetConfigs(presetName)
+            : [buildSingleListingConfig()];
+
+        if (presetName) {
+            console.log(`\n🔧 Seeding preset "${presetName}" (${configs.length} listing${configs.length === 1 ? '' : 's'})...\n`);
+        } else {
+            console.log('\n🔧 Seeding dev partner app...\n');
+        }
+
+        for (const config of configs) {
+            await seedListing(neogma, config);
+        }
+
+        // Rate-limit reset is a run-level flag (not per-listing), so it fires
+        // once over every seeded listing at the end. Keeps flag semantics
+        // consistent with the pre-refactor script.
+        if (resetRateLimits) {
+            for (const config of configs) {
+                await clearRateLimits(config.listingId);
+            }
+        }
+    } finally {
+        await neogma.driver.close();
+    }
+}
+
+/**
+ * Seed one AppStoreListing (and its supporting nodes) through the idempotent
+ * slug-keyed path. Cleanly swallow-proof: every step is MERGE-safe except the
+ * first-time CREATE, which is only reached when the slug lookup misses.
+ *
+ * The big move from the pre-refactor version: every field that used to read
+ * from module-level `appName` / `slug` / `permissions` / etc. is now sourced
+ * from `config` so the preset-loop caller and the single-CLI caller produce
+ * identical DB state.
+ */
+async function seedListing(neogma: Neogma, config: ListingConfig): Promise<void> {
     const run = neogma.queryRunner.run.bind(neogma.queryRunner);
+    const parsedUrl = new URL(config.appUrl);
+    const normalizedProfileId = transformProfileId(config.ownerProfileId);
 
-    console.log('\n🔧 Seeding dev partner app...\n');
-
-    const normalizedProfileId = transformProfileId(ownerProfileId);
+    console.log(`\n— ${config.appName} (${config.launchType}) —`);
 
     // 1. Ensure owner profile exists (MERGE = idempotent)
     const profileResult = await run(
@@ -165,7 +404,7 @@ async function main(): Promise<void> {
          RETURN p, p.did AS existed`,
         {
             profileId: normalizedProfileId,
-            displayName: ownerProfileId,
+            displayName: config.ownerProfileId,
             shortBio: 'Dev seed profile',
             did: `did:seed:${normalizedProfileId}`,
         }
@@ -177,58 +416,64 @@ async function main(): Promise<void> {
         console.log(`  Owner profile ready: ${normalizedProfileId}`);
     }
 
-    // 2. Check for existing listing by slug (idempotency)
+    // 2. Check for existing listing by slug (idempotency anchor).
     const existingResult = await run(
         `MATCH (listing:AppStoreListing {slug: $slug})
          RETURN listing.listing_id AS listing_id
          LIMIT 1`,
-        { slug }
+        { slug: config.slug }
     );
 
     const existingId = existingResult.records[0]?.get('listing_id');
+    const launchConfigJson = JSON.stringify({ url: config.appUrl, permissions: config.permissions });
 
     if (existingId) {
-        console.log(`  Listing already exists for slug "${slug}": ${existingId}`);
+        console.log(`  Listing already exists for slug "${config.slug}": ${existingId}`);
 
-        // Update mutable fields in case they changed
-        const launchConfigJson = JSON.stringify({ url: appUrl, permissions });
-
+        // Update the mutable fields so re-running the preset picks up edits
+        // (launch type, promotion, URL, icon, permissions). Note: listing_id
+        // and slug are immutable here — changing either would orphan the node.
         await run(
             `MATCH (l:AppStoreListing {listing_id: $listingId})
-             SET l.promotion_level = $promotionLevel,
-                 l.launch_config_json = $launchConfigJson
-             ${appImage ? ', l.icon_url = $iconUrl' : ''}
+             SET l.promotion_level    = $promotionLevel,
+                 l.launch_config_json = $launchConfigJson,
+                 l.launch_type        = $launchType,
+                 l.display_name       = $displayName,
+                 l.tagline            = $tagline,
+                 l.full_description   = $fullDescription,
+                 l.category           = $category
+             ${config.iconUrl ? ', l.icon_url = $iconUrl' : ''}
              RETURN l`,
             {
                 listingId: existingId,
-                promotionLevel,
+                promotionLevel: config.promotionLevel,
                 launchConfigJson,
-                ...(appImage && { iconUrl: appImage }),
+                launchType: config.launchType,
+                displayName: config.appName,
+                tagline: config.tagline,
+                fullDescription: config.fullDescription,
+                category: config.category,
+                ...(config.iconUrl && { iconUrl: config.iconUrl }),
             }
         );
 
-        console.log(`  Updated promotion_level → ${promotionLevel}`);
-        console.log(`  Updated permissions     → ${permissions.join(', ')}`);
+        console.log(`  Updated launch_type     → ${config.launchType}`);
+        console.log(`  Updated promotion_level → ${config.promotionLevel}`);
 
-        if (appImage) {
-            console.log(`  Updated icon_url       → ${appImage}`);
-        }
+        // Ensure boost + signing authority exist even on re-runs.
+        await ensureBoostAndSigningAuthority(run, existingId, normalizedProfileId, config);
 
-        // Ensure boost + signing authority exist even on re-runs
-        await ensureBoostAndSigningAuthority(run, existingId, normalizedProfileId);
-
-        if (resetRateLimits) {
-            await clearRateLimits(existingId);
-        }
-
-        printSummary(existingId);
-        await neogma.driver.close();
+        printSummary(existingId, config);
         return;
     }
 
-    // 3. Create integration
+    // 3. Create Integration (CREATED_BY the owner profile). Whitelisted
+    // domains are "mostly metadata" for DIRECT_LINK entries — the real
+    // enforcement kicks in for EMBEDDED_IFRAME where the iframe origin has
+    // to match. We seed both hostname and hostname:port for parity with
+    // what the pre-refactor single-app path did.
     const integrationId = uuid();
-    const whitelistedDomains = [domain, `${domain}:${parsedUrl.port || '80'}`];
+    const whitelistedDomains = [config.domain, `${config.domain}:${parsedUrl.port || '80'}`];
 
     await run(
         `CREATE (i:Integration {
@@ -246,8 +491,8 @@ async function main(): Promise<void> {
          RETURN i`,
         {
             id: integrationId,
-            name: `${appName} Integration`,
-            description: `Integration for ${appName}`,
+            name: `${config.appName} Integration`,
+            description: `Integration for ${config.appName}`,
             publishableKey: `pk_${uuid()}`,
             whitelistedDomains,
             status: 'setup',
@@ -259,9 +504,8 @@ async function main(): Promise<void> {
     console.log(`  Integration created: ${integrationId}`);
     console.log(`  Whitelisted domains: ${whitelistedDomains.join(', ')}`);
 
-    // 4. Create app store listing + link to integration
-    const listingId = uuid();
-
+    // 4. Create the AppStoreListing itself. `listing_id` is deterministic
+    // for presets and random for single-CLI — see ListingConfig.
     await run(
         `CREATE (l:AppStoreListing {
             listing_id: $listingId,
@@ -281,33 +525,33 @@ async function main(): Promise<void> {
          CREATE (i)-[:PUBLISHES_LISTING]->(l)
          RETURN l`,
         {
-            listingId,
-            slug,
-            displayName: appName,
-            tagline: `Dev app at ${appUrl}`,
-            fullDescription: `Locally seeded partner app pointing at ${appUrl}`,
-            iconUrl: appImage || 'https://placehold.co/250x250/orange/white?text=App',
+            listingId: config.listingId,
+            slug: config.slug,
+            displayName: config.appName,
+            tagline: config.tagline,
+            fullDescription: config.fullDescription,
+            iconUrl: config.iconUrl || 'https://placehold.co/250x250/orange/white?text=App',
             status: 'LISTED',
-            launchType: 'EMBEDDED_IFRAME',
-            launchConfigJson: JSON.stringify({ url: appUrl, permissions }),
-            category: 'Learning',
-            promotionLevel,
+            launchType: config.launchType,
+            launchConfigJson,
+            category: config.category,
+            promotionLevel: config.promotionLevel,
             integrationId,
         }
     );
 
-    console.log(`  Listing created:     ${listingId}`);
-    console.log(`  Slug:                ${slug}`);
-    console.log(`  Status:              LISTED`);
-    console.log(`  Promotion:           ${promotionLevel}`);
-    console.log(`  Launch URL:          ${appUrl}`);
+    console.log(`  Listing created:     ${config.listingId}`);
+    console.log(`  Slug:                ${config.slug}`);
+    console.log(`  Launch type:         ${config.launchType}`);
+    console.log(`  Promotion:           ${config.promotionLevel}`);
+    console.log(`  Launch URL:          ${config.appUrl}`);
 
-    // 5. Create boost template + signing authority for credential issuance
-    await ensureBoostAndSigningAuthority(run, listingId, normalizedProfileId);
+    // 5. Boost + signing authority for credential issuance.
+    await ensureBoostAndSigningAuthority(run, config.listingId, normalizedProfileId, config);
 
-    // 6. Optionally install for a second profile
-    if (installForProfileId && installForProfileId !== ownerProfileId) {
-        const normalizedInstallId = transformProfileId(installForProfileId);
+    // 6. Optionally install for a second profile (learner-side dev data).
+    if (config.installForProfileId && config.installForProfileId !== config.ownerProfileId) {
+        const normalizedInstallId = transformProfileId(config.installForProfileId);
 
         await run(
             `MERGE (p:Profile {profileId: $profileId})
@@ -317,7 +561,7 @@ async function main(): Promise<void> {
              RETURN p`,
             {
                 profileId: normalizedInstallId,
-                displayName: installForProfileId,
+                displayName: config.installForProfileId,
                 shortBio: 'Dev seed user',
                 did: `did:seed:${normalizedInstallId}`,
             }
@@ -332,21 +576,15 @@ async function main(): Promise<void> {
              RETURN r`,
             {
                 profileId: normalizedInstallId,
-                listingId,
+                listingId: config.listingId,
                 installedAt: new Date().toISOString(),
             }
         );
 
-        console.log(`  App installed for: ${installForProfileId}`);
+        console.log(`  App installed for:   ${config.installForProfileId}`);
     }
 
-    printSummary(listingId);
-
-    if (resetRateLimits) {
-        await clearRateLimits(listingId);
-    }
-
-    await neogma.driver.close();
+    printSummary(config.listingId, config);
 }
 
 // ---------------------------------------------------------------------------
@@ -356,21 +594,21 @@ async function main(): Promise<void> {
 async function ensureBoostAndSigningAuthority(
     run: Neogma['queryRunner']['run'],
     listingId: string,
-    profileId: string
+    profileId: string,
+    config: ListingConfig
 ): Promise<void> {
     // Check if a boost with this templateAlias already exists for the listing
     const existingBoost = await run(
         `MATCH (l:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {templateAlias: $templateAlias}]->(b:Boost)
          RETURN b.id AS boostId`,
-        { listingId, templateAlias }
+        { listingId, templateAlias: config.templateAlias }
     );
 
     const existingBoostId = existingBoost.records[0]?.get('boostId');
 
     if (!existingBoostId) {
-        // Create Boost node with credential template
         const boostId = uuid();
-        const boostJson = buildCredentialTemplate(appName);
+        const boostJson = buildCredentialTemplate(config.appName);
 
         await run(
             `CREATE (b:Boost {
@@ -390,32 +628,30 @@ async function ensureBoostAndSigningAuthority(
             {
                 boostId,
                 boostJson,
-                name: `${appName} Badge`,
+                name: `${config.appName} Badge`,
                 category: 'Achievement',
                 profileId,
                 listingId,
-                templateAlias,
+                templateAlias: config.templateAlias,
                 date: new Date().toISOString(),
             }
         );
 
-        console.log(`  Boost created:       ${boostId} (alias: "${templateAlias}")`);
+        console.log(`  Boost created:       ${boostId} (alias: "${config.templateAlias}")`);
     } else {
-        console.log(`  Boost exists:        ${existingBoostId} (alias: "${templateAlias}")`);
+        console.log(`  Boost exists:        ${existingBoostId} (alias: "${config.templateAlias}")`);
     }
 
-    // Ensure SigningAuthority node + relationship to listing
     const existingSa = await run(
         `MATCH (l:AppStoreListing {listing_id: $listingId})-[r:USES_SIGNING_AUTHORITY]->(sa:SigningAuthority)
          RETURN sa.endpoint AS endpoint`,
         { listingId }
     );
 
-    const appDid = getAppDidWeb(BRAIN_DOMAIN, slug);
-    const saDidKey = deriveDidKeyFromSeed(saSeed);
+    const appDid = getAppDidWeb(BRAIN_DOMAIN, config.slug);
+    const saDidKey = deriveDidKeyFromSeed(config.saSeed);
 
     if (!existingSa.records.length) {
-
         await run(
             `MERGE (sa:SigningAuthority {endpoint: $endpoint})
              WITH sa
@@ -427,17 +663,18 @@ async function ensureBoostAndSigningAuthority(
              }]->(sa)
              RETURN sa`,
             {
-                endpoint: saEndpoint,
+                endpoint: config.saEndpoint,
                 listingId,
                 name: 'default',
                 did: saDidKey,
             }
         );
 
-        console.log(`  Signing authority:   ${saEndpoint} (linked to listing)`);
+        console.log(`  Signing authority:   ${config.saEndpoint} (linked to listing)`);
         console.log(`  SA did:key:          ${saDidKey}`);
 
-        // Also link SA to the owner profile (fallback path)
+        // Also link SA to the owner profile (fallback path used when the
+        // brain-service can't find a listing-level SA relationship).
         await run(
             `MATCH (sa:SigningAuthority {endpoint: $endpoint})
              MATCH (p:Profile {profileId: $profileId})
@@ -445,24 +682,24 @@ async function ensureBoostAndSigningAuthority(
              ON CREATE SET r.name = $name, r.did = $did, r.isPrimary = true
              RETURN r`,
             {
-                endpoint: saEndpoint,
+                endpoint: config.saEndpoint,
                 profileId,
                 name: 'default',
                 did: saDidKey,
             }
         );
-
     } else {
         console.log(`  Signing authority:   already configured`);
     }
 
     // Always ensure MongoDB SA exists (idempotent).
-    // The brain-service sends the *app* DID (not the user DID) as ownerDidOverride
-    // when calling /credentials/issue, so MongoDB must key the SA by the app DID.
-    await ensureMongoSigningAuthority(appDid);
+    // The brain-service sends the *app* DID (not the user DID) as
+    // ownerDidOverride when calling /credentials/issue, so MongoDB must key
+    // the SA by the app DID.
+    await ensureMongoSigningAuthority(appDid, config.saSeed);
 }
 
-async function ensureMongoSigningAuthority(ownerDid: string): Promise<void> {
+async function ensureMongoSigningAuthority(ownerDid: string, saSeed: string): Promise<void> {
     let client: MongoClient | undefined;
 
     try {
@@ -552,27 +789,25 @@ async function clearRateLimits(listingId: string): Promise<void> {
     await redis.quit();
 }
 
-function printSummary(listingId: string): void {
+function printSummary(listingId: string, config: ListingConfig): void {
     console.log('\n✅ Done! Seed summary:');
     console.log('─'.repeat(50));
     console.log(`  Listing ID:      ${listingId}`);
-    console.log(`  Slug:            ${slug}`);
-    console.log(`  Owner:           ${ownerProfileId}`);
-    console.log(`  App URL:         ${appUrl}`);
-    console.log(`  Domain:          ${domain}`);
-    console.log(`  Promotion:       ${promotionLevel}`);
-    console.log(`  Template Alias:  ${templateAlias}`);
-    console.log(`  SA Endpoint:     ${saEndpoint}`);
-    console.log(`  Permissions:     ${permissions.join(', ')}`);
+    console.log(`  Slug:            ${config.slug}`);
+    console.log(`  Owner:           ${config.ownerProfileId}`);
+    console.log(`  App URL:         ${config.appUrl}`);
+    console.log(`  Domain:          ${config.domain}`);
+    console.log(`  Launch Type:     ${config.launchType}`);
+    console.log(`  Promotion:       ${config.promotionLevel}`);
+    console.log(`  Template Alias:  ${config.templateAlias}`);
+    console.log(`  SA Endpoint:     ${config.saEndpoint}`);
+    console.log(`  Permissions:     ${config.permissions.join(', ')}`);
 
-    if (installForProfileId) {
-        console.log(`  Installed for:   ${installForProfileId}`);
+    if (config.installForProfileId) {
+        console.log(`  Installed for:   ${config.installForProfileId}`);
     }
 
     console.log('─'.repeat(50));
-    console.log('\n  Use this listing ID in your app or .env:\n');
-    console.log(`    LISTING_ID=${listingId}`);
-    console.log(`    TEMPLATE_ALIAS=${templateAlias}\n`);
 }
 
 main()

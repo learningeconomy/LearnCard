@@ -9,6 +9,9 @@
 
 import { z } from 'zod';
 
+import { ActionDescriptorSchema } from './action';
+import { OutcomeSignalSchema } from './outcome';
+
 // -----------------------------------------------------------------
 // References
 // -----------------------------------------------------------------
@@ -303,6 +306,18 @@ export const PathwayNodeSchema = z.object({
     updatedAt: z.string().datetime(),
 
     // -------------------------------------------------------------
+    // Action descriptor (optional) — where the learner goes to act
+    // on this node. Orthogonal to `policy` (what kind of work) and
+    // `termination` (how we know it's done). See `types/action.ts`
+    // for the full discriminated union and `core/action.ts` for the
+    // dispatch helper used by Today / NodeDetail to turn this into a
+    // primary CTA. Absence is honored — `resolveNodeAction` falls
+    // back to the legacy `earnUrl` / `policy.external.mcp` paths so
+    // nodes authored before this field existed keep working.
+    // -------------------------------------------------------------
+    action: ActionDescriptorSchema.optional(),
+
+    // -------------------------------------------------------------
     // Provenance (optional) — populated when this node originated
     // outside our system (CTDL import, OBv3 achievement, etc.).
     //
@@ -456,6 +471,22 @@ export const PathwaySchema = z.object({
      * callers use to derive, maintain, and consume the field.
      */
     chosenRoute: z.array(z.string().uuid()).optional(),
+
+    // -------------------------------------------------------------
+    // Outcome signals (optional) — real-world results the pathway is
+    // trying to produce (SAT score uplift, enrollment, employment,
+    // wage change, narrative self-reports, …). Distinct from node
+    // terminations: termination asks "did the learner execute the
+    // pathway?", outcomes ask "did executing it work?".
+    //
+    // See `types/outcome.ts` for the `OutcomeSignal` union and
+    // `core/outcomeMatcher.ts` for the wallet-VC matcher. Bindings
+    // are recorded on `OutcomeSignal.binding` by the credential
+    // binder (`agents/credentialBinder.ts`) through a proposal, so
+    // the learner still confirms every bind — agents never write
+    // outcome state directly.
+    // -------------------------------------------------------------
+    outcomes: z.array(OutcomeSignalSchema).optional(),
 
     // -------------------------------------------------------------
     // Provenance (optional) — see `PathwayNodeSchema` for rationale.

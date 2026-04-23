@@ -28,11 +28,12 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
-import { getNodeEarnLink } from '../today/presentation';
+import { buildInAppHref, resolveNodeAction, type ResolvedAction } from '../core/action';
 import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
 import { canProject } from '../projection/toAchievementCredential';
 
+import AppListingCard from './AppListingCard';
 import CompositeNodeBody from './CompositeNodeBody';
 import CredentialPreview from './CredentialPreview';
 import EndorsementPanel from './EndorsementPanel';
@@ -40,6 +41,7 @@ import EvidencePanel from './EvidencePanel';
 import EvidenceUploader from './EvidenceUploader';
 import ReviewsPanel from './ReviewsPanel';
 import TerminationProgress from './TerminationProgress';
+import { useListingForNode } from './useListingForNode';
 import { computeTerminationView, terminationDone } from './termination';
 
 /**
@@ -61,6 +63,140 @@ export interface NodeDetailLocationState {
     returnTo?: string;
     restoreFocusId?: string;
 }
+
+/**
+ * Copy for the "Where to act" header row. The label under the kicker
+ * and the visual openness of the icon both adapt to the resolved
+ * action kind so we stay honest:
+ *
+ *   - `external-url` + landingPage → "View landing page" (marketing,
+ *     not a guaranteed earn destination)
+ *   - `external-url` otherwise     → "Go to issuer page"
+ *   - `app-listing`                → "Open app listing"
+ *   - `in-app-route`               → "Continue in-app"
+ *   - `mcp-tool` / `none`          → omitted (the overlay itself is
+ *     the honest destination)
+ */
+interface LaunchCopy {
+    kicker: string;
+    label: string;
+}
+
+/**
+ * Unified launch-row component. Renders the small "Where to act" pill
+ * above the working state and dispatches on the resolved action kind:
+ *
+ *   - `external-url`  → `<a target="_blank">` (actually leaves the app)
+ *   - `app-listing`   → `history.push('/app/:id')` via `onInAppNavigate`
+ *   - `in-app-route`  → `history.push(buildInAppHref(resolved))`
+ *
+ * MCP and `none` kinds never reach this component — callers gate
+ * rendering with `describeLaunch(...) && kind !== 'mcp-tool' | 'none'`.
+ * The component stays dumb about that logic so the branches below
+ * remain exhaustive.
+ */
+type LaunchableResolvedAction =
+    | Extract<ResolvedAction, { kind: 'external-url' }>
+    | Extract<ResolvedAction, { kind: 'app-listing' }>
+    | Extract<ResolvedAction, { kind: 'in-app-route' }>;
+
+const LaunchRow: React.FC<{
+    copy: LaunchCopy;
+    resolved: LaunchableResolvedAction;
+    onDispatch: (destination: string) => void;
+    onInAppNavigate: (href: string) => void;
+}> = ({ copy, resolved, onDispatch, onInAppNavigate }) => {
+    const rowClass =
+        `group flex items-center justify-between gap-3
+         px-4 py-3 rounded-[18px]
+         bg-white/70 backdrop-blur
+         border border-grayscale-200
+         hover:bg-white hover:border-grayscale-300
+         hover:shadow-sm transition-all duration-200
+         text-left w-full`;
+
+    const iconGlyph = resolved.kind === 'external-url' ? openOutline : mapOutline;
+
+    const inner = (
+        <>
+            <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
+                    {copy.kicker}
+                </p>
+
+                <p className="text-sm font-medium text-grayscale-900 truncate">
+                    {copy.label}
+                </p>
+            </div>
+
+            <IonIcon
+                icon={iconGlyph}
+                className="shrink-0 text-grayscale-500 text-lg
+                           group-hover:text-grayscale-900 transition-colors"
+                aria-hidden
+            />
+        </>
+    );
+
+    if (resolved.kind === 'external-url') {
+        return (
+            <motion.a
+                {...SECTION_MOTION}
+                transition={{ ...SECTION_MOTION.transition, delay: 0.08 }}
+                href={resolved.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${copy.label} (opens in a new tab)`}
+                onClick={() => onDispatch(resolved.url)}
+                className={rowClass}
+            >
+                {inner}
+            </motion.a>
+        );
+    }
+
+    // app-listing / in-app-route → in-app navigation.
+    const href =
+        resolved.kind === 'app-listing'
+            ? `/app/${encodeURIComponent(resolved.listingId)}`
+            : buildInAppHref(resolved);
+
+    return (
+        <motion.button
+            {...SECTION_MOTION}
+            transition={{ ...SECTION_MOTION.transition, delay: 0.08 }}
+            type="button"
+            aria-label={copy.label}
+            onClick={() => {
+                onDispatch(href);
+                onInAppNavigate(href);
+            }}
+            className={rowClass}
+        >
+            {inner}
+        </motion.button>
+    );
+};
+
+const describeLaunch = (resolved: ResolvedAction): LaunchCopy | null => {
+    switch (resolved.kind) {
+        case 'external-url':
+            return {
+                kicker: 'Where to act',
+                label: resolved.landingPage ? 'View landing page' : 'Go to issuer page',
+            };
+
+        case 'app-listing':
+            return { kicker: 'Where to act', label: 'Open app listing' };
+
+        case 'in-app-route':
+            return { kicker: 'Where to act', label: 'Continue in-app' };
+
+        case 'mcp-tool':
+        case 'none':
+            return null;
+    }
+};
 
 /**
  * Pick an `ArtifactType` to pre-bias the uploader toward, matching
@@ -326,16 +462,41 @@ const NodeDetail: React.FC = () => {
     const requirementText =
         view.kind === 'ready' ? null : view.requirement;
 
-    // Issuer-side earn link (populated by the CTDL importer from
-    // `ceterms:sourceData` or `ceterms:subjectWebpage` — including via
-    // `proxyFor` resolution). Copy degrades with the source so we
-    // never promise a landing page awards a credential.
-    const earnLink = getNodeEarnLink(node);
-    const earnLinkLabel = earnLink
-        ? earnLink.source === 'sourceData'
-            ? 'Go to issuer page'
-            : 'View landing page'
-        : null;
+    // Resolve the node's primary launch destination. The resolver
+    // unifies three historically-separate signals:
+    //   - `node.action`                (explicit ActionDescriptor)
+    //   - `credentialProjection.earnUrl` (CTDL-imported earn link)
+    //   - `policy.external.mcp`         (MCP-driven work)
+    // and returns a single `ResolvedAction` we can dispatch on.
+    //
+    // Copy degrades with the source so we never promise a landing
+    // page awards a credential: explicit + earn-url/sourceData get
+    // "Go to issuer page" / "Continue in Khan Academy" etc.;
+    // earn-url/subjectWebpage softens to "View landing page."
+    const resolved: ResolvedAction = resolveNodeAction(node);
+    const launchCopy = describeLaunch(resolved);
+
+    // For `app-listing` actions, resolve the linked listing so we can
+    // render a rich inline card (icon, name, tagline, install/open
+    // CTA) instead of the generic "Open app listing" row. React Query
+    // de-dupes per listingId, so this costs nothing when the Map
+    // already fetched the same listing for its card avatar.
+    //
+    // Gracefully degrades: if the listing 404s (preset id the brain
+    // service hasn't seeded yet) the hook returns
+    // `{ listing: null, error }` and we fall through to the legacy
+    // `LaunchRow` which at least routes the learner to `/app/:id`
+    // where the public-listing page can show an honest error state.
+    const listingForNode = useListingForNode(node);
+    const hasAppListingAction = resolved.kind === 'app-listing';
+    const showAppListingCard =
+        hasAppListingAction
+        && !listingForNode.error
+        && listingForNode.listing !== null;
+    const showAppListingSkeleton =
+        hasAppListingAction
+        && listingForNode.isLoading
+        && !listingForNode.listing;
 
     // Badge/certificate artwork from the CTDL import (or the proxied
     // credential). Falls back to `null` when the upstream record has
@@ -405,45 +566,98 @@ const NodeDetail: React.FC = () => {
                 </motion.header>
 
                 {/* -------------------------------------------------- */}
-                {/* Where to earn this — issuer link row (CTDL-imported  */}
-                {/* nodes only). Rendered above the working state so the */}
-                {/* learner sees the off-app path before they start     */}
-                {/* uploading proof here. Copy adapts to the CTDL       */}
-                {/* source so a `subjectWebpage` is honestly "View      */}
-                {/* landing page" rather than a false "Earn it here."   */}
+                {/* Where to act — two surfaces share this slot:         */}
+                {/*                                                     */}
+                {/*   1. `AppListingCard` when the node's resolved      */}
+                {/*      action is `app-listing` AND the listing loaded */}
+                {/*      — rich preview with icon, tagline, category,   */}
+                {/*      and an inline Install / Open CTA so learners   */}
+                {/*      don't have to leave the Map for the happy path.*/}
+                {/*                                                     */}
+                {/*   2. `LaunchRow` for every other launchable kind    */}
+                {/*      (external-url, in-app-route) and for          */}
+                {/*      app-listing nodes whose listing 404s or errors */}
+                {/*      — the row still routes to `/app/:id` where the */}
+                {/*      public-listing page shows the honest error.    */}
+                {/*                                                     */}
+                {/* mcp-tool / none kinds fall through entirely: the    */}
+                {/* overlay itself is the destination for those nodes.  */}
                 {/* -------------------------------------------------- */}
-                {earnLink && earnLinkLabel && (
-                    <motion.a
-                        {...SECTION_MOTION}
-                        transition={{ ...SECTION_MOTION.transition, delay: 0.08 }}
-                        href={earnLink.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${earnLinkLabel} (opens in a new tab)`}
-                        className="group flex items-center justify-between gap-3
-                                   px-4 py-3 rounded-[18px]
-                                   bg-white/70 backdrop-blur
-                                   border border-grayscale-200
-                                   hover:bg-white hover:border-grayscale-300
-                                   hover:shadow-sm transition-all duration-200"
-                    >
-                        <div className="min-w-0">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
-                                Where to earn this
-                            </p>
+                {showAppListingCard && listingForNode.listing && (
+                    <AppListingCard
+                        listing={listingForNode.listing}
+                        isInstalled={listingForNode.isInstalled}
+                        isInstalledLoading={listingForNode.isInstalledLoading}
+                        onInstallSuccess={() => {
+                            // Fire the same analytics event the
+                            // LaunchRow emits on dispatch, so the
+                            // install-completion path matches the
+                            // external-url / in-app-route shape. The
+                            // actual launch telemetry lands when the
+                            // learner taps Open after this.
+                            analytics.track(
+                                AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED,
+                                {
+                                    nodeId: node.id,
+                                    kind: resolved.kind,
+                                    source: resolved.source,
+                                    destination: `install:${
+                                        resolved.kind === 'app-listing'
+                                            ? resolved.listingId
+                                            : ''
+                                    }`,
+                                },
+                            );
+                        }}
+                    />
+                )}
 
-                            <p className="text-sm font-medium text-grayscale-900 truncate">
-                                {earnLinkLabel}
-                            </p>
+                {showAppListingSkeleton && (
+                    // Same vertical footprint as AppListingCard so the
+                    // layout doesn't jump when the listing resolves.
+                    <div
+                        aria-hidden
+                        className="
+                            rounded-2xl border border-grayscale-200 bg-white
+                            px-4 pt-3 pb-4
+                        "
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-14 h-14 rounded-xl bg-grayscale-100 animate-pulse" />
+
+                            <div className="min-w-0 flex-1 space-y-2 pt-1">
+                                <div className="h-4 w-3/4 rounded bg-grayscale-100 animate-pulse" />
+                                <div className="h-3 w-5/6 rounded bg-grayscale-100 animate-pulse" />
+                                <div className="h-4 w-16 rounded-full bg-grayscale-100 animate-pulse" />
+                            </div>
                         </div>
 
-                        <IonIcon
-                            icon={openOutline}
-                            className="shrink-0 text-grayscale-500 text-lg
-                                       group-hover:text-grayscale-900 transition-colors"
-                            aria-hidden
-                        />
-                    </motion.a>
+                        <div className="mt-3 h-11 w-full rounded-[20px] bg-grayscale-100 animate-pulse" />
+                    </div>
+                )}
+
+                {launchCopy
+                    && !showAppListingCard
+                    && !showAppListingSkeleton
+                    && (resolved.kind === 'external-url'
+                        || resolved.kind === 'app-listing'
+                        || resolved.kind === 'in-app-route') && (
+                    <LaunchRow
+                        copy={launchCopy}
+                        resolved={resolved}
+                        onDispatch={(destination) => {
+                            analytics.track(
+                                AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED,
+                                {
+                                    nodeId: node.id,
+                                    kind: resolved.kind,
+                                    source: resolved.source,
+                                    destination,
+                                },
+                            );
+                        }}
+                        onInAppNavigate={(href) => history.push(href)}
+                    />
                 )}
 
                 {/* -------------------------------------------------- */}

@@ -13,6 +13,14 @@ node_modules
 **/.turbo
 **/.nx
 
+# The Pathways module owns a `src/pages/pathways/build/` subtree (the
+# "Build mode" — authoring UI, policy editors, history reducer, etc.).
+# It is *source*, not output; without this negation the `**/build` line
+# above silently strips it from the Docker context and Rollup fails to
+# resolve `./build/BuildMode` from `PathwaysShell.tsx` at image-build time.
+!**/pages/pathways/build
+!**/pages/pathways/build/**
+
 # Common exclusions
 *.log
 .git

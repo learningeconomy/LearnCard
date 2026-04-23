@@ -13,6 +13,7 @@ import {
     removeEdge,
     removeNode,
     reorderNodes,
+    setAction,
     setCompositePolicy,
     setDestinationNode,
     setNodeOrder,
@@ -135,6 +136,82 @@ describe('updateNode', () => {
         const after = updateNode(before, 'a', { title: 'A' }, opts);
 
         expect(after.nodes[1]).toEqual(before.nodes[1]);
+    });
+});
+
+describe('setAction', () => {
+    it('sets an ActionDescriptor on the target node and bumps updatedAt', () => {
+        const before = pathway([node('a')]);
+        const after = setAction(
+            before,
+            'a',
+            { kind: 'app-listing', listingId: 'listing-xyz' },
+            opts,
+        );
+
+        expect(after).not.toBe(before);
+        expect(after.nodes[0].action).toEqual({
+            kind: 'app-listing',
+            listingId: 'listing-xyz',
+        });
+        expect(after.nodes[0].updatedAt).toBe(LATER);
+        expect(after.updatedAt).toBe(LATER);
+    });
+
+    it('replaces an existing action with a new kind', () => {
+        const initial = pathway([node('a')]);
+        const step1 = setAction(
+            initial,
+            'a',
+            { kind: 'external-url', url: 'https://example.com' },
+            opts,
+        );
+        const step2 = setAction(
+            step1,
+            'a',
+            { kind: 'in-app-route', to: '/wallet' },
+            opts,
+        );
+
+        expect(step2.nodes[0].action).toEqual({ kind: 'in-app-route', to: '/wallet' });
+    });
+
+    it('clears the action when passed null — and removes the key entirely', () => {
+        // Build a node that already carries an action by layering the field
+        // onto the fixture. `node()` doesn't accept overrides, and we want
+        // the fixture helper to stay minimal, so spreading here keeps the
+        // test local without widening the helper's signature.
+        const nodeWithAction: PathwayNode = {
+            ...node('a'),
+            action: { kind: 'external-url', url: 'https://example.com' },
+        };
+
+        const initial = pathway([nodeWithAction]);
+        const cleared = setAction(initial, 'a', null, opts);
+
+        expect('action' in cleared.nodes[0]).toBe(false);
+        expect(cleared.nodes[0].updatedAt).toBe(LATER);
+    });
+
+    it('is a no-op for unknown node ids (returns the same reference)', () => {
+        const before = pathway([node('a')]);
+        const after = setAction(
+            before,
+            'ghost',
+            { kind: 'none' },
+            opts,
+        );
+
+        expect(after).toBe(before);
+    });
+
+    it('preserves other fields on the node (stage, progress, createdBy)', () => {
+        const before = pathway([node('a')]);
+        const after = setAction(before, 'a', { kind: 'none' }, opts);
+
+        expect(after.nodes[0].stage).toEqual(before.nodes[0].stage);
+        expect(after.nodes[0].progress).toEqual(before.nodes[0].progress);
+        expect(after.nodes[0].createdBy).toEqual(before.nodes[0].createdBy);
     });
 });
 

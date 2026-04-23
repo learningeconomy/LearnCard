@@ -187,6 +187,68 @@ export const AchievementProjectionSchema = z.object({
 
 This keeps the pathway graph cheap to mutate (no signing on every edit) and defers the cryptographic cost to the moment of credentialing. It also means a node can be **retroactively re‑projected** if the achievement schema evolves (which it will).
 
+### 3.7 `ActionDescriptor` — where the learner goes to act (v0.5)
+
+**Status:** Shipped. See `apps/learn-card-app/src/pages/pathways/types/action.ts`, dispatch in `core/action.ts`.
+
+Policy tells us the *shape* of the work; projection tells us *what credential represents completion*. Neither of them tells the UI **where the learner should go to actually do it**. That was a real gap: Today and NodeDetail both hid one-off branches for "does this node have an earnUrl?", "is `policy.kind === 'external'`?" and defaulted everything else to "open the NodeDetail overlay." With the surface expanding to AI Tutor sessions, App Store listings, and dozens of external providers (Khan, Coursera, ETS, Handshake…), guessing a CTA from policy kind stops being honest.
+
+`ActionDescriptor` is an **optional** discriminated union on `PathwayNode.action`:
+
+```ts
+type ActionDescriptor =
+    | { kind: 'in-app-route'; to: string; params?: Record<string, string | number | boolean> }
+    | { kind: 'app-listing'; listingId: string; deepLinkSection?: string }
+    | { kind: 'external-url'; url: string; mobileDeepLink?: string }
+    | { kind: 'mcp-tool'; ref: { serverId: string; toolName: string; defaultArgs?: … } }
+    | { kind: 'none' };
+```
+
+Load-bearing design choices:
+
+- **Orthogonal to Policy / Termination / Projection.** A `practice` policy can launch via any action kind. Authors pick each axis independently — the UI uses all four together to render an honest CTA.
+- **App-listing references a registry entry, not a URL.** `AppStoreListingValidator` in brain-service is our provider registry — first-party apps AND external providers with `launch_type: DIRECT_LINK` (Coursera, Khan, Handshake) live there. `launch_type` already tells us how to open them; `providerKind` would be a second axis we don't need.
+- **Optional field, graceful fallback.** Nodes authored before the field existed keep working. `resolveNodeAction` in `core/action.ts` synthesises a best-effort `ResolvedAction` from legacy signals:
+  1. `node.action` (explicit) — wins when present.
+  2. `credentialProjection.earnUrl` + `earnUrlSource` — synthesised `external-url`. `subjectWebpage` flags as `landingPage: true` so surfaces degrade copy ("View landing page" vs. "Go to issuer page").
+  3. `policy.external.mcp` — synthesised `mcp-tool`.
+  4. Otherwise — `none` (local-only node; NodeDetail overlay is the destination).
+- **Telemetry separates signal from source.** `PATHWAYS_ACTION_DISPATCHED` carries `kind` *and* `source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none'` so we can measure how much of the CTA dispatch is driven by authored descriptors vs. legacy fallbacks — a practical proxy for "did authors adopt the new field?".
+
+`NodeDetail` and `Today`'s `NextActionCard` both dispatch through `resolveNodeAction`. `external-url` renders an `<a target="_blank">`; `in-app-route` / `app-listing` use `history.push` through `buildInAppHref` (which substitutes `:slot` params and pushes the rest into the query string). MCP and `none` keep the learner inside the NodeDetail overlay — MCP is agent-driven work, not navigation; `none` means "the overlay *is* the destination."
+
+### 3.8 `OutcomeSignal` — real-world results, not step completion (v0.5)
+
+**Status:** Shipped schema + matcher + binder. UI surfacing (dedicated Outcome panel in Build/Today) is next. See `types/outcome.ts`, `core/outcomeMatcher.ts`, `agents/credentialBinder.ts`.
+
+Termination answers *"did the learner execute the pathway?"*. Outcome signals answer *"did executing it produce the intended result?"*. A pathway with 100% node completion can still fail its outcome; conversely, learners get outcomes without finishing pathways. Collapsing the two into one "green check" hides the iteration loop we need in order to measure pathway *effectiveness* (not just *fidelity*).
+
+Signals live on `Pathway.outcomes?: OutcomeSignal[]` and are a discriminated union keyed on `kind`:
+
+```ts
+type OutcomeSignal =
+    | { kind: 'credential-received'; expectedCredentialType: string; expectedIssuerDid?: string; … }
+    | { kind: 'score-threshold';     expectedCredentialType: string; field: string; op: ComparisonOp; value: number; … }
+    | { kind: 'enrollment';          institutionHint?: string; … }
+    | { kind: 'employment';          employerHint?: string; … }
+    | { kind: 'wage-delta';          minDeltaPercent?: number; … }   // matcher gated — needs trusted payroll roster
+    | { kind: 'self-reported';       prompt: string; … };             // human-only
+```
+
+Each signal carries common fields: `id`, `label`, `description?`, `minTrustTier`, optional `window`, and an optional `binding: OutcomeBinding` recorded when a wallet credential satisfies the predicate.
+
+Load-bearing design choices:
+
+- **Trust tier gate is separate from predicate.** The matcher answers the data question ("does this VC match?"); the binder answers the trust question ("does the issuer clear the minimum tier?"). `classifyIssuerTrust` is the swap point for a proper issuer registry later; today it promotes DIDs listed in `institutionIssuers` / `trustedIssuers` and defaults anything else to `trusted`.
+- **Window is a flag, not a gate.** VCs outside a signal's declared window still produce proposals (learners commonly earn things late); `OutcomeBinding.outOfWindow: true` tags them so cohort analytics can split in-window vs. out-of-window effectiveness rather than hiding tail observations.
+- **Bindings go through the proposal pipeline.** The credential binder (`agents/credentialBinder.ts`) is a deterministic local observer — no LLM, no budget burn, no cost ledger. When a wallet VC matches an outcome predicate AND the issuer clears the trust tier, the binder constructs a `Proposal` with `capability: 'interpretation'` and `diff.setOutcomeBindings`. Rationale:
+  - The learner *always* confirms a binding. A VC landing in the wallet doesn't auto-commit — it proposes. The core architecture invariant ("agent proposes, learner commits") survives contact with credentials-as-outcomes.
+  - `PathwayDiff.setOutcomeBindings` extends the existing `applyProposal` seam. No new write path. Stale patches for unknown outcome ids are silently dropped (cross-device replay safety).
+- **Emitted one proposal per matching outcome.** A single VC that satisfies five outcomes across three pathways produces five proposals, not one bundle. The learner can accept / reject each independently, which matches the existing Proposal UX and prevents a wrongly-matched outcome in pathway A from blocking the correct match in pathway B.
+- **`wage-delta` schema is declared but matcher returns `pending-implementation`.** Authors can write the signal today so cohort analytics code can be drafted against it; auto-binding lights up when a trusted payroll issuer roster ships.
+
+Two telemetry events accompany the lifecycle: `PATHWAYS_OUTCOME_AUTOBIND_PROPOSED` (binder emitted a proposal, still awaiting commit) and `PATHWAYS_OUTCOME_BOUND` (learner accepted a proposal or manually bound). A `PATHWAYS_OUTCOME_BINDING_CLEARED` event covers revocation / learner dispute.
+
 ---
 
 ## 4. Routes, modes, layout
@@ -816,6 +878,7 @@ _End of v0.3. This document is meant to be edited in place as Phase 0 lands and 
 
 ## Changelog
 
+- **v0.5** — Action descriptors + outcome signals. Added § 3.7 (`ActionDescriptor`) and § 3.8 (`OutcomeSignal`) covering the two new node/pathway primitives shipped in this release, plus the deterministic credential binder (`agents/credentialBinder.ts`) that turns wallet VCs into outcome-binding proposals without LLM cost or budget burn. Extended `PathwayDiff` with `setOutcomeBindings` so `applyProposal` stays the one commit seam. Added four telemetry events (`PATHWAYS_ACTION_DISPATCHED`, `PATHWAYS_OUTCOME_AUTOBIND_PROPOSED`, `PATHWAYS_OUTCOME_BOUND`, `PATHWAYS_OUTCOME_BINDING_CLEARED`). Wired `NodeDetail` and Today's `NextActionCard` to dispatch primary CTAs through `resolveNodeAction` (kind-aware anchor / `history.push` / MCP / overlay fallback), with source-aware copy degradation for CTDL `subjectWebpage` landing pages. No breaking changes — both new fields are optional, legacy `earnUrl` + `policy.external.mcp` paths still work via the resolver's fallback. 54 new Vitest cases (757 total in pathways, all passing).
 - **v0.4** — Retrospective + current-state pass. Added the "Current state (April 2026)" callout near the top summarizing that phases 0 / 1 / 2 / 3a are complete client-side (with VC signing, graceful-degradation + Playwright tests, and tenant gating as the Phase 1 gaps), that What-If shipped ahead of schedule because it is pure over graph state, and that Phase 3b is gated on a brain-service LLM proxy whose seam (`agents/proxy.ts:setAgentDispatch`) already exists. Annotated every phase in § 17 with per-bullet completion status. Called out three additions beyond the original scope that are now load-bearing: Credential Engine Registry round-trip (`import/` + `projection/toCtdlPathway.ts`), `intentAltitude` for non-aspirational arrivals, and `chosenRoute` as the single source of truth shared by Today / Map / What-If. No changes to architectural commitments; this release is purely reconciling the document with the code.
 - **v0.3** — Incorporated second review round. Added prime metric (WCL) at top of telemetry with product sign‑off callout (Section 13.0). Added endorsement lifecycle events + daily cost snapshot event (Section 13.1). Strengthened cost control with per‑learner and per‑tenant monthly caps (Section 7.3). Added cross‑device stale‑proposal row to offline conflict table (Section 11). Reframed Section 7.2 as **capabilities** (contracts) rather than named agents (implementations). Added three‑gate package promotion criteria (Section 15). Split Phase 3 into 3a (infrastructure, mock agent) + 3b (Interpretation only) with explicit kill criteria. Added audience wedge as a required product decision at the top of the roadmap.
 - **v0.2** — Incorporated first review round. Added "what Pathways is not" (Section 1). Moved `Proposal` out of `Pathway` into a sibling collection (Section 3.5). Committed to LLM-proxy-through-brain-service and added read/write distinction for agents (Section 7.1), plus an explicit "boundaries not final" note (Section 7.2). Reframed `getNextAction` as a scoring function with `reasons[]` (Section 8.1). Made cold-start vector-first, LLM-maybe (Section 6). Added a React Flow spike to Phase 2 (Section 10). New sections: Offline conflict policy (11), Telemetry (13), Graceful degradation (14), Package vs in-app decision (15). Roadmap updated accordingly.

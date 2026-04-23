@@ -34,6 +34,7 @@ import { motion } from 'motion/react';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { computePathwayProgress, resolveCompositeChild } from '../core/composition';
+import { useListingForNode } from '../node/useListingForNode';
 import type { PathwayNode, Policy } from '../types';
 
 /**
@@ -186,16 +187,22 @@ const KIND_ICON: Record<PolicyKind, string> = {
 };
 
 /**
- * M6.b — Node avatar.
+ * M6.b + v0.5 — Node avatar.
  *
- * Three-tier visual fallback, picked in order:
+ * Four-tier visual fallback, picked in order:
  *
- *   1. `credentialProjection.image` — the badge/certificate art from
- *      the CTDL import. This is the richest signal on a learner's
- *      map: seeing the actual badge you'll earn makes the card feel
- *      like a real reward, not a todo list row.
- *   2. Otherwise, a kind-tinted bubble with a `KIND_ICON` glyph (see
- *      the KIND_TONE / KIND_ICON maps above). This gives every card a
+ *   1. `appListingIconUrl` — when the node's resolved action is an
+ *      app-listing, use the app's square icon rendered in a
+ *      `rounded-xl` frame (not a circle). The squircle-vs-circle
+ *      distinction is doing work here: badges read as "thing you
+ *      earn" (circle, ring, completion aura); apps read as "thing you
+ *      open to work" (square, like any phone app icon). Two shapes,
+ *      two meanings — learners scan once and know which card is which.
+ *   2. `credentialProjection.image` — the badge/certificate art from
+ *      the CTDL import. Seeing the actual badge you'll earn makes
+ *      the card feel like a real reward, not a todo list row.
+ *   3. Otherwise, a kind-tinted bubble with a `KIND_ICON` glyph (see
+ *      the KIND_TONE / KIND_ICON maps above). Every card still has a
  *      recognizable anchor point even when no art exists.
  *
  * Locked/gated nodes render the avatar desaturated + slightly
@@ -206,8 +213,17 @@ const NodeAvatar: React.FC<{
     node: PathwayNode;
     status: Status;
     isGated: boolean;
-}> = ({ node, status, isGated }) => {
-    const image = node.credentialProjection?.image;
+    /**
+     * App-listing icon URL when the node's action is `app-listing`
+     * and the listing has resolved. Undefined for every other node,
+     * and while the listing is still loading — we'd rather show the
+     * kind-glyph fallback than briefly flash a generic circle before
+     * the app icon pops in. React Query caches per listingId so the
+     * flash is sub-frame in practice.
+     */
+    appListingIconUrl?: string | null;
+}> = ({ node, status, isGated, appListingIconUrl }) => {
+    const badgeImage = node.credentialProjection?.image;
     const kind = node.stage.policy.kind;
     const tone = KIND_TONE[kind];
     const glyph = KIND_ICON[kind];
@@ -217,14 +233,40 @@ const NodeAvatar: React.FC<{
     // but it isn't available yet." Completed wins over gating.
     const dimClass = isGated && !isCompleted ? 'opacity-60 grayscale' : '';
 
-    if (image) {
+    // App-listing wins — the node exists to send the learner into that
+    // app, so the app's own identity is the most honest anchor.
+    if (appListingIconUrl) {
+        return (
+            <span
+                aria-hidden
+                className={`shrink-0 w-8 h-8 rounded-[8px] overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
+            >
+                <img
+                    src={appListingIconUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    draggable={false}
+                    onError={e => {
+                        // Broken CDN → fall through visually by
+                        // clearing the src. Parent's ring + bg-white
+                        // keep the slot occupied so layout is stable
+                        // and the other fallbacks aren't retriggered.
+                        (e.currentTarget as HTMLImageElement).src = '';
+                    }}
+                />
+            </span>
+        );
+    }
+
+    if (badgeImage) {
         return (
             <span
                 aria-hidden
                 className={`shrink-0 w-8 h-8 rounded-full overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
             >
                 <img
-                    src={image}
+                    src={badgeImage}
                     alt=""
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -247,6 +289,18 @@ const NodeAvatar: React.FC<{
 const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
     const { node, inFocus, isFocusNode } = data;
     const status = node.progress.status;
+
+    // App-listing resolution. `useListingForNode` is gated internally —
+    // for nodes without an `app-listing` action the hook short-circuits
+    // and issues no queries, so we pay nothing on badge / credential /
+    // review nodes. React Query de-dupes per listingId, so 10 map cards
+    // pointing at the same listing still issue exactly one request.
+    // When the fetch resolves we pass the icon URL to NodeAvatar, which
+    // swaps its circular badge frame for a rounded-xl app frame — the
+    // one-look visual signal this is an embedded-app step.
+    const listingForNode = useListingForNode(node);
+    const appListingIconUrl =
+        listingForNode.listing?.icon_url ?? null;
 
     // Composite-node affordance: if this node references another
     // pathway, we show a tiny "chunk" pill in the top-left corner so
@@ -516,6 +570,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         node={node}
                         status={status}
                         isGated={data.prereq.gated}
+                        appListingIconUrl={appListingIconUrl}
                     />
 
                     <div className="min-w-0 flex-1">

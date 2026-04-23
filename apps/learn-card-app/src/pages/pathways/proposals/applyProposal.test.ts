@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type {
     Edge,
+    OutcomeBinding,
+    OutcomeSignal,
     Pathway,
     PathwayDiff,
     PathwayNode,
@@ -614,5 +616,137 @@ describe('applyProposal — composite guard', () => {
         );
 
         expect(after.nodes[0].stage.policy.kind).toBe('composite');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Outcome bindings — learner-visible outcomes satisfied via proposal.
+// ---------------------------------------------------------------------------
+
+describe('applyProposal — outcome bindings', () => {
+    const OUTCOME_ID = '00000000-0000-4000-8000-00000000abcd';
+
+    const satOutcome = (overrides: Partial<OutcomeSignal> = {}): OutcomeSignal =>
+        ({
+            id: OUTCOME_ID,
+            label: 'SAT ≥ 1400',
+            kind: 'score-threshold',
+            expectedCredentialType: 'CollegeBoardSATScore',
+            field: 'score.total',
+            op: '>=',
+            value: 1400,
+            minTrustTier: 'institution',
+            ...overrides,
+        }) as OutcomeSignal;
+
+    const binding = (overrides: Partial<OutcomeBinding> = {}): OutcomeBinding => ({
+        credentialUri: 'urn:uuid:vc-1',
+        boundAt: NOW,
+        boundVia: 'auto',
+        issuerTrustTier: 'institution',
+        observedValue: 1450,
+        outOfWindow: false,
+        ...overrides,
+    });
+
+    it('records a binding on the targeted outcome', () => {
+        const before = pathway([], [], { outcomes: [satOutcome()] });
+
+        const after = applyProposal(
+            before,
+            proposal(
+                emptyDiff({
+                    setOutcomeBindings: [{ outcomeId: OUTCOME_ID, binding: binding() }],
+                }),
+            ),
+            LATER,
+        );
+
+        const [outcome] = after.outcomes ?? [];
+
+        expect(outcome).toBeDefined();
+        expect(outcome.binding).toEqual(binding());
+    });
+
+    it('clears a prior binding when the patch is null', () => {
+        const before = pathway([], [], {
+            outcomes: [satOutcome({ binding: binding({ credentialUri: 'urn:uuid:old' }) })],
+        });
+
+        const after = applyProposal(
+            before,
+            proposal(
+                emptyDiff({
+                    setOutcomeBindings: [{ outcomeId: OUTCOME_ID, binding: null }],
+                }),
+            ),
+            LATER,
+        );
+
+        const [outcome] = after.outcomes ?? [];
+
+        expect(outcome.binding).toBeUndefined();
+    });
+
+    it('silently drops patches for unknown outcome ids', () => {
+        const before = pathway([], [], { outcomes: [satOutcome()] });
+
+        const after = applyProposal(
+            before,
+            proposal(
+                emptyDiff({
+                    setOutcomeBindings: [
+                        {
+                            outcomeId: '00000000-0000-4000-8000-00000000ffff',
+                            binding: binding(),
+                        },
+                    ],
+                }),
+            ),
+            LATER,
+        );
+
+        // Outcome list survives unchanged; no crash.
+        expect(after.outcomes).toHaveLength(1);
+        expect(after.outcomes?.[0].binding).toBeUndefined();
+    });
+
+    it('leaves outcomes reference-equal when no binding patches are supplied', () => {
+        const outcomes = [satOutcome()];
+        const before = pathway([], [], { outcomes });
+
+        const after = applyProposal(before, proposal(emptyDiff({})), LATER);
+
+        expect(after.outcomes).toBe(outcomes);
+    });
+
+    it('applies multiple binding patches in one proposal', () => {
+        const OUTCOME_ID_B = '00000000-0000-4000-8000-00000000ef00';
+
+        const before = pathway([], [], {
+            outcomes: [
+                satOutcome(),
+                satOutcome({ id: OUTCOME_ID_B, label: 'Other' }),
+            ],
+        });
+
+        const after = applyProposal(
+            before,
+            proposal(
+                emptyDiff({
+                    setOutcomeBindings: [
+                        { outcomeId: OUTCOME_ID, binding: binding() },
+                        {
+                            outcomeId: OUTCOME_ID_B,
+                            binding: binding({ credentialUri: 'urn:uuid:vc-b', observedValue: 1500 }),
+                        },
+                    ],
+                }),
+            ),
+            LATER,
+        );
+
+        expect(after.outcomes?.[0].binding?.credentialUri).toBe('urn:uuid:vc-1');
+        expect(after.outcomes?.[1].binding?.credentialUri).toBe('urn:uuid:vc-b');
     });
 });
