@@ -561,7 +561,8 @@ const UpdateBoostCMS: React.FC = () => {
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,
-                                _boostUri
+                                _boostUri,
+                                { mediaAttachments: issuee.mediaAttachments }
                             );
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
@@ -576,7 +577,8 @@ const UpdateBoostCMS: React.FC = () => {
                         const issuedVc = await addBoostSomeone(
                             wallet,
                             issuee?.profileId,
-                            _boostUri
+                            _boostUri,
+                            { mediaAttachments: issuee.mediaAttachments }
                         );
                         return issuedVc;
                     })
