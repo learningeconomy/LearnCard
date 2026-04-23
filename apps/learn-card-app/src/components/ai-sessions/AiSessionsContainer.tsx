@@ -134,9 +134,8 @@ export const AiSessionsContainer: React.FC<{
 
             <GenericErrorBoundary>
                 <div
-                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${
-                        !isDesktop ? 'pb-[90px]' : ''
-                    }`}
+                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${!isDesktop ? 'pb-[90px]' : ''
+                        }`}
                 >
                     <div className="w-full ml-2 px-2 py-0">
                         {isDesktop && (
