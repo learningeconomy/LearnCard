@@ -92,7 +92,10 @@ import {
     getProfileIdFromDid,
     getProfileIdFromString,
 } from '@helpers/did.helpers';
-import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
+import {
+    getCredentialStatusForBoostAndProfile,
+    getCredentialInstanceForBoostAndProfile,
+} from '@accesslayer/credential/read';
 import {
     getContractTermsForProfile,
     getContractDetailsByUri,
@@ -1237,24 +1240,29 @@ const handleSendAiSessionCredentialEvent = async (
         : getDidWeb(ctx.domain, listing.listing_id);
 
     if (topicBoost && topicUri) {
-        const sentCredentials = await getCredentialsSentByListingToProfile(
-            listingId,
-            profile.profileId,
-            { limit: 100 }
+        // Look up the topic credential by boostId + profileId directly rather
+        // than scanning recent sent credentials. This is O(1) and race-safe for
+        // users who may have many sessions over time.
+        const existingTopicCredential = await getCredentialInstanceForBoostAndProfile(
+            topicBoost.id,
+            profile.profileId
         );
 
-        const topicCredential = sentCredentials.find(
-            cred => cred.boostCategory && aiTopicBoostCategories.includes(cred.boostCategory)
-        );
-
-        if (topicCredential) {
-            topicCredentialUri = getCredentialUri(topicCredential.credentialId, ctx.domain);
+        if (existingTopicCredential) {
+            topicCredentialUri = getCredentialUri(existingTopicCredential.id, ctx.domain);
         }
     }
 
     if (!topicBoost) {
         isNewTopic = true;
 
+        // JSON-LD context for TopicCredential is intentionally inlined rather
+        // than hosted at a stable URL. Inline contexts are valid JSON-LD and
+        // allow schema evolution without deploying a hosted contexts service,
+        // at the cost of a few KB per credential. If/when this credential type
+        // stabilizes and is consumed by many external verifiers, consider
+        // publishing at e.g. https://ctx.learncard.com/ai-topic/1.0.0.json and
+        // referencing it by URL instead.
         const topicCredential: UnsignedVC = {
             '@context': [
                 'https://www.w3.org/ns/credentials/v2',
@@ -1331,6 +1339,9 @@ const handleSendAiSessionCredentialEvent = async (
         });
     }
 
+    // See the note on the TopicCredential @context above: the SummaryCredential
+    // context is likewise inlined intentionally. When this schema stabilizes,
+    // consider publishing at https://ctx.learncard.com/ai-session/1.0.0.json.
     const sessionCredential: UnsignedVC = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',

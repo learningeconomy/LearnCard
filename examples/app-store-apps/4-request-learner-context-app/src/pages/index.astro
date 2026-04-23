@@ -219,6 +219,7 @@ import '../styles/global.css';
                                         id="preset-learning-btn"
                                         class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
                                         data-preset="learning"
+                                        data-testid="ai-session-preset-learning"
                                     >
                                         📚 Learning Session
                                     </button>
@@ -226,6 +227,7 @@ import '../styles/global.css';
                                         id="preset-coding-btn"
                                         class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
                                         data-preset="coding"
+                                        data-testid="ai-session-preset-coding"
                                     >
                                         💻 Coding Practice
                                     </button>
@@ -233,6 +235,7 @@ import '../styles/global.css';
                                         id="preset-design-btn"
                                         class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
                                         data-preset="design"
+                                        data-testid="ai-session-preset-design"
                                     >
                                         🎨 Design Workshop
                                     </button>
@@ -240,6 +243,7 @@ import '../styles/global.css';
                                         id="preset-minimal-btn"
                                         class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
                                         data-preset="minimal"
+                                        data-testid="ai-session-preset-minimal"
                                     >
                                         ⚡ Minimal Test
                                     </button>
@@ -255,6 +259,7 @@ import '../styles/global.css';
                                         <input
                                             type="text"
                                             id="custom-session-title"
+                                            data-testid="ai-session-custom-title"
                                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                                             placeholder="My Custom Learning Session"
                                         />
@@ -264,6 +269,7 @@ import '../styles/global.css';
                                         <input
                                             type="text"
                                             id="custom-summary-title"
+                                            data-testid="ai-session-custom-summary-title"
                                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                                             placeholder="Session Summary"
                                         />
@@ -272,6 +278,7 @@ import '../styles/global.css';
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Summary Text</label>
                                         <textarea
                                             id="custom-summary-text"
+                                            data-testid="ai-session-custom-summary-text"
                                             rows="2"
                                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                                             placeholder="Brief description of what was learned..."
@@ -317,6 +324,7 @@ import '../styles/global.css';
                                     </div>
                                     <button
                                         id="create-custom-session-btn"
+                                        data-testid="ai-session-create-custom"
                                         class="btn-secondary w-full text-white font-bold py-3 rounded-xl text-sm shadow-lg"
                                     >
                                         Create Custom Session
@@ -324,22 +332,32 @@ import '../styles/global.css';
                                 </div>
                             </div>
 
-                            <div id="ai-session-result" class="hidden mt-4 space-y-3">
+                            <div
+                                id="ai-session-result"
+                                data-testid="ai-session-result"
+                                class="hidden mt-4 space-y-3"
+                            >
                                 <div class="glass-panel rounded-xl p-4">
                                     <span class="text-sm font-medium">Topic URI:</span>
                                     <code
                                         id="topic-uri-display"
+                                        data-testid="ai-session-topic-uri"
                                         class="text-purple-600 text-xs break-all block mt-1"></code>
                                 </div>
                                 <div class="glass-panel rounded-xl p-4">
                                     <span class="text-sm font-medium">Session Credential:</span>
                                     <code
                                         id="session-credential-display"
+                                        data-testid="ai-session-session-credential-uri"
                                         class="text-purple-600 text-xs break-all block mt-1"></code>
                                 </div>
                                 <div class="glass-panel rounded-xl p-4">
                                     <span class="text-sm font-medium">New Topic?</span>
-                                    <span id="is-new-topic-display" class="text-gray-800"></span>
+                                    <span
+                                        id="is-new-topic-display"
+                                        data-testid="ai-session-is-new-topic"
+                                        class="text-gray-800"
+                                    ></span>
                                 </div>
                             </div>
                         </div>

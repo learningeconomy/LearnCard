@@ -943,23 +943,12 @@ export const LCNNotificationDataValidator = z
     .loose();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
-export const LCNNotificationAppStoreListingValidator = z.object({
-    type: z.literal('appStoreListing'),
-    id: z.string(),
-    displayName: z.string(),
-    did: z.string(),
-});
-export type LCNNotificationAppStoreListing = z.infer<
-    typeof LCNNotificationAppStoreListingValidator
->;
-
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
     to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
     from: z.union([
         z.string(),
         LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-        LCNNotificationAppStoreListingValidator,
     ]),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),

@@ -81,10 +81,10 @@ export const AiSessionsContainer: React.FC<{
 
     const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
 
-    const topicUri = (_topicUri || (query.get('topicBoostUri') as string)).replace(
-        /localhost:/,
-        'localhost%3A'
-    );
+    // Producers URL-encode the `topicBoostUri` query param before navigation;
+    // URLSearchParams.get() returns the decoded value, so no further decoding
+    // is needed here.
+    const topicUri = _topicUri ?? query.get('topicBoostUri') ?? '';
     const { data: enrichedSessionData, isLoading: isLoadingEnrichedSessions } =
         useGetEnrichedSession(topicUri);
 

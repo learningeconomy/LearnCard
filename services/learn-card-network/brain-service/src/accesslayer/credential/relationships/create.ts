@@ -34,6 +34,41 @@ export const createSentCredentialRelationship = async (
         ...(integrationId ? { integrationId } : {}),
     });
 
+    // Always write the Profile -> CREDENTIAL_SENT -> Credential edge from the
+    // issuer's owner profile. Many existing queries (getBoostRecipients, etc.)
+    // match on this specific shape, so maintaining this invariant prevents
+    // silent regressions when credentials are issued via alternative issuer
+    // types (e.g., AppStoreListing).
+    const ownerProfile = getIssuerOwnerProfile(issuer);
+
+    await new QueryBuilder(new BindParam({ params: properties }))
+        .match({
+            related: [
+                {
+                    model: Profile,
+                    where: { profileId: ownerProfile.profileId },
+                    identifier: 'profile',
+                },
+            ],
+        })
+        .match({
+            related: [
+                { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+            ],
+        })
+        .create(
+            `(profile)-[r:${
+                Profile.getRelationshipByAlias('credentialSent').name
+            }]->(credential)`
+        )
+        .set('r = $params')
+        .run();
+
+    // If the issuer is an AppStoreListing, additionally write the
+    // AppStoreListing -> CREDENTIAL_SENT -> Credential edge so that
+    // listing-scoped queries (getCredentialsByIssuer, getCredentialsSentByListingToProfile)
+    // can attribute the credential to the listing without having to traverse
+    // the owner profile.
     if (isAppStoreListingIssuer(issuer)) {
         await new QueryBuilder(new BindParam({ params: properties }))
             .match({
@@ -53,31 +88,6 @@ export const createSentCredentialRelationship = async (
             .create(
                 `(listing)-[r:${
                     AppStoreListing.getRelationshipByAlias('credentialSent').name
-                }]->(credential)`
-            )
-            .set('r = $params')
-            .run();
-    } else {
-        const ownerProfile = getIssuerOwnerProfile(issuer);
-
-        await new QueryBuilder(new BindParam({ params: properties }))
-            .match({
-                related: [
-                    {
-                        model: Profile,
-                        where: { profileId: ownerProfile.profileId },
-                        identifier: 'profile',
-                    },
-                ],
-            })
-            .match({
-                related: [
-                    { model: Credential, where: { id: credential.id }, identifier: 'credential' },
-                ],
-            })
-            .create(
-                `(profile)-[r:${
-                    Profile.getRelationshipByAlias('credentialSent').name
                 }]->(credential)`
             )
             .set('r = $params')

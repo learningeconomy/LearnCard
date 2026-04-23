@@ -17,8 +17,6 @@ import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
 
-import { useGetIntegrationForListing } from 'learn-card-base';
-
 interface LaunchConfig {
     url?: string;
     permissions?: string[];

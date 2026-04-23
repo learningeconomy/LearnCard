@@ -59,7 +59,11 @@ export const AiSessionTopicItem: React.FC<{
     return (
         <button
             type="button"
-            onClick={() => history.push(`/ai/sessions?topicBoostUri=${topicBoost?.uri}`)}
+            onClick={() =>
+                history.push(
+                    `/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`
+                )
+            }
             className="flex items-center justify-between w-full bg-white rounded-2xl shadow-sm px-4 py-3 mb-3"
         >
             <div className="flex items-center justify-start flex-1 min-w-0">
