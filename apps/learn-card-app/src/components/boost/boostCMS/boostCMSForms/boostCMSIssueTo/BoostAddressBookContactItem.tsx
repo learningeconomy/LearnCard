@@ -6,10 +6,12 @@ import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
-import { UserProfilePicture, BoostUserTypeEnum } from 'learn-card-base';
+import { ModalTypes, UserProfilePicture, BoostUserTypeEnum, useModal } from 'learn-card-base';
+import PaperClip from 'apps/learn-card-app/src/components/svgs/PaperClip';
 
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
 import { BoostAddressBookEditMode } from './BoostAddressBook';
+import RecipientMediaAttachmentsModal from './RecipientMediaAttachmentsModal';
 
 type BoostAddressBookContactItemProps = {
     mode: BoostAddressBookEditMode;
@@ -29,6 +31,7 @@ type BoostAddressBookContactItemProps = {
     customListItemStyles?: string;
 
     version?: 'original' | 'sleek';
+    showRecipientAttachments?: boolean;
 };
 
 export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemProps> = ({
@@ -43,13 +46,17 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
     collectionPropName = 'issueTo',
     customListItemStyles,
     version = 'original',
+    showRecipientAttachments = false,
 }) => {
+    const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
     let actionButton;
     let viewModeStyles;
     const issueToList = state?.[collectionPropName];
     const contactAlreadyExists = _issueTo?.find?.(
         _contact => _contact?.profileId === contact?.profileId
     );
+    const attachmentsCount = contact.mediaAttachments?.length ?? 0;
+    const hasAttachments = attachmentsCount > 0;
 
     const handleAddContact = (contact: BoostCMSIssueTo) => {
         if (!contactAlreadyExists) {
@@ -79,6 +86,22 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
         // removes contact from local addressBook component state
         const filteredList = _issueTo.filter(_contact => _contact.profileId !== contact.profileId);
         _setIssueTo([...filteredList]);
+    };
+
+    const handleOpenMediaAttachments = () => {
+        newModal(
+            <RecipientMediaAttachmentsModal recipient={contact} setIssueTo={_setIssueTo} />,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+                usePortal: true,
+                customCloseButton: true,
+            },
+            {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
+            }
+        );
     };
 
     if (mode === BoostAddressBookEditMode.delete) {
@@ -149,7 +172,11 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
             className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item ${viewModeStyles} ${customListItemStyles}`}
         >
             <div className="flex items-center justify-between w-full">
-                <div className="flex items-center justify-start w-[80%]">
+                <div
+                    className={`flex items-center justify-start ${
+                        showRecipientAttachments ? 'w-[68%]' : 'w-[80%]'
+                    }`}
+                >
                     <UserProfilePicture
                         customContainerClass="flex justify-center items-center w-12 h-12 min-w-12 min-h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
                         customImageClass="flex justify-center items-center w-12 h-12 h-12 min-w-12 min-h-12 rounded-full overflow-hidden object-cover"
@@ -165,7 +192,28 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
                         </p>
                     </div>
                 </div>
-                <div className="flex item-center justify-end w-[20%] pt-1 pr-1 pb-1">
+                <div
+                    className={`flex item-center justify-end pt-1 pr-1 pb-1 gap-2 ${
+                        showRecipientAttachments ? 'w-[32%]' : 'w-[20%]'
+                    }`}
+                >
+                    {showRecipientAttachments && (
+                        <button
+                            type="button"
+                            aria-label={`Media Attachments for ${
+                                contact?.displayName ?? contact?.profileId
+                            }`}
+                            onClick={handleOpenMediaAttachments}
+                            className="relative flex items-center justify-center rounded-full shadow-3xl w-12 h-12 bg-white text-grayscale-800"
+                        >
+                            <PaperClip className="h-[24px] w-[24px]" />
+                            {hasAttachments && (
+                                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full bg-emerald-600 text-white text-xs font-medium">
+                                    {attachmentsCount}
+                                </span>
+                            )}
+                        </button>
+                    )}
                     {actionButton}
                 </div>
             </div>
