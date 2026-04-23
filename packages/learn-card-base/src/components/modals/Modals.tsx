@@ -6,16 +6,16 @@ import { useModalsContext } from './ModalsContext';
 import { MODALS } from './modals.helpers';
 
 import { ModalTypes } from './types/Modals';
-import { useScreenWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth } from '../../hooks/useDeviceTypeByWidth';
 
 export const Modals = () => {
     const { modals } = useModalsContext();
 
-    const screenWidth = useScreenWidth();
+    const { isMobile } = useDeviceTypeByWidth();
 
     return createPortal(
         modals.map(modal => {
-            const type = screenWidth < 991 ? modal.type.mobile : modal.type.desktop;
+            const type = isMobile ? modal.type.mobile : modal.type.desktop;
 
             if (type === ModalTypes.None) return <></>;
 

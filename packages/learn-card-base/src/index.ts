@@ -44,6 +44,7 @@ export * from './components/modals/CancelModal';
 export * from './components/modals/CenterModal';
 export * from './components/modals/FreeformModal';
 export * from './components/modals/FullScreenModal';
+export * from './components/modals/BottomSheetModal';
 export * from './components/modals/useConfirmation';
 export * from './components/modals/Confirmation';
 export * from './components/modals/types/Modals';
