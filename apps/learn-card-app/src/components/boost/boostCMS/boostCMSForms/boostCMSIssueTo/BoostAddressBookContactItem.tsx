@@ -93,9 +93,8 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
             <RecipientMediaAttachmentsModal recipient={contact} setIssueTo={_setIssueTo} />,
             {
                 sectionClassName: '!max-w-[500px]',
-                hideButton: true,
+                hideButton: false,
                 usePortal: true,
-                customCloseButton: true,
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -161,7 +160,26 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
                 <p className="text-grayscale-800 font-notoSans text-[18px]">
                     {contact?.displayName ?? contact?.profileId}
                 </p>
-                {actionButton}
+                <div className="ml-auto flex items-center gap-[10px]">
+                    {showRecipientAttachments && (
+                        <button
+                            type="button"
+                            aria-label={`Media Attachments for ${
+                                contact?.displayName ?? contact?.profileId
+                            }`}
+                            onClick={handleOpenMediaAttachments}
+                            className="relative flex items-center justify-center rounded-full shadow-3xl w-[35px] h-[35px] bg-white text-grayscale-800"
+                        >
+                            <PaperClip className="h-[18px] w-[18px]" />
+                            {hasAttachments && (
+                                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-600 text-white text-[10px] font-medium">
+                                    {attachmentsCount}
+                                </span>
+                            )}
+                        </button>
+                    )}
+                    {actionButton}
+                </div>
             </div>
         );
     }

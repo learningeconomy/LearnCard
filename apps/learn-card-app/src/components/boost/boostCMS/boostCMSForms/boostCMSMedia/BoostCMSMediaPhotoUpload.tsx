@@ -12,6 +12,9 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
 
+const getTopmostCancelPortal = (): HTMLElement | null =>
+    Array.from(document.querySelectorAll<HTMLElement>('#section-cancel-portal')).at(-1) ?? null;
+
 type BoostCMSMediaPhotoUploadProps = {
     state: BoostCMSMediaState;
     setState: Updater<BoostCMSMediaAttachment[]>;
@@ -40,7 +43,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
     createMode,
     setShowCloseButtonState,
 }) => {
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const sectionPortal = getTopmostCancelPortal();
     const { closeModal } = useModal();
 
     const { id, type, title, color, Icon } = boostMediaOptions.find(

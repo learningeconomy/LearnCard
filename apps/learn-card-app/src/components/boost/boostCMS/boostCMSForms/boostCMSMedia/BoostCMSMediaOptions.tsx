@@ -24,10 +24,9 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
 }) => {
     const { closeModal } = useModal();
     const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
-        showCloseButton || true
+        showCloseButton ?? true
     );
     const sectionPortal = document.getElementById('section-cancel-portal');
-
     return (
         <>
             <section
