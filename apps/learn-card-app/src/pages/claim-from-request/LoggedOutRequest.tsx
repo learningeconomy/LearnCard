@@ -9,7 +9,6 @@ import { IonRow } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { useTheme } from '../../theme/hooks/useTheme';
 import GenericErrorBoundary from 'learn-card-base/components/generic/GenericErrorBoundary';
 import LoginFooter from '../login/LoginFooter';
 import InteractWithWallet from './InteractWithWallet';
