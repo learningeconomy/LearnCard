@@ -10,7 +10,14 @@ on:
         required: true
         default: 'changeset-release/main'
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/learncard
+
 jobs:
+  # ============================================================================
+  # UNIT / INTEGRATION TESTS (runs on every PR)
+  # ============================================================================
   Test:
     runs-on: ubuntu-latest
     environment: ci-tests
@@ -38,13 +45,150 @@ jobs:
           SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
-  # Run E2E tests on changeset release PRs or manual trigger
-  # SSHs into EC2 to run Playwright tests against the branch
-  e2e-tests:
+  # ============================================================================
+  # E2E BACKEND TESTS (runs on every PR using pre-built Docker images)
+  # ============================================================================
+  e2e-backend-tests:
+    name: E2E Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Fetch main for diff check
+        run: git fetch --no-tags --prune origin main
+
+      - name: Check if Docker rebuild is needed
+        id: check_rebuild
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD || true)
+
+          if echo "$CHANGED" | grep -qE '(pnpm-lock\.yaml|Dockerfile|package\.json)'; then
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+            echo "Docker rebuild needed — lockfile, Dockerfile, or package.json changed"
+          else
+            echo "rebuild=false" >> $GITHUB_OUTPUT
+            echo "No Docker rebuild needed — pulling pre-built images"
+          fi
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull pre-built images
+        if: steps.check_rebuild.outputs.rebuild == 'false'
+        run: |
+          echo "Pulling pre-built monorepo image..."
+          docker pull ${{ env.IMAGE_PREFIX }}/monorepo:main
+          docker tag ${{ env.IMAGE_PREFIX }}/monorepo:main learncard-monorepo-local
+
+          echo "Pulling pre-built LCA API image..."
+          docker pull ${{ env.IMAGE_PREFIX }}/lca-api:main
+          docker tag ${{ env.IMAGE_PREFIX }}/lca-api:main lca-api-service
+
+      - name: Build images from source (lockfile/Dockerfile changed)
+        if: steps.check_rebuild.outputs.rebuild == 'true'
+        run: |
+          echo "Building monorepo image with registry cache..."
+          docker buildx build \
+            --cache-from type=registry,ref=${{ env.IMAGE_PREFIX }}/monorepo:buildcache \
+            --load \
+            -t learncard-monorepo-local \
+            -f Dockerfile.monorepo \
+            .
+
+          echo "Building LCA API image with registry cache..."
+          docker buildx build \
+            --cache-from type=registry,ref=${{ env.IMAGE_PREFIX }}/lca-api:buildcache \
+            --load \
+            -t lca-api-service \
+            -f services/learn-card-network/lca-api/Dockerfile \
+            .
+
+      - name: Start services
+        working-directory: tests/e2e
+        run: docker compose up -d
+
+      - name: Use Composite Setup Action
+        uses: ./.github/actions/setup
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for brain service health check..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:4000/api/health-check > /dev/null 2>&1; then
+              echo "Brain service is healthy after $((i * 2)) seconds"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Timeout waiting for brain service"
+              docker compose -f tests/e2e/compose.yaml logs
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run E2E backend tests
+        working-directory: tests/e2e
+        run: pnpm vitest run --reporter=verbose
+        env:
+          E2E_MANAGE_DOCKER: 'false'
+          SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+      - name: Docker logs on failure
+        if: failure()
+        working-directory: tests/e2e
+        run: docker compose logs --tail=200
+
+      - name: Stop services
+        if: always()
+        working-directory: tests/e2e
+        run: docker compose down -v
+
+  # ============================================================================
+  # PLAYWRIGHT E2E TESTS (release PRs + manual dispatch)
+  # SSHs into EC2 — uses pre-built images when possible
+  # ============================================================================
+  e2e-playwright-tests:
+    name: E2E Playwright Tests
     if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
     steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Fetch main for diff check
+        run: git fetch --no-tags --prune origin main
+
+      - name: Check if Docker rebuild is needed
+        id: check_rebuild
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD || true)
+
+          if echo "$CHANGED" | grep -qE '(pnpm-lock\.yaml|Dockerfile|package\.json)'; then
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+          else
+            echo "rebuild=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Start EC2 instance
         run: |
           echo "Starting EC2 instance..."
@@ -88,10 +232,23 @@ jobs:
           key: ${{ secrets.E2E_EC2_SSH_KEY }}
           script_stop: true
           command_timeout: 50m
+          envs: REBUILD_DOCKER
           script: |
             cd ~/learncard-e2e-runner
             git pull origin main
             ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
+
+            # Pull pre-built images if no rebuild needed
+            if [ "${{ steps.check_rebuild.outputs.rebuild }}" = "false" ]; then
+              echo "Pulling pre-built Docker images from GHCR..."
+              echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+              docker pull ${{ env.IMAGE_PREFIX }}/monorepo:main
+              docker tag ${{ env.IMAGE_PREFIX }}/monorepo:main learncard-monorepo-local
+              docker pull ${{ env.IMAGE_PREFIX }}/lca-api:main
+              docker tag ${{ env.IMAGE_PREFIX }}/lca-api:main lca-api-service
+              export E2E_SKIP_BUILD=true
+            fi
+
             ./scripts/run-tests.sh
 
       - name: Download Playwright report from EC2
