@@ -24,8 +24,7 @@ export const FreeformModal: ModalContainer = ({ component, options, open }) => {
                     className="freeform-modal-dimmer"
                     type="button"
                     onClick={handleBackdropClick}
-                    aria-label="modal-dimmer"
-                    aria-hidden
+                    aria-label="Close modal"
                 />
             )}
             <div
