@@ -4,31 +4,32 @@ import { IonSkeletonText } from '@ionic/react';
 
 export const AiSessionTopicItemSkeleton: React.FC = () => {
     return (
-        <div className="flex items-center justify-between w-full bg-white pb-[12px] pt-[12px] cursor-default first:mt-1 last:pb-[200px]">
-            <div className="flex items-center justify-start">
-                <div className="w-[45px] h-[45px] flex items-center justify-center mr-1">
+        <div className="flex items-center justify-between w-full bg-white rounded-2xl px-4 py-3 mb-3 cursor-default">
+            <div className="flex items-center justify-start flex-1 min-w-0">
+                <IonSkeletonText
+                    animated
+                    style={{ width: '50px', height: '50px', borderRadius: '12px', flexShrink: 0 }}
+                />
+                <div className="ml-3 flex flex-col gap-1">
                     <IonSkeletonText
                         animated
-                        style={{ width: '45px', height: '45px', borderRadius: '12px' }}
+                        style={{ width: '130px', height: '17px', borderRadius: '4px' }}
                     />
-                </div>
-
-                <div className="ml-2">
                     <IonSkeletonText
                         animated
-                        style={{ width: '140px', height: '18px', borderRadius: '4px' }}
+                        style={{ width: '80px', height: '13px', borderRadius: '4px' }}
                     />
                 </div>
             </div>
 
-            <div className="flex items-center space-x-2 mr-2">
+            <div className="flex items-center gap-1 ml-3">
                 <IonSkeletonText
                     animated
                     style={{ width: '20px', height: '16px', borderRadius: '4px' }}
                 />
                 <IonSkeletonText
                     animated
-                    style={{ width: '20px', height: '20px', borderRadius: '4px' }}
+                    style={{ width: '16px', height: '16px', borderRadius: '4px' }}
                 />
             </div>
         </div>
