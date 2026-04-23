@@ -49,7 +49,9 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
         return (
             <BoostAddressBookContactItem
                 state={state as unknown as BoostCMSState}
-                setState={setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>}
+                setState={
+                    setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>
+                }
                 contact={contact}
                 key={index}
                 mode={BoostAddressBookEditMode.delete}

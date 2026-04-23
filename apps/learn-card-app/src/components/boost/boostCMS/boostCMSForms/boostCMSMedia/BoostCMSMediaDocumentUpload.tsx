@@ -13,6 +13,7 @@ import { useFilestack, UploadRes } from 'learn-card-base';
 import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 
 type BoostCMSMediaDocumentUploadProps = {
     state: BoostCMSMediaState;
@@ -38,7 +39,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
     setShowCloseButtonState,
     createMode,
 }) => {
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const sectionPortal = getTopmostCancelPortal();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;

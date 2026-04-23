@@ -7,6 +7,7 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 
 type BoostCMSMediaVideoAttachmentProps = {
     state: BoostCMSMediaState;
@@ -36,7 +37,7 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
     handleCloseModal,
     setShowCloseButtonState,
 }) => {
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const sectionPortal = getTopmostCancelPortal();
 
     const { title, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 

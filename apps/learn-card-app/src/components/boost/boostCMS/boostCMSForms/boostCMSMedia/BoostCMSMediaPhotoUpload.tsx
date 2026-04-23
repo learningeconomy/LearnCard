@@ -11,9 +11,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
-
-const getTopmostCancelPortal = (): HTMLElement | null =>
-    Array.from(document.querySelectorAll<HTMLElement>('#section-cancel-portal')).at(-1) ?? null;
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 
 type BoostCMSMediaPhotoUploadProps = {
     state: BoostCMSMediaState;

@@ -6,6 +6,7 @@ import { IonToolbar, IonHeader } from '@ionic/react';
 import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 
 import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
@@ -26,7 +27,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
     const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
         showCloseButton ?? true
     );
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const sectionPortal = getTopmostCancelPortal();
     return (
         <>
             <section
