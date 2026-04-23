@@ -1,11 +1,5 @@
 import moment from 'moment';
-import {
-    VerificationItem,
-    BoostRecipientInfo,
-    LCNBoostStatusEnum,
-    UnsignedVC,
-    VC,
-} from '@learncard/types';
+import { VerificationItem, BoostRecipientInfo, LCNBoostStatusEnum, VC } from '@learncard/types';
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSMediaAttachment } from './boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
@@ -31,18 +25,55 @@ type SendBoostCredentialOptions = {
     mediaAttachments?: BoostCMSMediaAttachment[];
 };
 
-const getRecipientMediaAttachmentSendOptions = (
+/**
+ * Builds the `templateData` payload that `sendBoost` / `addBoostSomeone`
+ * forward to the network when a recipient has per-recipient media attachments
+ * (photo, document, link, video) attached from the issuer UI.
+ *
+ * The returned object is designed to spread directly into the `sendBoost`
+ * options, e.g.:
+ *     wallet.invoke.sendBoost(profileId, boostUri, {
+ *         ...getRecipientMediaAttachmentTemplateData(options?.mediaAttachments),
+ *     });
+ * which is why the empty case returns `{}` — spreading it is a no-op.
+ *
+ * Data flow:
+ *   1. `convertAttachmentsToEvidence` maps each `BoostCMSMediaAttachment`
+ *      (the issuer-UI shape) to an OBv3-compatible evidence entry.
+ *   2. Each entry is tagged with a `last` boolean so Mustache templates can
+ *      render comma separators correctly inside
+ *      `{{#evidence}}...{{^last}},{{/last}}{{/evidence}}` sections. The
+ *      `last` flag is a rendering hint ONLY — the server strips it back off
+ *      in `appendTemplateEvidenceToCredential` before the credential is
+ *      signed, so it never reaches the recipient's wallet.
+ *   3. If the boost template does NOT reference `{{evidence}}` itself, the
+ *      server-side `appendTemplateEvidenceToCredential` auto-appends these
+ *      entries onto `credential.evidence` as a fallback.
+ *
+ * @param mediaAttachments - Per-recipient attachments from the issuer UI
+ * @returns `{ templateData: { evidence: [...] } }` when there's at least one
+ *          attachment, or `{}` when there are none
+ */
+const getRecipientMediaAttachmentTemplateData = (
     mediaAttachments: BoostCMSMediaAttachment[] = []
 ) => {
     const evidence = convertAttachmentsToEvidence(mediaAttachments);
 
+    // No attachments → return an empty object so callers can spread it
+    // unconditionally without polluting the sendBoost options.
     if (evidence.length === 0) return {};
 
     return {
-        overideFn: (boost: UnsignedVC): UnsignedVC => ({
-            ...boost,
-            evidence: [...(boost.evidence ?? []), ...evidence],
-        }),
+        templateData: {
+            // `last` is a per-iteration hint for Mustache `{{#last}}` / `{{^last}}`
+            // sections (useful for emitting separators between entries). The
+            // server strips this field before the evidence lands on the
+            // signed credential.
+            evidence: evidence.map((item, index) => ({
+                ...item,
+                last: index === evidence.length - 1,
+            })),
+        },
     };
 };
 
@@ -339,7 +370,7 @@ export const sendBoostCredential = async (
     const sentBoostUri = await wallet?.invoke?.sendBoost(profileId, boostUri, {
         skipNotification: options?.skipNotification ?? false,
         encrypt: true,
-        ...getRecipientMediaAttachmentSendOptions(options?.mediaAttachments),
+        ...getRecipientMediaAttachmentTemplateData(options?.mediaAttachments),
     });
     // anytime you use sendboost the crednetial sent to other person is wrapped
 
@@ -379,7 +410,7 @@ export const addBoostSomeone = async (
     const sentBoost = await wallet?.invoke?.sendBoost(profileId, boostUri, {
         skipNotification: options?.skipNotification ?? false,
         encrypt: true,
-        ...getRecipientMediaAttachmentSendOptions(options?.mediaAttachments),
+        ...getRecipientMediaAttachmentTemplateData(options?.mediaAttachments),
     });
     return sentBoost;
 };
