@@ -19,39 +19,21 @@ on:
 jobs:
   smoketest:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 24.12
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.12.0
+      # Composite action handles Node 24.12 + pnpm (pinned to the repo's
+      # packageManager version) + pnpm-store cache + workspace install.
+      - name: Use Composite Setup Action
+        uses: ./.github/actions/setup
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-          run_install: false
-
-      - name: Install smoketest dependencies
-        run: |
-          cd tests/smoketests
-          pnpm install --no-frozen-lockfile
-
-      - name: Install Playwright
-        run: |
-          cd tests/smoketests
-          pnpm exec playwright install --with-deps chromium
-
-      - name: Run API smoketests
-        run: pnpm exec playwright test --project=api
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
         working-directory: tests/smoketests
-        env:
-          SMOKETEST_ENV: ${{ inputs.environment }}
 
-      - name: Run browser smoketests
-        run: pnpm exec playwright test --project=browser
+      - name: Run smoketests
+        run: pnpm exec playwright test
         working-directory: tests/smoketests
         env:
           SMOKETEST_ENV: ${{ inputs.environment }}

@@ -1,20 +1,52 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 import { resolveUrls } from '../lib/resolveUrls';
 
 const { api: API_URL, cloud: CLOUD_URL, lcaApi: LCA_API_URL } = resolveUrls();
 
-// DID / docs live at the service root, not under /api. Strip the suffix once.
+// DID / docs / tRPC live at the service root, not under /api. Strip once.
 const stripApi = (u: string) => u.replace(/\/api\/?$/, '');
 const BRAIN_ROOT = stripApi(API_URL);
 const CLOUD_ROOT = stripApi(CLOUD_URL);
 const LCA_ROOT = stripApi(LCA_API_URL);
 
-// A GET to the tRPC base should return something other than 502/503.
-// 404 is fine — it means the service is up and routing, just that GET isn't
-// the right verb for that path.
-const expectReachable = (status: number) => {
-    expect(status).not.toBe(502);
-    expect(status).not.toBe(503);
+// A plain HTTP liveness probe (/health-check) can succeed while the tRPC
+// router is broken — they're independent handlers, and we've been bitten by
+// that before. This asserts the tRPC HTTP adapter itself is mounted and
+// serving by probing an unknown procedure and verifying the response is
+// tRPC's own JSON-RPC error envelope:
+//
+//   { "error": { "code": -32004, "data": { "code": "NOT_FOUND", ... } } }
+//
+// An upstream 404 from API Gateway / CloudFront / NGINX has a different
+// shape (HTML or a generic JSON error), so this distinguishes "the host
+// responds" from "tRPC responds".
+const PROBE_PATH = '__smoketest_probe';
+
+const expectTrpcReachable = async (request: APIRequestContext, rootUrl: string) => {
+    const response = await request.get(`${rootUrl}/trpc/${PROBE_PATH}`);
+
+    // tRPC returns 404 for unknown procedures. Any 5xx or an upstream-shaped
+    // 404 (non-JSON body) means the router isn't actually serving.
+    expect(
+        response.status(),
+        `Expected 404 from tRPC for unknown procedure, got ${response.status()}`
+    ).toBe(404);
+
+    expect(
+        response.headers()['content-type'] ?? '',
+        'tRPC responses must be JSON — non-JSON 404 indicates upstream is answering'
+    ).toContain('application/json');
+
+    const body = (await response.json()) as {
+        error?: { code?: number; data?: { code?: string } };
+    };
+
+    // JSON-RPC error code -32004 + tRPC's NOT_FOUND is the unmistakable
+    // signature of a live tRPC handler.
+    expect(body.error?.code, 'missing JSON-RPC error code — not a tRPC response').toBe(-32004);
+    expect(body.error?.data?.code, 'missing tRPC NOT_FOUND code — not a tRPC response').toBe(
+        'NOT_FOUND'
+    );
 };
 
 test.describe('Tier 1: API Health Checks', () => {
@@ -24,9 +56,8 @@ test.describe('Tier 1: API Health Checks', () => {
             expect(response.status()).toBe(200);
         });
 
-        test('tRPC endpoint is reachable', async ({ request }) => {
-            const response = await request.get(`${API_URL}/trpc`);
-            expectReachable(response.status());
+        test('tRPC router is mounted and serving', async ({ request }) => {
+            await expectTrpcReachable(request, BRAIN_ROOT);
         });
 
         test('did:web resolves at /.well-known/did.json', async ({ request }) => {
@@ -48,9 +79,8 @@ test.describe('Tier 1: API Health Checks', () => {
             expect(response.status()).toBe(200);
         });
 
-        test('tRPC endpoint is reachable', async ({ request }) => {
-            const response = await request.get(`${CLOUD_URL}/trpc`);
-            expectReachable(response.status());
+        test('tRPC router is mounted and serving', async ({ request }) => {
+            await expectTrpcReachable(request, CLOUD_ROOT);
         });
     });
 
@@ -60,9 +90,8 @@ test.describe('Tier 1: API Health Checks', () => {
             expect(response.status()).toBe(200);
         });
 
-        test('tRPC endpoint is reachable', async ({ request }) => {
-            const response = await request.get(`${LCA_API_URL}/trpc`);
-            expectReachable(response.status());
+        test('tRPC router is mounted and serving', async ({ request }) => {
+            await expectTrpcReachable(request, LCA_ROOT);
         });
 
         test('OpenAPI docs endpoint returns 200', async ({ request }) => {

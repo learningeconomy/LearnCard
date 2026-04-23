@@ -979,8 +979,10 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
-            needs.determine-affected.outputs.is_release != 'true' &&
-            needs.determine-affected.outputs.is_manual != 'true' &&
+            (
+                (needs.determine-affected.outputs.is_release != 'true' && needs.determine-affected.outputs.is_manual != 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'staging')
+            ) &&
             (
               needs.deploy-brain-service.result == 'success' ||
               needs.deploy-learn-cloud.result == 'success' ||
