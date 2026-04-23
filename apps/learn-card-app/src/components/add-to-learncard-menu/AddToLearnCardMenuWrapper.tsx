@@ -8,7 +8,7 @@ const AddToLearnCardMenuWrapper = () => {
     const { closeModal } = useModal();
 
     return (
-        <div className="w-full flex flex-col gap-3">
+        <div className="w-full flex flex-col gap-3 relative">
             <div
                 className="flex items-center justify-between w-full max-w-[600px] p-[10px] rounded-[15px] border-4 border-white"
                 style={{
