@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useVerifiableData } from 'learn-card-base';
 import {
     SKILL_PROFILE_PROFILE_KEY,
@@ -47,7 +47,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
     const professionalTitle = profileData?.professionalTitle || '';
     const salaryValue = salaryData?.salary?.trim() || '';
     const salaryTypeLabel = salaryData?.salaryType === 'per_hour' ? '/hr' : '/yr';
-    const formattedSalary = (() => {
+    const formattedSalary = useMemo(() => {
         if (!salaryValue) {
             return '$XX,XXX';
         }
@@ -61,7 +61,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
         }
 
         return salaryValue.startsWith('$') ? salaryValue : `$${salaryValue}`;
-    })();
+    }, [salaryValue]);
 
     const {
         occupation,

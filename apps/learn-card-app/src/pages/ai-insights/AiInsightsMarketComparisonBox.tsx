@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
@@ -80,42 +80,96 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     isLoading = false,
     salaryType = 'per_year',
 }) => {
-    const selectedWages = occupation
-        ? getSelectedWagesBySalaryType(occupation.Wages.NationalWagesList || [], salaryType)
-        : undefined;
+    const selectedWages = useMemo(() => {
+        if (!occupation) {
+            return undefined;
+        }
 
-    const marketLow = selectedWages?.Pct10 ? parseSalaryValue(selectedWages.Pct10) : undefined;
-    const marketAvg = selectedWages?.Median ? parseSalaryValue(selectedWages.Median) : undefined;
-    const marketHigh = selectedWages?.Pct90 ? parseSalaryValue(selectedWages.Pct90) : undefined;
+        return getSelectedWagesBySalaryType(occupation.Wages.NationalWagesList || [], salaryType);
+    }, [occupation, salaryType]);
 
-    const currentSalary = parseSalaryValue(salaryData?.salary);
+    const marketLow = useMemo(
+        () => (selectedWages?.Pct10 ? parseSalaryValue(selectedWages.Pct10) : undefined),
+        [selectedWages?.Pct10]
+    );
+    const marketAvg = useMemo(
+        () => (selectedWages?.Median ? parseSalaryValue(selectedWages.Median) : undefined),
+        [selectedWages?.Median]
+    );
+    const marketHigh = useMemo(
+        () => (selectedWages?.Pct90 ? parseSalaryValue(selectedWages.Pct90) : undefined),
+        [selectedWages?.Pct90]
+    );
 
-    const scaleMax = Math.max(marketHigh ?? 0, currentSalary ?? 0, 1);
+    const currentSalary = useMemo(() => parseSalaryValue(salaryData?.salary), [salaryData?.salary]);
+
+    const scaleMax = useMemo(
+        () => Math.max(marketHigh ?? 0, currentSalary ?? 0, 1),
+        [marketHigh, currentSalary]
+    );
+
     const getPositionFromValue = (value: number): number => {
         return clampPercent((value / scaleMax) * 100);
     };
 
-    const markerLeft =
-        currentSalary !== undefined ? getPositionFromValue(currentSalary) : undefined;
+    const markerLeft = useMemo(() => {
+        return currentSalary !== undefined ? getPositionFromValue(currentSalary) : undefined;
+    }, [currentSalary, scaleMax]);
 
-    const comparisonPercent =
-        currentSalary !== undefined && selectedWages
+    const comparisonPercent = useMemo(() => {
+        return currentSalary !== undefined && selectedWages
             ? getSalaryPercentileAtValue(currentSalary, selectedWages, salaryType)
             : undefined;
+    }, [currentSalary, selectedWages, salaryType]);
 
-    const comparisonPercentLabel =
-        comparisonPercent !== undefined ? Math.round(comparisonPercent).toString() : undefined;
-    const title = occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
-    const titlePlural = toTitleCase(pluralizeTitle(title));
-    const marketLowLabel = marketLow !== undefined ? formatCurrency(marketLow, salaryType) : '$0';
-    const marketAvgLabel = marketAvg !== undefined ? formatCurrency(marketAvg, salaryType) : '$0';
-    const marketHighLabel =
-        marketHigh !== undefined ? formatCurrency(marketHigh, salaryType) : '$0';
-    const currentSalaryLabel =
-        currentSalary !== undefined ? formatCurrency(currentSalary, salaryType) : '$0';
-    const marketComparisonAriaLabel = `Salary comparison for ${title}. Your salary is ${currentSalaryLabel}. Market range is ${marketLowLabel} to ${marketHighLabel}, with an average of ${marketAvgLabel}. You are above ${
-        comparisonPercentLabel ?? 0
-    }% of other ${titlePlural} in the market.`;
+    const comparisonPercentLabel = useMemo(() => {
+        return comparisonPercent !== undefined
+            ? Math.round(comparisonPercent).toString()
+            : undefined;
+    }, [comparisonPercent]);
+
+    const title = useMemo(() => {
+        return occupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
+    }, [occupation?.OnetTitle, professionalTitle]);
+
+    const titlePlural = useMemo(() => {
+        return toTitleCase(pluralizeTitle(title));
+    }, [title]);
+
+    const marketLowLabel = useMemo(
+        () => (marketLow !== undefined ? formatCurrency(marketLow, salaryType) : '$0'),
+        [marketLow, salaryType]
+    );
+    const marketAvgLabel = useMemo(
+        () => (marketAvg !== undefined ? formatCurrency(marketAvg, salaryType) : '$0'),
+        [marketAvg, salaryType]
+    );
+    const marketHighLabel = useMemo(
+        () => (marketHigh !== undefined ? formatCurrency(marketHigh, salaryType) : '$0'),
+        [marketHigh, salaryType]
+    );
+    const currentSalaryLabel = useMemo(
+        () => (currentSalary !== undefined ? formatCurrency(currentSalary, salaryType) : '$0'),
+        [currentSalary, salaryType]
+    );
+    const marketComparisonAriaLabel = useMemo(() => {
+        return `Salary comparison for ${title}. Your salary is ${currentSalaryLabel}. Market range is ${marketLowLabel} to ${marketHighLabel}, with an average of ${marketAvgLabel}. You are above ${
+            comparisonPercentLabel ?? 0
+        }% of other ${titlePlural} in the market.`;
+    }, [
+        comparisonPercentLabel,
+        currentSalaryLabel,
+        marketAvgLabel,
+        marketHighLabel,
+        marketLowLabel,
+        title,
+        titlePlural,
+    ]);
+
+    const tickValues = useMemo(
+        () => [0, scaleMax * 0.25, scaleMax * 0.5, scaleMax * 0.75, scaleMax],
+        [scaleMax]
+    );
 
     if (isLoading) {
         return (
@@ -140,8 +194,6 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             </div>
         );
     }
-
-    const tickValues = [0, scaleMax * 0.25, scaleMax * 0.5, scaleMax * 0.75, scaleMax];
 
     return (
         <div className="w-full font-poppins flex flex-col gap-4">

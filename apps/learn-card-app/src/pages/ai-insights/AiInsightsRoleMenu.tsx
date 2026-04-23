@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     SearchInput,
     fetchOccupationDetailsForKeyword,
@@ -86,7 +86,7 @@ const useBrowseableRoles = (enabled: boolean) => {
         })),
     });
 
-    const occupations = React.useMemo(() => {
+    const occupations = useMemo(() => {
         const merged = queries.flatMap(query => (query.data ?? []) as OccupationDetailsResponse[]);
 
         return sortOccupationsAlphabetically(dedupeOccupations(merged));
@@ -175,7 +175,7 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
     salaryType = 'per_year',
     variant = 'popover',
 }) => {
-    const [search, setSearch] = React.useState('');
+    const [search, setSearch] = useState('');
     const isSheet = variant === 'sheet';
     const searchTerm = search.trim();
     const isSearchActive = searchTerm.length >= 2;
@@ -184,7 +184,10 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
         isLoading: searchLoading,
         isFetching: searchFetching,
     } = useOccupationDetailsForKeyword(isSearchActive ? searchTerm : '');
-    const occupationsToDisplay = isSearchActive ? searchedOccupations : suggestedOccupations;
+    const occupationsToDisplay = useMemo(
+        () => (isSearchActive ? searchedOccupations : suggestedOccupations),
+        [isSearchActive, searchedOccupations, suggestedOccupations]
+    );
     const isLoadingSearchResults = isSearchActive && (searchLoading || searchFetching);
     const { occupations: moreRoles, isLoading: moreRolesLoading } = useBrowseableRoles(
         !isSearchActive

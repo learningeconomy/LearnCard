@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OccupationDetailsResponse } from 'learn-card-base';
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
@@ -60,24 +60,49 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
         };
     }, [isRoleMenuOpen]);
 
-    const activeOccupation = selectedOccupation ?? occupation;
+    const activeOccupation = useMemo(() => {
+        return selectedOccupation ?? occupation;
+    }, [occupation, selectedOccupation]);
 
-    const selectedWages = activeOccupation
-        ? getSelectedWagesBySalaryType(activeOccupation?.Wages?.NationalWagesList || [], salaryType)
-        : undefined;
-    const projection = activeOccupation?.Projections?.Projections?.[0];
-    const totalEmploymentCount = formatAboutCount(projection?.EstimatedEmployment);
+    const selectedWages = useMemo(() => {
+        if (!activeOccupation) {
+            return undefined;
+        }
+
+        return getSelectedWagesBySalaryType(
+            activeOccupation?.Wages?.NationalWagesList || [],
+            salaryType
+        );
+    }, [activeOccupation, salaryType]);
+
+    const projection = useMemo(() => {
+        return activeOccupation?.Projections?.Projections?.[0];
+    }, [activeOccupation]);
+
+    const totalEmploymentCount = useMemo(() => {
+        return formatAboutCount(projection?.EstimatedEmployment);
+    }, [projection?.EstimatedEmployment]);
 
     const minSalary = selectedWages?.Pct10;
     const medianSalary = selectedWages?.Median;
     const maxSalary = selectedWages?.Pct90;
-    const formattedMedianSalary = formatSalaryAmount(medianSalary, false, salaryType);
-    const formattedMinSalary = formatSalaryAmount(minSalary, true, salaryType);
-    const formattedMaxSalary = formatSalaryAmount(maxSalary, true, salaryType);
-    const title = activeOccupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
-    const pluralizedTitle = title.toLowerCase().endsWith('s')
-        ? title.toLowerCase()
-        : `${title.toLowerCase()}s`;
+    const formattedMedianSalary = useMemo(() => {
+        return formatSalaryAmount(medianSalary, false, salaryType);
+    }, [medianSalary, salaryType]);
+    const formattedMinSalary = useMemo(() => {
+        return formatSalaryAmount(minSalary, true, salaryType);
+    }, [minSalary, salaryType]);
+    const formattedMaxSalary = useMemo(() => {
+        return formatSalaryAmount(maxSalary, true, salaryType);
+    }, [maxSalary, salaryType]);
+    const title = useMemo(() => {
+        return activeOccupation?.OnetTitle?.trim() || professionalTitle.trim() || 'Career';
+    }, [activeOccupation?.OnetTitle, professionalTitle]);
+    const pluralizedTitle = useMemo(() => {
+        const normalizedTitle = title.toLowerCase();
+
+        return normalizedTitle.endsWith('s') ? normalizedTitle : `${normalizedTitle}s`;
+    }, [title]);
     const salaryTypeLabel = salaryType === 'per_hour' ? '/hr' : '/yr';
     const handleSelectOccupation = (nextOccupation: OccupationDetailsResponse) => {
         setSelectedOccupation(nextOccupation);
