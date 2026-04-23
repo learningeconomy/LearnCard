@@ -182,6 +182,8 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                                         topicBoost={t.topicBoost}
                                         topicRecord={t.topicRecord}
                                         topicSessionsCount={t.sessions?.length || 0}
+                                        hasUnfinishedSessions={t.hasUnfinishedSessions}
+                                        hasFinishedSessions={t.hasFinishedSessions}
                                     />
                                 );
                             })}
@@ -208,6 +210,8 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                                         topicBoost={t.topicBoost}
                                         topicRecord={t.topicRecord}
                                         topicSessionsCount={topicSessionsCount}
+                                        hasUnfinishedSessions={t.hasUnfinishedSessions}
+                                        hasFinishedSessions={t.hasFinishedSessions}
                                     />
                                 );
                             })}
