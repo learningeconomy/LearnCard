@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bug, X, Shield, Settings, Palette } from 'lucide-react';
+import { Bug, X, Shield, Settings, Palette, GitBranch } from 'lucide-react';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
@@ -7,12 +7,13 @@ import { WIDGET_ENABLED } from './debugComponents';
 import { AuthDebugTab, getMeta } from './AuthDebugTab';
 import { ConfigDebugTab } from './ConfigDebugTab';
 import { ThemeDebugTab } from './ThemeDebugTab';
+import { PathwaysDebugTab } from './PathwaysDebugTab';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
 // ---------------------------------------------------------------------------
 
-type TabId = 'auth' | 'config' | 'theme';
+type TabId = 'auth' | 'config' | 'theme' | 'pathways';
 
 interface TabDef {
     id: TabId;
@@ -24,6 +25,7 @@ const TABS: TabDef[] = [
     { id: 'auth', label: 'Auth', icon: <Shield className="w-3 h-3" /> },
     { id: 'config', label: 'Config', icon: <Settings className="w-3 h-3" /> },
     { id: 'theme', label: 'Theme', icon: <Palette className="w-3 h-3" /> },
+    { id: 'pathways', label: 'Pathways', icon: <GitBranch className="w-3 h-3" /> },
 ];
 
 // ---------------------------------------------------------------------------
@@ -104,6 +106,7 @@ export const DevDebugPanel: React.FC = () => {
                         {activeTab === 'auth' && <AuthDebugTab />}
                         {activeTab === 'config' && <ConfigDebugTab />}
                         {activeTab === 'theme' && <ThemeDebugTab />}
+                        {activeTab === 'pathways' && <PathwaysDebugTab />}
                     </div>
 
                     {/* ── Footer ── */}
