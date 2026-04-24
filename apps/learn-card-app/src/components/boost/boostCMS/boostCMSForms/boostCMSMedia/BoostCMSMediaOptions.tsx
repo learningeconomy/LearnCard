@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
 
@@ -14,6 +14,7 @@ type BoostCMSMediaOptionsProps = {
     title?: String | React.ReactNode;
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
     showCloseButton?: boolean;
+    hideCloseButton?: boolean;
 };
 
 const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
@@ -22,12 +23,16 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
     title,
     displayType,
     showCloseButton,
+    hideCloseButton,
 }) => {
     const { closeModal } = useModal();
     const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
-        showCloseButton ?? true
+        !hideCloseButton && (showCloseButton ?? true)
     );
-    const sectionPortal = getTopmostCancelPortal();
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
     return (
         <>
             <section

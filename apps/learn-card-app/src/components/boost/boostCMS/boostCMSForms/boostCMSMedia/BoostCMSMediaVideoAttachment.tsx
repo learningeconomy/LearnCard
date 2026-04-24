@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
 import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
@@ -22,6 +22,7 @@ type BoostCMSMediaVideoAttachmentProps = {
     hideBackButton?: boolean;
     handleCloseModal?: () => void;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    hideCloseButton?: boolean;
 };
 
 const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> = ({
@@ -36,8 +37,12 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
     hideBackButton,
     handleCloseModal,
     setShowCloseButtonState,
+    hideCloseButton,
 }) => {
-    const sectionPortal = getTopmostCancelPortal();
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
 
     const { title, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 
@@ -138,7 +143,9 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                                 onClick={() => {
                                     if (createMode) {
                                         setActiveMediaType(null);
-                                        setShowCloseButtonState?.(true);
+                                        if (!hideCloseButton) {
+                                            setShowCloseButtonState?.(true);
+                                        }
                                     } else {
                                         handleCloseModal?.();
                                     }

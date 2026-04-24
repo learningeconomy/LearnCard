@@ -41,6 +41,7 @@ type CreateMediaAttachmentFormProps = {
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
     showCloseButtonState?: boolean;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    hideCloseButton?: boolean;
 };
 
 type BoostCMSMediaTypeSelectorProps = {
@@ -158,6 +159,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
     displayType,
     showCloseButtonState,
     setShowCloseButtonState,
+    hideCloseButton,
 }) => {
     const { closeModal } = useModal();
 
@@ -266,6 +268,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
                 setShowCloseButtonState={setShowCloseButtonState}
+                hideCloseButton={hideCloseButton}
             />
         );
     }
@@ -285,6 +288,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
                 setShowCloseButtonState={setShowCloseButtonState}
+                hideCloseButton={hideCloseButton}
             />
         );
     }
@@ -302,6 +306,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
                 setShowCloseButtonState={setShowCloseButtonState}
+                hideCloseButton={hideCloseButton}
             />
         );
     }
@@ -319,6 +324,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
                 setShowCloseButtonState={setShowCloseButtonState}
+                hideCloseButton={hideCloseButton}
             />
         );
     }

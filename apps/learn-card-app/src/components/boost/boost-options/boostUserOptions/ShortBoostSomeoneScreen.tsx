@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn-card-base';
@@ -63,7 +63,10 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
         );
     });
     const { closeModal } = useModal();
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(document.getElementById('section-cancel-portal'));
+    }, []);
 
     const color = boostCategoryMetadata[category]?.color ?? 'grayscale-900';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
 import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
@@ -26,6 +26,7 @@ type BoostCMSMediaDocumentUploadProps = {
     handleCloseModal?: () => void;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
     createMode?: boolean;
+    hideCloseButton?: boolean;
 };
 
 const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = ({
@@ -38,8 +39,12 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
     handleCloseModal,
     setShowCloseButtonState,
     createMode,
+    hideCloseButton,
 }) => {
-    const sectionPortal = getTopmostCancelPortal();
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -152,7 +157,9 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 onClick={() => {
                                     if (createMode) {
                                         setActiveMediaType(null);
-                                        setShowCloseButtonState?.(true);
+                                        if (!hideCloseButton) {
+                                            setShowCloseButtonState?.(true);
+                                        }
                                     } else {
                                         handleCloseModal?.();
                                     }
