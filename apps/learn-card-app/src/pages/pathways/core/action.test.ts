@@ -85,6 +85,48 @@ describe('resolveNodeAction — explicit descriptor', () => {
         });
     });
 
+    it('dispatches ai-session with topicUri, pathwayUri, and seedPrompt passthrough', () => {
+        // The resolver is a pure projection — every field authors
+        // can set on the action must end up on the resolved shape so
+        // dispatchers don't have to re-open the descriptor.
+        const action: ActionDescriptor = {
+            kind: 'ai-session',
+            topicUri: 'boost:aws-iam-deep-dive',
+            pathwayUri: 'boost:aws-curriculum-v1',
+            seedPrompt: 'Drill cross-account assume-role specifically.',
+        };
+
+        const node = makeNode({ action });
+
+        expect(resolveNodeAction(node)).toEqual<ResolvedAction>({
+            kind: 'ai-session',
+            topicUri: 'boost:aws-iam-deep-dive',
+            pathwayUri: 'boost:aws-curriculum-v1',
+            seedPrompt: 'Drill cross-account assume-role specifically.',
+            source: 'explicit',
+        });
+    });
+
+    it('dispatches ai-session with only the required topicUri', () => {
+        // Minimal shape: no pathway, no seed prompt. Optionality on
+        // the schema must carry through to the resolver without
+        // synthesising empty-string placeholders.
+        const action: ActionDescriptor = {
+            kind: 'ai-session',
+            topicUri: 'boost:aws-iam-deep-dive',
+        };
+
+        const node = makeNode({ action });
+
+        expect(resolveNodeAction(node)).toEqual<ResolvedAction>({
+            kind: 'ai-session',
+            topicUri: 'boost:aws-iam-deep-dive',
+            pathwayUri: undefined,
+            seedPrompt: undefined,
+            source: 'explicit',
+        });
+    });
+
     it('dispatches external-url and marks it NOT a landing page', () => {
         const action: ActionDescriptor = {
             kind: 'external-url',

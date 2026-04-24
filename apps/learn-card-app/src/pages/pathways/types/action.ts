@@ -159,6 +159,116 @@ export const AppListingActionSchema = z.object({
 export type AppListingAction = z.infer<typeof AppListingActionSchema>;
 
 // -----------------------------------------------------------------
+// AI session (built-in LearnCard tutor)
+// -----------------------------------------------------------------
+
+/**
+ * Minimal snapshot of an AI Topic, captured at **bind time** and
+ * stored inline on the action. Mirrors `AppListingSnapshotSchema`'s
+ * rationale: lets agents reason about the node without a wallet /
+ * registry fetch, preserves author intent if the underlying topic
+ * metadata drifts, and keeps the node renderable offline.
+ *
+ * Sourced from an `AI Topic` Verifiable Credential at bind time —
+ * `topicVc?.boostCredential?.topicInfo?.title` becomes `topicTitle`,
+ * etc. See `core/aiSessionSnapshot.ts` for the projection helper.
+ *
+ * The field is `optional()` on the action — back-compat with nodes
+ * authored before the snapshot lever existed, and with programmatic
+ * authoring that doesn't have the topic metadata handy. The UI falls
+ * back to a live topic resolution when snapshot is absent.
+ */
+export const AiSessionSnapshotSchema = z.object({
+    /** Topic display title, e.g. "AWS IAM Deep Dive". */
+    topicTitle: z.string().min(1),
+    /** Long-form topic description if the topic VC carries one. */
+    topicDescription: z.string().optional(),
+    /**
+     * Skill tags the topic asserts coverage over. Distinct from the
+     * generic `semanticTags` on app listings — these are skill names
+     * (e.g. "IAM", "least-privilege", "VPC peering") that agents can
+     * match against learner-goal skills to reason about peer nodes.
+     */
+    skills: z.array(z.string()).optional(),
+    /** Icon URL at bind time — lets Map nodes render without a topic fetch. */
+    iconUrl: z.string().url().optional(),
+    /**
+     * ISO timestamp of when this snapshot was captured. A refresher
+     * job compares this to the topic boost's `updatedAt` to decide
+     * whether to propose a refresh.
+     */
+    snapshottedAt: z.string().datetime(),
+});
+export type AiSessionSnapshot = z.infer<typeof AiSessionSnapshotSchema>;
+
+/**
+ * Dispatch to the built-in LearnCard AI Tutor on a specific topic.
+ *
+ * Distinct from `app-listing` with `launch_type: AI_TUTOR`:
+ *   - `app-listing` AI_TUTOR launches a **third-party** tutor via
+ *     the MCP-backed `AiTutorConnectedView`, gated by consent flow +
+ *     listing registration. That tutor runs someone else's agent.
+ *   - `ai-session` launches the **first-party** LearnCard tutor
+ *     (`/chats` surface, `LearnCardAiChatBot` component). No MCP hop,
+ *     no listing record, no consent-flow gate — just a direct
+ *     deep-link into LearnCard's own tutoring capability seeded with
+ *     a topic and (optionally) an AI Learning Pathway.
+ *
+ * **Topic availability.** `topicUri` does *not* need to be in the
+ * learner's wallet before dispatch — the chat service resolves-or-
+ * creates the topic server-side (same contract the GrowSkills AI
+ * Learning Pathway carousel and `ExistingAiTopicItem` rely on). The
+ * renderer calls `useTopicAvailability` purely for advisory copy
+ * (flip "Start session" → "Continue session" when prior sessions
+ * exist) and never blocks launch on the result. Errors surface via
+ * the chatbot's own modal system at session-start time.
+ *
+ * **pathwayUri is the AI Learning Pathway URI** — *not* the containing
+ * LearnCard pathway. An AI Learning Pathway is a curriculum spine
+ * (ordered micro-topics) the tutor walks through; a LearnCard pathway
+ * is the outer "what am I working toward" structure. A node can
+ * reference both: the node lives inside a LearnCard pathway AND
+ * specifies which AI curriculum to run. Optional — when absent, the
+ * tutor starts with the topic's default plan.
+ *
+ * **Seed prompt is permissive and editable.** Both authors (in
+ * BuildMode) and agents (via `applyProposal`) can set this. At
+ * dispatch, it's passed to the chatbot as user-supplied focus text —
+ * **never** as a system/developer message, so prompt-injection in
+ * author content can't escalate tutor behavior.
+ */
+export const AiSessionActionSchema = z.object({
+    kind: z.literal('ai-session'),
+    /**
+     * URI of the Topic boost the session is bound to. Resolves to a
+     * Topic VC in the learner's wallet; the tutor seeds its initial
+     * plan from this topic's metadata.
+     */
+    topicUri: z.string().min(1),
+    /**
+     * Optional AI Learning Pathway URI (the *tutor's* curriculum
+     * spine, distinct from the containing LearnCard pathway). When
+     * provided, the tutor runs the pathway's ordered micro-topics
+     * instead of the topic's default plan.
+     */
+    pathwayUri: z.string().min(1).optional(),
+    /**
+     * Optional author/agent-supplied focus. Treated as user text by
+     * the chatbot, never as a system instruction — injection-safe by
+     * construction. Example: "Drill IAM cross-account assume-role
+     * specifically; skip the fundamentals."
+     */
+    seedPrompt: z.string().optional(),
+    /**
+     * Minimal topic metadata captured at bind time. See
+     * `AiSessionSnapshotSchema` for rationale (agent reasoning,
+     * offline rendering, drift tolerance).
+     */
+    snapshot: AiSessionSnapshotSchema.optional(),
+});
+export type AiSessionAction = z.infer<typeof AiSessionActionSchema>;
+
+// -----------------------------------------------------------------
 // External URL
 // -----------------------------------------------------------------
 
@@ -222,6 +332,7 @@ export type NoneAction = z.infer<typeof NoneActionSchema>;
 export const ActionDescriptorSchema = z.discriminatedUnion('kind', [
     InAppRouteActionSchema,
     AppListingActionSchema,
+    AiSessionActionSchema,
     ExternalUrlActionSchema,
     McpToolActionSchema,
     NoneActionSchema,
@@ -232,6 +343,7 @@ export type ActionDescriptor = z.infer<typeof ActionDescriptorSchema>;
 export const ACTION_KINDS = [
     'in-app-route',
     'app-listing',
+    'ai-session',
     'external-url',
     'mcp-tool',
     'none',

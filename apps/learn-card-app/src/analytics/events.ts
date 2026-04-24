@@ -361,7 +361,13 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
         nodeId: string;
         /** Resolved `ActionDescriptor.kind` at click time. */
-        kind: 'in-app-route' | 'app-listing' | 'external-url' | 'mcp-tool' | 'none';
+        kind:
+            | 'in-app-route'
+            | 'app-listing'
+            | 'ai-session'
+            | 'external-url'
+            | 'mcp-tool'
+            | 'none';
         /** How the resolver arrived at that kind. */
         source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
         /**

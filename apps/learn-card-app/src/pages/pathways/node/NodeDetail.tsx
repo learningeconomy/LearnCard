@@ -33,6 +33,7 @@ import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
 import { canProject } from '../projection/toAchievementCredential';
 
+import AiSessionCard from './AiSessionCard';
 import AppListingCard from './AppListingCard';
 import CompositeNodeBody from './CompositeNodeBody';
 import CredentialPreview from './CredentialPreview';
@@ -191,6 +192,14 @@ const describeLaunch = (resolved: ResolvedAction): LaunchCopy | null => {
 
         case 'in-app-route':
             return { kicker: 'Where to act', label: 'Continue in-app' };
+
+        case 'ai-session':
+            // `ai-session` nodes render via the dedicated
+            // `AiSessionCard` (topic availability gate, skill chips,
+            // seed-prompt preview). The generic LaunchRow fallback
+            // would be both redundant and wrong — it would show a
+            // secondary CTA alongside the first-class card.
+            return null;
 
         case 'mcp-tool':
         case 'none':
@@ -498,6 +507,21 @@ const NodeDetail: React.FC = () => {
         && listingForNode.isLoading
         && !listingForNode.listing;
 
+    // For `ai-session` actions, render the dedicated `AiSessionCard`
+    // — topic enrichment, skill chips, seed-prompt preview, modal
+    // launch over the Map. The card always renders a launch CTA
+    // (the chat service resolves-or-creates the topic server-side;
+    // no wallet pre-flight is required) and uses `useTopicAvailability`
+    // advisorily to flip "Start session" → "Continue session" when
+    // prior sessions exist. NodeDetail just decides whether to mount it.
+    //
+    // The snapshot (when present on the action) is passed through so
+    // the card renders topic title / description / skills on first
+    // paint without waiting for the wallet query to resolve.
+    const aiSessionAction =
+        node.action?.kind === 'ai-session' ? node.action : null;
+    const showAiSessionCard = resolved.kind === 'ai-session';
+
     // Badge/certificate artwork from the CTDL import (or the proxied
     // credential). Falls back to `null` when the upstream record has
     // no image — we don't render a broken thumbnail.
@@ -636,9 +660,22 @@ const NodeDetail: React.FC = () => {
                     </div>
                 )}
 
+                {/* AI tutor session card — first-party LearnCard tutor
+                    on a specific AI Topic VC. Supersedes the generic
+                    LaunchRow entirely for `ai-session` nodes; the
+                    card's own states (loading / not-available / ready)
+                    cover every branch LaunchRow would. */}
+                {showAiSessionCard && resolved.kind === 'ai-session' && (
+                    <AiSessionCard
+                        resolved={resolved}
+                        snapshot={aiSessionAction?.snapshot}
+                    />
+                )}
+
                 {launchCopy
                     && !showAppListingCard
                     && !showAppListingSkeleton
+                    && !showAiSessionCard
                     && (resolved.kind === 'external-url'
                         || resolved.kind === 'app-listing'
                         || resolved.kind === 'in-app-route') && (

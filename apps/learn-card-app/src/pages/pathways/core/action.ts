@@ -51,6 +51,22 @@ export interface ResolvedAppListing {
     source: ActionSource;
 }
 
+export interface ResolvedAiSession {
+    kind: 'ai-session';
+    /** Topic boost URI — what `startTopicWithUri` / `startLearningPathway` consume. */
+    topicUri: string;
+    /** AI Learning Pathway URI (the tutor's curriculum spine). Optional. */
+    pathwayUri?: string;
+    /**
+     * Author/agent-supplied focus text. Threaded into the chatbot as
+     * **user** content, never as a system instruction — the dispatcher
+     * is responsible for that contract. See `AiSessionActionSchema`
+     * for why.
+     */
+    seedPrompt?: string;
+    source: ActionSource;
+}
+
 export interface ResolvedExternalUrl {
     kind: 'external-url';
     url: string;
@@ -81,6 +97,7 @@ export interface ResolvedNone {
 export type ResolvedAction =
     | ResolvedInAppRoute
     | ResolvedAppListing
+    | ResolvedAiSession
     | ResolvedExternalUrl
     | ResolvedMcpTool
     | ResolvedNone;
@@ -104,6 +121,15 @@ const resolveExplicit = (descriptor: ActionDescriptor): ResolvedAction => {
                 kind: 'app-listing',
                 listingId: descriptor.listingId,
                 deepLinkSection: descriptor.deepLinkSection,
+                source: 'explicit',
+            };
+
+        case 'ai-session':
+            return {
+                kind: 'ai-session',
+                topicUri: descriptor.topicUri,
+                pathwayUri: descriptor.pathwayUri,
+                seedPrompt: descriptor.seedPrompt,
                 source: 'explicit',
             };
 

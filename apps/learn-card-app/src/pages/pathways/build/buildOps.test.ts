@@ -815,6 +815,67 @@ describe('stampRevision + per-op revision bumping', () => {
         expect(action.snapshot?.iconUrl).toBe('https://example.com/icon.png');
     });
 
+    it('setAction preserves an `ai-session` descriptor with topicUri/pathwayUri/seedPrompt/snapshot', () => {
+        // Parallel of the app-listing snapshot test — every field
+        // the action schema allows must round-trip through the
+        // setter untouched. A setter that stripped `seedPrompt` or
+        // `pathwayUri` would break the core pathway-node-as-tutor
+        // integration silently, so we pin the full shape here.
+        const before = pathway([node('a')]);
+        const after = setAction(
+            before,
+            'a',
+            {
+                kind: 'ai-session',
+                topicUri: 'boost:aws-iam-deep-dive',
+                pathwayUri: 'boost:aws-curriculum-v1',
+                seedPrompt: 'Drill cross-account assume-role specifically.',
+                snapshot: {
+                    topicTitle: 'AWS IAM Deep Dive',
+                    topicDescription: 'Identity, access, and policies.',
+                    skills: ['IAM', 'least-privilege'],
+                    iconUrl: 'https://cdn.example/topic.png',
+                    snapshottedAt: LATER,
+                },
+            },
+            opts,
+        );
+
+        const action = after.nodes[0].action;
+        expect(action?.kind).toBe('ai-session');
+        if (action?.kind !== 'ai-session') throw new Error('unreachable');
+        expect(action.topicUri).toBe('boost:aws-iam-deep-dive');
+        expect(action.pathwayUri).toBe('boost:aws-curriculum-v1');
+        expect(action.seedPrompt).toBe('Drill cross-account assume-role specifically.');
+        expect(action.snapshot?.topicTitle).toBe('AWS IAM Deep Dive');
+        expect(action.snapshot?.skills).toEqual(['IAM', 'least-privilege']);
+    });
+
+    it('setAction accepts a minimal `ai-session` descriptor without pathway/seed/snapshot', () => {
+        // Authors and dev-seed paths often bind just a topic; the
+        // other fields are opt-in. A minimal descriptor must round-
+        // trip without the setter synthesising empty-string
+        // placeholders for the absent fields.
+        const before = pathway([node('a')]);
+        const after = setAction(
+            before,
+            'a',
+            {
+                kind: 'ai-session',
+                topicUri: 'boost:aws-iam-deep-dive',
+            },
+            opts,
+        );
+
+        const action = after.nodes[0].action;
+        expect(action?.kind).toBe('ai-session');
+        if (action?.kind !== 'ai-session') throw new Error('unreachable');
+        expect(action.topicUri).toBe('boost:aws-iam-deep-dive');
+        expect(action.pathwayUri).toBeUndefined();
+        expect(action.seedPrompt).toBeUndefined();
+        expect(action.snapshot).toBeUndefined();
+    });
+
     it('setDestinationNode bumps revision on change, skips when already set to the same value', () => {
         const before = {
             ...pathway([node('a'), node('b')]),

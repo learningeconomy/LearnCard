@@ -38,6 +38,20 @@ type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
     initialTopic?: string | undefined;
     initialTopicUri?: string | undefined;
+    /**
+     * Optional AI Learning Pathway URI to seed the session with. When
+     * provided alongside `initialTopicUri`, the chatbot calls
+     * `startLearningPathway(topicUri, pathwayUri)` instead of the
+     * plain `startTopicWithUri(topicUri)`.
+     *
+     * Historically this was only read from `window.location.search`
+     * (the `?pathwayUri=` query param). Accepting it as a prop lets
+     * callers like the Pathways Map modal dispatcher seed pathway
+     * context without having to rewrite the browser URL — which
+     * matters when the chatbot mounts as a modal *over* the existing
+     * route (e.g. `/pathways/:id/node/:nodeId`).
+     */
+    initialPathwayUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
     mode?: AiSessionMode;
@@ -47,6 +61,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     initialMessages = [],
     initialTopic = undefined,
     initialTopicUri: _initialTopicUri = undefined,
+    initialPathwayUri: _initialPathwayUri = undefined,
     contractUri = AiPassportAppContractUri.learncardapp,
     handleStartOver: _handleStartOver,
     mode = AiSessionMode.tutor,
@@ -84,7 +99,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const initialTopicUri = _initialTopicUri || urlParams.get('topicUri');
-        const pathwayUri = urlParams.get('pathwayUri');
+        // Prop wins over URL. Pathways Map modal launches seed this
+        // via prop so we don't have to rewrite the browser URL while
+        // the user is sitting on `/pathways/:id/node/:nodeId`.
+        const pathwayUri = _initialPathwayUri || urlParams.get('pathwayUri');
 
         // If there is already an active thread or messages, do not re-initialize
         const existingThread = currentThreadId.get?.();

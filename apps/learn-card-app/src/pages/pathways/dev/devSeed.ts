@@ -15,6 +15,7 @@
 
 import { pathwayStore } from '../../../stores/pathways';
 import { addEdge, addNode, setAction, setPolicy, setTermination } from '../build/buildOps';
+import { buildAiSessionSnapshot } from '../core/aiSessionSnapshot';
 import {
     buildAppListingSnapshot,
     type ListingSnapshotInput,
@@ -177,7 +178,7 @@ export const seedDemoPathwayIfEmpty = (learnerDid: string): void => {
 // AWS Cloud Practitioner demo pathway (v0.5 showcase)
 // ---------------------------------------------------------------------------
 //
-// A 5-node pathway authored to exercise every meaningful ActionDescriptor
+// A 7-node pathway authored to exercise every meaningful ActionDescriptor
 // dispatch path the UI supports, plus an OutcomeSignal that the credential
 // binder can auto-propose against once the terminal VC arrives. Intended
 // to be seeded *after* `pnpm lc seed pathway-demo` has populated the
@@ -186,9 +187,19 @@ export const seedDemoPathwayIfEmpty = (learnerDid: string): void => {
 // Node / kind mapping:
 //   1. Watch course     → `app-listing` (Coursera,      DIRECT_LINK)
 //   2. Practice exam    → `app-listing` (Practice Studio, EMBEDDED_IFRAME)
-//   3. AI coaching      → `app-listing` (Cloud Coach,     AI_TUTOR)
-//   4. Schedule exam    → `external-url` (Pearson VUE scheduler, no listing)
-//   5. Upload cert      → `kind: 'none'` — learner stays in NodeDetail
+//   3. AI coaching      → `app-listing` (Cloud Coach,     AI_TUTOR — third-party)
+//   4. IAM deep dive    → `ai-session`  (first-party LC tutor — full shape:
+//                                        topicUri + pathwayUri + seedPrompt + snapshot)
+//   5. VPC refresher    → `ai-session`  (first-party LC tutor — minimal shape:
+//                                        topicUri + snapshot only)
+//   6. Schedule exam    → `external-url` (Pearson VUE scheduler, no listing)
+//   7. Upload cert      → `kind: 'none'` — learner stays in NodeDetail
+//
+// Nodes 3–5 together show the deliberate split between the two tutor
+// surfaces: node 3 dispatches to a **third-party** agent via the listing
+// registry (consent-flow gated), nodes 4 & 5 dispatch to LearnCard's
+// **first-party** tutor (`/chats` surface, topic-VC availability gated).
+// Keeping both in the same demo makes the product distinction legible.
 //
 // The pathway-level OutcomeSignal is of kind `credential-received` and
 // expects `AWSCertifiedCloudPractitioner`. When a VC with that type lands
@@ -301,7 +312,117 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         });
     }
 
-    // --- Node 4: schedule proctored exam (external) ----------------------
+    // --- Node 4: LearnCard AI tutor — IAM deep dive (ai-session, full shape)
+    //
+    // Demonstrates the full `ai-session` descriptor: topicUri (the
+    // wallet-resolved Topic boost), pathwayUri (the AI Learning
+    // Pathway curriculum spine — NOT the containing LearnCard
+    // pathway), seedPrompt (author-supplied focus, dispatched as
+    // user text — never a system instruction), and snapshot (so
+    // the Map + NodeDetail render the right title/skills/icon on
+    // first paint without waiting for a wallet fetch).
+    //
+    // Contrast with node 3: that's a *third-party* tutor routed
+    // through the listing registry + consent flow. This one is
+    // LearnCard's *first-party* tutor on a specific topic VC, gated
+    // only by wallet availability of that topic.
+    pathway = addNode(pathway, {
+        title: 'AI Tutor: IAM deep dive',
+        description:
+            "Drill identity and access policies with LearnCard's AI tutor. Pre-seeded to focus on the cross-account assume-role scenarios the practice exams love to trap you on.",
+    });
+    const nIam = pathway.nodes[pathway.nodes.length - 1];
+
+    // Practice policy + self-attest termination: the session is a
+    // deliberate practice moment, not an artifact upload. Learner
+    // attests they completed the drill — the tutor itself is the
+    // evidence, and the chatbot keeps its own session log.
+    pathway = setPolicy(pathway, nIam.id, {
+        kind: 'practice',
+        cadence: { frequency: 'daily', perPeriod: 1 },
+        artifactTypes: ['text'],
+    });
+    pathway = setTermination(pathway, nIam.id, {
+        kind: 'self-attest',
+        prompt:
+            'I completed an IAM tutor session and can explain cross-account assume-role in my own words.',
+    });
+    {
+        // Snapshot is inlined (rather than table-keyed like the
+        // app-listing presets) because ai-session topics aren't
+        // registered in a shared catalog the dev seed needs to mirror.
+        // Keeps the topic metadata next to the node that uses it.
+        const snap = buildAiSessionSnapshot(
+            {
+                title: 'AWS IAM Deep Dive',
+                description:
+                    'Identity, access policies, and cross-account assume-role patterns for AWS practitioners.',
+                skills: ['IAM', 'least-privilege', 'cross-account', 'assume-role'],
+                iconUrl: 'https://cdn.filestackcontent.com/RXaNgRHTHCNr3meO1G0A',
+            },
+            { now },
+        );
+
+        pathway = setAction(pathway, nIam.id, {
+            kind: 'ai-session',
+            // Placeholder URIs — the chat service will resolve-or-
+            // create these server-side on first launch (same contract
+            // the GrowSkills AI Learning Pathway carousel uses), so
+            // the dev seed doesn't need to mirror real boost records.
+            // If a URI doesn't resolve at session-start time, the
+            // chatbot surfaces its own error modal — AiSessionCard
+            // never blocks launch on a wallet pre-flight.
+            topicUri: 'boost:aws-iam-deep-dive',
+            pathwayUri: 'boost:aws-ccp-curriculum-v1',
+            seedPrompt:
+                'Focus on cross-account assume-role and trust-policy edge cases. Skip the 101 material — I already did the Coursera course.',
+            ...(snap ? { snapshot: snap } : {}),
+        });
+    }
+
+    // --- Node 5: LearnCard AI tutor — VPC refresher (ai-session, minimal)
+    //
+    // Demonstrates the minimal `ai-session` shape: topicUri +
+    // snapshot only. No curriculum pathwayUri, no author-supplied
+    // seedPrompt — the tutor uses the topic's default plan and the
+    // learner drives from there. Useful for showing that authors
+    // can bind just a topic and let the tutor figure out the rest.
+    pathway = addNode(pathway, {
+        title: 'AI Tutor: VPC quick refresher',
+        description:
+            'Five-minute check-in on VPC concepts before the exam — subnets, routing, peering. No pre-set focus; the tutor uses the default plan.',
+    });
+    const nVpc = pathway.nodes[pathway.nodes.length - 1];
+
+    pathway = setPolicy(pathway, nVpc.id, {
+        kind: 'practice',
+        cadence: { frequency: 'daily', perPeriod: 1 },
+        artifactTypes: ['text'],
+    });
+    pathway = setTermination(pathway, nVpc.id, {
+        kind: 'self-attest',
+        prompt: 'I reviewed VPC fundamentals with the AI tutor.',
+    });
+    {
+        const snap = buildAiSessionSnapshot(
+            {
+                title: 'AWS VPC Fundamentals',
+                description: 'Subnets, routing, peering, and common VPC architectures.',
+                skills: ['VPC', 'subnets', 'routing', 'peering'],
+                iconUrl: 'https://cdn.filestackcontent.com/erbcRQfTG2TktX2hcmLu',
+            },
+            { now },
+        );
+
+        pathway = setAction(pathway, nVpc.id, {
+            kind: 'ai-session',
+            topicUri: 'boost:aws-vpc-fundamentals',
+            // No pathwayUri, no seedPrompt — minimal by design.
+            ...(snap ? { snapshot: snap } : {}),
+        });
+    }
+
+    // --- Node 6: schedule proctored exam (external) ----------------------
     pathway = addNode(pathway, {
         title: 'Schedule: book the proctored exam',
         description:
@@ -324,7 +445,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         url: 'https://www.pearsonvue.com/us/en/aws.html',
     });
 
-    // --- Node 5: upload the terminal credential --------------------------
+    // --- Node 7: upload the terminal credential --------------------------
     //
     // Action-less on purpose — the NodeDetail overlay *is* the destination.
     // The learner drops the AWS-issued VC into the wallet and this node's
@@ -355,9 +476,16 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
     pathway = setAction(pathway, n5.id, { kind: 'none' });
 
     // --- Prerequisite chain + destination + outcome ----------------------
+    //
+    // n1 → n2 → n3 → nIam → nVpc → n4 → n5. The two ai-session
+    // nodes slot between the third-party AI coach (n3) and the
+    // real exam (n4): after drilling with both agents, the learner
+    // books the proctored test.
     pathway = addEdge(pathway, n1.id, n2.id);
     pathway = addEdge(pathway, n2.id, n3.id);
-    pathway = addEdge(pathway, n3.id, n4.id);
+    pathway = addEdge(pathway, n3.id, nIam.id);
+    pathway = addEdge(pathway, nIam.id, nVpc.id);
+    pathway = addEdge(pathway, nVpc.id, n4.id);
     pathway = addEdge(pathway, n4.id, n5.id);
 
     // Pathway-level outcome: "did executing this pathway produce the
