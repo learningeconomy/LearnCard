@@ -457,22 +457,75 @@ export const satisfiesFilter = (value: unknown, filter: Record<string, unknown>)
 };
 
 /**
- * True when every declared `type` in a filter is a primitive JSON type.
- * Used by `evaluateField` to decide whether an array JSONPath match
- * should be retried element-by-element. Filters with no `type` keyword,
- * or with `type: "array"` / `type: "object"`, are treated as
- * non-primitive so we never flatten what a verifier clearly wants as a
- * structural match.
+ * True when a filter unambiguously targets a primitive (string / number
+ * / integer / boolean / null). Used by `evaluateField` to decide whether
+ * an array JSONPath match should be retried element-by-element.
+ *
+ * We treat a filter as primitive-targeting when:
+ *
+ * - It declares `type` and every listed type is a primitive, **or**
+ * - It has no `type` keyword but carries a keyword that only makes
+ *   sense on primitives: `pattern` / `minLength` / `maxLength` (string),
+ *   `minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`
+ *   (number), or `const` / `enum` whose value(s) are themselves
+ *   primitive.
+ *
+ * A filter with any array-shape keyword (`contains`, `items`,
+ * `minItems`, `maxItems`, or `type: "array"` / `type: "object"`) is
+ * always treated as non-primitive so `{contains: {const: "X"}}` against
+ * an array that lacks `"X"` stays a hard miss instead of being rescued
+ * by element iteration.
+ *
+ * This mirrors what Sphereon PEX and Credo-TS do in practice and is
+ * what lets real-world PDs that write `{const: "AlpsTourReservation"}`
+ * or `{pattern: "..."}` without a `type` keyword match against
+ * JSON-LD `type` arrays.
  */
 const expectsPrimitive = (filter: Record<string, unknown>): boolean => {
-    if (!('type' in filter)) return false;
+    // Array-structural keywords never imply primitives — bail early so
+    // the evaluator never flattens what a verifier wants as an array.
+    if (hasAnyKeyword(filter, ['contains', 'items', 'minItems', 'maxItems'])) {
+        return false;
+    }
 
-    const types = Array.isArray(filter.type) ? filter.type : [filter.type];
-    if (types.length === 0) return false;
+    if ('type' in filter) {
+        const types = Array.isArray(filter.type) ? filter.type : [filter.type];
+        if (types.length === 0) return false;
+        return types.every(t => typeof t === 'string' && PRIMITIVE_TYPES.has(t));
+    }
 
-    const primitives = new Set(['string', 'number', 'integer', 'boolean', 'null']);
-    return types.every(t => typeof t === 'string' && primitives.has(t));
+    // Type-less filter: infer from the other keywords.
+    if (hasAnyKeyword(filter, [
+        'pattern',
+        'minLength',
+        'maxLength',
+        'minimum',
+        'maximum',
+        'exclusiveMinimum',
+        'exclusiveMaximum',
+    ])) {
+        return true;
+    }
+
+    if ('const' in filter && isPrimitiveValue(filter.const)) return true;
+
+    if ('enum' in filter && Array.isArray(filter.enum) && filter.enum.length > 0) {
+        return filter.enum.every(isPrimitiveValue);
+    }
+
+    return false;
 };
+
+const PRIMITIVE_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'null']);
+
+const isPrimitiveValue = (value: unknown): boolean =>
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean';
+
+const hasAnyKeyword = (filter: Record<string, unknown>, keywords: string[]): boolean =>
+    keywords.some(k => k in filter);
 
 const matchesType = (value: unknown, type: unknown): boolean => {
     switch (type) {

@@ -170,7 +170,13 @@ const generateDidJwkSigner = async () => {
         kid,
     });
 
-    return { did, kid, signer, publicJwk: publicJwkMinimal };
+    return {
+        did,
+        kid,
+        signer,
+        publicJwk: publicJwkMinimal,
+        privateJwk: privateJwk as JWKWithPrivateKey,
+    };
 };
 
 const truncate = (s: string, n: number): string => (s.length <= n ? s : `${s.slice(0, n)}…`);
@@ -214,7 +220,7 @@ const main = async (): Promise<void> => {
     }
 
     // 3. Ephemeral holder key.
-    const { did, kid, signer } = await generateDidJwkSigner();
+    const { did, kid, signer, privateJwk } = await generateDidJwkSigner();
     console.log(`\nHolder DID: ${truncate(did, 120)}`);
     if (args.verbose) console.log(`Holder kid: ${kid}`);
 
@@ -296,7 +302,36 @@ const main = async (): Promise<void> => {
             );
         }
 
-        console.log(`\n   Next: pnpm try-verify "<oid4vp-uri>" --credentials ${args.savePath}`);
+        // Sidecar holder file: try-verify --submit reads this to sign
+        // the VP with the same holder the VC was issued to. Without
+        // this, real verifiers (walt.id, Animo, EUDI) reject the VP
+        // with a holder-binding mismatch.
+        const holderPath = `${absolute}.holder.json`;
+        const holderPayload = {
+            did,
+            kid,
+            privateJwk,
+            alg: 'EdDSA' as const,
+            // Trailing note so nobody commits this by accident. The
+            // plugin's .gitignore also catches *.holder.json.
+            _warning: 'PRIVATE KEY MATERIAL — do not commit. Gitignored by default.',
+        };
+
+        try {
+            writeFileSync(holderPath, `${JSON.stringify(holderPayload, null, 2)}\n`, 'utf8');
+            console.log(`🔑 Saved holder key to ${holderPath}`);
+        } catch (holderErr) {
+            console.error(
+                `\n⚠  Failed to write holder sidecar to ${holderPath}: ${
+                    holderErr instanceof Error ? holderErr.message : String(holderErr)
+                }`
+            );
+            console.error('   try-verify --submit will not be able to sign without it.');
+        }
+
+        console.log(
+            `\n   Next: pnpm try-verify "<oid4vp-uri>" --credentials ${args.savePath} --submit`
+        );
     }
 
     console.log('\n✓ Done');

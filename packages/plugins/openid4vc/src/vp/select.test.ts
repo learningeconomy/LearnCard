@@ -449,6 +449,218 @@ describe('walt.id real-world PD shape (regression)', () => {
     });
 });
 
+describe('real-world PD shape hardening', () => {
+    // Union-path + multi-format descriptor: the shape Sphereon PEX and
+    // Credo-TS verifiers emit to stay format-agnostic. The same
+    // descriptor must match ldp_vc (type at $.type) and jwt_vc_json
+    // (type at $.vc.type).
+    describe('Sphereon/Credo-TS: union paths + dual-format designation', () => {
+        const degreeJwt = buildJwtVc({
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+            credentialSubject: { id: 'did:jwk:holder', degree: { type: 'Bachelor' } },
+        });
+
+        const sphereonDescriptor = {
+            id: 'university-degree',
+            format: {
+                ldp_vc: { proof_type: ['Ed25519Signature2020', 'DataIntegrityProof'] },
+                jwt_vc_json: { alg: ['EdDSA', 'ES256'] },
+            },
+            constraints: {
+                fields: [
+                    {
+                        path: ['$.vc.type', '$.type'],
+                        filter: {
+                            type: 'array',
+                            contains: { const: 'UniversityDegreeCredential' },
+                        },
+                    },
+                ],
+            },
+        };
+
+        const pd: PresentationDefinition = {
+            id: 'sphereon-degree',
+            input_descriptors: [sphereonDescriptor],
+        };
+
+        it('matches an ldp_vc candidate', () => {
+            const result = selectCredentials([{ credential: degreeVc }], pd);
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc');
+        });
+
+        it('matches a jwt_vc_json candidate (compact JWS)', () => {
+            const result = selectCredentials([{ credential: degreeJwt }], pd);
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('jwt_vc_json');
+        });
+
+        it('matches a jwt_vc_json candidate (W3C-wrapped)', () => {
+            const wrapped = {
+                proof: { type: 'JwtProof2020', jwt: degreeJwt },
+            };
+            const result = selectCredentials([{ credential: wrapped }], pd);
+            expect(result.canSatisfy).toBe(true);
+        });
+
+        it('deduplicates neither — returns all matching candidates', () => {
+            const result = selectCredentials(
+                [{ credential: degreeVc }, { credential: degreeJwt }],
+                pd
+            );
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates).toHaveLength(2);
+        });
+    });
+
+    // EUDI reference verifier style: paths into nested claims under
+    // credentialSubject, primitive-typed filters without `type` (the
+    // shape that surfaced the widened expectsPrimitive heuristic), and
+    // optional fields for progressive disclosure.
+    describe('EUDI-style: nested credentialSubject paths + optional + purpose', () => {
+        const idCredential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential', 'PersonIdentificationData'],
+            issuer: 'did:web:issuer.eudiw.dev',
+            credentialSubject: {
+                id: 'did:jwk:holder',
+                given_name: 'Alice',
+                family_name: 'Liddell',
+                birth_date: '1990-07-21',
+                age_over_18: true,
+            },
+            proof: { type: 'Ed25519Signature2020' },
+        };
+
+        const eudiDescriptor = {
+            id: 'eu-pid',
+            name: 'EU Person Identification',
+            purpose: 'To verify age-over-18 for regulated services',
+            constraints: {
+                fields: [
+                    {
+                        path: ['$.credentialSubject.age_over_18', '$.vc.credentialSubject.age_over_18'],
+                        filter: { type: 'boolean', const: true },
+                        purpose: 'Age gate',
+                    },
+                    {
+                        path: ['$.credentialSubject.family_name', '$.vc.credentialSubject.family_name'],
+                        filter: { pattern: '.+' }, // type-less, pattern-only — widened heuristic path
+                    },
+                    {
+                        path: ['$.credentialSubject.ssn', '$.vc.credentialSubject.ssn'],
+                        optional: true,
+                    },
+                ],
+            },
+        };
+
+        const pd: PresentationDefinition = {
+            id: 'eudi-age-gate',
+            input_descriptors: [eudiDescriptor],
+        };
+
+        it('matches an ldp_vc candidate with required + optional fields', () => {
+            const result = selectCredentials([{ credential: idCredential }], pd);
+            expect(result.canSatisfy).toBe(true);
+        });
+
+        it('matches a W3C-wrapped JWT candidate (nested $.vc.credentialSubject.*)', () => {
+            const pidJwt = buildJwtVc({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'PersonIdentificationData'],
+                credentialSubject: idCredential.credentialSubject,
+            });
+            const wrapped = {
+                proof: { type: 'JwtProof2020', jwt: pidJwt },
+            };
+            const result = selectCredentials([{ credential: wrapped }], pd);
+            expect(result.canSatisfy).toBe(true);
+        });
+
+        it('rejects when age_over_18 is false (const boolean)', () => {
+            const minor = {
+                ...idCredential,
+                credentialSubject: { ...idCredential.credentialSubject, age_over_18: false },
+            };
+            const result = selectCredentials([{ credential: minor }], pd);
+            expect(result.canSatisfy).toBe(false);
+        });
+    });
+
+    // Animo Paradym-style PD: ldp_vc only, basic $.type contains filter.
+    // Sanity check the pre-fix happy path still works after the JWT
+    // decoder changes and array-fallback addition.
+    describe('Animo Paradym: ldp_vc-only sanity', () => {
+        it('ldp_vc PD with $.type contains filter still matches ldp candidates', () => {
+            const pd: PresentationDefinition = {
+                id: 'paradym-degree',
+                format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                input_descriptors: [degreeDescriptor],
+            };
+            const result = selectCredentials([{ credential: degreeVc }], pd);
+            expect(result.canSatisfy).toBe(true);
+        });
+
+        it('ldp_vc PD rejects a jwt_vc_json candidate via format designation', () => {
+            const jwtDegree = buildJwtVc({
+                type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+            });
+            const pd: PresentationDefinition = {
+                id: 'paradym-degree-strict',
+                format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                input_descriptors: [degreeDescriptor],
+            };
+            const result = selectCredentials([{ credential: jwtDegree }], pd);
+            expect(result.canSatisfy).toBe(false);
+        });
+    });
+
+    // submission_requirements crossing formats — mixed wallet with both
+    // ldp and jwt credentials, grouped descriptors each selecting the
+    // right one via format designation.
+    describe('submission_requirements with mixed-format candidates', () => {
+        it('satisfies rule=all across groups where each descriptor matches one format', () => {
+            const licenseJwt = buildJwtVc({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'DriversLicenseCredential'],
+                credentialSubject: { id: 'did:jwk:holder', licenseNumber: 'DL-42' },
+            });
+
+            const pd: PresentationDefinition = {
+                id: 'mixed-formats',
+                submission_requirements: [
+                    { name: 'Identity Pack', rule: 'all', from: 'identity' },
+                ],
+                input_descriptors: [
+                    {
+                        ...degreeDescriptor,
+                        group: ['identity'],
+                        format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                    },
+                    {
+                        ...licenseDescriptor,
+                        group: ['identity'],
+                        format: { jwt_vc_json: { alg: ['EdDSA'] } },
+                    },
+                ],
+            };
+
+            const result = selectCredentials(
+                [{ credential: degreeVc }, { credential: licenseJwt }],
+                pd
+            );
+
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors).toHaveLength(2);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc');
+            expect(result.descriptors[1].candidates[0].candidate.format).toBe('jwt_vc_json');
+        });
+    });
+});
+
 describe('buildPresentationSubmission', () => {
     const pd: PresentationDefinition = {
         id: 'pd-1',

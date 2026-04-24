@@ -333,6 +333,116 @@ describe('evaluateField', () => {
         expect(result.matched).toBe(false);
         expect(result.reason).toMatch(/no `path/);
     });
+
+    // The following block exercises the array-element iteration fallback
+    // that makes real-world verifier PDs (walt.id, Sphereon, Credo-TS)
+    // actually match. See the `expectsPrimitive` doc in pex.ts for why
+    // this exists. Each test pairs a JSONPath that lands on the VCDM
+    // `type` array with a filter from a real-world PD shape and a
+    // negative control that must NOT be rescued by the fallback.
+    describe('array-element iteration fallback for primitive filters', () => {
+        it('matches type:string + pattern (walt.id shape)', () => {
+            const field: Field = {
+                path: ['$.type'],
+                filter: {
+                    type: 'string',
+                    pattern: '^UniversityDegreeCredential$',
+                },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(true);
+            expect(result.value).toBe('UniversityDegreeCredential');
+        });
+
+        it('matches a type-less const filter via array iteration', () => {
+            const field: Field = {
+                path: ['$.type'],
+                filter: { const: 'UniversityDegreeCredential' },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(true);
+            expect(result.value).toBe('UniversityDegreeCredential');
+        });
+
+        it('matches a type-less enum filter via array iteration', () => {
+            const field: Field = {
+                path: ['$.type'],
+                filter: { enum: ['MasterDegreeCredential', 'UniversityDegreeCredential'] },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(true);
+            expect(result.value).toBe('UniversityDegreeCredential');
+        });
+
+        it('matches a type-less pattern filter via array iteration', () => {
+            const field: Field = {
+                path: ['$.type'],
+                filter: { pattern: 'Degree' },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(true);
+            expect(result.value).toBe('UniversityDegreeCredential');
+        });
+
+        it('does NOT iterate when the filter wants an array (contains)', () => {
+            // `contains` targets the array itself. If we iterated to
+            // elements here, `{contains:{const:"X"}}` would be satisfied
+            // against ANY non-array element (since `satisfiesFilter`
+            // skips `contains` on non-arrays). That's a false positive
+            // bug we must never regress.
+            const field: Field = {
+                path: ['$.type'],
+                filter: { contains: { const: 'DoesNotExist' } },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(false);
+            expect(result.reason).toMatch(/filter/);
+        });
+
+        it('does NOT iterate when the filter wants an array (type:array)', () => {
+            const field: Field = {
+                path: ['$.type'],
+                filter: { type: 'array', minItems: 10 },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(false);
+        });
+
+        it('does NOT iterate when the filter expects an object', () => {
+            // credentialSubject is an object, not an array, so fallback
+            // is irrelevant, but this test documents the intent: an
+            // object-shaped filter stays strict.
+            const field: Field = {
+                path: ['$.credentialSubject'],
+                filter: { type: 'object' },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(true);
+        });
+
+        it('still rejects when no array element satisfies the primitive filter', () => {
+            const field: Field = {
+                path: ['$.type'],
+                filter: { type: 'string', const: 'SomethingElse' },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(false);
+        });
+
+        it('applies iteration per candidate value, not across all path results', () => {
+            // `$..type` returns BOTH the outer array and the inner
+            // `degree.type` string. Array iteration is only applied to
+            // the array value; the string value is checked as-is. Either
+            // matching keeps the field satisfied.
+            const field: Field = {
+                path: ['$..type'],
+                filter: { const: 'BachelorDegree' },
+            };
+            const result = evaluateField(sampleVc, field);
+            expect(result.matched).toBe(true);
+            expect(result.value).toBe('BachelorDegree');
+        });
+    });
 });
 
 describe('matchInputDescriptor', () => {

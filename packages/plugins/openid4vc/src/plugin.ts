@@ -21,6 +21,19 @@ import {
 } from './vp/parse';
 import { AuthorizationRequest } from './vp/types';
 import { selectCredentials } from './vp/select';
+import {
+    buildPresentation as buildPresentationFn,
+    ChosenCredential,
+    PreparedPresentation,
+    VpFormat,
+} from './vp/present';
+import {
+    signPresentation as signPresentationFn,
+    LdpVpSigner,
+    SignPresentationResult,
+} from './vp/sign';
+import { submitPresentation as submitPresentationFn } from './vp/submit';
+import { ProofJwtSigner } from './vci/types';
 
 /**
  * Create the OpenID4VC holder plugin.
@@ -114,10 +127,7 @@ export const getOpenID4VCPlugin = (
                 resolveAuthorizationRequestFn(input, fetchImpl),
 
             prepareVerifiablePresentation: async (_lc, input, credentials) => {
-                const request: AuthorizationRequest =
-                    typeof input === 'string'
-                        ? await resolveAuthorizationRequestFn(input, fetchImpl)
-                        : input;
+                const request = await resolveRequestInput(input, fetchImpl);
 
                 // No presentation_definition → nothing to match against.
                 // The caller is probably handling a SIOPv2-only flow or a
@@ -141,9 +151,176 @@ export const getOpenID4VCPlugin = (
 
                 return { request, selection };
             },
+
+            buildPresentation: async (learnCard, input, chosen, options = {}) => {
+                const request = await resolveRequestInput(input, fetchImpl);
+                const pd = requirePresentationDefinition(request);
+
+                const holder = options.holder ?? learnCard.id.did();
+
+                const prepared = buildPresentationFn({
+                    pd,
+                    chosen,
+                    holder,
+                    envelopeFormat: options.envelopeFormat,
+                });
+
+                return { request, prepared };
+            },
+
+            signPresentation: async (learnCard, input, prepared, options = {}) => {
+                const request = await resolveRequestInput(input, fetchImpl);
+
+                const holder =
+                    options.holder ??
+                    (typeof prepared.unsignedVp.holder === 'string'
+                        ? prepared.unsignedVp.holder
+                        : learnCard.id.did());
+
+                if (prepared.vpFormat === 'jwt_vp_json') {
+                    const jwtSigner =
+                        options.signer ?? (await ensureVpJwtSigner(learnCard));
+
+                    return signPresentationFn(
+                        {
+                            unsignedVp: prepared.unsignedVp,
+                            vpFormat: prepared.vpFormat,
+                            audience: request.client_id,
+                            nonce: request.nonce,
+                            holder,
+                        },
+                        { jwtSigner }
+                    );
+                }
+
+                return signPresentationFn(
+                    {
+                        unsignedVp: prepared.unsignedVp,
+                        vpFormat: prepared.vpFormat,
+                        audience: request.client_id,
+                        nonce: request.nonce,
+                        holder,
+                    },
+                    { ldpVpSigner: buildLdpVpSigner(learnCard) }
+                );
+            },
+
+            submitPresentation: async (_lc, input, signed, submission) => {
+                const request = await resolveRequestInput(input, fetchImpl);
+                const responseUri = request.response_uri ?? request.redirect_uri;
+
+                if (!responseUri) {
+                    throw new Error(
+                        'Authorization Request has no response_uri / redirect_uri — cannot submitPresentation'
+                    );
+                }
+
+                return submitPresentationFn({
+                    responseUri,
+                    vpToken: signed.vpToken,
+                    submission,
+                    state: request.state,
+                    fetchImpl,
+                });
+            },
+
+            presentCredentials: async (learnCard, input, chosen, options = {}) => {
+                const request = await resolveRequestInput(input, fetchImpl);
+                const pd = requirePresentationDefinition(request);
+
+                const holder = options.holder ?? learnCard.id.did();
+
+                const prepared = buildPresentationFn({
+                    pd,
+                    chosen,
+                    holder,
+                    envelopeFormat: options.envelopeFormat,
+                });
+
+                const helpers =
+                    prepared.vpFormat === 'jwt_vp_json'
+                        ? {
+                              jwtSigner:
+                                  options.signer ??
+                                  (await ensureVpJwtSigner(learnCard)),
+                          }
+                        : { ldpVpSigner: buildLdpVpSigner(learnCard) };
+
+                const signed = await signPresentationFn(
+                    {
+                        unsignedVp: prepared.unsignedVp,
+                        vpFormat: prepared.vpFormat,
+                        audience: request.client_id,
+                        nonce: request.nonce,
+                        holder,
+                    },
+                    helpers
+                );
+
+                const responseUri = request.response_uri ?? request.redirect_uri;
+                if (!responseUri) {
+                    throw new Error(
+                        'Authorization Request has no response_uri / redirect_uri — cannot presentCredentials'
+                    );
+                }
+
+                const submitted = await submitPresentationFn({
+                    responseUri,
+                    vpToken: signed.vpToken,
+                    submission: prepared.submission,
+                    state: request.state,
+                    fetchImpl,
+                });
+
+                return { request, prepared, signed, submitted };
+            },
         },
     };
 };
+
+/**
+ * Resolve a URI-or-request union to a fully-resolved AuthorizationRequest.
+ * Idempotent when the caller already passes a resolved request.
+ */
+const resolveRequestInput = async (
+    input: string | AuthorizationRequest,
+    fetchImpl: typeof fetch | undefined
+): Promise<AuthorizationRequest> =>
+    typeof input === 'string'
+        ? await resolveAuthorizationRequestFn(input, fetchImpl)
+        : input;
+
+const requirePresentationDefinition = (request: AuthorizationRequest) => {
+    if (!request.presentation_definition) {
+        throw new Error(
+            'Authorization Request has no presentation_definition — cannot build a VP'
+        );
+    }
+    return request.presentation_definition;
+};
+
+/**
+ * Build a JWT signer for VP signing. Shares the same Ed25519 pathway
+ * used by the VCI proof-of-possession flow — the `typ` header is set
+ * per-call by the sign layer, so the signer itself is format-agnostic.
+ */
+const ensureVpJwtSigner = async (learnCard: any): Promise<ProofJwtSigner> => {
+    const keypair = learnCard.id.keypair('ed25519');
+    const did = learnCard.id.did();
+    const kid = await learnCard.invoke.didToVerificationMethod(did);
+
+    return createJoseEd25519Signer({ keypair, kid });
+};
+
+/**
+ * Wrap `learnCard.invoke.issuePresentation` into the {@link LdpVpSigner}
+ * contract expected by the VP sign layer. OID4VP replay-binding
+ * (domain/challenge) is passed through verbatim.
+ */
+const buildLdpVpSigner = (learnCard: any): LdpVpSigner => ({
+    sign: async (unsignedVp, { domain, challenge }) =>
+        learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
+});
 
 /**
  * Build an Ed25519 proof-of-possession signer from the host LearnCard's

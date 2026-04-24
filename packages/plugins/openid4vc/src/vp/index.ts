@@ -51,3 +51,32 @@ export type {
 } from './select';
 
 export type { DescriptorMatch, FieldMatch } from './pex';
+
+export { buildPresentation, BuildPresentationError } from './present';
+
+export type {
+    VpFormat,
+    ChosenCredential,
+    BuildPresentationOptions,
+    PreparedPresentation,
+    BuildPresentationErrorCode,
+} from './present';
+
+export { signPresentation, VpSignError } from './sign';
+
+export type {
+    VpToken,
+    LdpVpSigner,
+    SignPresentationOptions,
+    SignPresentationHelpers,
+    SignPresentationResult,
+    VpSignErrorCode,
+} from './sign';
+
+export { submitPresentation, VpSubmitError } from './submit';
+
+export type {
+    SubmitPresentationOptions,
+    SubmitPresentationResult,
+    VpSubmitErrorCode,
+} from './submit';

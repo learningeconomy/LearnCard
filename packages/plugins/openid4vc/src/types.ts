@@ -18,7 +18,23 @@ import {
     AuthorizationRequest,
     ParsedAuthorizationRequest,
 } from './vp/types';
-import { CandidateCredential, SelectionResult } from './vp/select';
+import {
+    CandidateCredential,
+    PresentationSubmission,
+    SelectionResult,
+} from './vp/select';
+import {
+    ChosenCredential,
+    PreparedPresentation,
+    VpFormat,
+} from './vp/present';
+import {
+    SignPresentationResult,
+} from './vp/sign';
+import {
+    SubmitPresentationResult,
+} from './vp/submit';
+import { ProofJwtSigner } from './vci/types';
 
 /**
  * Methods the host LearnCard must provide for the OpenID4VC plugin to work.
@@ -140,6 +156,96 @@ export type OpenID4VCPluginMethods = {
     ) => Promise<{
         request: AuthorizationRequest;
         selection: SelectionResult;
+    }>;
+
+    /**
+     * Slice 7a — build an unsigned Verifiable Presentation + DIF PEX
+     * Presentation Submission from the user's per-descriptor picks.
+     *
+     * Pure / synchronous w.r.t. cryptography: this method never touches
+     * the holder's private keys, so UIs can call it to show a preview
+     * of exactly what will be submitted before the user consents to
+     * sign.
+     *
+     * @param input    The verifier's Authorization Request (or URI that
+     *   will be re-resolved for convenience).
+     * @param chosen   One {@link ChosenCredential} per input_descriptor
+     *   the user picked. Order determines `verifiableCredential[i]`
+     *   slots in the VP and the corresponding `descriptor_map` entries.
+     * @param options  `holder` defaults to `learnCard.id.did()`;
+     *   `envelopeFormat` is inferred from `pd.format` + the inner
+     *   credential formats when omitted.
+     */
+    buildPresentation: (
+        input: string | AuthorizationRequest,
+        chosen: ChosenCredential[],
+        options?: {
+            holder?: string;
+            envelopeFormat?: VpFormat;
+        }
+    ) => Promise<{
+        request: AuthorizationRequest;
+        prepared: PreparedPresentation;
+    }>;
+
+    /**
+     * Slice 7b — sign a prepared VP into a submittable `vp_token`.
+     *
+     * For `jwt_vp_json` envelopes: builds a VCDM §6.3.1 JWT-VP with
+     * `iss`/`sub` = holder, `aud` = verifier `client_id`, `nonce` =
+     * verifier nonce, and signs with an Ed25519 signer derived from
+     * the host's primary keypair (unless overridden via `options.signer`).
+     *
+     * For `ldp_vp` envelopes: delegates to
+     * `learnCard.invoke.issuePresentation`, passing `domain = client_id`
+     * and `challenge = nonce` so the resulting Linked-Data proof binds
+     * to the verifier's replay-resistant context.
+     */
+    signPresentation: (
+        input: string | AuthorizationRequest,
+        prepared: PreparedPresentation,
+        options?: {
+            /** Override the JWT signer (for HSM/secp256k1/etc. backends). */
+            signer?: ProofJwtSigner;
+            /** Override holder DID. Defaults to `prepared.unsignedVp.holder` or `learnCard.id.did()`. */
+            holder?: string;
+        }
+    ) => Promise<SignPresentationResult>;
+
+    /**
+     * Slice 7c — POST the signed `vp_token` + `presentation_submission`
+     * to the verifier's `response_uri` per OID4VP §8 (direct_post).
+     * `state` is echoed back when the verifier included one.
+     */
+    submitPresentation: (
+        input: string | AuthorizationRequest,
+        signed: SignPresentationResult,
+        submission: PresentationSubmission
+    ) => Promise<SubmitPresentationResult>;
+
+    /**
+     * End-to-end convenience: resolve the verifier's request, build +
+     * sign the VP around the user's picks, and POST it. Returns every
+     * intermediate stage so UIs can surface per-step progress or errors.
+     *
+     * Typed error codes bubble up from each stage (`BuildPresentationError`,
+     * `VpSignError`, `VpSubmitError`) — wrap this in a `try/catch` to
+     * distinguish "we couldn't build the VP" from "the verifier rejected
+     * it" in the UI.
+     */
+    presentCredentials: (
+        input: string | AuthorizationRequest,
+        chosen: ChosenCredential[],
+        options?: {
+            holder?: string;
+            envelopeFormat?: VpFormat;
+            signer?: ProofJwtSigner;
+        }
+    ) => Promise<{
+        request: AuthorizationRequest;
+        prepared: PreparedPresentation;
+        signed: SignPresentationResult;
+        submitted: SubmitPresentationResult;
     }>;
 };
 

@@ -22,10 +22,11 @@
 
 /* eslint-disable no-console */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
 
 import { decodeJwt, decodeProtectedHeader } from 'jose';
+import type { JWKWithPrivateKey } from '@learncard/types';
 
 import {
     parseAuthorizationRequestUri,
@@ -43,12 +44,26 @@ import type {
     PresentationDefinition,
 } from '../src/vp/types';
 import { VpError } from '../src/vp/types';
+import { buildPresentation, ChosenCredential, VpFormat } from '../src/vp/present';
+import { signPresentation } from '../src/vp/sign';
+import { submitPresentation } from '../src/vp/submit';
+import { createJoseEd25519Signer } from '../src/vci/proof';
 
 interface CliArgs {
     requestUri: string;
     credentialsPath?: string;
+    holderPath?: string;
+    submit: boolean;
+    envelopeFormat?: VpFormat;
     unsafeDecodeJws: boolean;
     verbose: boolean;
+}
+
+interface HolderSidecar {
+    did: string;
+    kid: string;
+    privateJwk: JWKWithPrivateKey;
+    alg?: string;
 }
 
 /* ----------------------------------- cli ----------------------------------- */
@@ -66,6 +81,16 @@ const printUsage = (): void => {
             'Options:',
             '  --credentials <path>   JSON file containing a VC or an array of VCs.',
             '                         Each entry may be a W3C VC object or a compact JWT-VC string.',
+            '  --submit               After PEX selection, build + sign a VerifiablePresentation and',
+            '                         POST it to the verifier\'s response_uri (direct_post, OID4VP §8).',
+            '                         Requires a holder sidecar at <credentials-path>.holder.json',
+            '                         (written automatically by `try-offer --save`) or an explicit',
+            '                         --holder path.',
+            '  --holder <path>        JSON file carrying the holder key used to sign the VP:',
+            '                           { did, kid, privateJwk, alg? }',
+            '                         Default: <credentials-path>.holder.json',
+            '  --envelope <format>    Override the VP envelope format. One of: jwt_vp_json | ldp_vp.',
+            '                         Default: inferred from verifier\'s pd.format + VC formats.',
             '  --unsafe-decode-jws    Decode (without verifying) signed Request Objects so the harness',
             '                         can test Slice 6 against verifiers that use request_uri / request',
             '                         JWS (most real deployments). NEVER use for production — Slice 7',
@@ -87,6 +112,9 @@ const parseArgs = (argv: string[]): CliArgs => {
 
     let requestUri: string | undefined;
     let credentialsPath: string | undefined;
+    let holderPath: string | undefined;
+    let submit = false;
+    let envelopeFormat: VpFormat | undefined;
     let unsafeDecodeJws = false;
     let verbose = false;
 
@@ -97,6 +125,21 @@ const parseArgs = (argv: string[]): CliArgs => {
             case '--credentials':
                 credentialsPath = args[++i];
                 break;
+            case '--holder':
+                holderPath = args[++i];
+                break;
+            case '--submit':
+                submit = true;
+                break;
+            case '--envelope': {
+                const value = args[++i];
+                if (value !== 'jwt_vp_json' && value !== 'ldp_vp') {
+                    console.error(`--envelope must be jwt_vp_json or ldp_vp (got ${value})`);
+                    process.exit(2);
+                }
+                envelopeFormat = value;
+                break;
+            }
             case '--unsafe-decode-jws':
                 unsafeDecodeJws = true;
                 break;
@@ -129,7 +172,47 @@ const parseArgs = (argv: string[]): CliArgs => {
         process.exit(2);
     }
 
-    return { requestUri, credentialsPath, unsafeDecodeJws, verbose };
+    return {
+        requestUri,
+        credentialsPath,
+        holderPath,
+        submit,
+        envelopeFormat,
+        unsafeDecodeJws,
+        verbose,
+    };
+};
+
+/**
+ * Load the holder sidecar file written by `try-offer --save`. Returns
+ * `undefined` when the user didn't pass `--holder` AND no default
+ * sibling exists — the caller surfaces a user-friendly error then.
+ */
+const loadHolder = (args: CliArgs): HolderSidecar | undefined => {
+    const candidatePath =
+        args.holderPath ??
+        (args.credentialsPath ? `${args.credentialsPath}.holder.json` : undefined);
+
+    if (!candidatePath) return undefined;
+
+    const absolute = resolvePath(process.cwd(), candidatePath);
+    if (!existsSync(absolute)) return undefined;
+
+    const raw = readFileSync(absolute, 'utf8');
+    let parsed: HolderSidecar;
+    try {
+        parsed = JSON.parse(raw) as HolderSidecar;
+    } catch (e) {
+        throw new Error(`Failed to parse holder sidecar at ${absolute}: ${describe(e)}`);
+    }
+
+    if (!parsed.did || !parsed.kid || !parsed.privateJwk) {
+        throw new Error(
+            `Holder sidecar at ${absolute} is missing did / kid / privateJwk — regenerate via \`try-offer --save\``
+        );
+    }
+
+    return parsed;
 };
 
 /* --------------------------------- helpers -------------------------------- */
@@ -376,35 +459,173 @@ const main = async (): Promise<void> => {
     }
 
     /* 6. Preview the Presentation Submission the wallet would send. */
-    if (selection.canSatisfy) {
-        const firstChoices: SelectedDescriptor[] = selection.descriptors.map((d, i) => {
-            const candidate = d.candidates[0]!.candidate;
-            return {
-                descriptorId: d.descriptorId,
-                format: candidate.format ?? 'ldp_vc',
-                path: `$.verifiableCredential[${i}]`,
-            };
-        });
+    if (!selection.canSatisfy) {
+        return;
+    }
 
-        const submission = buildPresentationSubmission(pd, firstChoices);
+    const firstChoices: SelectedDescriptor[] = selection.descriptors.map((d, i) => {
+        const candidate = d.candidates[0]!.candidate;
+        return {
+            descriptorId: d.descriptorId,
+            format: candidate.format ?? 'ldp_vc',
+            path: `$.verifiableCredential[${i}]`,
+        };
+    });
 
-        console.log('\n--- Presentation Submission (first-match preview) ---');
-        console.log(pretty(submission));
+    const previewSubmission = buildPresentationSubmission(pd, firstChoices);
 
-        const destination = request.response_uri ?? request.redirect_uri ?? '(no response target)';
+    console.log('\n--- Presentation Submission (first-match preview) ---');
+    console.log(pretty(previewSubmission));
+
+    const destination = request.response_uri ?? request.redirect_uri ?? '(no response target)';
+
+    if (!args.submit) {
         console.log(
             [
                 '',
-                '✓ Slice 6 complete — the wallet knows WHAT it would present.',
-                '',
-                '  Slice 7 will:',
-                `    1. Wrap the selected credential(s) in a VerifiablePresentation`,
-                `    2. Sign it with the holder's LearnCard key`,
-                `    3. POST { vp_token, presentation_submission, state } to`,
-                `         ${destination}`,
+                '✓ Preview only. Re-run with --submit to sign the VP and POST it to',
+                `  ${destination}.`,
                 '',
             ].join('\n')
         );
+        return;
+    }
+
+    /* 7. --submit: sign the VP and POST to response_uri. */
+    await runSubmit({
+        args,
+        request,
+        pd,
+        selection,
+    });
+};
+
+const runSubmit = async (ctx: {
+    args: CliArgs;
+    request: AuthorizationRequest;
+    pd: PresentationDefinition;
+    selection: ReturnType<typeof selectCredentials>;
+}): Promise<void> => {
+    const { args, request, pd, selection } = ctx;
+
+    const responseUri = request.response_uri ?? request.redirect_uri;
+    if (!responseUri) {
+        throw new Error(
+            'Verifier Authorization Request has no response_uri / redirect_uri — cannot --submit'
+        );
+    }
+
+    const holder = loadHolder(args);
+    if (!holder) {
+        throw new Error(
+            [
+                'No holder sidecar found.',
+                '',
+                '  try-verify --submit needs the holder key that issued the credential.',
+                '  Either:',
+                '    1. Re-run `try-offer --save <path>` (writes <path>.holder.json next to',
+                '       your credential file, which this harness auto-discovers), or',
+                '    2. Pass --holder <path.json> explicitly (shape:',
+                '       { did, kid, privateJwk, alg }).',
+            ].join('\n')
+        );
+    }
+
+    /* Build the wallet’s picks: first match per descriptor. */
+    const chosen: ChosenCredential[] = selection.descriptors.map(d => ({
+        descriptorId: d.descriptorId,
+        candidate: d.candidates[0]!.candidate,
+    }));
+
+    /* 7a. Build the unsigned VP + submission. */
+    const prepared = buildPresentation({
+        pd,
+        chosen,
+        holder: holder.did,
+        envelopeFormat: args.envelopeFormat,
+    });
+
+    console.log(`\n--- Prepared VP (envelope=${prepared.vpFormat}) ---`);
+    console.log(`holder:          ${holder.did}`);
+    console.log(`verifiableCredential count: ${chosen.length}`);
+    if (args.verbose) {
+        console.log('\n[unsigned vp]');
+        console.log(pretty(prepared.unsignedVp));
+        console.log('\n[presentation_submission]');
+        console.log(pretty(prepared.submission));
+    }
+
+    /* 7b. Sign. */
+    if (prepared.vpFormat === 'ldp_vp') {
+        throw new Error(
+            [
+                'The harness only signs jwt_vp_json envelopes (no didkit linked into this script).',
+                '',
+                '  Pass --envelope jwt_vp_json to force the JWT path, or extend the harness to',
+                '  wire an ldp signer.',
+            ].join('\n')
+        );
+    }
+
+    const jwtSigner = await createJoseEd25519Signer({
+        keypair: holder.privateJwk,
+        kid: holder.kid,
+    });
+
+    const signed = await signPresentation(
+        {
+            unsignedVp: prepared.unsignedVp,
+            vpFormat: prepared.vpFormat,
+            audience: request.client_id,
+            nonce: request.nonce,
+            holder: holder.did,
+        },
+        { jwtSigner }
+    );
+
+    if (args.verbose && typeof signed.vpToken === 'string') {
+        console.log('\n[signed vp_token]');
+        console.log(signed.vpToken);
+    }
+
+    /* 7c. POST to response_uri. */
+    console.log(`\n→ POST ${responseUri}`);
+    try {
+        const result = await submitPresentation({
+            responseUri,
+            vpToken: signed.vpToken,
+            submission: prepared.submission,
+            state: request.state,
+        });
+
+        console.log(`\n✓ Verifier accepted the VP (HTTP ${result.status}).`);
+        if (result.redirectUri) {
+            console.log(`  redirect_uri: ${result.redirectUri}`);
+        }
+        if (result.body !== undefined) {
+            console.log('\n[verifier body]');
+            console.log(typeof result.body === 'string' ? result.body : pretty(result.body));
+        }
+    } catch (e) {
+        if (e && typeof e === 'object' && 'code' in e) {
+            const err = e as {
+                code: string;
+                message?: string;
+                status?: number;
+                body?: unknown;
+            };
+            console.error(`\n✗ Verifier rejected the VP:\n`);
+            if (err.code) console.error(`  code:    ${err.code}`);
+            if (err.message) console.error(`  message: ${err.message}`);
+            if (err.status !== undefined) console.error(`  status:  ${err.status}`);
+            if (err.body !== undefined)
+                console.error(
+                    `  body:    ${typeof err.body === 'string' ? err.body : pretty(err.body)}`
+                );
+            process.exitCode = 1;
+        } else {
+            throw e;
+        }
     }
 };
 
