@@ -51,7 +51,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline } from 'ionicons/icons';
@@ -61,6 +61,7 @@ import {
     resolveCtaCopy,
     type ProgressTier,
 } from './progressCtaCopy';
+import type { NodeDetailLocationState } from '../node/NodeDetail';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -124,8 +125,10 @@ const TIER_CONFIG: Record<ProgressTier, TierConfig> = {
     terminal: {
         // Terminal gets more padding and a slightly warmer fill
         // than the others — the celebration earns the extra visual
-        // weight.
-        cardClasses: 'bg-emerald-50/90 border-emerald-100 p-6 gap-4',
+        // weight. Fully opaque: the card is presented over the
+        // busy pathway canvas and a translucent fill made it read
+        // as a ghost of itself.
+        cardClasses: 'bg-emerald-50 border-emerald-100 p-6 gap-4',
         // Emerald CTA is the app's "positive action" token — fine
         // per AGENTS.md for a terminal celebration. Non-terminal
         // tiers use grayscale-900 (the default primary) so the
@@ -136,8 +139,14 @@ const TIER_CONFIG: Record<ProgressTier, TierConfig> = {
         autoDismiss: false,
         hapticStyle: 'Medium',
     },
+    // Non-terminal tiers also render solid now — the original
+    // `/70` alpha plus `backdrop-blur-xl` looked washed-out over
+    // the Map canvas's saturated pastel pins. The card was
+    // competing with the backdrop instead of sitting on top of
+    // it. Solid `bg-emerald-50` keeps the "soft glass" vibe via
+    // shadow + rounded corners without the legibility cost.
     'cross-pathway': {
-        cardClasses: 'bg-emerald-50/70 border-emerald-100 p-5 gap-3',
+        cardClasses: 'bg-emerald-50 border-emerald-100 p-5 gap-3',
         ctaClasses:
             'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
         headlineClasses: 'text-base font-semibold',
@@ -145,7 +154,7 @@ const TIER_CONFIG: Record<ProgressTier, TierConfig> = {
         hapticStyle: 'Light',
     },
     major: {
-        cardClasses: 'bg-emerald-50/70 border-emerald-100 p-5 gap-3',
+        cardClasses: 'bg-emerald-50 border-emerald-100 p-5 gap-3',
         ctaClasses:
             'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
         headlineClasses: 'text-base font-semibold',
@@ -212,6 +221,7 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
     className = '',
 }) => {
     const history = useHistory();
+    const location = useLocation();
     const progress = usePathwayProgressForCredential(credentialUri ?? null);
 
     // Mount-transition state. Drives the fade-in + scale entry.
@@ -314,6 +324,53 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
 
     const handlePrimary = (): void => {
         onNavigate?.();
+
+        // When the CTA opens a NodeDetail overlay, stamp a
+        // `returnTo` in the router state so NodeDetail's X lands
+        // the learner somewhere sensible. Two cases:
+        //
+        //   1. Already inside the pathway shell (`/pathways/*`) —
+        //      snapshot the current pathname so Map ↔ Map and
+        //      Today ↔ Today round-trips feel natural. Don't
+        //      snapshot another node-detail route (avoid loops on
+        //      chained progress events) — fall through to the
+        //      next-pathway surface.
+        //
+        //   2. Anywhere else — claim pages (`/request`, `/claim/`),
+        //      the wallet home (`/`), embeds, notification deep
+        //      links. Snapshotting those as `returnTo` either
+        //      re-runs a transient flow (the claim page would
+        //      attempt to re-ingest) or yanks the learner back to
+        //      an irrelevant surface. Default to
+        //      `/pathways/map` — the CTA literally said "Open
+        //      pathway", so the pathway visualization is the right
+        //      landing surface on dismiss, not the claim form.
+        //
+        // `restoreFocusId` always carries the node we just opened
+        // so Map re-focuses the correct pin on return.
+        if (
+            tier === 'major'
+            && firstNode
+            && primaryTarget.startsWith('/pathways/node/')
+        ) {
+            const currentPath = location.pathname;
+
+            const isPathwayShellPath =
+                currentPath.startsWith('/pathways/')
+                && !currentPath.startsWith('/pathways/node/');
+
+            const returnTo = isPathwayShellPath ? currentPath : '/pathways/map';
+
+            const state: NodeDetailLocationState = {
+                returnTo,
+                restoreFocusId: firstNode.nodeId,
+            };
+
+            history.push(primaryTarget, state);
+
+            return;
+        }
+
         history.push(primaryTarget);
     };
 
