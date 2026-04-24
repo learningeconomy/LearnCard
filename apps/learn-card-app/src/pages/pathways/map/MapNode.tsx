@@ -647,7 +647,19 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             const typeLabel = projection
                                 ? credentialTypeChip(projection.achievementType)
                                 : null;
-                            const isGated = data.prereq.gated;
+                            // A completed node is never "locked" regardless of
+                            // whether its direct prereqs are done — the
+                            // pathway-progress reactor can auto-complete a
+                            // node via a credential or AI-session event that
+                            // bypasses the normal DAG walk (e.g. a terminal
+                            // credential arriving for a `requirement-satisfied`
+                            // termination whose predecessor node hasn't been
+                            // started yet). Without this guard, those nodes
+                            // keep rendering "Locked · 0/1" forever even
+                            // though they carry a completion checkmark,
+                            // which is the specific confusion that made IAM
+                            // look "still locked" after a session finish.
+                            const isGated = data.prereq.gated && status !== 'completed';
 
                             const tailLabel = isGated
                                 ? `Locked · ${data.prereq.met}/${data.prereq.total}`
