@@ -5,6 +5,29 @@ import type { TemplateId, TemplateDataMap } from '@learncard/email-templates';
 
 import { DeliveryService, Notification } from '../delivery.service';
 
+/**
+ * Build a Postmark-compatible "From" header from a brand name and a raw
+ * address value. The raw value may be:
+ *   - a bare email (`inbox@learncard.com`)
+ *   - an already-formatted address (`LearnCard <inbox@learncard.com>`)
+ *   - a bare domain (`learncard.com`)
+ *
+ * We must avoid double-wrapping (`Brand <Brand <addr>>`), which Postmark
+ * rejects with "Illegal email mailbox ... in address ...".
+ */
+const buildFromAddress = (brandName: string, rawAddress: string): string => {
+    const trimmed = rawAddress.trim();
+
+    // Already formatted as "Name <addr>" — use as-is, do not re-wrap.
+    if (trimmed.includes('<') || trimmed.includes('>')) return trimmed;
+
+    // Bare email (contains `@`) — wrap with brand.
+    if (trimmed.includes('@')) return `${brandName} <${trimmed}>`;
+
+    // Bare domain — assume a `support@` mailbox.
+    return `${brandName} <support@${trimmed}>`;
+};
+
 /** Template IDs that the email-templates package can render locally. */
 const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'universal-inbox-claim': 'inbox-claim',
@@ -33,8 +56,8 @@ export class PostmarkAdapter implements DeliveryService {
         // Use tenant branding for the "From" name and domain when available
         const brandName = notification.branding?.brandName || defaultBrandName;
         const from = notification.branding?.fromDomain
-            ? `${brandName} <support@${notification.branding.fromDomain}>`
-            : `${defaultBrandName} <${defaultFrom}>`;
+            ? buildFromAddress(brandName, `support@${notification.branding.fromDomain}`)
+            : buildFromAddress(brandName, defaultFrom);
 
         const localTemplateId = LOCAL_TEMPLATE_MAP[notification.templateId];
 
