@@ -344,6 +344,89 @@ export interface LearnerContextResponse {
 }
 
 /**
+ * Keywords for next steps in summary credential data
+ */
+export interface SummaryCredentialKeyword {
+    occupations: string[] | null;
+    careers: string[] | null;
+    jobs: string[] | null;
+    skills: string[] | null;
+    fieldOfStudy: string | null;
+}
+
+/**
+ * Skill item in summary credential data
+ */
+export interface SummaryCredentialSkill {
+    title: string;
+    description: string;
+}
+
+/**
+ * Next step item in summary credential data
+ */
+export interface SummaryCredentialNextStep {
+    title: string;
+    description: string;
+    keywords: SummaryCredentialKeyword;
+}
+
+/**
+ * Reflection item in summary credential data
+ */
+export interface SummaryCredentialReflection {
+    title: string;
+    description: string;
+}
+
+/**
+ * Summary data for an AI Session credential
+ * Contains structured information about what was learned
+ */
+export interface SummaryCredentialData {
+    /** Short, concise title for the learning session or credential */
+    title: string;
+    /** Comprehensive summary of what happened during the session */
+    summary: string;
+    /** Bullet points of key knowledge gained */
+    learned: string[];
+    /** Categorized skills learned during the session */
+    skills: SummaryCredentialSkill[];
+    /** Recommended follow-up activities or learning modules */
+    nextSteps: SummaryCredentialNextStep[];
+    /** Reflections on the learning experience */
+    reflections: SummaryCredentialReflection[];
+}
+
+/**
+ * Input for creating and sending an AI Session credential
+ */
+export interface SendAiSessionCredentialInput {
+    /** Title of this specific AI session */
+    sessionTitle: string;
+    /** Structured summary data about what was learned */
+    summaryData: SummaryCredentialData;
+    /** Optional metadata for the session */
+    metadata?: Record<string, unknown>;
+}
+
+/**
+ * Response from sending an AI Session credential
+ */
+export interface SendAiSessionCredentialResponse {
+    /** URI of the AI Topic (parent) boost */
+    topicUri: string;
+    /** URI of the topic credential, if a new topic was created */
+    topicCredentialUri?: string;
+    /** URI of the created AI Session credential */
+    sessionCredentialUri: string;
+    /** URI of the session boost (child of topic) */
+    sessionBoostUri: string;
+    /** Whether a new topic was created (true) or existing was used (false) */
+    isNewTopic: boolean;
+}
+
+/**
  * Input for sending a notification to the current user from this app.
  * The notification appears in the user's LearnCard notification inbox.
  */

@@ -7,10 +7,12 @@ import type { ProfileType } from 'types/profile';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
+import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
     getContractUriFromLaunchConfig,
@@ -78,7 +80,10 @@ import type {
     AppStoreListingUpdateType,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { createBoostForListing } from '@accesslayer/boost/create';
+import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
+
+import { sendBoost, isDraftBoost, getBoostUri } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import {
@@ -87,14 +92,18 @@ import {
     getProfileIdFromDid,
     getProfileIdFromString,
 } from '@helpers/did.helpers';
-import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
+import {
+    getCredentialStatusForBoostAndProfile,
+    getCredentialInstanceForBoostAndProfile,
+} from '@accesslayer/credential/read';
 import {
     getContractTermsForProfile,
     getContractDetailsByUri,
 } from '@accesslayer/consentflowcontract/relationships/read';
-import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
+import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
+import { neogma } from '@instance';
 import {
     handleIncrementCounterEvent,
     handleGetCounterEvent,
@@ -663,6 +672,13 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    // Create CredentialIssuer from the listing
+    const issuer: CredentialIssuer = {
+        type: 'appStoreListing',
+        listing,
+        ownerProfile: integrationOwner,
+    };
+
     // Issue via signing authority
     let credential: VC | JWE;
 
@@ -679,7 +695,7 @@ const handleSendCredentialEvent = async (
             templateAlias,
         });
         credential = await issueCredentialWithSigningAuthority(
-            integrationOwner,
+            issuer,
             unsignedVc,
             sa,
             ctx.domain,
@@ -716,7 +732,7 @@ const handleSendCredentialEvent = async (
 
     // Send to user's wallet (credential stays pending until user claims via the app UI)
     const credentialUri = await sendBoost({
-        from: integrationOwner,
+        from: issuer,
         to: target,
         boost,
         credential,
@@ -724,7 +740,6 @@ const handleSendCredentialEvent = async (
         skipNotification: false,
         activityId,
         integrationId: integration.id,
-        listingId,
     });
 
     return {
@@ -974,7 +989,57 @@ const handleGetTemplateRecipientsEvent = async (
         });
     }
 
-    const recipients = await getBoostRecipients(boost, {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[sent:CREDENTIAL_SENT]->(credential:Credential)
+         MATCH (credential)-[:INSTANCE_OF]->(boost:Boost {id: $boostId})
+         WHERE ${cursor ? 'sent.date < $cursor' : 'true'}
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile {profileId: sent.to})
+         OPTIONAL MATCH (target:Profile {profileId: sent.to})
+         RETURN sent, received, credential.id AS credentialId, target.profileId AS recipientProfileId, target.displayName AS recipientDisplayName
+         ORDER BY sent.date DESC
+         LIMIT ${limit + 1}`,
+        {
+            listingId,
+            boostId: boost.id,
+            cursor: cursor ?? null,
+        }
+    );
+
+    const rawRecords = result.records
+        .map((record: { get: (key: string) => unknown }) => {
+            const sent = inflateObject<Record<string, unknown>>(
+                (record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {}
+            );
+            const receivedNode = record.get('received') as {
+                properties?: Record<string, unknown>;
+            } | null;
+            const received = receivedNode?.properties
+                ? inflateObject<Record<string, unknown>>(receivedNode.properties)
+                : undefined;
+
+            return {
+                recipientProfileId: record.get('recipientProfileId') as string | undefined,
+                recipientDisplayName: record.get('recipientDisplayName') as string | undefined,
+                sentDate: sent.date as string,
+                claimedDate: received?.date as string | undefined,
+                credentialUri: getCredentialUri(record.get('credentialId') as string, ctx.domain),
+                status: received ? ('claimed' as const) : ('pending' as const),
+            };
+        })
+        .filter(
+            (
+                record
+            ): record is {
+                recipientProfileId: string;
+                recipientDisplayName: string | undefined;
+                sentDate: string;
+                claimedDate: string | undefined;
+                credentialUri: string;
+                status: 'pending' | 'claimed';
+            } => Boolean(record.recipientProfileId)
+        );
+
+    const directProfileRecords = await getBoostRecipients(boost, {
         limit: limit + 1,
         cursor,
         includeUnacceptedBoosts: true,
@@ -982,33 +1047,35 @@ const handleGetTemplateRecipientsEvent = async (
         from: profile.profileId,
     });
 
-    const hasMore = recipients.length > limit;
-    const records = hasMore ? recipients.slice(0, limit) : recipients;
+    const combinedRecords = [
+        ...rawRecords,
+        ...directProfileRecords.map(record => ({
+            recipientProfileId: record.to.profileId,
+            recipientDisplayName: record.to.displayName,
+            sentDate: record.sent,
+            claimedDate: record.received,
+            credentialUri: record.uri,
+            status: record.received ? ('claimed' as const) : ('pending' as const),
+        })),
+    ]
+        .filter(record => Boolean(record.credentialUri))
+        .filter(
+            (record, index, self) =>
+                index ===
+                self.findIndex(existing => existing.credentialUri === record.credentialUri)
+        )
+        .sort((a, b) => b.sentDate.localeCompare(a.sentDate));
 
-    const formattedRecords = records.map(
-        (r: {
-            to: { profileId: string; displayName?: string };
-            sent: string;
-            received?: string;
-            uri?: string;
-        }) => ({
-            recipientProfileId: r.to.profileId,
-            recipientDisplayName: r.to.displayName,
-            sentDate: r.sent,
-            claimedDate: r.received,
-            credentialUri: r.uri,
-            status: r.received ? 'claimed' : 'pending',
-        })
-    );
-
+    const hasMore = combinedRecords.length > limit;
+    const records = hasMore ? combinedRecords.slice(0, limit) : combinedRecords;
     const lastRecord = records.length > 0 ? records[records.length - 1] : undefined;
-    const nextCursor = hasMore && lastRecord ? (lastRecord as { sent: string }).sent : undefined;
+    const nextCursor = hasMore && lastRecord ? lastRecord.sentDate : undefined;
 
     return {
-        records: formattedRecords,
+        records,
         hasMore,
         cursor: nextCursor,
-        total: formattedRecords.length,
+        total: records.length,
     };
 };
 
@@ -1077,6 +1144,367 @@ const handleRequestLearnerContextEvent = async (
         detailLevel,
         maxCredentials: credentialUris.length,
         did: `did:web:${ctx.domain}:${profile.profileId}`,
+    };
+};
+
+const handleSendAiSessionCredentialEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const aiTopicBoostCategories = ['AI Topic', 'ai-topic'];
+    const aiSummaryBoostCategory = 'ai-summary';
+
+    const {
+        sessionTitle,
+        summaryData,
+        metadata: _metadata,
+    } = event as {
+        sessionTitle: string;
+        summaryData: {
+            title: string;
+            summary: string;
+            learned: string[];
+            skills: { title: string; description: string }[];
+            nextSteps: { title: string; description: string; keywords: unknown }[];
+            reflections: { title: string; description: string }[];
+        };
+        metadata?: Record<string, unknown>;
+    };
+
+    if (!sessionTitle) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'sessionTitle is required' });
+    }
+
+    if (!summaryData) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'summaryData is required' });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+
+    const integration = await getIntegrationForListing(listingId);
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
+    if (!integrationOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    const issuer: CredentialIssuer = {
+        type: 'appStoreListing',
+        listing,
+        ownerProfile: integrationOwner,
+    };
+
+    const listingSa = await getPrimarySigningAuthorityForListing(listing);
+    const integrationSa = listingSa
+        ? undefined
+        : await getPrimarySigningAuthorityForIntegration(integration.id);
+    const ownerSa =
+        listingSa || integrationSa
+            ? undefined
+            : await getPrimarySigningAuthorityForUser(integrationOwner);
+    const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    if (!sa) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No signing authority configured for this app',
+        });
+    }
+
+    const appBoosts = await getBoostsForListing(listingId, ctx.domain);
+
+    let topicBoost: BoostInstance | null = null;
+    let topicUri: string | null = null;
+    let topicCredentialUri: string | null = null;
+    let isNewTopic = false;
+
+    for (const appBoost of appBoosts) {
+        const boost = await getBoostByUri(appBoost.boostUri);
+        if (boost?.category && aiTopicBoostCategories.includes(boost.category)) {
+            topicBoost = boost;
+            topicUri = appBoost.boostUri;
+            break;
+        }
+    }
+
+    const appDid = listing.slug
+        ? getAppDidWeb(ctx.domain, listing.slug)
+        : getDidWeb(ctx.domain, listing.listing_id);
+
+    if (topicBoost && topicUri) {
+        // Look up the topic credential by boostId + profileId directly rather
+        // than scanning recent sent credentials. This is O(1) and race-safe for
+        // users who may have many sessions over time.
+        const existingTopicCredential = await getCredentialInstanceForBoostAndProfile(
+            topicBoost.id,
+            profile.profileId
+        );
+
+        if (existingTopicCredential) {
+            topicCredentialUri = getCredentialUri(existingTopicCredential.id, ctx.domain);
+        }
+    }
+
+    if (!topicBoost) {
+        isNewTopic = true;
+
+        // JSON-LD context for TopicCredential is intentionally inlined rather
+        // than hosted at a stable URL. Inline contexts are valid JSON-LD and
+        // allow schema evolution without deploying a hosted contexts service,
+        // at the cost of a few KB per credential. If/when this credential type
+        // stabilizes and is consumed by many external verifiers, consider
+        // publishing at e.g. https://ctx.learncard.com/ai-topic/1.0.0.json and
+        // referencing it by URL instead.
+        const topicCredential: UnsignedVC = {
+            '@context': [
+                'https://www.w3.org/ns/credentials/v2',
+                {
+                    type: '@type',
+                    xsd: 'https://www.w3.org/2001/XMLSchema#',
+                    lcn: 'https://docs.learncard.com/definitions#',
+                    TopicCredential: {
+                        '@id': 'lcn:topicCredential',
+                        '@context': {
+                            boostId: {
+                                '@id': 'lcn:boostId',
+                                '@type': 'xsd:string',
+                            },
+                            topicInfo: {
+                                '@id': 'lcn:topicInfo',
+                                '@context': {
+                                    title: {
+                                        '@id': 'lcn:title',
+                                        '@type': 'xsd:string',
+                                    },
+                                    threadId: {
+                                        '@id': 'lcn:threadId',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+            type: ['VerifiableCredential', 'TopicCredential', 'BoostCredential'],
+            issuer: { id: appDid },
+            credentialSubject: {
+                id: getDidWeb(ctx.domain, profile.profileId),
+                name: listing.display_name,
+                description: `AI tutoring sessions from ${listing.display_name}`,
+            },
+            topicInfo: {
+                title: listing.display_name,
+                threadId: listingId,
+            },
+            validFrom: new Date().toISOString(),
+        };
+
+        topicBoost = await createBoostForListing(
+            topicCredential,
+            listing,
+            { category: 'ai-topic', status: 'LIVE' },
+            ctx.domain
+        );
+
+        topicUri = getBoostUri(topicBoost.id, ctx.domain);
+
+        topicCredential.boostId = topicUri;
+
+        const topicVc = await issueCredentialWithSigningAuthority(
+            issuer,
+            topicCredential,
+            sa,
+            ctx.domain,
+            true,
+            appDid
+        );
+
+        topicCredentialUri = await sendBoost({
+            from: issuer,
+            to: profile,
+            boost: topicBoost,
+            credential: topicVc,
+            domain: ctx.domain,
+            skipNotification: true,
+            autoAcceptCredential: true,
+        });
+    }
+
+    // See the note on the TopicCredential @context above: the SummaryCredential
+    // context is likewise inlined intentionally. When this schema stabilizes,
+    // consider publishing at https://ctx.learncard.com/ai-session/1.0.0.json.
+    const sessionCredential: UnsignedVC = {
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            {
+                type: '@type',
+                xsd: 'https://www.w3.org/2001/XMLSchema#',
+                lcn: 'https://docs.learncard.com/definitions#',
+                SummaryCredential: {
+                    '@id': 'lcn:summaryCredential',
+                    '@context': {
+                        boostId: {
+                            '@id': 'lcn:boostId',
+                            '@type': 'xsd:string',
+                        },
+                        summaryInfo: {
+                            '@id': 'lcn:summaryInfo',
+                            '@context': {
+                                title: {
+                                    '@id': 'lcn:title',
+                                    '@type': 'xsd:string',
+                                },
+                                summary: {
+                                    '@id': 'lcn:summary',
+                                    '@type': 'xsd:string',
+                                },
+                                learned: {
+                                    '@id': 'lcn:learned',
+                                    '@container': '@set',
+                                    '@type': 'xsd:string',
+                                },
+                                skills: {
+                                    '@id': 'lcn:skillsSummary',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:skillsSummaryTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:skillsSummaryDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                reflections: {
+                                    '@id': 'lcn:reflections',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:reflectionTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:reflectionDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                nextSteps: {
+                                    '@id': 'lcn:nextSteps',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:nextStepsTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:nextStepsDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                        keywords: {
+                                            '@id': 'lcn:nextStepsKeywords',
+                                            '@context': {
+                                                occupations: {
+                                                    '@id': 'lcn:nextStepsOccupationKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                careers: {
+                                                    '@id': 'lcn:nextStepsCareerKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                jobs: {
+                                                    '@id': 'lcn:nextStepsJobKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                skills: {
+                                                    '@id': 'lcn:nextStepsSkillKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                fieldOfStudy: {
+                                                    '@id': 'lcn:nextStepsFieldOfStudy',
+                                                    '@type': 'xsd:string',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        ],
+        type: ['VerifiableCredential', 'SummaryCredential', 'BoostCredential'],
+        issuer: { id: appDid },
+        credentialSubject: { id: getDidWeb(ctx.domain, profile.profileId) },
+        summaryInfo: summaryData,
+    };
+
+    const sessionBoost = await createBoostForListing(
+        sessionCredential,
+        listing,
+        { category: aiSummaryBoostCategory, status: 'LIVE', name: 'Conversation Summary' },
+        ctx.domain
+    );
+
+    await setBoostAsParent(topicBoost, sessionBoost);
+
+    const sessionBoostUri = getBoostUri(sessionBoost.id, ctx.domain);
+
+    sessionCredential.boostId = sessionBoostUri;
+
+    const issuedSessionVc = await issueCredentialWithSigningAuthority(
+        issuer,
+        sessionCredential,
+        sa,
+        ctx.domain,
+        true,
+        appDid
+    );
+
+    const activityId = await logCredentialSent({
+        recipientType: 'profile',
+        recipientIdentifier: profile.profileId,
+        recipientProfileId: profile.profileId,
+        boostUri: sessionBoostUri,
+        integrationId: integration.id,
+        listingId,
+        source: 'appEvent',
+        metadata: { listingId, sessionTitle, topicUri, isNewTopic },
+    });
+
+    const sessionCredentialUri = await sendBoost({
+        from: issuer,
+        to: profile,
+        boost: sessionBoost,
+        credential: issuedSessionVc,
+        domain: ctx.domain,
+        skipNotification: true,
+        activityId,
+        autoAcceptCredential: true,
+    });
+
+    return {
+        topicUri,
+        topicCredentialUri,
+        sessionCredentialUri,
+        sessionBoostUri,
+        isNewTopic,
     };
 };
 
@@ -2275,6 +2703,10 @@ export const appStoreRouter = t.router({
                     event,
                     listing
                 );
+            }
+
+            if (eventType === 'send-ai-session-credential') {
+                return handleSendAiSessionCredentialEvent(ctx, profile, resolvedListingId, event);
             }
 
             if (eventType === 'send-notification') {

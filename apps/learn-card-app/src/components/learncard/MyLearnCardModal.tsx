@@ -67,6 +67,7 @@ import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModa
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
@@ -502,6 +503,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             ...(vpJwt && typeof vpJwt === 'string'
                                 ? { Authorization: `Bearer ${vpJwt}` }
                                 : {}),
+                            ...getTenantHeaders(),
                         };
                     };
 

@@ -32,6 +32,7 @@ COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
+COPY packages/email-templates packages/email-templates
 COPY services/learn-card-network/brain-service services/learn-card-network/brain-service
 
 RUN pnpm install --no-frozen-lockfile
