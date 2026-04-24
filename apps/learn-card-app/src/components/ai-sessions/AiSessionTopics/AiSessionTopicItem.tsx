@@ -1,15 +1,26 @@
-import React from 'react';
 import { useHistory } from 'react-router-dom';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { Boost, VC } from '@learncard/types';
+import type { Boost, VC } from '@learncard/types';
 import { getAiTopicTitle } from '../../new-ai-session/newAiSession.helpers';
-import { LCR } from 'learn-card-base/types/credential-records';
+import { useGetAppStoreListingBySlug, useGetProfile } from 'learn-card-base';
+import {
+    getAppSlugFromDidWeb,
+    getProfileIdFromLCNDidWeb,
+} from 'learn-card-base/helpers/credentialHelpers';
+import { unwrapBoostCredential } from '@learncard/helpers';
+
+const getIssuerId = (topicVc?: VC): string | undefined => {
+    const issuer = topicVc?.issuer;
+
+    if (!issuer) return undefined;
+    return typeof issuer === 'string' ? issuer : issuer.id;
+};
 
 export const AiSessionTopicItem: React.FC<{
-    topicRecord?: LCR;
+    topicRecord?: { contractUri?: string };
     topicBoost?: Boost;
     topicVc?: VC;
     topicSessionsCount: number;
@@ -26,11 +37,33 @@ export const AiSessionTopicItem: React.FC<{
     const history = useHistory();
 
     const app = aiPassportApps?.find(app => app?.contractUri === topicRecord?.contractUri);
+    const issuerId = getIssuerId(unwrapBoostCredential(topicVc));
+    const issuerProfileId = !app ? getProfileIdFromLCNDidWeb(issuerId) : undefined;
+    const issuerAppSlug = !app ? getAppSlugFromDidWeb(issuerId) : undefined;
+    const { data: issuerProfile } = useGetProfile(issuerProfileId, Boolean(issuerProfileId));
+    const { data: issuerAppListing } = useGetAppStoreListingBySlug(
+        issuerAppSlug,
+        Boolean(issuerAppSlug)
+    );
+
+    const imageSrc =
+        app?.img ||
+        issuerProfile?.image ||
+        issuerAppListing?.icon_url ||
+        topicVc?.image ||
+        undefined;
+    const imageAlt =
+        app?.name || issuerProfile?.displayName || issuerAppListing?.display_name || 'Topic image';
     const topicTitle = getAiTopicTitle(topicVc) ?? '';
 
     return (
         <button
-            onClick={() => history.push(`/ai/sessions?topicBoostUri=${topicBoost?.uri}`)}
+            type="button"
+            onClick={() =>
+                history.push(
+                    `/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`
+                )
+            }
             className="flex items-center justify-between w-full bg-white rounded-2xl shadow-sm px-4 py-3 mb-3"
         >
             <div className="flex items-center justify-start flex-1 min-w-0">

@@ -1,20 +1,23 @@
 import { Op, QueryBuilder, Where } from 'neogma';
-import {
-    Credential,
+import { neogma } from '@instance';
+import { Credential, Profile, AppStoreListing } from '@models';
+import type {
     CredentialInstance,
     CredentialRelationships,
-    Profile,
     ProfileRelationships,
+    AppStoreListingRelationships,
 } from '@models';
-import { SentCredentialInfo } from '@learncard/types';
+import type { SentCredentialInfo } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 
-import { CredentialType } from 'types/credential';
-import { ProfileType } from 'types/profile';
+import type { CredentialType } from 'types/credential';
+import type { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { getIdFromUri } from '@helpers/uri.helpers';
+import type { CredentialIssuer } from 'types/issuer';
+import { isProfileIssuer, isAppStoreListingIssuer } from 'types/issuer';
 
 const inflateRelationshipProperties = (
     properties: Record<string, unknown>
@@ -160,48 +163,39 @@ export const getIncomingCredentialsForProfile = async (
     profile: ProfileType,
     { limit, from }: { limit: number; from?: string[] }
 ): Promise<SentCredentialInfo[]> => {
-    const whereFrom =
-        from && from.length > 0
-            ? new Where({ source: { profileId: { [Op.in]: from } } })
-            : undefined;
+    const safeLimit = Math.max(0, Math.trunc(limit));
 
-    const results = convertQueryResultToPropertiesObjectArray<{
-        source: ProfileType;
-        relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        credential: CredentialType;
-    }>(
-        await new QueryBuilder(whereFrom?.getBindParam())
-            .match({
-                related: [
-                    { identifier: 'source', model: Profile },
-                    {
-                        ...Profile.getRelationshipByAlias('credentialSent'),
-                        identifier: 'relationship',
-                        where: { to: profile.profileId },
-                    },
-                    { identifier: 'credential', model: Credential },
-                ],
-            })
-            // Don't return credentials that have been accepted
-            .where(
-                `NOT (credential)-[:CREDENTIAL_RECEIVED]->()${
-                    whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
-                }`
-            )
-            .return('source, relationship, credential')
-            .limit(limit)
-            .run()
+    const result = await neogma.queryRunner.run(
+        `MATCH (source)-[relationship:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential)
+         WHERE (source:Profile OR source:AppStoreListing)
+           AND NOT (credential)-[:CREDENTIAL_RECEIVED]->()
+           ${from && from.length > 0 ? 'AND ((source:Profile AND source.profileId IN $from) OR (source:AppStoreListing AND source.listing_id IN $from))' : ''}
+         RETURN source, relationship, credential
+         ORDER BY relationship.date DESC
+         LIMIT ${safeLimit}`,
+        {
+            profileId: profile.profileId,
+            from: from ?? [],
+        }
     );
 
-    return results.map(({ source, relationship, credential }) => {
-        const relationshipProps = inflateRelationshipProperties(
-            relationship as unknown as Record<string, unknown>
+    return result.records.map(record => {
+        const sourceNode = record.get('source') as { properties?: Record<string, unknown> };
+        const relationshipNode = record.get('relationship') as {
+            properties?: Record<string, unknown>;
+        };
+        const credentialNode = record.get('credential') as { properties?: Record<string, unknown> };
+
+        const source = inflateObject<Record<string, unknown>>(sourceNode?.properties ?? {});
+        const relationshipProps = inflateRelationshipProperties(relationshipNode?.properties ?? {});
+        const credential = inflateObject<CredentialType>(
+            (credentialNode?.properties ?? {}) as CredentialType
         );
 
         return {
             uri: getCredentialUri(credential.id, domain),
             to: relationshipProps.to as string,
-            from: source.profileId,
+            from: (source.profileId ?? source.listing_id) as string,
             sent: relationshipProps.date as string,
             metadata: relationshipProps.metadata as Record<string, unknown> | undefined,
         };
@@ -219,65 +213,37 @@ export const getCredentialStatusForBoostAndProfile = async (
     boostId: string,
     profileId: string
 ): Promise<CredentialStatusForBoostAndProfile | null> => {
-    const { Boost } = await import('@models');
-
-    const results = convertQueryResultToPropertiesObjectArray<{
-        credential: CredentialType;
-        sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
-    }>(
-        await new QueryBuilder()
-            .match({
-                related: [
-                    { identifier: 'boost', model: Boost, where: { id: boostId } },
-                    { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
-                    { identifier: 'credential', model: Credential },
-                    {
-                        ...Profile.getRelationshipByAlias('credentialSent'),
-                        identifier: 'sent',
-                        direction: 'in',
-                    },
-                    { identifier: 'sender', model: Profile },
-                ],
-            })
-            .where(`sent.to = "${profileId}"`)
-            .match({
-                optional: true,
-                related: [
-                    { identifier: 'credential' },
-                    {
-                        ...Credential.getRelationshipByAlias('credentialReceived'),
-                        identifier: 'received',
-                    },
-                    { identifier: 'recipient', model: Profile, where: { profileId } },
-                ],
-            })
-            .with('credential, sent, received')
-            .return('credential, sent, received')
-            .orderBy('coalesce(received.date, sent.date) DESC')
-            .limit(1)
-            .run()
+    const result = await neogma.queryRunner.run(
+        `MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
+         MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
+         WHERE (sender:Profile OR sender:AppStoreListing)
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
+         RETURN credential, sent, received
+         ORDER BY coalesce(received.date, sent.date) DESC
+         LIMIT 1`,
+        { boostId, profileId }
     );
 
-    if (results.length === 0) {
+    const record = result.records[0];
+    if (!record) {
         return null;
     }
 
-    const result = results[0];
-    if (!result) {
-        return null;
-    }
-
-    const credential = await Credential.findOne({ where: { id: result.credential.id } });
+    const credentialProps = inflateObject<CredentialType>(
+        ((record.get('credential') as { properties?: Record<string, unknown> })?.properties ??
+            {}) as CredentialType
+    );
+    const credential = await Credential.findOne({ where: { id: credentialProps.id } });
     if (!credential) {
         return null;
     }
 
     const sentProps = inflateRelationshipProperties(
-        result.sent as unknown as Record<string, unknown>
+        ((record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {})
     );
-    const receivedProps = result.received
-        ? inflateRelationshipProperties(result.received as unknown as Record<string, unknown>)
+    const receivedNode = record.get('received') as { properties?: Record<string, unknown> } | null;
+    const receivedProps = receivedNode?.properties
+        ? inflateRelationshipProperties(receivedNode.properties)
         : undefined;
 
     const rawStatus = receivedProps?.status;
@@ -341,4 +307,190 @@ export const getRevokedCredentialUrisForProfile = async (
     );
 
     return results.map(({ credential }) => getCredentialUri(credential.id, domain));
+};
+
+/**
+ * Get credentials sent by a specific issuer (Profile or AppStoreListing)
+ */
+export const getCredentialsByIssuer = async (
+    issuer: CredentialIssuer,
+    domain: string,
+    options?: {
+        limit?: number;
+        cursor?: string;
+        includeRevoked?: boolean;
+    }
+): Promise<{
+    credentials: Array<{
+        uri: string;
+        to: string;
+        date: string;
+        status?: string;
+    }>;
+    hasMore: boolean;
+    cursor?: string;
+}> => {
+    const { limit = 50, cursor, includeRevoked = false } = options ?? {};
+
+    // Query based on issuer type
+    if (isProfileIssuer(issuer)) {
+        // Query Profile.credentialSent relationships
+        const query = new QueryBuilder()
+            .match({
+                related: [
+                    {
+                        identifier: 'source',
+                        model: Profile,
+                        where: { profileId: issuer.profile.profileId },
+                    },
+                    { ...Profile.getRelationshipByAlias('credentialSent'), identifier: 'sent' },
+                    { identifier: 'credential', model: Credential },
+                ],
+            })
+            .match({
+                optional: true,
+                related: [
+                    { identifier: 'credential', model: Credential },
+                    {
+                        ...Credential.getRelationshipByAlias('credentialReceived'),
+                        identifier: 'received',
+                    },
+                    { identifier: 'target', model: Profile },
+                ],
+            });
+
+        // Apply cursor if provided
+        let paginatedQuery = query;
+        if (cursor) {
+            paginatedQuery = query.where(`sent.date < "${cursor}"`);
+        }
+
+        // Filter out revoked credentials unless includeRevoked is true
+        if (!includeRevoked) {
+            paginatedQuery = paginatedQuery.where(
+                `(received.status IS NULL OR received.status <> "revoked")`
+            );
+        }
+
+        const results = convertQueryResultToPropertiesObjectArray<{
+            sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
+            credential: CredentialType;
+            received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        }>(
+            await paginatedQuery
+                .return('sent, credential, received')
+                .limit(limit + 1)
+                .run()
+        );
+
+        const hasMore = results.length > limit;
+        const paginatedResults = hasMore ? results.slice(0, limit) : results;
+
+        const credentials = paginatedResults.map(({ sent, credential, received }) => {
+            const sentProps = inflateRelationshipProperties(
+                sent as unknown as Record<string, unknown>
+            );
+            const receivedProps = received
+                ? inflateRelationshipProperties(received as unknown as Record<string, unknown>)
+                : undefined;
+
+            return {
+                uri: getCredentialUri(credential.id, domain),
+                to: sentProps.to as string,
+                date: sentProps.date as string,
+                status: receivedProps?.status as string | undefined,
+            };
+        });
+
+        const lastCredential = credentials[credentials.length - 1];
+
+        return {
+            credentials,
+            hasMore,
+            cursor: hasMore && lastCredential ? lastCredential.date : undefined,
+        };
+    }
+
+    if (isAppStoreListingIssuer(issuer)) {
+        // Query AppStoreListing.credentialSent relationships
+        const query = new QueryBuilder()
+            .match({
+                related: [
+                    {
+                        identifier: 'source',
+                        model: AppStoreListing,
+                        where: { listing_id: issuer.listing.listing_id },
+                    },
+                    {
+                        ...AppStoreListing.getRelationshipByAlias('credentialSent'),
+                        identifier: 'sent',
+                    },
+                    { identifier: 'credential', model: Credential },
+                ],
+            })
+            .match({
+                optional: true,
+                related: [
+                    { identifier: 'credential', model: Credential },
+                    {
+                        ...Credential.getRelationshipByAlias('credentialReceived'),
+                        identifier: 'received',
+                    },
+                    { identifier: 'target', model: Profile },
+                ],
+            });
+
+        // Apply cursor if provided
+        let paginatedQuery = query;
+        if (cursor) {
+            paginatedQuery = query.where(`sent.date < "${cursor}"`);
+        }
+
+        // Filter out revoked credentials unless includeRevoked is true
+        if (!includeRevoked) {
+            paginatedQuery = paginatedQuery.where(
+                `(received.status IS NULL OR received.status <> "revoked")`
+            );
+        }
+
+        const results = convertQueryResultToPropertiesObjectArray<{
+            sent: AppStoreListingRelationships['credentialSent']['RelationshipProperties'];
+            credential: CredentialType;
+            received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        }>(
+            await paginatedQuery
+                .return('sent, credential, received')
+                .limit(limit + 1)
+                .run()
+        );
+
+        const hasMore = results.length > limit;
+        const paginatedResults = hasMore ? results.slice(0, limit) : results;
+
+        const credentials = paginatedResults.map(({ sent, credential, received }) => {
+            const sentProps = inflateRelationshipProperties(
+                sent as unknown as Record<string, unknown>
+            );
+            const receivedProps = received
+                ? inflateRelationshipProperties(received as unknown as Record<string, unknown>)
+                : undefined;
+
+            return {
+                uri: getCredentialUri(credential.id, domain),
+                to: sentProps.to as string,
+                date: sentProps.date as string,
+                status: receivedProps?.status as string | undefined,
+            };
+        });
+
+        const lastCredential = credentials[credentials.length - 1];
+
+        return {
+            credentials,
+            hasMore,
+            cursor: hasMore && lastCredential ? lastCredential.date : undefined,
+        };
+    }
+
+    throw new Error('Integration issuer type not supported for credential queries');
 };
