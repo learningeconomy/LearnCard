@@ -50,6 +50,14 @@ export interface SubmitPresentationOptions {
     submission: PresentationSubmission;
 
     /**
+     * SIOPv2 ID token (Slice 8). Required when the verifier asked for
+     * `response_type=vp_token id_token` or `response_type=id_token`;
+     * must be omitted otherwise. Encoded as the `id_token` form field
+     * alongside `vp_token`.
+     */
+    idToken?: string;
+
+    /**
      * The verifier's `state` parameter (if present in the Auth
      * Request). Echoed back so the verifier can correlate the
      * response with the pending session. Omitted when absent.
@@ -143,7 +151,12 @@ export const submitPresentation = async (
         );
     }
 
-    const body = encodeFormBody({ vpToken, submission, state });
+    const body = encodeFormBody({
+        vpToken,
+        submission,
+        state,
+        idToken: options.idToken,
+    });
 
     let response: Response;
     try {
@@ -188,11 +201,16 @@ const encodeFormBody = (args: {
     vpToken: VpToken;
     submission: PresentationSubmission;
     state?: string;
+    idToken?: string;
 }): string => {
     const params = new URLSearchParams();
 
     params.set('vp_token', stringifyVpToken(args.vpToken));
     params.set('presentation_submission', JSON.stringify(args.submission));
+
+    if (typeof args.idToken === 'string' && args.idToken.length > 0) {
+        params.set('id_token', args.idToken);
+    }
 
     if (typeof args.state === 'string' && args.state.length > 0) {
         params.set('state', args.state);

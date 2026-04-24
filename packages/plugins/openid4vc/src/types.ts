@@ -11,6 +11,10 @@ import {
     AcceptedCredentialResult,
 } from './vci/types';
 import {
+    AuthCodeFlowHandle,
+    BeginAuthCodeFlowResult,
+} from './vci/auth-code';
+import {
     StoreAcceptedCredentialsOptions,
     StoreAcceptedCredentialsResult,
 } from './vci/store';
@@ -35,6 +39,9 @@ import {
     SubmitPresentationResult,
 } from './vp/submit';
 import { DidResolver } from './vp/request-object';
+import {
+    SignIdTokenResult,
+} from './siop/sign';
 import { ProofJwtSigner } from './vci/types';
 
 /**
@@ -107,6 +114,52 @@ export type OpenID4VCPluginMethods = {
         input: string | CredentialOffer,
         options?: AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions
     ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
+
+    /**
+     * Slice 4 — phase 1 of the OID4VCI **authorization_code** flow.
+     *
+     * Resolves issuer + AS metadata, generates PKCE, and builds the
+     * `authorization_endpoint` URL the wallet should open in a
+     * user-agent. Returns an opaque `flowHandle` the wallet persists
+     * until the redirect callback fires.
+     *
+     * This method is purely preparation — no codes are exchanged, no
+     * credentials requested. The actual credential issuance happens
+     * in {@link completeCredentialOfferAuthCode} once the redirect
+     * delivers a `code`.
+     */
+    beginCredentialOfferAuthCode: (
+        input: string | CredentialOffer,
+        options: {
+            /** Wallet's OAuth 2.0 redirect_uri for the callback. Required. */
+            redirectUri: string;
+            /** Wallet's OAuth client_id. Required by most authorization servers. */
+            clientId: string;
+            /** Optional subset of credential_configuration_ids. Default: all. */
+            configurationIds?: string[];
+            /** Optional OAuth scope. */
+            scope?: string;
+        }
+    ) => Promise<BeginAuthCodeFlowResult>;
+
+    /**
+     * Slice 4 — phase 2 of the OID4VCI **authorization_code** flow.
+     *
+     * Takes the `code` (and `state`) delivered on the redirect
+     * callback, the `flowHandle` persisted from
+     * {@link beginCredentialOfferAuthCode}, and:
+     *   - Exchanges the code for an access token (PKCE verifier sent).
+     *   - Builds a proof-of-possession JWT via the host signer.
+     *   - POSTs the credential request + returns the issued VC(s).
+     */
+    completeCredentialOfferAuthCode: (
+        options: {
+            flowHandle: AuthCodeFlowHandle;
+            code: string;
+            state?: string;
+            signer?: AcceptCredentialOfferOptions['signer'];
+        }
+    ) => Promise<AcceptedCredentialResult>;
 
     /**
      * Parse an OpenID4VP Authorization Request URI. Does not hit the
@@ -216,23 +269,48 @@ export type OpenID4VCPluginMethods = {
     /**
      * Slice 7c — POST the signed `vp_token` + `presentation_submission`
      * to the verifier's `response_uri` per OID4VP §8 (direct_post).
-     * `state` is echoed back when the verifier included one.
+     * Pass `idToken` to include a SIOPv2 id_token alongside the VP
+     * (required when `response_type=vp_token id_token`). `state` is
+     * echoed back when the verifier included one.
      */
     submitPresentation: (
         input: string | AuthorizationRequest,
         signed: SignPresentationResult,
-        submission: PresentationSubmission
+        submission: PresentationSubmission,
+        options?: { idToken?: string }
     ) => Promise<SubmitPresentationResult>;
+
+    /**
+     * Slice 8 — sign a SIOPv2 ID token proving holder control of
+     * their DID. Used on its own for SIOPv2-only flows
+     * (`response_type=id_token`), or bundled into `presentCredentials`
+     * for combined `vp_token id_token` flows.
+     */
+    signIdToken: (
+        input: string | AuthorizationRequest,
+        options?: {
+            holder?: string;
+            signer?: ProofJwtSigner;
+            lifetimeSeconds?: number;
+            issuerMode?: 'did' | 'self-issued.me';
+            vpTokenHash?: string;
+        }
+    ) => Promise<SignIdTokenResult>;
 
     /**
      * End-to-end convenience: resolve the verifier's request, build +
      * sign the VP around the user's picks, and POST it. Returns every
      * intermediate stage so UIs can surface per-step progress or errors.
      *
+     * When the verifier's `response_type` includes `id_token`, a
+     * SIOPv2 id_token is also signed and included in the direct_post
+     * submission. The returned `signedIdToken` is populated on those
+     * flows; on pure `vp_token` flows it's undefined.
+     *
      * Typed error codes bubble up from each stage (`BuildPresentationError`,
-     * `VpSignError`, `VpSubmitError`) — wrap this in a `try/catch` to
-     * distinguish "we couldn't build the VP" from "the verifier rejected
-     * it" in the UI.
+     * `VpSignError`, `SiopSignError`, `VpSubmitError`) — wrap this in
+     * a `try/catch` to distinguish "we couldn't build the VP" from
+     * "the verifier rejected it" in the UI.
      */
     presentCredentials: (
         input: string | AuthorizationRequest,
@@ -246,6 +324,7 @@ export type OpenID4VCPluginMethods = {
         request: AuthorizationRequest;
         prepared: PreparedPresentation;
         signed: SignPresentationResult;
+        signedIdToken?: SignIdTokenResult;
         submitted: SubmitPresentationResult;
     }>;
 };

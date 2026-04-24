@@ -9,6 +9,10 @@ import {
 } from './offer/parse';
 import { CredentialOffer, CredentialOfferParseError } from './offer/types';
 import { acceptCredentialOffer as acceptCredentialOfferFn } from './vci/accept';
+import {
+    beginAuthCodeFlow as beginAuthCodeFlowFn,
+    completeAuthCodeFlow as completeAuthCodeFlowFn,
+} from './vci/auth-code';
 import { createJoseEd25519Signer } from './vci/proof';
 import {
     storeAcceptedCredentials,
@@ -34,6 +38,11 @@ import {
     SignPresentationResult,
 } from './vp/sign';
 import { submitPresentation as submitPresentationFn } from './vp/submit';
+import {
+    signIdToken as signIdTokenFn,
+    requiresIdToken,
+    SignIdTokenResult,
+} from './siop/sign';
 import { ProofJwtSigner } from './vci/types';
 
 /**
@@ -130,6 +139,33 @@ export const getOpenID4VCPlugin = (
                 return { ...accepted, ...stored };
             },
 
+            beginCredentialOfferAuthCode: async (_lc, input, authOptions) => {
+                const offer = typeof input === 'string' ? await resolveOffer(input) : input;
+
+                return beginAuthCodeFlowFn({
+                    offer,
+                    redirectUri: authOptions.redirectUri,
+                    clientId: authOptions.clientId,
+                    configurationIds: authOptions.configurationIds,
+                    scope: authOptions.scope,
+                    fetchImpl,
+                });
+            },
+
+            completeCredentialOfferAuthCode: async (learnCard, completionOptions) => {
+                const signer =
+                    completionOptions.signer ??
+                    (await ensureSigner(learnCard, {}));
+
+                return completeAuthCodeFlowFn({
+                    flowHandle: completionOptions.flowHandle,
+                    code: completionOptions.code,
+                    state: completionOptions.state,
+                    signer,
+                    fetchImpl,
+                });
+            },
+
             parseAuthorizationRequest: (_lc, input) => parseAuthorizationRequestUri(input),
 
             resolveAuthorizationRequest: async (_lc, input) =>
@@ -214,7 +250,7 @@ export const getOpenID4VCPlugin = (
                 );
             },
 
-            submitPresentation: async (_lc, input, signed, submission) => {
+            submitPresentation: async (_lc, input, signed, submission, submitOptions = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const responseUri = request.response_uri ?? request.redirect_uri;
 
@@ -228,9 +264,29 @@ export const getOpenID4VCPlugin = (
                     responseUri,
                     vpToken: signed.vpToken,
                     submission,
+                    idToken: submitOptions.idToken,
                     state: request.state,
                     fetchImpl,
                 });
+            },
+
+            signIdToken: async (learnCard, input, options = {}) => {
+                const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+                const holder = options.holder ?? learnCard.id.did();
+                const signer =
+                    options.signer ?? (await ensureVpJwtSigner(learnCard));
+
+                return signIdTokenFn(
+                    {
+                        holder,
+                        audience: request.client_id,
+                        nonce: request.nonce,
+                        lifetimeSeconds: options.lifetimeSeconds,
+                        issuerMode: options.issuerMode,
+                        vpTokenHash: options.vpTokenHash,
+                    },
+                    { signer }
+                );
             },
 
             presentCredentials: async (learnCard, input, chosen, options = {}) => {
@@ -246,13 +302,20 @@ export const getOpenID4VCPlugin = (
                     envelopeFormat: options.envelopeFormat,
                 });
 
+                // Resolve the JWT signer once — we may need it for both
+                // the VP (jwt_vp_json path) and the SIOPv2 id_token
+                // (always Ed25519 / JWS). Even when the VP envelope is
+                // ldp_vp, the id_token still has to be a JWS, so we
+                // build the signer lazily and share it.
+                let jwtSigner: ProofJwtSigner | undefined = options.signer;
+                const ensureSharedJwtSigner = async (): Promise<ProofJwtSigner> => {
+                    if (!jwtSigner) jwtSigner = await ensureVpJwtSigner(learnCard);
+                    return jwtSigner;
+                };
+
                 const helpers =
                     prepared.vpFormat === 'jwt_vp_json'
-                        ? {
-                              jwtSigner:
-                                  options.signer ??
-                                  (await ensureVpJwtSigner(learnCard)),
-                          }
+                        ? { jwtSigner: await ensureSharedJwtSigner() }
                         : { ldpVpSigner: buildLdpVpSigner(learnCard) };
 
                 const signed = await signPresentationFn(
@@ -266,6 +329,21 @@ export const getOpenID4VCPlugin = (
                     helpers
                 );
 
+                // SIOPv2 combined flow (Slice 8): when the verifier
+                // asked for `id_token`, sign one and bundle it alongside
+                // the VP in the direct_post submission.
+                let signedIdToken: SignIdTokenResult | undefined;
+                if (requiresIdToken(request.response_type)) {
+                    signedIdToken = await signIdTokenFn(
+                        {
+                            holder,
+                            audience: request.client_id,
+                            nonce: request.nonce,
+                        },
+                        { signer: await ensureSharedJwtSigner() }
+                    );
+                }
+
                 const responseUri = request.response_uri ?? request.redirect_uri;
                 if (!responseUri) {
                     throw new Error(
@@ -277,11 +355,12 @@ export const getOpenID4VCPlugin = (
                     responseUri,
                     vpToken: signed.vpToken,
                     submission: prepared.submission,
+                    idToken: signedIdToken?.idToken,
                     state: request.state,
                     fetchImpl,
                 });
 
-                return { request, prepared, signed, submitted };
+                return { request, prepared, signed, signedIdToken, submitted };
             },
         },
     };

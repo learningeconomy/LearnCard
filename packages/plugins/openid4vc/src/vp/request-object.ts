@@ -27,6 +27,8 @@
  * `did:jwk` (inline) and `did:web` (over the caller's fetch). Callers
  * plug in their own resolver to support `did:key`, `did:ion`, etc.
  */
+import { X509Certificate } from 'node:crypto';
+
 import { importJWK, importX509, jwtVerify, JWK } from 'jose';
 
 import {
@@ -409,9 +411,9 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 
     // Defensive DER → X509Certificate construction.
-    let chain: import('node:crypto').X509Certificate[];
+    let chain: X509Certificate[];
     try {
-        chain = await buildCertChain(x5c as string[]);
+        chain = buildCertChain(x5c as string[]);
     } catch (e) {
         throw new RequestObjectError(
             'invalid_request_object',
@@ -471,12 +473,10 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 };
 
-const buildCertChain = async (
+const buildCertChain = (
     x5c: string[]
-): Promise<import('node:crypto').X509Certificate[]> => {
-    const { X509Certificate } = await import('node:crypto');
-    return x5c.map(b64 => new X509Certificate(new Uint8Array(Buffer.from(b64, 'base64'))));
-};
+): X509Certificate[] =>
+    x5c.map(b64 => new X509Certificate(new Uint8Array(Buffer.from(b64, 'base64'))));
 
 /**
  * Walk the `x5c` chain bottom-up: each cert must be issued by the next,
@@ -484,12 +484,9 @@ const buildCertChain = async (
  * Throws {@link RequestObjectError} on any broken link.
  */
 const verifyChainToTrustedRoots = (
-    chain: import('node:crypto').X509Certificate[],
+    chain: X509Certificate[],
     trustedPems: readonly string[]
 ): void => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { X509Certificate } = require('node:crypto') as typeof import('node:crypto');
-
     const trusted = trustedPems.map(pem => new X509Certificate(pem));
 
     for (let i = 0; i < chain.length - 1; i++) {
