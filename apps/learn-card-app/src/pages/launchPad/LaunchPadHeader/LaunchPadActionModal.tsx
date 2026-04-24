@@ -4,7 +4,6 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { ProfilePicture } from 'learn-card-base';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
@@ -14,7 +13,6 @@ import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav
 import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
-import CaretDown from 'learn-card-base/svgs/CaretDown';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
@@ -36,17 +34,13 @@ import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/A
 import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
 import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
 import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
-import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
 import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
 import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
-import {
-    roleIcons,
-    iconBgColors,
-} from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
+import { roleIcons } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
 import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
