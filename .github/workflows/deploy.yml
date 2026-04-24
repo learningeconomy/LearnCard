@@ -776,6 +776,8 @@ jobs:
                   JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
                   JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
               run: |
+                  set -o pipefail
+
                   RELEASE_NAME="${{ steps.release-info.outputs.release_name }}"
 
                   echo "Creating Jira release: $RELEASE_NAME"
@@ -783,8 +785,11 @@ jobs:
                   echo "Jira URL: $JIRA_BASE_URL"
 
                   # Build the Basic auth header per Atlassian docs:
-                  # Base64-encode "email:api_token" and pass as Authorization header
-                  AUTH_HEADER="Authorization: Basic $(echo -n "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" | base64)"
+                  # Base64-encode "email:api_token" and pass as Authorization header.
+                  # NOTE: GNU base64 wraps at 76 columns by default, which injects a
+                  # newline into the header and makes curl fail with exit 43. Strip
+                  # newlines explicitly so this works on both GNU and BSD base64.
+                  AUTH_HEADER="Authorization: Basic $(printf '%s' "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" | base64 | tr -d '\n')"
 
                   # Look up the Jira project ID from the project key
                   PROJECT_RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -796,8 +801,8 @@ jobs:
                   PROJECT_BODY=$(echo "$PROJECT_RESPONSE" | sed '$d')
 
                   if [[ "$HTTP_CODE" -ne 200 ]]; then
-                    echo "::warning::Failed to fetch Jira project (HTTP $HTTP_CODE): $PROJECT_BODY"
-                    exit 0
+                    echo "::error::Failed to fetch Jira project (HTTP $HTTP_CODE): $PROJECT_BODY"
+                    exit 1
                   fi
 
                   PROJECT_ID=$(echo "$PROJECT_BODY" | jq -r '.id')
