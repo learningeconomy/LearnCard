@@ -39,7 +39,8 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
-        "@learncard/vc-plugin": "workspace:^"
+        "@learncard/vc-plugin": "workspace:^",
+        "jose": "^5.9.6"
     },
     "sideEffects": false
 }

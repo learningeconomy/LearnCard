@@ -14,7 +14,9 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 |---|---|
 | Credential Offer URI parsing (by-value + by-reference) | ✅ Slice 1 |
 | Draft 11 → Draft 13 normalization | ✅ Slice 1 |
-| Pre-authorized code flow (`jwt_vc_json`) | 🚧 Slice 2 |
+| Issuer + authorization-server metadata fetching | ✅ Slice 2 |
+| Pre-authorized code flow (`jwt_vc_json`) | ✅ Slice 2 |
+| Proof-of-possession JWT (EdDSA, default signer from host LearnCard) | ✅ Slice 2 |
 | Wallet index / LearnCloud integration | 🚧 Slice 3 |
 | Authorization code flow + PKCE | ⏳ Slice 4 |
 | `ldp_vc` credential format | ⏳ Slice 5 |
@@ -56,14 +58,37 @@ const parsed = lc.invoke.parseCredentialOffer(
 if (parsed.kind === 'by_value') {
     console.log('Issuer:', parsed.offer.credential_issuer);
     console.log('Credentials on offer:', parsed.offer.credential_configuration_ids);
-} else {
-    console.log('Fetch from:', parsed.uri);
 }
 
-// Or resolve a by-reference offer in one call:
-const offer = await lc.invoke.resolveCredentialOffer(
-    'openid-credential-offer://?credential_offer_uri=https://issuer.example.com/offers/abc'
+// Slice 2 — accept the offer end-to-end (fetch metadata, exchange the
+// pre-authorized code for a token, build a proof-of-possession JWT, and
+// request the credential):
+const result = await lc.invoke.acceptCredentialOffer(
+    'openid-credential-offer://?credential_offer=...',
+    { txCode: '1234' } // only required when the offer carries a tx_code
 );
+
+for (const entry of result.credentials) {
+    console.log(entry.format, entry.credential); // e.g. 'jwt_vc_json', 'eyJ.vc.jwt'
+}
+```
+
+Storage of the issued credentials is the caller's responsibility until Slice 3 wires them into the wallet index.
+
+### Using your own signer
+
+Callers using a non-Ed25519 key (HSM, secp256k1) should pass a custom signer:
+
+```ts
+import { ProofJwtSigner } from '@learncard/openid4vc-plugin';
+
+const signer: ProofJwtSigner = {
+    alg: 'ES256',
+    kid: 'did:key:zDn...#zDn...',
+    sign: async (header, payload) => myHsm.signCompactJws(header, payload),
+};
+
+await lc.invoke.acceptCredentialOffer(uri, { signer });
 ```
 
 ## Errors

@@ -7,7 +7,9 @@ import {
     parseCredentialOfferUri,
     resolveCredentialOfferByReference,
 } from './offer/parse';
-import { CredentialOfferParseError } from './offer/types';
+import { CredentialOffer, CredentialOfferParseError } from './offer/types';
+import { acceptCredentialOffer as acceptCredentialOfferFn } from './vci/accept';
+import { createJoseEd25519Signer } from './vci/proof';
 
 /**
  * Create the OpenID4VC holder plugin.
@@ -24,6 +26,30 @@ export const getOpenID4VCPlugin = (
 ): OpenID4VCPlugin => {
     const fetchImpl = config.fetch ?? globalThis.fetch;
 
+    const resolveOffer = async (input: string): Promise<CredentialOffer> => {
+        const parsed = parseCredentialOfferUri(input);
+
+        if (parsed.kind === 'by_value') return parsed.offer;
+
+        if (typeof fetchImpl !== 'function') {
+            throw new CredentialOfferParseError(
+                'invalid_uri',
+                'No fetch implementation available; pass `config.fetch` to getOpenID4VCPlugin()'
+            );
+        }
+
+        const resolved = await resolveCredentialOfferByReference(parsed.uri, fetchImpl);
+
+        if (resolved.kind !== 'by_value') {
+            throw new CredentialOfferParseError(
+                'invalid_uri',
+                'Unexpected by_reference result after resolving credential_offer_uri'
+            );
+        }
+
+        return resolved.offer;
+    };
+
     return {
         name: 'OpenID4VC',
         displayName: 'OpenID4VC',
@@ -32,29 +58,30 @@ export const getOpenID4VCPlugin = (
         methods: {
             parseCredentialOffer: (_lc, input) => parseCredentialOfferUri(input),
 
-            resolveCredentialOffer: async (_lc, input) => {
-                const parsed = parseCredentialOfferUri(input);
+            resolveCredentialOffer: async (_lc, input) => resolveOffer(input),
 
-                if (parsed.kind === 'by_value') return parsed.offer;
+            acceptCredentialOffer: async (learnCard, input, options = {}) => {
+                const offer = typeof input === 'string' ? await resolveOffer(input) : input;
 
-                if (typeof fetchImpl !== 'function') {
-                    throw new CredentialOfferParseError(
-                        'invalid_uri',
-                        'No fetch implementation available; pass `config.fetch` to getOpenID4VCPlugin()'
-                    );
+                let signer = options.signer;
+
+                if (!signer) {
+                    // Build a default Ed25519 signer from the host LearnCard's
+                    // primary keypair. Callers using secp256k1 or hardware
+                    // keys should pass `options.signer` instead.
+                    const keypair = learnCard.id.keypair('ed25519');
+                    const did = learnCard.id.did();
+                    const kid = await learnCard.invoke.didToVerificationMethod(did);
+
+                    signer = await createJoseEd25519Signer({ keypair, kid });
                 }
 
-                const resolved = await resolveCredentialOfferByReference(parsed.uri, fetchImpl);
-
-                // resolveCredentialOfferByReference always returns by_value.
-                if (resolved.kind !== 'by_value') {
-                    throw new CredentialOfferParseError(
-                        'invalid_uri',
-                        'Unexpected by_reference result after resolving credential_offer_uri'
-                    );
-                }
-
-                return resolved.offer;
+                return acceptCredentialOfferFn({
+                    offer,
+                    signer,
+                    options,
+                    fetchImpl,
+                });
             },
         },
     };

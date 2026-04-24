@@ -6,6 +6,10 @@ import {
     CredentialOffer,
     ParsedCredentialOfferUri,
 } from './offer/types';
+import {
+    AcceptCredentialOfferOptions,
+    AcceptedCredentialResult,
+} from './vci/types';
 
 /**
  * Methods the host LearnCard must provide for the OpenID4VC plugin to work.
@@ -41,6 +45,23 @@ export type OpenID4VCPluginMethods = {
      * normalize the underlying offer. Returns the normalized Draft 13 offer.
      */
     resolveCredentialOffer: (input: string) => Promise<CredentialOffer>;
+
+    /**
+     * Drive the pre-authorized_code flow end-to-end for a credential offer
+     * and return the raw issued credentials. Accepts either a Credential
+     * Offer URI (which will be parsed + resolved) or an already-parsed offer.
+     *
+     * The plugin auto-builds an Ed25519 proof-of-possession signer from the
+     * host LearnCard's keypair. Callers using other key types (HSM, secp256k1)
+     * should supply their own `options.signer`.
+     *
+     * Storage of the returned credentials is the caller's responsibility
+     * (Slice 3 will add wallet-index integration).
+     */
+    acceptCredentialOffer: (
+        input: string | CredentialOffer,
+        options?: AcceptCredentialOfferOptions
+    ) => Promise<AcceptedCredentialResult>;
 };
 
 /** Configuration passed to {@link getOpenID4VCPlugin}. */

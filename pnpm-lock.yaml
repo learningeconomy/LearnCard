@@ -2981,6 +2981,9 @@ importers:
       '@learncard/vc-plugin':
         specifier: workspace:^
         version: link:../vc
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
     devDependencies:
       '@learncard/types':
         specifier: workspace:*
