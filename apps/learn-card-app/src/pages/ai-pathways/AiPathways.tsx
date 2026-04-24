@@ -42,7 +42,7 @@ const AiPathways: React.FC = () => {
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
                             {isInitialPercentageAboveZero && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
-                            <MySkillProfile />
+                            <MySkillProfile className="px-4" />
 
                             {!isInitialPercentageAboveZero && (
                                 <AiPathwaysWhatWouldYouLikeToDoCard />

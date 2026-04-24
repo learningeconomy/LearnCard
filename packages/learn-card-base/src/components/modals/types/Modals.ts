@@ -8,6 +8,7 @@ export const enum ModalTypes {
     Freeform = 'free-form',
     FullScreen = 'full-screen',
     Select = 'select',
+    BottomSheet = 'bottom-sheet',
     Right = 'right',
 }
 

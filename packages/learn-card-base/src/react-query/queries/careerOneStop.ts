@@ -6,7 +6,7 @@ import { useWallet } from 'learn-card-base';
 
 import { networkStore } from '../../stores/NetworkStore';
 
-const fetchOccupationDetailsForKeyword = async ({
+export const fetchOccupationDetailsForKeyword = async ({
     keyword,
     limit,
     topNDetails,
