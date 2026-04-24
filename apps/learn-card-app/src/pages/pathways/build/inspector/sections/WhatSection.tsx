@@ -31,7 +31,7 @@ import { flashOutline } from 'ionicons/icons';
 import { pathwayStore } from '../../../../../stores/pathways';
 import type { Pathway, PathwayNode, Policy } from '../../../types';
 import PolicyEditor from '../../PolicyEditor';
-import { DEFAULT_TERMINATION, setPolicy, setTermination } from '../../buildOps';
+import { DEFAULT_TERMINATION, setAction, setPolicy, setTermination } from '../../buildOps';
 import { summarizePolicy } from '../../summarize/summarizePolicy';
 import TemplatePicker from '../../templates/TemplatePicker';
 import type { NodeTemplate } from '../../templates/registry';
@@ -68,12 +68,28 @@ const WhatSection: React.FC<WhatSectionProps> = ({
     );
 
     /**
-     * Apply a template — set policy + termination in one store
-     * transaction so history / offline-queue get a single commit.
+     * Apply a template — set policy + termination (+ optionally
+     * action) in one store transaction so history / offline-queue
+     * get a single commit.
+     *
+     * When the template provides an `action()` generator (e.g. the
+     * "AI tutor session" template), we stamp it too — the template
+     * takes responsibility for keeping `termination.topicUri` and
+     * `action.topicUri` aligned at pick-time. Templates that don't
+     * care about the launch destination omit the generator and we
+     * leave the node's existing `action` untouched (null = leave
+     * as-is, not "clear it").
      */
     const handlePickTemplate = (template: NodeTemplate) => {
         let next = setPolicy(pathway, node.id, template.policy());
         next = setTermination(next, node.id, template.termination());
+
+        const templateAction = template.action?.();
+
+        if (templateAction) {
+            next = setAction(next, node.id, templateAction);
+        }
+
         onChangePathway(next);
     };
 
@@ -119,6 +135,7 @@ const WhatSection: React.FC<WhatSectionProps> = ({
                 <TemplatePicker
                     policy={node.stage.policy}
                     termination={node.stage.termination}
+                    action={node.action}
                     onPick={handlePickTemplate}
                 />
 

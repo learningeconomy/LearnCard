@@ -47,16 +47,30 @@ export type AnyTerminationKindSpec = {
 
 /**
  * Ordered list of author-selectable kinds. Order reflects how
- * frequently each ends a stage in practice: attach things (most
- * concrete), then endorsements, self-attest, score, and composite
- * (power-user). `pathway-completed` is excluded — managed by the
- * composite invariant, not author-picked.
+ * frequently each ends a stage in practice:
+ *
+ *   1. `artifact-count` — attach-something, the most concrete.
+ *   2. `requirement-satisfied` — earn-a-credential (reactor-driven).
+ *      High up because the reactor+binder pipeline makes this the
+ *      default "done when the learner earns this" termination and
+ *      every CTDL-imported pathway node uses it.
+ *   3. `endorsement` — receive vouches.
+ *   4. `self-attest` — learner marks done (weakest; late in list).
+ *   5. `assessment-score` — numeric threshold.
+ *   6. `session-completed` — AI tutor session ended. Pairs with an
+ *      `ai-session` action on the same node (see templates).
+ *   7. `composite` — power-user AND/OR over the above.
+ *
+ * `pathway-completed` is still excluded — managed by the composite
+ * policy invariant, not author-picked.
  */
 export const SELECTABLE_TERMINATION_KIND_LIST: readonly AnyTerminationKindSpec[] = [
     artifactCountSpec,
+    requirementSatisfiedSpec,
     endorsementSpec,
     selfAttestSpec,
     assessmentScoreSpec,
+    sessionCompletedSpec,
     compositeSpec,
 ];
 

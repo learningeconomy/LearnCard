@@ -20,7 +20,7 @@ import React from 'react';
 
 import { IonIcon } from '@ionic/react';
 
-import type { Policy, Termination } from '../../types';
+import type { ActionDescriptor, Policy, Termination } from '../../types';
 import {
     matchTemplate,
     NODE_TEMPLATES,
@@ -30,6 +30,17 @@ import {
 interface TemplatePickerProps {
     policy: Policy;
     termination: Termination;
+
+    /**
+     * Optional action on the selected node. When supplied, acts as
+     * the tie-breaker for templates that share a policy+termination
+     * pair (today: "Earn a credential" vs. "AI tutor session",
+     * both of which can be wired on top of `artifact` policy +
+     * pathway-specific terminations). Omit when the caller doesn't
+     * care which of two action-differentiated templates highlights —
+     * the picker falls back to the first matching candidate.
+     */
+    action?: ActionDescriptor;
 
     /**
      * Apply a template. The parent owns atomicity (one call to
@@ -42,9 +53,10 @@ interface TemplatePickerProps {
 const TemplatePicker: React.FC<TemplatePickerProps> = ({
     policy,
     termination,
+    action,
     onPick,
 }) => {
-    const current = matchTemplate(policy, termination);
+    const current = matchTemplate(policy, termination, action ?? null);
 
     return (
         <div className="space-y-2">

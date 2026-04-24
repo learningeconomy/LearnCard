@@ -14,9 +14,17 @@
  *
  *       Identity      — what am I editing?
  *       What happens  — what does the learner do?
+ *       Where to act  — where does the learner go to do it?
  *       Done when     — how do they finish?
  *       Connections   — what unlocks this, what does it unlock?
  *       Danger zone   — destructive actions, always last.
+ *
+ *   - "Where to act" sits between What and Done because it shares
+ *     a natural read with the policy (the work shape implies a
+ *     launch destination) but the termination often depends on
+ *     whether that launch happened (session-completed needs an
+ *     ai-session action, for instance). Authors move top-to-bottom
+ *     through the inspector, so action comes before termination.
  */
 
 import React from 'react';
@@ -25,6 +33,7 @@ import type { Pathway, PathwayNode } from '../../types';
 import type { Issue } from '../validate/validatePathway';
 
 import ValidationBanner from './ValidationBanner';
+import ActionSection from './sections/ActionSection';
 import ConnectionsSection from './sections/ConnectionsSection';
 import DangerSection from './sections/DangerSection';
 import DoneSection from './sections/DoneSection';
@@ -97,6 +106,18 @@ const InspectorPane: React.FC<InspectorPaneProps> = ({
             node={node}
             onChangePathway={onChangePathway}
             onCreateNestedPathway={onCreateNestedPathway}
+        />
+
+        {/*
+            ActionSection returns null for composite-policy nodes
+            (their launch is implicitly "drill into the nested
+            pathway"), so it won't render for those — matches
+            DoneSection's behavior for the same reason.
+        */}
+        <ActionSection
+            pathway={pathway}
+            node={node}
+            onChangePathway={onChangePathway}
         />
 
         <DoneSection

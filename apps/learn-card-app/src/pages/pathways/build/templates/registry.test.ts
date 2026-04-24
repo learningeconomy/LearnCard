@@ -20,14 +20,26 @@ import { PolicySchema, TerminationSchema } from '../../types';
 import { matchTemplate, NODE_TEMPLATES } from './registry';
 
 describe('NODE_TEMPLATES', () => {
-    it('exposes seven distinct templates with unique ids', () => {
+    it('exposes nine distinct templates with unique ids', () => {
         const ids = NODE_TEMPLATES.map(t => t.id);
 
-        // Seven templates is the design contract — fewer means a
-        // common shape is missing, more means the picker is getting
-        // crowded. Change deliberately, not accidentally.
-        expect(ids).toHaveLength(7);
+        // Nine templates is the current design contract — the base
+        // set of seven plus the reactor-driven "earn" shape and the
+        // first-party AI tutor shape. Change deliberately, not
+        // accidentally; cross-check the TemplatePicker grid layout
+        // when adding another row.
+        expect(ids).toHaveLength(9);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('includes the "earn" and "ai-tutor" templates', () => {
+        // Guard against silent rename: both ids are referenced by
+        // the onboarding copy and by test fixtures elsewhere. The
+        // registry test is the canonical source.
+        const ids = NODE_TEMPLATES.map(t => t.id);
+
+        expect(ids).toContain('earn');
+        expect(ids).toContain('ai-tutor');
     });
 
     it('every template declares a label, icon, blurb, and matchPolicyKinds', () => {
@@ -40,22 +52,39 @@ describe('NODE_TEMPLATES', () => {
     });
 
     describe('policy()/termination() validity', () => {
-        // Nest's empty pathway refs are Zod-invalid by design — same
-        // pattern as `CompositeSpec.default()`. Skip those variants
-        // here; publish-time validation catches the incomplete ref
-        // separately.
-        const HAS_INVALID_BY_DESIGN = new Set(['nest']);
+        // Some templates intentionally seed Zod-invalid in-flight
+        // values so the author is dropped onto a blank form to fill
+        // in (same pattern `CompositeSpec.default()` uses). Publish-
+        // time validation catches the incomplete fields separately.
+        //
+        //   - nest      — empty composite pathwayRef + termination
+        //                 pathwayRef. Composite invariant fills both.
+        //   - earn      — empty `credential-type.type`. Author types
+        //                 the expected VC type.
+        //   - ai-tutor  — empty `session-completed.topicUri`. Author
+        //                 types the topic URI; paired ai-session
+        //                 action shares the field.
+        const HAS_INVALID_POLICY_BY_DESIGN = new Set(['nest']);
+        const HAS_INVALID_TERMINATION_BY_DESIGN = new Set([
+            'nest',
+            'earn',
+            'ai-tutor',
+        ]);
 
         for (const t of NODE_TEMPLATES) {
-            if (HAS_INVALID_BY_DESIGN.has(t.id)) continue;
+            if (!HAS_INVALID_POLICY_BY_DESIGN.has(t.id)) {
+                it(`${t.id} policy is Zod-valid`, () => {
+                    expect(() => PolicySchema.parse(t.policy())).not.toThrow();
+                });
+            }
 
-            it(`${t.id} policy is Zod-valid`, () => {
-                expect(() => PolicySchema.parse(t.policy())).not.toThrow();
-            });
-
-            it(`${t.id} termination is Zod-valid`, () => {
-                expect(() => TerminationSchema.parse(t.termination())).not.toThrow();
-            });
+            if (!HAS_INVALID_TERMINATION_BY_DESIGN.has(t.id)) {
+                it(`${t.id} termination is Zod-valid`, () => {
+                    expect(() =>
+                        TerminationSchema.parse(t.termination()),
+                    ).not.toThrow();
+                });
+            }
         }
 
         it('nest policy is Zod-INVALID by design (empty pathwayRef)', () => {
@@ -63,6 +92,24 @@ describe('NODE_TEMPLATES', () => {
             if (!template) throw new Error('nest template missing');
 
             expect(PolicySchema.safeParse(template.policy()).success).toBe(false);
+        });
+
+        it('earn termination is Zod-INVALID by design (empty credential type)', () => {
+            const template = NODE_TEMPLATES.find(t => t.id === 'earn');
+            if (!template) throw new Error('earn template missing');
+
+            expect(
+                TerminationSchema.safeParse(template.termination()).success,
+            ).toBe(false);
+        });
+
+        it('ai-tutor termination is Zod-INVALID by design (empty topicUri)', () => {
+            const template = NODE_TEMPLATES.find(t => t.id === 'ai-tutor');
+            if (!template) throw new Error('ai-tutor template missing');
+
+            expect(
+                TerminationSchema.safeParse(template.termination()).success,
+            ).toBe(false);
         });
     });
 });

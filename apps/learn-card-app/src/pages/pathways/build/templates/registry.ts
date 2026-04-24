@@ -33,10 +33,12 @@ import {
     refreshOutline,
     repeatOutline,
     ribbonOutline,
+    schoolOutline,
+    sparklesOutline,
     starOutline,
 } from 'ionicons/icons';
 
-import type { Policy, Termination } from '../../types';
+import type { ActionDescriptor, Policy, Termination } from '../../types';
 
 export interface NodeTemplate {
     /** Stable id used for React keys and test assertions. */
@@ -64,11 +66,35 @@ export interface NodeTemplate {
     /** Optional additional disambiguation via termination kind. */
     matchTerminationKinds?: ReadonlyArray<Termination['kind']>;
 
+    /**
+     * Optional disambiguation via action kind. When two templates share
+     * a policy+termination pair but differ on the action (e.g. "Earn a
+     * credential" with an `external-url` landing page vs. "AI tutor
+     * session" with an `ai-session` launcher), the action kind is the
+     * tie-breaker. The picker only considers this after
+     * `matchPolicyKinds` and `matchTerminationKinds` have narrowed the
+     * field.
+     */
+    matchActionKinds?: ReadonlyArray<ActionDescriptor['kind']>;
+
     /** Starting policy for this template. Pure. */
     policy: () => Policy;
 
     /** Starting termination for this template. Pure. */
     termination: () => Termination;
+
+    /**
+     * Optional starting action for this template. Pure. Returning
+     * `null` (or omitting the field) leaves the node's `action`
+     * untouched — use this for templates that don't care about the
+     * launch destination (the author configures it later in
+     * `ActionSection`).
+     *
+     * Templates that DO care (AI tutor session, earn-a-credential
+     * pointing at an App Store listing) pre-seed the action here so
+     * the node lands in a useful shape with a single click.
+     */
+    action?: () => ActionDescriptor | null;
 }
 
 export const NODE_TEMPLATES: readonly NodeTemplate[] = [
@@ -83,6 +109,37 @@ export const NODE_TEMPLATES: readonly NodeTemplate[] = [
         termination: () => ({ kind: 'artifact-count', count: 1, artifactType: 'link' }),
     },
 
+    /**
+     * Earn a credential — the reactor-driven completion shape. Pairs
+     * an `artifact` policy placeholder with a `requirement-satisfied`
+     * termination defaulting to a `credential-type` match. Authors
+     * fill in the expected VC `type` (and optionally an App Store
+     * listing via `ActionSection`) to finish wiring the node.
+     *
+     * No action is seeded — the learner might earn this credential
+     * on an external issuer page, via an App Store listing, or off-
+     * platform entirely, and we'd rather leave `action` absent than
+     * pre-commit to the wrong destination. `matchPolicyKinds:
+     * ['artifact']` gives this template tie-breaker disambiguation
+     * against the 'submit' and 'endorse' templates via
+     * `matchTerminationKinds` — it's the first (and currently only)
+     * artifact-policy template that pairs with requirement-satisfied.
+     */
+    {
+        id: 'earn',
+        label: 'Earn a credential',
+        icon: ribbonOutline,
+        blurb: 'Done when a matching credential lands in the wallet.',
+        matchPolicyKinds: ['artifact'],
+        matchTerminationKinds: ['requirement-satisfied'],
+        policy: () => ({ kind: 'artifact', prompt: '', expectedArtifact: 'link' }),
+        termination: () => ({
+            kind: 'requirement-satisfied',
+            requirement: { kind: 'credential-type', type: '' },
+            minTrustTier: 'trusted',
+        }),
+    },
+
     {
         id: 'endorse',
         label: 'Get endorsed',
@@ -92,6 +149,39 @@ export const NODE_TEMPLATES: readonly NodeTemplate[] = [
         matchTerminationKinds: ['endorsement'],
         policy: () => ({ kind: 'artifact', prompt: '', expectedArtifact: 'link' }),
         termination: () => ({ kind: 'endorsement', minEndorsers: 1 }),
+    },
+
+    /**
+     * AI tutor session — learner opens LearnCard's first-party AI
+     * tutor on a specific topic; the node auto-completes when the
+     * session ends.
+     *
+     * Unique among templates because it **seeds all three of policy,
+     * termination, and action**. The `topicUri` on the action and
+     * the termination MUST match for the reactor to fire — we
+     * initialise both to the same empty string so the author types
+     * it once and both sides stay in lock-step until explicitly
+     * diverged. `ActionSection` surfaces a callout if they drift.
+     *
+     * `policy` is `artifact` as a neutral placeholder — AI sessions
+     * don't fit the existing policy kinds cleanly (they're not
+     * "submit an artifact", not "pass an assessment", not an MCP
+     * tool), and introducing a new `ai-session` policy kind would
+     * duplicate the action's discriminator. The placeholder is
+     * harmless: Today / NodeDetail dispatch on `action`, not policy,
+     * once an action is set.
+     */
+    {
+        id: 'ai-tutor',
+        label: 'AI tutor session',
+        icon: sparklesOutline,
+        blurb: 'Learner completes a LearnCard AI tutor session on a topic.',
+        matchPolicyKinds: ['artifact'],
+        matchTerminationKinds: ['session-completed'],
+        matchActionKinds: ['ai-session'],
+        policy: () => ({ kind: 'artifact', prompt: '', expectedArtifact: 'text' }),
+        termination: () => ({ kind: 'session-completed', topicUri: '' }),
+        action: () => ({ kind: 'ai-session', topicUri: '' }),
     },
 
     {
@@ -164,8 +254,8 @@ export const NODE_TEMPLATES: readonly NodeTemplate[] = [
 /**
  * Pick the template whose `matchPolicyKinds` contains the current
  * policy kind — and, when available, disambiguates by termination
- * kind. Returns `null` if no template matches (shouldn't happen in
- * practice, but defensive).
+ * kind, then by action kind. Returns `null` if no template matches
+ * (shouldn't happen in practice, but defensive).
  *
  * Used by the picker to highlight the "current" card without
  * storing a template id on the node.
@@ -173,6 +263,7 @@ export const NODE_TEMPLATES: readonly NodeTemplate[] = [
 export const matchTemplate = (
     policy: Policy,
     termination: Termination,
+    action?: ActionDescriptor | null,
 ): NodeTemplate | null => {
     const candidates = NODE_TEMPLATES.filter(t =>
         t.matchPolicyKinds.includes(policy.kind),
@@ -181,10 +272,26 @@ export const matchTemplate = (
     if (candidates.length === 0) return null;
     if (candidates.length === 1) return candidates[0];
 
-    // Disambiguate by termination kind where declared.
-    const tieBroken = candidates.find(t =>
+    // Narrow by termination kind where declared.
+    const terminationMatches = candidates.filter(t =>
         t.matchTerminationKinds?.includes(termination.kind),
     );
 
-    return tieBroken ?? candidates[0];
+    const afterTermination =
+        terminationMatches.length > 0 ? terminationMatches : candidates;
+
+    if (afterTermination.length === 1) return afterTermination[0];
+
+    // Secondary disambiguation by action kind. Only kicks in when
+    // two templates share a policy+termination pair (e.g. a future
+    // external-URL-earn variant competing with app-listing-earn).
+    if (action) {
+        const actionMatches = afterTermination.filter(t =>
+            t.matchActionKinds?.includes(action.kind),
+        );
+
+        if (actionMatches.length > 0) return actionMatches[0];
+    }
+
+    return afterTermination[0];
 };
