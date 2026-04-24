@@ -4440,6 +4440,12 @@ importers:
         specifier: ^9.5.1
         version: 9.6.0
 
+  tests/smoketests:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.42.0
+        version: 1.56.1
+
   tools/executors/workspace/run-command:
     dependencies:
       execa:

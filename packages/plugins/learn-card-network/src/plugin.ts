@@ -2183,6 +2183,16 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            associateBoostWithListing: async (_learnCard, listingId, boostUri, templateAlias) => {
+                await ensureUser();
+
+                return client.appStore.addBoostToListing.mutate({
+                    listingId,
+                    boostUri,
+                    templateAlias,
+                });
+            },
+
             removeBoostFromApp: async (_learnCard, listingId, templateAlias) => {
                 await ensureUser();
 

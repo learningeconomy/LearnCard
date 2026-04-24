@@ -8,7 +8,8 @@ import { IssueEndpointValidator } from 'types/credentials';
 import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
 
-const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS = process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
+const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS =
+    process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
 
 export const credentialsRouter = t.router({
     issueCredential: authorizedDidRoute
@@ -81,7 +82,10 @@ export const credentialsRouter = t.router({
 
                 if (encryption) {
                     const recipients = [saDid, ...encryption.recipients];
-                    console.log('[LCA /credentials/issue] Encrypting JWE for recipients:', recipients);
+                    console.log(
+                        '[LCA /credentials/issue] Encrypting JWE for recipients:',
+                        recipients
+                    );
                     const jwe = await learnCard.invoke.createDagJwe(issuedCredential, recipients);
                     console.log('[LCA /credentials/issue] JWE created successfully');
                     return jwe;
