@@ -15,6 +15,12 @@ import {
     StoreAcceptedCredentialsOptions,
 } from './vci/store';
 import { AcceptCredentialOfferOptions } from './vci/types';
+import {
+    parseAuthorizationRequestUri,
+    resolveAuthorizationRequest as resolveAuthorizationRequestFn,
+} from './vp/parse';
+import { AuthorizationRequest } from './vp/types';
+import { selectCredentials } from './vp/select';
 
 /**
  * Create the OpenID4VC holder plugin.
@@ -100,6 +106,40 @@ export const getOpenID4VCPlugin = (
                 );
 
                 return { ...accepted, ...stored };
+            },
+
+            parseAuthorizationRequest: (_lc, input) => parseAuthorizationRequestUri(input),
+
+            resolveAuthorizationRequest: async (_lc, input) =>
+                resolveAuthorizationRequestFn(input, fetchImpl),
+
+            prepareVerifiablePresentation: async (_lc, input, credentials) => {
+                const request: AuthorizationRequest =
+                    typeof input === 'string'
+                        ? await resolveAuthorizationRequestFn(input, fetchImpl)
+                        : input;
+
+                // No presentation_definition → nothing to match against.
+                // The caller is probably handling a SIOPv2-only flow or a
+                // scope-based PD lookup; return an empty selection result
+                // so they can still render verifier identity + proceed.
+                if (!request.presentation_definition) {
+                    return {
+                        request,
+                        selection: {
+                            descriptors: [],
+                            canSatisfy: true,
+                            reason: undefined,
+                        },
+                    };
+                }
+
+                const selection = selectCredentials(
+                    credentials,
+                    request.presentation_definition
+                );
+
+                return { request, selection };
             },
         },
     };

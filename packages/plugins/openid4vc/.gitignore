@@ -1,3 +1,10 @@
 node_modules/
 dist/
 tsconfig.tsbuildinfo
+
+# try-offer --save output and try-verify --credentials input.
+# Real holder credentials from live issuers must never be checked in.
+my-vc.json
+my-vc*.json
+*.vc.json
+issued-credentials*.json

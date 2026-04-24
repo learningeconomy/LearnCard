@@ -17,6 +17,9 @@
 
 /* eslint-disable no-console */
 
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve as resolvePath } from 'node:path';
+
 import { exportJWK, generateKeyPair } from 'jose';
 import type { JWKWithPrivateKey } from '@learncard/types';
 
@@ -34,6 +37,7 @@ interface CliArgs {
     txCode?: string;
     clientId?: string;
     configurationIds?: string[];
+    savePath?: string;
     verbose: boolean;
 }
 
@@ -42,7 +46,8 @@ const printUsage = (): void => {
         [
             '',
             'Usage:',
-            '  pnpm try-offer <offer-uri> [--tx-code <code>] [--client-id <id>] [--only <id1,id2>] [--verbose]',
+            '  pnpm try-offer <offer-uri> [--tx-code <code>] [--client-id <id>] [--only <id1,id2>]',
+            '                              [--save <path>] [--verbose]',
             '',
             'Arguments:',
             '  <offer-uri>        Credential Offer URI (openid-credential-offer://... or https://...)',
@@ -51,12 +56,16 @@ const printUsage = (): void => {
             '  --tx-code <code>   Transaction code (PIN) if the offer requires one',
             '  --client-id <id>   Client identifier to present to the authorization server',
             '  --only <ids>       Comma-separated subset of credential_configuration_ids to request',
+            '  --save <path>      Write the issued credential(s) as a JSON file at <path>. Single VC is',
+            '                     saved as an object; multiple VCs as an array. Feed it straight into',
+            '                     `pnpm try-verify ... --credentials <path>`.',
             '  --verbose, -v      Log the full resolved offer and issuer metadata',
             '  --help, -h         Show this message',
             '',
             'Examples:',
             '  pnpm try-offer "openid-credential-offer://?credential_offer_uri=https://dev.issuer.eudiw.dev/credential_offer/..."',
             '  pnpm try-offer --tx-code 1234 "openid-credential-offer://..."',
+            '  pnpm try-offer --save ./my-vc.json "openid-credential-offer://..."',
             '',
         ].join('\n')
     );
@@ -69,6 +78,7 @@ const parseArgs = (argv: string[]): CliArgs => {
     let txCode: string | undefined;
     let clientId: string | undefined;
     let configurationIds: string[] | undefined;
+    let savePath: string | undefined;
     let verbose = false;
 
     for (let i = 0; i < args.length; i++) {
@@ -88,6 +98,14 @@ const parseArgs = (argv: string[]): CliArgs => {
                     .split(',')
                     .map(s => s.trim())
                     .filter(Boolean);
+                break;
+
+            case '--save':
+                savePath = args[++i];
+                if (!savePath) {
+                    console.error('--save requires a path argument');
+                    process.exit(2);
+                }
                 break;
 
             case '--verbose':
@@ -122,7 +140,7 @@ const parseArgs = (argv: string[]): CliArgs => {
         process.exit(2);
     }
 
-    return { offerUri: offerUri!, txCode, clientId, configurationIds, verbose };
+    return { offerUri: offerUri!, txCode, clientId, configurationIds, savePath, verbose };
 };
 
 /**
@@ -215,6 +233,13 @@ const main = async (): Promise<void> => {
 
     console.log(`\n=== ${accepted.credentials.length} credential(s) issued ===`);
 
+    // Collect successfully-normalized VCs for --save. We keep the W3C-VC
+    // shape (not the raw issuer response) because try-verify consumes that
+    // shape directly and inferCredentialFormat still classifies JWT-VCs
+    // correctly via the preserved proof.jwt / proof.type === 'JwtProof2020'.
+    const savableVcs: unknown[] = [];
+    let skippedOnSave = 0;
+
     for (let i = 0; i < accepted.credentials.length; i++) {
         const entry = accepted.credentials[i];
 
@@ -226,17 +251,52 @@ const main = async (): Promise<void> => {
             const { vc, jwt } = normalizeIssuedCredential(entry.credential, entry.format);
             console.log(pretty(vc));
             if (args.verbose && jwt) console.log(`\nRaw JWT:\n${jwt}`);
+            savableVcs.push(vc);
         } catch (decodeErr) {
             console.error(
                 `(decode failed: ${decodeErr instanceof Error ? decodeErr.message : String(decodeErr)})`
             );
             console.log('Raw credential payload:');
             console.log(pretty(entry.credential));
+            skippedOnSave += 1;
         }
     }
 
     if (accepted.notification_id) {
         console.log(`\nIssuer notification_id: ${accepted.notification_id}`);
+    }
+
+    if (args.savePath) {
+        if (savableVcs.length === 0) {
+            console.error(
+                `\n✗ --save: no credentials could be normalized; nothing written to ${args.savePath}`
+            );
+            process.exit(1);
+        }
+
+        const payload = savableVcs.length === 1 ? savableVcs[0] : savableVcs;
+        const absolute = resolvePath(process.cwd(), args.savePath);
+
+        try {
+            mkdirSync(dirname(absolute), { recursive: true });
+            writeFileSync(absolute, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+        } catch (writeErr) {
+            console.error(
+                `\n✗ --save: failed to write ${absolute}: ${writeErr instanceof Error ? writeErr.message : String(writeErr)}`
+            );
+            process.exit(1);
+        }
+
+        const shape = savableVcs.length === 1 ? 'single VC object' : `array of ${savableVcs.length} VCs`;
+        console.log(`\n💾 Saved ${shape} to ${absolute}`);
+
+        if (skippedOnSave > 0) {
+            console.error(
+                `   (skipped ${skippedOnSave} credential(s) that failed to normalize — check the log above)`
+            );
+        }
+
+        console.log(`\n   Next: pnpm try-verify "<oid4vp-uri>" --credentials ${args.savePath}`);
     }
 
     console.log('\n✓ Done');

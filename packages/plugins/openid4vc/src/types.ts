@@ -14,6 +14,11 @@ import {
     StoreAcceptedCredentialsOptions,
     StoreAcceptedCredentialsResult,
 } from './vci/store';
+import {
+    AuthorizationRequest,
+    ParsedAuthorizationRequest,
+} from './vp/types';
+import { CandidateCredential, SelectionResult } from './vp/select';
 
 /**
  * Methods the host LearnCard must provide for the OpenID4VC plugin to work.
@@ -85,6 +90,57 @@ export type OpenID4VCPluginMethods = {
         input: string | CredentialOffer,
         options?: AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions
     ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
+
+    /**
+     * Parse an OpenID4VP Authorization Request URI. Does not hit the
+     * network. Returns a discriminated union so callers can detect
+     * signed Request Objects (`request` / `request_uri`) — those require
+     * JWS verification via Slice 7.
+     *
+     * @see resolveAuthorizationRequest for the one-shot version that
+     * also fetches `presentation_definition_uri` when present.
+     */
+    parseAuthorizationRequest: (input: string) => ParsedAuthorizationRequest;
+
+    /**
+     * End-to-end: parse the Authorization Request URI and, if it's a
+     * by-value request with an out-of-band `presentation_definition_uri`,
+     * fetch and inline the PD. Returns a fully resolved
+     * {@link AuthorizationRequest} ready for PEX matching.
+     *
+     * Throws `VpError` with code `request_object_not_supported` when
+     * the URI points at a signed Request Object (Slice 7 surface).
+     */
+    resolveAuthorizationRequest: (input: string) => Promise<AuthorizationRequest>;
+
+    /**
+     * The main OID4VP entry point for wallet UIs: resolve the verifier's
+     * Authorization Request, match every `input_descriptor` in its
+     * Presentation Definition against the holder's candidate credentials,
+     * and return a preview object carrying:
+     *
+     *   - The resolved {@link AuthorizationRequest} (for UI to show
+     *     verifier identity, purpose, etc.).
+     *   - A {@link SelectionResult} with per-descriptor candidate lists
+     *     so the UI can render selection rows and disable "Share" up
+     *     front when `canSatisfy === false`.
+     *
+     * This method is read-only — it never signs, never POSTs, and never
+     * touches the holder's private keys. Actual vp_token construction
+     * + `direct_post` submission happens in Slice 7.
+     *
+     * @param input  Authorization Request URI, or an already-parsed request.
+     * @param credentials  The wallet's candidate pool. Each entry carries
+     *   the raw credential value; the `format` id is inferred when
+     *   omitted.
+     */
+    prepareVerifiablePresentation: (
+        input: string | AuthorizationRequest,
+        credentials: CandidateCredential[]
+    ) => Promise<{
+        request: AuthorizationRequest;
+        selection: SelectionResult;
+    }>;
 };
 
 /** Configuration passed to {@link getOpenID4VCPlugin}. */

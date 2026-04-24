@@ -12,7 +12,8 @@
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
-        "try-offer": "tsx ./scripts/try-offer.ts"
+        "try-offer": "tsx ./scripts/try-offer.ts",
+        "try-verify": "tsx ./scripts/try-verify.ts"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
