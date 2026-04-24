@@ -38,6 +38,8 @@ import type {
     TemplateRecipientsResponse,
     RequestLearnerContextOptions,
     LearnerContextResponse,
+    SendAiSessionCredentialInput,
+    SendAiSessionCredentialResponse,
     AppNotificationInput,
     AppNotificationResponse,
     IncrementCounterResponse,
@@ -125,10 +127,7 @@ export class PartnerConnect {
                     // Persist to sessionStorage so subsequent page navigations
                     // within this tab automatically use the same override.
                     try {
-                        sessionStorage.setItem(
-                            PartnerConnect.SESSION_STORAGE_KEY,
-                            hostOverride
-                        );
+                        sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, hostOverride);
                     } catch {
                         // sessionStorage may be unavailable (e.g. sandboxed iframes)
                     }
@@ -140,27 +139,19 @@ export class PartnerConnect {
                 let storedOverride: string | null = null;
 
                 try {
-                    storedOverride = sessionStorage.getItem(
-                        PartnerConnect.SESSION_STORAGE_KEY
-                    );
+                    storedOverride = sessionStorage.getItem(PartnerConnect.SESSION_STORAGE_KEY);
                 } catch {
                     // sessionStorage may be unavailable
                 }
 
                 if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
                     this.activeHostOrigin = storedOverride;
-                    console.log(
-                        '[LearnCard SDK] Using stored lc_host_override:',
-                        storedOverride
-                    );
+                    console.log('[LearnCard SDK] Using stored lc_host_override:', storedOverride);
                 } else {
                     // Use first configured origin or default
                     this.activeHostOrigin =
                         this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                    console.log(
-                        '[LearnCard SDK] Using configured origin:',
-                        this.activeHostOrigin
-                    );
+                    console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
                 }
             }
         } catch (error) {
@@ -656,21 +647,29 @@ export class PartnerConnect {
     }
 
     /**
+     * Create and send an AI Session credential to the user.
+     *
+     * This method manages the AI Topic → AI Session hierarchy:
+     * - Ensures an AI Topic exists for this app (creates one if needed)
+     * - Creates a new AI Session as a child of the topic
+     * - The topic appears in the user's AI Sessions page with the app's name
+     * - All sessions from this app are organized under that topic
+     *
+     * @param input - Session details including title and optional metadata
+     * @returns Promise resolving to topic and session URIs
+     */
+    public sendAiSessionCredential(
+        input: SendAiSessionCredentialInput
+    ): Promise<SendAiSessionCredentialResponse> {
+        return this.sendAppEvent<SendAiSessionCredentialResponse>({
+            type: 'send-ai-session-credential',
+            ...input,
+        });
+    }
+
+    /**
      * Send a notification to the current user from this app.
      * The notification appears in the user's LearnCard notification inbox.
-     *
-     * @param input - Notification content (title, body, actionPath, category, priority)
-     * @returns Promise resolving to `{ sent: true }` on success
-     *
-     * @example
-     * ```typescript
-     * await learnCard.sendNotification({
-     *   title: 'Sprint Bonus!',
-     *   body: '+10 coins from Sprint 42',
-     *   actionPath: '/',
-     *   category: 'reward',
-     * });
-     * ```
      */
     public sendNotification(input: AppNotificationInput): Promise<AppNotificationResponse> {
         return this.sendAppEvent<AppNotificationResponse>({
@@ -681,22 +680,6 @@ export class PartnerConnect {
 
     /**
      * Increment or decrement an app-scoped counter for the current user.
-     *
-     * Counters are scoped to (user, app, key). If the counter does not exist,
-     * it is created with the given amount as its initial value.
-     *
-     * @param key - Counter name (alphanumeric, underscore, hyphen; max 64 chars)
-     * @param amount - Value to add (negative to decrement)
-     * @returns Promise resolving to `{ key, previousValue, newValue }`
-     *
-     * @example
-     * ```typescript
-     * const result = await learnCard.incrementCounter('coins', 10);
-     * console.log(result.newValue); // e.g. 110
-     *
-     * // Decrement
-     * await learnCard.incrementCounter('coins', -5);
-     * ```
      */
     public incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse> {
         return this.sendAppEvent<IncrementCounterResponse>({
@@ -708,17 +691,6 @@ export class PartnerConnect {
 
     /**
      * Read the current value of an app-scoped counter for the current user.
-     *
-     * Returns `{ value: 0 }` if the counter does not exist.
-     *
-     * @param key - Counter name
-     * @returns Promise resolving to `{ key, value, updatedAt }`
-     *
-     * @example
-     * ```typescript
-     * const { value } = await learnCard.getCounter('coins');
-     * console.log('Balance:', value);
-     * ```
      */
     public getCounter(key: string): Promise<GetCounterResponse> {
         return this.sendAppEvent<GetCounterResponse>({
@@ -729,20 +701,6 @@ export class PartnerConnect {
 
     /**
      * Read multiple app-scoped counters at once for the current user.
-     *
-     * If `keys` is omitted, returns all counters for this app.
-     *
-     * @param keys - Optional array of counter names to fetch (max 50)
-     * @returns Promise resolving to `{ counters: CounterResponse[] }`
-     *
-     * @example
-     * ```typescript
-     * const { counters } = await learnCard.getCounters(['coins', 'spins', 'streak']);
-     * counters.forEach(c => console.log(c.key, c.value));
-     *
-     * // Get all counters
-     * const all = await learnCard.getCounters();
-     * ```
      */
     public getCounters(keys?: string[]): Promise<GetCountersResponse> {
         return this.sendAppEvent<GetCountersResponse>({

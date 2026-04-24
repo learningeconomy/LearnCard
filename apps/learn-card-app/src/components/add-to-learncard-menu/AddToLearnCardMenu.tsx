@@ -45,7 +45,7 @@ export type AddToLearnCardMenuItem = {
     onClick?: () => void;
 };
 
-export const AddToLearnCardMenu: React.FC = () => {
+export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className }) => {
     const flags = useFlags();
     const { isDesktop } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
@@ -186,7 +186,7 @@ export const AddToLearnCardMenu: React.FC = () => {
     }
 
     return (
-        <div className="w-full flex flex-col justify-center p-4">
+        <div className={`w-full flex flex-col justify-center p-4 ${className}`}>
             <div className="w-full flex flex-col justify-center">
                 {addToLearnCardMenuItems.map(menuItem => {
                     const { type, Icon, label, onClick } = menuItem;

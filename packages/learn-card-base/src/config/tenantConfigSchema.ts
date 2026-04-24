@@ -180,6 +180,26 @@ export const tenantNativeConfigSchema = z.object({
     capgoChannel: z.string().optional(),
 }).passthrough();
 
+/**
+ * Email / SMS delivery branding.
+ *
+ * When present, the delivery adapters in brain-service and lca-api render
+ * emails locally via @learncard/email-templates using these values.
+ * Every field is optional — missing fields fall back to LearnCard defaults.
+ */
+export const tenantEmailConfigSchema = z.object({
+    brandName: z.string().optional(),
+    logoUrl: z.string().optional(),
+    logoAlt: z.string().optional(),
+    primaryColor: z.string().optional(),
+    primaryTextColor: z.string().optional(),
+    supportEmail: z.string().optional(),
+    websiteUrl: z.string().optional(),
+    appUrl: z.string().optional(),
+    fromDomain: z.string().optional(),
+    copyrightHolder: z.string().optional(),
+}).passthrough();
+
 /** @planned — ecosystem fields reserved for multi-tenant org hierarchy support */
 export const tenantEcosystemConfigSchema = z.object({
     ecosystemId: z.string().optional(),
@@ -210,6 +230,7 @@ export const tenantConfigSchema = z.object({
     observability: tenantObservabilityConfigSchema,
     links: tenantLinksConfigSchema,
 
+    email: tenantEmailConfigSchema.optional(),
     native: tenantNativeConfigSchema.optional(),
     ecosystem: tenantEcosystemConfigSchema.optional(),
 }).passthrough();
@@ -229,6 +250,7 @@ export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;
 export type TenantNativeConfig = z.infer<typeof tenantNativeConfigSchema>;
+export type TenantEmailConfig = z.infer<typeof tenantEmailConfigSchema>;
 export type TenantEcosystemConfig = z.infer<typeof tenantEcosystemConfigSchema>;
 
 // -----------------------------------------------------------------

@@ -1,15 +1,31 @@
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { v4 as uuidv4 } from 'uuid';
-import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator, ContactMethodQueryType } from '@learncard/types';
+import {
+    VC,
+    JWE,
+    UnsignedVC,
+    LCNNotificationTypeEnumValidator,
+    ContactMethodQueryType,
+} from '@learncard/types';
 import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import {
+    CredentialIssuer,
+    getIssuerDisplayName,
+    getIssuerOwnerProfile,
+    getIssuerProfileId,
+} from '../types/issuer';
 import { trace, traceDb, traceCrypto, traceInternal } from '@tracing';
 import {
     injectObv3AlignmentsIntoCredentialForBoost,
     buildObv3AlignmentsForBoost,
 } from '@services/skills-provider/inject';
-import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    hasMustacheVariables,
+    renderBoostTemplate,
+    parseRenderedTemplate,
+} from '@helpers/template.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -18,14 +34,13 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createListingSentCredentialRelationship,
     createCredentialIssuedViaContractRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { BoostStatus } from 'types/boost';
+import { BoostStatus, getBoostOwnerProfile } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
 
@@ -38,7 +53,10 @@ export const isProfileBoostOwner = async (
 ): Promise<boolean> => {
     const owner = await getBoostOwner(boost);
 
-    return owner?.profileId === profile.profileId;
+    if (!owner) return false;
+
+    const ownerProfile = getBoostOwnerProfile(owner);
+    return ownerProfile.profileId === profile.profileId;
 };
 
 export const isDraftBoost = (boost: BoostInstance): boolean => {
@@ -71,7 +89,7 @@ export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string
 ): string => {
-    const template = { ...credential };
+    const template = cloneDeep(credential);
 
     delete template.proof;
     template.issuer = defaultIssuerDid ?? 'did:example:123';
@@ -280,7 +298,9 @@ export const issueCertifiedBoost = async (
         let lcnDID = `did:web:${domain}`;
 
         try {
-            const didDoc = await trace('did', 'resolveDid', () => learnCard.invoke.resolveDid(lcnDID));
+            const didDoc = await trace('did', 'resolveDid', () =>
+                learnCard.invoke.resolveDid(lcnDID)
+            );
 
             if (!didDoc) {
                 lcnDID = learnCard.id.did();
@@ -302,8 +322,9 @@ export const issueCertifiedBoost = async (
             );
 
             if (isValid) {
-                const unsignedCertifiedBoost = await traceInternal('constructCertifiedBoostCredential', () =>
-                    constructCertifiedBoostCredential(boost, credential, domain, lcnDID)
+                const unsignedCertifiedBoost = await traceInternal(
+                    'constructCertifiedBoostCredential',
+                    () => constructCertifiedBoostCredential(boost, credential, domain, lcnDID)
                 );
 
                 // TODO: Encrypt Boost Credential
@@ -359,9 +380,8 @@ export const sendBoost = async ({
     metadata,
     activityId,
     integrationId,
-    listingId,
 }: {
-    from: ProfileType;
+    from: CredentialIssuer;
     to: ProfileType;
     boost: BoostInstance;
     credential: VC | JWE;
@@ -373,43 +393,99 @@ export const sendBoost = async ({
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
-    listingId?: string;
 }): Promise<string> => {
-    return trace('boost', 'sendBoost', async () => {
-        const decryptedCredential = await decryptCredential(credential);
-        let boostUri: string | undefined;
+    return trace(
+        'boost',
+        'sendBoost',
+        async () => {
+            const decryptedCredential = await decryptCredential(credential);
+            let boostUri: string | undefined;
+            const fromProfile = getIssuerOwnerProfile(from);
 
-        // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
-        let _skipCertification = skipCertification || !decryptedCredential || !decryptedCredential?.type?.includes('BoostCredential');
+            // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
+            let _skipCertification =
+                skipCertification ||
+                !decryptedCredential ||
+                !decryptedCredential?.type?.includes('BoostCredential');
 
-        if (!_skipCertification && decryptedCredential) {
-            const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
+            if (!_skipCertification && decryptedCredential) {
+                const certifiedBoost = await issueCertifiedBoost(
+                    boost,
+                    decryptedCredential,
+                    domain
+                );
 
-            if (certifiedBoost) {
-                const credentialInstance = await traceDb('storeCredential', () => storeCredential(certifiedBoost));
+                if (certifiedBoost) {
+                    const credentialInstance = await traceDb('storeCredential', () =>
+                        storeCredential(certifiedBoost)
+                    );
 
-                const tasks = [
-                    createBoostInstanceOfRelationship(credentialInstance, boost),
-                    createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
-                ];
-
-                if (listingId) {
-                    tasks.push(
-                        createListingSentCredentialRelationship(
-                            listingId,
+                    const tasks = [
+                        createBoostInstanceOfRelationship(credentialInstance, boost),
+                        createSentCredentialRelationship(
+                            from,
                             to,
                             credentialInstance,
                             metadata,
                             activityId,
                             integrationId
-                        )
-                    );
-                }
+                        ),
+                    ];
 
-                // If this credential is being issued via a contract, create that relationship
+                    // If this credential is being issued via a contract, create that relationship
+                    if (contractTerms) {
+                        tasks.push(
+                            createCredentialIssuedViaContractRelationship(
+                                credentialInstance,
+                                contractTerms
+                            )
+                        );
+                    }
+
+                    await traceDb('createRelationships', () => Promise.all(tasks));
+
+                    if (autoAcceptCredential) {
+                        await acceptCredential(
+                            to,
+                            getCredentialUri(credentialInstance.id, domain),
+                            {
+                                skipNotification,
+                            }
+                        );
+                    }
+
+                    boostUri = getCredentialUri(credentialInstance.id, domain);
+
+                    if (process.env.NODE_ENV !== 'test') {
+                        console.log('🚀 sendBoost:boost certified', boostUri);
+                    }
+                } else {
+                    throw new Error('Credential does not match boost template.');
+                }
+            } else {
+                // TODO: Should we warn them if they send a credential that can't be decrypted?
+                const credentialInstance = await traceDb('storeCredential', () =>
+                    storeCredential(credential)
+                );
+
+                const tasks = [
+                    createBoostInstanceOfRelationship(credentialInstance, boost),
+                    createSentCredentialRelationship(
+                        from,
+                        to,
+                        credentialInstance,
+                        metadata,
+                        activityId,
+                        integrationId
+                    ),
+                ];
+
                 if (contractTerms) {
                     tasks.push(
-                        createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
+                        createCredentialIssuedViaContractRelationship(
+                            credentialInstance,
+                            contractTerms
+                        )
                     );
                 }
 
@@ -422,76 +498,33 @@ export const sendBoost = async ({
                 }
 
                 boostUri = getCredentialUri(credentialInstance.id, domain);
+            }
 
-                if (process.env.NODE_ENV !== 'test') {
-                    console.log('🚀 sendBoost:boost certified', boostUri);
+            if (typeof boostUri === 'string') {
+                if (!skipNotification) {
+                    await trace('notification', 'addNotificationToQueue', () =>
+                        addNotificationToQueue({
+                            type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                            to: to,
+                            from: fromProfile,
+                            message: {
+                                title: 'Boost Received',
+                                body: `${getIssuerDisplayName(from)} has boosted you!`,
+                            },
+                            data: {
+                                vcUris: [boostUri!],
+                            },
+                        })
+                    );
                 }
+
+                return boostUri;
             } else {
-                throw new Error('Credential does not match boost template.');
+                throw new Error('Error sending boost.');
             }
-        } else {
-            // TODO: Should we warn them if they send a credential that can't be decrypted?
-            const credentialInstance = await traceDb('storeCredential', () => storeCredential(credential));
-
-            const tasks = [
-                createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
-            ];
-
-            if (listingId) {
-                tasks.push(
-                    createListingSentCredentialRelationship(
-                        listingId,
-                        to,
-                        credentialInstance,
-                        metadata,
-                        activityId,
-                        integrationId
-                    )
-                );
-            }
-
-            if (contractTerms) {
-                tasks.push(
-                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
-                );
-            }
-
-            await traceDb('createRelationships', () => Promise.all(tasks));
-
-            if (autoAcceptCredential) {
-                await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
-                    skipNotification,
-                });
-            }
-
-            boostUri = getCredentialUri(credentialInstance.id, domain);
-        }
-
-        if (typeof boostUri === 'string') {
-            if (!skipNotification) {
-                await trace('notification', 'addNotificationToQueue', () =>
-                    addNotificationToQueue({
-                        type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
-                        to: to,
-                        from: from,
-                        message: {
-                            title: 'Boost Received',
-                            body: `${from.displayName} has boosted you!`,
-                        },
-                        data: {
-                            vcUris: [boostUri!],
-                        },
-                    })
-                );
-
-            }
-
-            return boostUri;
-        } else {
-            throw new Error('Error sending boost.');
-        }
-    }, { from: from.profileId, to: to.profileId });
+        },
+        { from: getIssuerProfileId(from), to: to.profileId }
+    );
 };
 
 export const constructCertifiedBoostCredential = async (
@@ -527,7 +560,7 @@ export const constructCertifiedBoostCredential = async (
 export const issueClaimLinkBoost = async (
     boost: BoostInstance,
     domain: string,
-    from: ProfileType,
+    from: CredentialIssuer,
     to: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType
 ): Promise<string> => {
@@ -670,9 +703,7 @@ export const prepareCredentialFromBoost = async (
  * Resolves a boost from a URI and validates it exists.
  * Throws TRPCError if not found.
  */
-export const resolveBoostByUri = async (
-    boostUri: string
-): Promise<BoostInstance> => {
+export const resolveBoostByUri = async (boostUri: string): Promise<BoostInstance> => {
     const { TRPCError } = await import('@trpc/server');
     const { getBoostByUri } = await import('@accesslayer/boost/read');
 

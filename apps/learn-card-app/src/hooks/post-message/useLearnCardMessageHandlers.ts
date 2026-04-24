@@ -18,8 +18,6 @@ import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow
 import sdkActivityStore from '../../stores/sdkActivityStore';
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
 
-import { useGetIntegrationForListing } from 'learn-card-base';
-
 interface LaunchConfig {
     url?: string;
     permissions?: string[];
@@ -33,7 +31,12 @@ interface UseLearnCardMessageHandlersOptions {
     isInstalled?: boolean;
     appId?: string;
     onCredentialIssued?: (credentialUri: string, boostUri?: string) => void;
-    onAppNotification?: (notification: { title?: string; body?: string; category?: string; priority?: string }) => void;
+    onAppNotification?: (notification: {
+        title?: string;
+        body?: string;
+        category?: string;
+        priority?: string;
+    }) => void;
     debug?: boolean;
 }
 
@@ -355,21 +358,20 @@ export function useLearnCardMessageHandlers({
                     const integration = await getIntegrationForListing(appId);
                     const guideState = integration?.guideState as
                         | {
-                              config?: {
-                                  consentFlowConfig?: { contractUri?: string };
-                                  embedAppConfig?: {
-                                      featureConfig?: {
-                                          'request-data-consent'?: { contractUri?: string };
-                                      };
-                                  };
-                              };
-                          }
+                            config?: {
+                                consentFlowConfig?: { contractUri?: string };
+                                embedAppConfig?: {
+                                    featureConfig?: {
+                                        'request-data-consent'?: { contractUri?: string };
+                                    };
+                                };
+                            };
+                        }
                         | undefined;
 
                     return (
                         guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
-                            ?.contractUri ||
-                        guideState?.config?.consentFlowConfig?.contractUri
+                            ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
                     );
                 },
 
@@ -958,14 +960,75 @@ export function useLearnCardMessageHandlers({
                             );
                         }
 
+                        if (event.type === 'send-ai-session-credential') {
+                            const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
+                                result;
+
+                            if (topicCredentialUri && isNewTopic) {
+                                try {
+                                    const topicCredential = await learnCard.read.get(
+                                        topicCredentialUri as string
+                                    );
+                                    if (topicCredential) {
+                                        await storeAndAddVCToWallet(
+                                            topicCredential,
+                                            { title: topicCredential.name || 'AI Topic' },
+                                            'LearnCloud',
+                                            true
+                                        );
+                                    }
+                                } catch (e) {
+                                    console.error(
+                                        '[AI Topics] Failed to store topic credential:',
+                                        e
+                                    );
+                                }
+                            }
+
+                            if (sessionCredentialUri) {
+                                try {
+                                    const sessionCredential = await learnCard.read.get(
+                                        sessionCredentialUri as string
+                                    );
+                                    if (sessionCredential) {
+                                        await storeAndAddVCToWallet(
+                                            sessionCredential,
+                                            { title: sessionCredential.name || 'AI Session' },
+                                            'LearnCloud',
+                                            true
+                                        );
+                                    }
+                                } catch (e) {
+                                    console.error(
+                                        '[AI Topics] Failed to store session credential:',
+                                        e
+                                    );
+                                }
+                            }
+                        }
+
                         // If a notification was sent, trigger the toast overlay
-                        if (event.type === 'send-notification' && result.sent && onAppNotification) {
+                        if (
+                            event.type === 'send-notification' &&
+                            result.sent &&
+                            onAppNotification
+                        ) {
                             onAppNotification({
-                                title: (event as Record<string, unknown>).title as string | undefined,
-                                body: (event as Record<string, unknown>).body as string | undefined,
-                                actionPath: (event as Record<string, unknown>).actionPath as string | undefined,
-                                category: (event as Record<string, unknown>).category as string | undefined,
-                                priority: (event as Record<string, unknown>).priority as string | undefined,
+                                title: (event as Record<string, unknown>).title as
+                                    | string
+                                    | undefined,
+                                body: (event as Record<string, unknown>).body as
+                                    | string
+                                    | undefined,
+                                actionPath: (event as Record<string, unknown>).actionPath as
+                                    | string
+                                    | undefined,
+                                category: (event as Record<string, unknown>).category as
+                                    | string
+                                    | undefined,
+                                priority: (event as Record<string, unknown>).priority as
+                                    | string
+                                    | undefined,
                             });
                         }
 
