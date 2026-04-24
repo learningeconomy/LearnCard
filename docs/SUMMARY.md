@@ -21,6 +21,7 @@
 -   [Connect Systems](how-to-guides/connect-systems/README.md)
     -   [Connect a Website](how-to-guides/connect-systems/connect-a-website.md)
     -   [Embed a Claim Button](how-to-guides/connect-systems/embed-a-claim-button.md)
+    -   [Embed LearnCard Connect](how-to-guides/connect-systems/embed-learncard-connect.md)
     -   [Connect an Embedded App](how-to-guides/connect-systems/connect-an-embedded-app.md)
     -   [Connect a Game](how-to-guides/connect-systems/connect-a-game.md)
     -   [Connect AI Agent](how-to-guides/connect-systems/connect-ai-agent.md)
@@ -98,6 +99,7 @@
         ```
     -   [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
 -   [Embed SDK](sdks/embed-sdk.md)
+-   [LearnCard Connect](sdks/learncard-connect.md)
 -   [SSS Key Manager](sdks/sss-key-manager.md)
 -   [Auth Types](sdks/auth-types.md)
 -   [Partner Connect SDK](sdks/partner-connect.md)
@@ -152,6 +154,7 @@
 -   [Apps Overview](apps/README.md)
 -   [LearnCard App](apps/learn-card-app/README.md)
     -   [Analytics](apps/learn-card-app/analytics.md)
+    -   [Embedded Context Review](apps/learn-card-app/embed-context.md)
     -   [Resume Builder LER-RS Mapping](apps/learn-card-app/resume-builder-ler-rs-mapping.md)
 -   [ScoutPass](apps/scouts/README.md)
     -   [Credential Revocation](apps/scouts/credential-revocation.md)
