@@ -24,6 +24,8 @@ describe('termination registry shape', () => {
         'assessment-score',
         'composite',
         'pathway-completed',
+        'requirement-satisfied',
+        'session-completed',
     ];
 
     it('contains an entry for every Termination kind', () => {

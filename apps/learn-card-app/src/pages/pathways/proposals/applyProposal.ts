@@ -19,8 +19,10 @@ import { wouldCreateCycle, type PathwayMap } from '../core/composition';
 import type {
     Edge,
     NodePatch,
+    NodeProgress,
     OutcomeSignal,
     Pathway,
+    PathwayDiff,
     PathwayNode,
     Proposal,
 } from '../types';
@@ -110,6 +112,7 @@ const mergeNodePatch = (node: PathwayNode, patch: NodePatch, now: string): Pathw
 // -----------------------------------------------------------------
 
 type OutcomeBindingPatch = NonNullable<Proposal['diff']['setOutcomeBindings']>[number];
+type NodeCompletionPatch = NonNullable<PathwayDiff['completeNodes']>[number];
 
 /**
  * Apply a set of outcome binding patches to the pathway's outcomes.
@@ -156,6 +159,83 @@ const applyOutcomeBindings = (
     });
 
     return changed ? next : (outcomes as OutcomeSignal[]);
+};
+
+// -----------------------------------------------------------------
+// Node completion application
+// -----------------------------------------------------------------
+
+/**
+ * Fold a list of `completeNodes` patches into the pathway's node set,
+ * returning the new node list (and whether anything changed so
+ * callers can preserve reference equality when the diff is a no-op).
+ *
+ * Idempotency: nodes already in status `completed` are silently
+ * skipped. This keeps replay, cross-device sync, and re-applying a
+ * stale proposal from bumping progress or overwriting the original
+ * `completedAt`.
+ *
+ * Unknown node ids are dropped. Same policy as outcome bindings —
+ * a stale proposal shouldn't wedge the pathway.
+ *
+ * Evidence is recorded on `node.progress.terminationEvidence` when
+ * supplied. The field is typed as `unknown` on `NodeProgress` today
+ * (no Zod schema update needed yet — we store evidence on the
+ * progress record as an auxiliary field that progress consumers
+ * ignore; the Record builder / audit UI can read it directly when
+ * it lands).
+ */
+const applyNodeCompletions = (
+    nodes: readonly PathwayNode[],
+    patches: readonly NodeCompletionPatch[] | undefined,
+    now: string,
+): { nodes: PathwayNode[]; changed: boolean } => {
+    if (!patches || patches.length === 0) {
+        return { nodes: nodes as PathwayNode[], changed: false };
+    }
+
+    const byId = new Map<string, NodeCompletionPatch>();
+    for (const patch of patches) byId.set(patch.nodeId, patch);
+
+    let changed = false;
+
+    const next = nodes.map(node => {
+        const patch = byId.get(node.id);
+
+        if (!patch) return node;
+
+        // Idempotent: once a node is completed, later patches are
+        // silently dropped. Two replay events on the same credential
+        // must not bump `completedAt` or double-record evidence.
+        if (node.progress.status === 'completed') return node;
+
+        changed = true;
+
+        // Evidence is recorded as an auxiliary field on progress.
+        // We avoid widening `NodeProgress` itself here — progress is
+        // learner-owned state, and adding a first-class `evidence`
+        // slot is a conversation the schema should have separately.
+        // Stashing it as a companion property keeps the shape
+        // compatible today; the Record builder and Audit UI can
+        // read it by key without a migration.
+        const progress: NodeProgress & { terminationEvidence?: unknown } = {
+            ...node.progress,
+            status: 'completed',
+            completedAt: patch.completedAt,
+        };
+
+        if (patch.evidence) {
+            progress.terminationEvidence = patch.evidence;
+        }
+
+        return {
+            ...node,
+            progress,
+            updatedAt: now,
+        };
+    });
+
+    return { nodes: next, changed };
 };
 
 export interface ApplyProposalOptions {
@@ -248,7 +328,18 @@ export const applyProposal = (
     // Stamp pathwayId onto inbound additions so callers can't mis-wire them.
     const additions = diff.addNodes.map(n => ({ ...n, pathwayId: pathway.id }));
 
-    const nextNodes = [...patchedNodes, ...additions];
+    const nodesAfterStructural = [...patchedNodes, ...additions];
+
+    // Apply progress-driven completions. Runs over the post-structural
+    // node set so a single proposal can legitimately add a node *and*
+    // complete it in one shot (unusual but legal — e.g. a planner
+    // proposal that adds a node already known to be satisfied by an
+    // existing credential).
+    const { nodes: nextNodes } = applyNodeCompletions(
+        nodesAfterStructural,
+        diff.completeNodes,
+        now,
+    );
 
     // -- Build next edge set ----------------------------------------------
 

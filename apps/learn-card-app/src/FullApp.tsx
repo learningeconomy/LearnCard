@@ -22,6 +22,7 @@ import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 
@@ -176,6 +177,12 @@ const FullApp: React.FC = () => {
                                         <AppUrlListener />
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
+                                        {/* Subscribes the pathway-progress reactor to
+                                            the wallet event bus. Placed alongside the
+                                            other app-level listeners so every claim
+                                            and session-end event — wherever it's
+                                            published — flows through one reactor. */}
+                                        <PathwayProgressReactorMount />
                                         <AppRouter />
                                         <QRCodeScannerListener />
 

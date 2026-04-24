@@ -4,7 +4,9 @@
  */
 
 export * from './action';
+export * from './nodeRequirement';
 export * from './outcome';
 export * from './pathway';
 export * from './proposal';
 export * from './ranking';
+export * from './walletEvent';

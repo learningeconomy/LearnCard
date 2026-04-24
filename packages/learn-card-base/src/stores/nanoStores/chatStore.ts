@@ -25,6 +25,30 @@ export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 export const chatInputText = atom('');
 
+/**
+ * The topic URI the current session was started against.
+ * Populated by `startTopicWithUri` / `startLearningPathway` and
+ * cleared by `resetChatStores`. Read by surfaces that need to
+ * report session provenance (e.g. the pathway-progress event
+ * bus publisher in `FinishSessionButton`).
+ */
+export const currentTopicUri = atom<string | null>(null);
+
+/**
+ * The AI-pathway URI the current session is walking through, if
+ * any. Only populated by `startLearningPathway`; plain
+ * `startTopicWithUri` sessions leave this null.
+ */
+export const currentAiPathwayUri = atom<string | null>(null);
+
+/**
+ * Timestamp of when the current session entered `isTyping: true` for
+ * the first time — a proxy for "session started". Used by the
+ * pathway-progress publisher to compute a duration estimate at
+ * `finishSession` time. Cleared by `resetChatStores`.
+ */
+export const sessionStartedAt = atom<string | null>(null);
+
 // Plan streaming state
 export const planStreamActive = atom(false);
 export const planMetadata = atom<{
@@ -73,6 +97,9 @@ export function resetChatStores() {
     sessionEnded.set(false);
     planReady.set(false);
     planReadyThread.set(null);
+    currentTopicUri.set(null);
+    currentAiPathwayUri.set(null);
+    sessionStartedAt.set(null);
     planStreamActive.set(false);
     planMetadata.set({
         sections: {
@@ -741,6 +768,13 @@ export async function startTopicWithUri(topicUri: string) {
     activeQuestions.set([]);
     sessionEnded.set(false);
 
+    // Pathway-progress provenance: record the topic (no pathway) so
+    // `FinishSessionButton` can publish a well-formed
+    // `AiSessionCompleted` event at finish time.
+    currentTopicUri.set(topicUri);
+    currentAiPathwayUri.set(null);
+    sessionStartedAt.set(new Date().toISOString());
+
     const { did } = auth.get();
     if (!did) {
         console.error('Authentication required to start a topic with URI.');
@@ -802,6 +836,13 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     messages.set([]);
     activeQuestions.set([]);
     sessionEnded.set(false);
+
+    // Pathway-progress provenance: record both topic and AI pathway
+    // URIs so the `AiSessionCompleted` event published at finish time
+    // carries the full context.
+    currentTopicUri.set(topicUri);
+    currentAiPathwayUri.set(pathwayUri);
+    sessionStartedAt.set(new Date().toISOString());
 
     const { did } = auth.get();
     if (!did) {

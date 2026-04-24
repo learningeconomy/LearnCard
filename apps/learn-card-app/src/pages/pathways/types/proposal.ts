@@ -96,6 +96,75 @@ export const PathwayDiffSchema = z.object({
         )
         .optional(),
 
+    /**
+     * **Node completions** — mark one or more nodes as completed,
+     * optionally recording the evidence that triggered the flip.
+     * Narrow, intentionally distinct from `updateNodes`:
+     *
+     *   - `updateNodes` is *authoring* state (policy, termination,
+     *     title, description). `applyProposal` pins `progress` off-
+     *     limits on that path because progress is learner-owned and
+     *     should not be silently overwritten by authoring diffs.
+     *   - `completeNodes` is *progress* state — one narrow channel
+     *     a proposal can use to flip a node to `completed` when an
+     *     external event (credential claim, AI session end)
+     *     satisfied the node's termination. The learner still
+     *     accepts the proposal; agents never commit directly.
+     *
+     * Having the two channels keeps the trust model honest: an
+     * agent that wants to mark a node done must *explicitly* declare
+     * it in this field, not disguise it inside a grab-bag `stage`
+     * patch. `applyProposal` idempotently ignores entries for nodes
+     * that are already `completed`, so a re-applied / replayed
+     * proposal is a no-op rather than a progress-bumping hazard.
+     *
+     * `evidence` is optional context recorded on the node's
+     * progress for post-hoc auditing ("why did this tick off?").
+     * Unknown node ids are silently dropped so stale proposals
+     * can't wedge the pathway — same policy as the outcome binding
+     * channel.
+     */
+    completeNodes: z
+        .array(
+            z.object({
+                nodeId: z.string().uuid(),
+                completedAt: z.string().datetime(),
+                evidence: z
+                    .object({
+                        /**
+                         * Where the completing event originated.
+                         * Discriminates how `ref` should be interpreted.
+                         */
+                        kind: z.enum([
+                            'credential',
+                            'ai-session',
+                            'artifact',
+                            'self-attest',
+                            'manual',
+                        ]),
+                        /**
+                         * Stable reference for the evidence — a VC
+                         * wallet URI for `credential`, a chat thread
+                         * id for `ai-session`, etc. Opaque to
+                         * `applyProposal`; preserved as-is so later
+                         * surfaces can resolve it back to its origin.
+                         */
+                        ref: z.string().min(1),
+                        /**
+                         * Observed numeric/string value, for
+                         * score-threshold style matches. Stored so UI
+                         * can render "you scored 1450 (target 1400)"
+                         * without re-reading the VC.
+                         */
+                        observedValue: z
+                            .union([z.number(), z.string()])
+                            .optional(),
+                    })
+                    .optional(),
+            }),
+        )
+        .optional(),
+
     // For Planner drafting an entire new pathway.
     newPathway: z
         .object({

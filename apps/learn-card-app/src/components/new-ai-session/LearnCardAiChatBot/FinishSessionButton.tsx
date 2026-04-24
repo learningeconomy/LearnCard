@@ -1,4 +1,5 @@
 import { useHistory } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '@nanostores/react';
 import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
@@ -19,8 +20,12 @@ import {
     isLoading,
     messages,
     planReadyThread,
+    currentTopicUri,
+    currentAiPathwayUri,
+    sessionStartedAt,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { chatBotStore } from '../../../stores/chatBotStore';
+import { publishWalletEvent } from '../../../pages/pathways/events/walletEventBus';
 import { AiSessionMode } from '../newAiSession.helpers';
 import { ChatBotQuestionsEnum } from '../NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
@@ -50,6 +55,55 @@ const FinishSessionButton: React.FC = () => {
 
     if (hasSessionEnded || $isEndingSession) return <></>;
 
+    /**
+     * Publish an `AiSessionCompleted` event to the pathway-progress
+     * bus. Best-effort — failures must not block the finish flow.
+     * Only fires when we actually have a topicUri (tutor sessions
+     * started via `startTopicWithUri` / `startLearningPathway`);
+     * onboarding / skill-profile sessions that never set a topic
+     * produce no event, which is the right behavior — there's no
+     * pathway node to advance.
+     */
+    const publishAiSessionCompleted = (source: 'user-finish' | 'auto-end'): void => {
+        const threadId = currentThreadId.get();
+        const topicUri = currentTopicUri.get();
+
+        if (!threadId || !topicUri) return;
+
+        const startedAt = sessionStartedAt.get();
+        const endedAt = new Date().toISOString();
+
+        const durationSec = startedAt
+            ? Math.max(
+                  0,
+                  Math.round(
+                      (new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000,
+                  ),
+              )
+            : undefined;
+
+        try {
+            publishWalletEvent({
+                kind: 'ai-session-completed',
+                eventId: uuidv4(),
+                threadId,
+                topicUri,
+                ...(currentAiPathwayUri.get()
+                    ? { aiPathwayUri: currentAiPathwayUri.get()! }
+                    : {}),
+                endedAt,
+                ...(durationSec !== undefined ? { durationSec } : {}),
+                source,
+            });
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error(
+                '[FinishSessionButton] failed to publish ai-session-completed:',
+                err,
+            );
+        }
+    };
+
     const handleFinish = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
 
@@ -69,6 +123,15 @@ const FinishSessionButton: React.FC = () => {
             closeAllModals();
             return;
         }
+
+        // Publish BEFORE resetting — `finishSession` callback runs
+        // after the service-side end-session response lands, at which
+        // point the chat store may have been partially reset by other
+        // flows. Publishing here guarantees threadId/topicUri are
+        // still populated. The reactor idempotency prevents double-
+        // processing if a pathway-integration flow eventually
+        // publishes on the callback side too.
+        publishAiSessionCompleted('user-finish');
 
         finishSession(async () => {
             await fetchNewContractCredentials();

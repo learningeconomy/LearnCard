@@ -27,7 +27,14 @@ import { v4 as uuid } from 'uuid';
 import { pathwayStore, proposalStore } from '../../../stores/pathways';
 import { bindCredentialToOutcomes } from '../agents/credentialBinder';
 import type { VcLike } from '../core/outcomeMatcher';
-import type { OutcomeSignal } from '../types';
+import { pathwayProgressReactor } from '../events/pathwayProgressReactor';
+import type { ProgressDispatchRecord } from '../events/pathwayProgressReactor';
+import { publishWalletEvent } from '../events/walletEventBus';
+import type {
+    CredentialIngestSource,
+    OutcomeSignal,
+    Termination,
+} from '../types';
 
 import {
     seedAwsCloudPractitionerDemo,
@@ -263,6 +270,304 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
 };
 
 // ---------------------------------------------------------------------------
+// Wallet-event simulators (for the pathway-progress reactor)
+// ---------------------------------------------------------------------------
+//
+// These simulators are the primary test scaffolding for the post-v0.5
+// pathway-progress architecture (credential-ingested /
+// ai-session-completed → bus → reactor → binder → proposal →
+// auto-accept → pathway state + CTA modal).
+//
+// They publish *through the bus* rather than poking the reactor
+// directly so the full pipeline runs — dedup, replay buffer,
+// fanout, binder, proposal store, auto-accept. The return value is
+// the dispatch record the reactor recorded for the event, so a
+// console user can see exactly what the pipeline did.
+//
+// Two design choices worth flagging:
+//
+//   1. **Simulators assemble real-shaped events.** We populate the
+//      same fields production ingests would (eventId, credentialUri,
+//      a VC body the identity extractor can walk). That way the
+//      simulator exercises the identity-extraction chain too, not
+//      just the match layer.
+//
+//   2. **Every helper is idempotent on eventId.** Pass your own
+//      eventId to test the dedup layer; omit it and the simulator
+//      mints a fresh uuid for every call.
+
+/**
+ * Input shape for `simulateCredentialClaim`. Every field is optional;
+ * pass whatever the termination you're trying to satisfy is looking
+ * for. The simulator assembles a minimal VC body from these inputs
+ * that the identity extractor can traverse.
+ */
+export interface SimulateCredentialInput {
+    /**
+     * W3C `type` string (e.g. `'AWSCertifiedCloudPractitioner'`).
+     * The VC's type array will be `['VerifiableCredential', type]`.
+     */
+    type?: string;
+    /** Issuer DID. Defaults to `did:example:demo-issuer`. */
+    issuer?: string;
+    /** W3C `id` field — for `issuer-credential-id` matchers. */
+    credentialId?: string;
+    /**
+     * LearnCard boost URI forwarded as a publisher provenance hint —
+     * the identity extractor pins it on the `CredentialIdentity` so
+     * `boost-uri` matchers fire regardless of VC body.
+     */
+    boostUri?: string;
+    /**
+     * OBv3 `credentialSubject.achievement.id`. For
+     * `ob-achievement` matchers.
+     */
+    achievementId?: string;
+    /**
+     * OBv3 alignments — each becomes a `targetUrl` on the
+     * achievement's `alignments[]` array. For `ob-alignment` matchers.
+     */
+    alignments?: string[];
+    /**
+     * Skill tags — populated into `credentialSubject.tag`. For
+     * `skill-tag` matchers.
+     */
+    tags?: string[];
+    /**
+     * Extra `credentialSubject` fields merged verbatim. For
+     * `score-threshold` matchers; e.g.
+     * `{ score: { total: 1450 } }`.
+     */
+    credentialSubject?: Record<string, unknown>;
+    /** Ingest source tag. Defaults to `'import'`. */
+    source?: CredentialIngestSource;
+    /** Override for dedup testing. Defaults to a fresh uuid. */
+    eventId?: string;
+    /** Override for dedup testing. Defaults to a fresh `urn:uuid:`. */
+    credentialUri?: string;
+}
+
+/**
+ * Publish a synthetic `CredentialIngested` event to the wallet
+ * event bus. The reactor (if mounted) will pick it up, run the
+ * binders, write proposals, and auto-accept — same path as a real
+ * claim. Returns the reactor's dispatch record so the console user
+ * can see what matched.
+ *
+ * Call after `seedAws(did)` so there's a pathway to match against.
+ */
+const simulateCredentialClaim = (
+    input: SimulateCredentialInput = {},
+): ProgressDispatchRecord | null => {
+    const eventId = input.eventId ?? uuid();
+    const credentialUri = input.credentialUri ?? `urn:uuid:sim-${uuid()}`;
+
+    // Assemble a minimal-but-realistic VC body. The identity
+    // extractor pulls from `type`, `issuer`, `id`, subject.tag,
+    // subject.achievement.{id,alignments}, and various ctid fields;
+    // we populate the ones that correspond to supplied input.
+    const achievement: Record<string, unknown> = {};
+
+    if (input.achievementId) achievement.id = input.achievementId;
+    if (input.alignments && input.alignments.length > 0) {
+        achievement.alignments = input.alignments.map(targetUrl => ({ targetUrl }));
+    }
+
+    const subject: Record<string, unknown> = {
+        ...(input.credentialSubject ?? {}),
+    };
+
+    if (Object.keys(achievement).length > 0) subject.achievement = achievement;
+    if (input.tags && input.tags.length > 0) subject.tag = input.tags;
+
+    const vc: Record<string, unknown> = {
+        type: ['VerifiableCredential', input.type ?? 'VerifiableCredential'],
+        issuer: input.issuer ?? 'did:example:demo-issuer',
+        issuanceDate: new Date().toISOString(),
+        ...(input.credentialId ? { id: input.credentialId } : {}),
+        ...(Object.keys(subject).length > 0 ? { credentialSubject: subject } : {}),
+    };
+
+    try {
+        publishWalletEvent({
+            kind: 'credential-ingested',
+            eventId,
+            credentialUri,
+            vc,
+            ingestedAt: new Date().toISOString(),
+            source: input.source ?? 'import',
+            ...(input.boostUri ? { boostUri: input.boostUri } : {}),
+        });
+    } catch (err) {
+        console.error('[pathwaysDev] simulateCredentialClaim rejected by bus:', err);
+
+        return null;
+    }
+
+    const record = pathwayProgressReactor.lastDispatch();
+
+    console.info(
+        '[pathwaysDev] simulateCredentialClaim →',
+        record
+            ? {
+                  nodeCompletions: record.nodeCompletions.length,
+                  outcomeBindings: record.outcomeBindings?.length ?? 0,
+                  credentialUri,
+              }
+            : '(no dispatch — reactor saw the event but matched nothing / no pathways)',
+    );
+
+    return record;
+};
+
+export interface SimulateSessionInput {
+    /**
+     * Topic boost URI the session ran against. Required — the
+     * simulator refuses to publish without it because a topic-less
+     * session cannot satisfy any `session-completed` termination.
+     */
+    topicUri: string;
+    /** Optional AI Learning Pathway URI. */
+    aiPathwayUri?: string;
+    /** Session duration in seconds. Defaults to 300 (5 min). */
+    durationSec?: number;
+    /** Override for dedup testing. */
+    eventId?: string;
+    /** Override for dedup testing. Defaults to a synthetic thread id. */
+    threadId?: string;
+}
+
+/**
+ * Publish a synthetic `AiSessionCompleted` event. Mirrors what
+ * `FinishSessionButton` emits in production. Useful for testing
+ * `session-completed` terminations without having to actually
+ * drive a tutor session through the websocket chat service.
+ */
+const simulateAiSessionFinish = (
+    input: SimulateSessionInput,
+): ProgressDispatchRecord | null => {
+    if (!input.topicUri) {
+        console.warn('[pathwaysDev] simulateAiSessionFinish requires a topicUri.');
+
+        return null;
+    }
+
+    const eventId = input.eventId ?? uuid();
+    const threadId = input.threadId ?? `sim-thread-${uuid()}`;
+    const durationSec = input.durationSec ?? 300;
+
+    try {
+        publishWalletEvent({
+            kind: 'ai-session-completed',
+            eventId,
+            threadId,
+            topicUri: input.topicUri,
+            ...(input.aiPathwayUri ? { aiPathwayUri: input.aiPathwayUri } : {}),
+            endedAt: new Date().toISOString(),
+            durationSec,
+            source: 'user-finish',
+        });
+    } catch (err) {
+        console.error('[pathwaysDev] simulateAiSessionFinish rejected by bus:', err);
+
+        return null;
+    }
+
+    const record = pathwayProgressReactor.lastDispatch();
+
+    console.info(
+        '[pathwaysDev] simulateAiSessionFinish →',
+        record
+            ? {
+                  nodeCompletions: record.nodeCompletions.length,
+                  topicUri: input.topicUri,
+                  threadId,
+              }
+            : '(no dispatch — reactor saw the event but matched nothing)',
+    );
+
+    return record;
+};
+
+/**
+ * Print a summary of every termination on the active pathway with
+ * its current progress status — makes it easy to verify that a
+ * simulated event actually flipped the right node.
+ */
+const inspectActivePathway = (): void => {
+    const activeId = pathwayStore.get.activePathwayId();
+
+    if (!activeId) {
+        console.warn('[pathwaysDev] No active pathway.');
+
+        return;
+    }
+
+    const pathway = pathwayStore.get.pathways()[activeId];
+
+    if (!pathway) return;
+
+    console.info(`[pathwaysDev] Pathway: ${pathway.title} (${pathway.nodes.length} nodes)`);
+
+    for (const node of pathway.nodes) {
+        const termination: Termination = node.stage.termination;
+        const status = node.progress.status;
+        const marker = status === 'completed' ? '✓' : '·';
+
+        console.info(
+            `  ${marker} [${status.padEnd(11)}] ${node.title} — ${terminationLabel(termination)}`,
+        );
+    }
+
+    console.info(
+        `[pathwaysDev] Outcomes: ${pathway.outcomes?.length ?? 0} declared, ${
+            pathway.outcomes?.filter(o => o.binding).length ?? 0
+        } bound`,
+    );
+};
+
+const terminationLabel = (termination: Termination): string => {
+    switch (termination.kind) {
+        case 'artifact-count':
+            return `${termination.count} × ${termination.artifactType}`;
+        case 'endorsement':
+            return `${termination.minEndorsers} vouch(es)`;
+        case 'self-attest':
+            return 'self-attest';
+        case 'assessment-score':
+            return `score ≥ ${termination.min}`;
+        case 'pathway-completed':
+            return 'nested pathway complete';
+        case 'composite':
+            return `${termination.require} of ${termination.of.length}`;
+        case 'requirement-satisfied':
+            return `requirement (${termination.requirement.kind})`;
+        case 'session-completed':
+            return `session on ${termination.topicUri}`;
+    }
+};
+
+/**
+ * Nuclear reset — wipes every pathway, proposal, and reactor
+ * dispatch-history entry. Useful when iterating on seed changes
+ * (the store persists across hot-reloads, but a reset puts you
+ * back at a known empty state).
+ */
+const resetPathwaysAndProposals = (): void => {
+    pathwayStore.set.state(draft => {
+        draft.pathways = {};
+        draft.activePathwayId = null;
+        draft.recentCompletion = null;
+    });
+    proposalStore.set.state(draft => {
+        draft.proposals = {};
+    });
+    pathwayProgressReactor.resetDispatchHistory();
+
+    console.info('[pathwaysDev] Wiped pathwayStore + proposalStore + reactor history.');
+};
+
+// ---------------------------------------------------------------------------
 // Install
 // ---------------------------------------------------------------------------
 
@@ -276,8 +581,39 @@ export interface PathwaysDevGlobals {
     seedAws: (learnerDid: string) => string;
     /** Seed the pre-existing curated template + composite parent demo. */
     seedDemo: (learnerDid: string) => void;
-    /** Drop a synthesized matching VC → fire the credential binder. */
+    /**
+     * Drop a synthesized matching VC against every outcome on the
+     * active pathway → fire the pathway-level credential binder.
+     * Pre-dates the post-v0.5 `requirement-satisfied` / node-level
+     * binder path; use `simulateCredentialClaim` for node-level tests.
+     */
     dropVc: (options?: DropVcOptions) => DropVcResult;
+    /**
+     * Publish a synthetic `CredentialIngested` event through the
+     * walletEventBus. Exercises the full
+     * `bus → reactor → nodeProgressBinder + credentialBinder →
+     * proposal → auto-accept` pipeline, and populates provenance
+     * hints on the identity extractor. Returns the reactor's
+     * dispatch record (or null on a no-op).
+     */
+    simulateCredentialClaim: (input?: SimulateCredentialInput) => ProgressDispatchRecord | null;
+    /** Publish a synthetic `AiSessionCompleted` event through the bus. */
+    simulateAiSessionFinish: (input: SimulateSessionInput) => ProgressDispatchRecord | null;
+    /**
+     * Print a termination-by-termination snapshot of the active
+     * pathway with progress status. Useful after a simulator call
+     * to confirm the right node flipped.
+     */
+    inspectPathway: () => void;
+    /** Snapshot of recent dispatch records. Oldest first. */
+    listDispatches: () => readonly ProgressDispatchRecord[];
+    /** Clear the reactor's dispatch history. */
+    clearDispatches: () => void;
+    /**
+     * Nuclear reset — wipes every pathway, proposal, and reactor
+     * dispatch-history entry so the next seed call starts clean.
+     */
+    resetAll: () => void;
 }
 
 declare global {
@@ -299,9 +635,17 @@ export const installPathwaysDevGlobals = (): void => {
         seedAws: (learnerDid: string) => seedAwsCloudPractitionerDemo(learnerDid).id,
         seedDemo: (learnerDid: string) => seedDemoPathwayIfEmpty(learnerDid),
         dropVc: (options?: DropVcOptions) => dropMatchingDemoVc(options),
+        simulateCredentialClaim,
+        simulateAiSessionFinish,
+        inspectPathway: inspectActivePathway,
+        listDispatches: () => pathwayProgressReactor.recentDispatches(),
+        clearDispatches: () => pathwayProgressReactor.resetDispatchHistory(),
+        resetAll: resetPathwaysAndProposals,
     };
 
     console.info(
-        '[pathwaysDev] Installed. Available: __pathwaysDev.seedAws(did) / seedDemo(did) / dropVc().',
+        '[pathwaysDev] Installed. Available: seedAws(did) / seedDemo(did) / ' +
+            'dropVc() / simulateCredentialClaim({...}) / simulateAiSessionFinish({topicUri}) / ' +
+            'inspectPathway() / listDispatches() / clearDispatches() / resetAll().',
     );
 };

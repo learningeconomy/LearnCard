@@ -10,7 +10,8 @@
 import { z } from 'zod';
 
 import { ActionDescriptorSchema } from './action';
-import { OutcomeSignalSchema } from './outcome';
+import { NodeRequirementSchema } from './nodeRequirement';
+import { OutcomeSignalSchema, OutcomeTrustTierSchema } from './outcome';
 
 // -----------------------------------------------------------------
 // References
@@ -184,6 +185,42 @@ const BaseTerminationSchema = z.union([
     z.object({
         kind: z.literal('pathway-completed'),
         pathwayRef: z.string().uuid(),
+    }),
+    /**
+     * `requirement-satisfied` — the node is complete when a wallet
+     * credential (or other evidence) satisfies a `NodeRequirement`
+     * predicate. This is the node-level analogue of the pathway-level
+     * `OutcomeSignal.credential-received` — same trust-tier model,
+     * but flexible enough to express modern identity schemes (boost
+     * URIs, CTDL CTIDs, OB achievements/alignments, skill tags,
+     * composite AND/OR trees). See `types/nodeRequirement.ts` for
+     * the requirement DSL and `core/nodeRequirementMatcher.ts` for
+     * the matcher.
+     *
+     * `minTrustTier` mirrors the outcomes system: the issuer of the
+     * satisfying evidence must clear this tier before the node
+     * auto-completes. Defaults to `trusted`.
+     */
+    z.object({
+        kind: z.literal('requirement-satisfied'),
+        requirement: NodeRequirementSchema,
+        minTrustTier: OutcomeTrustTierSchema.default('trusted'),
+    }),
+    /**
+     * `session-completed` — the node is complete when a first-party
+     * LearnCard AI tutor session ends on the specified topic. Pairs
+     * naturally with an `ai-session` action: same `topicUri`,
+     * learner engages, session ends, node ticks off.
+     *
+     * `minDurationSec` is an optional floor on session length; the
+     * binder will decline to auto-complete very short sessions (the
+     * learner opened and immediately closed the tutor) when this
+     * threshold is set. Omitting it means any session ending counts.
+     */
+    z.object({
+        kind: z.literal('session-completed'),
+        topicUri: z.string().min(1),
+        minDurationSec: z.number().int().nonnegative().optional(),
     }),
 ]);
 

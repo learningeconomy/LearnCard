@@ -18,7 +18,9 @@ import assessmentScoreSpec from './AssessmentScoreSpec';
 import compositeSpec from './CompositeSpec';
 import endorsementSpec from './EndorsementSpec';
 import pathwayCompletedSpec from './PathwayCompletedSpec';
+import requirementSatisfiedSpec from './RequirementSatisfiedSpec';
 import selfAttestSpec from './SelfAttestSpec';
+import sessionCompletedSpec from './SessionCompletedSpec';
 import type { TerminationKindSpec } from './types';
 
 export const TERMINATION_KINDS = {
@@ -28,6 +30,8 @@ export const TERMINATION_KINDS = {
     'assessment-score': assessmentScoreSpec,
     composite: compositeSpec,
     'pathway-completed': pathwayCompletedSpec,
+    'requirement-satisfied': requirementSatisfiedSpec,
+    'session-completed': sessionCompletedSpec,
 } satisfies {
     [K in Termination['kind']]: TerminationKindSpec<K>;
 };
@@ -64,4 +68,6 @@ export const TERMINATION_KIND_LIST: readonly AnyTerminationKindSpec[] = [
     assessmentScoreSpec,
     compositeSpec,
     pathwayCompletedSpec,
+    requirementSatisfiedSpec,
+    sessionCompletedSpec,
 ];

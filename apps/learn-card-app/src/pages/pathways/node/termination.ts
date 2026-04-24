@@ -19,6 +19,10 @@ import type { PathwayNode, Termination } from '../types';
  *
  *   - `count`      → renders a progress ring (current / total).
  *   - `ready`      → no ring needed; self-attest unlocks immediately.
+ *   - `external`   → waiting on an event the reactor will dispatch
+ *                   (credential claim, AI session end). The overlay
+ *                   renders a "waiting" state that flips to "done"
+ *                   once `node.progress.status === 'completed'`.
  *   - `unsupported`→ Phase 2 can't satisfy this (assessment, composite);
  *                   the overlay shows the requirement but stays locked.
  */
@@ -36,6 +40,19 @@ export type TerminationView =
     | {
           kind: 'ready';
           requirement: string;
+      }
+    | {
+          kind: 'external';
+          /**
+           * `true` once the node's `progress.status === 'completed'`.
+           * The reactor flips this by accepting a completion proposal
+           * from `nodeProgressBinder`.
+           */
+          done: boolean;
+          /** Short plain-English requirement, e.g. "Earn a matching credential". */
+          requirement: string;
+          /** Hint shown while waiting for the triggering event. */
+          unmetHint: string;
       }
     | {
           kind: 'unsupported';
@@ -198,6 +215,40 @@ export const computeTerminationView = (
                 unmetHint: 'Composite goals arrive in a later release.',
             };
         }
+
+        case 'requirement-satisfied': {
+            // The `done` flip is driven by `node.progress.status`, which
+            // `applyProposal` writes when the reactor accepts a
+            // completion proposal from `nodeProgressBinder`. The view
+            // itself is stateless — it just mirrors the progress field.
+            const done = node.progress.status === 'completed';
+
+            return {
+                kind: 'external',
+                done,
+                requirement: 'Earn a qualifying credential',
+                unmetHint: done
+                    ? ''
+                    : 'This step completes automatically when a matching credential lands in your wallet.',
+            };
+        }
+
+        case 'session-completed': {
+            const done = node.progress.status === 'completed';
+            const minSec = termination.minDurationSec;
+            const durationCopy = minSec && minSec > 0
+                ? ` (at least ${Math.ceil(minSec / 60)} minute${minSec >= 120 ? 's' : ''})`
+                : '';
+
+            return {
+                kind: 'external',
+                done,
+                requirement: `Finish the AI tutor session${durationCopy}`,
+                unmetHint: done
+                    ? ''
+                    : 'This step completes automatically when you finish the tutor session.',
+            };
+        }
     }
 };
 
@@ -211,6 +262,8 @@ export const terminationDone = (view: TerminationView): boolean => {
             return view.done;
         case 'ready':
             return true;
+        case 'external':
+            return view.done;
         case 'unsupported':
             return false;
     }

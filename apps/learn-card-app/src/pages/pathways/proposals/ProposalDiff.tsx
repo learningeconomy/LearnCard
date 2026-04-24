@@ -55,6 +55,15 @@ const terminationSummary = (termination: Termination): string => {
             // together, so showing the same term here keeps the diff
             // from looking like a double-change.
             return 'completion of nested pathway';
+        case 'requirement-satisfied':
+            // The diff view doesn't try to rehydrate a full human
+            // description of the `NodeRequirement` tree — that's the
+            // job of `RequirementSatisfiedSpec.summarize`. For the
+            // structural diff view, "a qualifying credential" is
+            // the right level of detail.
+            return 'qualifying credential in wallet';
+        case 'session-completed':
+            return 'AI tutor session completed';
     }
 };
 

@@ -175,36 +175,50 @@ export const seedDemoPathwayIfEmpty = (learnerDid: string): void => {
 };
 
 // ---------------------------------------------------------------------------
-// AWS Cloud Practitioner demo pathway (v0.5 showcase)
+// AWS Cloud Practitioner demo pathway (post-v0.5 showcase)
 // ---------------------------------------------------------------------------
 //
 // A 7-node pathway authored to exercise every meaningful ActionDescriptor
-// dispatch path the UI supports, plus an OutcomeSignal that the credential
-// binder can auto-propose against once the terminal VC arrives. Intended
-// to be seeded *after* `pnpm lc seed pathway-demo` has populated the
-// matching listings (see `presetListings.ts` for ID derivation).
+// dispatch path AND every new termination kind in the pathway-progress
+// reactor architecture. Intended to be seeded *after*
+// `pnpm lc seed pathway-demo` has populated the matching listings
+// (see `presetListings.ts` for ID derivation).
 //
 // Node / kind mapping:
-//   1. Watch course     → `app-listing` (Coursera,      DIRECT_LINK)
+//   1. Watch course     → `app-listing` (Coursera,        DIRECT_LINK)
+//                       · termination: `artifact-count` (upload completion cert)
 //   2. Practice exam    → `app-listing` (Practice Studio, EMBEDDED_IFRAME)
+//                       · termination: `artifact-count`
 //   3. AI coaching      → `app-listing` (Cloud Coach,     AI_TUTOR — third-party)
-//   4. IAM deep dive    → `ai-session`  (first-party LC tutor — full shape:
-//                                        topicUri + pathwayUri + seedPrompt + snapshot)
-//   5. VPC refresher    → `ai-session`  (first-party LC tutor — minimal shape:
-//                                        topicUri + snapshot only)
+//                       · termination: `self-attest`
+//   4. IAM deep dive    → `ai-session`   (first-party LC tutor — full shape)
+//                       · termination: `session-completed` — the node auto-
+//                         completes when the reactor sees an
+//                         `AiSessionCompleted` event on the matching
+//                         `topicUri`. Live loop: open the tutor, finish
+//                         the session, `FinishSessionButton` publishes,
+//                         the reactor commits, the node ticks off.
+//   5. VPC refresher    → `ai-session`   (first-party LC tutor — minimal)
+//                       · termination: `self-attest` (kept as a control
+//                         so the pathway has both styles of AI-session
+//                         node for comparison).
 //   6. Schedule exam    → `external-url` (Pearson VUE scheduler, no listing)
-//   7. Upload cert      → `kind: 'none'` — learner stays in NodeDetail
+//                       · termination: `artifact-count`
+//   7. Earn AWS cert    → `kind: 'none'`
+//                       · termination: `requirement-satisfied` — uses an
+//                         `any-of` composition so EITHER a boost-URI
+//                         match OR a credential-type match is enough.
+//                         Demonstrates the recursive NodeRequirement DSL
+//                         in the living seed. A matching VC arriving in
+//                         the wallet from any source (claim link, partner
+//                         SDK, consent-flow sync) will auto-complete the
+//                         node via the reactor.
 //
-// Nodes 3–5 together show the deliberate split between the two tutor
-// surfaces: node 3 dispatches to a **third-party** agent via the listing
-// registry (consent-flow gated), nodes 4 & 5 dispatch to LearnCard's
-// **first-party** tutor (`/chats` surface, topic-VC availability gated).
-// Keeping both in the same demo makes the product distinction legible.
-//
-// The pathway-level OutcomeSignal is of kind `credential-received` and
-// expects `AWSCertifiedCloudPractitioner`. When a VC with that type lands
-// in the wallet, the binder emits a proposal (no LLM, no budget burn);
-// learner commits. That's the full v0.5 loop in one demo.
+// The pathway-level `credential-received` OutcomeSignal remains — a VC
+// with `type: AWSCertifiedCloudPractitioner` is both a node-completing
+// event AND an outcome-binding event, and both binders run in one pass
+// per ingest. This is the "one credential satisfies multiple layers"
+// property the architecture promises.
 
 const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway => {
     let pathway: Pathway = {
@@ -342,10 +356,19 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         cadence: { frequency: 'daily', perPeriod: 1 },
         artifactTypes: ['text'],
     });
+    // `session-completed` termination paired with the node's own
+    // `ai-session` action: when the learner clicks Finish Session,
+    // `FinishSessionButton` publishes an `AiSessionCompleted` event
+    // that carries this topicUri, the reactor matches, and the node
+    // auto-completes with no extra click. The `topicUri` here MUST
+    // match `setAction.topicUri` below, hence keeping the string as
+    // a single source of truth in a local const.
     pathway = setTermination(pathway, nIam.id, {
-        kind: 'self-attest',
-        prompt:
-            'I completed an IAM tutor session and can explain cross-account assume-role in my own words.',
+        kind: 'session-completed',
+        topicUri: 'boost:aws-iam-deep-dive',
+        // No `minDurationSec` — any session ending counts. The
+        // tutor-side already guards against trivially-short
+        // sessions (sub-second open/close) before firing the event.
     });
     {
         // Snapshot is inlined (rather than table-keyed like the
@@ -445,33 +468,61 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         url: 'https://www.pearsonvue.com/us/en/aws.html',
     });
 
-    // --- Node 7: upload the terminal credential --------------------------
+    // --- Node 7: earn the terminal credential ---------------------------
     //
     // Action-less on purpose — the NodeDetail overlay *is* the destination.
-    // The learner drops the AWS-issued VC into the wallet and this node's
-    // evidence uploader. The pathway OutcomeSignal will separately
-    // auto-propose a binding via the credential binder (see below), which
-    // is the more interesting v0.5 path.
+    // The learner earns the AWS-issued VC through Pearson/AWS's external
+    // flow (node 6) and any of the usual paths surface it into the wallet
+    // (claim link, partner-SDK, consent-flow sync). The reactor sees the
+    // `CredentialIngested` event, matches against this termination, and
+    // auto-completes the node via a completion proposal.
+    //
+    // Termination uses an `any-of` composition so BOTH identity schemes
+    // satisfy the rule — a boost-URI match (if AWS starts issuing through
+    // a LearnCard boost) OR a raw credential-type match on the W3C `type`.
+    // The pathway-level `credential-received` outcome also fires for this
+    // VC, so a single ingest produces one node completion + one outcome
+    // binding, running both binders in the same reactor pass.
     pathway = addNode(pathway, {
-        title: 'Upload: your AWS Cloud Practitioner credential',
+        title: 'Earn: AWS Cloud Practitioner credential',
         description:
-            'Once AWS issues your credential, upload it here — this node completes when the VC lands in your wallet.',
+            'This final step completes automatically as soon as your AWS-issued Cloud Practitioner credential lands in your wallet — from a claim link, a partner app, or a background sync. No upload step required.',
     });
     const n5 = pathway.nodes[pathway.nodes.length - 1];
 
-    // `ArtifactType` doesn't have a VC variant yet — PDF is the closest
-    // honest match (AWS delivers the cert as a PDF, and the real VC path
-    // runs through the OutcomeSignal binder below, not this node's
-    // termination). Revisit once evidence types grow a first-class VC kind.
+    // Policy stays `artifact` so Build mode has something coherent to
+    // render in the node inspector — but the *termination* is
+    // decoupled. Authoring policy and termination independently is
+    // fine; the composite invariant only constrains `composite` policy
+    // ↔ `pathway-completed` termination pairs.
     pathway = setPolicy(pathway, n5.id, {
         kind: 'artifact',
-        prompt: 'Upload your AWS-issued Cloud Practitioner credential (PDF or screenshot).',
-        expectedArtifact: 'pdf',
+        prompt: 'No upload needed — the reactor recognises your AWS credential automatically.',
+        expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n5.id, {
-        kind: 'artifact-count',
-        count: 1,
-        artifactType: 'pdf',
+        kind: 'requirement-satisfied',
+        requirement: {
+            // EITHER a canonical LearnCard boost URI (forward-compat for
+            // when AWS credentials are issued through a boost), OR a raw
+            // W3C `type` match (today's common path — any issuer whose
+            // credential declares this type counts). Composition via
+            // `any-of` is the recursive DSL this architecture exists to
+            // enable; the matcher walks the tree and records which
+            // branch satisfied via `satisfiedBy` on the verdict.
+            kind: 'any-of',
+            of: [
+                {
+                    kind: 'boost-uri',
+                    uri: 'boost:aws-ccp-credential',
+                },
+                {
+                    kind: 'credential-type',
+                    type: 'AWSCertifiedCloudPractitioner',
+                },
+            ],
+        },
+        minTrustTier: 'trusted',
     });
     pathway = setAction(pathway, n5.id, { kind: 'none' });
 
