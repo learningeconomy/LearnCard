@@ -54,13 +54,149 @@ if (!issuerSeed) {
     );
 }
 
+// Optional brain-service URL. When set, `initLearnCard({ network })`
+// points at this URL instead of the production LearnCard Network
+// (`network.learncard.com`). The `network` option accepts `true`
+// (use default) OR a string URL — see
+// `packages/learn-card-init/src/types/LearnCard.ts:80-88`.
+//
+// Leaving it unset in production is the right call. Setting it to
+// something like `http://localhost:4000` is the right call when
+// you're running `services/learn-card-network/brain-service`
+// locally and want the course email-claim flow to create its
+// inbox issuances against that local service.
+const networkUrl = import.meta.env.LEARNCARD_NETWORK_URL as string | undefined;
+
 // `initLearnCard` is idempotent for the same seed: it rebuilds an
 // in-memory wallet each call but all derived keys / the DID are
 // deterministic. We invoke it per-action so the handlers stay
 // independent and free of module-scope state that could leak across
 // requests. The overhead is a one-off key-derivation cost per call.
+//
+// `getIssuer` stays local-only — no network plugin, no profile
+// registration. That's all the practice and coaching actions need
+// (they sign locally and hand the VC to the Partner Connect SDK,
+// which delivers it via postMessage inside the embed iframe).
 const getIssuer = async () => {
     return initLearnCard({ seed: issuerSeed as string });
+};
+
+// -------------------------------------------------------------------
+// Network issuer — required for `.send()` (Universal Inbox)
+// -------------------------------------------------------------------
+//
+// The course page is reached as a direct link, not an embed, so the
+// Partner Connect postMessage bridge isn't available. Instead we
+// route the course VC through the LearnCard Network's Universal
+// Inbox: sign locally, then call `invoke.send({ recipient: email,
+// signedCredential, options: { suppressDelivery: true } })` to get
+// back a claim URL the learner clicks. Claiming drops the VC into
+// their wallet, which triggers the same `credential-ingested` event
+// the pathway reactor already listens for.
+//
+// That flow has two preconditions the local-only issuer can't meet:
+//
+//   1. `initLearnCard({ network: true })`. Without this, the
+//      `invoke.send` method isn't mounted on the plugin surface
+//      (it lives in the network plugin, not the didkit plugin).
+//
+//   2. A profile registered on the network under our issuer DID.
+//      `.send()` creates a boost template on the recipient's behalf
+//      and requires the caller to be a known issuer. The Mozilla
+//      Social Badges example uses the same pattern — see its
+//      `ensureLearnCardIssuerProfileExists` helper.
+//
+// Both the network init AND the profile check are memoized at
+// module scope. They're expensive (network round-trips), idempotent,
+// and safe to share across requests because the issuer state is
+// identical for every caller in this app — the seed never changes
+// mid-process, so the resolved issuer is de facto a singleton.
+// `initLearnCard` is overloaded and doesn't accept explicit generic
+// arguments at call sites, so we derive the type from the default
+// overload and trust runtime that the network-plugin methods
+// (`getProfile`, `createProfile`, `send`) are present when we pass
+// `network: true`. The alternative — plumbing the exact network-
+// plugin return type through here — changes every minor SDK bump
+// and breaks the Astro dev server rebuild loop.
+type NetworkIssuer = Awaited<ReturnType<typeof initLearnCard>>;
+
+let networkIssuerPromise: Promise<NetworkIssuer> | null = null;
+let profileEnsuredPromise: Promise<void> | null = null;
+
+const ensureIssuerProfile = async (issuer: NetworkIssuer): Promise<void> => {
+    const existing = await issuer.invoke.getProfile();
+
+    if (existing) return;
+
+    // First-run on a fresh seed — create the demo issuer profile.
+    // The profileId is hard-coded so re-runs with the same seed
+    // always find the same profile; change it only if the seed
+    // itself rotates. If another deployment has already claimed
+    // this profileId, `createProfile` throws and the caller sees
+    // a helpful error — fix by rotating the seed or renaming here.
+    await issuer.invoke.createProfile({
+        profileId: 'northstar-learning-demo',
+        displayName: 'Northstar Learning',
+        description:
+            'AWS Cloud Practitioner certification prep — demo issuer for the Northstar Learning pathway app.',
+    });
+};
+
+const getNetworkIssuer = async (): Promise<NetworkIssuer> => {
+    if (!networkIssuerPromise) {
+        // `network` accepts `true` (production) or a URL string
+        // (custom brain-service — typically a local dev server).
+        //
+        // The init package only auto-appends `/trpc` when `network`
+        // is `true` (see
+        // `packages/learn-card-init/src/initializers/networkLearnCardFromSeed.ts:43`);
+        // custom URLs are used verbatim. That's a footgun for
+        // local-dev — a raw `http://localhost:4000` produces
+        // requests to `/utilities.getChallenges` and the
+        // brain-service returns 404s because its tRPC router is
+        // mounted under `/trpc`.
+        //
+        // We normalize here: if the URL doesn't already end in
+        // `/trpc` (and isn't just a bare tRPC suffix), append it.
+        // That lets the env value be either `http://localhost:4000`
+        // or `http://localhost:4000/trpc` — both work.
+        const raw = networkUrl?.trim();
+        const normalized = raw
+            ? raw.replace(/\/+$/, '').endsWith('/trpc')
+                ? raw.replace(/\/+$/, '')
+                : `${raw.replace(/\/+$/, '')}/trpc`
+            : null;
+
+        const networkOption: true | string = normalized ?? true;
+
+        if (typeof networkOption === 'string') {
+            console.log(
+                `[northstar] initializing issuer against custom LearnCard Network at ${networkOption}`,
+            );
+        }
+
+        networkIssuerPromise = initLearnCard({
+            seed: issuerSeed as string,
+            network: networkOption,
+        });
+    }
+
+    const issuer = await networkIssuerPromise;
+
+    // Chain the profile check off the init so concurrent callers
+    // all await the same promise. If `ensureIssuerProfile` throws
+    // we clear the cached promise so the next call retries — a
+    // sticky failure would otherwise lock out the whole action.
+    if (!profileEnsuredPromise) {
+        profileEnsuredPromise = ensureIssuerProfile(issuer).catch(err => {
+            profileEnsuredPromise = null;
+            throw err;
+        });
+    }
+
+    await profileEnsuredPromise;
+
+    return issuer;
 };
 
 // ---------------------------------------------------------------------------
@@ -187,6 +323,158 @@ export const server = {
             };
 
             return signOrThrow(issuer, vc, 'issueCourseCompletion');
+        },
+    }),
+
+    /**
+     * Issue a course-completion VC and route it through the LearnCard
+     * Network's Universal Inbox, returning a claim URL the learner
+     * can click.
+     *
+     * This is the *direct-link* path for the course page — distinct
+     * from `issueCourseCompletion` above (which assumes the page is
+     * rendered inside the Partner Connect embed iframe and uses
+     * `sendCredential` to postMessage the VC into the wallet).
+     *
+     * Shape is identical to `issueCourseCompletion` except:
+     *
+     *   • `credentialSubject.id` is omitted. When a learner claims
+     *     via email, the network doesn't know their DID yet —
+     *     Universal Inbox fills in the subject id during claim
+     *     (or the VC stays subject-less, which is valid per VC v2).
+     *   • Issuance goes through `getNetworkIssuer()` (network plugin
+     *     + registered profile), because `.send()` is a network
+     *     method, not a local one.
+     *   • `options.suppressDelivery: true` tells the network to
+     *     *not* send the claim email and instead return the URL to
+     *     the caller. We surface that URL in the page UI so the
+     *     demo works end-to-end without depending on SMTP delivery.
+     *     A production issuer would drop `suppressDelivery` (or set
+     *     it to `false`) and the network would email the learner.
+     */
+    issueCourseCompletionEmail: defineAction({
+        input: z.object({
+            recipientEmail: z.string().email(),
+        }),
+        handler: async ({ recipientEmail }) => {
+            let issuer: NetworkIssuer;
+
+            try {
+                issuer = await getNetworkIssuer();
+            } catch (err) {
+                console.error('[northstar] network issuer init failed:', err);
+
+                throw new ActionError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message:
+                        err instanceof Error
+                            ? `Could not reach LearnCard Network: ${err.message}`
+                            : 'Could not reach LearnCard Network.',
+                });
+            }
+
+            const issuerDid = issuer.id.did();
+
+            const vc = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                ],
+                id: urnId(),
+                type: [
+                    'VerifiableCredential',
+                    'OpenBadgeCredential',
+                    `${NORTHSTAR_VOCAB_IRI}AWSCloudEssentialsCompletion`,
+                ],
+                issuer: issuerDid,
+                validFrom: nowIso(),
+                name: 'AWS Cloud Essentials — Course Completion',
+                credentialSubject: {
+                    // Deliberately no `id` here — the learner's DID
+                    // is unknown at sign time (we only have their
+                    // email). Universal Inbox patches it in during
+                    // claim.
+                    type: ['AchievementSubject'],
+                    activityEndDate: nowIso(),
+                    achievement: {
+                        id: 'https://badges.northstar.learning/ach/aws-cloud-essentials-course',
+                        type: ['Achievement'],
+                        name: 'AWS Cloud Essentials',
+                        description:
+                            'Completed Northstar’s AWS Cloud Essentials course covering EC2, S3, IAM, and VPC fundamentals.',
+                        criteria: {
+                            narrative:
+                                'Finished every chapter of Northstar’s AWS Cloud Essentials course.',
+                        },
+                    },
+                },
+            };
+
+            let signedCredential: unknown;
+
+            try {
+                signedCredential = await issuer.invoke.issueCredential(vc);
+            } catch (err) {
+                console.error('[northstar] course VC sign failed:', err);
+
+                throw new ActionError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message:
+                        err instanceof Error
+                            ? err.message
+                            : 'Failed to sign your course completion credential.',
+                });
+            }
+
+            try {
+                // `invoke.send` is typed to accept a wide union of
+                // input shapes; the `signedCredential` path is one
+                // of the documented variants (see
+                // `docs/how-to-guides/send-credentials.md`, "Send a
+                // Pre-Signed Credential"). We cast inline here rather
+                // than plumb the exact union through the plugin
+                // types because those types change frequently and
+                // the Astro dev server rebuilds on every change —
+                // a loose cast keeps the demo resilient to SDK
+                // minor-version bumps while the spec stays stable.
+                const result = await (issuer.invoke as any).send({
+                    type: 'boost',
+                    recipient: recipientEmail,
+                    signedCredential,
+                    options: {
+                        suppressDelivery: true,
+                        branding: {
+                            issuerName: 'Northstar Learning',
+                            credentialName: 'AWS Cloud Essentials Completion',
+                        },
+                    },
+                });
+
+                const claimUrl = result?.inbox?.claimUrl as string | undefined;
+
+                if (!claimUrl) {
+                    throw new Error(
+                        'LearnCard Network did not return a claim URL. Check that the issuer profile can create inbox issuances.',
+                    );
+                }
+
+                return {
+                    claimUrl,
+                    issuanceId: result.inbox.issuanceId as string,
+                    status: result.inbox.status as string,
+                    recipientEmail,
+                };
+            } catch (err) {
+                console.error('[northstar] issueCourseCompletionEmail send failed:', err);
+
+                throw new ActionError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message:
+                        err instanceof Error
+                            ? err.message
+                            : 'Failed to generate a claim link.',
+                });
+            }
         },
     }),
 

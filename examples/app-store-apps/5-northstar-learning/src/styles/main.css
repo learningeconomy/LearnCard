@@ -408,6 +408,190 @@ h2.section-title {
     width: 100%;
 }
 
+.btn-ghost {
+    background: transparent;
+    color: var(--ink-700);
+    border: 1px solid var(--ink-200);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--ink-50);
+    color: var(--ink-900);
+    border-color: var(--ink-300);
+}
+
+/* -- Form inputs --------------------------------------------------------- */
+
+.input {
+    display: block;
+    width: 100%;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink-900);
+    background: #fff;
+    border: 1.5px solid var(--ink-200);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease;
+    min-height: 52px;
+    line-height: 1.3;
+}
+
+.input::placeholder {
+    color: var(--ink-400);
+}
+
+.input:hover:not(:disabled) {
+    border-color: var(--ink-300);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--emerald-500);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.input:disabled {
+    background: var(--ink-50);
+    color: var(--ink-500);
+    cursor: not-allowed;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-700);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.field-hint {
+    font-size: 12px;
+    color: var(--ink-500);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* -- Claim / callout card ------------------------------------------------- */
+
+/*
+   Slightly richer card variant for "next-step" callouts like the
+   email-claim surface on /course. It's still a .card underneath;
+   these modifiers add an emerald accent strip and tighter rhythm
+   so the card reads as an obvious call-to-action rather than just
+   a list container.
+*/
+.card.is-callout {
+    border: 1px solid var(--ink-200);
+    background: linear-gradient(
+        180deg,
+        rgba(236, 253, 245, 0.4) 0%,
+        #fff 42%
+    );
+    position: relative;
+    overflow: hidden;
+}
+
+.card.is-callout::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--emerald-500),
+        var(--emerald-400)
+    );
+}
+
+.card.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: saturate(0.7);
+}
+
+.card-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--emerald-700);
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+    margin: 0 0 6px;
+}
+
+.card-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-600);
+    margin: 0;
+}
+
+/* Pill showing chapter progress inside the claim card header. */
+.progress-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--ink-100);
+    color: var(--ink-700);
+    font-variant-numeric: tabular-nums;
+}
+
+.progress-pill.is-complete {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+/* Copyable URL block used on the success card. */
+.url-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--ink-50);
+    border: 1px solid var(--ink-200);
+    border-radius: var(--radius-md);
+    font-family:
+        ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+        'Liberation Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-700);
+    word-break: break-all;
+    line-height: 1.5;
+    user-select: all;
+}
+
+.url-block-icon {
+    flex-shrink: 0;
+    color: var(--ink-500);
+}
+
 .spinner {
     width: 14px;
     height: 14px;
