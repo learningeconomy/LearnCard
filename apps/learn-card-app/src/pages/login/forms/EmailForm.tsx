@@ -6,6 +6,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import {
     currentUserStore,
     getRandomBaseColor,
@@ -75,6 +76,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
+    const { theme } = useTheme();
+    const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
+    const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
+
     const flags = useFlags();
     const query = usePathQuery();
     const history = useHistory();
@@ -146,6 +151,34 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         return false;
     };
+
+    const handleVerifyCode = async () => {
+        if (validateCode()) {
+            try {
+                setCodeError('');
+                setIsLoading(true);
+                const response = await verifyLoginVerificationCode({
+                    email: verificationEmail as string,
+                    code: code,
+                });
+                if (response?.token) {
+                    redirectStore.set.email(null);
+                    await signInWithCustomFirebaseToken(response?.token);
+                }
+                setIsLoading(false);
+            } catch (e) {
+                setIsLoading(false);
+                setCodeError('Unable to verify code. Please try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
+            // auto verify code when 6 digits are entered
+            handleVerifyCode();
+        }
+    }, [code, currentStep]);
 
     const handleDemoLogin = async () => {
         setIsLoading(true);
@@ -248,25 +281,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 }
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
-            if (validateCode()) {
-                try {
-                    setCodeError('');
-                    setIsLoading(true);
-
-                    const response = await verifyLoginVerificationCode({
-                        email: verificationEmail as string,
-                        code: code as string,
-                    });
-                    if (response?.token) {
-                        redirectStore.set.email(null);
-                        await signInWithCustomFirebaseToken(response?.token);
-                    }
-                    setIsLoading(false);
-                } catch (e) {
-                    setIsLoading(false);
-                    setCodeError('Unable to verify code. Please try again.');
-                }
-            }
+            await handleVerifyCode();
         } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
             // todo: trigger login to existing account
         } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
@@ -302,7 +317,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         formTitle = null;
 
         const defaultEmailInputClassName =
-            'bg-emerald-600 text-white placeholder:text-white white-placeholder';
+            'bg-white/20 text-white placeholder:text-white white-placeholder';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
         const emailError = errors.email?.[0];
@@ -323,7 +338,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         activeStep = (
             <div
-                className={`w-full mb-[20px] ${
+                className={`w-full ${
                     emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
                 } justify-center`}
             >
@@ -364,10 +379,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             </p>
         );
         activeStep = (
-            <IonCol
-                size="12"
-                className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
-            >
+            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
                     name="phoneVerification"
                     inputMode="numeric"
@@ -441,20 +453,24 @@ const EmailForm: React.FC<EmailFormProps> = ({
         <form onSubmit={handleOnClick} className="w-full">
             {formTitle && (
                 <IonCol size="12">
-                    <p
+                    <div
                         className={
                             formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
                         }
                     >
                         {formTitle}
-                    </p>
+                    </div>
                 </IonCol>
             )}
 
             {activeStep}
-            <div className="flex items-center justify-center pb-[20px]">
+            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${!loginButtonBgColor ? 'bg-grayscale-900' : ''} ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
+                    style={{
+                        ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
+                        ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
+                    }}
                     onClick={handleOnClick}
                     disabled={disabled}
                 >

@@ -2,12 +2,17 @@ import React from 'react';
 import numeral from 'numeral';
 
 import ArrowUp from 'learn-card-base/svgs/ArrowUp';
+import ArrowTrendingDown from 'learn-card-base/svgs/ArrowTrendingDown';
+import ArrowLeftRight from 'learn-card-base/svgs/ArrowLeftRight';
+import { type OccupationDetailsResponse } from 'learn-card-base';
+import AiPathwayCareerSection from './AiPathwayCareerSection';
 
-import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
+type JobMarketState = 'growth' | 'stable' | 'decline';
 
-export const AiPathwayCareerJobGrowthInfo: React.FC<{ occupation: OccupationDetailsResponse }> = ({
-    occupation,
-}) => {
+export const AiPathwayCareerJobGrowthInfo: React.FC<{
+    occupation: OccupationDetailsResponse;
+    compact?: boolean;
+}> = ({ occupation, compact = false }) => {
     const projection = occupation.Projections?.Projections?.[0];
 
     const jobGrowth = projection
@@ -21,27 +26,103 @@ export const AiPathwayCareerJobGrowthInfo: React.FC<{ occupation: OccupationDeta
 
     if (!jobGrowth) return null;
 
-    return (
-        <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-2">
-            <div className="w-full flex items-center justify-start">
-                <h2 className="text-xl text-grayscale-800 font-notoSans">
-                    Growth in the Job Market
-                </h2>
-            </div>
+    const marketState: JobMarketState =
+        jobGrowth.percentChange > 5
+            ? 'growth'
+            : jobGrowth.percentChange < -5
+            ? 'decline'
+            : 'stable';
 
-            <div className="w-full flex items-start justify-start gap-2">
-                <span className="w-[20px] h-[20px]">
-                    <ArrowUp className="text-grayscale-900 mt-1" />
-                </span>
-                <p className="text-grayscale-800 text-sm text-left">
+    const marketStateConfig: Record<
+        JobMarketState,
+        {
+            title: string;
+            accentClassName: string;
+            icon: React.ReactNode;
+            description: React.ReactNode;
+        }
+    > = {
+        growth: {
+            title: 'Growth in the Job Market',
+            accentClassName: 'text-teal-500',
+            icon: <ArrowUp className="h-[24px] w-[24px] text-teal-500" />,
+            description: (
+                <p className="text-grayscale-600 text-[14px] text-left">
                     From {jobGrowth.estimatedYear} to {jobGrowth.projectedYear}, demand for{' '}
-                    <strong>{occupation.OnetTitle}</strong> is projected to grow by{' '}
-                    <strong>{jobGrowth.percentChange}%</strong>, with approximately{' '}
-                    <strong>{numeral(jobGrowth.annualOpenings).format('0,0')}</strong> job openings
-                    per year.
+                    {occupation.OnetTitle} is projected to grow by{' '}
+                    <strong className="text-indigo-600 font-bold">
+                        {jobGrowth.percentChange}%
+                    </strong>
+                    , with approximately{' '}
+                    <strong className="text-indigo-600 font-bold">
+                        {numeral(jobGrowth.annualOpenings).format('0,0')} new job openings
+                    </strong>{' '}
+                    for this role.
                 </p>
-            </div>
-        </div>
+            ),
+        },
+        stable: {
+            title: 'Stable in the Job Market',
+            accentClassName: 'text-blue-500',
+            icon: <ArrowLeftRight className="h-[24px] w-[24px] text-blue-500" />,
+            description: (
+                <p className="text-grayscale-600 text-[14px] text-left">
+                    From {jobGrowth.estimatedYear} to {jobGrowth.projectedYear}, demand for{' '}
+                    {occupation.OnetTitle} is projected to remain stable with{' '}
+                    {jobGrowth.percentChange >= 0 ? 'an increase' : 'a decrease'} by{' '}
+                    <strong className="text-indigo-600 font-bold">
+                        {Math.abs(jobGrowth.percentChange)}%
+                    </strong>{' '}
+                    and approximately{' '}
+                    <strong className="text-indigo-600 font-bold">
+                        {numeral(jobGrowth.annualOpenings).format('0,0')} new job openings
+                    </strong>{' '}
+                    for this role.
+                </p>
+            ),
+        },
+        decline: {
+            title: 'Decline in the Job Market',
+            accentClassName: 'text-amber-500',
+            icon: <ArrowTrendingDown className="h-[24px] w-[24px] text-amber-500" />,
+            description: (
+                <p className="text-grayscale-600 text-[14px] text-left">
+                    From {jobGrowth.estimatedYear} to {jobGrowth.projectedYear}, demand for{' '}
+                    {occupation.OnetTitle} is projected to decline by{' '}
+                    <strong className="text-indigo-600 font-bold">
+                        {Math.abs(jobGrowth.percentChange)}%
+                    </strong>
+                    , with approximately{' '}
+                    <strong className="text-indigo-600 font-bold">
+                        {numeral(jobGrowth.annualOpenings).format('0,0')} new job openings
+                    </strong>{' '}
+                    for this role.
+                </p>
+            ),
+        },
+    };
+
+    const { title, accentClassName, icon, description } = marketStateConfig[marketState];
+
+    return (
+        <AiPathwayCareerSection
+            title={title}
+            compact={compact}
+            headerOverride={
+                <h2 className="text-[17px] text-grayscale-900 font-poppins font-bold leading-[24px] flex gap-[5px] items-center">
+                    {icon}
+
+                    <span className="leading-[24px]">
+                        <span className={accentClassName}>
+                            {title.split(' in the Job Market')[0]}
+                        </span>{' '}
+                        in the Job Market
+                    </span>
+                </h2>
+            }
+        >
+            {description}
+        </AiPathwayCareerSection>
     );
 };
 

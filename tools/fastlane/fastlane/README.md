@@ -76,6 +76,14 @@ Description of what the lane does
 
 
 
+### android initial_upload
+
+```sh
+[bundle exec] fastlane android initial_upload
+```
+
+Build AAB for first-time manual upload to Google Play (no Play Store lookup or upload)
+
 ### android upload_to_appetize
 
 ```sh

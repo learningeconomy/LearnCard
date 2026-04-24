@@ -8,6 +8,7 @@ export enum AdminToolOptionsEnum {
     CONSENT_FLOW = 'Consent Flow',
     SYNC_ALL_CREDENTIALS = 'Sync All Credentials',
     CLI = 'CLI',
+    GUARDIAN_CREDENTIAL_TEST = 'Guardian Credential Test',
 }
 
 export type AdminToolOption = {
@@ -37,6 +38,14 @@ export const adminToolOptions: AdminToolOption[] = [
         description: 'Create and share consent contracts.',
         actionLabel: 'Create Contract',
         type: AdminToolOptionsEnum.CONSENT_FLOW,
+    },
+    {
+        id: 3,
+        label: 'Guardian Credential Test',
+        title: 'Guardian Credential Test',
+        description: 'Send a guardian-gated test credential to test the guardian credential flow.',
+        actionLabel: 'Open Test UI',
+        type: AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST,
     },
 ];
 

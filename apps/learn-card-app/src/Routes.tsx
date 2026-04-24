@@ -89,6 +89,9 @@ const ClaimFromDashboard = lazyWithRetry(
 );
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
+const GuardianCredentialApprovalPage = lazyWithRetry(
+    () => import('./pages/interactions/GuardianCredentialApprovalPage')
+);
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
@@ -159,6 +162,9 @@ const LearnCardAiChatBot = lazyWithRetry(
     () => import('./components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot')
 );
 
+const TermsOfServicePage = lazyWithRetry(() => import('./pages/legal/TermsOfServicePage'));
+const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/legal/PrivacyPolicyPage'));
+
 // Create Custom Sentry Route component
 // https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/#react-router-v4v5
 const SentryRoute = Sentry.withSentryRouting(Route);
@@ -189,6 +195,8 @@ export const Routes: React.FC = () => {
                     <Switch location={background || location}>
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute exact path="/__/auth/action" component={LoginPage} />
+                        <SentryRoute exact path="/legal/terms" component={TermsOfServicePage} />
+                        <SentryRoute exact path="/legal/privacy" component={PrivacyPolicyPage} />
                         <SentryRoute
                             exact
                             path="/share-creds/:uri/:seed"
@@ -335,6 +343,11 @@ export const Routes: React.FC = () => {
                             exact
                             path="/claim/from-dashboard"
                             component={ClaimFromDashboard}
+                        />
+                        <SentryRoute
+                            exact
+                            path="/interactions/guardian-credential-approval/:token"
+                            component={GuardianCredentialApprovalPage}
                         />
                         <SentryRoute path="/interactions/*" component={InteractionsPage} />
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />

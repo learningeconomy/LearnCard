@@ -22,8 +22,9 @@ import {
     Filter,
     ChevronDown,
     Download,
+    Layout,
 } from 'lucide-react';
-import type { LCNIntegration } from '@learncard/types';
+import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
@@ -46,12 +47,16 @@ import {
 import { ExportDialog } from '../components/ExportDialog';
 
 import { useWallet } from 'learn-card-base';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
     config: DashboardConfig;
     stats: DashboardStats;
     templates: CredentialTemplate[];
+    appListings?: AppStoreListing[];
+    selectedListingId?: string;
+    onListingFilterChange?: (listingId: string | undefined) => void;
     onNavigate: (tabId: string) => void;
     refreshKey?: number;
 }
@@ -464,10 +469,21 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     config,
     stats,
     templates,
+    appListings,
+    selectedListingId,
+    onListingFilterChange,
     onNavigate,
     refreshKey,
 }) => {
     const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
+
+    // Use the dashboard-level filter if provided, otherwise use local state
+    const listingFilter = selectedListingId === undefined ? 'ALL' : selectedListingId || 'ALL';
+    const setListingFilter = (value: string) => {
+        if (onListingFilterChange) {
+            onListingFilterChange(value === 'ALL' ? undefined : value);
+        }
+    };
 
     const {
         activity,
@@ -480,6 +496,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     } = useIntegrationActivity(templates, {
         limit: 25,
         integrationId: integration.id,
+        listingId: selectedListingId,
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
@@ -594,10 +611,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         </button>
                     ))}
 
-                    <a
-                        href={docsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        onClick={() => openExternalLink(docsUrl)}
                         className="p-4 border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50 transition-colors text-left group"
                     >
                         <ExternalLink className="w-8 h-8 text-cyan-600 mb-3" />
@@ -605,7 +620,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             Documentation
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">Learn how to integrate</p>
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -623,24 +638,51 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             Download CSV
                         </button>
                     </div>
-                    <div className="relative">
-                        <select
-                            value={eventTypeFilter}
-                            onChange={e =>
-                                setEventTypeFilter(e.target.value as CredentialEventType | 'ALL')
-                            }
-                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
-                                       text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
-                                       focus:border-transparent cursor-pointer transition-colors"
-                        >
-                            {EVENT_TYPE_FILTER_OPTIONS.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <div className="flex items-center gap-2">
+                        {/* App Listing Filter - only show if multiple apps exist */}
+                        {appListings && appListings.length > 1 && (
+                            <div className="relative">
+                                <select
+                                    value={listingFilter}
+                                    onChange={e => setListingFilter(e.target.value)}
+                                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
+                                               text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                               focus:border-transparent cursor-pointer transition-colors max-w-[180px]"
+                                >
+                                    <option value="ALL">All Apps</option>
+                                    {appListings.map(listing => (
+                                        <option key={listing.listing_id} value={listing.listing_id}>
+                                            {listing.display_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <Layout className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                        )}
+
+                        {/* Event Type Filter */}
+                        <div className="relative">
+                            <select
+                                value={eventTypeFilter}
+                                onChange={e =>
+                                    setEventTypeFilter(
+                                        e.target.value as CredentialEventType | 'ALL'
+                                    )
+                                }
+                                className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
+                                           text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                           focus:border-transparent cursor-pointer transition-colors"
+                            >
+                                {EVENT_TYPE_FILTER_OPTIONS.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                     </div>
                 </div>
                 {showExportDialog && (
@@ -649,6 +691,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             integrationId={integration.id}
                             integrationName={integration.name}
                             initialEventType={eventTypeFilter === 'ALL' ? '' : eventTypeFilter}
+                            initialListingId={listingFilter === 'ALL' ? '' : listingFilter}
+                            appListings={appListings}
                             onClose={() => setShowExportDialog(false)}
                         />
                     </div>
@@ -664,7 +708,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                             <p>No activity yet</p>
                             <p className="text-sm mt-1">
-                                Credentials will appear here as they're issued
+                                Consent and credential activity will appear here as users connect
                             </p>
                         </div>
                     ) : (
@@ -788,13 +832,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 function getDocsUrl(guideType?: string): string {
     switch (guideType) {
         case 'issue-credentials':
-            return 'https://docs.learncard.com/send-credentials';
+            return 'https://docs.learncard.com/how-to-guides/send-credentials';
         case 'embed-claim':
             return 'https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-embed-sdk';
         case 'embed-app':
             return 'https://docs.learncard.com/sdks/partner-connect';
         case 'consent-flow':
-            return 'https://docs.learncard.com/consent-flow';
+            return 'https://docs.learncard.com/core-concepts/consent-and-permissions/consentflow-overview';
         default:
             return 'https://docs.learncard.com';
     }

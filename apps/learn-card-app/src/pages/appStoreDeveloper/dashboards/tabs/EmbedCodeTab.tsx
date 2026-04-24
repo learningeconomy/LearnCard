@@ -5,6 +5,7 @@ import type { LCNIntegration } from '@learncard/types';
 
 import { useToast } from 'learn-card-base/hooks/useToast';
 import type { CredentialTemplate } from '../types';
+import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 
 interface EmbedClaimConfig {
     partnerName?: string;
@@ -311,7 +312,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                             <tr>
                                 <td className="py-1.5 pr-2 font-mono">apiBaseUrl</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Override the API endpoint. Defaults to <code>https://network.learncard.com/api</code>.</td>
+                                <td className="py-1.5">Override the API endpoint. Defaults to <code>{getResolvedTenantConfig().apis.brainServiceApi}</code>.</td>
                             </tr>
                         </tbody>
                     </table>

@@ -5,6 +5,7 @@ import { BoostCMSState, BoostCMSStepsEnum } from '../../boost';
 import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../boost-options/boostOptions';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base';
 
 type BoostCMSConfirmationPromptProps = {
     state: BoostCMSState;
@@ -14,6 +15,7 @@ type BoostCMSConfirmationPromptProps = {
     isSaveLoading: boolean;
     clearLocalSave?: () => void;
     onIntentionalNavigation?: () => void;
+    skippedPublishStep?: boolean;
 };
 
 export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProps> = ({
@@ -24,9 +26,11 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     isSaveLoading,
     clearLocalSave,
     onIntentionalNavigation,
+    skippedPublishStep = false,
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const { closeModal } = useModal();
     const history = useHistory();
@@ -45,13 +49,16 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
 
     let promptText = null;
 
-    if (currentStep === BoostCMSStepsEnum.issueTo) {
+    if (currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep) {
         promptText =
             'Your boost is published and no more edits can be made. You can return to issuing or quit to start over.';
     }
 
+    // Show "Issue Later" only when on issueTo step AND publish step was NOT skipped
     const quitWithoutSavingText =
-        currentStep === BoostCMSStepsEnum.issueTo ? 'Issue Later' : 'Quit Without Saving';
+        currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep
+            ? 'Issue Later'
+            : 'Quit Without Saving';
 
     return (
         <section className="pt-[36px] pb-[16px]">
@@ -60,7 +67,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                     <div className="flex flex-col">
                         <div className="w-full flex items-center justify-center">
                             <h6 className="tracking-[12px] text-base font-bold text-black">
-                                LEARNCARD
+                                {brandingConfig?.name || 'LEARNCARD'}
                             </h6>
                         </div>
                     </div>
@@ -72,8 +79,9 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                     {promptText}
 
                     {currentStep !== BoostCMSStepsEnum.confirmation &&
-                        currentStep !== BoostCMSStepsEnum.issueTo &&
-                        !isEditMode && (
+                        !isEditMode &&
+                        (currentStep !== BoostCMSStepsEnum.issueTo ||
+                            (currentStep === BoostCMSStepsEnum.issueTo && skippedPublishStep)) && (
                             <button
                                 disabled={isSaveLoading}
                                 onClick={handleQuitAndSave}

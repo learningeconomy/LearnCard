@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -21,7 +23,8 @@ import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
 
 import LocationIcon from '../../svgs/LocationIcon';
-import LearnCardLogo from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -46,6 +49,7 @@ import {
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { LearnCardRoles, LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
 
@@ -56,8 +60,10 @@ import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
+import GuardianLinkedModal from '../GuardianLinkedModal';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
+import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -75,6 +81,8 @@ type OnboardingNetworkFormProps = {
     role?: LearnCardRolesEnum | null;
     setStep?: (step: OnboardingStepsEnum) => void;
     onSuccess?: () => void;
+    skipRoleSlides?: boolean;
+    pendingInstall?: { listingId: string; appName: string; appIcon?: string } | null;
     formData: {
         name: string | null | undefined;
         dob: string | null | undefined;
@@ -96,7 +104,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     onSuccess,
     formData,
     updateFormData,
+    skipRoleSlides,
+    pendingInstall,
 }) => {
+    const brandingConfig = useBrandingConfig();
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
@@ -112,6 +123,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { name, dob, country, photo, usMinorConsent, profileId } = formData;
 
     const handleNameChange = (value: string) => {
@@ -281,6 +293,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 setIsLoading(true);
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
+
+                // Get Firebase ID token for server-side email auto-verification
+                let authToken: string | undefined;
+                try {
+                    if (Capacitor.isNativePlatform()) {
+                        const res = await FirebaseAuthentication.getIdToken({
+                            forceRefresh: false,
+                        });
+                        authToken = res?.token;
+                    } else {
+                        const user = auth()?.currentUser;
+                        authToken = user ? await user.getIdToken(false) : undefined;
+                    }
+                } catch (e) {
+                    console.warn('Could not get Firebase ID token (non-fatal):', e);
+                }
+
                 const didWeb = await wallet.invoke.createProfile({
                     profileId: profileId as string,
                     displayName: name ?? '',
@@ -291,6 +320,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     role: role ?? '',
                     dob: dob ?? '',
                     country: country ?? '',
+                    authToken,
                 });
 
                 if (didWeb) {
@@ -299,21 +329,40 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     const limit = getMinorAgeThreshold(country);
                     const isMinorUser = age !== null && !isNaN(age) && age < limit;
 
+                    const aiEnabled = !isMinorUser;
+                    let preferencesInitialized = false;
+
                     await updatePreferences({
-                        aiEnabled: !isMinorUser,
+                        aiEnabled,
                         aiAutoDisabled: isMinorUser,
-                        analyticsEnabled: !isMinorUser,
+                        analyticsEnabled: aiEnabled,
                         analyticsAutoDisabled: isMinorUser,
-                        bugReportsEnabled: !isMinorUser,
+                        bugReportsEnabled: aiEnabled,
                         isMinor: isMinorUser,
-                    }).catch(err => {
-                        console.error('Failed to initialize preferences (non-blocking):', err);
-                    });
+                    })
+                        .then(() => {
+                            preferencesInitialized = true;
+                        })
+                        .catch(err => {
+                            console.error(
+                                'Failed to initialize preferences (non-blocking):',
+                                err
+                            );
+                        });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
                         country: country ?? undefined,
                     });
+
+                    // Check for pending guardian approvals linked to this email (non-blocking)
+                    let claimedChildren: Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }> = [];
+                    try {
+                        claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
+                    } catch (err) {
+                        console.error('claimPendingGuardianLinks failed (non-blocking):', err);
+                    }
+
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();
@@ -322,19 +371,55 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     setIsLoading(false);
                     setIsCreateLoading(false);
 
+                    window.setTimeout(async () => {
+                        try {
+                            await autoConsentLearnCardAi({
+                                enabled: aiEnabled && preferencesInitialized,
+                                userOverrides: {
+                                    name: name ?? currentUser?.name ?? '',
+                                    profileImage: photo ?? currentUser?.profileImage ?? '',
+                                },
+                            });
+                        } catch (err) {
+                            console.error(
+                                'Failed to auto-consent LearnCard AI after onboarding:',
+                                err
+                            );
+                        }
+                    }, 0);
+
                     setTimeout(async () => {
                         await onSuccess?.();
                     }, 1000);
-                    newModal(
-                        <OnboardingSwiperForSlides
-                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
-                            dob={dob}
-                        />,
-                        {
-                            sectionClassName: '!max-w-full',
-                        },
-                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                    );
+
+                    if (skipRoleSlides && pendingInstall) {
+                        // Hand install intent back to AppListingPage — its useEffect fires once
+                        // isOnboardingOpen becomes false (set by OnboardingContainer on unmount)
+                        redirectStore.set.installIntent(pendingInstall);
+                    } else {
+                        // Default: show role-specific onboarding slides
+                        newModal(
+                            <OnboardingSwiperForSlides
+                                roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                                dob={dob}
+                            />,
+                            {
+                                sectionClassName: '!max-w-full',
+                            },
+                            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        );
+                    }
+
+                    if (claimedChildren.length > 0) {
+                        newModal(
+                            <GuardianLinkedModal
+                                children={claimedChildren}
+                                onDismiss={closeModal}
+                            />,
+                            { sectionClassName: '!max-w-[400px]' },
+                            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                        );
+                    }
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {
@@ -433,8 +518,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
                             <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
                                 <img
-                                    src={LearnCardLogo}
-                                    alt="LearnCard logo"
+                                    src={useTenantBrandingAssets().appIcon}
+                                    alt="App logo"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -446,7 +531,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             </div>
                         </div>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Add Your Child to LearnCard!
+                            Add Your Child to {brandingConfig?.name}!
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                             Log in or sign up to create your profile inside a family account.
@@ -490,7 +575,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
-                                    handleLogout(BrandingEnum.learncard, {
+                                    handleLogout({
                                         overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
                                             '/families?createFamily=true'
                                         )}`,
@@ -762,6 +847,21 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     return (
         <div className="w-full h-full bg-white relative overflow-y-auto">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
+                {pendingInstall && (
+                    <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3">
+                        {pendingInstall.appIcon && (
+                            <img
+                                src={pendingInstall.appIcon}
+                                alt=""
+                                className="w-8 h-8 rounded-lg object-cover shrink-0"
+                            />
+                        )}
+                        <p className="text-sm text-indigo-800 font-medium">
+                            After creating your account, you'll be able to install{' '}
+                            <span className="font-semibold">{pendingInstall.appName}</span>
+                        </p>
+                    </div>
+                )}
                 <OnboardingHeader text="Set up your profile to get started!" />
                 {isLoading && (
                     <div className="absolute top-0 left-0 w-full h-full z-[10000] flex flex-col items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">

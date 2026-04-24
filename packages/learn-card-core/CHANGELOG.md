@@ -1,5 +1,42 @@
 # learn-card-core
 
+## 9.4.15
+
+### Patch Changes
+
+-   [#1118](https://github.com/learningeconomy/LearnCard/pull/1118) [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564) Thanks [@Computer8004](https://github.com/Computer8004)! - Added optional `delete` method to the Store Control Plane, allowing storage plugins to support credential deletion. When implemented, this method removes stored credentials and automatically invalidates the read cache.
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.15
+
+## 9.4.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.14
+
+## 9.4.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.13
+
+## 9.4.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.12
+
+## 9.4.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.11
+
 ## 9.4.10
 
 ### Patch Changes

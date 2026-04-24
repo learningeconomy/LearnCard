@@ -1,12 +1,13 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.13.0",
+    "version": "3.14.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "test": "vitest",
         "test:watch": "vitest --watch",
+        "seed:dev-app": "npx tsx scripts/seed-dev-app.ts",
         "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json && tsc --showConfig --p tsconfig.build.json > tsconfig.temp.json && tsc-alias --replacer ./tsc-alias-replacer.cjs -p tsconfig.temp.json && shx rm tsconfig.temp.json",
         "build:docker": "shx rm -rf build && node esbuild-docker.mjs",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --host 127.0.0.1 --config serverless-local.yml",
@@ -76,6 +77,7 @@
         "fastify-plugin": "^5.1.0",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
+        "jose": "^5.9.6",
         "jwt-decode": "^3.1.2",
         "libsodium-wrappers": "^0.7.11",
         "lodash": "^4.17.21",

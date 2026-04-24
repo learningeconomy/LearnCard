@@ -1,5 +1,49 @@
 # @learncard/app-store-demo-basic-launchpad
 
+## 0.0.19
+
+### Patch Changes
+
+-   [#1116](https://github.com/learningeconomy/LearnCard/pull/1116) [`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1742] feat: App-Scoped Counters + In-App Notifications
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/partner-connect@0.2.15
+    -   @learncard/init@2.3.13
+
+## 0.0.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.12
+    -   @learncard/partner-connect@0.2.14
+
+## 0.0.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.11
+    -   @learncard/partner-connect@0.2.13
+
+## 0.0.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.10
+    -   @learncard/partner-connect@0.2.12
+
+## 0.0.15
+
+### Patch Changes
+
+-   [#1056](https://github.com/learningeconomy/LearnCard/pull/1056) [`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1632] [LC-1633] Add checkUserHasCredential app event and PartnerConnect SDK helper (with duplicate-claim prevention)
+
+-   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2)]:
+    -   @learncard/partner-connect@0.2.11
+    -   @learncard/init@2.3.9
+
 ## 0.0.14
 
 ### Patch Changes

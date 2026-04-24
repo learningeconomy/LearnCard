@@ -71,6 +71,7 @@ export const LearnerInsightsPreview: React.FC<{
                         <AiInsightsLearningSnapshots
                             isLoading={isLoading}
                             aiInsightCredential={aiInsightsCredential}
+                            isSharedView
                         />
                     </div>
                 </div>

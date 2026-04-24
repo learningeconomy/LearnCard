@@ -11,6 +11,15 @@
 }
 
 ion-tab-bar {
+    --background: transparent;
+    --border: none;
+    border: none;
+    box-shadow: none;
+
+    &::before {
+        display: none;
+    }
+
     @media (min-width: 992px) {
         display: none;
     }
@@ -20,17 +29,33 @@ ion-tab-bar {
     margin-right: 40px;
 
     @media (max-width: 579px) {
-        margin-right: 20px;
+        margin-right: 0px;
     }
 
     @media (max-width: 479px) {
         margin-right: 0px;
-        margin-left: 10px;
+        margin-left: 0px;
     }
 }
 
 .mobile-nav-right-button {
-    margin-left: 40px;
+    margin-left: 0px;
+}
+
+.mobile-nav-notification-button {
+    position: absolute;
+    right: 20px;
+    top: 49%;
+    transform: translateY(-50%);
+    z-index: 9999;
+    background: none;
+
+    @media (max-width: 500px) {
+        right: 0px;
+    }
+    @media (max-width: 320px) {
+        right: -10px;
+    }
 }
 
 .mobile-nav-hamburger-button {
@@ -91,17 +116,26 @@ ion-tab-bar {
 
 .mobile-nav-boost-button {
     position: absolute;
-    // top: -25px;
+    top: -10px;
     background: transparent;
     transform: translateX(-65%);
     z-index: 50;
-    height: 100px;
-    width: 100px;
+    height: 75px;
+    width: 75px;
 
     @media (min-width: 500px) {
-        left: 50%;
+        left: 52%;
     }
     @media (max-width: 500px) {
-        left: 54%;
+        left: 53%;
+    }
+    @media (max-width: 320px) {
+        left: 53.5%;
+    }
+    @media (min-width: 500px) and (max-width: 768px) {
+        left: 51.5%;
+    }
+    @media (min-width: 768px) and (max-width: 991px) {
+        transform: translateX(-70%);
     }
 }

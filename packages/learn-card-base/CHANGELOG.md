@@ -1,5 +1,114 @@
 # learn-card-base
 
+## 0.1.28
+
+### Patch Changes
+
+-   [#1164](https://github.com/learningeconomy/LearnCard/pull/1164) [`b3d1e4234c8d2bf6251f33d350850086e98d59b0`](https://github.com/learningeconomy/LearnCard/commit/b3d1e4234c8d2bf6251f33d350850086e98d59b0) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1678 - Pathways 2.0: Explore Roles
+
+-   [#1169](https://github.com/learningeconomy/LearnCard/pull/1169) [`46ab1ec6c928ba4b5a9d1e522ad1b42a9a9bc7ac`](https://github.com/learningeconomy/LearnCard/commit/46ab1ec6c928ba4b5a9d1e522ad1b42a9a9bc7ac) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1285] Skip published step for Boost
+
+-   [#1168](https://github.com/learningeconomy/LearnCard/pull/1168) [`ac87f698a64b5f40d23d115a8b55da3039c07cb0`](https://github.com/learningeconomy/LearnCard/commit/ac87f698a64b5f40d23d115a8b55da3039c07cb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Grow Skills redesign and modal
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1171](https://github.com/learningeconomy/LearnCard/pull/1171) [`7b517d7323fbc91e625cf93d79c579d3c5d3a08a`](https://github.com/learningeconomy/LearnCard/commit/7b517d7323fbc91e625cf93d79c579d3c5d3a08a) Thanks [@smurflo2](https://github.com/smurflo2)! - Allow over 18 children to access AI features with guardian approval
+
+-   [#1155](https://github.com/learningeconomy/LearnCard/pull/1155) [`bc4e363d499f4426ebb957ac34eb6ef13a0ac654`](https://github.com/learningeconomy/LearnCard/commit/bc4e363d499f4426ebb957ac34eb6ef13a0ac654) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1675] - What would you like to do card?
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/types@5.13.5
+    -   @learncard/lca-api-plugin@1.2.5
+    -   @learncard/helpers@1.2.15
+    -   @learncard/ler-rs-plugin@0.1.6
+    -   @learncard/sss-key-manager@0.1.5
+
+## 0.1.27
+
+### Patch Changes
+
+-   [#1157](https://github.com/learningeconomy/LearnCard/pull/1157) [`3f61574ac55e6034042f991ec19701bc2cb84edf`](https://github.com/learningeconomy/LearnCard/commit/3f61574ac55e6034042f991ec19701bc2cb84edf) Thanks [@Custard7](https://github.com/Custard7)! - fix: "Already Connected" Error on Android Resume
+
+## 0.1.26
+
+### Patch Changes
+
+-   [#1154](https://github.com/learningeconomy/LearnCard/pull/1154) [`c66315c41224b0eb92f5a6a030dda732d7827b25`](https://github.com/learningeconomy/LearnCard/commit/c66315c41224b0eb92f5a6a030dda732d7827b25) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Explore Pathways modal with Skill + Goal editing
+
+-   [#1148](https://github.com/learningeconomy/LearnCard/pull/1148) [`5e55b5b46b73a0b77585c71c3edba7f25c0edb9a`](https://github.com/learningeconomy/LearnCard/commit/5e55b5b46b73a0b77585c71c3edba7f25c0edb9a) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1738] Stale Auth Error on Android Resume
+
+-   [#1146](https://github.com/learningeconomy/LearnCard/pull/1146) [`741e391412998677162a858eb96cec931c21de1c`](https://github.com/learningeconomy/LearnCard/commit/741e391412998677162a858eb96cec931c21de1c) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1695] Mobile header and footer polishes
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/types@5.13.4
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/ler-rs-plugin@0.1.5
+    -   @learncard/sss-key-manager@0.1.4
+
+## 0.1.25
+
+### Patch Changes
+
+-   [#1134](https://github.com/learningeconomy/LearnCard/pull/1134) [`4baedfa4755593e43d64d0e773367d830dd8a161`](https://github.com/learningeconomy/LearnCard/commit/4baedfa4755593e43d64d0e773367d830dd8a161) Thanks [@smurflo2](https://github.com/smurflo2)! - Self-Assigned Skills UI updates
+
+-   [#1143](https://github.com/learningeconomy/LearnCard/pull/1143) [`a290fd16ef3c2ec81281a0bc3b7ffebbccb9f6b5`](https://github.com/learningeconomy/LearnCard/commit/a290fd16ef3c2ec81281a0bc3b7ffebbccb9f6b5) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1652] Endorsement link doesn't deep link correctly into native apps
+
+-   [#1145](https://github.com/learningeconomy/LearnCard/pull/1145) [`85f43a3a299b3429599bb9c13c4f95c975bd8baf`](https://github.com/learningeconomy/LearnCard/commit/85f43a3a299b3429599bb9c13c4f95c975bd8baf) Thanks [@Custard7](https://github.com/Custard7)! - fix: Stale chunk error crashing the app (Sentry LEARN-CARD-APP-26)
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+    -   @learncard/lca-api-plugin@1.2.3
+    -   @learncard/helpers@1.2.13
+    -   @learncard/ler-rs-plugin@0.1.4
+    -   @learncard/sss-key-manager@0.1.3
+
+## 0.1.24
+
+### Patch Changes
+
+-   [#1099](https://github.com/learningeconomy/LearnCard/pull/1099) [`57b933ebcbbde962daf27b36bfa028e97a7bbdd6`](https://github.com/learningeconomy/LearnCard/commit/57b933ebcbbde962daf27b36bfa028e97a7bbdd6) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1656] User Validation/Review Layer for Resume/Transcript Upload in Build My Learn Card
+
+-   [#1120](https://github.com/learningeconomy/LearnCard/pull/1120) [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050) Thanks [@smurflo2](https://github.com/smurflo2)! - OpenSALT import enhancements - proper classification of tier/competency, icons, pagination, and more!
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   Updated dependencies [[`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8), [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5)]:
+    -   @learncard/types@5.13.2
+    -   @learncard/helpers@1.2.12
+    -   @learncard/lca-api-plugin@1.2.2
+    -   @learncard/ler-rs-plugin@0.1.3
+    -   @learncard/sss-key-manager@0.1.2
+
+## 0.1.23
+
+### Patch Changes
+
+-   [#1097](https://github.com/learningeconomy/LearnCard/pull/1097) [`26de4ce53c2e8b6c2bb3e461789e976178250179`](https://github.com/learningeconomy/LearnCard/commit/26de4ce53c2e8b6c2bb3e461789e976178250179) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1674 - Enhance CLR Credential
+
+-   [#1089](https://github.com/learningeconomy/LearnCard/pull/1089) [`2e9ca79c1e8fb375ca0cc5f3cba0afcdd40d8915`](https://github.com/learningeconomy/LearnCard/commit/2e9ca79c1e8fb375ca0cc5f3cba0afcdd40d8915) Thanks [@smurflo2](https://github.com/smurflo2)! - Add My Skills Profile (version 1) to AI Pathways
+
+-   [#1100](https://github.com/learningeconomy/LearnCard/pull/1100) [`81e621d020be1fd58fdb690888b22162129c4888`](https://github.com/learningeconomy/LearnCard/commit/81e621d020be1fd58fdb690888b22162129c4888) Thanks [@smurflo2](https://github.com/smurflo2)! - Various Family Fixes. Correctly show child name + image when switching. Use parent's image in PIN modal.
+
+-   [#1085](https://github.com/learningeconomy/LearnCard/pull/1085) [`e8c886eac8907e127805e760c9622118c80c7bf5`](https://github.com/learningeconomy/LearnCard/commit/e8c886eac8907e127805e760c9622118c80c7bf5) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1639] Download CSV of Analytics from App Dashboard
+
+-   [#1096](https://github.com/learningeconomy/LearnCard/pull/1096) [`b601eabb482807f07b85f55fd1893ed6c60cef65`](https://github.com/learningeconomy/LearnCard/commit/b601eabb482807f07b85f55fd1893ed6c60cef65) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1683] App Listing login redirect not working
+
+-   [#1111](https://github.com/learningeconomy/LearnCard/pull/1111) [`c109634abe085eed5b71a1003a10529d3b2875e4`](https://github.com/learningeconomy/LearnCard/commit/c109634abe085eed5b71a1003a10529d3b2875e4) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1682] Misc bug fixes
+
+-   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2), [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0)]:
+    -   @learncard/types@5.13.1
+    -   @learncard/helpers@1.2.11
+    -   @learncard/lca-api-plugin@1.2.1
+    -   @learncard/ler-rs-plugin@0.1.2
+    -   @learncard/sss-key-manager@0.1.1
+
 ## 0.1.22
 
 ### Patch Changes

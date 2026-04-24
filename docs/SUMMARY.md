@@ -27,6 +27,7 @@
     -   [Connect AI Agent](how-to-guides/connect-systems/connect-ai-agent.md)
 -   [Implement Flows](how-to-guides/implement-flows/README.md)
     -   [Claim Data after Guardian Consent](how-to-guides/implement-flows/claim-data-after-guardian-consent.md)
+    -   [Guardian-Gated Credentials](how-to-guides/implement-flows/guardian-gated-credentials.md)
     -   [Connect via CHAPI](how-to-guides/implement-flows/chapi/README.md)
         -   [⭐ CHAPI Wallet Setup Guide](how-to-guides/implement-flows/chapi/chapi-wallet-setup-guide.md)
         -   [↔️ Translating to CHAPI documentation](how-to-guides/implement-flows/chapi/translating-to-chapi-documentation.md)

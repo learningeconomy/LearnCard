@@ -1,5 +1,42 @@
 # @learncard/network-brain-client
 
+## 1.6.19
+
+### Patch Changes
+
+-   [#1118](https://github.com/learningeconomy/LearnCard/pull/1118) [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564) Thanks [@Computer8004](https://github.com/Computer8004)! - Added optional `delete` method to the Store Control Plane, allowing storage plugins to support credential deletion. When implemented, this method removes stored credentials and automatically invalidates the read cache.
+
+-   Updated dependencies [[`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/learn-cloud-service@2.5.12
+
+## 1.6.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.11
+
+## 1.6.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.10
+
+## 1.6.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.9
+
+## 1.6.15
+
+### Patch Changes
+
+-   Updated dependencies [[`6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2`](https://github.com/learningeconomy/LearnCard/commit/6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2)]:
+    -   @learncard/learn-cloud-service@2.5.8
+
 ## 1.6.14
 
 ### Patch Changes

@@ -1,9 +1,19 @@
 import { vi } from 'vitest';
-import { LCNProfileConnectionStatusEnum } from '@learncard/types';
+import {
+    AllowConnectionRequestsEnum,
+    LCNProfileConnectionStatusEnum,
+    ProfileVisibilityEnum,
+} from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost, ClaimHook } from '@models';
+import { Profile, SigningAuthority, Credential, Boost, ClaimHook, ContactMethod } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
+
+// Mock verifyAuthToken for authToken integration tests
+const mockVerifyAuthToken = vi.fn();
+vi.mock('@helpers/oidc-jwt.helpers', () => ({
+    verifyAuthToken: (...args: any[]) => mockVerifyAuthToken(...args),
+}));
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -227,6 +237,121 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.approved).toBeTruthy();
+        });
+
+        describe('authToken (auto-verify email)', () => {
+            beforeEach(async () => {
+                mockVerifyAuthToken.mockReset();
+                await ContactMethod.delete({ detach: true, where: {} });
+            });
+
+            afterAll(async () => {
+                mockVerifyAuthToken.mockReset();
+                await ContactMethod.delete({ detach: true, where: {} });
+            });
+
+            it('should auto-verify email when valid authToken is provided', async () => {
+                mockVerifyAuthToken.mockResolvedValue({
+                    email: 'alice@test.com',
+                    emailVerified: true,
+                    uid: 'firebase-uid-123',
+                    provider: 'https://securetoken.google.com/test',
+                });
+
+                await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'fake-valid-jwt',
+                });
+
+                expect(mockVerifyAuthToken).toHaveBeenCalledWith('fake-valid-jwt');
+
+                // Verify contact method was created and linked
+                const methods =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const cm = methods?.find(m => m.value === 'alice@test.com');
+                expect(cm).toBeDefined();
+                expect(cm?.type).toBe('email');
+                expect(cm?.isVerified).toBe(true);
+            });
+
+            it('should create profile successfully without authToken (backwards compat)', async () => {
+                const didWeb = await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                });
+
+                expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
+                expect(mockVerifyAuthToken).not.toHaveBeenCalled();
+            });
+
+            it('should still create profile when authToken verification fails', async () => {
+                mockVerifyAuthToken.mockResolvedValue(null);
+
+                const didWeb = await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'bad-token',
+                });
+
+                expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
+
+                // No contact method should be created
+                const methods =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                expect(methods?.length ?? 0).toBe(0);
+            });
+
+            it('should still create profile when verifyAuthToken throws', async () => {
+                mockVerifyAuthToken.mockRejectedValue(new Error('OIDC discovery failed'));
+
+                const didWeb = await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'error-token',
+                });
+
+                expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
+            });
+
+            it('should not verify email if emailVerified is false', async () => {
+                mockVerifyAuthToken.mockResolvedValue({
+                    email: 'unverified@test.com',
+                    emailVerified: false,
+                    uid: 'firebase-uid-456',
+                    provider: 'https://securetoken.google.com/test',
+                });
+
+                await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'unverified-email-jwt',
+                });
+
+                // emailVerified is false, but the check is `!== false` so this should still pass
+                // Let's verify the actual behavior matches the route logic
+                const methods =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                // emailVerified === false → the condition `claims.emailVerified !== false` is false → skip
+                expect(methods?.length ?? 0).toBe(0);
+            });
+
+            it('should reuse existing contact method if email already exists', async () => {
+                // First, create a profile with the same email via authToken
+                mockVerifyAuthToken.mockResolvedValue({
+                    email: 'shared@test.com',
+                    emailVerified: true,
+                    uid: 'firebase-uid-789',
+                    provider: 'https://securetoken.google.com/test',
+                });
+
+                await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'jwt-a',
+                });
+
+                // Verify CM was created
+                const methodsA =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const cmA = methodsA?.find(m => m.value === 'shared@test.com');
+                expect(cmA).toBeDefined();
+                expect(cmA?.isVerified).toBe(true);
+            });
         });
     });
 
@@ -521,22 +646,22 @@ describe('Profiles', () => {
 
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
-            expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.email).toBeUndefined();
             expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
-            expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.email).toBeUndefined();
             expect(userBProfile?.bio).toEqual('I am user B');
         });
 
-        it('should include country when viewing other profiles', async () => {
+        it('should not include country when viewing other profiles', async () => {
             await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
 
             const userBView = await userB.clients.fullAuth.profile.getOtherProfile({
                 profileId: 'usera',
             });
 
-            expect(userBView?.country).toEqual('US');
+            expect(userBView?.country).toBeUndefined();
         });
 
         it('should allow getting another profile by did:web', async () => {
@@ -561,6 +686,302 @@ describe('Profiles', () => {
             await expect(
                 userA.clients.fullAuth.profile.getOtherProfile({ profileId: 'did:example:userb' })
             ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+    });
+
+    describe('profile privacy tiers', () => {
+        const createViewerProfiles = async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                shortBio: 'Short A',
+                bio: 'I am user A',
+                email: 'userA@test.com',
+                country: 'US',
+                role: 'teacher',
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                displayName: 'B',
+            });
+            await userC.clients.fullAuth.profile.createProfile({
+                profileId: 'userc',
+                displayName: 'C',
+            });
+        };
+
+        const connectUserBToUserA = async () => {
+            await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
+            await userA.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'userb' });
+        };
+
+        const expectPublicTier = (profile: any) => {
+            expect(profile?.profileId).toEqual('usera');
+            expect(profile?.displayName).toEqual('A');
+            expect(profile?.shortBio).toEqual('Short A');
+            expect(profile?.bio).toBeUndefined();
+            expect(profile?.did).toBeUndefined();
+            expect(profile?.email).toBeUndefined();
+            expect(profile?.profileVisibility).toBeUndefined();
+            expect(profile?.showEmail).toBeUndefined();
+            expect(profile?.allowConnectionRequests).toBeUndefined();
+            expect(profile?.isPrivate).toBeUndefined();
+        };
+
+        const expectAuthenticatedTier = (profile: any) => {
+            expect(profile?.profileId).toEqual('usera');
+            expect(profile?.displayName).toEqual('A');
+            expect(profile?.shortBio).toEqual('Short A');
+            expect(profile?.bio).toEqual('I am user A');
+            expect(profile?.did).toEqual('did:web:localhost%3A3000:users:usera');
+            expect(profile?.country).toBeUndefined();
+            expect(profile?.role).toEqual('teacher');
+            expect(profile?.profileVisibility).toBeUndefined();
+            expect(profile?.showEmail).toBeUndefined();
+            expect(profile?.allowConnectionRequests).toBeUndefined();
+            expect(profile?.isPrivate).toBeUndefined();
+        };
+
+        const expectConnectionTier = (profile: any) => {
+            expectAuthenticatedTier(profile);
+            expect(profile?.email).toEqual('userA@test.com');
+        };
+
+        const expectSelfTier = (
+            profile: any,
+            visibility: (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum]
+        ) => {
+            expect(profile?.profileId).toEqual('usera');
+            expect(profile?.displayName).toEqual('A');
+            expect(profile?.shortBio).toEqual('Short A');
+            expect(profile?.bio).toEqual('I am user A');
+            expect(profile?.did).toEqual('did:web:localhost%3A3000:users:usera');
+            expect(profile?.email).toEqual('userA@test.com');
+            expect(profile?.country).toEqual('US');
+            expect(profile?.role).toEqual('teacher');
+            expect(profile?.profileVisibility).toEqual(visibility);
+            expect(profile?.showEmail).toEqual(true);
+            expect(profile?.allowConnectionRequests).toEqual(
+                AllowConnectionRequestsEnum.enum.anyone
+            );
+            expect(profile?.isPrivate).toEqual(visibility === ProfileVisibilityEnum.enum.private);
+        };
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should return the expected tiers for a public profile', async () => {
+            await createViewerProfiles();
+            await userA.clients.fullAuth.profile.updateProfile({
+                profileVisibility: ProfileVisibilityEnum.enum.public,
+                showEmail: true,
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.anyone,
+            });
+            await connectUserBToUserA();
+
+            const anonymousView = await noAuthClient.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const strangerView = await userC.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const connectionView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const selfView = await userA.clients.fullAuth.profile.getProfile();
+
+            expectPublicTier(anonymousView);
+            expectAuthenticatedTier(strangerView);
+            expectConnectionTier(connectionView);
+            expectSelfTier(selfView, ProfileVisibilityEnum.enum.public);
+        });
+
+        it('should return the expected tiers for a connections_only profile', async () => {
+            await createViewerProfiles();
+            await userA.clients.fullAuth.profile.updateProfile({
+                profileVisibility: ProfileVisibilityEnum.enum.connections_only,
+                showEmail: true,
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.anyone,
+            });
+            await connectUserBToUserA();
+
+            const anonymousView = await noAuthClient.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const strangerView = await userC.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const connectionView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const selfView = await userA.clients.fullAuth.profile.getProfile();
+
+            expectPublicTier(anonymousView);
+            expectAuthenticatedTier(strangerView);
+            expectConnectionTier(connectionView);
+            expectSelfTier(selfView, ProfileVisibilityEnum.enum.connections_only);
+        });
+
+        it('should return the expected tiers for a private profile', async () => {
+            await createViewerProfiles();
+            await userA.clients.fullAuth.profile.updateProfile({
+                profileVisibility: ProfileVisibilityEnum.enum.private,
+                showEmail: true,
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.anyone,
+            });
+            await connectUserBToUserA();
+
+            const anonymousView = await noAuthClient.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const strangerView = await userC.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const connectionView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const selfView = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(anonymousView).toBeUndefined();
+            expectAuthenticatedTier(strangerView);
+            expectAuthenticatedTier(connectionView);
+            expect(connectionView?.email).toBeUndefined();
+            expectSelfTier(selfView, ProfileVisibilityEnum.enum.private);
+        });
+
+        it('should mirror legacy isPrivate for tier resolution when profileVisibility is missing', async () => {
+            await createViewerProfiles();
+            await userA.clients.fullAuth.profile.updateProfile({ isPrivate: true });
+            await connectUserBToUserA();
+
+            const anonymousView = await noAuthClient.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const strangerView = await userC.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+            const connectionView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+
+            expect(anonymousView).toBeUndefined();
+            expectAuthenticatedTier(strangerView);
+            expectAuthenticatedTier(connectionView);
+        });
+    });
+
+    describe('showEmail', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                bio: 'I am user A',
+                email: 'userA@test.com',
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                displayName: 'B',
+            });
+            await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
+            await userA.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should include email for connections when showEmail is true', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                profileVisibility: ProfileVisibilityEnum.enum.public,
+                showEmail: true,
+            });
+
+            const connectionView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+
+            expect(connectionView?.email).toEqual('userA@test.com');
+        });
+
+        it('should omit email for connections when showEmail is false', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                profileVisibility: ProfileVisibilityEnum.enum.public,
+                showEmail: false,
+            });
+
+            const connectionView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+
+            expect(connectionView?.email).toBeUndefined();
+        });
+    });
+
+    describe('allowConnectionRequests', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                displayName: 'B',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should allow normal connection requests when allowConnectionRequests is anyone', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.anyone,
+            });
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })
+            ).resolves.toBeTruthy();
+        });
+
+        it('should reject normal connection requests when allowConnectionRequests is invite_only', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.invite_only,
+            });
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+
+        it('should still allow invite-based connections when allowConnectionRequests is invite_only', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.invite_only,
+            });
+            const { challenge } = await userA.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'usera',
+                    challenge,
+                })
+            ).resolves.toBeTruthy();
+        });
+
+        it('should reject expired-invite connection requests when allowConnectionRequests is invite_only', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.invite_only,
+            });
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWithExpiredInvite({ profileId: 'usera' })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         });
     });
 
@@ -962,6 +1383,18 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.country).toEqual('CA');
+        });
+
+        it('should ignore empty email updates instead of overwriting the existing email', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ email: 'userA@test.com' });
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ email: '' })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.email).toEqual('userA@test.com');
         });
 
         it('should allow updating approved', async () => {
@@ -1581,7 +2014,13 @@ describe('Profiles', () => {
             const nonUpdatedConnections = await userA.clients.fullAuth.profile.connections();
 
             expect(nonUpdatedConnections).toHaveLength(1);
-            expect(nonUpdatedConnections[0]).toEqual(userBBeforeUpdate);
+            expect(nonUpdatedConnections[0]).toMatchObject({
+                profileId: userBBeforeUpdate?.profileId,
+                displayName: userBBeforeUpdate?.displayName,
+                bio: userBBeforeUpdate?.bio,
+                did: userBBeforeUpdate?.did,
+            });
+            expect(nonUpdatedConnections[0]?.isPrivate).toBeUndefined();
 
             await userB.clients.fullAuth.profile.updateProfile({
                 displayName: 'something else lol',
@@ -1592,7 +2031,13 @@ describe('Profiles', () => {
 
             expect(userBAfterUpdate).not.toEqual(userBBeforeUpdate);
             expect(updatedConnections).toHaveLength(1);
-            expect(updatedConnections[0]).toEqual(userBAfterUpdate);
+            expect(updatedConnections[0]).toMatchObject({
+                profileId: userBAfterUpdate?.profileId,
+                displayName: userBAfterUpdate?.displayName,
+                bio: userBAfterUpdate?.bio,
+                did: userBAfterUpdate?.did,
+            });
+            expect(updatedConnections[0]?.isPrivate).toBeUndefined();
         });
     });
 

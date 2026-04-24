@@ -9,9 +9,10 @@ import {
     useUpdatePreferences,
     useGetCurrentLCNUser,
 } from 'learn-card-base';
-import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
-import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
+import { getAiFeatureAgeGateState } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
 
 const PrivacySettingsPage: React.FC = () => {
@@ -20,26 +21,26 @@ const PrivacySettingsPage: React.FC = () => {
     const { mutate: updatePreferences } = useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const brandingConfig = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
     // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
-    const dob = currentLCNUser?.dob;
-    const age = dob ? calculateAge(dob) : null;
-    const threshold = getMinorAgeThreshold(currentLCNUser?.country);
-    const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
-    const isMinor = isMinorByAge;
+    const ageGate = getAiFeatureAgeGateState({
+        profileType,
+        dob: currentLCNUser?.dob,
+        country: currentLCNUser?.country,
+    });
+    const { handleAiToggle } = useAiConsentToggle();
+    const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
 
-    const aiEnabled = isMinor ? false : (preferences?.aiEnabled ?? true);
-    const analyticsEnabled = isMinor ? false : (preferences?.analyticsEnabled ?? true);
-    const bugReportsEnabled = isMinor ? false : (preferences?.bugReportsEnabled ?? true);
-
-    const handleAiToggle = useCallback(
-        (enabled: boolean) => {
-            updatePreferences({ aiEnabled: enabled });
-        },
-        [updatePreferences]
-    );
+    const aiEnabled = ageGate.isAiAgeRestricted
+        ? false
+        : ageGate.isChildProfile
+        ? preferences?.aiEnabled ?? false
+        : preferences?.aiEnabled ?? true;
+    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
+    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
@@ -98,8 +99,10 @@ const PrivacySettingsPage: React.FC = () => {
                             </div>
                             <IonToggle
                                 checked={aiEnabled}
-                                disabled={isMinor}
-                                onIonChange={e => !isMinor && handleAiToggle(e.detail.checked)}
+                                disabled={ageGate.isAiAgeRestricted}
+                                onIonChange={e =>
+                                    !ageGate.isAiAgeRestricted && handleAiToggle(e.detail.checked)
+                                }
                                 aria-label="AI Features"
                             />
                         </div>
@@ -113,7 +116,7 @@ const PrivacySettingsPage: React.FC = () => {
                                     Analytics & Insights
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Help improve LearnCard with anonymous usage data
+                                    Help improve {brandingConfig?.name} with anonymous usage data
                                 </p>
                             </div>
                             <IonToggle

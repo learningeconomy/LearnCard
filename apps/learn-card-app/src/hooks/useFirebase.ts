@@ -39,10 +39,14 @@ import {
 } from 'learn-card-base';
 
 import { auth } from '../firebase/firebase';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
-import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
+import {
+    getAppBaseUrl,
+    getFirebaseRedirectDomain,
+    getFirebaseDynamicLinkDomain,
+    getNativeBundleId,
+} from '../config/bootstrapTenantConfig';
 
 export const useFirebase = () => {
     const { newModal, closeModal } = useModal({
@@ -157,8 +161,12 @@ export const useFirebase = () => {
     };
 
     const sendSignInLink = async (email: string, customRedirectUrl?: string) => {
+        const firebaseRedirectDomain = getFirebaseRedirectDomain();
+        const bundleId = getNativeBundleId();
+        const dynamicLinkDomain = getFirebaseDynamicLinkDomain();
+
         if (Capacitor.isNativePlatform()) {
-            let url = `https://${FIREBASE_REDIRECT_URL}/login`;
+            let url = `https://${firebaseRedirectDomain}/login`;
             if (customRedirectUrl) url = customRedirectUrl;
 
             FirebaseAuthentication.sendSignInLinkToEmail({
@@ -170,14 +178,14 @@ export const useFirebase = () => {
                     // This must be true.
                     handleCodeInApp: true,
                     iOS: {
-                        bundleId: 'com.learncard.app',
+                        bundleId,
                     },
                     android: {
-                        packageName: 'com.learncard.app',
+                        packageName: bundleId,
                         installApp: true,
                         minimumVersion: '12',
                     },
-                    dynamicLinkDomain: 'learncard.app',
+                    dynamicLinkDomain,
                 },
             })
                 .then(res => {
@@ -198,10 +206,7 @@ export const useFirebase = () => {
                     });
                 });
         } else {
-            let url =
-                IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                    ? `https://${FIREBASE_REDIRECT_URL}/login`
-                    : 'http://localhost:3000/login';
+            let url = `${getAppBaseUrl()}/login`;
             if (customRedirectUrl) url = customRedirectUrl;
 
             const actionCodeSettings = {

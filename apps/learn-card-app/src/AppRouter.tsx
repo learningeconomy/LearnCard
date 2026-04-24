@@ -132,7 +132,10 @@ const AppRouter: React.FC = () => {
     useEffect(() => {
         if (isShareInsightsRequest) {
             newModal(
-                <RequestInsightsFromUserModalWrapper profileId={learnerProfileId as string} />,
+                <RequestInsightsFromUserModalWrapper
+                    profileId={learnerProfileId as string}
+                    redirectToLink={`/passport?shareInsights=${isShareInsightsRequest}&learnerProfileId=${learnerProfileId}`}
+                />,
                 { className: '!bg-transparent' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
@@ -174,27 +177,46 @@ const AppRouter: React.FC = () => {
 
     useEffect(() => {
         if (boostUri && endorsementRequest) {
-            if (!isLoggedIn) {
-                endorsementsRequestStore.set.credentialInfo({
-                    uri: boostUri as string,
-                    seed: seed as string,
-                    pin: pin as string,
-                });
-            }
+            // Clear any stale draft data from previous sessions to prevent auto-submit
+            endorsementsRequestStore.set.endorsementRequest({
+                description: '',
+                qualification: '',
+                mediaAttachments: [],
+                relationship: null,
+            });
+            endorsementsRequestStore.set.credentialInfo(undefined);
+
+            // Set credentialInfo so ViewSharedBoost can access the params
+            // (needed for both logged-in and logged-out users, especially on native deep links)
+            endorsementsRequestStore.set.credentialInfo({
+                uri: boostUri as string,
+                seed: seed as string,
+                pin: pin as string,
+            });
             newModal(
-                <ViewSharedBoost boostUri={boostUri as string} showEndorsementRequest />,
+                <ViewSharedBoost showEndorsementRequest />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, []);
+    }, [boostUri, endorsementRequest]);
 
     useEffect(() => {
-        if (
-            isLoggedIn &&
-            draftEndorsementRequest?.relationship?.type &&
-            draftEndorsementRequest?.relationship?.type
-        ) {
+        // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it
+        if (endorsementRequest) {
+            return;
+        }
+
+        // Only show draft success if:
+        // 1. User just logged in (after filling out the form while logged out)
+        // 2. Has a pending draft with credential info
+        const currentDraft = endorsementsRequestStore.get.endorsementRequest();
+        const currentCredentialInfo = endorsementsRequestStore.get.credentialInfo();
+
+        const hasActiveDraft =
+            currentDraft?.relationship?.type && currentDraft?.description && currentCredentialInfo;
+
+        if (isLoggedIn && hasActiveDraft) {
             newModal(
                 <ViewSharedBoost showDraftSuccess showEndorsementRequest={false} />,
                 {},
@@ -240,10 +262,15 @@ const AppRouter: React.FC = () => {
 
             const isNative = Capacitor?.isNativePlatform();
 
+            // Check if this is an endorsement link - let AppUrlListener handle navigation
+            const isEndorsementLink =
+                params.get('endorsementRequest') === 'true' || params.get('uri');
+
             if (params.get('verifyCode') === 'true' && isNative) {
                 redirectStore.set.email(params.get('email') as string);
                 history.replace('/login?verifyCode=true');
-            } else {
+            } else if (!isEndorsementLink) {
+                // Only run auth verification for non-endorsement links
                 if (authLink) {
                     // refetch the saved email on event "appUrlOpen" trigger
                     const saved_email_native = window.localStorage.getItem('emailForSignIn') ?? '';

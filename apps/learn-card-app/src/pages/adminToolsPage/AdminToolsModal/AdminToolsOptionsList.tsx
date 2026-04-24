@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useModal, useGetProfile } from 'learn-card-base';
+import { useModal, useGetProfile, switchedProfileStore } from 'learn-card-base';
 
 import AdminToolOptionsListItem from './AdminToolsOptionsListItem';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
@@ -20,10 +20,19 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
     const flags = useFlags();
     const { closeAllModals } = useModal();
     const { data: lcNetworkProfile } = useGetProfile();
+    const profileType = switchedProfileStore.use.profileType();
 
     const userRole = lcNetworkProfile?.role as LearnCardRolesEnum | undefined;
     const canAccessDevTools =
-        userRole === LearnCardRolesEnum.developer || userRole === LearnCardRolesEnum.admin;
+        userRole === LearnCardRolesEnum.developer ||
+        userRole === LearnCardRolesEnum.admin ||
+        profileType === 'service';
+
+    const filteredAdminToolOptions = adminToolOptions.filter(option =>
+        option.type === AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST
+            ? flags.showGuardianCredentialTestAdmin
+            : true
+    );
 
     const filteredDeveloperToolOptions = developerToolOptions.filter(option =>
         option.type === AdminToolOptionsEnum.LEARNER_CONTEXT_TEST
@@ -41,7 +50,7 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                 </div>
                 <div className="w-full flex items-center justify-start">
                     <ul className="w-full">
-                        {adminToolOptions.map(option => (
+                        {filteredAdminToolOptions.map(option => (
                             <AdminToolOptionsListItem
                                 shortCircuitDevTool={shortCircuitDevTool}
                                 option={option}

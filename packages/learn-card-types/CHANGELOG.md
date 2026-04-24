@@ -1,5 +1,47 @@
 # learn-card-types
 
+## 5.13.5
+
+### Patch Changes
+
+-   [#1116](https://github.com/learningeconomy/LearnCard/pull/1116) [`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1742] feat: App-Scoped Counters + In-App Notifications
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+## 5.13.4
+
+### Patch Changes
+
+-   [#1147](https://github.com/learningeconomy/LearnCard/pull/1147) [`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a) Thanks [@Custard7](https://github.com/Custard7)! - feat:[LC-1737] - Simplify sending pre-signed credentials with
+
+## 5.13.3
+
+### Patch Changes
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+## 5.13.2
+
+### Patch Changes
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   [#1121](https://github.com/learningeconomy/LearnCard/pull/1121) [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1658] Add Application Submission Information in Admin Dashboard
+
+## 5.13.1
+
+### Patch Changes
+
+-   [#1056](https://github.com/learningeconomy/LearnCard/pull/1056) [`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1632] [LC-1633] Add checkUserHasCredential app event and PartnerConnect SDK helper (with duplicate-claim prevention)
+
+-   [#1102](https://github.com/learningeconomy/LearnCard/pull/1102) [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add "Unsubmit" feature for app store listings
+
+    Developers can now withdraw their pending app submissions by clicking "Unsubmit" on listings in PENDING_REVIEW status. The listing returns to DRAFT status and the APP_LISTING_SUBMITTED notification is automatically deleted from admin inboxes (via a new APP_LISTING_WITHDRAWN notification type that triggers notification cleanup in LCA-API).
+
 ## 5.13.0
 
 ### Minor Changes

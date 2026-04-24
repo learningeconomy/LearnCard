@@ -3,6 +3,93 @@ import { test } from './fixtures/test';
 import { seedAppListing, mockEmbedRoute, SeededListing } from './app-store.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
+test.describe('App Store — redirect flow', () => {
+    let listing: SeededListing;
+
+    test.beforeEach(async () => {
+        listing = await seedAppListing();
+    });
+
+    test('shows sign-in modal then redirect banner on login page when installing from app listing', async ({ page }) => {
+        // Clear auth state so user is truly logged out
+        // (demoState.json pre-populates currentUserStore with a demo user)
+        await page.goto('/');
+        await page.evaluate(() => {
+            localStorage.removeItem('currentUserStore');
+            localStorage.removeItem('authStore');
+        });
+
+        // Navigate to app listing directly
+        await page.goto(`/app/${listing.listingId}`);
+
+        // Wait for listing page to load
+        await expect(page.getByText(listing.displayName)).toBeVisible({ timeout: 20_000 });
+
+        // Click "Get App" (button text for logged-out users) or "Install"
+        await page.getByRole('button', { name: /get app|install/i }).click();
+
+        // Confirmation modal should appear
+        await expect(page.getByText('Sign in to continue')).toBeVisible({ timeout: 3_000 });
+
+        // Click "Continue" to proceed to login
+        await page.getByRole('button', { name: /continue/i }).click();
+
+        // Should navigate to /login
+        await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
+
+        // Persistent banner should show redirect context with app name
+        await expect(
+            page.getByText(new RegExp(`taken back to.*${listing.displayName}`, 'i'))
+        ).toBeVisible({ timeout: 5_000 });
+    });
+
+    test('auto-triggers install modal after login redirect (existing user)', async ({ page }) => {
+        // Seed a user with a profile BEFORE logging in, so they have an existing account
+        await waitForAuthenticatedState(page, { profileId: 'testa' });
+
+        // Log out by clearing all browser storage (localStorage alone isn't enough
+        // because the private key is stored in IndexedDB and would re-authenticate)
+        await page.evaluate(async () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            const dbs = await indexedDB.databases();
+            for (const db of dbs) {
+                if (db.name) indexedDB.deleteDatabase(db.name);
+            }
+        });
+        await page.context().clearCookies();
+        await page.reload();
+
+        // Navigate to app listing (logged out now)
+        await page.goto(`/app/${listing.listingId}`);
+
+        // Wait for listing to load
+        await expect(page.getByText(listing.displayName)).toBeVisible({ timeout: 20_000 });
+
+        // Click "Get App" to trigger install intent + sign-in modal
+        await page.getByRole('button', { name: /get app|install/i }).click();
+
+        // Sign-in modal should appear — click "Continue" to proceed to login
+        await expect(page.getByText('Sign in to continue')).toBeVisible({ timeout: 3_000 });
+        await page.getByRole('button', { name: /continue/i }).click();
+
+        // Should redirect to /login
+        await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
+
+        // Log in again — waitForAuthenticatedState uses /hidden/seed which bypasses
+        // the login page's returnUrl redirect, so we navigate back to the listing manually.
+        // The installIntent persists in redirectStore across this navigation.
+        await waitForAuthenticatedState(page, { profileId: 'testa' });
+        await page.goto(`/app/${listing.listingId}`);
+
+        // Should be on the app listing
+        await expect(page).toHaveURL(new RegExp(`/app/${listing.listingId}`), { timeout: 15_000 });
+
+        // Install consent modal should auto-open
+        await expect(page.getByRole('heading', { name: 'Install App' })).toBeVisible({ timeout: 20_000 });
+    });
+});
+
 test.describe('App Store', () => {
     let listing: SeededListing;
 

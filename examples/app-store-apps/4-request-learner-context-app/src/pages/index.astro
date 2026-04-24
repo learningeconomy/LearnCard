@@ -1,0 +1,467 @@
+---
+import '../styles/global.css';
+
+// Server-side data (if needed for backend integration in the future)
+const hostOriginEnv = import.meta.env.HOST_ORIGIN || 'https://learncard.app';
+// Split by spaces to support multiple origins (e.g., "https://learncard.app https://staging.learncard.app")
+const hostOrigin = hostOriginEnv.includes(' ') ? hostOriginEnv.split(/\s+/) : hostOriginEnv;
+
+const config = {
+    hostOrigin,
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AI Tutor Context Demo</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-5xl relative z-10">
+            <div class="text-center mb-8">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-2xl bg-white/20 backdrop-blur-lg border border-white/30 shadow-2xl"
+                >
+                    <span class="text-5xl">🎓</span>
+                </div>
+                <h1 class="text-5xl md:text-6xl font-bold text-white mb-3">AI Tutor Context</h1>
+                <p class="text-xl text-white/80 font-light">Powered by requestLearnerContext</p>
+            </div>
+
+            <div class="glass-card rounded-3xl p-8 md:p-10 space-y-8">
+                <div
+                    id="setup-banner"
+                    class="bg-gradient-to-r from-amber-100 to-orange-100 border-l-4 border-amber-500 p-5 rounded-2xl shadow-lg"
+                >
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="flex-shrink-0 w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-2xl shadow-lg"
+                        >
+                            ⚠️
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-amber-900 text-lg mb-1">Setup Required</h3>
+                            <p class="text-amber-800 leading-relaxed">
+                                This app must be installed in the LearnCard App Store and have a
+                                ConsentFlow contract configured.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    id="status-box"
+                    class="flex items-center gap-4 p-5 rounded-2xl bg-indigo-100 border-2 border-indigo-300 shadow-lg"
+                >
+                    <div
+                        id="status-icon"
+                        class="w-12 h-12 rounded-xl bg-indigo-500 flex items-center justify-center text-2xl shadow-lg"
+                    >
+                        🔌
+                    </div>
+                    <div class="flex-1">
+                        <p id="auth-status" class="font-semibold text-indigo-900 text-lg">
+                            Ready to Connect
+                        </p>
+                    </div>
+                </div>
+
+                <div id="auth-section" class="text-center py-8">
+                    <button
+                        id="connect-btn"
+                        class="btn-primary text-white font-bold py-4 px-10 rounded-2xl text-lg shadow-2xl"
+                    >
+                        Connect with LearnCard
+                    </button>
+                </div>
+                <div id="controls" class="hidden space-y-8">
+                    <!-- Consent Section -->
+                    <div
+                        id="consent-section"
+                        class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-6 border-2 border-indigo-200 text-center"
+                    >
+                        <div
+                            class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center"
+                        >
+                            <svg
+                                class="w-8 h-8 text-indigo-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                ></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">
+                            Data Sharing Consent Required
+                        </h3>
+                        <p class="text-gray-600 mb-4">
+                            This app needs your permission to access your learning data for AI
+                            personalization.
+                        </p>
+                        <button
+                            id="request-consent-btn"
+                            class="btn-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg"
+                        >
+                            Grant Access
+                        </button>
+                    </div>
+
+                    <!-- Request Options (hidden until consent granted) -->
+                    <div id="request-options" class="hidden space-y-6">
+                        <div class="glass-panel rounded-2xl p-6 space-y-6">
+                            <h3 class="text-xl font-bold text-gray-800">Request Options</h3>
+
+                            <div class="space-y-4">
+                                <div
+                                    class="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">📜</span>
+                                        <div>
+                                            <span class="font-semibold block">Credentials</span>
+                                            <span class="text-sm text-gray-500"
+                                                >Include your earned credentials and badges</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            id="include-credentials"
+                                            class="sr-only peer"
+                                            checked
+                                        />
+                                        <div
+                                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                        >
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div
+                                    class="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">👤</span>
+                                        <div>
+                                            <span class="font-semibold block">Personal Data</span>
+                                            <span class="text-sm text-gray-500"
+                                                >Include your name, bio, and other profile info</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            id="include-personal-data"
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                        >
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">Format</label>
+                                    <select
+                                        id="format"
+                                        class="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                                    >
+                                        <option value="prompt">LLM Prompt</option>
+                                        <option value="structured">Structured Data</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2"
+                                        >Detail Level</label
+                                    >
+                                    <select
+                                        id="detail-level"
+                                        class="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                                    >
+                                        <option value="compact">Compact</option>
+                                        <option value="expanded">Expanded</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            id="request-btn"
+                            class="btn-primary w-full text-white font-bold py-5 rounded-2xl text-lg shadow-2xl"
+                        >
+                            Get Learner Context
+                        </button>
+
+                        <div id="results" class="hidden space-y-6">
+                            <h3 class="text-xl font-bold text-gray-800">Results</h3>
+
+                            <!-- Prompt display (shown when format=prompt) -->
+                            <div id="prompt-section" class="result-card rounded-2xl p-6">
+                                <pre
+                                    id="prompt-display"
+                                    class="prompt-display text-green-300 text-sm whitespace-pre-wrap">
+                                </pre>
+                            </div>
+
+                            <!-- Structured data display (shown when format=structured) -->
+                            <div id="structured-section" class="hidden space-y-4">
+                                <div
+                                    id="personal-data-section"
+                                    class="hidden glass-panel rounded-2xl p-6 space-y-3"
+                                >
+                                    <h4 class="text-lg font-semibold text-gray-800">
+                                        Personal Data
+                                    </h4>
+                                    <div id="personal-data-display" class="space-y-2"></div>
+                                </div>
+
+                                <div
+                                    id="credentials-section"
+                                    class="hidden glass-panel rounded-2xl p-6 space-y-3"
+                                >
+                                    <h4 class="text-lg font-semibold text-gray-800">
+                                        Credentials
+                                        <span
+                                            id="credentials-count"
+                                            class="text-sm font-normal text-gray-500"></span>
+                                    </h4>
+                                    <div
+                                        id="credentials-display"
+                                        class="space-y-3 max-h-[400px] overflow-y-auto"
+                                    >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="glass-panel rounded-xl p-5">
+                                    <span class="text-sm font-medium">DID:</span>
+                                    <code id="did-display" class="text-indigo-600 text-sm break-all"
+                                    ></code>
+                                </div>
+
+                                <div class="glass-panel rounded-xl p-5">
+                                    <span class="text-sm font-medium">Name:</span>
+                                    <span id="name-display" class="text-gray-800"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Config variables for the module script -->
+            <script define:vars={{ config }}>
+                window.__LC_CONFIG = config;
+            </script>
+
+            <script>
+                import { createPartnerConnect } from '@learncard/partner-connect';
+                const learnCard = createPartnerConnect({
+                    hostOrigin: window.__LC_CONFIG.hostOrigin,
+                });
+
+                async function handleConnect() {
+                    try {
+                        await learnCard.requestIdentity();
+                        document.getElementById('auth-status').textContent = 'Connected!';
+                        document.getElementById('auth-section').classList.add('hidden');
+                        document.getElementById('controls').classList.remove('hidden');
+                        document.getElementById('setup-banner').classList.add('hidden');
+                    } catch (error: any) {
+                        document.getElementById('auth-status').textContent =
+                            'Failed: ' + error.message;
+                    }
+                }
+
+                async function handleRequestConsent() {
+                    const btn = document.getElementById('request-consent-btn') as HTMLButtonElement;
+                    btn.disabled = true;
+                    btn.textContent = 'Requesting...';
+
+                    try {
+                        // Request consent for data access
+                        const consentResult = await learnCard.requestConsent();
+
+                        if (consentResult.granted) {
+                            // Consent granted - show request options
+                            document.getElementById('consent-section').classList.add('hidden');
+                            document.getElementById('request-options').classList.remove('hidden');
+                            document.getElementById('auth-status').textContent =
+                                'Consent granted! Configure your request below.';
+                        } else {
+                            // Consent denied
+                            btn.disabled = false;
+                            btn.textContent = 'Grant Access';
+                            document.getElementById('auth-status').textContent =
+                                'Consent denied. Cannot access learner context without permission.';
+                        }
+                    } catch (error: any) {
+                        btn.disabled = false;
+                        btn.textContent = 'Grant Access';
+                        document.getElementById('auth-status').textContent =
+                            'Consent request failed: ' + error.message;
+                    }
+                }
+
+                function renderStructuredData(
+                    raw:
+                        | { credentials?: unknown[]; personalData?: Record<string, unknown> }
+                        | undefined
+                ) {
+                    const structuredSection = document.getElementById('structured-section')!;
+                    const personalDataSection = document.getElementById('personal-data-section')!;
+                    const personalDataDisplay = document.getElementById('personal-data-display')!;
+                    const credentialsSection = document.getElementById('credentials-section')!;
+                    const credentialsDisplay = document.getElementById('credentials-display')!;
+                    const credentialsCount = document.getElementById('credentials-count')!;
+
+                    structuredSection.classList.remove('hidden');
+
+                    // Personal data
+                    if (raw?.personalData && Object.keys(raw.personalData).length > 0) {
+                        personalDataSection.classList.remove('hidden');
+                        personalDataDisplay.innerHTML = Object.entries(raw.personalData)
+                            .map(
+                                ([key, value]) => `
+                                <div class="flex items-baseline gap-2 py-1 border-b border-gray-100 last:border-0">
+                                    <span class="text-sm font-medium text-gray-500 min-w-[120px]">${key}</span>
+                                    <span class="text-sm text-gray-800 break-all">${
+                                        typeof value === 'object'
+                                            ? JSON.stringify(value)
+                                            : String(value)
+                                    }</span>
+                                </div>
+                            `
+                            )
+                            .join('');
+                    } else {
+                        personalDataSection.classList.add('hidden');
+                    }
+
+                    // Credentials
+                    if (raw?.credentials && raw.credentials.length > 0) {
+                        credentialsSection.classList.remove('hidden');
+                        credentialsCount.textContent = `(${raw.credentials.length})`;
+                        credentialsDisplay.innerHTML = raw.credentials
+                            .map((cred: any, i: number) => {
+                                const name =
+                                    cred?.name ||
+                                    cred?.credentialSubject?.achievement?.name ||
+                                    `Credential ${i + 1}`;
+                                const type =
+                                    (Array.isArray(cred?.type) ? cred.type : [cred?.type])
+                                        .filter((t: string) => t !== 'VerifiableCredential')
+                                        .join(', ') || 'VerifiableCredential';
+                                const issuer =
+                                    typeof cred?.issuer === 'string'
+                                        ? cred.issuer
+                                        : cred?.issuer?.name || cred?.issuer?.id || 'Unknown';
+
+                                return `
+                                    <details class="group rounded-xl border-2 border-gray-200 overflow-hidden">
+                                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">${
+                                                i + 1
+                                            }</div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-semibold text-gray-800 truncate">${name}</div>
+                                                <div class="text-xs text-gray-500">${type} · ${issuer}</div>
+                                            </div>
+                                            <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </summary>
+                                        <div class="p-4 bg-gray-900 border-t border-gray-200">
+                                            <pre class="text-xs text-green-300 whitespace-pre-wrap break-all">${JSON.stringify(
+                                                cred,
+                                                null,
+                                                2
+                                            )}</pre>
+                                        </div>
+                                    </details>
+                                `;
+                            })
+                            .join('');
+                    } else {
+                        credentialsSection.classList.add('hidden');
+                    }
+                }
+
+                async function handleRequest() {
+                    const credsToggle = document.getElementById(
+                        'include-credentials'
+                    ) as HTMLInputElement;
+                    const personalDataToggle = document.getElementById(
+                        'include-personal-data'
+                    ) as HTMLInputElement;
+                    const formatSelect = document.getElementById('format') as HTMLSelectElement;
+                    const detailSelect = document.getElementById(
+                        'detail-level'
+                    ) as HTMLSelectElement;
+
+                    const isStructured = formatSelect?.value === 'structured';
+
+                    try {
+                        const context = await learnCard.requestLearnerContext({
+                            includeCredentials: credsToggle?.checked ?? true,
+                            includePersonalData: personalDataToggle?.checked ?? false,
+                            format: formatSelect?.value as 'prompt' | 'structured',
+                            detailLevel: detailSelect?.value as 'compact' | 'expanded',
+                        });
+
+                        const promptSection = document.getElementById('prompt-section')!;
+                        const structuredSection = document.getElementById('structured-section')!;
+
+                        if (isStructured) {
+                            promptSection.classList.add('hidden');
+                            renderStructuredData(
+                                context.raw as
+                                    | {
+                                          credentials?: unknown[];
+                                          personalData?: Record<string, unknown>;
+                                      }
+                                    | undefined
+                            );
+                        } else {
+                            promptSection.classList.remove('hidden');
+                            structuredSection.classList.add('hidden');
+                            document.getElementById('prompt-display')!.textContent = context.prompt;
+                        }
+
+                        document.getElementById('did-display')!.textContent = context.did;
+                        document.getElementById('name-display')!.textContent =
+                            context.displayName || 'N/A';
+                        document.getElementById('results')!.classList.remove('hidden');
+                        document.getElementById('auth-status')!.textContent =
+                            'Context retrieved successfully!';
+                    } catch (error: any) {
+                        document.getElementById('auth-status')!.textContent =
+                            'Request failed: ' + error.message;
+                    }
+                }
+
+                document.getElementById('connect-btn').addEventListener('click', handleConnect);
+                document
+                    .getElementById('request-consent-btn')
+                    .addEventListener('click', handleRequestConsent);
+                document.getElementById('request-btn').addEventListener('click', handleRequest);
+            </script>
+        </div>
+    </body>
+</html>

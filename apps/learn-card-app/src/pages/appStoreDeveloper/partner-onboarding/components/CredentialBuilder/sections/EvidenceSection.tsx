@@ -53,7 +53,11 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
         updateEvidence([...evidence, newItem]);
     };
 
-    const updateEvidenceItem = (index: number, field: keyof EvidenceTemplate, value: TemplateFieldValue) => {
+    const updateEvidenceItem = (
+        index: number,
+        field: keyof EvidenceTemplate,
+        value: TemplateFieldValue
+    ) => {
         const items = [...evidence];
         items[index] = { ...items[index], [field]: value };
         updateEvidence(items);
@@ -72,10 +76,15 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
             isExpanded={isExpanded}
             onToggle={onToggle}
             optional
-            badge={evidence.length > 0 ? `${evidence.length} item${evidence.length > 1 ? 's' : ''}` : undefined}
+            badge={
+                evidence.length > 0
+                    ? `${evidence.length} item${evidence.length > 1 ? 's' : ''}`
+                    : undefined
+            }
         >
             <p className="text-xs text-gray-500 mb-3">
-                Attach artifacts that support this credential — link to projects, portfolios, assessments, or other work products.
+                Attach artifacts that support this credential — link to projects, portfolios,
+                assessments, or other work products.
             </p>
 
             <button
@@ -110,7 +119,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             <FieldEditor
                                 label="Evidence Name"
                                 field={item.name || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'name', f)}
+                                onChange={f => updateEvidenceItem(index, 'name', f)}
                                 placeholder="e.g., Final Project Submission"
                                 helpText="A short title for this piece of evidence"
                                 showDynamicToggle={!disableDynamicFields}
@@ -119,18 +128,21 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             <FieldEditor
                                 label="Evidence URL"
                                 field={item.evidenceUrl || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'evidenceUrl', f)}
+                                onChange={f => updateEvidenceItem(index, 'evidenceUrl', f)}
                                 placeholder="https://portfolio.example.com/project"
                                 helpText="Link to the evidence artifact (webpage, file, portfolio)"
                                 type="url"
                                 showDynamicToggle={!disableDynamicFields}
-                                error={getFieldError(validationErrors, `evidence.${index}.evidenceUrl`)}
+                                error={getFieldError(
+                                    validationErrors,
+                                    `evidence.${index}.evidenceUrl`
+                                )}
                             />
 
                             <FieldEditor
                                 label="Narrative"
                                 field={item.narrative || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'narrative', f)}
+                                onChange={f => updateEvidenceItem(index, 'narrative', f)}
                                 placeholder="Describe the process and achievement that led to this evidence..."
                                 helpText="A narrative describing the evidence and how it was produced (supports Markdown)"
                                 type="textarea"
@@ -140,17 +152,17 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             <FieldEditor
                                 label="Description"
                                 field={item.description || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'description', f)}
+                                onChange={f => updateEvidenceItem(index, 'description', f)}
                                 placeholder="e.g., A sentiment analysis model trained on movie reviews"
                                 helpText="A longer description of this evidence"
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3 xs:flex xs:flex-col">
                                 <FieldEditor
                                     label="Genre"
                                     field={item.genre || staticField('')}
-                                    onChange={(f) => updateEvidenceItem(index, 'genre', f)}
+                                    onChange={f => updateEvidenceItem(index, 'genre', f)}
                                     placeholder="e.g., Portfolio, Film"
                                     helpText="The format or medium of the evidence"
                                     showDynamicToggle={!disableDynamicFields}
@@ -159,7 +171,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 <FieldEditor
                                     label="Audience"
                                     field={item.audience || staticField('')}
-                                    onChange={(f) => updateEvidenceItem(index, 'audience', f)}
+                                    onChange={f => updateEvidenceItem(index, 'audience', f)}
                                     placeholder="e.g., Hiring Managers"
                                     helpText="Who this evidence is intended for"
                                     showDynamicToggle={!disableDynamicFields}
@@ -169,7 +181,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             <FieldEditor
                                 label="Evidence Type"
                                 field={item.type || staticField('Evidence')}
-                                onChange={(f) => updateEvidenceItem(index, 'type', f)}
+                                onChange={f => updateEvidenceItem(index, 'type', f)}
                                 placeholder="Evidence"
                                 helpText="OBv3 type identifier (usually 'Evidence')"
                                 showDynamicToggle={!disableDynamicFields}

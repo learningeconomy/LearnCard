@@ -73,28 +73,27 @@ export default defineConfig(({ mode }) => {
             },
         },
         define: {
-            LCN_URL: process.env.LCN_URL && `"${process.env.LCN_URL}"`,
-            LCN_API_URL: process.env.LCN_API_URL && `"${process.env.LCN_API_URL}"`,
-            CLOUD_URL: process.env.CLOUD_URL && `"${process.env.CLOUD_URL}"`,
-            LEARN_CLOUD_XAPI_URL:
-                process.env.LEARN_CLOUD_XAPI_URL && `"${process.env.LEARN_CLOUD_XAPI_URL}"`,
-            API_URL: process.env.API_URL && `"${process.env.API_URL}"`,
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
-            // SSS Key Manager configuration
+            // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
+            // Kept as fallbacks for backward compat; will be removed in a future PR.
             'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env.REACT_APP_KEY_DERIVATION_PROVIDER
                 ? JSON.stringify(process.env.REACT_APP_KEY_DERIVATION_PROVIDER)
                 : 'undefined',
             'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL
                 ? JSON.stringify(process.env.REACT_APP_SSS_SERVER_URL)
                 : 'undefined',
+            // DEPRECATED — now in config.json → observability.sentryEnv / sentryDsn
             SENTRY_ENV: process.env.SENTRY_ENV ? `"${process.env.SENTRY_ENV}"` : '"development"',
             SENTRY_DSN: process.env.SENTRY_DSN
                 ? `"${process.env.SENTRY_DSN}"`
                 : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
+            // Not yet in TenantConfig — keep as-is
             GOOGLE_MAPS_API_KEY:
                 process.env.GOOGLE_MAPS_API_KEY && `"${process.env.GOOGLE_MAPS_API_KEY}"`,
+            // DEPRECATED — now in config.json → branding.defaultTheme
             APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
+            // Not yet in TenantConfig — keep as-is
             CORS_PROXY_API_KEY: env.CORS_PROXY_API_KEY
                 ? JSON.stringify(env.CORS_PROXY_API_KEY)
                 : 'undefined',

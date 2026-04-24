@@ -205,7 +205,8 @@ export const AiInsightsUserCard: React.FC<{
                 <SkinnyCaretRight className="text-grayscale-400 h-[24px] w-[20px] min-h-[20px] min-w-[20px]" />
             )}
             {(mode === AiInsightsUserCardMode.View || mode === AiInsightsUserCardMode.Preview) &&
-                showOptions && (
+                showOptions &&
+                requestStatus !== RequestInsightStatusEnum.accepted && (
                     <button
                         onClick={e => {
                             e.stopPropagation();

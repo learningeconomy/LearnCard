@@ -8,7 +8,7 @@ export enum ThemeEnum {
 }
 
 export type PreferencesType = {
-    theme?: ThemeEnum;
+    theme?: string;
     aiEnabled?: boolean;
     aiAutoDisabled?: boolean;
     analyticsEnabled?: boolean;
@@ -24,7 +24,8 @@ export const useUpdatePreferences = () => {
     return useMutation<boolean, Error, PreferencesType>({
         mutationFn: async (preferences: PreferencesType) => {
             const wallet = await initWallet();
-            return wallet.invoke.updatePreferences(preferences);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return wallet.invoke.updatePreferences(preferences as any);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['useGetPreferencesForDid'] });
@@ -39,7 +40,8 @@ export const useCreatePreferences = () => {
     return useMutation<boolean, Error, PreferencesType>({
         mutationFn: async (preferences: PreferencesType) => {
             const wallet = await initWallet();
-            return wallet.invoke.createPreferences(preferences);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return wallet.invoke.createPreferences(preferences as any);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['useGetPreferencesForDid'] });

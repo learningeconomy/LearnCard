@@ -1,4 +1,5 @@
 import React from 'react';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonPage, IonGrid, IonCol, IonRow, IonToolbar, IonHeader, IonContent } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -8,6 +9,8 @@ const MyDataAppsList: React.FC<{
     setSelectedApp: React.Dispatch<any>;
     handleGoBack: () => void;
 }> = ({ appsList = [], setSelectedApp, handleGoBack }) => {
+    const brandingConfig = useBrandingConfig();
+
     return (
         <IonPage className="bg-grayscale-900">
             <IonHeader className="ion-no-border">
@@ -69,8 +72,8 @@ const MyDataAppsList: React.FC<{
                     </IonRow>
                     <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
                         <p className="w-full text-left text-grayscale-50 text-sm">
-                            As apps request permission to update your LearnCard data, they will be
-                            added to the list.
+                            As apps request permission to update your {brandingConfig?.name} data,
+                            they will be added to the list.
                         </p>
                     </IonRow>
                 </IonGrid>

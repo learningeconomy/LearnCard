@@ -12,6 +12,7 @@ import CustomSpinner from '../svgs/CustomSpinner';
 import BurgerIcon from '../../components/svgs/Burger';
 import AddToLearnCardMenu from '../../components/add-to-learncard-menu/AddToLearnCardMenu';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 
 import {
     getNavBarColor,
@@ -32,26 +33,40 @@ import { useGetUnreadUserNotifications } from 'learn-card-base';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { IconSetEnum } from '../../theme/icons';
+import { IconSetEnum, NavbarIcons } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
+import { NavBarIcons } from 'learn-card-base';
+
+import navBarBackground from '../../assets/images/mobile-nav-bar-vector.svg';
+
+const { notification: NavBarBellIcon } = NavBarIcons;
 
 export enum MobileNavBarLinks {
     wallet = 'wallet',
     plus = '/boost',
     launchpad = 'launchpad',
+    notification = 'notification',
 }
 
 const MobileNavBar: React.FC = () => {
     const { getIconSet, getColorSet, theme } = useTheme();
     const icons = getIconSet(IconSetEnum.navbar);
     const colors = getColorSet(ColorSetEnum.navbar);
-    const { wallet: WalletIcon, plus: PlusIcon, launchPad: LaunchPadIcon } = icons;
+    const {
+        wallet: WalletIcon,
+        plus: PlusIcon,
+        launchPad: LaunchPadIcon,
+        notification: NotificationIcon = NavBarBellIcon,
+    } = icons as NavbarIcons;
 
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const isWalletSyncing = walletStore.useTracked.syncState();
 
-    const { newModal } = useModal();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Freeform,
+        mobile: ModalTypes.Freeform,
+    });
     const { gate } = useLCNGatedAction();
     const { data } = useGetUnreadUserNotifications();
 
@@ -62,22 +77,17 @@ const MobileNavBar: React.FC = () => {
         const { prompted } = await gate();
         if (prompted) return;
 
-        newModal(
-            <AddToLearnCardMenu />,
-            {
-                sectionClassName: '!max-w-[500px]',
-            },
-            {
-                desktop: ModalTypes.Cancel,
-                mobile: ModalTypes.Cancel,
-            }
-        );
+        newModal(<LaunchPadActionModal />, {
+            className: 'w-full flex items-center justify-center !bg-white/70 !backdrop-blur-[5px]',
+            sectionClassName: '!max-w-[500px] !disable-scrollbars',
+        });
     };
 
     const activePathname = location.pathname;
     const isWalletTabActive =
         activePathname === '/wallet' || activePathname === '/passport' || activePathname === '/';
     const isLaunchPadTabActive = activePathname === '/launchpad';
+    const isNotificationTabActive = activePathname === '/notifications';
 
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
@@ -85,9 +95,9 @@ const MobileNavBar: React.FC = () => {
     let walletText = 'Passport';
     if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
 
-    let walletTextStyles = 'mt-[6px]';
-    if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[6px] pb-[2px]`;
-    if (isCompleted) walletTextStyles = `${colors?.completedColor} mt-[6px] pb-[2px]`;
+    let walletTextStyles = 'mt-[3px]';
+    if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[3px] pb-[2px]`;
+    if (isCompleted) walletTextStyles = `${colors?.completedColor} mt-[3px] pb-[2px]`;
 
     return (
         <GenericErrorBoundary>
@@ -101,6 +111,10 @@ const MobileNavBar: React.FC = () => {
                         style={{
                             contain: 'none',
                             overflow: 'visible',
+                            backgroundImage: `url(${navBarBackground})`,
+                            backgroundSize: '100% 100%',
+                            backgroundPosition: 'center top',
+                            backgroundRepeat: 'no-repeat',
                         }}
                     >
                         {/*
@@ -108,11 +122,6 @@ const MobileNavBar: React.FC = () => {
                             set href to # to prevent id undefined errors & rerouting
                         */}
                         <IonTabButton tab="/" href="#" className="mobile-nav-hamburger-button">
-                            {unreadCount && (
-                                <div className="notification-count-mobile alert-indicator-dot">
-                                    {unreadCount}
-                                </div>
-                            )}
                             <IonMenuToggle menu="appSideMenu">
                                 <BurgerIcon className="text-grayscale-900 h-[35px] w-[35px] m-[10px]" />
                             </IonMenuToggle>
@@ -145,7 +154,7 @@ const MobileNavBar: React.FC = () => {
                                             className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px]`}
                                         />
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[14px] ${
+                                            className={`font-notoSans font-bold text-[12px] ${
                                                 isWalletTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -171,7 +180,7 @@ const MobileNavBar: React.FC = () => {
                                                 backgroundPosition: 'center',
                                                 backgroundSize: 'contain',
                                             }}
-                                            className="relative rounded-full h-[90px] w-[90px] flex items-center justify-center flex-col border-solid border-[3px] border-grayscale-100"
+                                            className="relative rounded-full h-[75px] w-[75px] flex items-center justify-center flex-col "
                                         />
                                     </IonTabButton>
                                 );
@@ -190,7 +199,7 @@ const MobileNavBar: React.FC = () => {
                                             className="h-[35px] w-[35px] mt-[0px] mb-0"
                                         />
                                         <IonLabel
-                                            className={`font-notoSans font-bold mt-[6px] text-[14px] ${
+                                            className={`font-notoSans font-bold mt-[3px] text-[12px] ${
                                                 isLaunchPadTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -198,6 +207,36 @@ const MobileNavBar: React.FC = () => {
                                         >
                                             {link.label}
                                         </IonLabel>
+                                    </IonTabButton>
+                                );
+                            }
+
+                            if (link.id === MobileNavBarLinks.notification) {
+                                return (
+                                    <IonTabButton
+                                        key={link.id}
+                                        tab={link.id}
+                                        href={link.path}
+                                        className="mobile-nav-notification-button"
+                                    >
+                                        <div className="relative">
+                                            <NotificationIcon
+                                                version={isNotificationTabActive ? '2' : '1'}
+                                                className="h-[40px] w-[40px] mt-[0px] mb-0"
+                                            />
+                                            {unreadCount > 0 && (
+                                                <div className="absolute top-0 right-[5px] h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
+                                            )}
+                                            <IonLabel
+                                                className={`font-notoSans font-bold text-[12px] ${
+                                                    isNotificationTabActive
+                                                        ? colors?.activeColor
+                                                        : colors?.inactiveColor
+                                                }`}
+                                            >
+                                                {link.label}
+                                            </IonLabel>
+                                        </div>
                                     </IonTabButton>
                                 );
                             }

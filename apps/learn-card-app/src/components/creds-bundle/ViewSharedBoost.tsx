@@ -35,8 +35,9 @@ import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-ca
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
 import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
-const websiteLink = 'https://learncard.app/login';
+const websiteLink = `${getAppBaseUrl()}/login`;
 
 const ViewSharedBoost: React.FC<{
     showEndorsementRequest?: boolean;
@@ -178,7 +179,9 @@ const ViewSharedBoost: React.FC<{
     }
 
     if (showDraftSuccess) {
-        return <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} />;
+        return (
+            <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} autoSend />
+        );
     }
 
     return (

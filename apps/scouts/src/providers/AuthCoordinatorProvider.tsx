@@ -42,6 +42,7 @@ import {
     authStore,
     SocialLoginTypes,
     getAuthConfig,
+    getSSSConfig,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
@@ -205,7 +206,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
     return (
         <Overlay>
             <QrLoginApprover
-                serverUrl={authConfig.serverUrl}
+                serverUrl={getSSSConfig().serverUrl}
                 deviceShare={deviceShare}
                 approverDid={did}
                 accountHint={accountHint}
@@ -222,9 +223,11 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 // Provider factory registrations (module-level, runs once on import)
 // ---------------------------------------------------------------------------
 
-registerKeyDerivationFactory('sss', (config) =>
-    createSSSStrategy({
-        serverUrl: config.serverUrl,
+registerKeyDerivationFactory('sss', () => {
+    const sss = getSSSConfig();
+
+    return createSSSStrategy({
+        serverUrl: sss.serverUrl,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the
@@ -232,18 +235,19 @@ registerKeyDerivationFactory('sss', (config) =>
         storage: Capacitor.isNativePlatform()
             ? createNativeSSSStorage()
             : createAdaptiveStorage(),
-        enableEmailBackupShare: config.enableEmailBackupShare,
-    })
-);
+        enableEmailBackupShare: sss.enableEmailBackupShare,
+    });
+});
 
 registerKeyDerivationFactory('web3auth', () => {
-    const { web3AuthClientId, web3AuthNetwork, web3AuthVerifierId, web3AuthRpcTarget } = getAuthConfig();
+    const { providerConfig } = getAuthConfig();
+    const w3a = providerConfig.web3Auth ?? {};
 
     return createWeb3AuthStrategy({
-        clientId: web3AuthClientId,
-        web3AuthNetwork,
-        verifier: web3AuthVerifierId,
-        chainConfig: web3AuthRpcTarget ? { rpcTarget: web3AuthRpcTarget } : undefined,
+        clientId: (w3a.clientId as string) ?? '',
+        web3AuthNetwork: (w3a.network as string) ?? '',
+        verifier: (w3a.verifierId as string) ?? '',
+        chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
     });
 }); 
 
@@ -433,11 +437,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             return;
         }
 
-        const { requireEmailForPhoneUsers, enableEmailBackupShare } = authConfig;
+        const sssConfig = getSSSConfig();
 
         if (
-            !requireEmailForPhoneUsers ||
-            !enableEmailBackupShare ||
+            !sssConfig.requireEmailForPhoneUsers ||
+            !sssConfig.enableEmailBackupShare ||
             !keyDerivation.capabilities.contactMethodUpgrade
         ) {
             setShowEmailLinkGate(false);
@@ -590,11 +594,17 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
         const extractAndInject = async () => {
             try {
+                const w3a = authConfig.providerConfig.web3Auth ?? {};
+                const w3aClientId = (w3a.clientId as string) ?? '';
+                const w3aNetwork = (w3a.network as string) ?? '';
+                const w3aVerifierId = (w3a.verifierId as string) ?? '';
+                const w3aRpcTarget = (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth';
+
                 emitAuthDebugEvent('web3auth:migration_key', 'Extracting Web3Auth key for migration', {
                     data: {
-                        clientId: authConfig.web3AuthClientId ? `${authConfig.web3AuthClientId.slice(0, 8)}...` : '(empty)',
-                        network: authConfig.web3AuthNetwork || '(empty)',
-                        verifier: authConfig.web3AuthVerifierId || '(empty)',
+                        clientId: w3aClientId ? `${w3aClientId.slice(0, 8)}...` : '(empty)',
+                        network: w3aNetwork || '(empty)',
+                        verifier: w3aVerifierId || '(empty)',
                     },
                 });
 
@@ -603,7 +613,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                         chainConfig: {
                             chainNamespace: CHAIN_NAMESPACES.EIP155,
                             chainId: '0x1',
-                            rpcTarget: authConfig.web3AuthRpcTarget,
+                            rpcTarget: w3aRpcTarget,
                             displayName: 'Ethereum Mainnet',
                             blockExplorerUrl: 'https://etherscan.io/',
                             ticker: 'ETH',
@@ -613,8 +623,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 });
 
                 const web3auth = new Web3Auth({
-                    clientId: authConfig.web3AuthClientId,
-                    web3AuthNetwork: authConfig.web3AuthNetwork as 'sapphire_mainnet' | 'sapphire_devnet',
+                    clientId: w3aClientId,
+                    web3AuthNetwork: w3aNetwork as 'sapphire_mainnet' | 'sapphire_devnet',
                     privateKeyProvider,
                     usePnPKey: true,
                 });
@@ -640,13 +650,13 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling connect()...', {
                     data: {
-                        verifier: authConfig.web3AuthVerifierId,
+                        verifier: w3aVerifierId,
                         verifierId: liveUser.uid,
                         tokenLength: token.length,
                     },
                 });
                 await web3auth.connect({
-                    verifier: authConfig.web3AuthVerifierId,
+                    verifier: w3aVerifierId,
                     verifierId: liveUser.uid,
                     idToken: token,
                 });
@@ -977,7 +987,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             {showEmailLinkGate && (
                 <EmailLinkOverlay
                     onSendCode={async (email: string) => {
-                        const { serverUrl } = authConfig;
+                        const { serverUrl } = getSSSConfig();
 
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
@@ -1165,7 +1175,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 }
 
                 // Session valid — show the recovery setup modal
-                const { serverUrl } = getAuthConfig();
+                const { serverUrl } = getSSSConfig();
                 const currentPrivateKey = coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
 
                 const setupMethod = async (input: RecoverySetupInput, authUser?: { id: string; email?: string; phone?: string; providerType: string } | null) => {
@@ -1296,7 +1306,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
 
 export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({ children }) => {
     const authConfig = getAuthConfig();
-    const serverUrl = authConfig.serverUrl;
+    const { serverUrl } = getSSSConfig();
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
 
@@ -1338,7 +1348,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     // Resolve key derivation strategy from the provider registry (env-var driven)
     const keyDerivation = useMemo(
         () => resolveKeyDerivation(authConfig),
-        [authConfig.keyDerivation, authConfig.serverUrl]
+        [authConfig.keyDerivation, serverUrl]
     );
 
     // Debug event handler — forward to the in-memory event system so

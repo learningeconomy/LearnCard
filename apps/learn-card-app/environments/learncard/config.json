@@ -1,0 +1,113 @@
+{
+    "_defaults": "Fallback defaults live in packages/learn-card-base/src/config/tenantDefaults.ts — run `pnpm lc resolve learncard` to see the final merged config.",
+
+    "tenantId": "learncard",
+    "domain": "learncard.app",
+    "devDomain": "localhost:3000",
+
+    "apis": {
+        "brainService": "https://network.learncard.com/trpc",
+        "brainServiceApi": "https://network.learncard.com/api",
+        "cloudService": "https://cloud.learncard.com/trpc",
+        "lcaApi": "https://api.learncard.app/trpc",
+        "aiService": "https://api.learncloud.ai"
+    },
+
+    "auth": {
+        "provider": "firebase",
+        "keyDerivation": "web3auth",
+        "firebase": {
+            "apiKey": "AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o",
+            "authDomain": "learncard.firebaseapp.com",
+            "projectId": "learncard",
+            "storageBucket": "learncard.appspot.com",
+            "messagingSenderId": "776298253175",
+            "appId": "1:776298253175:web:dd996767bf1a2a37a2ef72",
+            "measurementId": "G-XPHGSD6Q59",
+            "redirectDomain": "learncard.app",
+            "dynamicLinkDomain": "learncard.app"
+        },
+        "sss": {
+            "serverUrl": "https://api.learncard.app/trpc",
+            "enableEmailBackupShare": true,
+            "requireEmailForPhoneUsers": false
+        },
+        "web3Auth": {
+            "clientId": "BBB5ReobO60-olXYx2JB7s5pkJplYnBHz4E99Cdf9aaNokNt3XzvVvRL9UQfziK_PMEuBYcgdMEW_WCHNPdUGPg",
+            "network": "testnet",
+            "verifierId": "learncardapp-firebase",
+            "rpcTarget": "https://mainnet.infura.io/v3/af590ea7328444e4b20c75bb401b6105"
+        }
+    },
+
+    "branding": {
+        "name": "LearnCard",
+        "shortName": "LC",
+        "defaultTheme": "colorful",
+        "allowedThemes": ["colorful", "formal"],
+        "loginRedirectPath": "/waitingsofa?loginCompleted=true",
+        "brandingKey": "learncard",
+        "headerText": "LEARNCARD",
+        "homeRoute": "/wallet",
+        "textLogoUrl": "/branding/text-logo.svg",
+        "textLogoDarkUrl": "/branding/text-logo-dark.svg",
+        "brandMarkUrl": "/branding/brand-mark.png",
+        "appIconUrl": "/branding/app-icon.png",
+        "desktopLoginBgUrl": "/branding/desktop-login-bg.png",
+        "desktopLoginBgAltUrl": "/branding/desktop-login-bg-alt.png",
+        "categoryLabels": {
+            "learningHistory": "Study",
+            "workHistory": "Experience",
+            "accommodation": "Assistance",
+            "accomplishment": "Portfolio",
+            "socialBadge": "Boost"
+        },
+        "deleteSuccessStyles": {
+            "containerClass": "bg-white text-emerald-600",
+            "statusBarColor": "light"
+        }
+    },
+
+    "features": {
+        "aiFeatures": true,
+        "appStore": true,
+        "analytics": true,
+        "themeSwitching": true,
+        "introSlides": true,
+        "launchPadQuickActions": false
+    },
+
+    "observability": {
+        "sentryDsn": "https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704",
+        "sentryEnv": "production",
+        "sentryTraceDomains": ["network.learncard.com", "api.learncard.app", "cloud.learncard.com"],
+        "launchDarklyClientId": "63dabf3982caed12cac3e55c",
+        "userflowToken": "ct_qq6z63mixbhyzbzsgmivgrftda",
+        "analyticsProvider": "posthog",
+        "posthogHost": "https://us.i.posthog.com",
+        "posthogKey": "phc_GnoH7LTUUjRQXHr3D5KIa3fTsyvYsgWVAKxpV9fWvgV",
+        "googleMapsApiKey": "AIzaSyDF9igmdxgx3URcmJ-rEupAe2VQbrCTtdk"
+    },
+
+    "links": {
+        "appStoreUrl": "https://apps.apple.com/us/app/learncard/id1635841898",
+        "playStoreUrl": "https://play.google.com/store/apps/details?id=com.learncard.app",
+        "termsOfServiceUrl": "https://www.learncard.com/learncard-terms-of-service",
+        "privacyPolicyUrl": "https://www.learncard.com/learncard-privacy-policy",
+        "contactUrl": "https://www.learningeconomy.io/contact",
+        "websiteUrl": "https://www.learncard.com/"
+    },
+
+    "native": {
+        "bundleId": "com.learncard.app",
+        "displayName": "LearnCard",
+        "deepLinkDomains": [
+            "learncard.app",
+            "learncardapp.netlify.app",
+            "learncardapp.netlify.com",
+            "lcw.app"
+        ],
+        "customSchemes": ["dccrequest", "msprequest", "asuprequest"],
+        "capgoChannel": "1.0.4"
+    }
+}

@@ -296,10 +296,9 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             <p className="text-grayscale-900 font-medium line-clamp-1">
                                 {listing.display_name}
                             </p>
-
                             {listing.age_rating && (
-                                <span className="inline-block px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 text-[10px] font-medium rounded-full shrink-0">
-                                    {listing.age_rating}
+                                <span className="hidden sm:inline-block px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 text-[10px] font-medium rounded-full shrink-0">
+                                    Age {listing.age_rating}
                                 </span>
                             )}
                         </div>
@@ -309,12 +308,12 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                         </p>
                     </div>
 
-                    <div className="flex app-connect-btn-container items-center ml-2 gap-2">
+                    <div className="flex app-connect-btn-container items-center ml-2 gap-2 shrink-0">
                         {isInstalledLoading ? (
                             <button className={buttonClass} disabled>
                                 <IonSpinner name="dots" className="w-4 h-4" />
                             </button>
-                        ) : isInstalled || installedAt ? (
+                        ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
                                     Open

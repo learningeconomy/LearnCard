@@ -21,7 +21,7 @@ The `send` method is the simplest and most ergonomic way to send credentials to 
 ### Prerequisites
 
 * LearnCard SDK initialized with `network: true`
-* A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing)
+* A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing) **OR** a pre-signed credential (no signing authority needed)
 
 ### Basic Usage
 
@@ -112,6 +112,35 @@ const result = await learnCard.invoke.send({
 ```
 {% endtab %}
 
+{% tab title="Send a Pre-Signed Credential" %}
+```typescript
+// Sign a credential yourself, then send it — no template needed
+const signedCredential = await learnCard.invoke.issueCredential({
+    "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    ],
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "issuer": learnCard.id.did(),
+    "credentialSubject": {
+        "type": ["AchievementSubject"],
+        "achievement": {
+            "type": ["Achievement"],
+            "name": "Teamwork Badge",
+            "description": "Recognized for outstanding collaboration.",
+            "criteria": { "narrative": "Nominated by peers." }
+        }
+    }
+});
+
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient@example.com', // or profile ID, DID
+    signedCredential,
+});
+```
+{% endtab %}
+
 {% tab title="With ConsentFlow Contract" %}
 ```typescript
 // Send through a consent flow contract
@@ -126,14 +155,120 @@ const result = await learnCard.invoke.send({
 {% endtab %}
 {% endtabs %}
 
+### REST API (`POST /send`)
+
+The `send` method is also available as a REST endpoint. Use an API key or bearer token for authentication.
+
+{% tabs %}
+{% tab title="cURL: Send with Template" %}
+```bash
+curl -X POST https://network.learncard.com/api/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "boost",
+    "recipient": "student@example.com",
+    "templateUri": "urn:lc:boost:abc123"
+  }'
+```
+{% endtab %}
+
+{% tab title="cURL: Send Pre-Signed Credential" %}
+```bash
+curl -X POST https://network.learncard.com/api/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "boost",
+    "recipient": "student@example.com",
+    "signedCredential": {
+      "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+        "https://w3id.org/security/suites/ed25519-2020/v1"
+      ],
+      "type": ["VerifiableCredential", "OpenBadgeCredential"],
+      "issuer": { "id": "did:web:example.com" },
+      "validFrom": "2025-01-01T00:00:00Z",
+      "name": "Teamwork Badge",
+      "credentialSubject": {
+        "type": ["AchievementSubject"],
+        "achievement": {
+          "type": ["Achievement"],
+          "name": "Teamwork",
+          "description": "Recognized for outstanding collaboration.",
+          "criteria": { "narrative": "Nominated by peers." }
+        }
+      },
+      "proof": {
+        "type": "Ed25519Signature2020",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z...",
+        "verificationMethod": "did:web:example.com#owner",
+        "created": "2025-01-01T00:00:00Z"
+      }
+    }
+  }'
+```
+{% endtab %}
+
+{% tab title="JavaScript (fetch)" %}
+```javascript
+const response = await fetch('https://network.learncard.com/api/send', {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        type: 'boost',
+        recipient: 'student@example.com',
+        signedCredential: mySignedVC, // A previously signed VC object
+    }),
+});
+
+const result = await response.json();
+console.log(result);
+// { type: 'boost', uri: 'urn:lc:boost:...', inbox: { issuanceId: '...', status: 'PENDING' } }
+```
+{% endtab %}
+{% endtabs %}
+
+{% hint style="info" %}
+**All SDK parameters work in the REST API too** — `templateUri`, `template`, `signedCredential`, `templateData`, `options`, and `contractUri` are all supported in the JSON body.
+{% endhint %}
+
 ### How It Works
 
 1. **Detects recipient type** - Automatically determines if recipient is email, phone, DID, or profile ID
 2. **Routes appropriately** - Uses direct send for profiles/DIDs, Universal Inbox for email/phone
-3. **Prepares the credential** - Uses your template or creates a new boost on-the-fly
-4. **Signs the credential** - Uses client-side signing if available, otherwise falls back to your registered signing authority
+3. **Prepares the credential** - Uses your template, creates a new template on-the-fly, or uses your pre-signed credential as-is
+4. **Signs the credential** - Skips signing if you provided a `signedCredential`; otherwise uses client-side signing if available, or falls back to your registered signing authority
 5. **Delivers the credential** - Direct delivery or sends claim email/SMS based on recipient type
 6. **Auto-delivery for verified users** - If the email/phone is already verified and linked to a LearnCard profile, the credential is delivered directly to their wallet without requiring them to click a claim link
+
+{% hint style="info" %}
+**Pre-Signed Credentials**: When you provide only `signedCredential` (without `templateUri` or `template`), the system automatically creates a template from your credential. This is ideal when you've already signed the credential yourself and don't need the server to sign it. Your original proof is preserved through the entire flow, including email inbox claims.
+{% endhint %}
+
+### Guardian-Gated Credentials
+
+To require guardian (parent) approval before a minor can claim a credential, add `guardianEmail` to `options`:
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student@school.edu',
+    templateUri: 'urn:lc:boost:abc123',
+    options: {
+        guardianEmail: 'parent@example.com',
+    },
+});
+
+console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
+```
+
+The guardian receives an approval email with an OTP challenge. The student cannot claim the credential until the guardian approves. See [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md) for the full guide.
 
 ### Response
 
@@ -152,6 +287,10 @@ interface SendResponse {
             | 'CLAIMED';     // Claimed via claim link
         claimUrl?: string;   // Present when suppressDelivery=true
         recipientDid?: string; // DID of recipient (present when ISSUED)
+        guardianStatus?:       // Present when guardianEmail was specified
+            | 'AWAITING_GUARDIAN'  // Waiting for guardian approval
+            | 'GUARDIAN_APPROVED'  // Guardian approved
+            | 'GUARDIAN_REJECTED'; // Guardian rejected
     };
 }
 ```

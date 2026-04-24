@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-
 import {
     IonContent,
     IonFooter,
@@ -26,6 +25,7 @@ import {
     UserProfilePicture,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import DatePickerInput from '../../../date-picker/DatePickerInput';
 import CountrySelectorModal from '../../../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
@@ -76,6 +76,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const bottomBarRef = useRef<HTMLDivElement>();
+    const brandingConfig = useBrandingConfig();
     const isInEditMode = ChildInviteModalViewModeEnum.edit === viewMode;
 
     const [name, setName] = useState<string | null | undefined>(
@@ -247,12 +248,13 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                         </div>
                                     )}
                                 </UserProfilePicture>
-                                <div
+                                <button
+                                    type="button"
                                     onClick={handleImageSelect}
                                     className="text-grayscale-900 ml-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
                                 >
                                     <Pencil className="h-[60%]" />
-                                </div>
+                                </button>
                             </div>
                         </div>
                         <div>
@@ -361,7 +363,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                             className="w-full text-grayscale-900 text-xl font-poppins flex items-center justify-between px-2 mt-4"
                         >
                             <div className="flex">
-                                <LearnCardIconOutline className="mr-2" /> Edit LearnCard
+                                <LearnCardIconOutline className="mr-2" /> Edit{' '}
+                                {brandingConfig.name || 'LearnCard'}
                             </div>
 
                             <SlimCaretRight className="text-grayscale-400 w-[22px] h-auto" />

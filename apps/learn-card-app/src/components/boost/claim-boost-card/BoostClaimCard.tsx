@@ -27,7 +27,13 @@ import {
     getAchievementType,
     getDefaultCategoryForCredential,
     parseShareLinkParams,
+    isClrCredential,
+    getClrLinkedCredentials,
+    getClrLinkedCredentialCounts,
 } from 'learn-card-base/helpers/credentialHelpers';
+import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
+import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
 
 type BoostClaimCardProps = {
@@ -106,6 +112,34 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
 
+    const _isClr = isClrCredential(credential);
+    const linkedCredentialCount = _isClr ? getClrLinkedCredentialCounts(credential) : 0;
+    const clrAchievements: any[] =
+        _isClr && Array.isArray(credential?.credentialSubject?.achievement)
+            ? credential.credentialSubject.achievement
+            : [];
+    const clrAssociations: any[] =
+        _isClr && Array.isArray(credential?.credentialSubject?.association)
+            ? credential.credentialSubject.association
+            : [];
+    const clrDisplayType = (credential as any)?.display?.displayType;
+
+    const customLinkedCredentialsComponent =
+        linkedCredentialCount > 0 ? (
+            <BoostLinkedCredentialsBox
+                credential={credential as VC}
+                categoryType={category as unknown as BoostCategoryOptionsEnum}
+                linkedCredentialCount={linkedCredentialCount}
+                linkedCredentials={getClrLinkedCredentials(credential)}
+                displayType={clrDisplayType}
+            />
+        ) : clrAchievements.length > 0 ? (
+            <ClrAchievementsSummaryBox
+                achievements={clrAchievements}
+                associations={clrAssociations}
+            />
+        ) : undefined;
+
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
     const handleBoostCredential = async (visibility?: boolean) => {
@@ -183,6 +217,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const isID = credential?.display?.displayType === 'id' || false;
     const isFamily = category === CredentialCategoryEnum.family;
+    const selectedCredential = credential;
 
     let claimStatusText;
     const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
@@ -216,10 +251,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         }
         newModal(
             <BoostDetailsSideMenu
-                credential={credential}
+                credential={selectedCredential}
                 // categoryType={categoryType}
                 verificationItems={vcVerifications}
                 hideEndorsementRequestCard={hideEndorsementRequestCard}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />,
             {
                 className: '!bg-transparent',
@@ -237,6 +273,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 endorsementVC={credential}
                 handleSaveEndorsement={handleBoostCredential}
                 isClaimed={isClaimed}
+                isLoading={isClaimLoading}
             />
         );
     }
@@ -270,6 +307,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     // isFrontOverride={isFront}
                                     setIsFrontOverride={setIsFront}
                                     onMediaClick={handleImageClick}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
                                     bottomButton={
                                         isID ? (
                                             <button
@@ -331,14 +371,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 </footer>
                 {!isMobile && (
                     <BoostDetailsSideBar
-                        credential={
-                            credential?.type.includes('ClrCredential')
-                                ? credential?.credentialSubject?.verifiableCredential[0]
-                                : credential
-                        }
+                        credential={selectedCredential}
                         // categoryType={categoryType}
                         verificationItems={vcVerifications}
                         hideEndorsementRequestCard={hideEndorsementRequestCard}
+                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     />
                 )}
             </div>

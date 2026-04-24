@@ -1,5 +1,194 @@
 # @learncard/network-brain-service
 
+## 3.14.0
+
+### Minor Changes
+
+-   [#1094](https://github.com/learningeconomy/LearnCard/pull/1094) [`c94799c5364d48188683ba18c8591b7eaf587384`](https://github.com/learningeconomy/LearnCard/commit/c94799c5364d48188683ba18c8591b7eaf587384) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Thin Federation: Cross-instance credential exchange
+
+    ### New Features
+
+    **External URI Resolution**
+
+    -   URI resolution now automatically detects external domains and fetches resources from remote brain-service instances
+    -   Storage resolve endpoint handles both local and external URI resolution transparently
+    -   Boost URIs from external domains are now correctly preserved when fetched
+
+    **Federated Inbox API**
+
+    -   New `POST /api/inbox/receive` endpoint accepts credentials from trusted external brain-services
+    -   DID Auth JWT authentication for service-to-service communication
+    -   Creates federated inbox credential records with issuer tracking
+    -   Sends notifications to recipients when credentials are received
+
+    **Trust Registry**
+
+    -   Environment-based service whitelist via `TRUSTED_BRAIN_SERVICES`
+    -   `isServiceTrusted()` checks if a service is trusted by extracting server DID from user DID
+    -   `getTrustedServices()` returns list of trusted brain-services
+
+    **Seamless SDK Integration**
+
+    -   `sendCredential()` now automatically detects external DIDs and federates
+    -   No separate method needed - existing API works for both local and cross-instance sends
+    -   DID resolution finds inbox service endpoints from DID Documents
+
+    **DID Document Updates**
+
+    -   Added `UniversalInboxService` endpoint to DID documents
+    -   Added `LearnCardBrainService` endpoint for service discovery
+    -   Services can now discover each other via DID resolution
+
+    ### Bug Fixes
+
+    -   Fixed `getBoost()` to preserve original URI domain when returning boosts from external services
+    -   Fixed trust check to properly extract server DID from user DID for comparison
+    -   Fixed external URI resolution to use correct domain comparison
+
+    ### Testing
+
+    -   Added comprehensive federation E2E tests in `tests/federation-e2e/`
+    -   Tests cover: trust registry, DID resolution, federated inbox, external URI resolution
+    -   Docker Compose setup for multi-instance testing
+
+### Patch Changes
+
+-   [#1116](https://github.com/learningeconomy/LearnCard/pull/1116) [`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1742] feat: App-Scoped Counters + In-App Notifications
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/types@5.13.5
+    -   @learncard/core@9.4.15
+    -   @learncard/helpers@1.2.15
+    -   @learncard/did-web-plugin@1.1.15
+    -   @learncard/didkey-plugin@1.1.15
+    -   @learncard/didkit-plugin@1.8.5
+    -   @learncard/didkit-plugin-node@0.2.11
+    -   @learncard/encryption-plugin@1.1.15
+    -   @learncard/learn-card-plugin@1.2.15
+    -   @learncard/vc-plugin@1.4.11
+    -   @learncard/vc-templates-plugin@1.1.15
+    -   @learncard/crypto-plugin@1.1.15
+    -   @learncard/dynamic-loader-plugin@1.1.15
+    -   @learncard/expiration-plugin@1.2.15
+
+## 3.13.5
+
+### Patch Changes
+
+-   [#1139](https://github.com/learningeconomy/LearnCard/pull/1139) [`4599f016afc31f6e34b713c85af56d0355a71e67`](https://github.com/learningeconomy/LearnCard/commit/4599f016afc31f6e34b713c85af56d0355a71e67) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1726] First-class CLR 2.0 support in CredentialBuilder
+
+## 3.13.4
+
+### Patch Changes
+
+-   [#1147](https://github.com/learningeconomy/LearnCard/pull/1147) [`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a) Thanks [@Custard7](https://github.com/Custard7)! - feat:[LC-1737] - Simplify sending pre-signed credentials with
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/types@5.13.4
+    -   @learncard/core@9.4.14
+    -   @learncard/helpers@1.2.14
+    -   @learncard/did-web-plugin@1.1.14
+    -   @learncard/didkey-plugin@1.1.14
+    -   @learncard/didkit-plugin@1.8.4
+    -   @learncard/didkit-plugin-node@0.2.10
+    -   @learncard/encryption-plugin@1.1.14
+    -   @learncard/learn-card-plugin@1.2.14
+    -   @learncard/vc-plugin@1.4.10
+    -   @learncard/vc-templates-plugin@1.1.14
+    -   @learncard/crypto-plugin@1.1.14
+    -   @learncard/dynamic-loader-plugin@1.1.14
+    -   @learncard/expiration-plugin@1.2.14
+
+## 3.13.3
+
+### Patch Changes
+
+-   [#1122](https://github.com/learningeconomy/LearnCard/pull/1122) [`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1663] Streamline Auto-verify email
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+    -   @learncard/core@9.4.13
+    -   @learncard/helpers@1.2.13
+    -   @learncard/did-web-plugin@1.1.13
+    -   @learncard/didkey-plugin@1.1.13
+    -   @learncard/didkit-plugin@1.8.3
+    -   @learncard/didkit-plugin-node@0.2.9
+    -   @learncard/encryption-plugin@1.1.13
+    -   @learncard/learn-card-plugin@1.2.13
+    -   @learncard/vc-plugin@1.4.9
+    -   @learncard/vc-templates-plugin@1.1.13
+    -   @learncard/crypto-plugin@1.1.13
+    -   @learncard/dynamic-loader-plugin@1.1.13
+    -   @learncard/expiration-plugin@1.2.13
+
+## 3.13.2
+
+### Patch Changes
+
+-   [#1125](https://github.com/learningeconomy/LearnCard/pull/1125) [`359a64bc190505255cf49b9317a7853b8fc71226`](https://github.com/learningeconomy/LearnCard/commit/359a64bc190505255cf49b9317a7853b8fc71226) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for OpenSALT Staging
+
+-   [#1120](https://github.com/learningeconomy/LearnCard/pull/1120) [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050) Thanks [@smurflo2](https://github.com/smurflo2)! - OpenSALT import enhancements - proper classification of tier/competency, icons, pagination, and more!
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   [#1121](https://github.com/learningeconomy/LearnCard/pull/1121) [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1658] Add Application Submission Information in Admin Dashboard
+
+-   [#1123](https://github.com/learningeconomy/LearnCard/pull/1123) [`a702862957303a3e25c21bdc7f0998b3ee3e64a3`](https://github.com/learningeconomy/LearnCard/commit/a702862957303a3e25c21bdc7f0998b3ee3e64a3) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1680] Filter Dashboard Anayltics for integration by app id
+
+-   Updated dependencies [[`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8), [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5)]:
+    -   @learncard/types@5.13.2
+    -   @learncard/core@9.4.12
+    -   @learncard/helpers@1.2.12
+    -   @learncard/did-web-plugin@1.1.12
+    -   @learncard/didkey-plugin@1.1.12
+    -   @learncard/didkit-plugin@1.8.2
+    -   @learncard/didkit-plugin-node@0.2.8
+    -   @learncard/encryption-plugin@1.1.12
+    -   @learncard/learn-card-plugin@1.2.12
+    -   @learncard/vc-plugin@1.4.8
+    -   @learncard/vc-templates-plugin@1.1.12
+    -   @learncard/crypto-plugin@1.1.12
+    -   @learncard/dynamic-loader-plugin@1.1.12
+    -   @learncard/expiration-plugin@1.2.12
+
+## 3.13.1
+
+### Patch Changes
+
+-   [#1085](https://github.com/learningeconomy/LearnCard/pull/1085) [`e8c886eac8907e127805e760c9622118c80c7bf5`](https://github.com/learningeconomy/LearnCard/commit/e8c886eac8907e127805e760c9622118c80c7bf5) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1639] Download CSV of Analytics from App Dashboard
+
+-   [#1056](https://github.com/learningeconomy/LearnCard/pull/1056) [`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1632] [LC-1633] Add checkUserHasCredential app event and PartnerConnect SDK helper (with duplicate-claim prevention)
+
+-   [#1102](https://github.com/learningeconomy/LearnCard/pull/1102) [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add "Unsubmit" feature for app store listings
+
+    Developers can now withdraw their pending app submissions by clicking "Unsubmit" on listings in PENDING_REVIEW status. The listing returns to DRAFT status and the APP_LISTING_SUBMITTED notification is automatically deleted from admin inboxes (via a new APP_LISTING_WITHDRAWN notification type that triggers notification cleanup in LCA-API).
+
+-   [#1093](https://github.com/learningeconomy/LearnCard/pull/1093) [`6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2`](https://github.com/learningeconomy/LearnCard/commit/6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Small dev change to not use NAPI didkit in local docker containers
+
+-   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2), [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0)]:
+    -   @learncard/types@5.13.1
+    -   @learncard/core@9.4.11
+    -   @learncard/helpers@1.2.11
+    -   @learncard/did-web-plugin@1.1.11
+    -   @learncard/didkey-plugin@1.1.11
+    -   @learncard/didkit-plugin@1.8.1
+    -   @learncard/didkit-plugin-node@0.2.7
+    -   @learncard/encryption-plugin@1.1.11
+    -   @learncard/learn-card-plugin@1.2.11
+    -   @learncard/vc-plugin@1.4.7
+    -   @learncard/vc-templates-plugin@1.1.11
+    -   @learncard/crypto-plugin@1.1.11
+    -   @learncard/dynamic-loader-plugin@1.1.11
+    -   @learncard/expiration-plugin@1.2.11
+
 ## 3.13.0
 
 ### Minor Changes

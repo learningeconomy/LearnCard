@@ -1,5 +1,124 @@
 # learn-card-core
 
+## 2.11.0
+
+### Minor Changes
+
+-   [#1094](https://github.com/learningeconomy/LearnCard/pull/1094) [`c94799c5364d48188683ba18c8591b7eaf587384`](https://github.com/learningeconomy/LearnCard/commit/c94799c5364d48188683ba18c8591b7eaf587384) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Thin Federation: Cross-instance credential exchange
+
+    ### New Features
+
+    **External URI Resolution**
+
+    -   URI resolution now automatically detects external domains and fetches resources from remote brain-service instances
+    -   Storage resolve endpoint handles both local and external URI resolution transparently
+    -   Boost URIs from external domains are now correctly preserved when fetched
+
+    **Federated Inbox API**
+
+    -   New `POST /api/inbox/receive` endpoint accepts credentials from trusted external brain-services
+    -   DID Auth JWT authentication for service-to-service communication
+    -   Creates federated inbox credential records with issuer tracking
+    -   Sends notifications to recipients when credentials are received
+
+    **Trust Registry**
+
+    -   Environment-based service whitelist via `TRUSTED_BRAIN_SERVICES`
+    -   `isServiceTrusted()` checks if a service is trusted by extracting server DID from user DID
+    -   `getTrustedServices()` returns list of trusted brain-services
+
+    **Seamless SDK Integration**
+
+    -   `sendCredential()` now automatically detects external DIDs and federates
+    -   No separate method needed - existing API works for both local and cross-instance sends
+    -   DID resolution finds inbox service endpoints from DID Documents
+
+    **DID Document Updates**
+
+    -   Added `UniversalInboxService` endpoint to DID documents
+    -   Added `LearnCardBrainService` endpoint for service discovery
+    -   Services can now discover each other via DID resolution
+
+    ### Bug Fixes
+
+    -   Fixed `getBoost()` to preserve original URI domain when returning boosts from external services
+    -   Fixed trust check to properly extract server DID from user DID for comparison
+    -   Fixed external URI resolution to use correct domain comparison
+
+    ### Testing
+
+    -   Added comprehensive federation E2E tests in `tests/federation-e2e/`
+    -   Tests cover: trust registry, DID resolution, federated inbox, external URI resolution
+    -   Docker Compose setup for multi-instance testing
+
+### Patch Changes
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564)]:
+    -   @learncard/core@9.4.15
+    -   @learncard/helpers@1.2.15
+    -   @learncard/network-brain-client@2.5.28
+
+## 2.10.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.27
+
+## 2.10.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.14
+    -   @learncard/helpers@1.2.14
+    -   @learncard/network-brain-client@2.5.26
+
+## 2.10.13
+
+### Patch Changes
+
+-   [#1122](https://github.com/learningeconomy/LearnCard/pull/1122) [`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1663] Streamline Auto-verify email
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.25
+    -   @learncard/core@9.4.13
+    -   @learncard/helpers@1.2.13
+
+## 2.10.12
+
+### Patch Changes
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.24
+    -   @learncard/core@9.4.12
+    -   @learncard/helpers@1.2.12
+
+## 2.10.11
+
+### Patch Changes
+
+-   [#1089](https://github.com/learningeconomy/LearnCard/pull/1089) [`2e9ca79c1e8fb375ca0cc5f3cba0afcdd40d8915`](https://github.com/learningeconomy/LearnCard/commit/2e9ca79c1e8fb375ca0cc5f3cba0afcdd40d8915) Thanks [@smurflo2](https://github.com/smurflo2)! - Add My Skills Profile (version 1) to AI Pathways
+
+-   [#1102](https://github.com/learningeconomy/LearnCard/pull/1102) [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add "Unsubmit" feature for app store listings
+
+    Developers can now withdraw their pending app submissions by clicking "Unsubmit" on listings in PENDING_REVIEW status. The listing returns to DRAFT status and the APP_LISTING_SUBMITTED notification is automatically deleted from admin inboxes (via a new APP_LISTING_WITHDRAWN notification type that triggers notification cleanup in LCA-API).
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.23
+    -   @learncard/core@9.4.11
+    -   @learncard/helpers@1.2.11
+
 ## 2.10.10
 
 ### Patch Changes

@@ -437,7 +437,7 @@ const LaunchPad: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader customClassName="bg-white" />
+            <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
                 <IonContent fullscreen scrollY={true} color="grayscale-100">
                     <div className="flex flex-col items-center w-full">
@@ -556,7 +556,12 @@ const LaunchPad: React.FC = () => {
                                             <>
                                                 <div className="px-2 pt-6 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Discover More Apps
+                                                        {tab === LaunchPadTabEnum.plugins ||
+                                                        filteredAvailableApps.every(
+                                                            app => app.category === 'plugin'
+                                                        )
+                                                            ? 'Plugins'
+                                                            : 'Discover More Apps'}
                                                     </p>
                                                 </div>
                                                 {filteredAvailableApps.map(app => (
@@ -630,8 +635,29 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Discover More (Standard apps - only show when searching) */}
+                                    {/* Plugins section - show all available plugins when on Plugins tab */}
+                                    {tab === LaunchPadTabEnum.plugins &&
+                                        nonPromotedAvailableApps.length > 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        Plugins
+                                                    </p>
+                                                </div>
+                                                {nonPromotedAvailableApps.map(app => (
+                                                    <AppStoreListItem
+                                                        key={`plugin-${app.listing_id}`}
+                                                        listing={app}
+                                                        isInstalled={false}
+                                                        onInstallSuccess={refetchInstalledApps}
+                                                    />
+                                                ))}
+                                            </>
+                                        )}
+
+                                    {/* Discover More (Standard apps - only show when searching, not on Plugins tab) */}
                                     {searchInput.length > 0 &&
+                                        tab !== LaunchPadTabEnum.plugins &&
                                         nonPromotedAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">

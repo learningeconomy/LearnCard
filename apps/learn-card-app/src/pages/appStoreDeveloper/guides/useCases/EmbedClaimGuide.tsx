@@ -29,6 +29,7 @@ import { TemplateListManager } from '../../components/TemplateListManager';
 import { EmbedPreview } from '../../components/EmbedPreview';
 import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import type { GuideProps } from '../GuidePage';
+import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 
 const STEPS = [
     { id: 'publishable-key', title: 'Get Publishable Key' },
@@ -438,7 +439,7 @@ const ConfigureStep: React.FC<{
         // Show success message, redirect, etc.
     },
 
-    // apiBaseUrl: 'https://network.learncard.com/api', // Override API base URL if needed
+    // apiBaseUrl: '${getResolvedTenantConfig().apis.brainServiceApi}', // Override API base URL if needed
 });`;
     };
 
