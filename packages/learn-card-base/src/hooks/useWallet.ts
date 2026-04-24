@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { initLearnCard } from '@learncard/init';
-import { CredentialRecord } from '@learncard/types';
+import type { CredentialRecord, UnsignedVP, VC, Boost } from '@learncard/types';
 import { v4 as uuidv4 } from 'uuid';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
@@ -12,15 +12,16 @@ import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 import {
     getDefaultCategoryForCredential,
     isBoostCredential,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { CredentialCategory, IndexMetadata } from 'learn-card-base/types/credentials';
+import type { CredentialCategory, IndexMetadata } from 'learn-card-base/types/credentials';
 import { CredentialCategoryEnum, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
-import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
-import { UnsignedVP, VC, Boost } from '@learncard/types';
-import { InfiniteData, useQueryClient } from '@tanstack/react-query';
-import { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
+import { useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
+import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 
@@ -36,11 +37,13 @@ export const getCategoryForCredential = async (
     wallet: BespokeLearnCard,
     mapAiCredentials = true
 ): Promise<CredentialCategory> => {
+    const boostUri = credential.boostId ?? unwrapBoostCredential(credential)?.boostId;
+
     // Check if this is a boost credential
-    if (isBoostCredential(credential) && credential.boostId) {
+    if (isBoostCredential(credential) && boostUri) {
         try {
             // Resolve the boost to get its category
-            const boost = await wallet.invoke.getBoost(credential.boostId);
+            const boost = await wallet.invoke.getBoost(boostUri);
 
             if (boost?.category) {
                 if (!mapAiCredentials) return boost.category as CredentialCategory;
@@ -70,7 +73,7 @@ Hook that servers as a simple wrapper exposing aspects of core wallet functional
 
 // These modify the storage prototype to allow for storing an object in local storage
 // It is temporary solution that will be removed in the near future
-Storage.prototype.setObject = function (key: string, value: any) {
+Storage.prototype.setObject = function (key: string, value: unknown) {
     this.setItem(key, JSON.stringify(value));
 };
 
@@ -132,10 +135,10 @@ export const useWallet = () => {
             generating = false;
 
             return newWallet;
-        } catch (e: any) {
+        } catch (e: unknown) {
             generating = false;
 
-            if (e.message?.includes('Error, no valid private key found')) {
+            if (e instanceof Error && e.message.includes('Error, no valid private key found')) {
                 console.debug('No private key — expected before login.');
             } else {
                 console.warn('Could not initialize wallet', e);
@@ -163,16 +166,17 @@ export const useWallet = () => {
                 const categoryInfo = terms.read.credentials.categories[category];
 
                 if (
-                    categoryInfo &&
-                    categoryInfo.shareAll &&
+                    categoryInfo?.shareAll &&
                     categoryInfo.sharing &&
                     (!categoryInfo.shareUntil || categoryInfo.shareUntil > new Date().toISOString())
                 ) {
+                    if (!record.uri) return;
+
                     const sharedUri = await getOrCreateSharedUriForWallet(
                         learnCard,
                         contract.owner.did,
                         queryClient,
-                        record.uri!,
+                        record.uri,
                         category
                     );
 
@@ -265,13 +269,14 @@ export const useWallet = () => {
     ): Promise<{ result: boolean; credentialUri: string }> => {
         const { title, imgUrl } = metadata;
         const _id = vc.id || uuidv4();
-        let returnUri;
+        let returnUri: string | undefined;
 
         try {
             const wallet = await getWallet();
 
             const category = await getCategoryForCredential(vc, wallet);
-            let result;
+            const boostUri = vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
+            let result: boolean | undefined;
 
             if (skipLCNUser) {
                 const uri2 = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
@@ -279,6 +284,7 @@ export const useWallet = () => {
                     id: _id,
                     uri: uri2,
                     category,
+                    ...(boostUri ? { boostUri } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
                 };
@@ -294,6 +300,7 @@ export const useWallet = () => {
                     id: _id,
                     uri,
                     category,
+                    ...(boostUri ? { boostUri } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
                 };
@@ -393,6 +400,7 @@ export const useWallet = () => {
             if (!vc) throw new Error('No credential was found at the provided URI');
 
             const category = await getCategoryForCredential(vc as VC, wallet);
+            const boostUri = vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
 
             const record = {
                 id: _id,
@@ -401,7 +409,7 @@ export const useWallet = () => {
                 ...(title ? { title } : {}),
                 ...(imgUrl ? { imgUrl } : {}),
                 ...(contractUri ? { contractUri } : {}),
-                ...(vc?.boostId ? { boostUri: vc.boostId } : {}),
+                ...(boostUri ? { boostUri } : {}),
                 __v: 1,
             };
 

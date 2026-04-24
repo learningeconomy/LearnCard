@@ -142,8 +142,15 @@ const ChatInput: React.FC = () => {
                                     chatBotStore.set.resetStore();
 
                                     setTimeout(() => {
+                                        const topicParam = encodeURIComponent(
+                                            thread?.topicCredentialUri ?? ''
+                                        );
+                                        const summaryParam = encodeURIComponent(
+                                            thread?.summaries?.[0]?.credential_uri ?? ''
+                                        );
+
                                         history.push(
-                                            `/ai/sessions?topicBoostUri=${thread?.topicCredentialUri}&summaryUri=${thread?.summaries?.[0]?.credential_uri}`
+                                            `/ai/sessions?topicBoostUri=${topicParam}&summaryUri=${summaryParam}`
                                         );
                                     }, 500);
                                 }}
