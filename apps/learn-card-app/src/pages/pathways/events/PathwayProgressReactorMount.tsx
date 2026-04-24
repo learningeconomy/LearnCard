@@ -88,11 +88,19 @@ const PathwayProgressReactorMount: React.FC = () => {
                     <CredentialClaimedPathwayCta
                         credentialUri={record.credentialUri ?? null}
                         onNavigate={() => closeModal()}
+                        onDismiss={() => closeModal()}
                         className="w-full"
                     />,
                     {
-                        sectionClassName: '!max-w-[500px]',
-                        hideButton: false,
+                        sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
+                        // `hideButton: true` suppresses the modal-chrome
+                        // X. The CTA component has its own primary
+                        // action + "Later" dismiss + auto-dismiss path,
+                        // so adding a third close affordance competes
+                        // with the primary and muddies the moment. The
+                        // transparent sectionClassName above lets our
+                        // glass card provide the only visible surface.
+                        hideButton: true,
                         usePortal: true,
                     },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.Center },

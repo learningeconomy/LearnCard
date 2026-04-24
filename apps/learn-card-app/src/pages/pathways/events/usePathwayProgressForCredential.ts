@@ -44,6 +44,10 @@ import {
     type PathwayProgressReactor,
     type ProgressDispatchRecord,
 } from './pathwayProgressReactor';
+import {
+    computeProgressTier,
+    type ProgressTier,
+} from './progressCtaCopy';
 
 // ---------------------------------------------------------------------------
 // Result shape
@@ -86,6 +90,13 @@ export interface PathwayProgressForCredential {
      * early-return when this is false.
      */
     hasProgress: boolean;
+    /**
+     * Stakes classifier for the event — drives copy, visual weight,
+     * and haptic strength in the CTA component. `'none'` when
+     * `hasProgress` is false; the component uses that as its
+     * early-return signal.
+     */
+    tier: ProgressTier;
     affectedNodes: AffectedNode[];
     affectedOutcomes: AffectedOutcome[];
     /**
@@ -230,9 +241,26 @@ export const usePathwayProgressForCredential = (
         projected.affectedNodes.length > 0
         || projected.affectedOutcomes.length > 0;
 
+    // Compute tier reactively. Reading from the live `pathways`
+    // snapshot (rather than a snapshot-at-dispatch) means tier
+    // stays accurate if the learner happens to complete another
+    // node on the same pathway between the dispatch arriving and
+    // the modal mounting — an edge case, but the computation is
+    // cheap and getting it right costs nothing.
+    const tier = useMemo(() => {
+        if (!hasProgress) return 'none' as const;
+
+        return computeProgressTier({
+            affectedNodes: projected.affectedNodes,
+            affectedOutcomes: projected.affectedOutcomes,
+            pathways,
+        });
+    }, [hasProgress, projected.affectedNodes, projected.affectedOutcomes, pathways]);
+
     return {
         isReady,
         hasProgress,
+        tier,
         affectedNodes: projected.affectedNodes,
         affectedOutcomes: projected.affectedOutcomes,
         dispatch,
