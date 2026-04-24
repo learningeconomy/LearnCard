@@ -16,6 +16,7 @@ import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
+import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
 
 import { useGetIntegrationForListing } from 'learn-card-base';
 
@@ -401,6 +402,39 @@ export function useLearnCardMessageHandlers({
                                             true
                                         )
                                     )?.credentialUri;
+
+                                    // Announce the ingest to the pathway
+                                    // reactor. Without this, pathway nodes
+                                    // that terminate on this credential
+                                    // never re-evaluate — the reactor is
+                                    // event-driven and only wakes on
+                                    // `credential-ingested`. Other ingest
+                                    // call sites (claim-link, dashboard
+                                    // import, self-issue, etc.) publish
+                                    // their own variants; the Partner
+                                    // Connect `SEND_CREDENTIAL` path has
+                                    // been the one gap. We publish best-
+                                    // effort: an event-bus failure should
+                                    // not block the acceptance UX (the VC
+                                    // is already saved by this point).
+                                    if (credentialId) {
+                                        try {
+                                            publishWalletEvent({
+                                                kind: 'credential-ingested',
+                                                eventId: crypto.randomUUID(),
+                                                credentialUri: credentialId,
+                                                vc: credential,
+                                                ingestedAt: new Date().toISOString(),
+                                                source: 'partner-sdk',
+                                            });
+                                        } catch (publishErr) {
+                                            logError(
+                                                'Failed to publish credential-ingested event:',
+                                                publishErr
+                                            );
+                                        }
+                                    }
+
                                     closeModal();
                                     resolve(credentialId ?? true);
                                 } catch (error) {

@@ -1,0 +1,204 @@
+---
+/**
+ * /course — Northstar Cloud Essentials.
+ *
+ * A stripped-down course-player mock. Four chapter rows with checkboxes
+ * (clicked by the learner to simulate progress), then a primary
+ * "Mark course complete" button that:
+ *
+ *   1. Calls `requestIdentity()` to get the learner's DID.
+ *   2. Calls the `issueCourseCompletion` server action with that DID.
+ *      The server signs an `AWSCloudEssentialsCompletion` VC.
+ *   3. Passes the signed VC to `sendCredential(vc)`, which pushes it
+ *      through the Partner Connect bridge into the learner's wallet.
+ *
+ * Once the VC lands in the wallet the pathway-progress reactor
+ * picks up the `CredentialIngested` event, matches the node-1
+ * `credential-type` termination, and auto-completes the node.
+ *
+ * Every chapter toggle is pure UX theatre — the server doesn't care
+ * whether the learner "actually" finished the chapters. In production
+ * a real course-player would gate issuance behind real progress, but
+ * we're not pretending to teach AWS here; we're demoing the matcher.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const chapters = [
+    {
+        id: 'ec2',
+        title: 'Chapter 1 · Compute with EC2',
+        meta: '18 min · video + quick check',
+    },
+    {
+        id: 's3',
+        title: 'Chapter 2 · Object storage with S3',
+        meta: '14 min · video + quick check',
+    },
+    {
+        id: 'iam',
+        title: 'Chapter 3 · Identity & access with IAM',
+        meta: '22 min · video + quick check',
+    },
+    {
+        id: 'vpc',
+        title: 'Chapter 4 · Networking with VPC',
+        meta: '19 min · video + quick check',
+    },
+];
+---
+
+<BaseLayout title="Cloud Essentials" activeNav="course">
+    <div class="container container-narrow">
+        <p class="page-eyebrow">Northstar · Cloud Essentials</p>
+
+        <h1 class="page-title">AWS Cloud Essentials</h1>
+
+        <p class="page-lede">
+            Four chapters covering the compute, storage, identity, and networking
+            fundamentals of AWS. When you finish, Northstar issues a signed
+            completion credential to your wallet &mdash; no upload required.
+        </p>
+
+        <div
+            class="banner is-info"
+            id="status-banner"
+        >
+            <span class="banner-icon" aria-hidden="true">i</span>
+            <span id="status-text">
+                Check off the chapters as you go, then hit <strong>Mark course complete</strong>.
+                Your completion credential will drop into your wallet automatically.
+            </span>
+        </div>
+
+        <section class="card u-stack">
+            {chapters.map(ch => (
+                <label class="card-row" data-chapter-id={ch.id}>
+                    <span class="checkbox" aria-hidden="true"></span>
+                    <span style="flex: 1;">
+                        <span class="card-row-title">{ch.title}</span>
+                        <span class="card-row-meta">{ch.meta}</span>
+                    </span>
+                </label>
+            ))}
+        </section>
+
+        <div style="margin-top: 28px;">
+            <button
+                class="btn btn-success btn-block"
+                id="complete-btn"
+                disabled
+            >
+                <span id="complete-label">Finish all chapters to continue</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        import { actions } from 'astro:actions';
+        import { createPartnerConnect } from '@learncard/partner-connect';
+
+        // Plain JS — Astro inline scripts get pre-scanned by esbuild
+        // in JS mode; TS-only syntax makes the scanner bail and the
+        // whole script fails to load (click handlers never bind).
+        //
+        // Each page creates its OWN SDK instance rather than reading
+        // window.__northstar — page scripts and the BaseLayout's
+        // script load as independent modules in document order, and
+        // the page often runs first, so the global isn't set yet and
+        // any read on it throws (wiping every handler below).
+        const learnCard = createPartnerConnect();
+
+        // -- Chapter checkbox state ---------------------------------------
+
+        const rows = Array.from(document.querySelectorAll('.card-row'));
+        const completeBtn = document.getElementById('complete-btn');
+        const completeLabel = document.getElementById('complete-label');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+
+        const completed = new Set();
+
+        const refreshCompleteButton = () => {
+            if (!completeBtn || !completeLabel) return;
+            const allDone = completed.size === rows.length;
+            completeBtn.disabled = !allDone;
+            completeLabel.textContent = allDone
+                ? 'Mark course complete'
+                : `${completed.size} of ${rows.length} chapters done`;
+        };
+
+        rows.forEach(row => {
+            const checkbox = row.querySelector('.checkbox');
+            const id = row.dataset.chapterId ?? '';
+
+            row.addEventListener('click', () => {
+                if (completed.has(id)) {
+                    completed.delete(id);
+                    checkbox?.classList.remove('is-checked');
+                } else {
+                    completed.add(id);
+                    checkbox?.classList.add('is-checked');
+                }
+                refreshCompleteButton();
+            });
+        });
+
+        refreshCompleteButton();
+
+        // -- Issuance flow ------------------------------------------------
+
+        const setStatus = (kind, html) => {
+            if (!statusBanner || !statusText) return;
+            statusBanner.classList.remove('is-info', 'is-success', 'is-error');
+            statusBanner.classList.add(`is-${kind}`);
+            statusText.innerHTML = html;
+        };
+
+        completeBtn?.addEventListener('click', async () => {
+            if (!completeBtn || !completeLabel) return;
+
+            completeBtn.disabled = true;
+            completeLabel.innerHTML =
+                '<span class="spinner" aria-hidden="true"></span> Issuing your credential&hellip;';
+
+            try {
+                const identity = await learnCard.requestIdentity();
+                const learnerDid = identity?.user?.did;
+
+                if (!learnerDid) {
+                    throw new Error('Could not read your wallet DID. Is LearnCard connected?');
+                }
+
+                const result = await actions.issueCourseCompletion({ learnerDid });
+
+                // Astro actions wrap the response; real shape is result.data.
+                if (result.error || !result.data?.credential) {
+                    throw new Error('Northstar failed to sign your completion credential.');
+                }
+
+                await learnCard.sendCredential(result.data.credential);
+
+                setStatus(
+                    'success',
+                    '<strong>Credential sent!</strong> Your AWS Cloud Essentials completion is in your wallet. Hop back to your pathway &mdash; the next step should be unlocked.',
+                );
+
+                completeLabel.textContent = '\u2713 Credential sent';
+                // Keep button disabled after success so the learner
+                // doesn't double-issue by accident.
+                window.dispatchEvent(new CustomEvent('northstar:auth-changed'));
+            } catch (err) {
+                console.error('[course] completion failed:', err);
+                setStatus(
+                    'error',
+                    `Something went wrong: ${
+                        err instanceof Error ? err.message : 'unknown error'
+                    }. Please try again.`,
+                );
+                completeBtn.disabled = false;
+                completeLabel.textContent = 'Mark course complete';
+            }
+        });
+    </script>
+</BaseLayout>

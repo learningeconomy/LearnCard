@@ -1,0 +1,23 @@
+{
+  "name": "@learncard/app-store-demo-northstar-learning",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Northstar Learning — multi-product showcase app for the AWS Cloud Practitioner pathway demo. Issues three different VC shapes (credential-type, score-threshold, OBv3 achievement) so the LearnCard pathways reactor can match each via a different requirement kind.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/netlify": "^6.6.5",
+    "@learncard/init": "workspace:*",
+    "@learncard/partner-connect": "workspace:*",
+    "astro": "^5.0.0"
+  },
+  "devDependencies": {
+    "prettier-plugin-astro": "^0.5.4"
+  }
+}

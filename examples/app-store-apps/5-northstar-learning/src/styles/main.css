@@ -1,0 +1,777 @@
+/* ---------------------------------------------------------------------------
+   Northstar Learning — shared stylesheet.
+
+   Design language:
+     - Deep-navy brand color (`--brand-900`) for anchors (logo, primary text)
+       and emerald (`--emerald-600` family) for any "progress" or "completed"
+       affordance. Mirrors the LearnCard app's palette so the demo feels
+       native to the host wallet while still having its own identity.
+     - Inter font (same choice as other app-store-demo apps).
+     - Generous radii (`--radius-lg: 20px`) on buttons and cards to match
+       the host app's pill-and-card aesthetic.
+     - Zero framework — vanilla CSS — to keep the example readable for
+       partners without dragging Tailwind into every example.
+--------------------------------------------------------------------------- */
+
+:root {
+    --brand-900: #0f1f3d;
+    --brand-800: #1a2c56;
+    --brand-500: #4b5c7f;
+    --brand-300: #8b95ac;
+
+    --ink-900: #18224e;
+    --ink-700: #52597a;
+    --ink-600: #6f7590;
+    --ink-500: #8b91a7;
+    --ink-400: #a8acbd;
+    --ink-300: #c5c8d3;
+    --ink-200: #e2e3e9;
+    --ink-100: #eff0f5;
+    --ink-50: #f8f9fc;
+
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-400: #34d399;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-900: #064e3b;
+
+    --amber-50: #fffbeb;
+    --amber-500: #f59e0b;
+    --amber-700: #b45309;
+
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-500: #ef4444;
+    --red-700: #b91c1c;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+
+    --shadow-sm: 0 1px 2px rgba(15, 31, 61, 0.05);
+    --shadow-md: 0 4px 12px rgba(15, 31, 61, 0.06);
+    --shadow-lg: 0 12px 32px rgba(15, 31, 61, 0.1);
+
+    --font-family:
+        'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+        Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    color: var(--ink-900);
+    background: var(--ink-50);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* -- Layout shell --------------------------------------------------------- */
+
+.page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+}
+
+.container-narrow {
+    max-width: 720px;
+}
+
+/* -- Header --------------------------------------------------------------- */
+
+.header {
+    background: #fff;
+    border-bottom: 1px solid var(--ink-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: saturate(180%) blur(12px);
+    background: rgba(255, 255, 255, 0.88);
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    gap: 24px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--brand-900);
+    letter-spacing: -0.01em;
+}
+
+.brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--brand-900), var(--brand-800));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+}
+
+.brand-mark::after {
+    /* small emerald "North star" accent dot, upper-right of the mark */
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--emerald-500);
+    border: 2px solid #fff;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nav-link {
+    padding: 8px 14px;
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-700);
+    transition:
+        background 150ms ease,
+        color 150ms ease;
+    white-space: nowrap;
+}
+
+.nav-link:hover {
+    background: var(--ink-100);
+    color: var(--ink-900);
+}
+
+.nav-link.is-active {
+    background: var(--brand-900);
+    color: #fff;
+}
+
+.auth-pill {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--ink-100);
+    color: var(--ink-700);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.auth-pill.is-connected {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+.auth-pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ink-400);
+}
+
+.auth-pill.is-connected::before {
+    background: var(--emerald-500);
+}
+
+/* -- Main content --------------------------------------------------------- */
+
+main {
+    flex: 1;
+    padding: 48px 0 80px;
+}
+
+.page-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--emerald-700);
+    margin: 0 0 8px;
+}
+
+h1.page-title {
+    font-size: 32px;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink-900);
+    margin: 0 0 12px;
+}
+
+.page-lede {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-600);
+    margin: 0 0 32px;
+    max-width: 600px;
+}
+
+h2.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+    margin: 40px 0 16px;
+}
+
+/* -- Cards ---------------------------------------------------------------- */
+
+.card {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+}
+
+.card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    transition: background 120ms ease;
+}
+
+.card-row + .card-row {
+    margin-top: 4px;
+}
+
+.card-row:hover {
+    background: var(--ink-50);
+}
+
+.card-row-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-900);
+    margin: 0 0 2px;
+}
+
+.card-row-meta {
+    font-size: 12px;
+    color: var(--ink-500);
+    margin: 0;
+}
+
+.checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    border: 1.5px solid var(--ink-300);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        border-color 150ms ease,
+        background 150ms ease,
+        transform 120ms ease;
+    flex-shrink: 0;
+}
+
+.checkbox:hover {
+    border-color: var(--emerald-500);
+}
+
+.checkbox.is-checked {
+    background: var(--emerald-500);
+    border-color: var(--emerald-500);
+}
+
+.checkbox.is-checked::after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+
+/* -- Buttons -------------------------------------------------------------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    font-weight: 500;
+    transition:
+        background 150ms ease,
+        opacity 150ms ease,
+        transform 120ms ease;
+    min-height: 44px;
+    line-height: 1;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: var(--brand-900);
+    color: #fff;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--brand-800);
+}
+
+.btn-success {
+    background: var(--emerald-600);
+    color: #fff;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: var(--emerald-700);
+}
+
+.btn-secondary {
+    background: #fff;
+    color: var(--ink-700);
+    border: 1px solid var(--ink-300);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--ink-50);
+    color: var(--ink-900);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 999px;
+    animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* -- Score ring (practice page) ------------------------------------------ */
+
+.score-hero {
+    background: linear-gradient(135deg, var(--brand-900), var(--brand-800));
+    color: #fff;
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    box-shadow: var(--shadow-lg);
+}
+
+.score-ring {
+    width: 96px;
+    height: 96px;
+    border-radius: 999px;
+    background:
+        conic-gradient(
+            var(--emerald-400) calc(var(--pct, 0) * 1%),
+            rgba(255, 255, 255, 0.15) 0
+        );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 400ms ease;
+}
+
+.score-ring-inner {
+    width: 76px;
+    height: 76px;
+    border-radius: 999px;
+    background: var(--brand-900);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.score-meta {
+    flex: 1;
+}
+
+.score-meta h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.score-meta p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+}
+
+/* -- Exam list (practice page) ------------------------------------------- */
+
+.exam-list {
+    margin-top: 0;
+}
+
+.exam-row-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.exam-score-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--ink-100);
+    color: var(--ink-600);
+    font-variant-numeric: tabular-nums;
+}
+
+.exam-score-badge.is-pass {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+.exam-score-badge.is-fail {
+    background: var(--amber-50);
+    color: var(--amber-700);
+}
+
+/* -- Chat (coaching page) ------------------------------------------------ */
+
+.chat {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.chat-bubble {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.chat-bubble.is-ai {
+    background: var(--ink-100);
+    color: var(--ink-900);
+    border-bottom-left-radius: 6px;
+    align-self: flex-start;
+}
+
+.chat-bubble.is-user {
+    background: var(--brand-900);
+    color: #fff;
+    border-bottom-right-radius: 6px;
+    align-self: flex-end;
+}
+
+.chat-skill-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.chat-skill-chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+/* -- Hero home page ------------------------------------------------------ */
+
+.hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    padding: 48px 0 24px;
+}
+
+.hero-art {
+    background: linear-gradient(135deg, var(--brand-900), var(--brand-800));
+    border-radius: var(--radius-xl);
+    aspect-ratio: 1 / 1;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.hero-art::before {
+    content: '';
+    position: absolute;
+    inset: 20%;
+    background: radial-gradient(
+        circle,
+        var(--emerald-400) 0%,
+        transparent 60%
+    );
+    opacity: 0.5;
+    filter: blur(16px);
+}
+
+.hero-art-label {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    right: 24px;
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 28px 0;
+}
+
+.product-card {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    transition:
+        transform 200ms ease,
+        box-shadow 200ms ease,
+        border-color 200ms ease;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: inherit;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--emerald-400);
+}
+
+.product-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.product-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink-900);
+    margin: 0;
+}
+
+.product-card-desc {
+    font-size: 13px;
+    color: var(--ink-600);
+    margin: 0;
+    line-height: 1.55;
+}
+
+/* -- Status banner ------------------------------------------------------- */
+
+.banner {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 20px;
+}
+
+.banner-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    margin-top: 1px;
+}
+
+.banner.is-info {
+    background: var(--ink-100);
+    color: var(--ink-700);
+}
+
+.banner.is-info .banner-icon {
+    background: var(--ink-500);
+}
+
+.banner.is-success {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+.banner.is-success .banner-icon {
+    background: var(--emerald-500);
+}
+
+.banner.is-error {
+    background: var(--red-50);
+    color: var(--red-700);
+}
+
+.banner.is-error .banner-icon {
+    background: var(--red-500);
+}
+
+.banner.is-hidden {
+    display: none;
+}
+
+/* -- Footer -------------------------------------------------------------- */
+
+.footer {
+    padding: 32px 0;
+    border-top: 1px solid var(--ink-200);
+    font-size: 12px;
+    color: var(--ink-500);
+    text-align: center;
+}
+
+.footer a {
+    color: var(--ink-700);
+    text-decoration: underline;
+    text-decoration-color: var(--ink-300);
+}
+
+/* -- Utilities ----------------------------------------------------------- */
+
+.u-stack > * + * {
+    margin-top: 12px;
+}
+
+.u-stack-lg > * + * {
+    margin-top: 24px;
+}
+
+.u-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 720px) {
+    .hero {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-art {
+        display: none;
+    }
+
+    .product-grid {
+        grid-template-columns: 1fr;
+    }
+
+    h1.page-title {
+        font-size: 26px;
+    }
+}

@@ -91,40 +91,48 @@ interface PresetEntry {
  * in-app path (DIRECT_LINK leaves the app, EMBEDDED_IFRAME opens inline,
  * AI_TUTOR renders the MCP-backed chat surface).
  */
+// All three listings back routes of the `5-northstar-learning` example app
+// (see `examples/app-store-apps/5-northstar-learning/`). Each one exercises
+// a different credential-matcher kind on the demo pathway: credential-type
+// (course), score-threshold (practice), ob-achievement (coaching). The URLs
+// below are the local dev ports; override at seed time with `--app-url` if
+// you're pointing the Astro app at a staging host.
+//
+// The `demo-coursera-aws-essentials` slug is kept historical for UUIDv5
+// stability — renaming it would break every previously-seeded listing_id.
+// Read it as a stable opaque identifier; the surfaced brand is Northstar.
 const PATHWAY_DEMO_PRESET: PresetEntry[] = [
     {
         slug: 'demo-coursera-aws-essentials',
-        appName: 'Coursera — AWS Cloud Essentials',
-        appUrl: 'https://www.coursera.org/learn/aws-cloud-technical-essentials',
+        appName: 'Northstar — Cloud Essentials',
+        appUrl: 'http://localhost:4321/course',
         launchType: 'DIRECT_LINK',
         category: 'Learning',
-        tagline: 'Learn the fundamentals of AWS cloud.',
+        tagline: 'Video-led intro to EC2, S3, IAM, and VPC.',
         fullDescription:
-            'A ~2-week Coursera course covering core AWS services: EC2, S3, IAM, VPC. Ideal preparation for the Cloud Practitioner exam.',
+            'Northstar Learning’s structured Cloud Essentials course. Work through four chapters on EC2, S3, IAM, and VPC; mark complete to receive your AWSCloudEssentialsCompletion credential automatically.',
         iconUrl: 'https://cdn.filestackcontent.com/RXaNgRHTHCNr3meO1G0A',
     },
     {
         slug: 'demo-aws-practice-studio',
-        appName: 'AWS Practice Studio',
-        // Points at the local dev app shell so the iframe actually loads on
-        // a fresh clone. Override with --app-url when pointing at a real one.
-        appUrl: 'http://localhost:4321',
+        appName: 'Northstar — Practice Exams',
+        appUrl: 'http://localhost:4321/practice',
         launchType: 'EMBEDDED_IFRAME',
         category: 'Practice',
-        tagline: 'In-app AWS CCP practice questions.',
+        tagline: 'Timed AWS Cloud Practitioner practice exams.',
         fullDescription:
-            'Timed practice questions for the AWS Certified Cloud Practitioner exam. Runs inline inside LearnCard.',
+            'Five timed Cloud Practitioner practice exams with a running average score. Submitting your practice log issues an AWSPracticeExamScore credential; the pathway unlocks when your average clears 80%.',
         iconUrl: 'https://cdn.filestackcontent.com/erbcRQfTG2TktX2hcmLu',
     },
     {
         slug: 'demo-aws-cloud-coach',
-        appName: 'Cloud Coach',
-        appUrl: 'https://learncard.local/ai-tutors/cloud-coach',
+        appName: 'Northstar — AI Coach',
+        appUrl: 'http://localhost:4321/coaching',
         launchType: 'AI_TUTOR',
         category: 'Tutor',
-        tagline: 'One-on-one AI tutor for AWS deep-dives.',
+        tagline: 'One-on-one coaching drills on your weakest AWS topics.',
         fullDescription:
-            'A Cloud Coach that helps you close specific gaps before your exam — ask about IAM roles, VPC peering, or anything the practice questions surfaced.',
+            'AI-driven coaching drills targeted at the topics your practice exams flagged as weak. Finishing a drill issues an OBv3-shaped coaching badge that closes out the coaching node of your pathway.',
         iconUrl: 'https://cdn.filestackcontent.com/aWUPGBPRFenRT9taokA6',
     },
 ];

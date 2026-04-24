@@ -61,7 +61,7 @@ const shouldPresentForDispatch = (record: ProgressDispatchRecord): boolean => {
 };
 
 const PathwayProgressReactorMount: React.FC = () => {
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, closeAllModals } = useModal();
 
     // Debounce: a single credential can produce multiple
     // dispatches rapidly (outcomes + nodes), but we only want ONE
@@ -87,7 +87,24 @@ const PathwayProgressReactorMount: React.FC = () => {
                 newModal(
                     <CredentialClaimedPathwayCta
                         credentialUri={record.credentialUri ?? null}
-                        onNavigate={() => closeModal()}
+                        // "View Pathway" should land the learner on the
+                        // pathway route with no overlays in the way.
+                        // Credentials can arrive while the learner is
+                        // inside an embed app (the iframe wrapper is
+                        // itself rendered through `useModal` — see
+                        // `EmbedIframeModal`), so popping only the CTA
+                        // leaves the embed modal behind and the
+                        // pathway route rendered *under* it. We close
+                        // the whole modal stack so the navigation is
+                        // visually clean. The routed full-screen embed
+                        // (`/apps/:appId`) isn't a modal, so this is a
+                        // no-op there — the subsequent `history.push`
+                        // unmounts it via normal router semantics.
+                        onNavigate={() => closeAllModals()}
+                        // "Later" / auto-dismiss should only pop the
+                        // CTA itself — the learner asked to stay put,
+                        // so we leave any embed modal they were using
+                        // untouched.
                         onDismiss={() => closeModal()}
                         className="w-full"
                     />,

@@ -1,0 +1,164 @@
+---
+// BaseLayout — shared chrome for every Northstar page.
+//
+// Renders:
+//   - head with Inter font and the shared stylesheet.
+//   - Sticky header with the Northstar brand mark, three product-nav
+//     links (Course / Practice / Coaching), and a wallet-connect pill.
+//   - main slot for page content.
+//   - Footer with links back to LearnCard and a tiny credit line.
+//   - A tail script that initialises the Partner Connect SDK once
+//     per page, checks wallet-connect status, and wires the pill UI.
+//
+// Pages are individually responsible for their OWN partner-connect
+// calls (requestIdentity, sendCredential, etc) — the layout only
+// handles the header pill. That split keeps each page's issuance flow
+// readable in its own file rather than scattered across a shared init
+// module.
+
+import '../styles/main.css';
+
+interface Props {
+    title: string;
+    activeNav?: 'home' | 'course' | 'practice' | 'coaching';
+}
+
+const { title, activeNav = 'home' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title} · Northstar Learning</title>
+        <meta
+            name="description"
+            content="Northstar Learning — AWS Cloud Practitioner cert prep with course, practice exams, and AI coaching. Demo integration for the LearnCard pathways platform."
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <div class="page">
+            <header class="header">
+                <div class="container header-inner">
+                    <a href="/" class="brand" aria-label="Northstar Learning home">
+                        <span class="brand-mark" aria-hidden="true">N</span>
+                        <span>Northstar</span>
+                    </a>
+
+                    <nav class="nav" aria-label="Main">
+                        <a
+                            href="/course"
+                            class={`nav-link ${activeNav === 'course' ? 'is-active' : ''}`}
+                        >Cloud Essentials</a>
+                        <a
+                            href="/practice"
+                            class={`nav-link ${activeNav === 'practice' ? 'is-active' : ''}`}
+                        >Practice Exams</a>
+                        <a
+                            href="/coaching"
+                            class={`nav-link ${activeNav === 'coaching' ? 'is-active' : ''}`}
+                        >AI Coach</a>
+                    </nav>
+
+                    <div class="auth-pill" id="auth-pill" aria-live="polite">
+                        Not connected
+                    </div>
+                </div>
+            </header>
+
+            <main>
+                <slot />
+            </main>
+
+            <footer class="footer">
+                <div class="container">
+                    Northstar Learning is a demo app showcasing the
+                    <a
+                        href="https://github.com/learningeconomy/learncard"
+                        target="_blank"
+                        rel="noopener"
+                    >LearnCard</a> pathways platform. Credentials issued here are real, signed, and
+                    flow through the learner&rsquo;s wallet like any production integration.
+                </div>
+            </footer>
+        </div>
+
+        <script>
+            // Shared header-pill auth wiring. Every page inherits this
+            // behaviour; page-specific sendCredential calls live in
+            // each page's own script tag. The pill listens for a custom
+            // northstar:auth-changed event so pages that trigger a
+            // fresh auth check can keep the pill in sync.
+
+            import { createPartnerConnect } from '@learncard/partner-connect';
+
+            const pill = document.getElementById('auth-pill');
+            const learnCard = createPartnerConnect();
+
+            // Note: page scripts deliberately create their OWN SDK
+            // instance rather than reading off window here. Astro
+            // loads page + layout scripts as independent modules in
+            // document order, and the page script often runs first —
+            // reading a window-global set here races against undefined
+            // and blows away the page's handlers. Duplicate
+            // createPartnerConnect calls are cheap (stacked
+            // postMessage listeners, no side effects).
+
+            const renderConnected = (displayName) => {
+                if (!pill) return;
+                pill.textContent = displayName;
+                pill.classList.add('is-connected');
+            };
+
+            const renderDisconnected = () => {
+                if (!pill) return;
+                pill.textContent = 'Not connected';
+                pill.classList.remove('is-connected');
+            };
+
+            const refresh = async () => {
+                try {
+                    const identity = await learnCard.requestIdentity();
+                    // IdentityResponse types user.profile narrowly; the
+                    // host sometimes includes a displayName but the SDK's
+                    // type surface doesn't guarantee it. We read through an
+                    // opaque record so the normal "no displayName, use did"
+                    // fallback path still works.
+                    const profile = (identity && identity.user && identity.user.profile) || {};
+                    const maybeDisplayName =
+                        typeof profile.displayName === 'string' ? profile.displayName : null;
+                    const did = (identity && identity.user && identity.user.did) || null;
+                    const displayName =
+                        maybeDisplayName ||
+                        (did ? did.slice(0, 18) + '\u2026' : 'Connected');
+                    renderConnected(displayName);
+                } catch (err) {
+                    const code = err && err.code;
+                    if (code === 'LC_UNAUTHENTICATED') {
+                        renderDisconnected();
+                    } else {
+                        // Any other failure (e.g. running the app
+                        // standalone outside a LearnCard host) — show
+                        // disconnected. Don't throw; the page can
+                        // still render its demo UI.
+                        renderDisconnected();
+                        console.warn('[northstar] auth check failed:', err);
+                    }
+                }
+            };
+
+            window.addEventListener('northstar:auth-changed', () => {
+                refresh();
+            });
+
+            refresh();
+        </script>
+    </body>
+</html>

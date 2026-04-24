@@ -39,26 +39,34 @@ import { AWS_DEMO_LISTING_IDS } from './presetListings';
 // *immediately*, and gives agents something to reason about without a hop.
 // ---------------------------------------------------------------------------
 
+// All three preset listings are backed by the `5-northstar-learning`
+// example Astro app (see `examples/app-store-apps/5-northstar-learning/`).
+// They surface in the pathway Map as three distinct app-listings under
+// one coherent brand — matching the way real multi-product learning
+// platforms (Coursera + Practice + Coach) actually ship. Each listing
+// points at a different route of the same app deploy; the brain-service
+// side of the seed (services/learn-card-network/brain-service/scripts/
+// seed-dev-app.ts) carries the real launch URLs for each slug.
 const AWS_DEMO_PRESET_LISTINGS: Record<string, ListingSnapshotInput> = {
     [AWS_DEMO_LISTING_IDS.courseraEssentials]: {
-        name: 'Coursera — AWS Cloud Essentials',
+        name: 'Northstar: Cloud Essentials',
         category: 'Learning',
         launch_type: 'DIRECT_LINK',
-        tagline: 'Learn the fundamentals of AWS cloud.',
+        tagline: 'Video-led intro to EC2, S3, IAM, and VPC.',
         icon_url: 'https://cdn.filestackcontent.com/RXaNgRHTHCNr3meO1G0A',
     },
     [AWS_DEMO_LISTING_IDS.practiceStudio]: {
-        name: 'AWS Practice Studio',
+        name: 'Northstar: Practice Exams',
         category: 'Practice',
         launch_type: 'EMBEDDED_IFRAME',
-        tagline: 'In-app AWS CCP practice questions.',
+        tagline: 'Timed AWS Cloud Practitioner practice exams with score tracking.',
         icon_url: 'https://cdn.filestackcontent.com/erbcRQfTG2TktX2hcmLu',
     },
     [AWS_DEMO_LISTING_IDS.cloudCoach]: {
-        name: 'Cloud Coach',
+        name: 'Northstar: AI Coach',
         category: 'Tutor',
         launch_type: 'AI_TUTOR',
-        tagline: 'One-on-one AI tutor for AWS deep-dives.',
+        tagline: 'One-on-one coaching drills on the AWS topics you’re weakest on.',
         icon_url: 'https://cdn.filestackcontent.com/aWUPGBPRFenRT9taokA6',
     },
 };
@@ -178,19 +186,30 @@ export const seedDemoPathwayIfEmpty = (learnerDid: string): void => {
 // AWS Cloud Practitioner demo pathway (post-v0.5 showcase)
 // ---------------------------------------------------------------------------
 //
-// A 7-node pathway authored to exercise every meaningful ActionDescriptor
+// An 8-node pathway authored to exercise every meaningful ActionDescriptor
 // dispatch path AND every new termination kind in the pathway-progress
 // reactor architecture. Intended to be seeded *after*
 // `pnpm lc seed pathway-demo` has populated the matching listings
 // (see `presetListings.ts` for ID derivation).
 //
 // Node / kind mapping:
-//   1. Watch course     → `app-listing` (Coursera,        DIRECT_LINK)
-//                       · termination: `artifact-count` (upload completion cert)
-//   2. Practice exam    → `app-listing` (Practice Studio, EMBEDDED_IFRAME)
-//                       · termination: `artifact-count`
-//   3. AI coaching      → `app-listing` (Cloud Coach,     AI_TUTOR — third-party)
-//                       · termination: `self-attest`
+//   0. Prep: real Coursera intro → `external-url` (no listing, real partner)
+//                       · termination: `self-attest` — the learner confirms
+//                         they watched the video; there's no VC to match,
+//                         no artifact to upload. Demonstrates the "partner
+//                         we don't control" flavor: authoring a node
+//                         against a real third-party URL with no backend
+//                         issuance contract.
+//   1. Northstar course → `app-listing` (Northstar Cloud Essentials, DIRECT_LINK)
+//                       · termination: `requirement-satisfied` /
+//                         `credential-type`. Northstar issues a
+//                         `AWSCloudEssentialsCompletion` VC on finish.
+//   2. Practice exam    → `app-listing` (Northstar Practice, EMBEDDED_IFRAME)
+//                       · termination: `requirement-satisfied` /
+//                         `score-threshold` reading a numeric field.
+//   3. AI coaching      → `app-listing` (Northstar Coach, AI_TUTOR — third-party)
+//                       · termination: `requirement-satisfied` /
+//                         `ob-achievement` matching an OBv3 achievement id.
 //   4. IAM deep dive    → `ai-session`   (first-party LC tutor — full shape)
 //                       · termination: `session-completed` — the node auto-
 //                         completes when the reactor sees an
@@ -240,23 +259,70 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         updatedAt: now,
     };
 
-    // --- Node 1: watch the Coursera course -------------------------------
+    // --- Node 0: prep on the real Coursera course ------------------------
+    //
+    // Pure `external-url` action paired with a `self-attest`
+    // termination. The destination URL is a real, live Coursera course
+    // we don't control — no listing, no issuance contract, no backend
+    // signalling available. Demonstrates the authoring flavor for
+    // "real-world partner we can't change". The learner goes, watches,
+    // comes back and toggles "I watched it" — the honor-system path.
+    //
+    // This sits before the Northstar course node so the story reads:
+    //   "skim the industry-standard Coursera intro, then come back and
+    //    work through Northstar's structured curriculum for the VC."
+    // Both cover similar material; the point is the *authoring
+    // contract difference*, not duplicated content.
     pathway = addNode(pathway, {
-        title: 'Watch: AWS Cloud Essentials',
+        title: 'Prep: skim the Coursera AWS intro',
         description:
-            'Work through the ~2-week Coursera course covering EC2, S3, IAM, and VPC fundamentals. Upload your completion certificate when you finish.',
+            'Warm up with the free Coursera "AWS Cloud Technical Essentials" course — a quick overview of the core services before you start Northstar’s structured curriculum. Mark done when you’ve watched enough to feel oriented.',
+    });
+    const nCoursera = pathway.nodes[pathway.nodes.length - 1];
+
+    pathway = setPolicy(pathway, nCoursera.id, {
+        kind: 'practice',
+        cadence: { frequency: 'daily', perPeriod: 1 },
+        artifactTypes: ['text'],
+    });
+    pathway = setTermination(pathway, nCoursera.id, {
+        kind: 'self-attest',
+        prompt: 'I watched the Coursera AWS Cloud Essentials intro.',
+    });
+    pathway = setAction(pathway, nCoursera.id, {
+        kind: 'external-url',
+        url: 'https://www.coursera.org/learn/aws-cloud-technical-essentials',
+    });
+
+    // --- Node 1: watch the Northstar course ------------------------------
+    //
+    // Termination: `requirement-satisfied` with a `credential-type`
+    // leaf. Northstar's course app issues an
+    // `AWSCloudEssentialsCompletion` VC when the learner clicks “Mark
+    // course complete”; the reactor matches it here and auto-completes
+    // the node with no upload step. This is the simplest matcher kind
+    // (match by W3C `type`) wired to a real issuing example app — the
+    // path most partners will start with.
+    pathway = addNode(pathway, {
+        title: 'Course: Northstar Cloud Essentials',
+        description:
+            'Work through Northstar’s Cloud Essentials course covering EC2, S3, IAM, and VPC fundamentals. Your completion credential arrives automatically when you finish.',
     });
     const n1 = pathway.nodes[pathway.nodes.length - 1];
 
     pathway = setPolicy(pathway, n1.id, {
         kind: 'artifact',
-        prompt: 'Upload a screenshot or PDF of your Coursera completion certificate.',
-        expectedArtifact: 'image',
+        prompt:
+            'No upload needed — Northstar issues your completion credential automatically when you finish the course.',
+        expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n1.id, {
-        kind: 'artifact-count',
-        count: 1,
-        artifactType: 'image',
+        kind: 'requirement-satisfied',
+        requirement: {
+            kind: 'credential-type',
+            type: 'AWSCloudEssentialsCompletion',
+        },
+        minTrustTier: 'trusted',
     });
     {
         // Snapshot so the Map renders the right icon/name on first
@@ -271,23 +337,51 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
         });
     }
 
-    // --- Node 2: practice exam (iframe) ----------------------------------
+    // --- Node 2: practice exams on Northstar Practice --------------------
+    //
+    // Termination: `requirement-satisfied` with a `score-threshold`
+    // leaf. Northstar Practice issues a VC of type
+    // `AWSPracticeExamScore` whose `credentialSubject.practiceScore`
+    // carries the learner’s average across five timed exams. The
+    // matcher reads that field and gates the node on the score clearing
+    // 80 — “do they know enough to book the real thing?”. Demonstrates
+    // *semantic* gating: the pathway reads numeric values out of VCs,
+    // not just “did this badge arrive”.
     pathway = addNode(pathway, {
-        title: 'Practice: 5 timed exams in Practice Studio',
+        title: 'Practice: 5 timed exams on Northstar Practice',
         description:
-            'Take five timed practice exams in the embedded Practice Studio app. Aim for 80%+ before scheduling the real thing.',
+            'Take five timed practice exams on Northstar Practice. Your score credential arrives automatically — the pathway unlocks when your average clears 80%.',
     });
     const n2 = pathway.nodes[pathway.nodes.length - 1];
 
     pathway = setPolicy(pathway, n2.id, {
         kind: 'artifact',
-        prompt: 'Log or screenshot each practice run; the app stores your score history.',
-        expectedArtifact: 'text',
+        prompt:
+            'No upload needed — Northstar Practice issues your score credential automatically when you submit your practice log.',
+        expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n2.id, {
-        kind: 'artifact-count',
-        count: 5,
-        artifactType: 'text',
+        kind: 'requirement-satisfied',
+        requirement: {
+            kind: 'score-threshold',
+            // Northstar's practice-score VC declares this custom type
+            // via an absolute-IRI entry in the VC `type` array
+            // (`https://ns.northstar.learning/v1#AWSPracticeExamScore`).
+            // The matcher's `typeMatches` helper strips prefixes, so
+            // authoring against the short name is the ergonomic form.
+            type: 'AWSPracticeExamScore',
+            // OBv3-native score location: `credentialSubject.result[0].value`.
+            // `readPath` splits on `.` and walks string-indexed array
+            // positions, so `result.0.value` resolves into the first
+            // `Result` entry's `value` field. Using OBv3's canonical
+            // result slot (rather than a flat custom `practiceScore`
+            // property) keeps the VC signable under strict JSON-LD
+            // without a custom context document.
+            field: 'result.0.value',
+            op: '>=',
+            value: 80,
+        },
+        minTrustTier: 'trusted',
     });
     {
         const snap = presetSnapshot(AWS_DEMO_LISTING_IDS.practiceStudio, now);
@@ -300,21 +394,35 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
     }
 
     // --- Node 3: AI coach deep dive --------------------------------------
+    //
+    // Termination: `requirement-satisfied` with an `ob-achievement`
+    // leaf. Northstar AI Coach issues an OBv3-shaped VC whose
+    // `credentialSubject.achievement.id` points at this exact URL.
+    // Demonstrates OBv3 alignment — the matcher pattern used by Credly,
+    // Badgr, Accredible, and the large slice of the credential
+    // ecosystem that lives in Open Badges v3. Different identifier
+    // *scheme* entirely from nodes 1 and 2; same reactor pipeline
+    // commits them all.
     pathway = addNode(pathway, {
         title: 'Deep dive: AI-coached gap close',
         description:
-            'Use Cloud Coach to drill the topics your practice exams flagged as weak. IAM roles, VPC peering, and cost analyzers are common traps.',
+            'Use Northstar AI Coach to drill the topics your practice exams flagged as weak. IAM roles, VPC peering, and cost analyzers are common traps — the coach issues an Open Badge when you finish your drill.',
     });
     const n3 = pathway.nodes[pathway.nodes.length - 1];
 
     pathway = setPolicy(pathway, n3.id, {
         kind: 'artifact',
-        prompt: 'Jot down one thing the AI coach clarified that the recorded course didn\'t.',
-        expectedArtifact: 'text',
+        prompt:
+            'No upload needed — Northstar AI Coach issues an Open Badge v3 achievement automatically when you finish your drill.',
+        expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n3.id, {
-        kind: 'self-attest',
-        prompt: 'I used Cloud Coach to close my weakest topics.',
+        kind: 'requirement-satisfied',
+        requirement: {
+            kind: 'ob-achievement',
+            achievementId: 'https://badges.northstar.learning/ach/aws-cloud-coach-drill',
+        },
+        minTrustTier: 'trusted',
     });
     {
         const snap = presetSnapshot(AWS_DEMO_LISTING_IDS.cloudCoach, now);
@@ -528,10 +636,13 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
 
     // --- Prerequisite chain + destination + outcome ----------------------
     //
-    // n1 → n2 → n3 → nIam → nVpc → n4 → n5. The two ai-session
-    // nodes slot between the third-party AI coach (n3) and the
-    // real exam (n4): after drilling with both agents, the learner
-    // books the proctored test.
+    // nCoursera → n1 → n2 → n3 → nIam → nVpc → n4 → n5. The real-
+    // Coursera prep gates the Northstar course (so the story reads
+    // "warm up externally, then commit to the structured path"); the
+    // two ai-session nodes slot between the third-party AI coach (n3)
+    // and the real exam (n4): after drilling with both agents, the
+    // learner books the proctored test.
+    pathway = addEdge(pathway, nCoursera.id, n1.id);
     pathway = addEdge(pathway, n1.id, n2.id);
     pathway = addEdge(pathway, n2.id, n3.id);
     pathway = addEdge(pathway, n3.id, nIam.id);
