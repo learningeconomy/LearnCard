@@ -17,7 +17,9 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 | Issuer + authorization-server metadata fetching | ✅ Slice 2 |
 | Pre-authorized code flow (`jwt_vc_json`) | ✅ Slice 2 |
 | Proof-of-possession JWT (EdDSA, default signer from host LearnCard) | ✅ Slice 2 |
-| Wallet index / LearnCloud integration | 🚧 Slice 3 |
+| Wallet index / LearnCloud integration (one-call `acceptAndStoreCredentialOffer`) | ✅ Slice 3 |
+| JWT VC → W3C VC reconstruction (VCDM §6.3.1) with raw JWT preserved under `proof.jwt` | ✅ Slice 3 |
+| Partial-failure reporting (one bad credential doesn't abort a batch) | ✅ Slice 3 |
 | Authorization code flow + PKCE | ⏳ Slice 4 |
 | `ldp_vc` credential format | ⏳ Slice 5 |
 | OID4VP Authorization Request + PEX v2 | ⏳ Slice 6 |
@@ -73,7 +75,46 @@ for (const entry of result.credentials) {
 }
 ```
 
-Storage of the issued credentials is the caller's responsibility until Slice 3 wires them into the wallet index.
+### Slice 3 — accept **and** store in one call
+
+For the common case (accept an offer, persist the credentials, have them show up in the wallet UI), use `acceptAndStoreCredentialOffer`:
+
+```ts
+const result = await lc.invoke.acceptAndStoreCredentialOffer(offerUri, {
+    txCode: '1234', // only if the offer requires it
+    category: 'Achievement', // optional override; otherwise auto-derived from VC types
+});
+
+// All credentials issued by the offer:
+result.credentials; // same as acceptCredentialOffer
+// Credentials that were successfully persisted:
+result.stored; // [{ uri, recordId, vc, configurationId, format }]
+// Credentials that failed to normalize / upload / index:
+result.failures; // [{ configurationId, format, error: VciError }]
+```
+
+What it does under the hood:
+
+1. Runs the pre-authorized code flow exactly like `acceptCredentialOffer`.
+2. Decodes each `jwt_vc_json` credential into a W3C VC per VCDM §6.3.1, preserving the raw JWT under `proof.jwt` so future verification can re-check the issuer signature.
+3. Uploads each VC via `learnCard.store.LearnCloud.uploadEncrypted` (default — encrypted at rest for the holder) or `upload` when encryption isn't available.
+4. Indexes each credential via `learnCard.index.LearnCloud.add(record)` so the wallet's credential list picks it up immediately.
+5. Catches per-credential errors so one bad credential doesn't discard a whole batch.
+
+Storage overrides:
+
+```ts
+await lc.invoke.acceptAndStoreCredentialOffer(offerUri, {
+    encrypt: false, // use plain `upload` instead of `uploadEncrypted`
+    category: vc => (vc.type?.includes('IdentityCredential') ? 'ID' : 'Achievement'),
+    title: vc => vc.name as string,
+    imgUrl: 'https://issuer.example.com/logo.png',
+
+    // Low-level escape hatches for custom backends or tests:
+    upload: async vc => myCustomStore.put(vc),
+    addToIndex: async record => myCustomIndex.insert(record),
+});
+```
 
 ### Using your own signer
 

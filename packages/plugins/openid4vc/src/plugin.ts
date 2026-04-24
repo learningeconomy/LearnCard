@@ -10,6 +10,11 @@ import {
 import { CredentialOffer, CredentialOfferParseError } from './offer/types';
 import { acceptCredentialOffer as acceptCredentialOfferFn } from './vci/accept';
 import { createJoseEd25519Signer } from './vci/proof';
+import {
+    storeAcceptedCredentials,
+    StoreAcceptedCredentialsOptions,
+} from './vci/store';
+import { AcceptCredentialOfferOptions } from './vci/types';
 
 /**
  * Create the OpenID4VC holder plugin.
@@ -62,19 +67,7 @@ export const getOpenID4VCPlugin = (
 
             acceptCredentialOffer: async (learnCard, input, options = {}) => {
                 const offer = typeof input === 'string' ? await resolveOffer(input) : input;
-
-                let signer = options.signer;
-
-                if (!signer) {
-                    // Build a default Ed25519 signer from the host LearnCard's
-                    // primary keypair. Callers using secp256k1 or hardware
-                    // keys should pass `options.signer` instead.
-                    const keypair = learnCard.id.keypair('ed25519');
-                    const did = learnCard.id.did();
-                    const kid = await learnCard.invoke.didToVerificationMethod(did);
-
-                    signer = await createJoseEd25519Signer({ keypair, kid });
-                }
+                const signer = await ensureSigner(learnCard, options);
 
                 return acceptCredentialOfferFn({
                     offer,
@@ -83,6 +76,67 @@ export const getOpenID4VCPlugin = (
                     fetchImpl,
                 });
             },
+
+            acceptAndStoreCredentialOffer: async (learnCard, input, options = {}) => {
+                // Split the merged options into the two concerns so each helper
+                // sees only what it cares about. This is purely hygienic —
+                // everything passes through by name.
+                const accepted = await (async () => {
+                    const offer = typeof input === 'string' ? await resolveOffer(input) : input;
+                    const signer = await ensureSigner(learnCard, options);
+
+                    return acceptCredentialOfferFn({
+                        offer,
+                        signer,
+                        options,
+                        fetchImpl,
+                    });
+                })();
+
+                const stored = await storeAcceptedCredentials(
+                    learnCard as any,
+                    accepted,
+                    splitStoreOptions(options)
+                );
+
+                return { ...accepted, ...stored };
+            },
         },
     };
 };
+
+/**
+ * Build an Ed25519 proof-of-possession signer from the host LearnCard's
+ * primary keypair, unless the caller already supplied a signer (for HSM /
+ * secp256k1 / external key backends).
+ */
+const ensureSigner = async (
+    learnCard: any,
+    options: { signer?: AcceptCredentialOfferOptions['signer'] }
+) => {
+    if (options.signer) return options.signer;
+
+    const keypair = learnCard.id.keypair('ed25519');
+    const did = learnCard.id.did();
+    const kid = await learnCard.invoke.didToVerificationMethod(did);
+
+    return createJoseEd25519Signer({ keypair, kid });
+};
+
+/**
+ * Extract just the {@link StoreAcceptedCredentialsOptions} fields from the
+ * merged options bag. Keeps `storeAcceptedCredentials` from seeing irrelevant
+ * VCI options (like `txCode` or `signer`).
+ */
+const splitStoreOptions = (
+    options: AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions
+): StoreAcceptedCredentialsOptions => ({
+    storage: options.storage,
+    encrypt: options.encrypt,
+    category: options.category,
+    title: options.title,
+    imgUrl: options.imgUrl,
+    upload: options.upload,
+    addToIndex: options.addToIndex,
+    makeId: options.makeId,
+});

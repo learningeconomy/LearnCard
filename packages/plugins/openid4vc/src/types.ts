@@ -10,6 +10,10 @@ import {
     AcceptCredentialOfferOptions,
     AcceptedCredentialResult,
 } from './vci/types';
+import {
+    StoreAcceptedCredentialsOptions,
+    StoreAcceptedCredentialsResult,
+} from './vci/store';
 
 /**
  * Methods the host LearnCard must provide for the OpenID4VC plugin to work.
@@ -55,13 +59,32 @@ export type OpenID4VCPluginMethods = {
      * host LearnCard's keypair. Callers using other key types (HSM, secp256k1)
      * should supply their own `options.signer`.
      *
-     * Storage of the returned credentials is the caller's responsibility
-     * (Slice 3 will add wallet-index integration).
+     * Storage of the returned credentials is the caller's responsibility.
+     * Use {@link acceptAndStoreCredentialOffer} for the turnkey "accept and
+     * persist to the wallet" flow.
      */
     acceptCredentialOffer: (
         input: string | CredentialOffer,
         options?: AcceptCredentialOfferOptions
     ) => Promise<AcceptedCredentialResult>;
+
+    /**
+     * Accept a Credential Offer **and** persist the resulting credentials
+     * to the wallet's store + index planes, so they appear in the UI.
+     *
+     * Internally: runs {@link acceptCredentialOffer}, then normalizes each
+     * issued credential into a W3C VC (JWT → VC per VCDM §6.3.1), uploads
+     * to `learnCard.store.LearnCloud.uploadEncrypted` by default, and adds
+     * an index record so the wallet's credential list picks it up.
+     *
+     * Per-credential failures are surfaced in the `failures` array rather
+     * than aborting the batch — one bad credential in an offer shouldn't
+     * discard the rest.
+     */
+    acceptAndStoreCredentialOffer: (
+        input: string | CredentialOffer,
+        options?: AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions
+    ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
 };
 
 /** Configuration passed to {@link getOpenID4VCPlugin}. */

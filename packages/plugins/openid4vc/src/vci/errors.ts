@@ -15,7 +15,11 @@ export type VciErrorCode =
     | 'unsupported_grant'
     | 'unsupported_format'
     | 'tx_code_required'
-    | 'nonce_required';
+    | 'nonce_required'
+    | 'store_failed'
+    | 'index_failed'
+    | 'store_plane_missing'
+    | 'index_plane_missing';
 
 /**
  * Thrown by any VCI helper when a flow step fails. Carries the originating

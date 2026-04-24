@@ -5,3 +5,5 @@ export * from './token';
 export * from './proof';
 export * from './request';
 export * from './accept';
+export * from './decode';
+export * from './store';
