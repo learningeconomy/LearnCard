@@ -23,7 +23,12 @@ const issuerMetadata = {
     credential_issuer: 'https://issuer.example.com',
     credential_endpoint: 'https://issuer.example.com/credential',
     credential_configurations_supported: {
-        UniversityDegree_jwt_vc_json: { format: 'jwt_vc_json' },
+        UniversityDegree_jwt_vc_json: {
+            format: 'jwt_vc_json',
+            credential_definition: {
+                type: ['VerifiableCredential', 'UniversityDegree'],
+            },
+        },
     },
 };
 
@@ -90,6 +95,82 @@ describe('acceptCredentialOffer', () => {
             aud: 'https://issuer.example.com',
             nonce: 'nonce-xyz',
         });
+    });
+
+    it('sends credential_definition from issuer metadata (NOT credential_identifier) in the credential request', async () => {
+        // Regression: WaltID demo rejected us with "No matching issuance
+        // request found for this session" because we were sending
+        // `credential_identifier: <config id>` alongside `format`. Per
+        // Draft 13 §7.2, those are mutually exclusive and credential_identifier
+        // is only valid when returned via authorization_details.
+        const fetchMock = makeFetch([
+            mockResponse(issuerMetadata),
+            mockResponse(asMetadata),
+            mockResponse(tokenResponse),
+            mockResponse(credentialResponse),
+        ]);
+
+        await acceptCredentialOffer({
+            offer: baseOffer,
+            signer: fakeSigner,
+            fetchImpl: fetchMock,
+        });
+
+        // Fourth call is the credential endpoint.
+        const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
+        const body = JSON.parse(credentialCall[1].body);
+
+        expect(body.format).toBe('jwt_vc_json');
+        expect(body.credential_definition).toEqual({
+            type: ['VerifiableCredential', 'UniversityDegree'],
+        });
+        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'proof.jwt.sig' });
+        // Must NOT be present — we didn't get an authorization_details identifier.
+        expect(body.credential_identifier).toBeUndefined();
+    });
+
+    it('uses credential_identifier from token response authorization_details (spec §7.2)', async () => {
+        const tokenResponseWithAuthDetails = {
+            ...tokenResponse,
+            authorization_details: [
+                {
+                    type: 'openid_credential',
+                    credential_configuration_id: 'UniversityDegree_jwt_vc_json',
+                    credential_identifiers: ['issuer-scoped-id-1', 'issuer-scoped-id-2'],
+                },
+            ],
+        };
+
+        const fetchMock = makeFetch([
+            mockResponse(issuerMetadata),
+            mockResponse(asMetadata),
+            mockResponse(tokenResponseWithAuthDetails),
+            mockResponse({ credential: 'vc-1' }),
+            mockResponse({ credential: 'vc-2' }),
+        ]);
+
+        const result = await acceptCredentialOffer({
+            offer: baseOffer,
+            signer: fakeSigner,
+            fetchImpl: fetchMock,
+        });
+
+        // One credential request per credential_identifier.
+        expect(result.credentials).toHaveLength(2);
+
+        const call1Body = JSON.parse(
+            (fetchMock as unknown as jest.Mock).mock.calls[3][1].body
+        );
+        const call2Body = JSON.parse(
+            (fetchMock as unknown as jest.Mock).mock.calls[4][1].body
+        );
+
+        expect(call1Body.credential_identifier).toBe('issuer-scoped-id-1');
+        expect(call1Body.format).toBeUndefined();
+        expect(call1Body.credential_definition).toBeUndefined();
+
+        expect(call2Body.credential_identifier).toBe('issuer-scoped-id-2');
+        expect(call2Body.format).toBeUndefined();
     });
 
     it('throws unsupported_grant when offer lacks pre-authorized_code grant', async () => {

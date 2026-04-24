@@ -148,9 +148,76 @@ All parse errors are thrown as `CredentialOfferParseError` with a stable `code` 
 
 ## Testing
 
+### Unit tests
+
 ```bash
 pnpm --filter @learncard/openid4vc-plugin test
 ```
+
+### Driving a real issuer end-to-end — `try-offer` harness
+
+`scripts/try-offer.ts` drives `acceptCredentialOffer` against any Draft 13 conformant issuer with an ephemeral `did:jwk` keypair. It skips the full LearnCard wiring (no wallet, no LearnCloud plugin required), so it's the fastest way to validate the flow against live infrastructure during development.
+
+```bash
+# from repo root
+pnpm --filter @learncard/openid4vc-plugin try-offer "<offer-uri>"
+
+# or from the plugin dir
+cd packages/plugins/openid4vc
+pnpm try-offer "<offer-uri>"
+```
+
+Flags:
+
+| Flag | Purpose |
+|---|---|
+| `--tx-code <code>` | PIN the issuer delivered out-of-band (if the offer carries `tx_code`) |
+| `--client-id <id>` | Client identifier, if the authorization server requires one |
+| `--only <id1,id2>` | Comma-separated subset of `credential_configuration_ids` to request |
+| `--verbose`, `-v` | Log the full resolved offer and each credential's raw JWT |
+| `--help`, `-h` | Show usage |
+
+Output on success: the decoded W3C VC for each issued credential plus the issuer's `notification_id` (if supplied). On failure: the `VciError` code, HTTP status, error body, and cause — so you can distinguish `metadata_fetch_failed` from `token_request_failed` from `credential_request_failed` at a glance.
+
+#### Recipes for public test issuers
+
+All of these expose pre-authorized-code offers, so the harness works as-is.
+
+**EUDI Reference Issuer** — most spec-conformant. Good first target.
+
+1. Visit `https://dev.issuer.eudiw.dev/`.
+2. Pick a credential (PID, mDL, etc.), start the issuance flow.
+3. Instead of scanning the QR with a wallet app, copy the `openid-credential-offer://...` URI the page displays.
+4. Run: `pnpm try-offer "openid-credential-offer://?credential_offer_uri=..."`
+5. If prompted for a PIN, pass it via `--tx-code`.
+
+**WaltID Portal** — friendliest UI.
+
+1. Visit `https://portal.walt.id`, sign in (free), go to Issuer.
+2. Issue a credential — the portal shows an offer URI / QR on the success page.
+3. Copy the `openid-credential-offer://...` URI and feed it to the harness.
+
+**Animo Funke** — Credo-TS based, EUDI-compatible.
+
+1. Visit `https://funke.animo.id`, select a credential profile.
+2. Start the issuance flow and copy the offer URI.
+3. Run against the harness.
+
+#### Running a local issuer
+
+When you want deterministic iteration (same offer twice, offline, step-through debugging), run WaltID's issuer in Docker:
+
+```bash
+docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:latest
+# in another terminal, POST an offer config to http://localhost:7002/...
+# then feed the returned offer URI to pnpm try-offer
+```
+
+#### What the harness does NOT cover
+
+- **No wallet integration.** Credentials are decoded and printed, not persisted. Once Slice 10 wires `acceptAndStoreCredentialOffer` into the wallet UI, use the learn-card-app instead for that part of the flow.
+- **No signature verification.** The harness trusts the issuer's response. Verifying the credential JWT against the issuer's published key is a separate concern handled by the VC plugin on read.
+- **Pre-authorized code only.** Authorization-code flows arrive in Slice 4.
 
 ## License
 

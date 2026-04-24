@@ -8,7 +8,7 @@ const mockResponse = (body: unknown, init: { ok?: boolean; status?: number } = {
     } as unknown as Response);
 
 describe('requestCredential', () => {
-    it('sends the proof JWT + format + Authorization header', async () => {
+    it('sends the proof JWT + format + Authorization header (format-based path)', async () => {
         const fetchMock = jest
             .fn()
             .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt', c_nonce: 'new-nonce' }));
@@ -18,7 +18,6 @@ describe('requestCredential', () => {
             accessToken: 'token-abc',
             format: 'jwt_vc_json',
             proofJwt: 'eyJ.proof.sig',
-            configurationId: 'UniversityDegree_jwt_vc_json',
             fetchImpl: fetchMock as unknown as typeof fetch,
         });
 
@@ -33,8 +32,47 @@ describe('requestCredential', () => {
 
         const body = JSON.parse(init.body);
         expect(body.format).toBe('jwt_vc_json');
-        expect(body.credential_identifier).toBe('UniversityDegree_jwt_vc_json');
         expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'eyJ.proof.sig' });
+        // Regression: Draft 13 §7.2 forbids pairing `credential_identifier`
+        // with `format`, and we never had a real identifier here anyway.
+        expect(body.credential_identifier).toBeUndefined();
+    });
+
+    it('sends credential_identifier (and NOT format) when caller supplies one from authorization_details', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialIdentifier: 'auth-details-id-abc',
+            // Even if the caller accidentally supplies these, the spec
+            // (§7.2) says they MUST NOT be sent alongside credential_identifier.
+            format: 'jwt_vc_json',
+            extra: { credential_definition: { type: ['X'] } },
+            proofJwt: 'eyJ.proof.sig',
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.credential_identifier).toBe('auth-details-id-abc');
+        expect(body.format).toBeUndefined();
+        expect(body.credential_definition).toBeUndefined();
+    });
+
+    it('throws when neither credentialIdentifier nor format is supplied', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                proofJwt: 'eyJ.proof.sig',
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toMatchObject({
+            code: 'credential_request_failed',
+            message: expect.stringContaining('credentialIdentifier'),
+        });
     });
 
     it('uses the supplied token_type verbatim in the Authorization header', async () => {
