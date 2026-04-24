@@ -24,7 +24,7 @@
                 "secondaryColor": "teal-500",
                 "indicatorColor": "indigo-500",
                 "borderColor": "teal-500",
-                "statusBarColor": "teal-400",
+                "statusBarColor": "light",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-grayscale-900",
                 "helperTextColor": "text-grayscale-700",
