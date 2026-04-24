@@ -60,6 +60,7 @@
         "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/encryption-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
+        "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
