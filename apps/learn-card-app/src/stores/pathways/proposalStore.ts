@@ -20,7 +20,14 @@ const initialState: ProposalStoreState = {
 
 export const proposalStore = createStore('proposalStore')<ProposalStoreState>(
     initialState,
-    { persist: { name: 'proposalStore', enabled: false } },
+    // Persistence enabled alongside `pathwayStore` so agent-origin
+    // proposals outlive navigation. Without this, a learner who
+    // bounces off the app to an external issuer (claim link, OAuth)
+    // returns to an empty Proposals tab — any pending auto-binds
+    // from before the round-trip disappear. `invalidateStale` on
+    // reconnect reconciles anything that changed server-side while
+    // the client was away.
+    { persist: { name: 'proposalStore', enabled: true } },
 ).extendActions(set => ({
     addProposal: (proposal: Proposal) => {
         set.state(draft => {

@@ -23,8 +23,22 @@ import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
 import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
+import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
+
+// Install `window.__pathwaysDev` at the app-root level rather than
+// waiting for the /pathways shell to mount. The dev-panel inspector
+// expects these globals to be available on any route (including the
+// `/claim/...` landing surface, the app-store, credential detail,
+// etc.) so developers can run `__pathwaysDev.inspectPathway()` /
+// `listDispatches()` to debug pathway-progress dispatches without
+// first having to navigate to /pathways.
+//
+// The installer is idempotent + guarded by `import.meta.env.DEV`,
+// so this is a no-op in production builds. See
+// `@/Users/jackson/Documents/Projects/LEStudios/LearnCard/apps/learn-card-app/src/pages/pathways/dev/pathwaysDevGlobals.ts:627`.
+installPathwaysDevGlobals();
 
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';

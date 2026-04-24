@@ -50,6 +50,9 @@ import {
     getIssuerNameNonBoost,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
+import { v4 as uuidv4 } from 'uuid';
+
+import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
 import ExchangePresentationRequest from './ExchangePresentationRequest';
 import ExchangeRedirect from './ExchangeRedirect';
@@ -531,8 +534,16 @@ const ClaimFromRequest: React.FC = () => {
             if (!credential) return;
             setClaimingCredential(true);
 
-            // Store credential in LearnCloud Storage and index using LearnCard SDK
-            await storeAndAddVCToWallet(credential, { title: name });
+            // Store credential in LearnCloud Storage and index using LearnCard SDK.
+            // Capture the returned `credentialUri` so we can publish a
+            // `credential-ingested` event to the pathway-progress bus —
+            // this is the single-credential VC-API claim path, parallel
+            // to the multi-credential path in
+            // `ExchangeAcceptCredentials.tsx` and the boost-claim path
+            // in `components/boost/mutations.ts`. Without this publish
+            // the reactor silently ignores the claim and no pathway
+            // nodes flip.
+            const storeResult = await storeAndAddVCToWallet(credential, { title: name });
 
             const category = getDefaultCategoryForCredential(credential);
             const achievementType = getAchievementType(credential);
@@ -543,6 +554,28 @@ const ClaimFromRequest: React.FC = () => {
                     boostType: achievementType,
                     method: 'VC-API Request',
                 });
+            }
+
+            // Publish the `credential-ingested` event. Wrapped in
+            // try/catch: a bad bus listener must never break the core
+            // claim flow — the reactor's dedup-by-eventId tolerates a
+            // replay sweep that catches anything we drop here.
+            if (storeResult?.credentialUri) {
+                try {
+                    publishWalletEvent({
+                        kind: 'credential-ingested',
+                        eventId: uuidv4(),
+                        credentialUri: storeResult.credentialUri,
+                        vc: credential as unknown as Record<string, unknown>,
+                        ingestedAt: new Date().toISOString(),
+                        source: 'vc-api-request',
+                    });
+                } catch (err) {
+                    console.error(
+                        '[ClaimFromRequest] failed to publish ingest event:',
+                        err,
+                    );
+                }
             }
 
             setClaimingCredential(false);

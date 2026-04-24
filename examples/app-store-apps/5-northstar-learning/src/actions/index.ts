@@ -450,18 +450,46 @@ export const server = {
                     },
                 });
 
+                // The network has two paths when you hand it an email:
+                //
+                //   1. Email is *not* associated with an existing
+                //      LearnCard account → network parks the VC in
+                //      the Universal Inbox and returns a `claimUrl`.
+                //      The learner opens the URL on the device where
+                //      their wallet lives to pull it in.
+                //
+                //   2. Email *is* associated with a verified profile
+                //      on the network → network auto-delivers the
+                //      credential directly into that account (via
+                //      `sendCredential`/`sendBoost`) and the response
+                //      has NO `claimUrl`. See
+                //      `services/learn-card-network/brain-service/src/helpers/inbox.helpers.ts:218`.
+                //
+                // Both are successful outcomes from the issuer's
+                // perspective — the caller just needs to know which
+                // one happened so the UI can show the right message.
+                // We return a discriminated `delivery` field so the
+                // page renders either the claim-link card (pending)
+                // or the "sent straight to your LearnCard" card
+                // (delivered).
                 const claimUrl = result?.inbox?.claimUrl as string | undefined;
+                const issuanceId = result?.inbox?.issuanceId as string | undefined;
+                const status = result?.inbox?.status as string | undefined;
 
-                if (!claimUrl) {
-                    throw new Error(
-                        'LearnCard Network did not return a claim URL. Check that the issuer profile can create inbox issuances.',
-                    );
+                if (claimUrl) {
+                    return {
+                        delivery: 'claim-link' as const,
+                        claimUrl,
+                        issuanceId,
+                        status,
+                        recipientEmail,
+                    };
                 }
 
                 return {
-                    claimUrl,
-                    issuanceId: result.inbox.issuanceId as string,
-                    status: result.inbox.status as string,
+                    delivery: 'direct' as const,
+                    issuanceId,
+                    status,
                     recipientEmail,
                 };
             } catch (err) {

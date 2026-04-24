@@ -196,11 +196,12 @@ const chapters = [
         </section>
 
         <!--
-          Success card — hidden until the server returns a claim URL.
-          We render the full URL (not just a button) so the learner
-          can copy it to another device or share it with a teammate,
-          which is one of the headline benefits of the claim-link
-          flow over a direct wallet drop.
+          Success card — claim-link variant. Hidden until the server
+          returns a claim URL (i.e. the email isn't associated with
+          an existing LearnCard account). We render the full URL (not
+          just a button) so the learner can copy it to another device
+          or share it with a teammate, which is one of the headline
+          benefits of the claim-link flow over a direct wallet drop.
         -->
         <section
             class="card is-callout u-stack"
@@ -274,6 +275,57 @@ const chapters = [
                 </button>
             </div>
         </section>
+
+        <!--
+          Success card — delivered-direct variant. Hidden until the
+          server auto-delivers the credential into an existing
+          LearnCard account (email matched a verified profile, no
+          claim URL needed). We don't render any copyable URL here
+          because there isn't one — the VC is already in the
+          learner's wallet.
+        -->
+        <section
+            class="card is-callout u-stack"
+            id="delivered-card"
+            style="margin-top: 28px; display: none;"
+        >
+            <div>
+                <p class="card-eyebrow">
+                    <svg
+                        aria-hidden="true"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Sent to your LearnCard
+                </p>
+                <h2 class="card-title">
+                    Delivered straight to your wallet
+                </h2>
+                <p class="card-body">
+                    We recognized <strong id="delivered-email"></strong>
+                    &mdash; your AWS Cloud Essentials completion is
+                    already in your LearnCard. Open the app and head to
+                    your pathway to see the next step unlock.
+                </p>
+            </div>
+
+            <a
+                class="btn btn-success btn-block"
+                href="learncard://wallet"
+                target="_blank"
+                rel="noopener"
+            >
+                Open LearnCard &rarr;
+            </a>
+        </section>
     </div>
 
     <script>
@@ -305,6 +357,8 @@ const chapters = [
         const copyBtn = document.getElementById('copy-btn');
         const progressPill = document.getElementById('progress-pill');
         const progressPillText = document.getElementById('progress-pill-text');
+        const deliveredCard = document.getElementById('delivered-card');
+        const deliveredEmail = document.getElementById('delivered-email');
 
         const completed = new Set();
 
@@ -413,39 +467,64 @@ const chapters = [
                 // Astro actions wrap the response; real shape is
                 // result.data when the handler resolves, result.error
                 // when it throws an ActionError.
-                if (result.error || !result.data?.claimUrl) {
+                if (result.error || !result.data) {
                     throw new Error(
                         result.error?.message ??
-                            'Northstar could not generate a claim link. Please try again.',
+                            'Northstar could not issue your credential. Please try again.',
                     );
                 }
 
-                const { claimUrl } = result.data;
+                // Hide whichever success card might have been shown
+                // previously so a retry doesn't stack both.
+                if (resultCard) resultCard.style.display = 'none';
+                if (deliveredCard) deliveredCard.style.display = 'none';
 
-                // Surface the URL to the learner. We set both the
-                // anchor href AND a copyable code block so the link
-                // is usable via click OR copy-paste — the latter
-                // matters when the learner's LearnCard wallet is on
-                // a different device than the browser they're
-                // running this demo in.
-                if (claimLink) claimLink.setAttribute('href', claimUrl);
-                if (claimUrlText) claimUrlText.textContent = claimUrl;
-                if (resultCard) resultCard.style.display = '';
+                if (result.data.delivery === 'claim-link') {
+                    // Not-yet-a-LearnCard user path: surface the URL
+                    // to the learner. We set both the anchor href
+                    // AND a copyable code block so the link is usable
+                    // via click OR copy-paste — the latter matters
+                    // when the learner's LearnCard wallet is on a
+                    // different device than the browser they're
+                    // running this demo in.
+                    const { claimUrl } = result.data;
 
-                setStatus(
-                    'success',
-                    '<strong>Claim link generated!</strong> Open it in LearnCard to add the credential to your wallet. Once you claim it, the AWS Cloud Practitioner pathway will auto-advance.',
-                );
+                    if (claimLink) claimLink.setAttribute('href', claimUrl);
+                    if (claimUrlText) claimUrlText.textContent = claimUrl;
+                    if (resultCard) resultCard.style.display = '';
 
-                // Scroll the result card into view — the page may be
-                // long enough that the learner misses it otherwise.
-                resultCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setStatus(
+                        'success',
+                        '<strong>Claim link ready!</strong> Open it in LearnCard to add the credential to your wallet. Once you claim it, the AWS Cloud Practitioner pathway will auto-advance.',
+                    );
 
-                // Keep the button disabled after success so the
-                // learner doesn't double-issue by accident. If they
-                // want another link (e.g. typo'd the email) they can
+                    resultCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    claimLabel.textContent = '\u2713 Claim link generated';
+                } else {
+                    // Existing-LearnCard-account path: the network
+                    // already delivered the VC directly, no claim
+                    // URL was returned. Show the delivered-card
+                    // instead, and acknowledge the recipient email
+                    // so the learner knows why we skipped the claim
+                    // step.
+                    if (deliveredEmail) {
+                        deliveredEmail.textContent = result.data.recipientEmail;
+                    }
+                    if (deliveredCard) deliveredCard.style.display = '';
+
+                    setStatus(
+                        'success',
+                        '<strong>Delivered!</strong> We recognized this email as a LearnCard account, so your AWS Cloud Essentials completion is already in your wallet. Head to your pathway to see the next step unlock.',
+                    );
+
+                    deliveredCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    claimLabel.textContent = '\u2713 Sent to your LearnCard';
+                }
+
+                // Keep the button disabled after success either way
+                // so the learner doesn't double-issue by accident.
+                // If they want to try a different email they can
                 // just refresh the page.
-                claimLabel.textContent = '\u2713 Claim link generated';
             } catch (err) {
                 console.error('[course] claim-link generation failed:', err);
                 setStatus(

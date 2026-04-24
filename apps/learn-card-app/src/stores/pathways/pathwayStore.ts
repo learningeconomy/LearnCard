@@ -66,7 +66,18 @@ const rollupInDraft = (draft: PathwayStoreState): void => {
 
 export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
     initialState,
-    { persist: { name: 'pathwayStore', enabled: false } },
+    // Persistence enabled so pathway graph + progress survive navigation
+    // away from the app (e.g. learner taps a claim link and bounces
+    // through an external issuer page). Without this, every round-trip
+    // wipes the in-memory pathway state, and the reactor's
+    // `credential-ingested` dispatch on return fires against an empty
+    // store — silent no-op, no CTA modal, no node completion.
+    //
+    // Storage is zustood's default (localStorage) keyed by the `name`.
+    // That's fine: the shape is small, pathways are per-tenant, and
+    // the sync helpers already tolerate stale cached entries via
+    // `proposalStore.invalidateStale` on reconnect.
+    { persist: { name: 'pathwayStore', enabled: true } },
 ).extendActions(set => ({
     setActivePathway: (pathwayId: string | null) => {
         set.activePathwayId(pathwayId);
