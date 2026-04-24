@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@learncard/partner-connect": "workspace:*",
-        "astro": "^5.0.0"
+        "astro": "6.0.6"
     },
     "devDependencies": {
         "@astrojs/tailwind": "^6.0.2",
