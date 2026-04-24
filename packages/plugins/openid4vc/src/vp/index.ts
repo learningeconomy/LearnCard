@@ -13,6 +13,22 @@ export {
     resolveAuthorizationRequest,
 } from './parse';
 
+export type { ResolveAuthorizationRequestOptions } from './parse';
+
+export {
+    verifyAndDecodeRequestObject,
+    RequestObjectError,
+    builtInDidResolver,
+} from './request-object';
+
+export type {
+    RequestObjectErrorCode,
+    VerifyRequestObjectOptions,
+    DidResolver,
+    DidDocument,
+    VerificationMethod,
+} from './request-object';
+
 export {
     selectCredentials,
     buildPresentationSubmission,

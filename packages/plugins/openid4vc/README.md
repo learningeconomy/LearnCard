@@ -8,7 +8,7 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 
 ## Status
 
-**Slice 6 complete.** This package is being built incrementally. Current surface:
+**Slices 1–7.5 complete.** End-to-end holder flow — offer intake through signed VP submission — verified live against walt.id. This package is being built incrementally:
 
 | Capability | Status |
 |---|---|
@@ -25,12 +25,17 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 | Candidate selection + `submission_requirements` (`all` / `pick` / `from_nested`) | ✅ Slice 6 |
 | Presentation Submission descriptor_map builder | ✅ Slice 6 |
 | Format designation matching (`jwt_vc_json` / `ldp_vc` / `ldp`) | ✅ Slice 6 |
-| Verified end-to-end against **WaltID** (`jwt_vc_json`) and **Animo Funke** (`ldp_vc`) | ✅ Slice 3 |
+| VP construction (`buildPresentation`): unsigned VP + PresentationSubmission | ✅ Slice 7a |
+| VP signing (`signPresentation`): `jwt_vp_json` (JWS) + `ldp_vp` (LD proof via host) | ✅ Slice 7b |
+| `direct_post` VP response (`submitPresentation`) | ✅ Slice 7c |
+| End-to-end `presentCredentials()` verified against **WaltID** verifier | ✅ Slice 7 |
+| Signed Request Objects (`request` / `request_uri` JWS) — `client_id_scheme=did` (did:jwk, did:web) + `x509_san_dns` (trusted-roots or self-signed-dev) | ✅ Slice 7.5 |
 | Authorization code flow + PKCE | ⏳ Slice 4 |
 | `ldp_vc` issuance format | ⏳ Slice 5 |
-| Signed Request Objects (`request` / `request_uri` JWS) | ⏳ Slice 7 |
-| `direct_post` VP response | ⏳ Slice 7 |
 | SIOPv2 ID token | ⏳ Slice 8 |
+| Deep-link / QR entry points | ⏳ Slice 9 |
+| UI adapter for consent + selection | ⏳ Slice 10 |
+| Self-hosted issuer + verifier for CI | ⏳ Slice 11 |
 
 See the California RFP epic for full scope.
 
@@ -140,7 +145,7 @@ await lc.invoke.acceptCredentialOffer(uri, { signer });
 
 ## OID4VP — presenting credentials to a verifier
 
-When a verifier scans/links you an `openid4vp://` URI, the wallet needs to: (1) resolve the verifier's request, (2) figure out which held credentials satisfy the DIF PEX Presentation Definition, (3) let the user choose, (4) sign + POST a VP token. Slice 6 covers steps 1–3; Slice 7 will cover step 4.
+When a verifier scans/links you an `openid4vp://` URI, the wallet needs to: (1) resolve the verifier's request (including verifying any signed Request Object), (2) figure out which held credentials satisfy the DIF PEX Presentation Definition, (3) let the user choose, (4) sign + POST a VP token. All four steps are wired up end-to-end via `plugin.presentCredentials()` (Slices 6 + 7 + 7.5).
 
 ### Slice 6a — parse an Authorization Request without touching the network
 
@@ -159,8 +164,8 @@ if (parsed.kind === 'by_value') {
 Three discriminated variants:
 
 - **`by_value`** — every param was inline; the returned `request` is ready for matching.
-- **`by_reference_request_uri`** — the verifier delegated the request to a signed JWS fetched from `request_uri`. Deferred to Slice 7 (needs JWS verification + trust-anchor resolution).
-- **`by_reference_request_jwt`** — same thing but inline via the `request` param.
+- **`by_reference_request_uri`** — the verifier delegated the request to a signed JWS fetched from `request_uri`. Slice 7.5 verifies the signature per `client_id_scheme` (see below) and inlines the claims.
+- **`by_reference_request_jwt`** — same thing but the JWS is embedded directly via the `request` param.
 
 ### Slice 6b — resolve `presentation_definition_uri` over HTTP
 
@@ -271,7 +276,19 @@ VCI errors are thrown as `CredentialOfferParseError` / `VciError`; VP errors as 
 | `invalid_presentation_definition` | PD is structurally malformed (missing `id`, empty `input_descriptors`, descriptor without `constraints`) |
 | `both_definition_and_uri` | Both `presentation_definition` and `presentation_definition_uri` supplied (spec violation) |
 | `presentation_definition_fetch_failed` | Fetching `presentation_definition_uri` timed out, returned non-2xx, or disallowed by scheme |
-| `request_object_not_supported` | Signed Request Object (`request` / `request_uri`) arrived — Slice 7 surface |
+
+Signed Request Objects surface a separate typed error, `RequestObjectError`, with these codes:
+
+| `code` | Meaning |
+|---|---|
+| `invalid_request_object` | JWS couldn't be decoded, or the payload was missing required claims (`client_id` in particular) |
+| `request_fetch_failed` | Fetching `request_uri` failed or returned non-2xx |
+| `missing_client_id_scheme` | Neither URL params nor JWS claims supplied `client_id_scheme` |
+| `unsupported_client_id_scheme` | Scheme is one we don't yet implement (`pre-registered`, `verifier_attestation`), or a forbidden scheme (`redirect_uri`) was combined with a signed JWS |
+| `client_id_mismatch` | Outer URL `client_id` disagrees with signed `client_id`, OR (for x509) the leaf cert SAN doesn't cover the `client_id` host |
+| `request_signature_invalid` | JWS signature failed to verify against the resolved key |
+| `request_signer_untrusted` | DID resolver couldn't find the `kid`; or the x509 chain didn't root into `trustedX509Roots` |
+| `did_resolution_failed` | DID resolver couldn't produce a document (network error for `did:web`, unsupported method for others) |
 
 ## Testing
 
@@ -362,11 +379,15 @@ Flags:
 | Flag | Purpose |
 |---|---|
 | `--credentials <path>` | JSON file containing a W3C VC object, a compact JWT-VC string, or an array of either |
-| `--unsafe-decode-jws` | Decode (without verifying) signed Request Objects so Slice 6 can be smoke-tested against verifiers that use `request_uri` / `request` JWS. **Never use in production** — Slice 7 replaces this with proper `client_id_scheme` verification |
+| `--holder <path>` | Sidecar written by `try-offer --save` — carries the holder `did` / `kid` / private JWK. Default: `<credentials>.holder.json` |
+| `--submit` | After PEX selection, sign the VP and POST it via `direct_post` |
+| `--envelope <fmt>` | Force `jwt_vp_json` or `ldp_vp` (default: inferred from PD + VC formats) |
+| `--trusted-root <path>` | PEM file with a trusted X.509 root — required for `client_id_scheme=x509_san_dns` verifiers. Repeatable. |
+| `--unsafe-allow-self-signed` | Dev-only: accept self-signed x509 chains. Disables the chain-to-trust-root check. **Never production.** |
 | `--verbose`, `-v` | Log the full resolved request + per-field JSONPath matches |
 | `--help`, `-h` | Show usage |
 
-The harness stops exactly where Slice 7 picks up: after building the `presentation_submission`, before signing or POSTing anything.
+The harness drives the full Slice 7 pipeline when `--submit` is set: build → sign → POST. Without it, it stops after previewing the `presentation_submission` so you can inspect what would be sent.
 
 #### Recipe: walt.id Verifier Portal (UI flow)
 
@@ -378,11 +399,11 @@ The quickest path to a real OID4VP URI.
 4. Run:
 
    ```bash
-   pnpm try-verify "openid4vp://?..." --credentials ./my-vc.json --unsafe-decode-jws
+   pnpm try-verify "openid4vp://?..." --credentials ./my-vc.json --submit
    ```
 
-   walt.id uses signed Request Objects (`request_uri` pointing at a JWS), so the `--unsafe-decode-jws` flag is required for smoke testing — the harness prints a loud warning when it's active.
-5. If `canSatisfy: ✓ YES`, the preview shows the `presentation_submission` the wallet would send. If `✗ NO`, each descriptor's `reason` field explains why (wrong format, missing type, filter mismatch).
+   walt.id's default verifier flow uses `client_id_scheme=redirect_uri` with inline PD — no trust-anchor setup required. If you pick a flow that wraps the request in a signed JWS, the harness automatically verifies it via the configured DID resolver (did:jwk / did:web out of the box).
+5. If `canSatisfy: ✓ YES`, the harness signs a JWT-VP, POSTs to the verifier's `response_uri`, and prints the `redirect_uri` the walt.id portal hands back. If `✗ NO`, each descriptor's `reason` field explains why (wrong format, missing type, filter mismatch).
 
 #### Recipe: walt.id Verifier REST API (scripted flow)
 
@@ -410,14 +431,14 @@ curl -s -X POST https://verifier.demo.walt.id/openid4vc/verify \
 # → returns a plain openid4vp://... URI in the response body.
 
 # 2. Run the harness against it.
-pnpm try-verify "openid4vp://..." --credentials ./my-vc.json --unsafe-decode-jws
+pnpm try-verify "openid4vp://..." --credentials ./my-vc.json --submit
 ```
 
 This path is perfect for regression-testing after we change the PEX matcher — you can keep a single PD template and rerun it after every selector change.
 
 #### Recipe: Sphereon demo verifier
 
-Sphereon's reference verifier (`https://ssi.sphereon.com`) emits plain by-value `openid4vp://` URIs for several demo flows, which means **no `--unsafe-decode-jws` flag is required** — the harness runs the clean path and every parser branch is exercised.
+Sphereon's reference verifier (`https://ssi.sphereon.com`) emits both by-value URIs and signed Request Objects (`client_id_scheme=did` with `did:web`). Both work without any extra flags — Slice 7.5 resolves the did:web document over the harness's fetch and verifies the JWS before matching.
 
 1. Visit the Sphereon demo verifier, pick a flow (e.g. "Request University Degree").
 2. Copy the `openid4vp://` URI.
@@ -436,7 +457,7 @@ The fastest loop is `try-offer --save` → `try-verify --credentials`:
 pnpm try-offer "<offer-uri>" --save ./my-vc.json
 
 # 2. Point a real verifier at the same file.
-pnpm try-verify "<oid4vp-uri>" --credentials ./my-vc.json --unsafe-decode-jws
+pnpm try-verify "<oid4vp-uri>" --credentials ./my-vc.json --submit
 ```
 
 `try-offer` writes the credential in its normalized W3C VC shape (JWT-VCs keep their compact JWS under `proof.jwt`), which `try-verify`'s `inferCredentialFormat` classifies correctly in both directions — so a single `./my-vc.json` round-trips through matchers for either format.
@@ -445,9 +466,8 @@ The plugin's `.gitignore` excludes `my-vc.json`, `my-vc*.json`, `*.vc.json`, and
 
 #### What the harness does NOT cover
 
-- **No signature verification on the verifier's Request Object.** When `--unsafe-decode-jws` is set, the harness reads the JWS payload but doesn't verify the signature against the verifier's `client_id_scheme`. Slice 7 adds this.
-- **No VP token construction.** The harness stops after `presentation_submission`. It never builds a `VerifiablePresentation`, never signs anything, never POSTs to `response_uri`. That's Slice 7's job.
-- **No `direct_post.jwt`** (encrypted response mode). When the verifier asks for `direct_post.jwt`, Slice 7 will encrypt the response body with the verifier's JWKS from `client_metadata`.
+- **No `direct_post.jwt`** (encrypted response mode). When a verifier asks for `direct_post.jwt`, we'll need to encrypt the response body with the verifier's JWKS from `client_metadata`. Not wired yet.
+- **No `client_id_scheme=pre-registered` / `verifier_attestation`.** Both surface `unsupported_client_id_scheme` from the Slice 7.5 verifier. `did` (did:jwk + did:web built-in, others via custom `didResolver`) and `x509_san_dns` (with `trustedX509Roots`) are the supported schemes.
 
 ## License
 

@@ -34,6 +34,7 @@ import {
 import {
     SubmitPresentationResult,
 } from './vp/submit';
+import { DidResolver } from './vp/request-object';
 import { ProofJwtSigner } from './vci/types';
 
 /**
@@ -258,6 +259,31 @@ export interface OpenID4VCPluginConfig {
      * Defaults to `globalThis.fetch` when available.
      */
     fetch?: typeof fetch;
+
+    /**
+     * DID resolver used to verify signed Authorization Request Objects
+     * whose `client_id_scheme=did` (Slice 7.5). When omitted, a
+     * built-in resolver handles `did:jwk` (offline) and `did:web` (over
+     * `fetch`). Host apps shipping `did:key` / `did:ion` / `did:pkh`
+     * etc. wire their own resolver here.
+     */
+    didResolver?: DidResolver;
+
+    /**
+     * PEM-encoded trust anchors for signed Request Objects whose
+     * `client_id_scheme=x509_san_dns` (Slice 7.5). When empty, the
+     * plugin refuses x509-signed requests unless
+     * {@link unsafeAllowSelfSignedRequestObject} is explicitly true.
+     */
+    trustedX509Roots?: readonly string[];
+
+    /**
+     * **Dev-only.** When true, accept `x509_san_dns` chains that don't
+     * root into {@link trustedX509Roots}. Exists so smoke tests can
+     * hit self-signed staging verifiers; production wallets must leave
+     * this off.
+     */
+    unsafeAllowSelfSignedRequestObject?: boolean;
 }
 
 /** LearnCard shape the plugin factory consumes. */

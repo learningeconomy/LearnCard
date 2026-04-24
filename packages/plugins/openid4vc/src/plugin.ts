@@ -18,6 +18,7 @@ import { AcceptCredentialOfferOptions } from './vci/types';
 import {
     parseAuthorizationRequestUri,
     resolveAuthorizationRequest as resolveAuthorizationRequestFn,
+    ResolveAuthorizationRequestOptions,
 } from './vp/parse';
 import { AuthorizationRequest } from './vp/types';
 import { selectCredentials } from './vp/select';
@@ -49,6 +50,14 @@ export const getOpenID4VCPlugin = (
     config: OpenID4VCPluginConfig = {}
 ): OpenID4VCPlugin => {
     const fetchImpl = config.fetch ?? globalThis.fetch;
+
+    // Request Object verification knobs (Slice 7.5). Built once so every
+    // resolveAuthorizationRequest call uses the same trust policy.
+    const resolveOptions: ResolveAuthorizationRequestOptions = {
+        didResolver: config.didResolver,
+        trustedX509Roots: config.trustedX509Roots,
+        unsafeAllowSelfSigned: config.unsafeAllowSelfSignedRequestObject,
+    };
 
     const resolveOffer = async (input: string): Promise<CredentialOffer> => {
         const parsed = parseCredentialOfferUri(input);
@@ -124,10 +133,10 @@ export const getOpenID4VCPlugin = (
             parseAuthorizationRequest: (_lc, input) => parseAuthorizationRequestUri(input),
 
             resolveAuthorizationRequest: async (_lc, input) =>
-                resolveAuthorizationRequestFn(input, fetchImpl),
+                resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions),
 
             prepareVerifiablePresentation: async (_lc, input, credentials) => {
-                const request = await resolveRequestInput(input, fetchImpl);
+                const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
 
                 // No presentation_definition → nothing to match against.
                 // The caller is probably handling a SIOPv2-only flow or a
@@ -153,7 +162,7 @@ export const getOpenID4VCPlugin = (
             },
 
             buildPresentation: async (learnCard, input, chosen, options = {}) => {
-                const request = await resolveRequestInput(input, fetchImpl);
+                const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const pd = requirePresentationDefinition(request);
 
                 const holder = options.holder ?? learnCard.id.did();
@@ -169,7 +178,7 @@ export const getOpenID4VCPlugin = (
             },
 
             signPresentation: async (learnCard, input, prepared, options = {}) => {
-                const request = await resolveRequestInput(input, fetchImpl);
+                const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
 
                 const holder =
                     options.holder ??
@@ -206,7 +215,7 @@ export const getOpenID4VCPlugin = (
             },
 
             submitPresentation: async (_lc, input, signed, submission) => {
-                const request = await resolveRequestInput(input, fetchImpl);
+                const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const responseUri = request.response_uri ?? request.redirect_uri;
 
                 if (!responseUri) {
@@ -225,7 +234,7 @@ export const getOpenID4VCPlugin = (
             },
 
             presentCredentials: async (learnCard, input, chosen, options = {}) => {
-                const request = await resolveRequestInput(input, fetchImpl);
+                const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const pd = requirePresentationDefinition(request);
 
                 const holder = options.holder ?? learnCard.id.did();
@@ -281,13 +290,20 @@ export const getOpenID4VCPlugin = (
 /**
  * Resolve a URI-or-request union to a fully-resolved AuthorizationRequest.
  * Idempotent when the caller already passes a resolved request.
+ *
+ * `resolveOptions` carries Slice 7.5 trust policy (DID resolver, X.509
+ * roots) so every internal call — including the convenience wrappers
+ * around `buildPresentation`, `signPresentation`, and
+ * `presentCredentials` — honors the plugin's configured trust anchors
+ * when a signed Request Object is in play.
  */
 const resolveRequestInput = async (
     input: string | AuthorizationRequest,
-    fetchImpl: typeof fetch | undefined
+    fetchImpl: typeof fetch | undefined,
+    resolveOptions: ResolveAuthorizationRequestOptions
 ): Promise<AuthorizationRequest> =>
     typeof input === 'string'
-        ? await resolveAuthorizationRequestFn(input, fetchImpl)
+        ? await resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions)
         : input;
 
 const requirePresentationDefinition = (request: AuthorizationRequest) => {

@@ -496,20 +496,44 @@ describe('resolveAuthorizationRequest', () => {
         );
     });
 
-    it('throws request_object_not_supported for signed Request Objects', async () => {
-        await expect(
-            resolveAuthorizationRequest(
-                'openid4vp://?request_uri=https%3A%2F%2Fverifier.example.com%2Freq.jwt',
-                jest.fn() as unknown as typeof fetch
-            )
-        ).rejects.toMatchObject({ code: 'request_object_not_supported' });
+    it('routes signed Request Objects through verifyAndDecodeRequestObject (Slice 7.5)', async () => {
+        // request_uri path: the resolver should now attempt to fetch
+        // the JWS. Our mock returns a non-JWS body, so the Slice 7.5
+        // module surfaces a typed RequestObjectError — NOT the old
+        // request_object_not_supported VpError.
+        const fetchMock = jest.fn(
+            async () =>
+                ({
+                    ok: true,
+                    status: 200,
+                    statusText: 'OK',
+                    headers: new Headers({ 'content-type': 'text/plain' }),
+                    text: async () => 'not-a-jws',
+                } as Response)
+        ) as unknown as typeof fetch;
 
         await expect(
             resolveAuthorizationRequest(
-                'openid4vp://?request=eyJ.header.payload.sig',
-                jest.fn() as unknown as typeof fetch
+                'openid4vp://?request_uri=https%3A%2F%2Fverifier.example.com%2Freq.jwt',
+                fetchMock
             )
-        ).rejects.toMatchObject({ code: 'request_object_not_supported' });
+        ).rejects.toMatchObject({
+            name: 'RequestObjectError',
+            code: 'invalid_request_object',
+        });
+
+        // Inline `request=<jws>` path: the string "eyJ.header.payload.sig"
+        // is not a structurally valid compact JWS (non-base64url chars),
+        // so the module rejects it before any crypto work.
+        await expect(
+            resolveAuthorizationRequest(
+                'openid4vp://?request=eyJ.header.payload.sig',
+                fetchMock
+            )
+        ).rejects.toMatchObject({
+            name: 'RequestObjectError',
+            code: 'invalid_request_object',
+        });
     });
 });
 

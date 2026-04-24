@@ -1,20 +1,18 @@
 /**
- * try-verify.ts — smoke-test the Slice 6 OID4VP surface against a real
- * verifier without needing a full wallet UI.
+ * try-verify.ts — smoke-test the OID4VP surface (Slices 6 + 7 + 7.5)
+ * against a real verifier without needing a full wallet UI.
  *
  * What it does (in order):
  *   1. Parse the verifier's Authorization Request URI.
- *   2. For signed Request Objects (`request_uri` / `request`), fetch +
- *      decode the JWS *without verifying* — gated behind the explicit
- *      `--unsafe-decode-jws` flag. Slice 7 replaces this shortcut with
- *      proper signature verification via `client_id_scheme`.
+ *   2. For signed Request Objects (`request_uri` / `request`),
+ *      fetch + **verify** the JWS per `client_id_scheme` (Slice 7.5).
+ *      Supported schemes out of the box: `did` (did:jwk, did:web)
+ *      and `x509_san_dns` (with --trusted-root or --unsafe-allow-self-signed).
  *   3. Resolve `presentation_definition_uri` if present.
  *   4. Load credentials from a JSON file.
  *   5. Run the PEX matcher + selector and print a preview of what the
  *      wallet would POST.
- *
- * This harness DOES NOT sign, submit, or touch any private keys. It
- * stops exactly where Slice 7 picks up.
+ *   6. With --submit, sign the VP and POST it to the verifier.
  *
  * Usage:
  *   pnpm try-verify <oid4vp-uri> --credentials <path.json> [options]
@@ -25,13 +23,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
 
-import { decodeJwt, decodeProtectedHeader } from 'jose';
 import type { JWKWithPrivateKey } from '@learncard/types';
 
 import {
-    parseAuthorizationRequestUri,
-    resolvePresentationDefinitionByReference,
+    resolveAuthorizationRequest,
 } from '../src/vp/parse';
+import { RequestObjectError } from '../src/vp/request-object';
 import {
     selectCredentials,
     buildPresentationSubmission,
@@ -55,7 +52,8 @@ interface CliArgs {
     holderPath?: string;
     submit: boolean;
     envelopeFormat?: VpFormat;
-    unsafeDecodeJws: boolean;
+    trustedRootPaths: string[];
+    unsafeAllowSelfSigned: boolean;
     verbose: boolean;
 }
 
@@ -79,29 +77,39 @@ const printUsage = (): void => {
             '  <oid4vp-uri>          OpenID4VP Authorization Request URI (openid4vp://..., haip://..., https://...)',
             '',
             'Options:',
-            '  --credentials <path>   JSON file containing a VC or an array of VCs.',
-            '                         Each entry may be a W3C VC object or a compact JWT-VC string.',
-            '  --submit               After PEX selection, build + sign a VerifiablePresentation and',
-            '                         POST it to the verifier\'s response_uri (direct_post, OID4VP §8).',
-            '                         Requires a holder sidecar at <credentials-path>.holder.json',
-            '                         (written automatically by `try-offer --save`) or an explicit',
-            '                         --holder path.',
-            '  --holder <path>        JSON file carrying the holder key used to sign the VP:',
-            '                           { did, kid, privateJwk, alg? }',
-            '                         Default: <credentials-path>.holder.json',
-            '  --envelope <format>    Override the VP envelope format. One of: jwt_vp_json | ldp_vp.',
-            '                         Default: inferred from verifier\'s pd.format + VC formats.',
-            '  --unsafe-decode-jws    Decode (without verifying) signed Request Objects so the harness',
-            '                         can test Slice 6 against verifiers that use request_uri / request',
-            '                         JWS (most real deployments). NEVER use for production — Slice 7',
-            '                         adds proper signature verification via client_id_scheme.',
-            '  --verbose, -v          Log the full resolved request + per-field match results',
-            '  --help, -h             Show this message',
+            '  --credentials <path>      JSON file containing a VC or an array of VCs.',
+            '                            Each entry may be a W3C VC object or a compact JWT-VC string.',
+            '  --submit                  After PEX selection, build + sign a VerifiablePresentation and',
+            '                            POST it to the verifier\'s response_uri (direct_post, OID4VP §8).',
+            '                            Requires a holder sidecar at <credentials-path>.holder.json',
+            '                            (written automatically by `try-offer --save`) or an explicit',
+            '                            --holder path.',
+            '  --holder <path>           JSON file carrying the holder key used to sign the VP:',
+            '                              { did, kid, privateJwk, alg? }',
+            '                            Default: <credentials-path>.holder.json',
+            '  --envelope <format>       Override the VP envelope format. One of: jwt_vp_json | ldp_vp.',
+            '                            Default: inferred from verifier\'s pd.format + VC formats.',
+            '  --trusted-root <path>     PEM file containing a trusted X.509 root certificate. Repeat',
+            '                            to add multiple. Required for client_id_scheme=x509_san_dns',
+            '                            unless --unsafe-allow-self-signed is set.',
+            '  --unsafe-allow-self-signed',
+            '                            Accept self-signed x509 chains for development. NEVER use in',
+            '                            production — disables the chain-to-trust-root check.',
+            '  --verbose, -v             Log the full resolved request + per-field match results',
+            '  --help, -h                Show this message',
             '',
             'Examples:',
-            '  pnpm try-verify "openid4vp://?client_id=...&presentation_definition=..." --credentials ./vc.json',
-            '  pnpm try-verify "openid4vp://?request_uri=https://verifier.example.com/req" \\',
-            '                  --credentials ./vc.json --unsafe-decode-jws',
+            '  # by_value request, walt.id-style',
+            '  pnpm try-verify "openid4vp://?client_id=...&presentation_definition=..." \\',
+            '                  --credentials ./vc.json --submit',
+            '',
+            '  # signed Request Object via did:web / did:jwk (verified automatically)',
+            '  pnpm try-verify "openid4vp://?request_uri=https://verifier.example/req" \\',
+            '                  --credentials ./vc.json',
+            '',
+            '  # signed Request Object via x509_san_dns with a pinned trust root',
+            '  pnpm try-verify "openid4vp://?request_uri=https://eudi.example/req" \\',
+            '                  --credentials ./vc.json --trusted-root ./eu-digital-id.pem',
             '',
         ].join('\n')
     );
@@ -115,7 +123,8 @@ const parseArgs = (argv: string[]): CliArgs => {
     let holderPath: string | undefined;
     let submit = false;
     let envelopeFormat: VpFormat | undefined;
-    let unsafeDecodeJws = false;
+    const trustedRootPaths: string[] = [];
+    let unsafeAllowSelfSigned = false;
     let verbose = false;
 
     for (let i = 0; i < args.length; i++) {
@@ -140,8 +149,20 @@ const parseArgs = (argv: string[]): CliArgs => {
                 envelopeFormat = value;
                 break;
             }
+            case '--trusted-root':
+                trustedRootPaths.push(args[++i]!);
+                break;
+            case '--unsafe-allow-self-signed':
+                unsafeAllowSelfSigned = true;
+                break;
             case '--unsafe-decode-jws':
-                unsafeDecodeJws = true;
+                // Deprecated alias from pre-Slice-7.5. Preserved so
+                // stale copy-paste invocations don't error out, but
+                // the flag no longer does anything — signed Request
+                // Objects are now verified properly by default.
+                console.warn(
+                    '⚠ --unsafe-decode-jws is deprecated. Signed Request Objects are now verified by default (Slice 7.5).'
+                );
                 break;
             case '--verbose':
             case '-v':
@@ -178,7 +199,8 @@ const parseArgs = (argv: string[]): CliArgs => {
         holderPath,
         submit,
         envelopeFormat,
-        unsafeDecodeJws,
+        trustedRootPaths,
+        unsafeAllowSelfSigned,
         verbose,
     };
 };
@@ -237,84 +259,20 @@ const loadCredentials = (path: string): CandidateCredential[] => {
     }));
 };
 
-/**
- * Fetch `request_uri` or decode the inline `request` JWS without
- * verifying the signature. Returns an {@link AuthorizationRequest} built
- * from the JWS payload claims. Gated behind `--unsafe-decode-jws` in the
- * harness; the plugin's public API still refuses this path until Slice 7.
- */
-const decodeUnverifiedRequestObject = async (args: {
-    requestUri?: string;
-    inlineJwt?: string;
-    verbose: boolean;
-}): Promise<AuthorizationRequest> => {
-    let jws: string;
-
-    if (args.requestUri) {
-        if (args.verbose) console.log(`\n[fetch] GET ${args.requestUri}`);
-
-        const response = await fetch(args.requestUri);
-        if (!response.ok) {
-            throw new Error(
-                `request_uri returned ${response.status} ${response.statusText}`
-            );
-        }
-        jws = (await response.text()).trim();
-    } else if (args.inlineJwt) {
-        jws = args.inlineJwt;
-    } else {
-        throw new Error('decodeUnverifiedRequestObject needs either requestUri or inlineJwt');
-    }
-
-    // jose's decodeJwt + decodeProtectedHeader perform no signature
-    // verification — exactly the behavior this harness needs.
-    let header: Record<string, unknown>;
-    let payload: Record<string, unknown>;
-
-    try {
-        header = decodeProtectedHeader(jws) as Record<string, unknown>;
-        payload = decodeJwt(jws) as Record<string, unknown>;
-    } catch (e) {
-        throw new Error(`Failed to decode Request Object JWS: ${describe(e)}`);
-    }
-
-    if (args.verbose) {
-        console.log('\n[jws.header] (not verified)');
-        console.log(pretty(header));
-        console.log('\n[jws.payload] (not verified)');
-        console.log(pretty(payload));
-    }
-
-    // Spec: the JWS payload contains the same claims an inline
-    // Authorization Request URI would carry. Just rebuild our shape.
-    const request: AuthorizationRequest = {
-        client_id: asString(payload.client_id) ?? '<unknown>',
-        client_id_scheme: asString(payload.client_id_scheme),
-        response_type: asString(payload.response_type) ?? 'vp_token',
-        response_mode: asString(payload.response_mode),
-        response_uri: asString(payload.response_uri),
-        redirect_uri: asString(payload.redirect_uri),
-        nonce: asString(payload.nonce) ?? '<missing>',
-        state: asString(payload.state),
-        presentation_definition: (payload.presentation_definition as PresentationDefinition | undefined) ?? undefined,
-        presentation_definition_uri: asString(payload.presentation_definition_uri),
-        client_metadata: isObject(payload.client_metadata)
-            ? (payload.client_metadata as Record<string, unknown>)
-            : undefined,
-        client_metadata_uri: asString(payload.client_metadata_uri),
-        scope: asString(payload.scope),
-    };
-
-    return request;
-};
-
-const asString = (v: unknown): string | undefined =>
-    typeof v === 'string' && v.length > 0 ? v : undefined;
-
-const isObject = (v: unknown): v is Record<string, unknown> =>
-    v !== null && typeof v === 'object' && !Array.isArray(v);
-
 const pretty = (value: unknown): string => JSON.stringify(value, null, 2);
+
+/**
+ * Load every `--trusted-root` PEM into an in-memory array the plugin
+ * passes to the Slice 7.5 verification layer.
+ */
+const loadTrustedRoots = (paths: string[]): string[] =>
+    paths.map(p => {
+        const absolute = resolvePath(process.cwd(), p);
+        if (!existsSync(absolute)) {
+            throw new Error(`Trusted root not found: ${absolute}`);
+        }
+        return readFileSync(absolute, 'utf8');
+    });
 
 const truncate = (value: string, max: number): string =>
     value.length <= max ? value : value.slice(0, max - 1) + '…';
@@ -329,51 +287,25 @@ const main = async (): Promise<void> => {
     console.log('\n=== OID4VP Try-Verify Harness ===\n');
     console.log(`Request URI: ${truncate(args.requestUri, 120)}`);
 
-    /* 1. Parse the URI — or extract the JWS reference to decode unsafely. */
-    const parsed = parseAuthorizationRequestUri(args.requestUri);
-    console.log(`Parse mode: ${parsed.kind}`);
+    /* 1. Resolve the request. Signed Request Objects are verified here
+     *    (Slice 7.5): did:jwk / did:web by default, x509_san_dns when
+     *    --trusted-root is supplied or --unsafe-allow-self-signed is on.
+     *
+     * 2. presentation_definition_uri is also resolved transparently
+     *    as part of this call.
+     */
+    const trustedX509Roots = loadTrustedRoots(args.trustedRootPaths);
 
-    let request: AuthorizationRequest;
-
-    if (parsed.kind === 'by_value') {
-        request = parsed.request;
-    } else {
-        if (!args.unsafeDecodeJws) {
-            console.error(
-                [
-                    '',
-                    '✗ This request uses a signed Request Object.',
-                    '',
-                    '  Slice 6 does not verify signed Request Objects — that work lives in Slice 7.',
-                    '  Re-run with --unsafe-decode-jws to DECODE THE JWS WITHOUT VERIFYING IT',
-                    '  so you can smoke-test the parser + PEX matcher + selector against real',
-                    '  verifier traffic during development.',
-                    '',
-                    '  NEVER use --unsafe-decode-jws in production.',
-                    '',
-                ].join('\n')
-            );
-            process.exit(1);
-        }
-
-        console.log('\n⚠ UNSAFE MODE — decoding Request Object JWS without signature verification');
-        console.log('  Enabled by --unsafe-decode-jws. Slice 7 replaces this with proper client_id_scheme verification.');
-
-        request = await decodeUnverifiedRequestObject({
-            requestUri: parsed.kind === 'by_reference_request_uri' ? parsed.requestUri : undefined,
-            inlineJwt: parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
-            verbose: args.verbose,
-        });
-    }
-
-    /* 2. Resolve presentation_definition_uri if the request points at one. */
-    if (!request.presentation_definition && request.presentation_definition_uri) {
-        if (args.verbose)
-            console.log(`\n[fetch] presentation_definition_uri → ${request.presentation_definition_uri}`);
-        request.presentation_definition = await resolvePresentationDefinitionByReference(
-            request.presentation_definition_uri
+    if (args.unsafeAllowSelfSigned) {
+        console.log(
+            '\n⚠ UNSAFE MODE — accepting self-signed x509 chains (client_id_scheme=x509_san_dns)'
         );
     }
+
+    const request = await resolveAuthorizationRequest(args.requestUri, undefined, {
+        trustedX509Roots,
+        unsafeAllowSelfSigned: args.unsafeAllowSelfSigned,
+    });
 
     /* 3. Print what we learned about the verifier's ask. */
     console.log('\n--- Verifier Authorization Request ---');
@@ -632,7 +564,15 @@ const runSubmit = async (ctx: {
 main().catch(error => {
     console.error('\n✗ try-verify failed:\n');
 
-    if (error instanceof VpError) {
+    if (error instanceof RequestObjectError) {
+        console.error(`  code:    ${error.code}`);
+        console.error(`  message: ${error.message}`);
+        console.error('');
+        console.error('  Signed Request Object verification failed.');
+        console.error('  If the verifier uses client_id_scheme=x509_san_dns, you may need:');
+        console.error('    --trusted-root <path.pem>      (production path)');
+        console.error('    --unsafe-allow-self-signed     (dev/staging only)');
+    } else if (error instanceof VpError) {
         console.error(`  code:    ${error.code}`);
         console.error(`  message: ${error.message}`);
     } else if (error instanceof Error) {

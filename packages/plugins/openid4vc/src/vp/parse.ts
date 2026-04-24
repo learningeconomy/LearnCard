@@ -4,6 +4,10 @@ import {
     PresentationDefinition,
     VpError,
 } from './types';
+import {
+    verifyAndDecodeRequestObject,
+    DidResolver,
+} from './request-object';
 
 /**
  * Parse an OpenID4VP Authorization Request URI without hitting the network.
@@ -115,28 +119,61 @@ export const resolvePresentationDefinitionByReference = async (
 };
 
 /**
- * End-to-end: parse the URI, and if it's a by-value request with an
- * out-of-band `presentation_definition_uri`, fetch and inline the PD so
+ * Options consumed by {@link resolveAuthorizationRequest} for signed
+ * Request Object verification (Slice 7.5). The caller (typically the
+ * plugin) wires DID resolver + X.509 roots from plugin config.
+ */
+export interface ResolveAuthorizationRequestOptions {
+    /** DID resolver for `client_id_scheme=did`. Defaults to built-in did:jwk + did:web. */
+    didResolver?: DidResolver;
+    /** Trust anchors for `client_id_scheme=x509_san_dns`. PEM-encoded. */
+    trustedX509Roots?: readonly string[];
+    /** **Dev-only.** Accept x509 chains without a trusted root. */
+    unsafeAllowSelfSigned?: boolean;
+}
+
+/**
+ * End-to-end: parse the URI, resolve signed Request Objects (per
+ * Slice 7.5), and inline `presentation_definition_uri` if needed, so
  * the caller gets a single fully-resolved {@link AuthorizationRequest}.
  *
- * Signed Request Objects (`request` / `request_uri`) still throw
- * {@link VpError} with code `request_object_not_supported` — that path
- * lands in Slice 7 together with signature verification.
+ * Signed Request Objects are verified according to their
+ * `client_id_scheme` (`did`, `x509_san_dns`). Schemes we don't support
+ * — or a `redirect_uri` scheme that illegitimately carries a signed
+ * Request Object — bubble up as {@link RequestObjectError} with a
+ * typed code.
  */
 export const resolveAuthorizationRequest = async (
     input: string,
-    fetchImpl: typeof fetch = globalThis.fetch
+    fetchImpl: typeof fetch = globalThis.fetch,
+    options: ResolveAuthorizationRequestOptions = {}
 ): Promise<AuthorizationRequest> => {
     const parsed = parseAuthorizationRequestUri(input);
 
-    if (parsed.kind !== 'by_value') {
-        throw new VpError(
-            'request_object_not_supported',
-            'Signed Request Objects (request / request_uri) are not supported until Slice 7'
-        );
-    }
+    let request: AuthorizationRequest;
 
-    const { request } = parsed;
+    if (parsed.kind === 'by_value') {
+        request = parsed.request;
+    } else {
+        const urlClientId = parsed.rawParams.get('client_id') ?? undefined;
+        const urlClientIdScheme =
+            parsed.rawParams.get('client_id_scheme') ?? undefined;
+
+        request = await verifyAndDecodeRequestObject({
+            requestUri:
+                parsed.kind === 'by_reference_request_uri'
+                    ? parsed.requestUri
+                    : undefined,
+            inlineJwt:
+                parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
+            urlClientId,
+            urlClientIdScheme,
+            fetchImpl,
+            didResolver: options.didResolver,
+            trustedX509Roots: options.trustedX509Roots,
+            unsafeAllowSelfSigned: options.unsafeAllowSelfSigned,
+        });
+    }
 
     // Inline PD wins; otherwise try to resolve by reference.
     if (request.presentation_definition) return request;
