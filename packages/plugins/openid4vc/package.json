@@ -43,6 +43,7 @@
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/vc-plugin": "workspace:^",
+        "dcql": "^3.0.0",
         "jose": "^5.9.6"
     },
     "sideEffects": false

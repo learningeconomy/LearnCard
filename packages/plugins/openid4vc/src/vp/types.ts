@@ -117,9 +117,16 @@ export interface AuthorizationRequest {
     state?: string;
 
     /**
-     * Inline DIF PEX v2 Presentation Definition. Exactly one of
-     * `presentation_definition` / `presentation_definition_uri` /
+     * Inline DIF PEX v2 Presentation Definition. Mutually exclusive
+     * with `dcql_query` per OID4VP 1.0 §5.3 — a verifier expresses
+     * its credential ask in EITHER PEX OR DCQL, never both.
+     *
+     * Exactly one of `presentation_definition` /
+     * `presentation_definition_uri` / `dcql_query` /
      * `scope` (with a well-known scope→PD mapping) is expected.
+     *
+     * The plugin auto-routes on whichever is present; PEX is the legacy
+     * path (every pre-1.0 verifier), DCQL is the OID4VP 1.0+ path.
      */
     presentation_definition?: PresentationDefinition;
 
@@ -128,6 +135,26 @@ export interface AuthorizationRequest {
      * by {@link resolvePresentationDefinitionByReference}.
      */
     presentation_definition_uri?: string;
+
+    /**
+     * **OID4VP 1.0 §6** Digital Credentials Query Language query.
+     *
+     * Mutually exclusive with `presentation_definition` —
+     * verifiers using DCQL set this and omit PEX, and vice versa.
+     * Coexistence is at the plugin level (we accept either),
+     * NOT at the wire level (a single auth request never carries both).
+     *
+     * Stored as a parsed-and-validated value of the `dcql` library's
+     * `DcqlQuery` type so downstream selector code can run
+     * `DcqlQuery.query(...)` without re-parsing. The plugin's
+     * resolver (in `./parse.ts`) calls `DcqlQuery.parse(rawJson)`
+     * before populating this field — by the time it lands here, it's
+     * already been structurally + semantically validated.
+     *
+     * Unlike `presentation_definition_uri`, DCQL is **always inline**;
+     * the spec doesn't define a `dcql_query_uri` mechanism.
+     */
+    dcql_query?: import('../dcql/types').DcqlQuery;
 
     /**
      * Verifier metadata (supported formats, response-encryption JWKS,

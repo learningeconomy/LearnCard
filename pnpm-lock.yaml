@@ -2981,6 +2981,9 @@ importers:
       '@learncard/vc-plugin':
         specifier: workspace:^
         version: link:../vc
+      dcql:
+        specifier: ^3.0.0
+        version: 3.0.0(typescript@5.6.2)
       jose:
         specifier: ^5.9.6
         version: 5.10.0
@@ -11890,6 +11893,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.10':
     resolution: {integrity: sha512-mHH7I6fWdztaNjguGJOLaerXWnQymQ/xKQ8NqClIXoI2PJNgmpQG6DxFcLRs1aYyWg1iY8bPliLJi41u94KdCA==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -16695,6 +16699,9 @@ packages:
 
   dayjs@1.8.36:
     resolution: {integrity: sha512-3VmRXEtw7RZKAf+4Tv1Ym9AGeo8r8+CjDi26x+7SYQil1UqtqdaokhzoEJohqlzt0m5kacJSDhJQkG/LWhpRBw==}
+
+  dcql@3.0.0:
+    resolution: {integrity: sha512-Z1Iq+tDQqPCqWzQVevUVOaYa+NfoplwrwSPvV0JINZpniiN5jq32C4CXsrmELAgSa5Ja7hBKiuYkpZjQFkeHyw==}
 
   debounce@1.2.1:
     resolution: {integrity: sha512-XRRe6Glud4rd/ZGQfiV1ruXSfbvfJedlV9Y6zOlP+2K04vBYiJEte6stfFkCP03aMnY5tsipamumUjL14fofug==}
@@ -28314,6 +28321,14 @@ packages:
   vali-date@1.0.0:
     resolution: {integrity: sha512-sgECfZthyaCKW10N0fm27cg8HYTFK5qMWgypqkXMQ4Wbl/zZKx7xZICgcoxIIE+WFAP/MBL2EFwC/YvLxw3Zeg==}
     engines: {node: '>=0.10.0'}
+
+  valibot@1.2.0:
+    resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
+    peerDependencies:
+      typescript: 5.6.2
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
@@ -48547,6 +48562,12 @@ snapshots:
 
   dayjs@1.8.36: {}
 
+  dcql@3.0.0(typescript@5.6.2):
+    dependencies:
+      valibot: 1.2.0(typescript@5.6.2)
+    transitivePeerDependencies:
+      - typescript
+
   debounce@1.2.1: {}
 
   debug@2.6.9:
@@ -64727,6 +64748,10 @@ snapshots:
       convert-source-map: 2.0.0
 
   vali-date@1.0.0: {}
+
+  valibot@1.2.0(typescript@5.6.2):
+    optionalDependencies:
+      typescript: 5.6.2
 
   validate-npm-package-license@3.0.4:
     dependencies:
