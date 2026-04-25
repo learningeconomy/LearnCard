@@ -35,6 +35,7 @@ import {
     createIssuerKey,
     mintWaltidOffer,
     resolveOfferToByValue,
+    tamperJwtSignature,
 } from '../setup/walt-id-client';
 import {
     startSphereonVerifier,
@@ -226,6 +227,68 @@ describe('interop: Sphereon strict nonce + audience binding', () => {
         const statusB = sphereon.getStatus(sessionB.state);
         expect(statusB.verificationResult).toBe(false);
         expect(statusB.errors.some(e => /audience mismatch/i.test(e))).toBe(true);
+    });
+
+    /* ---------------------- inner VC tamper detection --------------------- */
+
+    /**
+     * The deterministic counterpart to walt.id's flaky tampered-VC
+     * test (see `negative.spec.ts` — that one's currently `it.skip`d
+     * because walt.id's inner-VC validation is non-deterministic).
+     *
+     * Sphereon's verifier runs `jose.jwtVerify` on every inner VC
+     * against the issuer's `did:jwk` public key, which gives us a
+     * reliable, repeatable signal: a single bit-flip in the JWT-VC
+     * signature MUST cause rejection 100% of the time.
+     */
+    it('rejects a VP whose inner VC signature was tampered', async () => {
+        const mock = await buildMockLearnCard();
+        const plugin = getPlugin(mock);
+
+        const vc = await issueWaltidUniversityDegree(plugin);
+        const tamperedVc = tamperJwtSignature(vc);
+
+        // Sanity: header + payload preserved, signature differs.
+        expect(tamperedVc).not.toBe(vc);
+        expect(tamperedVc.split('.').slice(0, 2)).toEqual(vc.split('.').slice(0, 2));
+
+        const session = sphereon.createSession({
+            presentationDefinition: universityDegreePD,
+        });
+
+        // The plugin packages the tampered VC into a freshly-signed
+        // VP — that's the wallet's job, it doesn't re-verify what
+        // it's been handed. The submission *itself* should reach
+        // the verifier successfully (transport-level), and the
+        // verifier should reject during inner-VC validation.
+        let submitFailed = false;
+        try {
+            await plugin.presentCredentials(session.authorizationRequestUri, [
+                {
+                    descriptorId: 'university_degree_descriptor',
+                    candidate: { credential: tamperedVc, format: 'jwt_vc_json' as const },
+                },
+            ]);
+        } catch (e) {
+            submitFailed = true;
+            // The plugin throws VpSubmitError on non-2xx — that's
+            // exactly the path we expect here. Verify it's a 400
+            // from our verifier and nothing exotic.
+            const err = e as { status?: number; body?: { error?: string } };
+            expect(err.status).toBe(400);
+            expect(err.body?.error ?? '').toMatch(/signature/i);
+        }
+
+        expect(submitFailed).toBe(true);
+
+        const status = sphereon.getStatus(session.state);
+        expect(status.verificationResult).toBe(false);
+        // jose's signature error wording can vary by version
+        // ("signature verification failed" / "invalid signature").
+        // Match either.
+        expect(
+            status.errors.some(e => /signature/i.test(e) || /invalid/i.test(e))
+        ).toBe(true);
     });
 
     /* ----------------- positive: confirm strict mode is real --------------- */

@@ -1,9 +1,14 @@
 # `@workspace/openid4vc-interop-e2e-tests`
 
 Real-vendor interop tests for the `@learncard/openid4vc-plugin`. Drives
-the plugin end-to-end against a locally-hosted [walt.id Community
-Stack](https://github.com/walt-id/waltid-identity) issuer + verifier
-running in Docker.
+the plugin end-to-end against:
+
+- **Tier 1**: a locally-hosted [walt.id Community Stack](https://github.com/walt-id/waltid-identity) issuer + verifier in Docker (lenient real vendor, real-network).
+- **Tier 2**: an in-process strict verifier built on [Sphereon's reference PEX library](https://github.com/Sphereon-Opensource/PEX) + `jose` (different team, different codebase, strict spec compliance).
+
+The two tiers complement each other: walt.id catches real-vendor wire-level
+spec drift, Sphereon catches the spec-compliance gaps walt.id is too lax
+to reveal.
 
 ## Why this exists
 
@@ -58,6 +63,8 @@ pnpm logs
 
 ## What the specs cover
 
+### Tier 1 — walt.id (real vendor, real wire)
+
 | File | Tests | Flow under test |
 |---|---|---|
 | `tests/issue.spec.ts` | 1 | Pre-auth OID4VCI: walt.id mints offer → plugin accepts → walt.id-signed JWT-VC bound to holder DID. |
@@ -66,7 +73,35 @@ pnpm logs
 | `tests/multi-credential.spec.ts` | 1 | Multi-input-descriptor PD. Two distinct VC types (`UniversityDegree` + `OpenBadgeCredential`) issued separately, then presented together in a single VP that satisfies both descriptors. Exercises the plugin's selector + descriptor-map emission. |
 | `tests/auth-code.spec.ts` | 1 | OID4VCI **Slice 4** (authorization_code + PKCE). walt.id mints an offer with `authorization_code` grant, plugin builds the authorization URL with PKCE S256, the harness simulates the user-agent redirect to capture the `code`, plugin exchanges code → token → credential. |
 | `tests/sd-jwt.spec.ts` | 1 | SD-JWT VC issuance. Dynamically discovers any `vc+sd-jwt` / `dc+sd-jwt` / `sd-jwt-vc` config from walt.id's running metadata (no hard-coded type id), then validates the plugin can run the credential request and surface the format. SD-JWT *presentation* (key binding + selective disclosure) is intentionally out of scope here. |
-| `tests/negative.spec.ts` | 1 + 1 skipped | **Tampered VC** (active) — flip a byte in the JWT signature, walt.id rejects. Proves walt.id validates the inner VC signature, not just the outer envelope. **Replay nonce** (skipped — see *Walt.id quirks* below). |
+| `tests/negative.spec.ts` | 0 + 2 skipped | Both negative tests against walt.id are `it.skip`d — see *Walt.id quirks* below. The strict versions live in Tier 2 against Sphereon. |
+
+### Tier 2 — Sphereon (strict spec compliance, in-process)
+
+| File | Tests | Flow under test |
+|---|---|---|
+| `tests/sphereon-roundtrip.spec.ts` | 1 | **Cross-vendor roundtrip.** walt.id issues a credential → our plugin holds it → Sphereon's strict PEX evaluator (`@sphereon/pex`) accepts the VP. Proves a credential from one vendor passes a different vendor's verifier — the canonical interop signal. |
+| `tests/sphereon-strict-binding.spec.ts` | 4 | Strict checks walt.id can't enforce: **(a)** nonce binding — a VP signed for session A's nonce, replayed to session B with `state` rewritten, is rejected with `nonce mismatch`. **(b)** Audience binding — a VP with the wrong `aud` claim is rejected with `audience mismatch`. **(c)** Inner-VC tamper detection — a single bit flipped in a JWT-VC signature causes deterministic rejection at `jose.jwtVerify`. **(d)** Clean positive — the foil that proves the strict checks gate on real failures, not always-reject. |
+
+The Sphereon harness lives in `setup/sphereon-verifier.ts` — a tiny
+Node `http.createServer` listener on a dynamic port that mimics OID4VP
+§8's `direct_post` semantics. See its module docstring for the full
+rejection-pipeline (signature → nonce → audience → PEX → inner VC).
+
+### Cross-vendor enforcement matrix
+
+| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict) |
+|---|---|---|
+| Outer VP JWT signature | ✅ enforced | ✅ enforced |
+| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced |
+| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced |
+| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced |
+| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) |
+| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) |
+
+The two empty cells in walt.id's column are the entire reason Tier 2
+exists — a green Tier 1 alone says nothing about whether our plugin's
+VP is actually nonce-bound or whether tampered credentials would be
+caught downstream.
 
 ## Walt.id quirks discovered while building this suite
 
@@ -113,8 +148,9 @@ a submitted JWT-VP matches the `nonce` it issued for the session.
 A VP signed with `nonce_A` (from session A) submitted to session
 B's `response_uri` is accepted and `verificationResult` flips to
 `true`. The replay-nonce spec in `negative.spec.ts` is preserved
-but `it.skip`-ed; the strict version belongs in Tier 2 against a
-vendor that enforces nonce binding (Sphereon, EUDI reference).
+but `it.skip`-ed; the strict version is **active in Tier 2 against
+Sphereon** (`tests/sphereon-strict-binding.spec.ts`) where every
+run confirms the plugin emits the correct per-session nonce.
 
 ### 6. HTTPS-only by-reference URIs
 
@@ -126,6 +162,21 @@ harness rewrites by-reference URIs to by-value before handing them
 to the plugin (`resolveOfferToByValue` /
 `resolveAuthorizationRequestToByValue`). This is a test-only shim;
 the plugin's HTTPS guard is unmodified.
+
+### 7. Non-deterministic inner-VC signature validation (verifier)
+
+Walt.id's verifier sometimes catches a tampered inner VC signature
+and sometimes doesn't, on the same input. Observed sequence across
+consecutive runs of the same code: reject → accept → reject →
+accept. The flake appears to be inside walt.id's verification
+pipeline, not our plugin (the plugin packages whatever VC it's
+handed — wallets don't pre-verify their own credentials).
+
+The tampered-VC test in `tests/negative.spec.ts` is `it.skip`d
+for this reason; the deterministic version lives in
+`tests/sphereon-strict-binding.spec.ts` and runs `jose.jwtVerify`
+on every inner JWT-VC against its `did:jwk` issuer key — 100%
+repeatable rejection on a single bit-flip.
 
 ## Architecture notes
 
