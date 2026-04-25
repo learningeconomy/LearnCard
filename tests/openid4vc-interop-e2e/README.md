@@ -5,12 +5,15 @@ the plugin end-to-end against:
 
 - **Tier 1**: a locally-hosted [walt.id Community Stack](https://github.com/walt-id/waltid-identity) issuer + verifier in Docker (lenient real vendor, real-network, **PEX**).
 - **Tier 2**: an in-process strict verifier built on two reference TypeScript libraries from independent teams — [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX) for **PEX** evaluation and [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts) (OWF Labs, by the spec's author) for **DCQL** matching, plus `jose` for shared JWT/nonce/audience checks.
+- **Tier 2.C**: the [EU Digital Identity Wallet reference verifier](https://github.com/eu-digital-identity-wallet/eudi-srv-verifier-endpoint) (OID4VP 1.0, **DCQL**, mso_mdoc / dc+sd-jwt only) running in Docker. Currently runs one active session-shape test plus three documented-skip roundtrip tests gated on plugin slices listed below.
 
-The two tiers complement each other: walt.id catches real-vendor
+The three tiers complement each other: walt.id catches real-vendor
 wire-level spec drift, Sphereon catches the spec-compliance gaps
 walt.id is too lax to reveal AND validates the plugin's DCQL output
-(OID4VP 1.0 §6) — which walt.id `1.0.0-SNAPSHOT` doesn't yet
-implement on the verifier side.
+(OID4VP 1.0 §6), and EUDI provides the authoritative EU government
+reference impl for OID4VP 1.0 — surfacing plugin gaps (SD-JWT-VC
+presentation, OID4VP 1.0 client-id-prefix semantics) the in-process
+tiers can't see.
 
 ## Why this exists
 
@@ -33,7 +36,7 @@ or on-demand before a release.
 
 - [Docker](https://docs.docker.com/get-docker/) daemon running
 - [`docker compose`](https://docs.docker.com/compose/) v2
-- Ports `7002` and `7003` free on the host
+- Ports `7002`, `7003`, and `7004` free on the host
 
 ## Running
 
@@ -108,25 +111,71 @@ that receives a body without `presentation_submission` 400s, and a
 DCQL session that receives one *with* `presentation_submission` 400s
 (OID4VP 1.0 §6.4 mandates the field be absent for DCQL responses).
 
+### Tier 2.C — EUDI reference verifier (Docker, OID4VP 1.0 / DCQL)
+
+The [EU Digital Identity Wallet reference verifier](https://github.com/eu-digital-identity-wallet/eudi-srv-verifier-endpoint)
+is the EU Commission's authoritative OID4VP 1.0 implementation.
+Used primarily for what *can't* yet be tested end-to-end against it,
+so plugin gaps that block production wallet integration surface
+locally instead of in EU pilots.
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/eudi-parsing.spec.ts` | 1 active + 3 skipped | **Active**: EUDI is reachable, accepts a DCQL session creation, and emits an OID4VP 1.0 spec-shape response (signed Request Object inlined as `request`, parsed-back DCQL query round-trips). **Skipped**: full Request Object resolution + selector format-gap reporting (blocked by plugin OID4VP 1.0 client-id-prefix support), and full credential roundtrip (blocked by plugin SD-JWT-VC presentation support). Each skip names the specific plugin slice that unblocks it. |
+
+**Documented gaps surfaced by EUDI integration** (becomes the
+plugin's prioritized backlog):
+
+1. **Plugin emits `jwt_vc_json`; EUDI accepts only `mso_mdoc` /
+   `dc+sd-jwt`.** EUDI returns `{"error":"UnsupportedFormat"}` at
+   the submission boundary. Unblocked by adding SD-JWT-VC
+   presentation (KB-JWT signing, selective-disclosure handling)
+   to the plugin.
+2. **Plugin requires `client_id_scheme`; EUDI uses OID4VP 1.0
+   client-id-prefix semantics** (default `pre-registered` mode
+   emits a bare `client_id: "Verifier"`). Plugin's Slice 7.5 JAR
+   verifier rejects this. Unblocked by parsing `<scheme>:<value>`
+   out of `client_id` in `vp/request-object.ts` (with sensible
+   default for unprefixed values).
+
+The EUDI Docker image is `linux/amd64`-only; on Apple Silicon hosts
+Docker emulates and cold-start is ~30s vs. ~5s for native amd64.
+The global-setup probe gives EUDI a 180s timeout to accommodate
+emulated boots.
+
 ### Cross-vendor enforcement matrix
 
-| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict, PEX) | Sphereon (strict, DCQL) |
-|---|---|---|---|
-| Outer VP JWT signature | ✅ enforced | ✅ enforced | ✅ enforced (per-query VP) |
-| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced | ✅ enforced |
-| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced | ✅ enforced (per-query) |
-| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced | ✅ enforced |
-| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) | n/a |
-| DCQL `credential_matches` evaluation | n/a | n/a | ✅ (strict, by `dcql`) |
-| `presentation_submission` field presence | required | required | **forbidden** (must be absent) |
-| `vp_token` shape | string OR object | string OR object | object keyed by `credential_query_id` |
-| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) | n/a |
+| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict, PEX) | Sphereon (strict, DCQL) | EUDI reference (DCQL) |
+|---|---|---|---|---|
+| Outer VP JWT signature | ✅ enforced | ✅ enforced | ✅ enforced (per-query VP) | ✅ enforced (gated⁰) |
+| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
+| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced | ✅ enforced (per-query) | ✅ enforced (gated⁰) |
+| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
+| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) | n/a | n/a |
+| DCQL `credential_matches` evaluation | n/a | n/a | ✅ (strict, by `dcql`) | ✅ (strict, native EUDI Kotlin impl) |
+| `presentation_submission` field presence | required | required | **forbidden** (must be absent) | **forbidden** (must be absent) |
+| `vp_token` shape | string OR object | string OR object | object keyed by `credential_query_id` | object keyed by `credential_query_id` |
+| Accepted credential formats | `jwt_vc_json`, `ldp_vc`, SD-JWT issuance | `jwt_vc_json`, `ldp_vc` | `jwt_vc_json`, `ldp_vc` | **`mso_mdoc` + `dc+sd-jwt` only** |
+| OID4VP version | Draft 22 (`presentation_definition`) | Draft 22 (PEX) / 1.0 (DCQL) | Draft 22 (PEX) / 1.0 (DCQL) | 1.0 |
+| `client_id` style | bare string + `client_id_scheme` | bare string + `client_id_scheme` | bare string + `client_id_scheme` | OID4VP 1.0 client-id-prefix |
+| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) | n/a | n/a |
 
-The empty cells in walt.id's column are the entire reason Tier 2
+⁰ Gated tests: `it.skip` until plugin OID4VP 1.0 client-id-prefix
+support ships. The EUDI service is reachable today; the plugin
+can't yet decode its signed Request Objects.
+
+The empty cells in walt.id's column are the reason Tier 2 (Sphereon)
 exists — a green Tier 1 alone says nothing about whether our plugin's
 VP is actually nonce-bound, whether tampered credentials would be
 caught downstream, or whether DCQL responses match the wire shape
 spec-strict verifiers expect.
+
+The last three rows of the table (formats, version, client_id style)
+are why **EUDI integration is currently parsing-side only** — the
+plugin doesn't yet emit credentials EUDI can accept (`dc+sd-jwt`)
+nor parse EUDI's bare `client_id`. Each gap maps to a named plugin
+slice the suite documents alongside its skipped test; closing them
+in order replaces both `it.skip`s with active interop coverage.
 
 ## Plugin DCQL pipeline
 

@@ -73,6 +73,68 @@ services:
         networks:
             - oid4vc-interop
 
+    # EU Digital Identity Wallet reference verifier — the spec-strict
+    # DCQL implementation against which the plugin's DCQL emission is
+    # cross-vendor validated. The image is published at:
+    #   ghcr.io/eu-digital-identity-wallet/eudi-srv-verifier-endpoint
+    # (Apache-2.0, EU government-funded reference impl.)
+    #
+    # EUDI's only OID4VP query language is DCQL — there's no PEX
+    # surface — so this service exists specifically to exercise the
+    # plugin's Slice 1–9 DCQL pipeline against an authoritative
+    # vendor over the wire.
+    #
+    # Configuration:
+    #   - VERIFIER_PUBLICURL: the externally-reachable origin EUDI
+    #     embeds in metadata, response_uri, and request_uri values.
+    #     We pin it to http://localhost:7004 so the plugin running on
+    #     the docker host can call back. Production deployments use
+    #     HTTPS via HAProxy SSL termination; the test here trades
+    #     prod fidelity for local-loop simplicity.
+    #   - VERIFIER_RESPONSE_MODE: DirectPost (`direct_post`) is the
+    #     baseline; `direct_post.jwt` (encrypted JWE response) is
+    #     out of scope for this slice.
+    eudi-verifier:
+        image: ghcr.io/eu-digital-identity-wallet/eudi-srv-verifier-endpoint:latest
+        container_name: oid4vc-interop-eudi-verifier
+        ports:
+            - '7004:8080'
+        environment:
+            VERIFIER_PUBLICURL: 'http://localhost:7004'
+            VERIFIER_RESPONSE_MODE: 'DirectPost'
+            # Embed the Authorization Request inline in the response
+            # rather than as a fetchable URL — saves one round-trip
+            # in the test path.
+            VERIFIER_REQUESTJWT_EMBED: 'ByValue'
+            # Default `VERIFIER_CLIENTIDPREFIX=pre-registered` emits a
+            # bare `client_id: "Verifier"` with no scheme prefix —
+            # OID4VP 1.0 §5.10 lets the prefix be inferred from
+            # registration, but our plugin's draft-22 JAR verifier
+            # requires `client_id_scheme` explicitly. Setting
+            # `x509_san_dns` here is the natural workaround, but the
+            # bundled access certificate's SAN doesn't include
+            # "Verifier" (the default ORIGINALCLIENTID), so EUDI
+            # refuses to start. The clean fix lives in the plugin
+            # (OID4VP 1.0 client-id-prefix support); see
+            # `tests/eudi-parsing.spec.ts` for the documented
+            # `it.skip` and the plugin slice that unblocks it.
+        healthcheck:
+            # /ui/presentations is POST-only — GET returns 404 in this
+            # build (not 405 as walt.id does). We probe the Spring Boot
+            # actuator health endpoint instead, which is always GET-able
+            # and surfaces JVM readiness explicitly.
+            test:
+                [
+                    'CMD-SHELL',
+                    "wget -qO- http://localhost:8080/actuator/health 2>&1 | grep -q 'UP' || exit 1",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 60
+            start_period: 60s
+        networks:
+            - oid4vc-interop
+
 networks:
     oid4vc-interop:
         driver: bridge

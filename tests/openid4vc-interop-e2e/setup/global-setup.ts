@@ -23,6 +23,11 @@ const ISSUER_METADATA = 'http://localhost:7002/draft13/.well-known/openid-creden
 // is still enough to prove the listener is up.
 const VERIFIER_PROBE = 'http://localhost:7003/openid4vc/verify';
 
+// EUDI's Spring Boot actuator returns `{"status":"UP"}` once the
+// application is fully booted (Netty reactor + DCQL config + signing
+// keystore loaded). Cold start on arm64 emulating amd64 takes ~30s.
+const EUDI_VERIFIER_HEALTH = 'http://localhost:7004/actuator/health';
+
 const MANAGE_DOCKER = process.env.E2E_MANAGE_DOCKER !== 'false';
 const COMPOSE_FILE = 'compose.yaml';
 
@@ -60,6 +65,17 @@ const isVerifierUp = async (): Promise<boolean> => {
     return res !== null;
 };
 
+const isEudiVerifierUp = async (): Promise<boolean> => {
+    const res = await fetchWithTimeout(EUDI_VERIFIER_HEALTH);
+    if (!res || !res.ok) return false;
+    try {
+        const body = (await res.json()) as { status?: string };
+        return body.status === 'UP';
+    } catch {
+        return false;
+    }
+};
+
 const waitFor = async (
     name: string,
     probe: () => Promise<boolean>,
@@ -94,6 +110,12 @@ export async function setup() {
     await Promise.all([
         waitFor('waltid-issuer', isIssuerUp),
         waitFor('waltid-verifier', isVerifierUp),
+        // EUDI cold start can take longer on emulated arm64 — give it
+        // a generous timeout. Tests opt out via E2E_SKIP_EUDI=1 if
+        // they explicitly need a walt.id-only run.
+        ...(process.env.E2E_SKIP_EUDI === '1'
+            ? []
+            : [waitFor('eudi-verifier', isEudiVerifierUp, 180_000)]),
     ]);
 
     console.log(
