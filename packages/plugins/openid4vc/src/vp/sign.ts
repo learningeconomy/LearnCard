@@ -48,7 +48,21 @@ import { VpFormat } from './present';
  * uniformly: both go into `application/x-www-form-urlencoded` as the
  * `vp_token` field, with JSON objects JSON-stringified first.
  */
-export type VpToken = string | VP;
+/**
+ * Wire-shape of the OID4VP `vp_token` form field across BOTH query
+ * languages:
+ *
+ * - `string` — PEX `jwt_vp_json` compact JWS, OR a single DCQL entry
+ *   that's a `jwt_vc_json` presentation.
+ * - `VP`    — PEX `ldp_vp` signed VP object.
+ * - `Record<string, string | VP>` — DCQL response object keyed by
+ *   `credential_query_id` (OID4VP 1.0 §6.4); values are
+ *   per-query signed presentations.
+ *
+ * The submit layer JSON-encodes whichever non-string variant arrives
+ * before form-urlencoding it.
+ */
+export type VpToken = string | VP | Record<string, string | VP>;
 
 /**
  * Linked-Data VP signer contract. The plugin binds this to

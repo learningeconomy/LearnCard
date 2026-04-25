@@ -43,6 +43,28 @@ import {
     SignIdTokenResult,
 } from './siop/sign';
 import { ProofJwtSigner } from './vci/types';
+import type {
+    DcqlChosenCredential,
+    BuiltDcqlPresentation,
+} from './dcql/build';
+import type { DcqlSelectionResult } from './dcql/select';
+import type { DcqlSignedPresentation } from './dcql/respond';
+
+/**
+ * A holder pick for either the PEX or DCQL pipeline.
+ *
+ * The plugin auto-routes based on which query language the verifier's
+ * Authorization Request carried:
+ *
+ * - PEX (`request.presentation_definition` set) → entries MUST use
+ *   {@link ChosenCredential} (with `descriptorId`).
+ * - DCQL (`request.dcql_query` set) → entries MUST use
+ *   {@link DcqlChosenCredential} (with `credentialQueryId`).
+ *
+ * Mixing shapes within a single call is rejected with a typed error
+ * — every entry must match the request's query language.
+ */
+export type ChosenForPresentation = ChosenCredential | DcqlChosenCredential;
 
 /**
  * Methods the host LearnCard must provide for the OpenID4VC plugin to work.
@@ -199,17 +221,28 @@ export type OpenID4VCPluginMethods = {
      * touches the holder's private keys. Actual vp_token construction
      * + `direct_post` submission happens in Slice 7.
      *
-     * @param input  Authorization Request URI, or an already-parsed request.
-     * @param credentials  The wallet's candidate pool. Each entry carries
-     *   the raw credential value; the `format` id is inferred when
-     *   omitted.
+     * Match the holder's candidate pool against either the
+     * verifier's PEX `presentation_definition` or DCQL `dcql_query`,
+     * whichever the request carries.
+     *
+     * The returned object exposes BOTH `selection` (PEX) and
+     * `dcqlSelection` (DCQL) fields; exactly one is populated, mirroring
+     * which query language the request used. Callers can either:
+     *  - branch on `request.dcql_query` first (preferred), or
+     *  - branch on which selection field is defined.
+     *
+     * @param input        Authorization Request URI, or an already-parsed request.
+     * @param credentials  Wallet's candidate pool (same shape used by both routes).
      */
     prepareVerifiablePresentation: (
         input: string | AuthorizationRequest,
         credentials: CandidateCredential[]
     ) => Promise<{
         request: AuthorizationRequest;
-        selection: SelectionResult;
+        /** Populated when the verifier sent PEX. Undefined for DCQL requests. */
+        selection?: SelectionResult;
+        /** Populated when the verifier sent DCQL. Undefined for PEX requests. */
+        dcqlSelection?: DcqlSelectionResult;
     }>;
 
     /**
@@ -314,7 +347,7 @@ export type OpenID4VCPluginMethods = {
      */
     presentCredentials: (
         input: string | AuthorizationRequest,
-        chosen: ChosenCredential[],
+        chosen: ChosenForPresentation[],
         options?: {
             holder?: string;
             envelopeFormat?: VpFormat;
@@ -322,9 +355,36 @@ export type OpenID4VCPluginMethods = {
         }
     ) => Promise<{
         request: AuthorizationRequest;
-        prepared: PreparedPresentation;
-        signed: SignPresentationResult;
+        /**
+         * PEX flow output: the unsigned VP + DIF PEX presentation_submission
+         * built before signing. Populated only when the request carried
+         * `presentation_definition`.
+         */
+        prepared?: PreparedPresentation;
+        /**
+         * PEX flow output: the signed PEX `vp_token`. Populated only when
+         * the request carried `presentation_definition`.
+         */
+        signed?: SignPresentationResult;
+        /** SIOPv2 id_token (both PEX and DCQL flows route through this). */
         signedIdToken?: SignIdTokenResult;
+        /**
+         * DCQL flow output: per-credential-query unsigned VPs.
+         * Populated only when the request carried `dcql_query`.
+         */
+        dcqlBuilt?: BuiltDcqlPresentation[];
+        /**
+         * DCQL flow output: per-credential-query signed presentations.
+         * Populated only when the request carried `dcql_query`.
+         */
+        dcqlSigned?: DcqlSignedPresentation[];
+        /**
+         * DCQL flow output: the assembled `vp_token` object (keys =
+         * credential_query_id, values = signed presentations).
+         * Populated only when the request carried `dcql_query`.
+         */
+        dcqlVpToken?: Record<string, unknown>;
+        /** HTTP-level result of the direct_post submission. Always populated. */
         submitted: SubmitPresentationResult;
     }>;
 };

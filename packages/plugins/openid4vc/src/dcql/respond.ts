@@ -35,7 +35,6 @@
 import {
     signPresentation,
     type LdpVpSigner,
-    type VpToken,
 } from '../vp/sign';
 import type { ProofJwtSigner } from '../vci/types';
 
@@ -65,9 +64,17 @@ export interface SignDcqlPresentationsHelpers {
     ldpVpSigner?: LdpVpSigner;
 }
 
+/**
+ * One signed presentation in a DCQL response. The value type is the
+ * inner-VP shape (`string` for jwt_vp_json, `VP` for ldp_vp) — not
+ * the full {@link VpToken} union, because DCQL responses never nest
+ * (you can't have a DCQL object as a value inside another DCQL object).
+ */
+export type DcqlInnerVpToken = string | import('@learncard/types').VP;
+
 export interface DcqlSignedPresentation {
     credentialQueryId: string;
-    vpToken: VpToken;
+    vpToken: DcqlInnerVpToken;
     vpFormat: BuiltDcqlPresentation['vpFormat'];
 }
 
@@ -75,9 +82,10 @@ export interface DcqlResponse {
     /**
      * The OID4VP §6.4 `vp_token` object — keys are `credential_query_id`
      * strings, values are signed presentations. Submission code POSTs
-     * this verbatim.
+     * this verbatim. Compatible with {@link VpToken}'s
+     * `Record<string, string | VP>` arm.
      */
-    vpToken: Record<string, VpToken>;
+    vpToken: Record<string, DcqlInnerVpToken>;
 
     /**
      * Per-query signed-presentation breakdown. Same data as `vpToken`
@@ -120,9 +128,15 @@ export const signDcqlPresentations = async (
             helpers
         );
 
+        // `result.vpToken` is the broad `VpToken` union. For DCQL
+        // inner VPs we know the runtime shape can only be `string`
+        // (jwt_vp_json compact JWS) or `VP` (signed ldp_vp object) —
+        // a per-query DCQL inner can't itself be a DCQL Record. The
+        // signPresentation contract enforces this; the cast is a
+        // narrowing hint TypeScript can't infer from the union.
         out.push({
             credentialQueryId: entry.credentialQueryId,
-            vpToken: result.vpToken,
+            vpToken: result.vpToken as DcqlInnerVpToken,
             vpFormat: entry.vpFormat,
         });
     }
@@ -162,8 +176,8 @@ export const buildDcqlResponse = async (
  */
 export const assembleDcqlVpToken = (
     presentations: readonly DcqlSignedPresentation[]
-): Record<string, VpToken> => {
-    const out: Record<string, VpToken> = {};
+): Record<string, DcqlInnerVpToken> => {
+    const out: Record<string, DcqlInnerVpToken> = {};
     for (const p of presentations) {
         out[p.credentialQueryId] = p.vpToken;
     }

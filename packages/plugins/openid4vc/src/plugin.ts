@@ -44,6 +44,13 @@ import {
     SignIdTokenResult,
 } from './siop/sign';
 import { ProofJwtSigner } from './vci/types';
+import { selectCredentialsForDcql } from './dcql/select';
+import {
+    buildDcqlPresentations,
+    type DcqlChosenCredential,
+} from './dcql/build';
+import { buildDcqlResponse } from './dcql/respond';
+import type { ChosenForPresentation } from './types';
 
 /**
  * Create the OpenID4VC holder plugin.
@@ -174,27 +181,38 @@ export const getOpenID4VCPlugin = (
             prepareVerifiablePresentation: async (_lc, input, credentials) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
 
-                // No presentation_definition → nothing to match against.
-                // The caller is probably handling a SIOPv2-only flow or a
-                // scope-based PD lookup; return an empty selection result
-                // so they can still render verifier identity + proceed.
-                if (!request.presentation_definition) {
-                    return {
-                        request,
-                        selection: {
-                            descriptors: [],
-                            canSatisfy: true,
-                            reason: undefined,
-                        },
-                    };
+                // DCQL takes precedence over PEX when both are
+                // somehow present (the parser already rejects that
+                // case, but be defensive).
+                if (request.dcql_query) {
+                    const dcqlSelection = selectCredentialsForDcql(
+                        credentials,
+                        request.dcql_query
+                    );
+                    return { request, dcqlSelection };
                 }
 
-                const selection = selectCredentials(
-                    credentials,
-                    request.presentation_definition
-                );
+                if (request.presentation_definition) {
+                    const selection = selectCredentials(
+                        credentials,
+                        request.presentation_definition
+                    );
+                    return { request, selection };
+                }
 
-                return { request, selection };
+                // No presentation_definition AND no dcql_query →
+                // nothing to match against. The caller is probably
+                // handling a SIOPv2-only flow or a scope-based PD
+                // lookup; return an empty PEX selection result so
+                // they can still render verifier identity + proceed.
+                return {
+                    request,
+                    selection: {
+                        descriptors: [],
+                        canSatisfy: true,
+                        reason: undefined,
+                    },
+                };
             },
 
             buildPresentation: async (learnCard, input, chosen, options = {}) => {
@@ -291,27 +309,105 @@ export const getOpenID4VCPlugin = (
 
             presentCredentials: async (learnCard, input, chosen, options = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
-                const pd = requirePresentationDefinition(request);
 
                 const holder = options.holder ?? learnCard.id.did();
 
-                const prepared = buildPresentationFn({
-                    pd,
-                    chosen,
-                    holder,
-                    envelopeFormat: options.envelopeFormat,
-                });
-
-                // Resolve the JWT signer once — we may need it for both
-                // the VP (jwt_vp_json path) and the SIOPv2 id_token
-                // (always Ed25519 / JWS). Even when the VP envelope is
-                // ldp_vp, the id_token still has to be a JWS, so we
-                // build the signer lazily and share it.
+                // The id_token signer is needed for both routes when
+                // the verifier asked for SIOPv2 + VP combined, AND
+                // for the jwt_vp_json signing path.
                 let jwtSigner: ProofJwtSigner | undefined = options.signer;
                 const ensureSharedJwtSigner = async (): Promise<ProofJwtSigner> => {
                     if (!jwtSigner) jwtSigner = await ensureVpJwtSigner(learnCard);
                     return jwtSigner;
                 };
+
+                // SIOPv2 combined flow (Slice 8): when the verifier
+                // asked for `id_token`, sign one and bundle it alongside
+                // the VP in the direct_post submission. Lifted out of
+                // the per-route bodies so PEX and DCQL share it.
+                const signIdTokenIfRequested = async (): Promise<
+                    SignIdTokenResult | undefined
+                > => {
+                    if (!requiresIdToken(request.response_type)) return undefined;
+                    return signIdTokenFn(
+                        {
+                            holder,
+                            audience: request.client_id,
+                            nonce: request.nonce,
+                        },
+                        { signer: await ensureSharedJwtSigner() }
+                    );
+                };
+
+                const responseUri = request.response_uri ?? request.redirect_uri;
+                if (!responseUri) {
+                    throw new Error(
+                        'Authorization Request has no response_uri / redirect_uri — cannot presentCredentials'
+                    );
+                }
+
+                /* ---------------------- DCQL route ---------------------- */
+                if (request.dcql_query) {
+                    const dcqlChosen = assertDcqlChosen(chosen);
+
+                    const dcqlBuilt = buildDcqlPresentations({
+                        query: request.dcql_query,
+                        chosen: dcqlChosen,
+                        holder,
+                    });
+
+                    // DCQL only emits jwt_vp_json/ldp_vp depending on
+                    // each query entry's declared format. Build the
+                    // helpers off the full set so we have whatever's
+                    // needed across all per-query VPs.
+                    const needsJwt = dcqlBuilt.some(b => b.vpFormat === 'jwt_vp_json');
+                    const needsLdp = dcqlBuilt.some(b => b.vpFormat === 'ldp_vp');
+                    const dcqlHelpers = {
+                        ...(needsJwt ? { jwtSigner: await ensureSharedJwtSigner() } : {}),
+                        ...(needsLdp ? { ldpVpSigner: buildLdpVpSigner(learnCard) } : {}),
+                    };
+
+                    const dcqlResponse = await buildDcqlResponse(
+                        {
+                            built: dcqlBuilt,
+                            audience: request.client_id,
+                            nonce: request.nonce,
+                            holder,
+                        },
+                        dcqlHelpers
+                    );
+
+                    const signedIdToken = await signIdTokenIfRequested();
+
+                    const submitted = await submitPresentationFn({
+                        responseUri,
+                        vpToken: dcqlResponse.vpToken,
+                        // DCQL submissions MUST omit presentation_submission.
+                        idToken: signedIdToken?.idToken,
+                        state: request.state,
+                        fetchImpl,
+                    });
+
+                    return {
+                        request,
+                        dcqlBuilt,
+                        dcqlSigned: dcqlResponse.presentations,
+                        dcqlVpToken: dcqlResponse.vpToken,
+                        signedIdToken,
+                        submitted,
+                    };
+                }
+
+                /* ---------------------- PEX route ----------------------- */
+                const pd = requirePresentationDefinition(request);
+                const pexChosen = assertPexChosen(chosen);
+
+                const prepared = buildPresentationFn({
+                    pd,
+                    chosen: pexChosen,
+                    holder,
+                    envelopeFormat: options.envelopeFormat,
+                });
 
                 const helpers =
                     prepared.vpFormat === 'jwt_vp_json'
@@ -329,27 +425,7 @@ export const getOpenID4VCPlugin = (
                     helpers
                 );
 
-                // SIOPv2 combined flow (Slice 8): when the verifier
-                // asked for `id_token`, sign one and bundle it alongside
-                // the VP in the direct_post submission.
-                let signedIdToken: SignIdTokenResult | undefined;
-                if (requiresIdToken(request.response_type)) {
-                    signedIdToken = await signIdTokenFn(
-                        {
-                            holder,
-                            audience: request.client_id,
-                            nonce: request.nonce,
-                        },
-                        { signer: await ensureSharedJwtSigner() }
-                    );
-                }
-
-                const responseUri = request.response_uri ?? request.redirect_uri;
-                if (!responseUri) {
-                    throw new Error(
-                        'Authorization Request has no response_uri / redirect_uri — cannot presentCredentials'
-                    );
-                }
+                const signedIdToken = await signIdTokenIfRequested();
 
                 const submitted = await submitPresentationFn({
                     responseUri,
@@ -392,6 +468,41 @@ const requirePresentationDefinition = (request: AuthorizationRequest) => {
         );
     }
     return request.presentation_definition;
+};
+
+/**
+ * Type guard / discriminator: every entry must have `descriptorId`
+ * (PEX shape). Throws if any entry is the DCQL shape — that's a
+ * caller bug (passing DCQL picks for a PEX request).
+ */
+const assertPexChosen = (chosen: ChosenForPresentation[]): ChosenCredential[] => {
+    for (const [i, entry] of chosen.entries()) {
+        if (!('descriptorId' in entry) || typeof entry.descriptorId !== 'string') {
+            throw new Error(
+                `chosen[${i}] is missing 'descriptorId' — PEX requests need ChosenCredential entries (received DCQL-shape entry with credentialQueryId="${(entry as DcqlChosenCredential).credentialQueryId}")`
+            );
+        }
+    }
+    return chosen as ChosenCredential[];
+};
+
+/**
+ * Same idea for the DCQL route — every entry must carry
+ * `credentialQueryId`. Mixed shapes throw with a precise per-index
+ * message so debug is fast.
+ */
+const assertDcqlChosen = (chosen: ChosenForPresentation[]): DcqlChosenCredential[] => {
+    for (const [i, entry] of chosen.entries()) {
+        if (
+            !('credentialQueryId' in entry) ||
+            typeof entry.credentialQueryId !== 'string'
+        ) {
+            throw new Error(
+                `chosen[${i}] is missing 'credentialQueryId' — DCQL requests need DcqlChosenCredential entries (received PEX-shape entry with descriptorId="${(entry as ChosenCredential).descriptorId}")`
+            );
+        }
+    }
+    return chosen as DcqlChosenCredential[];
 };
 
 /**
