@@ -18,9 +18,17 @@ module.exports = {
         : [['jest-silent-reporter', { useDots: true }], 'summary'],
     testEnvironment: 'node',
     transform: {
-        // `.mjs` covers ESM-only deps mapped above (e.g. `dcql`); the
-        // `[jt]sx?$` line covers our own .ts/.js sources.
-        '^.+\\.mjs$': ['esbuild-jest', { sourcemap: true, target: 'es2020' }],
+        // `.mjs` covers ESM-only deps mapped above (e.g. `dcql`).
+        // esbuild-jest's built-in loaders map only handles js/jsx/ts/tsx/
+        // json — for anything else it falls through to the `text` loader,
+        // which would pass the entire ESM source through verbatim
+        // (collapsing all named exports into a single `default` blob).
+        // Passing `loaders: { '.mjs': 'js' }` overrides that fallback so
+        // .mjs gets full ESM-to-CJS conversion with named exports preserved.
+        '^.+\\.mjs$': [
+            'esbuild-jest',
+            { sourcemap: true, target: 'es2020', loaders: { '.mjs': 'js' } },
+        ],
         '^.+\\.[jt]sx?$': ['esbuild-jest', { sourcemap: true, target: 'es2020' }],
     },
     transformIgnorePatterns: [],

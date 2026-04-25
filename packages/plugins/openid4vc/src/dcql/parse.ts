@@ -20,9 +20,18 @@
  * different copy. For now the plugin treats "didn't pass either check"
  * as the same failure mode.
  */
-import { DcqlQuery } from 'dcql';
+// `dcql` exports `DcqlQuery` as a TypeScript namespace, which compiles
+// to `let DcqlQuery; (function(_) { _.parse = ...; })(DcqlQuery || ...)`.
+// Some bundlers (notably `esbuild-jest`) snapshot named imports at
+// module load time, which can capture `undefined` before the IIFE
+// runs. Using a namespace import keeps the live binding intact in
+// every transform pipeline we care about (Jest, Vitest, esbuild,
+// tsc).
+import * as dcql from 'dcql';
 
 import { VpError } from '../vp/types';
+
+import type { DcqlQuery as DcqlQueryType } from './types';
 
 /**
  * Parse + validate an arbitrary value as a DCQL query. Returns the
@@ -37,7 +46,7 @@ import { VpError } from '../vp/types';
  * The original `dcql` error is attached as `cause` so debug code can
  * still inspect the precise `valibot` issue tree if needed.
  */
-export const parseDcqlQuery = (raw: unknown): DcqlQuery => {
+export const parseDcqlQuery = (raw: unknown): DcqlQueryType => {
     if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
         throw new VpError(
             'invalid_dcql_query',
@@ -45,11 +54,13 @@ export const parseDcqlQuery = (raw: unknown): DcqlQuery => {
         );
     }
 
-    let parsed: DcqlQuery;
+    let parsed: DcqlQueryType;
     try {
-        // `parse` already throws on a malformed structure, so `as DcqlQuery.Input`
-        // here is a typed-input convenience — runtime validation is what we lean on.
-        parsed = DcqlQuery.parse(raw as DcqlQuery.Input);
+        // `parse` already throws on a malformed structure; the cast is
+        // a typed-input convenience, runtime validation is the real guard.
+        parsed = dcql.DcqlQuery.parse(
+            raw as Parameters<typeof dcql.DcqlQuery.parse>[0]
+        ) as DcqlQueryType;
     } catch (e) {
         throw new VpError(
             'invalid_dcql_query',
@@ -59,7 +70,7 @@ export const parseDcqlQuery = (raw: unknown): DcqlQuery => {
     }
 
     try {
-        DcqlQuery.validate(parsed);
+        dcql.DcqlQuery.validate(parsed);
     } catch (e) {
         throw new VpError(
             'invalid_dcql_query',
