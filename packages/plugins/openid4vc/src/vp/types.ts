@@ -27,7 +27,24 @@ export type VpErrorCode =
     | 'invalid_presentation_definition'
     | 'both_definition_and_uri'
     | 'request_object_not_supported'
-    | 'presentation_definition_fetch_failed';
+    | 'presentation_definition_fetch_failed'
+    /**
+     * The Authorization Request carried a `dcql_query` that wasn't a
+     * JSON object, failed `DcqlQuery.parse` (structure), or failed
+     * `DcqlQuery.validate` (content). Distinct from
+     * `invalid_presentation_definition` so UI can localize the two
+     * separately; the underlying `dcql` library error rides along on
+     * `Error.cause` for debug.
+     */
+    | 'invalid_dcql_query'
+    /**
+     * The Authorization Request carried BOTH `presentation_definition`
+     * (or `..._uri`) AND `dcql_query`. OID4VP 1.0 §5.3 forbids this:
+     * the verifier picks ONE query language per request. Without this
+     * guard we'd silently route on whichever one we happened to read
+     * first, which would mask verifier-side bugs.
+     */
+    | 'both_pex_and_dcql';
 
 /**
  * Thrown by the parser/resolver and by PEX selection helpers. The `code`

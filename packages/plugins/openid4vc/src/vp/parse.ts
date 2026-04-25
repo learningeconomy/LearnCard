@@ -8,6 +8,8 @@ import {
     verifyAndDecodeRequestObject,
     DidResolver,
 } from './request-object';
+import { parseDcqlQuery } from '../dcql/parse';
+import type { DcqlQuery } from '../dcql/types';
 
 /**
  * Parse an OpenID4VP Authorization Request URI without hitting the network.
@@ -267,11 +269,22 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
 
     const presentationDefinitionRaw = params.get('presentation_definition');
     const presentationDefinitionUri = params.get('presentation_definition_uri');
+    const dcqlQueryRaw = params.get('dcql_query');
 
     if (presentationDefinitionRaw && presentationDefinitionUri) {
         throw new VpError(
             'both_definition_and_uri',
             'Authorization Request has both presentation_definition and presentation_definition_uri'
+        );
+    }
+
+    // OID4VP 1.0 §5.3: PEX and DCQL are mutually exclusive. Catching this
+    // here (rather than letting downstream selectors race) means we can
+    // surface a precise error before either parser runs.
+    if (dcqlQueryRaw && (presentationDefinitionRaw || presentationDefinitionUri)) {
+        throw new VpError(
+            'both_pex_and_dcql',
+            'Authorization Request carries both PEX (presentation_definition[_uri]) and DCQL (dcql_query); OID4VP 1.0 §5.3 forbids this'
         );
     }
 
@@ -290,10 +303,26 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         presentationDefinition = validatePresentationDefinition(parsed);
     }
 
+    let dcqlQuery: DcqlQuery | undefined;
+    if (dcqlQueryRaw) {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(dcqlQueryRaw);
+        } catch (e) {
+            throw new VpError(
+                'invalid_json',
+                'dcql_query query parameter was not valid JSON',
+                { cause: e }
+            );
+        }
+        dcqlQuery = parseDcqlQuery(parsed);
+    }
+
     // `scope` (SIOPv2) lets verifiers reference pre-registered PDs by
     // name. We accept it without a PD present — the wallet UI / Slice 8
     // resolves scopes server-side. Outside of that escape hatch, a PD
-    // (inline or by reference) is required for a vp_token flow.
+    // (inline or by reference) OR a DCQL query is required for a
+    // vp_token flow.
     const scope = params.get('scope') ?? undefined;
     const hasVpToken = responseTypes.includes('vp_token');
 
@@ -301,11 +330,12 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         hasVpToken &&
         !presentationDefinition &&
         !presentationDefinitionUri &&
+        !dcqlQuery &&
         !scope
     ) {
         throw new VpError(
             'missing_presentation_definition',
-            'Authorization Request has neither presentation_definition, presentation_definition_uri, nor scope'
+            'Authorization Request has none of presentation_definition, presentation_definition_uri, dcql_query, or scope'
         );
     }
 
@@ -345,6 +375,7 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         'state',
         'presentation_definition',
         'presentation_definition_uri',
+        'dcql_query',
         'client_metadata',
         'client_metadata_uri',
         'scope',
@@ -366,6 +397,7 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         state: params.get('state') ?? undefined,
         presentation_definition: presentationDefinition,
         presentation_definition_uri: presentationDefinitionUri ?? undefined,
+        dcql_query: dcqlQuery,
         client_metadata: clientMetadata,
         client_metadata_uri: params.get('client_metadata_uri') ?? undefined,
         scope,

@@ -455,14 +455,26 @@ export const tamperJwtSignature = (jwt: string): string => {
     }
 
     const sig = parts[2]!;
-    if (sig.length === 0) throw new Error('JWT signature is empty');
+    if (sig.length < 4) throw new Error('JWT signature is too short to tamper');
 
-    // Flip the last char to its base64url-neighbour. Both `A→B` and
-    // `B→A` keep the string base64url-valid; either yields a
-    // signature that won't verify.
-    const last = sig[sig.length - 1]!;
-    const flipped = last === 'A' ? 'B' : 'A';
-    const tamperedSig = sig.slice(0, -1) + flipped;
+    // Flip a base64url character roughly mid-signature so we always
+    // mutate REAL signature bytes, not padding bits.
+    //
+    // Subtle gotcha — the obvious "flip the last char" approach is
+    // unreliable for Ed25519 sigs: 64 bytes encode to 86 base64url
+    // chars where the LAST char's bottom 2 bits are padding zeros.
+    // When that last char is 'A' (value 0), flipping it to 'B'
+    // (value 1) toggles ONLY a padding bit; the decoded signature
+    // bytes are identical, the JWT still verifies, and the test
+    // intermittently passes. By targeting a middle character we hit
+    // a position whose 6 bits all carry real signature data, so any
+    // flip guarantees a different byte sequence.
+    const idx = Math.floor(sig.length / 2);
+    const orig = sig[idx]!;
+    // 'A' (0) and 'B' (1) are both alphabet members; pick the one
+    // that's actually different from `orig`.
+    const flipped = orig === 'A' ? 'B' : 'A';
+    const tamperedSig = sig.slice(0, idx) + flipped + sig.slice(idx + 1);
 
     return [parts[0], parts[1], tamperedSig].join('.');
 };

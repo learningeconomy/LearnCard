@@ -34,7 +34,10 @@ import { importJWK, importX509, jwtVerify, JWK } from 'jose';
 import {
     AuthorizationRequest,
     PresentationDefinition,
+    VpError,
 } from './types';
+import { parseDcqlQuery } from '../dcql/parse';
+import type { DcqlQuery } from '../dcql/types';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -692,6 +695,26 @@ const buildRequestFromClaims = (
             ? (claims.presentation_definition as unknown as PresentationDefinition)
             : undefined;
 
+    const presentationDefinitionUri = asString(claims.presentation_definition_uri);
+
+    // OID4VP 1.0 §5.3 mutual-exclusion check, mirrored from the URL
+    // params parser. A signed Request Object that carries both query
+    // languages is malformed regardless of how it was transported.
+    let dcqlQuery: DcqlQuery | undefined;
+    if (claims.dcql_query !== undefined && claims.dcql_query !== null) {
+        if (presentationDefinition || presentationDefinitionUri) {
+            throw new VpError(
+                'both_pex_and_dcql',
+                'Request Object claims carry both PEX (presentation_definition[_uri]) and DCQL (dcql_query); OID4VP 1.0 §5.3 forbids this'
+            );
+        }
+
+        // The library handles non-object inputs internally; we pass
+        // `claims.dcql_query` through untouched so its `cause` chain
+        // stays meaningful.
+        dcqlQuery = parseDcqlQuery(claims.dcql_query);
+    }
+
     const clientMetadata =
         isObject(claims.client_metadata)
             ? (claims.client_metadata as Record<string, unknown>)
@@ -707,7 +730,8 @@ const buildRequestFromClaims = (
         nonce: asString(claims.nonce) ?? '',
         state: asString(claims.state),
         presentation_definition: presentationDefinition,
-        presentation_definition_uri: asString(claims.presentation_definition_uri),
+        presentation_definition_uri: presentationDefinitionUri,
+        dcql_query: dcqlQuery,
         client_metadata: clientMetadata,
         client_metadata_uri: asString(claims.client_metadata_uri),
         scope: asString(claims.scope),
