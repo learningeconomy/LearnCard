@@ -3,12 +3,14 @@
 Real-vendor interop tests for the `@learncard/openid4vc-plugin`. Drives
 the plugin end-to-end against:
 
-- **Tier 1**: a locally-hosted [walt.id Community Stack](https://github.com/walt-id/waltid-identity) issuer + verifier in Docker (lenient real vendor, real-network).
-- **Tier 2**: an in-process strict verifier built on [Sphereon's reference PEX library](https://github.com/Sphereon-Opensource/PEX) + `jose` (different team, different codebase, strict spec compliance).
+- **Tier 1**: a locally-hosted [walt.id Community Stack](https://github.com/walt-id/waltid-identity) issuer + verifier in Docker (lenient real vendor, real-network, **PEX**).
+- **Tier 2**: an in-process strict verifier built on two reference TypeScript libraries from independent teams — [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX) for **PEX** evaluation and [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts) (OWF Labs, by the spec's author) for **DCQL** matching, plus `jose` for shared JWT/nonce/audience checks.
 
-The two tiers complement each other: walt.id catches real-vendor wire-level
-spec drift, Sphereon catches the spec-compliance gaps walt.id is too lax
-to reveal.
+The two tiers complement each other: walt.id catches real-vendor
+wire-level spec drift, Sphereon catches the spec-compliance gaps
+walt.id is too lax to reveal AND validates the plugin's DCQL output
+(OID4VP 1.0 §6) — which walt.id `1.0.0-SNAPSHOT` doesn't yet
+implement on the verifier side.
 
 ## Why this exists
 
@@ -77,31 +79,88 @@ pnpm logs
 
 ### Tier 2 — Sphereon (strict spec compliance, in-process)
 
+In-process strict verifier built on **two** reference TypeScript
+libraries from independent teams:
+
+- **PEX path**: [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX)
+  by Sphereon for DIF Presentation Exchange v2 evaluation.
+- **DCQL path**: [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts)
+  (OWF Labs) by Martin Auer (DCQL spec author, SPRIN-D-funded) for
+  OID4VP 1.0 §6 Digital Credentials Query Language matching.
+
+The harness branches on `session.kind` (`pex` | `dcql`) and routes
+each submission through the corresponding strict matcher.
+
 | File | Tests | Flow under test |
 |---|---|---|
-| `tests/sphereon-roundtrip.spec.ts` | 1 | **Cross-vendor roundtrip.** walt.id issues a credential → our plugin holds it → Sphereon's strict PEX evaluator (`@sphereon/pex`) accepts the VP. Proves a credential from one vendor passes a different vendor's verifier — the canonical interop signal. |
+| `tests/sphereon-roundtrip.spec.ts` | 1 | **PEX cross-vendor roundtrip.** walt.id issues a credential → our plugin holds it → Sphereon's strict PEX evaluator (`@sphereon/pex`) accepts the VP. Proves a credential from one vendor passes a different vendor's verifier — the canonical interop signal. |
+| `tests/sphereon-dcql-roundtrip.spec.ts` | 1 | **DCQL cross-vendor roundtrip.** Same flow, DCQL routing: walt.id issues → plugin holds → plugin auto-routes to its DCQL pipeline (per `request.dcql_query`) → Sphereon's `dcql.DcqlPresentationResult` matcher accepts. Pins the OID4VP 1.0 §6.4 wire shape (object-form `vp_token` keyed by `credential_query_id`, no `presentation_submission`) end-to-end. |
 | `tests/sphereon-strict-binding.spec.ts` | 4 | Strict checks walt.id can't enforce: **(a)** nonce binding — a VP signed for session A's nonce, replayed to session B with `state` rewritten, is rejected with `nonce mismatch`. **(b)** Audience binding — a VP with the wrong `aud` claim is rejected with `audience mismatch`. **(c)** Inner-VC tamper detection — a single bit flipped in a JWT-VC signature causes deterministic rejection at `jose.jwtVerify`. **(d)** Clean positive — the foil that proves the strict checks gate on real failures, not always-reject. |
 
 The Sphereon harness lives in `setup/sphereon-verifier.ts` — a tiny
 Node `http.createServer` listener on a dynamic port that mimics OID4VP
 §8's `direct_post` semantics. See its module docstring for the full
-rejection-pipeline (signature → nonce → audience → PEX → inner VC).
+rejection pipeline (signature → nonce → audience → [PEX evaluator OR
+DCQL matcher] → inner VC).
+
+Spec-misshapen submissions are rejected at the door: a PEX session
+that receives a body without `presentation_submission` 400s, and a
+DCQL session that receives one *with* `presentation_submission` 400s
+(OID4VP 1.0 §6.4 mandates the field be absent for DCQL responses).
 
 ### Cross-vendor enforcement matrix
 
-| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict) |
-|---|---|---|
-| Outer VP JWT signature | ✅ enforced | ✅ enforced |
-| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced |
-| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced |
-| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced |
-| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) |
-| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) |
+| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict, PEX) | Sphereon (strict, DCQL) |
+|---|---|---|---|
+| Outer VP JWT signature | ✅ enforced | ✅ enforced | ✅ enforced (per-query VP) |
+| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced | ✅ enforced |
+| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced | ✅ enforced (per-query) |
+| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced | ✅ enforced |
+| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) | n/a |
+| DCQL `credential_matches` evaluation | n/a | n/a | ✅ (strict, by `dcql`) |
+| `presentation_submission` field presence | required | required | **forbidden** (must be absent) |
+| `vp_token` shape | string OR object | string OR object | object keyed by `credential_query_id` |
+| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) | n/a |
 
-The two empty cells in walt.id's column are the entire reason Tier 2
+The empty cells in walt.id's column are the entire reason Tier 2
 exists — a green Tier 1 alone says nothing about whether our plugin's
-VP is actually nonce-bound or whether tampered credentials would be
-caught downstream.
+VP is actually nonce-bound, whether tampered credentials would be
+caught downstream, or whether DCQL responses match the wire shape
+spec-strict verifiers expect.
+
+## Plugin DCQL pipeline
+
+The `@learncard/openid4vc-plugin` supports BOTH OID4VP query
+languages with a single API surface (`presentCredentials`,
+`prepareVerifiablePresentation`). Routing is driven entirely by
+the verifier's Authorization Request:
+
+- `presentation_definition` set → PEX route (legacy, OID4VP draft 22
+  and earlier, every walt.id-class vendor today).
+- `dcql_query` set → DCQL route (OID4VP 1.0+, EUDI reference
+  verifier, the future).
+
+Mutual exclusion is enforced at parse time per OID4VP 1.0 §5.3
+(`VpError('both_pex_and_dcql', ...)`).
+
+DCQL implementation is split into focused modules under
+`packages/plugins/openid4vc/src/dcql/`:
+
+| Module | Responsibility |
+|---|---|
+| `parse.ts` | Wraps `dcql.DcqlQuery.parse` + `validate` behind the plugin's stable `VpError` taxonomy. |
+| `adapt.ts` | Held credential (JWT-VC string / LD-VC object) → `DcqlW3cVcCredential`. Drops sd-jwt-vc / mso_mdoc cleanly. |
+| `select.ts` | Holder selector via `DcqlQuery.query`. Returns `DcqlSelectionResult` mirroring the PEX `SelectionResult` shape (different keying, same intent). |
+| `build.ts` | One unsigned VP per `credential_query_id` in chosen[]. Pure / synchronous. |
+| `respond.ts` | Sign each unsigned VP, assemble the OID4VP §6.4 `vp_token` object. |
+| `compose.ts` | Verifier-side: `requestW3cVc(spec)` builds spec-correct DCQL queries from domain-shaped intent. |
+
+The plugin's `dcql` library bind uses a namespace import
+(`import * as dcql from 'dcql'`) so live-binding works through the
+ESM ↔ CJS hop in Jest's transform pipeline. Jest config also maps
+the ESM-only `dcql` package to its `.mjs` and runs it through
+esbuild-jest's `js` loader — see
+`packages/plugins/openid4vc/jest.config.js` for the rationale.
 
 ## Walt.id quirks discovered while building this suite
 
