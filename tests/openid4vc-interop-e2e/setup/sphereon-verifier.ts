@@ -54,13 +54,24 @@ import type { AddressInfo } from 'node:net';
 import { randomBytes } from 'node:crypto';
 
 import { PEX } from '@sphereon/pex';
+import * as dcql from 'dcql';
 import { decodeJwt, decodeProtectedHeader, importJWK, jwtVerify, type JWK } from 'jose';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
 /* -------------------------------------------------------------------------- */
 
-export interface SphereonCreateSessionInput {
+/**
+ * Verifier session input — a discriminated union over the query
+ * language used to express the verifier's credential ask. Tests
+ * either pass `presentationDefinition` (PEX) or `dcqlQuery` (DCQL),
+ * never both.
+ */
+export type SphereonCreateSessionInput =
+    | (SphereonPexSessionInput & { dcqlQuery?: never })
+    | (SphereonDcqlSessionInput & { presentationDefinition?: never });
+
+export interface SphereonPexSessionInput {
     /**
      * DIF PEX v2 Presentation Definition the wallet must satisfy.
      * Type intentionally loose — Sphereon's `PEX` accepts both V1
@@ -69,6 +80,28 @@ export interface SphereonCreateSessionInput {
      */
     presentationDefinition: Record<string, unknown>;
 
+    /** See {@link SphereonCommonSessionInput.audience}. */
+    audience?: string;
+    /** See {@link SphereonCommonSessionInput.nonce}. */
+    nonce?: string;
+}
+
+export interface SphereonDcqlSessionInput {
+    /**
+     * Parsed DCQL query the wallet must satisfy. Test code typically
+     * builds this via the plugin's `requestW3cVc` (verifier composer
+     * helper) or hand-rolls the input and runs it through
+     * `parseDcqlQuery`.
+     */
+    dcqlQuery: Record<string, unknown>;
+
+    /** See {@link SphereonCommonSessionInput.audience}. */
+    audience?: string;
+    /** See {@link SphereonCommonSessionInput.nonce}. */
+    nonce?: string;
+}
+
+interface SphereonCommonSessionInput {
     /**
      * Verifier's `client_id` — the audience the wallet's VP JWT
      * must address (`aud` claim). Defaults to a stable test value
@@ -116,11 +149,14 @@ export interface SphereonVerifier {
 /*                                  internals                                 */
 /* -------------------------------------------------------------------------- */
 
-interface SessionRecord {
+type SessionRecord =
+    | (SessionCommon & { kind: 'pex'; presentationDefinition: Record<string, unknown> })
+    | (SessionCommon & { kind: 'dcql'; dcqlQuery: Record<string, unknown> });
+
+interface SessionCommon {
     state: string;
     nonce: string;
     clientId: string;
-    presentationDefinition: Record<string, unknown>;
     responseUri: string;
     verificationResult: boolean | null;
     errors: string[];
@@ -178,6 +214,211 @@ export const startSphereonVerifier = async (
     const sessions = new Map<string, SessionRecord>();
     const pex = new PEX();
 
+    /**
+     * PEX route: parse + verify the (single) JWT-VP, validate nonce +
+     * audience, run Sphereon's strict descriptor-map evaluator, then
+     * verify each inner VC's signature.
+     */
+    const validatePexSubmission = async (
+        session: SessionCommon & { kind: 'pex'; presentationDefinition: Record<string, unknown> },
+        vpToken: string,
+        submissionStr: string
+    ): Promise<void> => {
+        const submission = JSON.parse(submissionStr);
+
+        if (vpToken.split('.').length !== 3) {
+            throw new Error(
+                `expected compact JWT-VP, got: ${vpToken.slice(0, 40)}…`
+            );
+        }
+
+        const header = decodeProtectedHeader(vpToken);
+        const payload = decodeJwt(vpToken);
+
+        await verifyOuterVpJwt(vpToken, payload, header, session);
+
+        // Sphereon's strict descriptor-map walker confirms each PD
+        // input descriptor is satisfied by exactly one credential
+        // in the VP at the path the submission claims. Pass the
+        // raw JWT string (NOT the decoded `vp` claim) so descriptor
+        // paths like `$.vp.verifiableCredential[N]` resolve.
+        if (!('vp' in payload) || typeof (payload as { vp?: unknown }).vp !== 'object') {
+            throw new Error('JWT-VP payload has no `vp` claim');
+        }
+
+        const pexResult = pex.evaluatePresentation(
+            session.presentationDefinition as unknown as Parameters<
+                PEX['evaluatePresentation']
+            >[0],
+            vpToken as unknown as Parameters<PEX['evaluatePresentation']>[1],
+            {
+                presentationSubmission: submission,
+                generatePresentationSubmission: false,
+            }
+        );
+
+        if (pexResult.errors && pexResult.errors.length > 0) {
+            throw new Error(
+                `PEX evaluation rejected the VP: ${JSON.stringify(pexResult.errors)}`
+            );
+        }
+
+        // Inner VC signature verification — proves the wallet didn't
+        // substitute a self-signed VC into the envelope.
+        const vp = (payload as { vp?: { verifiableCredential?: unknown[] } }).vp ?? {};
+        await verifyInnerVcs(vp.verifiableCredential ?? []);
+    };
+
+    /**
+     * DCQL route: parse vp_token as a JSON object keyed by
+     * credential_query_id. For each entry, verify the JWT-VP,
+     * nonce, audience, and inner VC signatures. Then hand the
+     * normalized presentation set to `dcql.DcqlPresentationResult`
+     * for spec-strict matching against the verifier's query.
+     */
+    const validateDcqlSubmission = async (
+        session: SessionCommon & { kind: 'dcql'; dcqlQuery: Record<string, unknown> },
+        vpToken: string
+    ): Promise<void> => {
+        let parsedVpToken: Record<string, unknown>;
+        try {
+            parsedVpToken = JSON.parse(vpToken);
+        } catch (e) {
+            throw new Error(
+                `DCQL vp_token must be a JSON-encoded object: ${e instanceof Error ? e.message : String(e)}`
+            );
+        }
+
+        if (
+            parsedVpToken === null ||
+            typeof parsedVpToken !== 'object' ||
+            Array.isArray(parsedVpToken)
+        ) {
+            throw new Error('DCQL vp_token must be a JSON object keyed by credential_query_id');
+        }
+
+        // Per-query: verify JWT-VP signature + nonce + audience +
+        // inner VC signatures, then collect the normalized
+        // presentation shape DCQL needs to match against.
+        const dcqlPresentation: Record<string, unknown> = {};
+
+        for (const [queryId, presentation] of Object.entries(parsedVpToken)) {
+            if (typeof presentation !== 'string' || presentation.split('.').length !== 3) {
+                throw new Error(
+                    `DCQL entry "${queryId}" must be a compact JWT-VP string in this harness`
+                );
+            }
+
+            const header = decodeProtectedHeader(presentation);
+            const payload = decodeJwt(presentation);
+            await verifyOuterVpJwt(presentation, payload, header, session);
+
+            // Inner VC signatures.
+            const vp = (payload as { vp?: { verifiableCredential?: unknown[] } }).vp ?? {};
+            const vcs = vp.verifiableCredential ?? [];
+            await verifyInnerVcs(vcs);
+
+            // Build the DcqlW3cVcPresentation shape the dcql lib's
+            // result validator expects. We assume jwt_vc_json (the
+            // only format the plugin currently emits inside DCQL VPs);
+            // SD-JWT and mso_mdoc would need their own decoders.
+            const firstVc = vcs[0];
+            const innerPayload =
+                typeof firstVc === 'string'
+                    ? (decodeJwt(firstVc) as Record<string, unknown>)
+                    : undefined;
+            const innerVc =
+                innerPayload && typeof innerPayload.vc === 'object' && innerPayload.vc !== null
+                    ? (innerPayload.vc as Record<string, unknown>)
+                    : undefined;
+            const types = Array.isArray(innerVc?.type) ? (innerVc!.type as string[]) : [];
+
+            dcqlPresentation[queryId] = {
+                credential_format: 'jwt_vc_json',
+                claims: innerVc ?? {},
+                type: types,
+                cryptographic_holder_binding: true,
+            };
+        }
+
+        // dcql.DcqlPresentationResult.fromDcqlPresentation runs the
+        // spec-strict matcher and throws if the presentation set
+        // doesn't satisfy the query. The query was already parsed
+        // by the test caller; we re-parse defensively here.
+        const parsedQuery = dcql.DcqlQuery.parse(
+            session.dcqlQuery as Parameters<typeof dcql.DcqlQuery.parse>[0]
+        );
+        const result = dcql.DcqlPresentationResult.fromDcqlPresentation(
+            dcqlPresentation as Parameters<
+                typeof dcql.DcqlPresentationResult.fromDcqlPresentation
+            >[0],
+            { dcqlQuery: parsedQuery }
+        );
+
+        if (!result.can_be_satisfied) {
+            throw new Error(
+                `DCQL evaluation rejected the presentation: ${JSON.stringify(result.credential_matches)}`
+            );
+        }
+    };
+
+    /** Shared: verify the outer JWT-VP signature + nonce + audience. */
+    const verifyOuterVpJwt = async (
+        vpToken: string,
+        payload: ReturnType<typeof decodeJwt>,
+        header: ReturnType<typeof decodeProtectedHeader>,
+        session: SessionCommon
+    ): Promise<void> => {
+        const issDid = payload.iss;
+        if (typeof issDid !== 'string' || !issDid.startsWith('did:jwk:')) {
+            throw new Error(
+                `unsupported holder DID method (must be did:jwk in this harness): ${String(issDid)}`
+            );
+        }
+
+        const holderJwk = decodeDidJwk(issDid);
+        const holderKey = await importJWK(holderJwk, header.alg ?? 'EdDSA');
+
+        await jwtVerify(vpToken, holderKey);
+
+        if (payload.nonce !== session.nonce) {
+            throw new Error(
+                `nonce mismatch: VP carries nonce="${String(payload.nonce)}" but session "${session.state}" issued nonce="${session.nonce}"`
+            );
+        }
+
+        const aud = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
+        if (aud !== session.clientId) {
+            throw new Error(
+                `audience mismatch: VP carries aud="${String(aud)}" but session expects "${session.clientId}"`
+            );
+        }
+    };
+
+    /** Shared: verify each inner JWT-VC's signature against its issuer's did:jwk. */
+    const verifyInnerVcs = async (vcs: readonly unknown[]): Promise<void> => {
+        for (const vcEntry of vcs) {
+            if (typeof vcEntry !== 'string') continue;
+
+            if (vcEntry.split('.').length !== 3) {
+                throw new Error(
+                    `inner VC entry is not a compact JWT: ${vcEntry.slice(0, 40)}…`
+                );
+            }
+
+            const vcHeader = decodeProtectedHeader(vcEntry);
+            const vcPayload = decodeJwt(vcEntry);
+            const vcIss = vcPayload.iss;
+
+            if (typeof vcIss !== 'string' || !vcIss.startsWith('did:jwk:')) continue;
+
+            const issuerJwk = decodeDidJwk(vcIss);
+            const issuerKey = await importJWK(issuerJwk, vcHeader.alg ?? 'EdDSA');
+
+            await jwtVerify(vcEntry, issuerKey);
+        }
+    };
+
     const handleDirectPost = async (
         req: import('node:http').IncomingMessage,
         res: ServerResponse
@@ -196,7 +437,6 @@ export const startSphereonVerifier = async (
             stateForErrorPath = state ?? undefined;
 
             if (!vpToken) throw new Error('missing vp_token');
-            if (!submissionStr) throw new Error('missing presentation_submission');
             if (!state) throw new Error('missing state');
 
             session = sessions.get(state);
@@ -205,123 +445,24 @@ export const startSphereonVerifier = async (
             // Cache for the catch block.
             stateForErrorPath = session.state;
 
-            const submission = JSON.parse(submissionStr);
-
-            // 1) Parse + verify the VP JWT signature.
-            // The plugin emits jwt_vp_json by default for our flows;
-            // if a future spec exercises ldp_vp this branch will need
-            // a JSON-LD path. Throwing loudly is the right move until
-            // then so silent skips don't mask coverage gaps.
-            if (typeof vpToken !== 'string' || vpToken.split('.').length !== 3) {
-                throw new Error(
-                    `expected compact JWT-VP, got: ${typeof vpToken === 'string' ? vpToken.slice(0, 40) : typeof vpToken}…`
-                );
-            }
-
-            const header = decodeProtectedHeader(vpToken);
-            const payload = decodeJwt(vpToken);
-
-            const issDid = payload.iss;
-            if (typeof issDid !== 'string' || !issDid.startsWith('did:jwk:')) {
-                throw new Error(
-                    `unsupported holder DID method (must be did:jwk in this harness): ${String(issDid)}`
-                );
-            }
-
-            const holderJwk = decodeDidJwk(issDid);
-            const holderKey = await importJWK(holderJwk, header.alg ?? 'EdDSA');
-
-            // jwtVerify also validates `exp`/`nbf` if present and is
-            // the right place for signature errors to surface.
-            await jwtVerify(vpToken, holderKey);
-
-            // 2) Nonce binding — the heart of the replay-rejection guarantee.
-            if (payload.nonce !== session.nonce) {
-                throw new Error(
-                    `nonce mismatch: VP carries nonce="${String(payload.nonce)}" but session "${session.state}" issued nonce="${session.nonce}"`
-                );
-            }
-
-            // 3) Audience binding — the heart of cross-verifier replay rejection.
-            const aud = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
-            if (aud !== session.clientId) {
-                throw new Error(
-                    `audience mismatch: VP carries aud="${String(aud)}" but session expects "${session.clientId}"`
-                );
-            }
-
-            // 4) PEX evaluation — Sphereon's strict descriptor-map
-            // walker confirms each PD input descriptor is satisfied
-            // by exactly one credential in the VP at the path the
-            // submission claims.
-            //
-            // CRITICAL: pass the raw JWT-VP string (not the decoded
-            // `vp` claim). The plugin's descriptor_map paths are
-            // shaped per the OID4VP §6.1 conventions for jwt_vp_json
-            // submissions — `path: "$"` resolves to the JWT itself,
-            // and `path_nested.path: "$.vp.verifiableCredential[N]"`
-            // walks into the JWT payload's `vp` claim. If we hand
-            // PEX an already-unwrapped `vp` object, the nested path
-            // hits a `vp` key that doesn't exist (we already peeled
-            // it off) and PEX rejects the submission. Sphereon's
-            // PEX accepts a JWT string directly and decodes it
-            // internally for path evaluation.
-            if (!('vp' in payload) || typeof (payload as { vp?: unknown }).vp !== 'object') {
-                throw new Error('JWT-VP payload has no `vp` claim');
-            }
-
-            const pexResult = pex.evaluatePresentation(
-                session.presentationDefinition as Parameters<PEX['evaluatePresentation']>[0],
-                vpToken as unknown as Parameters<PEX['evaluatePresentation']>[1],
-                {
-                    presentationSubmission: submission,
-                    generatePresentationSubmission: false,
-                }
-            );
-
-            if (pexResult.errors && pexResult.errors.length > 0) {
-                throw new Error(
-                    `PEX evaluation rejected the VP: ${JSON.stringify(pexResult.errors)}`
-                );
-            }
-
-            // 5) Inner VC signature verification — proves the wallet
-            // didn't substitute a self-signed VC into the envelope.
-            // Walt.id-issued VCs have `iss` = walt.id's per-run
-            // did:jwk; we verify against that.
-            const vp = (payload as { vp?: { verifiableCredential?: unknown[] } }).vp ?? {};
-            const vcs = vp.verifiableCredential ?? [];
-            for (const vcEntry of vcs) {
-                if (typeof vcEntry !== 'string') {
-                    // ldp_vc (object form) requires a JSON-LD verifier;
-                    // out of scope for this harness. We let it pass
-                    // through PEX evaluation but don't claim signature
-                    // verification.
-                    continue;
-                }
-
-                if (vcEntry.split('.').length !== 3) {
+            // Route on the session's declared query language.
+            // Spec-compliant submissions match the language: PEX
+            // carries `presentation_submission`, DCQL omits it.
+            // Mismatched shapes are an immediate rejection.
+            if (session.kind === 'dcql') {
+                if (submissionStr) {
                     throw new Error(
-                        `inner VC entry is not a compact JWT: ${vcEntry.slice(0, 40)}…`
+                        'DCQL session received a submission containing presentation_submission; OID4VP 1.0 §6.4 forbids this'
                     );
                 }
-
-                const vcHeader = decodeProtectedHeader(vcEntry);
-                const vcPayload = decodeJwt(vcEntry);
-                const vcIss = vcPayload.iss;
-
-                if (typeof vcIss !== 'string' || !vcIss.startsWith('did:jwk:')) {
-                    // Out of scope for this harness — same reasoning as the holder DID guard.
-                    continue;
+                await validateDcqlSubmission(session, vpToken);
+            } else {
+                if (!submissionStr) {
+                    throw new Error('PEX session requires presentation_submission');
                 }
-
-                const issuerJwk = decodeDidJwk(vcIss);
-                const issuerKey = await importJWK(issuerJwk, vcHeader.alg ?? 'EdDSA');
-
-                await jwtVerify(vcEntry, issuerKey);
+                await validatePexSubmission(session, vpToken, submissionStr);
             }
 
-            // All checks passed.
             session.verificationResult = true;
             reply(res, 200, { status: 'ok' });
         } catch (e) {
@@ -384,41 +525,63 @@ export const startSphereonVerifier = async (
     return {
         baseUrl,
 
-        createSession({ presentationDefinition, audience, nonce }) {
+        createSession(input) {
             const state = randomState();
-            const nonceVal = nonce ?? randomState();
-            const clientId = audience ?? 'sphereon-interop-verifier';
+            const nonceVal = input.nonce ?? randomState();
+            const clientId = input.audience ?? 'sphereon-interop-verifier';
             const responseUri = `${baseUrl}/direct_post`;
-
-            sessions.set(state, {
-                state,
-                nonce: nonceVal,
-                clientId,
-                presentationDefinition,
-                responseUri,
-                verificationResult: null,
-                errors: [],
-            });
 
             // Build the auth-request URI inline. Order matches what
             // walt.id emits so a plugin path that's accidentally
             // sensitive to query-param order shows up in both
             // suites, not just one.
-            const params = new URLSearchParams({
+            const params: Record<string, string> = {
                 client_id: clientId,
                 response_type: 'vp_token',
                 response_mode: 'direct_post',
                 response_uri: responseUri,
                 nonce: nonceVal,
                 state,
-                presentation_definition: JSON.stringify(presentationDefinition),
-            });
+            };
 
+            if ('dcqlQuery' in input && input.dcqlQuery) {
+                sessions.set(state, {
+                    kind: 'dcql',
+                    state,
+                    nonce: nonceVal,
+                    clientId,
+                    dcqlQuery: input.dcqlQuery,
+                    responseUri,
+                    verificationResult: null,
+                    errors: [],
+                });
+
+                params.dcql_query = JSON.stringify(input.dcqlQuery);
+            } else if ('presentationDefinition' in input && input.presentationDefinition) {
+                sessions.set(state, {
+                    kind: 'pex',
+                    state,
+                    nonce: nonceVal,
+                    clientId,
+                    presentationDefinition: input.presentationDefinition,
+                    responseUri,
+                    verificationResult: null,
+                    errors: [],
+                });
+
+                params.presentation_definition = JSON.stringify(input.presentationDefinition);
+            } else {
+                throw new Error(
+                    'createSession requires either `presentationDefinition` (PEX) or `dcqlQuery` (DCQL)'
+                );
+            }
+
+            const search = new URLSearchParams(params);
             return {
                 state,
                 nonce: nonceVal,
                 clientId,
-                authorizationRequestUri: `openid4vp://authorize?${params.toString()}`,
+                authorizationRequestUri: `openid4vp://authorize?${search.toString()}`,
             };
         },
 

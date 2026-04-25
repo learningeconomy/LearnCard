@@ -15,7 +15,8 @@
         "@learncard/types": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
-        "@sphereon/pex": "^5.0.0-unstable.28",
+        "@sphereon/pex": "^5.0.0",
+        "dcql": "^3.0.0",
         "jose": "^5.9.6",
         "execa": "^9.5.1"
     },
