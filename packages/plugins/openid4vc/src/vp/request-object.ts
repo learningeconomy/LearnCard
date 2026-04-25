@@ -4,11 +4,13 @@
  * OpenID4VP §5 lets the verifier deliver the full Authorization Request
  * as a signed JWS, either embedded inline (`request=<jws>`) or fetched
  * by reference (`request_uri=<https-url>`). Signature verification
- * hinges on the verifier's `client_id_scheme`:
+ * hinges on the verifier's **client-id prefix** (OID4VP 1.0 §5.10) —
+ * which we derive from `client_id` and the optional draft-22
+ * `client_id_scheme` parameter (see `./client-id-prefix.ts`):
  *
  *   - **`redirect_uri`** — NO signed Request Object is permitted. The
  *     `client_id` is an opaque response URL and there's no signing key
- *     to check. If we receive a JWS for this scheme we reject it.
+ *     to check. If we receive a JWS for this prefix we reject it.
  *   - **`did`** — `client_id` is a DID URL. The JWS `kid` header MUST
  *     identify a verification method on the DID document, and the JWS
  *     signature MUST verify against that method's public key.
@@ -18,8 +20,15 @@
  *     leaf cert's public key. A caller-supplied `trustedX509Roots`
  *     list pins the trust anchor; in the absence of one we refuse
  *     unless `unsafeAllowSelfSigned` is explicitly set.
+ *   - **`pre-registered`** — the verifier is pre-registered with the
+ *     wallet out-of-band. We can't bind the signing key to the bare
+ *     `client_id` (there's no spec-mandated channel for that), so we
+ *     accept signed requests in `pre-registered` mode only when the
+ *     JWS carries an `x5c` header AND the caller has opted into
+ *     `unsafeAllowSelfSigned` for an interop / dev context. Production
+ *     wallets must layer their own pre-registration registry on top.
  *
- * Unsupported schemes (`pre-registered`, `verifier_attestation`, …)
+ * Unsupported prefixes (`https`, `verifier_attestation`, `x509_hash`)
  * raise a typed error so callers can degrade gracefully.
  *
  * This module is **pure and injectable**: the DID resolver + fetch
@@ -36,6 +45,10 @@ import {
     PresentationDefinition,
     VpError,
 } from './types';
+import {
+    deriveClientIdPrefix,
+    type ClientIdPrefix,
+} from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
 
@@ -137,6 +150,24 @@ export interface VerifyRequestObjectOptions {
      * explicitly opts in; production wallets must leave it off.
      */
     unsafeAllowSelfSigned?: boolean;
+
+    /**
+     * **Maximally dangerous.** Skip JWS signature verification on the
+     * Request Object entirely — claims are decoded but their
+     * authenticity is not checked at all. Strictly an interop /
+     * test-harness escape hatch for verifiers whose signing keys
+     * are pre-shared out-of-band and not published in any in-band
+     * channel (e.g. EUDI's reference verifier in `pre-registered`
+     * mode, which embeds `kid: "access_certificate"` referencing a
+     * keystore inside the verifier container with no JWKS endpoint).
+     *
+     * Production wallets MUST leave this off. Tampered Request
+     * Objects bypass detection when this flag is set. The other
+     * binding checks (`urlClientId` ↔ signed `client_id`) still run
+     * because they're integrity checks against the host-supplied
+     * URL, not against the JWS signature.
+     */
+    unsafeSkipRequestObjectSignatureVerification?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -165,17 +196,25 @@ export const verifyAndDecodeRequestObject = async (
         );
     }
 
-    const scheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
-    if (!scheme) {
-        throw new RequestObjectError(
-            'missing_client_id_scheme',
-            'Request Object has no client_id_scheme (in claims or URL)'
-        );
-    }
+    // Derive the OID4VP 1.0 client-id prefix. Accepts both:
+    //   - draft-22 wire form: `client_id` is bare, prefix lives in a
+    //     separate `client_id_scheme` claim or URL param.
+    //   - OID4VP 1.0 wire form: prefix is encoded inline in
+    //     `client_id` (e.g. `x509_san_dns:verifier.example.com`).
+    // The derivation is pure — `unsupported_client_id_scheme` for
+    // prefixes we don't handle is raised below where the trust
+    // context is known, not in the parser.
+    const legacyScheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
+    const { prefix, value: prefixValue } = deriveClientIdPrefix(
+        clientId,
+        legacyScheme
+    );
 
     // Defense-in-depth: the outer URL's client_id (when present) MUST
     // match the signed claim. Otherwise an attacker could wrap someone
-    // else's signed request and re-point it.
+    // else's signed request and re-point it. This check runs even
+    // when sig verification is bypassed — it's an integrity check on
+    // the host-supplied URL, not on the JWS signature.
     if (opts.urlClientId && opts.urlClientId !== clientId) {
         throw new RequestObjectError(
             'client_id_mismatch',
@@ -183,29 +222,71 @@ export const verifyAndDecodeRequestObject = async (
         );
     }
 
-    switch (scheme) {
+    // Sig-verification bypass — interop escape hatch. The flag is
+    // double-named (`unsafe`) and double-documented because flipping
+    // it OFF is the security-critical default. We still derive the
+    // prefix above so callers get a meaningful `client_id_scheme` in
+    // the resolved AuthorizationRequest; we just skip the actual
+    // crypto check below.
+    if (opts.unsafeSkipRequestObjectSignatureVerification) {
+        return buildRequestFromClaims(clientId, prefix, claims);
+    }
+
+    switch (prefix) {
         case 'redirect_uri':
             throw new RequestObjectError(
                 'unsupported_client_id_scheme',
-                'client_id_scheme=redirect_uri does not permit signed Request Objects (OID4VP §5)'
+                'client-id prefix=redirect_uri does not permit signed Request Objects (OID4VP §5)'
             );
 
         case 'did':
-            await verifyWithDid({ jws, header, clientId, opts });
+            await verifyWithDid({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+            });
             break;
 
         case 'x509_san_dns':
-            await verifyWithX509({ jws, header, clientId, opts });
+            await verifyWithX509({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+            });
             break;
 
-        default:
+        case 'pre-registered':
+            await verifyWithPreRegistered({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+            });
+            break;
+
+        case 'https':
+        case 'verifier_attestation':
+        case 'x509_hash':
             throw new RequestObjectError(
                 'unsupported_client_id_scheme',
-                `client_id_scheme=${scheme} is not supported (supported: did, x509_san_dns)`
+                `client-id prefix=${prefix} is not yet supported (supported: did, x509_san_dns, pre-registered)`
             );
+
+        default: {
+            // Exhaustiveness guard — if a future ClientIdPrefix lands
+            // and someone forgets to extend the switch, the type
+            // checker rejects it here.
+            const _exhaustive: never = prefix;
+            throw new RequestObjectError(
+                'unsupported_client_id_scheme',
+                `client-id prefix=${_exhaustive as string} is not supported`
+            );
+        }
     }
 
-    return buildRequestFromClaims(clientId, scheme, claims);
+    return buildRequestFromClaims(clientId, prefix, claims);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -547,6 +628,85 @@ const derToPem = (b64: string): string => {
     return `-----BEGIN CERTIFICATE-----\n${lines.join('\n')}\n-----END CERTIFICATE-----\n`;
 };
 
+/* -------------------------------------------------------------------------- */
+/*               client-id prefix=pre-registered verification                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Pre-registered verifier — the wallet has out-of-band knowledge of
+ * who this verifier is. The signing key isn't bound to `client_id`
+ * by any spec-defined channel, so we accept signed Request Objects
+ * **only** when:
+ *
+ *   1. `unsafeAllowSelfSigned` is explicitly enabled by the host app.
+ *      Production wallets must layer their own pre-registration
+ *      registry (mapping bare client_id → expected key) on top of
+ *      this verifier; until then, defaulting to "trusted via
+ *      out-of-band channel" silently would be a footgun.
+ *   2. The JWS carries `x5c` so we have *some* key material to
+ *      verify the signature against. Without it there's no key at
+ *      all — we'd be asserting authenticity from nothing.
+ *
+ * The leaf cert's SAN binding is **not** checked here (unlike
+ * `x509_san_dns`) because `pre-registered` doesn't bind the
+ * client_id to the certificate at all — the trust comes from the
+ * caller's `unsafeAllowSelfSigned` opt-in plus their downstream
+ * registry check.
+ *
+ * This is the path EUDI's reference verifier uses: it emits a bare
+ * `client_id="Verifier"` (no prefix) signed with a self-signed cert
+ * whose SAN doesn't match the client_id. Without this branch, our
+ * JAR verifier would correctly refuse to handle the request, leaving
+ * the host with no way to interop with EUDI even in dev.
+ */
+const verifyWithPreRegistered = async (ctx: VerifyCtx): Promise<void> => {
+    const { jws, header, opts } = ctx;
+
+    const allowSelfSigned = Boolean(opts.unsafeAllowSelfSigned);
+    if (!allowSelfSigned) {
+        throw new RequestObjectError(
+            'unsupported_client_id_scheme',
+            'client-id prefix=pre-registered without a registry binding requires unsafeAllowSelfSigned=true (signing key cannot be derived from client_id alone)'
+        );
+    }
+
+    const x5c = header.x5c;
+    if (!Array.isArray(x5c) || x5c.length === 0) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'client-id prefix=pre-registered requires an x5c header to verify the signature against (no key material available otherwise)'
+        );
+    }
+
+    // We don't validate the chain to a trust root here — the caller
+    // has opted into self-signed via `unsafeAllowSelfSigned`. The
+    // sole job of this branch is to verify the JWS signature against
+    // *some* embedded key so a tampered Request Object is still
+    // caught.
+    const leafPem = derToPem(x5c[0] as string);
+
+    let key: Awaited<ReturnType<typeof importX509>>;
+    try {
+        key = await importX509(leafPem, asString(header.alg) ?? 'RS256');
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Failed to import leaf X.509 cert: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    try {
+        await jwtVerify(jws, key);
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signature_invalid',
+            `JWS signature verification failed: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+};
+
 const hostFromClientId = (clientId: string): string => {
     // client_id can be a hostname, URL, or URL with path. Pull a DNS
     // name out in every reasonable shape.
@@ -687,7 +847,7 @@ const resolveDidWeb = async (
 
 const buildRequestFromClaims = (
     clientId: string,
-    clientIdScheme: string,
+    clientIdPrefix: ClientIdPrefix,
     claims: Record<string, unknown>
 ): AuthorizationRequest => {
     const presentationDefinition =
@@ -722,7 +882,7 @@ const buildRequestFromClaims = (
 
     return {
         client_id: clientId,
-        client_id_scheme: clientIdScheme,
+        client_id_scheme: clientIdPrefix,
         response_type: asString(claims.response_type) ?? 'vp_token',
         response_mode: asString(claims.response_mode),
         response_uri: asString(claims.response_uri),

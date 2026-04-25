@@ -366,16 +366,73 @@ describe('verifyAndDecodeRequestObject — unsupported / forbidden schemes', () 
         ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
     });
 
-    it('throws missing_client_id_scheme when neither payload nor URL supplies one', async () => {
+    it('infers prefix=did from a bare did:jwk client_id (OID4VP 1.0 implicit form)', async () => {
+        // Removed in this release: the legacy `missing_client_id_scheme`
+        // error code path. OID4VP 1.0 §5.10 lets the prefix be encoded
+        // implicitly in `client_id` (a DID URI here), so a verifier
+        // shipping NO `client_id_scheme` claim and a `did:jwk:...`
+        // client_id is now spec-conformant. The verifier should
+        // succeed end-to-end; the resulting AuthorizationRequest
+        // surfaces `client_id_scheme: 'did'` derived from the prefix.
         const key = await makeVerifierKey();
         const jws = await signRequestObject(key, {
             ...baseClaims(key),
             client_id_scheme: undefined,
         });
 
+        const request = await verifyAndDecodeRequestObject({ inlineJwt: jws });
+
+        expect(request.client_id).toBe(key.did);
+        expect(request.client_id_scheme).toBe('did');
+    });
+
+    it('rejects bare client_id (no prefix, no scheme) without unsafeAllowSelfSigned', async () => {
+        // OID4VP 1.0 maps a bare `client_id` (no prefix encoded
+        // inline) to `pre-registered`. Pre-registered mode requires
+        // an out-of-band trust binding the wallet doesn't have, so
+        // signed Request Objects are refused unless the host opts
+        // into `unsafeAllowSelfSigned` for an interop / dev context.
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id: 'Verifier',
+            client_id_scheme: undefined,
+        });
+
         await expect(
             verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'missing_client_id_scheme' });
+        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+    });
+
+    // NOTE: positive-flow coverage for the
+    // `pre-registered + x5c + unsafeAllowSelfSigned` branch lives in
+    // the interop suite (`tests/eudi-parsing.spec.ts`), which exercises
+    // it against a real EUDI verifier's self-signed cert chain rather
+    // than minting a synthetic X.509 leaf in-process. Synthesizing a
+    // valid X.509 cert here would require either pulling in
+    // `node-forge` / `selfsigned` as a test dep or implementing ASN.1
+    // DER encoding by hand — both are heavier than this unit test
+    // file's domain. The unit tests in this section cover the
+    // rejection invariants; interop covers the green path.
+
+    it('rejects bare client_id under unsafeAllowSelfSigned when x5c is missing', async () => {
+        // Even with the unsafe escape hatch enabled, we MUST have some
+        // key material in the JWS header to verify the signature
+        // against. A bare `client_id` with neither x5c nor any other
+        // embedded key is unverifiable.
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id: 'Verifier',
+            client_id_scheme: undefined,
+        });
+
+        await expect(
+            verifyAndDecodeRequestObject({
+                inlineJwt: jws,
+                unsafeAllowSelfSigned: true,
+            })
+        ).rejects.toMatchObject({ code: 'invalid_request_object' });
     });
 });
 

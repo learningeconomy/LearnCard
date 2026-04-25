@@ -73,6 +73,8 @@ export const getOpenID4VCPlugin = (
         didResolver: config.didResolver,
         trustedX509Roots: config.trustedX509Roots,
         unsafeAllowSelfSigned: config.unsafeAllowSelfSignedRequestObject,
+        unsafeSkipRequestObjectSignatureVerification:
+            config.unsafeSkipRequestObjectSignatureVerification,
     };
 
     const resolveOffer = async (input: string): Promise<CredentialOffer> => {

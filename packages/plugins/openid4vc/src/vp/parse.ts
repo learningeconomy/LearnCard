@@ -8,6 +8,7 @@ import {
     verifyAndDecodeRequestObject,
     DidResolver,
 } from './request-object';
+import { deriveClientIdPrefix } from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
 
@@ -132,6 +133,14 @@ export interface ResolveAuthorizationRequestOptions {
     trustedX509Roots?: readonly string[];
     /** **Dev-only.** Accept x509 chains without a trusted root. */
     unsafeAllowSelfSigned?: boolean;
+    /**
+     * **Dev-only escape hatch.** Skip JWS signature verification on
+     * the Request Object entirely (still parses claims). For
+     * interop testing against verifiers whose signing keys are
+     * pre-shared out-of-band — production wallets MUST leave this
+     * off. See `request-object.ts` for the full warning.
+     */
+    unsafeSkipRequestObjectSignatureVerification?: boolean;
 }
 
 /**
@@ -174,6 +183,8 @@ export const resolveAuthorizationRequest = async (
             didResolver: options.didResolver,
             trustedX509Roots: options.trustedX509Roots,
             unsafeAllowSelfSigned: options.unsafeAllowSelfSigned,
+            unsafeSkipRequestObjectSignatureVerification:
+                options.unsafeSkipRequestObjectSignatureVerification,
         });
     }
 
@@ -386,9 +397,25 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         if (!known.has(key)) extra[key] = value;
     });
 
+    // Derive the OID4VP 1.0 client-id prefix from the URL params.
+    // The wire forms we accept are the same as the JAR verifier:
+    //   - explicit `<prefix>:<value>` inline in `client_id`
+    //   - implicit DID URI / https URL forms
+    //   - draft-22 legacy `client_id_scheme` URL parameter
+    //
+    // Surfacing the derived prefix here (rather than echoing whatever
+    // `client_id_scheme=` happens to be in the URL) keeps URI-mode
+    // and Request-Object-mode aligned: plugin code downstream can
+    // rely on `client_id_scheme` being a normalized prefix in both
+    // paths, regardless of which encoding the verifier picked.
+    const { prefix: derivedPrefix } = deriveClientIdPrefix(
+        clientId,
+        params.get('client_id_scheme') ?? undefined
+    );
+
     return {
         client_id: clientId,
-        client_id_scheme: params.get('client_id_scheme') ?? undefined,
+        client_id_scheme: derivedPrefix,
         response_type: responseType,
         response_mode: responseMode,
         response_uri: responseUri,

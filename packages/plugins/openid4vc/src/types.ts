@@ -423,6 +423,24 @@ export interface OpenID4VCPluginConfig {
      * this off.
      */
     unsafeAllowSelfSignedRequestObject?: boolean;
+
+    /**
+     * **Maximally dangerous, dev-only.** Skip JWS signature
+     * verification on signed Request Objects entirely (claims are
+     * still parsed). Use ONLY when interoperating with a verifier
+     * whose signing keys are pre-shared out-of-band and not
+     * published on any in-band channel (e.g. EUDI's reference
+     * verifier in `pre-registered` mode, which embeds
+     * `kid: "access_certificate"` referencing a keystore inside
+     * the verifier container with no JWKS endpoint).
+     *
+     * Production wallets MUST leave this off — when set, tampered
+     * Request Objects bypass detection. The other binding checks
+     * (URL `client_id` ↔ signed `client_id`, mutual exclusion of
+     * PEX vs. DCQL, etc.) still run because they're integrity
+     * checks against the host-supplied URL, not the signature.
+     */
+    unsafeSkipRequestObjectSignatureVerification?: boolean;
 }
 
 /** LearnCard shape the plugin factory consumes. */

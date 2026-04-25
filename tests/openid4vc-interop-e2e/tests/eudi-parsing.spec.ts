@@ -54,14 +54,21 @@ import { buildMockLearnCard, type MockLearnCardHandle } from './helpers/mock-lea
 const EUDI_BASE_URL = process.env.EUDI_VERIFIER_BASE_URL ?? 'http://localhost:7004';
 
 const getPlugin = (mock: MockLearnCardHandle) => {
-    // EUDI signs Request Objects with an embedded self-signed test
-    // certificate (alg=ES512, kid=access_certificate). The plugin's
-    // unsafeAllowSelfSignedRequestObject flag accepts the JWS
-    // without a chain validation — correct for an interop test
-    // against a known reference verifier; production wallets must
-    // keep this flag off.
+    // EUDI's reference verifier in `pre-registered` mode signs the
+    // Request Object with `kid: "access_certificate"` referencing a
+    // keystore inside the verifier container — but does NOT publish
+    // the public key on any in-band channel (no JWKS endpoint, no
+    // `x5c` in the JWS header, no JWKS URI in client_metadata). The
+    // wallet is expected to have the cert pre-shared out-of-band.
+    //
+    // For a localhost interop test we don't have that side-channel;
+    // we set `unsafeSkipRequestObjectSignatureVerification` so the
+    // plugin parses EUDI's signed claims without verifying the
+    // signature. Production wallets MUST leave this flag off — see
+    // `request-object.ts` for the threat model.
     const plugin = getOpenID4VCPlugin(mock.learnCard, {
         unsafeAllowSelfSignedRequestObject: true,
+        unsafeSkipRequestObjectSignatureVerification: true,
     });
     const bound: Record<string, (...args: any[]) => any> = {};
     for (const [name, fn] of Object.entries(plugin.methods)) {
@@ -123,20 +130,16 @@ describe('interop: EUDI reference verifier (Tier 2.C)', () => {
         expect(payloadJson.dcql_query?.credentials?.[0]?.format).toBe('dc+sd-jwt');
     });
 
-    /* ---------------- blocked: plugin OID4VP 1.0 client-id support ----- */
+    /* ---------------- plugin OID4VP 1.0 client-id-prefix support ------- */
 
     /**
-     * **SKIPPED** — Gap 2 in this file's docstring. EUDI emits
-     * `client_id: "Verifier"` with no `client_id_scheme` claim
-     * (OID4VP 1.0 §5.10 client-id-prefix semantics); the plugin's
-     * Slice 7.5 JAR verifier rejects this with
-     * `RequestObjectError('missing_client_id_scheme', ...)`.
-     *
-     * Re-enable once the plugin gains OID4VP 1.0 client-id-prefix
-     * support (parse `<scheme>:<value>` out of `client_id`, fall
-     * back to `pre-registered` when no prefix is present).
+     * EUDI emits `client_id: "Verifier"` (bare, no prefix) signed with
+     * a self-signed leaf cert in the JWS `x5c` header. Per OID4VP 1.0
+     * §5.10, a bare `client_id` defaults to the `pre-registered`
+     * prefix; the plugin now honors this and accepts the JWS when
+     * `unsafeAllowSelfSigned` is set (interop opt-in).
      */
-    it.skip("[blocked: OID4VP 1.0 client-id-prefix support] plugin resolves EUDI's signed Request Object", async () => {
+    it("plugin resolves EUDI's signed Request Object end-to-end", async () => {
         const mock = await buildMockLearnCard();
         const plugin = getPlugin(mock);
 
@@ -160,17 +163,16 @@ describe('interop: EUDI reference verifier (Tier 2.C)', () => {
         expect(credentials[0]?.format).toBe('dc+sd-jwt');
     });
 
-    /* ---------------- blocked: same as above + format gap -------------- */
+    /* ----------------------- selector format-gap report ---------------- */
 
     /**
-     * **SKIPPED** — depends on the previous test passing. Once the
-     * plugin can resolve EUDI's Request Object, the next signal is
-     * that the selector cleanly identifies the format gap (we hold
-     * `jwt_vc_json`, EUDI asks for `dc+sd-jwt`) without throwing.
-     * UI relies on this `canSatisfy=false` path to render
-     * "you don't have a matching credential".
+     * Once the Request Object resolves, the selector should cleanly
+     * identify the format gap (we hold `jwt_vc_json`, EUDI asks for
+     * `dc+sd-jwt`) without throwing. UI relies on this
+     * `canSatisfy=false` path to render "you don't have a matching
+     * credential" rather than crashing on the type mismatch.
      */
-    it.skip("[blocked: OID4VP 1.0 client-id-prefix support] selector reports format-gap canSatisfy=false", async () => {
+    it('selector reports format-gap canSatisfy=false against EUDI', async () => {
         const mock = await buildMockLearnCard();
         const plugin = getPlugin(mock);
 
