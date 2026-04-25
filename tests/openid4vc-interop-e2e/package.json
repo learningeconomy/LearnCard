@@ -1,0 +1,24 @@
+{
+    "name": "@workspace/openid4vc-interop-e2e-tests",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "echo 'Skipping OID4VC interop E2E in CI. Run test:interop:e2e (requires docker).'",
+        "test:interop:e2e": "vitest run",
+        "test:interop:e2e:watch": "vitest",
+        "test:interop:no-docker": "E2E_MANAGE_DOCKER=false vitest run",
+        "logs": "docker compose logs -f"
+    },
+    "dependencies": {
+        "@learncard/openid4vc-plugin": "workspace:*",
+        "@learncard/core": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/vc-plugin": "workspace:*",
+        "jose": "^5.9.6",
+        "execa": "^9.5.1"
+    },
+    "devDependencies": {
+        "vitest": "^3.2.4"
+    }
+}

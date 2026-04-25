@@ -1,0 +1,78 @@
+# walt.id interop stack for OID4VC end-to-end testing.
+#
+# - `issuer-api` exposes the OID4VCI credential-issuance surface on
+#   http://localhost:7002.
+# - `verifier-api` exposes the OID4VP verification surface on
+#   http://localhost:7003.
+#
+# Both services REQUIRE a mounted config directory or they refuse to
+# boot ("baseUrl: Missing String from config"). The minimum we mount
+# is a single `*-service.conf` per service that sets `baseUrl` to the
+# externally-reachable origin (i.e. localhost from the host's POV).
+# That value is embedded in `credential_issuer` / `response_uri`, so
+# the plugin — running on the docker host — can call back successfully.
+#
+# Configs live under `./config/{issuer,verifier}/`. They mirror the
+# upstream walt.id defaults at:
+# https://github.com/walt-id/waltid-identity/tree/main/waltid-services
+
+services:
+    waltid-issuer:
+        image: waltid/issuer-api:latest
+        container_name: oid4vc-interop-issuer
+        # walt.id binds its web server to container port 3000
+        # regardless of the service. The `baseUrl` in the mounted
+        # config is the *advertised* origin (embedded in metadata),
+        # which must match this host-side port so the plugin's
+        # callbacks resolve.
+        ports:
+            - '7002:3000'
+        healthcheck:
+            # Health check runs *inside* the container, so we probe
+            # the actual listen port (3000), not the advertised
+            # host-side port (7002).
+            test:
+                [
+                    'CMD-SHELL',
+                    "wget -qO- http://localhost:3000/.well-known/openid-credential-issuer >/dev/null || exit 1",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 30s
+        volumes:
+            - ./config/issuer:/waltid-issuer-api/config:ro
+        networks:
+            - oid4vc-interop
+
+    waltid-verifier:
+        image: waltid/verifier-api:latest
+        container_name: oid4vc-interop-verifier
+        # Same story as the issuer: web server binds to container
+        # port 3000; `baseUrl` in verifier-service.conf is the
+        # *advertised* host-side URL (port 7003).
+        ports:
+            - '7003:3000'
+        healthcheck:
+            # Hit container-internal port 3000. We probe root + the
+            # OID4VP verify path — root may not be routed in newer
+            # builds, but POST /openid4vc/verify always exists; any
+            # HTTP response (even 405 Method Not Allowed) proves
+            # the listener is up.
+            test:
+                [
+                    'CMD-SHELL',
+                    "wget -qSO- http://localhost:3000/openid4vc/verify 2>&1 | grep -q 'HTTP/' || exit 1",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 30s
+        volumes:
+            - ./config/verifier:/waltid-verifier-api/config:ro
+        networks:
+            - oid4vc-interop
+
+networks:
+    oid4vc-interop:
+        driver: bridge
