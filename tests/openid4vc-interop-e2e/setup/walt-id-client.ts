@@ -78,6 +78,8 @@ export const createIssuerKey = async (): Promise<WaltidIssuerKey> => {
 /*                              issuer admin API                              */
 /* -------------------------------------------------------------------------- */
 
+export type WaltidAuthenticationMethod = 'PRE_AUTHORIZED' | 'NONE';
+
 export interface MintOfferOptions {
     issuerBaseUrl: string;
     issuerKey: WaltidIssuerKey;
@@ -87,7 +89,29 @@ export interface MintOfferOptions {
      * box, which keeps the spec happy without needing a config mount.
      */
     credentialConfigurationId?: string;
+    /**
+     * Concrete credential type name appended to the `type` array
+     * after the spec-mandatory `VerifiableCredential` value. Defaults
+     * to `UniversityDegree`. Tests issuing multiple credentials in
+     * the same suite override this so the resulting VCs have
+     * distinct shapes (and the verifier can target them
+     * independently via PD type filters).
+     */
+    credentialType?: string;
+    /**
+     * Subject claims merged into `credentialSubject`. The `id` field
+     * is auto-set by walt.id from the holder's proof JWT, so callers
+     * only need to specify the actual claim payload.
+     */
+    subjectClaims?: Record<string, unknown>;
     credentialSubjectId?: string;
+    /**
+     * `PRE_AUTHORIZED` (default) → offer carries a pre-authorized
+     * code grant. `NONE` → offer carries an `authorization_code`
+     * grant where walt.id issues the code without challenging the
+     * user, suitable for headless interop testing of Slice 4.
+     */
+    authenticationMethod?: WaltidAuthenticationMethod;
 }
 
 /**
@@ -102,7 +126,10 @@ export const mintWaltidOffer = async (
         issuerBaseUrl,
         issuerKey,
         credentialConfigurationId = 'UniversityDegree_jwt_vc_json',
+        credentialType = 'UniversityDegree',
         credentialSubjectId,
+        subjectClaims,
+        authenticationMethod = 'PRE_AUTHORIZED',
     } = opts;
 
     const body = {
@@ -115,15 +142,17 @@ export const mintWaltidOffer = async (
                 'https://www.w3.org/2018/credentials/examples/v1',
             ],
             id: `urn:uuid:${crypto.randomUUID()}`,
-            type: ['VerifiableCredential', 'UniversityDegree'],
+            type: ['VerifiableCredential', credentialType],
             issuer: { id: issuerKey.did },
             issuanceDate: new Date().toISOString(),
             credentialSubject: {
                 id: credentialSubjectId ?? 'did:example:placeholder-replaced-by-holder',
-                degree: {
-                    type: 'BachelorDegree',
-                    name: 'Bachelor of Science and Arts',
-                },
+                ...(subjectClaims ?? {
+                    degree: {
+                        type: 'BachelorDegree',
+                        name: 'Bachelor of Science and Arts',
+                    },
+                }),
             },
         },
         mapping: {
@@ -133,7 +162,7 @@ export const mintWaltidOffer = async (
             issuanceDate: '<timestamp>',
             expirationDate: '<timestamp-in:365d>',
         },
-        authenticationMethod: 'PRE_AUTHORIZED',
+        authenticationMethod,
         standardVersion: 'DRAFT13',
     };
 
@@ -341,6 +370,101 @@ export const resolveAuthorizationRequestToByValue = async (
     params.set('presentation_definition', JSON.stringify(pd));
 
     return `${base}?${params.toString()}`;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                       auth_code flow simulation helper                     */
+/* -------------------------------------------------------------------------- */
+
+export interface FollowAuthorizeResult {
+    /** Authorization code echoed by walt.id on the redirect URL. */
+    code: string;
+    /** State echoed by walt.id — the wallet must validate this. */
+    state?: string;
+    /** Full Location URL walt.id wanted us to redirect the browser to. */
+    redirectLocation: string;
+}
+
+/**
+ * Simulate the user-agent half of an auth_code flow.
+ *
+ * In a real wallet, the user opens `authorizationUrl` in a browser
+ * that walks any login screens, then the AS issues a 302 to the
+ * wallet's `redirect_uri` with `?code=…&state=…`. For a headless
+ * interop test, we fetch `authorizationUrl` with redirect-following
+ * disabled and pull `code` + `state` straight off the `Location`
+ * header. Requires walt.id's offer to have been minted with
+ * `authenticationMethod: 'NONE'` so no login wall sits in the path.
+ */
+export const followWaltidAuthorize = async (
+    authorizationUrl: string
+): Promise<FollowAuthorizeResult> => {
+    const res = await fetch(authorizationUrl, { redirect: 'manual' });
+
+    // walt.id replies with a 3xx (typically 302) carrying the redirect URL.
+    if (res.status < 300 || res.status >= 400) {
+        throw new Error(
+            `walt.id /authorize did not redirect (status ${res.status}, body ${await res
+                .text()
+                .catch(() => '<unreadable>')}). ` +
+                'Make sure the offer was minted with authenticationMethod="NONE".'
+        );
+    }
+
+    const location = res.headers.get('location');
+    if (!location) {
+        throw new Error(
+            `walt.id /authorize redirected (status ${res.status}) but emitted no Location header`
+        );
+    }
+
+    // The Location may be relative — resolve against the request URL.
+    const resolved = new URL(location, authorizationUrl);
+    const code = resolved.searchParams.get('code');
+    const state = resolved.searchParams.get('state') ?? undefined;
+
+    if (!code) {
+        throw new Error(
+            `walt.id /authorize redirect URL has no \`code\` param: ${resolved.toString()}`
+        );
+    }
+
+    return { code, state, redirectLocation: resolved.toString() };
+};
+
+/* -------------------------------------------------------------------------- */
+/*                              JWT tamper helper                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Flip the trailing byte of a JWT's signature, producing a token
+ * with a syntactically-valid shape but a signature that will fail
+ * verification. Used in negative interop tests to confirm that
+ * walt.id's verifier actually validates the inner VC signature, not
+ * just the outer VP envelope.
+ *
+ * We mutate the signature rather than the header or payload because
+ * those latter mutations can also blow up at JSON parse time, which
+ * is a less interesting failure mode — we want walt.id to *attempt*
+ * to verify and *correctly reject* on signature mismatch.
+ */
+export const tamperJwtSignature = (jwt: string): string => {
+    const parts = jwt.split('.');
+    if (parts.length !== 3) {
+        throw new Error(`Not a 3-part JWT: ${jwt.slice(0, 40)}…`);
+    }
+
+    const sig = parts[2]!;
+    if (sig.length === 0) throw new Error('JWT signature is empty');
+
+    // Flip the last char to its base64url-neighbour. Both `A→B` and
+    // `B→A` keep the string base64url-valid; either yields a
+    // signature that won't verify.
+    const last = sig[sig.length - 1]!;
+    const flipped = last === 'A' ? 'B' : 'A';
+    const tamperedSig = sig.slice(0, -1) + flipped;
+
+    return [parts[0], parts[1], tamperedSig].join('.');
 };
 
 /* -------------------------------------------------------------------------- */
