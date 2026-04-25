@@ -38,6 +38,7 @@ import {
     SignPresentationResult,
 } from './vp/sign';
 import { submitPresentation as submitPresentationFn } from './vp/submit';
+import { checkCredentialStatus as checkCredentialStatusFn } from './vp/status';
 import {
     signIdToken as signIdTokenFn,
     requiresIdToken,
@@ -443,6 +444,17 @@ export const getOpenID4VCPlugin = (
 
                 return { request, prepared, signed, signedIdToken, submitted };
             },
+
+            checkCredentialStatus: async (_lc, credential, options = {}) =>
+                checkCredentialStatusFn(credential, {
+                    // Default to the plugin's configured fetch impl so
+                    // hosts that proxy network calls through a trust
+                    // layer (e.g., DNS-pinning, mTLS) get consistent
+                    // behaviour across status-list fetches and every
+                    // other plugin HTTP call.
+                    fetchImpl,
+                    ...options,
+                }),
         },
     };
 };

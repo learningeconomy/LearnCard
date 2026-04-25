@@ -387,6 +387,32 @@ export type OpenID4VCPluginMethods = {
         /** HTTP-level result of the direct_post submission. Always populated. */
         submitted: SubmitPresentationResult;
     }>;
+
+    /**
+     * Slice 8 — Bitstring Status List (W3C VCDM v2) revocation /
+     * suspension check. Pass any held credential and get back a
+     * typed outcome (`active`, `revoked`, `suspended`, `no_status`,
+     * `unsupported_status_type`) plus diagnostics.
+     *
+     * Returns `no_status` for credentials with no `credentialStatus`
+     * entry — distinct from `active` so callers can decide policy
+     * (some governance models require a status list).
+     *
+     * Status list resolution defaults to `globalThis.fetch`; pass
+     * `options.fetchImpl` to use a host-supplied client (e.g., one
+     * that proxies through a trust layer) or `options.fetchStatusList`
+     * to short-circuit the network entirely with a cached list.
+     *
+     * Throws `StatusCheckError` for transport / encoding failures
+     * the caller should handle distinctly from "active by default" —
+     * silently ignoring fetch errors would defeat the security
+     * purpose. Wallets typically rejection-render in the UI when
+     * this throws.
+     */
+    checkCredentialStatus: (
+        credential: import('./vp/status').CredentialWithStatus,
+        options?: import('./vp/status').CheckCredentialStatusOptions
+    ) => Promise<import('./vp/status').StatusCheckResult>;
 };
 
 /** Configuration passed to {@link getOpenID4VCPlugin}. */

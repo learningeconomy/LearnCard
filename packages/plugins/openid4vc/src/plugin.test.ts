@@ -29,6 +29,7 @@ import type {
 import { BuildPresentationError } from './vp/present';
 import { VpSignError } from './vp/sign';
 import { VpSubmitError } from './vp/submit';
+import { buildBitstringStatusListCredential } from './vp/status';
 
 /* -------------------------------------------------------------------------- */
 /*                              test scaffolding                              */
@@ -660,5 +661,108 @@ describe('OpenID4VC plugin — presentCredentials surface guarantees', () => {
         expect(preview.selection.canSatisfy).toBe(true);
         expect(preview.selection.descriptors).toHaveLength(1);
         expect(preview.selection.descriptors[0].candidates).toHaveLength(1);
+    });
+});
+
+/* -------------------------------------------------------------------------- */
+
+describe('OpenID4VC plugin — checkCredentialStatus surface', () => {
+    /**
+     * The unit tests in `vp/status.test.ts` cover the bitstring
+     * decode pipeline exhaustively. These plugin-facade tests
+     * exercise the public method via `getOpenID4VCPlugin` to
+     * guarantee:
+     *
+     *   - The host LearnCard's first-arg injection works (the
+     *     method's `_lc` parameter is bound by the plugin
+     *     framework's adapter).
+     *   - The plugin threads its `fetchImpl` config into status
+     *     fetches by default (so a host that supplies a custom
+     *     fetch for trust-pinning gets the same network policy
+     *     applied to status lookups).
+     *   - Caller-supplied `fetchStatusList` short-circuits the
+     *     plugin's fetch entirely.
+     */
+    const buildBoundMethods = async () => {
+        const mock = await buildMockLearnCard();
+        // No verifier needed — status checking is offline-capable.
+        const fetchImpl = jest.fn() as unknown as typeof fetch;
+        const plugin = getOpenID4VCPlugin(mock.learnCard, { fetch: fetchImpl });
+        const bound: Record<string, (...args: any[]) => any> = {};
+        for (const [name, fn] of Object.entries(plugin.methods)) {
+            bound[name] = (...args: any[]) =>
+                (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        }
+        return { mock, fetchImpl, methods: bound as any };
+    };
+
+    it('returns no_status when the credential carries no credentialStatus', async () => {
+        const { methods } = await buildBoundMethods();
+        const result = await methods.checkCredentialStatus({
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:subject' },
+        });
+        expect(result.outcome).toBe('no_status');
+    });
+
+    it('returns revoked when the status list bit is set, using fetchStatusList override', async () => {
+        const { methods } = await buildBoundMethods();
+        // Build a real status list and mount it via the offline
+        // override so the test never needs a network.
+        const list = buildBitstringStatusListCredential({ bitsSet: [99] });
+
+        const credential = {
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:subject' },
+            credentialStatus: {
+                id: 'https://example.org/status/1#99',
+                type: 'BitstringStatusListEntry',
+                statusPurpose: 'revocation',
+                statusListIndex: '99',
+                statusListCredential: 'https://example.org/status/1',
+            },
+        };
+
+        const result = await methods.checkCredentialStatus(credential, {
+            fetchStatusList: async () => list,
+        });
+
+        expect(result.outcome).toBe('revoked');
+        expect(result.listIndex).toBe(99);
+    });
+
+    it('threads the plugin\'s configured fetch into the status fetcher (default path)', async () => {
+        const mock = await buildMockLearnCard();
+        const list = buildBitstringStatusListCredential({ bitsSet: [] });
+
+        const fetchImpl = jest.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => list,
+        })) as unknown as typeof fetch;
+
+        const plugin = getOpenID4VCPlugin(mock.learnCard, { fetch: fetchImpl });
+        const checkStatus = (...args: any[]) =>
+            (plugin.methods.checkCredentialStatus as any)(
+                mock.learnCard,
+                ...args
+            );
+
+        const result = await checkStatus({
+            credentialStatus: {
+                type: 'BitstringStatusListEntry',
+                statusPurpose: 'revocation',
+                statusListIndex: '5',
+                statusListCredential: 'https://example.org/status/1',
+            },
+        });
+
+        expect(result.outcome).toBe('active');
+        expect(fetchImpl).toHaveBeenCalledWith(
+            'https://example.org/status/1',
+            expect.any(Object)
+        );
     });
 });

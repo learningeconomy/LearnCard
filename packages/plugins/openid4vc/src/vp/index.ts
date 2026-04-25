@@ -96,3 +96,34 @@ export type {
     SubmitPresentationResult,
     VpSubmitErrorCode,
 } from './submit';
+
+export {
+    encryptResponseObject,
+    JarmEncryptError,
+    DEFAULT_JWE_ALG,
+    DEFAULT_JWE_ENC,
+} from './encrypt';
+
+export type {
+    EncryptResponseObjectOptions,
+    JarmClientMetadata,
+    JarmEncryptErrorCode,
+    ResponseObjectPayload,
+} from './encrypt';
+
+export {
+    checkCredentialStatus,
+    StatusCheckError,
+    buildBitstringStatusListCredential,
+} from './status';
+
+export type {
+    CheckCredentialStatusOptions,
+    CredentialStatusEntry,
+    CredentialWithStatus,
+    StatusCheckErrorCode,
+    StatusCheckOutcome,
+    StatusCheckResult,
+    StatusListCredential,
+    StatusListCredentialSubject,
+} from './status';

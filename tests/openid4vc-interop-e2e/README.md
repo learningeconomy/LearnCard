@@ -200,6 +200,32 @@ the resolved Authorization Request. The remaining
 `it.skip` (full SD-JWT-VC roundtrip) becomes active when the
 plugin gains `dc+sd-jwt` presentation support.
 
+## Plugin status-list checking (Bitstring Status List v1.0)
+
+Independent of any verifier interop, the plugin exposes
+`checkCredentialStatus(credential)` which decodes a held credential's
+`credentialStatus` entry against its referenced Status List
+Credential per [W3C VC Bitstring Status List v1.0](https://www.w3.org/TR/vc-bitstring-status-list/)
+(and the StatusList2021 legacy alias). Returns a typed outcome —
+`active` / `revoked` / `suspended` / `no_status` /
+`unsupported_status_type` — plus diagnostics (which list was
+consulted, which bit index was read, what the purpose was).
+
+The decoder is exercised by 27 unit tests in
+`packages/plugins/openid4vc/src/vp/status.test.ts` covering:
+bitstring layout invariants (high-order-bit-first, byte
+boundaries, multi-kilobyte indices), both legacy and modern
+entry types, multiple status entries on one credential
+(any-set-bit-wins semantics), unsupported type strict/lax
+modes, encoding edge cases (multibase prefix, non-GZIP
+payload, malformed base64, out-of-range index), and fetch /
+network error paths.
+
+3 plugin-facade tests in `packages/plugins/openid4vc/src/plugin.test.ts`
+verify the `checkCredentialStatus` method is correctly wired
+through the host LearnCard adapter and threads the plugin's
+configured `fetchImpl` into status-list fetches by default.
+
 ## Plugin DCQL pipeline
 
 The `@learncard/openid4vc-plugin` supports BOTH OID4VP query
