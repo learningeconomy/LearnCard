@@ -4,3 +4,4 @@ export * from './offer';
 export * from './vci';
 export * from './vp';
 export * from './siop';
+export * from './dcql';
