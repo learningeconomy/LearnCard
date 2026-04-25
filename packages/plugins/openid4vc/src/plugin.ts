@@ -270,7 +270,7 @@ export const getOpenID4VCPlugin = (
                 );
             },
 
-            submitPresentation: async (_lc, input, signed, submission, submitOptions = {}) => {
+            submitPresentation: async (learnCard, input, signed, submission, submitOptions = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const responseUri = request.response_uri ?? request.redirect_uri;
 
@@ -287,6 +287,7 @@ export const getOpenID4VCPlugin = (
                     idToken: submitOptions.idToken,
                     state: request.state,
                     fetchImpl,
+                    ...buildJarmOptions(request, await maybeJarmSigner(learnCard, request)),
                 });
             },
 
@@ -388,6 +389,7 @@ export const getOpenID4VCPlugin = (
                         idToken: signedIdToken?.idToken,
                         state: request.state,
                         fetchImpl,
+                        ...buildJarmOptions(request, await maybeJarmSigner(learnCard, request)),
                     });
 
                     return {
@@ -436,6 +438,7 @@ export const getOpenID4VCPlugin = (
                     idToken: signedIdToken?.idToken,
                     state: request.state,
                     fetchImpl,
+                    ...buildJarmOptions(request, await maybeJarmSigner(learnCard, request)),
                 });
 
                 return { request, prepared, signed, signedIdToken, submitted };
@@ -505,6 +508,66 @@ const assertDcqlChosen = (chosen: ChosenForPresentation[]): DcqlChosenCredential
         }
     }
     return chosen as DcqlChosenCredential[];
+};
+
+/**
+ * Build the JARM (`direct_post.jwt`) submit options off a resolved
+ * Authorization Request. Returns an empty object when the verifier
+ * asked for cleartext `direct_post`, so the spread at the call site
+ * is a no-op in the common case. The wallet signer is provided
+ * separately because it's only needed when the verifier ALSO
+ * declared `authorization_signed_response_alg` — wiring it lazily
+ * (see `maybeJarmSigner`) avoids touching the keystore for purely
+ * encrypted responses.
+ */
+const buildJarmOptions = (
+    request: AuthorizationRequest,
+    signer: ProofJwtSigner | undefined
+): {
+    responseMode?: string;
+    clientMetadata?: import('./vp/encrypt').JarmClientMetadata;
+    nonce?: string;
+    signer?: ProofJwtSigner;
+} => {
+    if (request.response_mode !== 'direct_post.jwt') return {};
+
+    return {
+        responseMode: 'direct_post.jwt',
+        clientMetadata: request.client_metadata as
+            | import('./vp/encrypt').JarmClientMetadata
+            | undefined,
+        nonce: request.nonce,
+        signer,
+    };
+};
+
+/**
+ * Conditionally build a wallet signer for the JARM nested-JWS layer.
+ *
+ * We only build one when the verifier ASKED for nested signing
+ * (`authorization_signed_response_alg` set in client_metadata) AND
+ * the response_mode is JARM. Building lazily matters because:
+ *
+ *   - For the cleartext `direct_post` path the signer is unused —
+ *     building it would unnecessarily touch the host keystore.
+ *   - For pure-JWE JARM (no nested sign) the signer is also unused.
+ *   - When the verifier requests both signing AND encryption, we
+ *     build the same Ed25519 signer the rest of the plugin uses
+ *     (`ensureVpJwtSigner`), which mirrors what the inner-VP
+ *     signer would produce — keeping the wallet's identity
+ *     consistent across sub-objects of the response.
+ */
+const maybeJarmSigner = async (
+    learnCard: any,
+    request: AuthorizationRequest
+): Promise<ProofJwtSigner | undefined> => {
+    if (request.response_mode !== 'direct_post.jwt') return undefined;
+
+    const signAlg = (request.client_metadata as { authorization_signed_response_alg?: unknown } | undefined)
+        ?.authorization_signed_response_alg;
+    if (typeof signAlg !== 'string' || signAlg.length === 0) return undefined;
+
+    return ensureVpJwtSigner(learnCard);
 };
 
 /**

@@ -55,7 +55,17 @@ import { randomBytes } from 'node:crypto';
 
 import { PEX } from '@sphereon/pex';
 import * as dcql from 'dcql';
-import { decodeJwt, decodeProtectedHeader, importJWK, jwtVerify, type JWK } from 'jose';
+import {
+    compactDecrypt,
+    decodeJwt,
+    decodeProtectedHeader,
+    exportJWK,
+    generateKeyPair,
+    importJWK,
+    jwtVerify,
+    type JWK,
+    type KeyLike,
+} from 'jose';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -71,7 +81,7 @@ export type SphereonCreateSessionInput =
     | (SphereonPexSessionInput & { dcqlQuery?: never })
     | (SphereonDcqlSessionInput & { presentationDefinition?: never });
 
-export interface SphereonPexSessionInput {
+export interface SphereonPexSessionInput extends SphereonCommonSessionInput {
     /**
      * DIF PEX v2 Presentation Definition the wallet must satisfy.
      * Type intentionally loose — Sphereon's `PEX` accepts both V1
@@ -79,26 +89,16 @@ export interface SphereonPexSessionInput {
      * specific PEX type version.
      */
     presentationDefinition: Record<string, unknown>;
-
-    /** See {@link SphereonCommonSessionInput.audience}. */
-    audience?: string;
-    /** See {@link SphereonCommonSessionInput.nonce}. */
-    nonce?: string;
 }
 
-export interface SphereonDcqlSessionInput {
+export interface SphereonDcqlSessionInput extends SphereonCommonSessionInput {
     /**
      * Parsed DCQL query the wallet must satisfy. Test code typically
      * builds this via the plugin's `requestW3cVc` (verifier composer
-     * helper) or hand-rolls the input and runs it through
-     * `parseDcqlQuery`.
+     * helper) so the test query is authored exactly the way real
+     * verifiers would compose it.
      */
     dcqlQuery: Record<string, unknown>;
-
-    /** See {@link SphereonCommonSessionInput.audience}. */
-    audience?: string;
-    /** See {@link SphereonCommonSessionInput.nonce}. */
-    nonce?: string;
 }
 
 interface SphereonCommonSessionInput {
@@ -117,6 +117,26 @@ interface SphereonCommonSessionInput {
      * sessions with known-mismatched nonces.
      */
     nonce?: string;
+
+    /**
+     * When `'direct_post.jwt'`, the harness advertises its
+     * encryption key in `client_metadata.jwks` and expects the
+     * wallet to send a JWE in a single `response` form field per
+     * OID4VP §8.3 (JARM). Defaults to cleartext `'direct_post'`.
+     *
+     * Requires `startSphereonVerifier({ jarm: true })` so the
+     * harness has an enc keypair to publish.
+     */
+    responseMode?: 'direct_post' | 'direct_post.jwt';
+
+    /**
+     * When `responseMode === 'direct_post.jwt'`, asks the wallet to
+     * sign the response object before encrypting (nested JWS-in-JWE).
+     * The harness verifies the inner JWS against the holder's
+     * `did:jwk` so the test exercises the full sign-then-encrypt
+     * path. Defaults to encrypt-only.
+     */
+    jarmSignAlg?: 'EdDSA' | 'ES256';
 }
 
 export interface SphereonSession {
@@ -207,12 +227,41 @@ const readBody = (req: import('node:http').IncomingMessage): Promise<string> =>
  * Spin up the strict verifier. Returns immediately once the listener
  * is bound. Pick a port explicitly if you need predictability;
  * otherwise the OS picks one and you read it off `baseUrl`.
+ *
+ * `jarm: true` provisions an ECDH-ES P-256 enc keypair the verifier
+ * can publish in `client_metadata.jwks` for sessions opted into
+ * `direct_post.jwt`. Other sessions on the same verifier still
+ * accept cleartext — JARM is per-session, not per-verifier.
  */
 export const startSphereonVerifier = async (
-    opts: { port?: number } = {}
+    opts: { port?: number; jarm?: boolean } = {}
 ): Promise<SphereonVerifier> => {
     const sessions = new Map<string, SessionRecord>();
     const pex = new PEX();
+
+    // JARM key provisioning. Lazy: only mint when asked, and reuse
+    // across all JARM sessions on this verifier (matches how a real
+    // verifier deployment would publish a stable enc key in its
+    // client_metadata).
+    let jarmKeyMaterial:
+        | { publicJwk: JWK; privateKey: KeyLike }
+        | undefined;
+    if (opts.jarm) {
+        const { privateKey, publicKey } = await generateKeyPair('ECDH-ES', {
+            crv: 'P-256',
+            extractable: true,
+        });
+        const publicJwk = await exportJWK(publicKey);
+        jarmKeyMaterial = {
+            publicJwk: {
+                ...publicJwk,
+                alg: 'ECDH-ES',
+                use: 'enc',
+                kid: 'sphereon-jarm-1',
+            },
+            privateKey: privateKey as KeyLike,
+        };
+    }
 
     /**
      * PEX route: parse + verify the (single) JWT-VP, validate nonce +
@@ -419,6 +468,119 @@ export const startSphereonVerifier = async (
         }
     };
 
+    /**
+     * Decode an incoming `direct_post.jwt` body — a single `response`
+     * form field whose value is a compact JWE (optionally wrapping a
+     * compact JWS). Returns the same `{ vp_token, presentation_submission,
+     * state, id_token }` fields the cleartext path would parse, so the
+     * downstream PEX/DCQL routing logic stays untouched.
+     *
+     * Validates two security-critical invariants on the JOSE blob:
+     *   1. The JWE protected header's `apv` must equal the
+     *      base64url-encoded session nonce (per OID4VP §8.3 ¶6).
+     *      Without this binding a captured response could be
+     *      replayed against a different session.
+     *   2. When the session declared `jarmSignAlg`, the inner JWS
+     *      MUST verify against the holder's `did:jwk` — same check
+     *      we do on the outer VP JWT in cleartext mode.
+     */
+    const decodeJarmBody = async (
+        responseJwe: string,
+        sessionForLookup: SessionRecord
+    ): Promise<{
+        vpToken: string;
+        submissionStr: string | null;
+        state: string;
+        idToken: string | null;
+    }> => {
+        if (!jarmKeyMaterial) {
+            throw new Error(
+                'received direct_post.jwt response but verifier was started without `jarm: true`'
+            );
+        }
+
+        const { plaintext, protectedHeader } = await compactDecrypt(
+            responseJwe,
+            jarmKeyMaterial.privateKey
+        );
+
+        // Bind the JWE to the session via apv echo. We compare the
+        // base64url-encoded session nonce to whatever the wallet put
+        // in apv; jose surfaces apv as a base64url string in the
+        // protectedHeader.
+        const expectedApv = Buffer.from(sessionForLookup.nonce, 'utf8')
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+
+        if (protectedHeader.apv !== expectedApv) {
+            throw new Error(
+                `JARM apv mismatch: header carries apv="${String(protectedHeader.apv)}" but session nonce produces "${expectedApv}"`
+            );
+        }
+
+        // Plaintext is either the response-object JSON directly or a
+        // nested JWS whose payload is that JSON. The `cty=JWT`
+        // protected-header signal disambiguates per RFC 7516 §4.1.12.
+        const decoded = new TextDecoder().decode(plaintext);
+
+        let responseObject: Record<string, unknown>;
+        if (
+            typeof protectedHeader.cty === 'string' &&
+            protectedHeader.cty.toUpperCase() === 'JWT'
+        ) {
+            // Nested JWS — verify against the holder's did:jwk so a
+            // tampered or unsigned response can't slip through.
+            //
+            // The OID4VP §8.3 response payload does NOT carry an
+            // `iss` claim (it carries vp_token / presentation_submission
+            // / state / id_token only). The holder's identity is in
+            // the JWS protected header's `kid`, which by convention
+            // is `<holder DID>#<fragment>` (matches what the rest of
+            // the plugin emits via createJoseEd25519Signer). Strip
+            // the fragment and decode the embedded JWK.
+            const innerHeader = decodeProtectedHeader(decoded);
+            const kid = innerHeader.kid;
+
+            if (typeof kid !== 'string' || !kid.startsWith('did:jwk:')) {
+                throw new Error(
+                    `JARM inner JWS protected header has no usable did:jwk kid (kid=${String(kid)})`
+                );
+            }
+
+            const holderDid = kid.split('#')[0]!;
+            const holderJwk = decodeDidJwk(holderDid);
+            const holderKey = await importJWK(
+                holderJwk,
+                innerHeader.alg ?? 'EdDSA'
+            );
+            await jwtVerify(decoded, holderKey);
+
+            responseObject = decodeJwt(decoded) as Record<string, unknown>;
+        } else {
+            responseObject = JSON.parse(decoded);
+        }
+
+        return {
+            vpToken:
+                typeof responseObject.vp_token === 'string'
+                    ? responseObject.vp_token
+                    : JSON.stringify(responseObject.vp_token ?? ''),
+            submissionStr: responseObject.presentation_submission
+                ? JSON.stringify(responseObject.presentation_submission)
+                : null,
+            state:
+                typeof responseObject.state === 'string'
+                    ? responseObject.state
+                    : '',
+            idToken:
+                typeof responseObject.id_token === 'string'
+                    ? responseObject.id_token
+                    : null,
+        };
+    };
+
     const handleDirectPost = async (
         req: import('node:http').IncomingMessage,
         res: ServerResponse
@@ -430,11 +592,57 @@ export const startSphereonVerifier = async (
             const body = await readBody(req);
             const params = new URLSearchParams(body);
 
-            const vpToken = params.get('vp_token');
-            const submissionStr = params.get('presentation_submission');
-            const state = params.get('state');
+            // JARM dispatch: if the wallet posted a `response` field,
+            // we're in `direct_post.jwt` mode. We need the session
+            // BEFORE we can decrypt (the apv check binds to the
+            // session's nonce), so we peek at the JWE's plaintext
+            // state after decryption rather than reading it off a
+            // form field.
+            const responseJwe = params.get('response');
 
-            stateForErrorPath = state ?? undefined;
+            let vpToken: string | null;
+            let submissionStr: string | null;
+            let state: string | null;
+
+            if (responseJwe) {
+                // For state lookup we need to find the session
+                // *some* way before decrypting — the JWE plaintext
+                // is the only place state lives in JARM mode. We
+                // peek by trying every session in turn and using the
+                // one whose nonce produces a matching apv. With our
+                // small in-memory session table this is O(n) and
+                // n=1 in the common test case; production verifiers
+                // would key on a separate URL parameter.
+                const apv = decodeProtectedHeader(responseJwe).apv;
+                const candidate = Array.from(sessions.values()).find(s => {
+                    const expected = Buffer.from(s.nonce, 'utf8')
+                        .toString('base64')
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=+$/, '');
+                    return expected === apv;
+                });
+
+                if (!candidate) {
+                    throw new Error(
+                        `JARM apv does not match any active session nonce`
+                    );
+                }
+
+                stateForErrorPath = candidate.state;
+                session = candidate;
+
+                const decoded = await decodeJarmBody(responseJwe, candidate);
+                vpToken = decoded.vpToken;
+                submissionStr = decoded.submissionStr;
+                state = decoded.state;
+            } else {
+                vpToken = params.get('vp_token');
+                submissionStr = params.get('presentation_submission');
+                state = params.get('state');
+            }
+
+            stateForErrorPath = state ?? stateForErrorPath;
 
             if (!vpToken) throw new Error('missing vp_token');
             if (!state) throw new Error('missing state');
@@ -531,6 +739,13 @@ export const startSphereonVerifier = async (
             const clientId = input.audience ?? 'sphereon-interop-verifier';
             const responseUri = `${baseUrl}/direct_post`;
 
+            const responseMode = input.responseMode ?? 'direct_post';
+            if (responseMode === 'direct_post.jwt' && !jarmKeyMaterial) {
+                throw new Error(
+                    'createSession({ responseMode: "direct_post.jwt" }) requires startSphereonVerifier({ jarm: true })'
+                );
+            }
+
             // Build the auth-request URI inline. Order matches what
             // walt.id emits so a plugin path that's accidentally
             // sensitive to query-param order shows up in both
@@ -538,11 +753,30 @@ export const startSphereonVerifier = async (
             const params: Record<string, string> = {
                 client_id: clientId,
                 response_type: 'vp_token',
-                response_mode: 'direct_post',
+                response_mode: responseMode,
                 response_uri: responseUri,
                 nonce: nonceVal,
                 state,
             };
+
+            // Publish the verifier's enc key + JARM algs in
+            // client_metadata when the wallet is being asked to
+            // encrypt. The wallet reads these straight off the
+            // resolved AuthorizationRequest — OID4VP §5.6.
+            if (responseMode === 'direct_post.jwt') {
+                const clientMetadata: Record<string, unknown> = {
+                    jwks: { keys: [jarmKeyMaterial!.publicJwk] },
+                    authorization_encrypted_response_alg: 'ECDH-ES',
+                    authorization_encrypted_response_enc: 'A256GCM',
+                };
+
+                if (input.jarmSignAlg) {
+                    clientMetadata.authorization_signed_response_alg =
+                        input.jarmSignAlg;
+                }
+
+                params.client_metadata = JSON.stringify(clientMetadata);
+            }
 
             if ('dcqlQuery' in input && input.dcqlQuery) {
                 sessions.set(state, {

@@ -99,6 +99,7 @@ each submission through the corresponding strict matcher.
 | `tests/sphereon-roundtrip.spec.ts` | 1 | **PEX cross-vendor roundtrip.** walt.id issues a credential → our plugin holds it → Sphereon's strict PEX evaluator (`@sphereon/pex`) accepts the VP. Proves a credential from one vendor passes a different vendor's verifier — the canonical interop signal. |
 | `tests/sphereon-dcql-roundtrip.spec.ts` | 1 | **DCQL cross-vendor roundtrip.** Same flow, DCQL routing: walt.id issues → plugin holds → plugin auto-routes to its DCQL pipeline (per `request.dcql_query`) → Sphereon's `dcql.DcqlPresentationResult` matcher accepts. Pins the OID4VP 1.0 §6.4 wire shape (object-form `vp_token` keyed by `credential_query_id`, no `presentation_submission`) end-to-end. |
 | `tests/sphereon-strict-binding.spec.ts` | 4 | Strict checks walt.id can't enforce: **(a)** nonce binding — a VP signed for session A's nonce, replayed to session B with `state` rewritten, is rejected with `nonce mismatch`. **(b)** Audience binding — a VP with the wrong `aud` claim is rejected with `audience mismatch`. **(c)** Inner-VC tamper detection — a single bit flipped in a JWT-VC signature causes deterministic rejection at `jose.jwtVerify`. **(d)** Clean positive — the foil that proves the strict checks gate on real failures, not always-reject. |
+| `tests/sphereon-jarm.spec.ts` | 4 | **`direct_post.jwt` (JARM) response encryption** — OID4VP §8.3. Sphereon mints sessions whose `client_metadata` advertises an ECDH-ES P-256 enc key + JWE algs; the plugin packs `vp_token`/`presentation_submission`/`state` into a JSON payload, encrypts to the verifier's key (binding the JWE to the session via `apv`=base64url(nonce) per ¶6), and POSTs as a single `response` form field. Covers PEX-over-JARM, DCQL-over-JARM, nested signed-then-encrypted (`authorization_signed_response_alg=EdDSA` so the wallet's `did:jwk` Ed25519 signs the response object before encryption), and apv-binding isolation across concurrent sessions. |
 
 The Sphereon harness lives in `setup/sphereon-verifier.ts` — a tiny
 Node `http.createServer` listener on a dynamic port that mimics OID4VP
@@ -110,6 +111,9 @@ Spec-misshapen submissions are rejected at the door: a PEX session
 that receives a body without `presentation_submission` 400s, and a
 DCQL session that receives one *with* `presentation_submission` 400s
 (OID4VP 1.0 §6.4 mandates the field be absent for DCQL responses).
+A JARM session that receives a cleartext form body 400s for the same
+reason — mode mismatch is a session-config error, not a transport
+fallback.
 
 ### Tier 2.C — EUDI reference verifier (Docker, OID4VP 1.0 / DCQL)
 
@@ -157,21 +161,22 @@ emulated boots.
 
 ### Cross-vendor enforcement matrix
 
-| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict, PEX) | Sphereon (strict, DCQL) | EUDI reference (DCQL) |
-|---|---|---|---|---|
-| Outer VP JWT signature | ✅ enforced | ✅ enforced | ✅ enforced (per-query VP) | ✅ enforced (gated⁰) |
-| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
-| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced | ✅ enforced (per-query) | ✅ enforced (gated⁰) |
-| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
-| Request Object signature verification | n/a | n/a | n/a | ⚠️ bypassed in interop (no in-band JWKS; plugin opts in via `unsafeSkipRequestObjectSignatureVerification`) |
-| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) | n/a | n/a |
-| DCQL `credential_matches` evaluation | n/a | n/a | ✅ (strict, by `dcql`) | ✅ (strict, native EUDI Kotlin impl) |
-| `presentation_submission` field presence | required | required | **forbidden** (must be absent) | **forbidden** (must be absent) |
-| `vp_token` shape | string OR object | string OR object | object keyed by `credential_query_id` | object keyed by `credential_query_id` |
-| Accepted credential formats | `jwt_vc_json`, `ldp_vc`, SD-JWT issuance | `jwt_vc_json`, `ldp_vc` | `jwt_vc_json`, `ldp_vc` | **`mso_mdoc` + `dc+sd-jwt` only** |
-| OID4VP version | Draft 22 (`presentation_definition`) | Draft 22 (PEX) / 1.0 (DCQL) | Draft 22 (PEX) / 1.0 (DCQL) | 1.0 |
-| `client_id` style | bare string + `client_id_scheme` | bare string + `client_id_scheme` | bare string + `client_id_scheme` | OID4VP 1.0 client-id-prefix |
-| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) | n/a | n/a |
+| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict, PEX) | Sphereon (strict, DCQL) | Sphereon (strict, JARM) | EUDI reference (DCQL) |
+|---|---|---|---|---|---|
+| Outer VP JWT signature | ✅ enforced | ✅ enforced | ✅ enforced (per-query VP) | ✅ enforced | ✅ enforced (gated⁰) |
+| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
+| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced | ✅ enforced (per-query) | ✅ enforced (also `apv` JWE KDF input) | ✅ enforced (gated⁰) |
+| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
+| Response confidentiality | ❌ cleartext | ❌ cleartext | ❌ cleartext | ✅ ECDH-ES + A256GCM JWE; opt nested EdDSA JWS | ⚠️ cleartext in interop (production EUDI requires JARM) |
+| Request Object signature verification | n/a | n/a | n/a | n/a | ⚠️ bypassed in interop (no in-band JWKS; plugin opts in via `unsafeSkipRequestObjectSignatureVerification`) |
+| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) | n/a | ✅ (strict, post-decrypt) | n/a |
+| DCQL `credential_matches` evaluation | n/a | n/a | ✅ (strict, by `dcql`) | ✅ (strict, post-decrypt) | ✅ (strict, native EUDI Kotlin impl) |
+| `presentation_submission` field presence | required | required | **forbidden** (must be absent) | required (PEX) / forbidden (DCQL) | **forbidden** (must be absent) |
+| `vp_token` shape | string OR object | string OR object | object keyed by `credential_query_id` | both shapes (encrypted) | object keyed by `credential_query_id` |
+| Accepted credential formats | `jwt_vc_json`, `ldp_vc`, SD-JWT issuance | `jwt_vc_json`, `ldp_vc` | `jwt_vc_json`, `ldp_vc` | `jwt_vc_json`, `ldp_vc` | **`mso_mdoc` + `dc+sd-jwt` only** |
+| OID4VP version | Draft 22 (`presentation_definition`) | Draft 22 (PEX) / 1.0 (DCQL) | Draft 22 (PEX) / 1.0 (DCQL) | 1.0 (JARM) | 1.0 |
+| `client_id` style | bare string + `client_id_scheme` | bare string + `client_id_scheme` | bare string + `client_id_scheme` | bare string + `client_id_scheme` | OID4VP 1.0 client-id-prefix |
+| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) | n/a | n/a | n/a |
 
 ⁰ Gated tests: `it.skip` until plugin SD-JWT-VC presentation
 support ships. The plugin's parsing-side interop with EUDI is

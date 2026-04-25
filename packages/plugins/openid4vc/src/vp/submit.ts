@@ -1,32 +1,56 @@
 import { PresentationSubmission } from './select';
 import { VpToken } from './sign';
+import {
+    encryptResponseObject,
+    JarmEncryptError,
+    type JarmClientMetadata,
+    type ResponseObjectPayload,
+} from './encrypt';
+import type { ProofJwtSigner } from '../vci/types';
 
 /**
- * Slice 7c — **`direct_post` transport**.
+ * Slice 7c / 7d — **direct_post + direct_post.jwt transport**.
  *
  * POST a signed `vp_token` (and, for PEX, a `presentation_submission`)
- * to the verifier's `response_uri` per OID4VP §8 "direct_post Response
- * Mode". Pure transport — no signing, no PEX/DCQL evaluation, no
- * request-object parsing.
+ * to the verifier's `response_uri` per OID4VP §8. Pure transport —
+ * no signing, no PEX/DCQL evaluation, no request-object parsing.
+ *
+ * Two response modes are supported:
+ *
+ * - **`direct_post`** (§8.2) — form fields go on the wire as
+ *   cleartext (`vp_token`, `presentation_submission`, `state`,
+ *   `id_token` directly URL-encoded). What every walt.id-class
+ *   verifier accepts today.
+ *
+ * - **`direct_post.jwt`** (§8.3) — the same fields are packed into
+ *   a JSON payload, optionally signed by the wallet, then encrypted
+ *   to the verifier's published encryption key. The single resulting
+ *   compact JOSE string goes on the wire as one form field named
+ *   `response`. What EUDI / EU pilot deployments require for
+ *   production. Encryption is delegated to `./encrypt.ts`; this
+ *   module just dispatches.
  *
  * ## PEX vs DCQL submissions
  *
  * OID4VP defines two distinct response shapes:
  *
  * - **PEX** (Draft 22 and earlier, still used by every walt.id-class
- *   verifier in the wild) → form fields `vp_token` + `presentation_submission`.
+ *   verifier in the wild) → fields `vp_token` + `presentation_submission`.
  *   `vp_token` is a single signed VP; `presentation_submission`
  *   carries the descriptor_map that routes inner credentials.
  *
- * - **DCQL** (OID4VP 1.0 §6.4) → form field `vp_token` only, valued
+ * - **DCQL** (OID4VP 1.0 §6.4) → field `vp_token` only, valued
  *   as a JSON-encoded object whose keys are `credential_query_id`
  *   strings and whose values are signed presentations. NO
  *   `presentation_submission` field — the keying carries the routing
  *   implicitly. Callers using the DCQL pipeline (`dcql/respond.ts`)
  *   pass `submission: undefined` (or omit it) so this transport
- *   leaves the field off the form body.
+ *   leaves the field off the response body.
  *
- * ## Encoding
+ * Both query-language splits work in either response mode. JARM
+ * just wraps the same payload in a JOSE blob.
+ *
+ * ## Encoding (cleartext mode)
  *
  * OID4VP requires `application/x-www-form-urlencoded`, even though
  * `vp_token` and `presentation_submission` are structured values.
@@ -37,6 +61,12 @@ import { VpToken } from './sign';
  *   object keyed by credential_query_id) → `JSON.stringify`.
  * - `presentation_submission` → always `JSON.stringify` when present.
  * - `state` → echoed verbatim if present.
+ *
+ * ## Encoding (JARM mode)
+ *
+ * Single form field: `response=<JOSE blob>`. Same form-urlencoded
+ * content type so verifier servers don't need protocol-aware framing
+ * — the JOSE blob is just one parameter value.
  *
  * ## Response handling
  *
@@ -93,6 +123,40 @@ export interface SubmitPresentationOptions {
      */
     state?: string;
 
+    /**
+     * Verifier's `response_mode` from the Authorization Request.
+     * Defaults to `direct_post` (cleartext). Set to `direct_post.jwt`
+     * to send a JARM (encrypted, optionally signed) response. Any
+     * other value is treated as cleartext for forward-compat — the
+     * caller can detect and reject unsupported modes upstream rather
+     * than have the transport silently downgrade.
+     */
+    responseMode?: string;
+
+    /**
+     * Verifier's `client_metadata` from the Authorization Request.
+     * Required when `responseMode === 'direct_post.jwt'` (carries
+     * the JWE algorithms + verifier's encryption JWKS). Ignored in
+     * cleartext mode.
+     */
+    clientMetadata?: JarmClientMetadata;
+
+    /**
+     * Verifier's `nonce` from the Authorization Request. Required
+     * when `responseMode === 'direct_post.jwt'` (used as the JWE
+     * `apv` ECDH-ES KDF input per OID4VP §8.3 ¶6). Ignored in
+     * cleartext mode.
+     */
+    nonce?: string;
+
+    /**
+     * Wallet signer — same shape as VCI proof-of-possession + outer
+     * VP signing. Required when JARM is in use AND the verifier
+     * declared `authorization_signed_response_alg` (the wallet must
+     * sign the response object before encrypting). Ignored otherwise.
+     */
+    signer?: ProofJwtSigner;
+
     /** Override fetch — defaults to `globalThis.fetch`. */
     fetchImpl?: typeof fetch;
 }
@@ -128,7 +192,8 @@ export type VpSubmitErrorCode =
     | 'invalid_input'
     | 'no_fetch'
     | 'network_error'
-    | 'server_error';
+    | 'server_error'
+    | 'jarm_encrypt_failed';
 
 export class VpSubmitError extends Error {
     readonly code: VpSubmitErrorCode;
@@ -188,12 +253,28 @@ export const submitPresentation = async (
         );
     }
 
-    const body = encodeFormBody({
-        vpToken,
-        submission,
-        state,
-        idToken: options.idToken,
-    });
+    // Pick transport mode. JARM (`direct_post.jwt`) wraps the same
+    // payload in a JOSE blob; everything else falls through to the
+    // cleartext form-fields path.
+    const isJarm = options.responseMode === 'direct_post.jwt';
+
+    const body = isJarm
+        ? await encodeJarmBody({
+              vpToken,
+              submission,
+              state,
+              idToken: options.idToken,
+              clientMetadata: options.clientMetadata,
+              nonce: options.nonce,
+              signer: options.signer,
+              fetchImpl,
+          })
+        : encodeFormBody({
+              vpToken,
+              submission,
+              state,
+              idToken: options.idToken,
+          });
 
 
     let response: Response;
@@ -266,6 +347,92 @@ const encodeFormBody = (args: {
 
 const stringifyVpToken = (vpToken: VpToken): string =>
     typeof vpToken === 'string' ? vpToken : JSON.stringify(vpToken);
+
+/**
+ * Build the JARM (`direct_post.jwt`) body: a single `response`
+ * form field whose value is the compact JWE / JWS-in-JWE blob built
+ * by `./encrypt.ts`.
+ *
+ * The plaintext payload is structurally identical to the cleartext
+ * mode's form fields — we just pack them into a JSON object first.
+ * The verifier sees the same fields after decryption, which keeps
+ * server-side parsing logic uniform across modes.
+ */
+const encodeJarmBody = async (args: {
+    vpToken: VpToken;
+    submission?: PresentationSubmission;
+    state?: string;
+    idToken?: string;
+    clientMetadata?: JarmClientMetadata;
+    nonce?: string;
+    signer?: ProofJwtSigner;
+    fetchImpl: typeof fetch;
+}): Promise<string> => {
+    if (!args.clientMetadata) {
+        throw new VpSubmitError(
+            'invalid_input',
+            'response_mode=direct_post.jwt requires `clientMetadata` (verifier\'s JWKS + JWE algs)'
+        );
+    }
+
+    if (typeof args.nonce !== 'string' || args.nonce.length === 0) {
+        throw new VpSubmitError(
+            'invalid_input',
+            'response_mode=direct_post.jwt requires the verifier `nonce` for the JWE `apv` ECDH-ES KDF input'
+        );
+    }
+
+    const payload: ResponseObjectPayload = {
+        // vp_token is structured even in cleartext mode (it can be a
+        // JSON object). We pass it through unchanged — JARM doesn't
+        // need the URL-form stringification cleartext does.
+        vp_token: args.vpToken,
+    };
+
+    if (args.submission) {
+        // PresentationSubmission is a structured PEX type; widening
+        // to `Record<string, unknown>` for JSON-encoding into the
+        // JWE plaintext is safe (it stays a plain object on the
+        // wire). Two-step cast through `unknown` to satisfy strict
+        // structural-equality narrowing.
+        payload.presentation_submission = args.submission as unknown as Record<
+            string,
+            unknown
+        >;
+    }
+
+    if (typeof args.state === 'string' && args.state.length > 0) {
+        payload.state = args.state;
+    }
+
+    if (typeof args.idToken === 'string' && args.idToken.length > 0) {
+        payload.id_token = args.idToken;
+    }
+
+    let jose: string;
+    try {
+        jose = await encryptResponseObject({
+            payload,
+            clientMetadata: args.clientMetadata,
+            verifierNonce: args.nonce,
+            signer: args.signer,
+            fetchImpl: args.fetchImpl,
+        });
+    } catch (e) {
+        if (e instanceof JarmEncryptError) {
+            throw new VpSubmitError(
+                'jarm_encrypt_failed',
+                `Failed to build JARM response (${e.code}): ${e.message}`,
+                { cause: e }
+            );
+        }
+        throw e;
+    }
+
+    const params = new URLSearchParams();
+    params.set('response', jose);
+    return params.toString();
+};
 
 const parseResponseBody = async (response: Response): Promise<unknown> => {
     // Empty body — many verifiers respond 200 with nothing.
