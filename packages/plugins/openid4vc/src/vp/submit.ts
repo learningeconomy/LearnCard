@@ -4,9 +4,27 @@ import { VpToken } from './sign';
 /**
  * Slice 7c — **`direct_post` transport**.
  *
- * POST a signed `vp_token` + `presentation_submission` to the verifier's
- * `response_uri` per OID4VP §8 "direct_post Response Mode". Pure
- * transport — no signing, no PEX evaluation, no request-object parsing.
+ * POST a signed `vp_token` (and, for PEX, a `presentation_submission`)
+ * to the verifier's `response_uri` per OID4VP §8 "direct_post Response
+ * Mode". Pure transport — no signing, no PEX/DCQL evaluation, no
+ * request-object parsing.
+ *
+ * ## PEX vs DCQL submissions
+ *
+ * OID4VP defines two distinct response shapes:
+ *
+ * - **PEX** (Draft 22 and earlier, still used by every walt.id-class
+ *   verifier in the wild) → form fields `vp_token` + `presentation_submission`.
+ *   `vp_token` is a single signed VP; `presentation_submission`
+ *   carries the descriptor_map that routes inner credentials.
+ *
+ * - **DCQL** (OID4VP 1.0 §6.4) → form field `vp_token` only, valued
+ *   as a JSON-encoded object whose keys are `credential_query_id`
+ *   strings and whose values are signed presentations. NO
+ *   `presentation_submission` field — the keying carries the routing
+ *   implicitly. Callers using the DCQL pipeline (`dcql/respond.ts`)
+ *   pass `submission: undefined` (or omit it) so this transport
+ *   leaves the field off the form body.
  *
  * ## Encoding
  *
@@ -15,9 +33,9 @@ import { VpToken } from './sign';
  * Stringification rules:
  *
  * - `vp_token` as a `string` (jwt_vp_json compact JWS) → used verbatim.
- * - `vp_token` as an object (ldp_vp signed VP, or an `{ "...": … }`
- *   wrapper for multi-credential jwt submissions) → `JSON.stringify`.
- * - `presentation_submission` → always `JSON.stringify`.
+ * - `vp_token` as an object (ldp_vp signed VP, OR a DCQL vp_token
+ *   object keyed by credential_query_id) → `JSON.stringify`.
+ * - `presentation_submission` → always `JSON.stringify` when present.
  * - `state` → echoed verbatim if present.
  *
  * ## Response handling
@@ -43,11 +61,22 @@ export interface SubmitPresentationOptions {
      */
     responseUri: string;
 
-    /** Signed VP token — compact JWS for jwt_vp_json, signed VP object for ldp_vp. */
+    /**
+     * Signed VP token. Three shapes are accepted:
+     *  - PEX `jwt_vp_json` → compact JWS string
+     *  - PEX `ldp_vp`      → signed VP JSON object
+     *  - DCQL response     → JSON object keyed by `credential_query_id`,
+     *                        values are per-query signed presentations
+     */
     vpToken: VpToken;
 
-    /** DIF PEX v2 Presentation Submission produced by {@link buildPresentation}. */
-    submission: PresentationSubmission;
+    /**
+     * DIF PEX v2 Presentation Submission. Required for PEX flows;
+     * MUST be omitted (or `undefined`) for DCQL flows — DCQL's
+     * vp_token keying provides the routing implicitly. See the
+     * module-level docstring for the full PEX-vs-DCQL split.
+     */
+    submission?: PresentationSubmission;
 
     /**
      * SIOPv2 ID token (Slice 8). Required when the verifier asked for
@@ -139,8 +168,16 @@ export const submitPresentation = async (
         throw new VpSubmitError('invalid_input', '`vpToken` is required');
     }
 
-    if (!submission || typeof submission !== 'object') {
-        throw new VpSubmitError('invalid_input', '`submission` must be a PresentationSubmission');
+    // `submission` is optional — DCQL responses don't carry one. When
+    // present it MUST be a structured object so we know we can
+    // round-trip it through `JSON.stringify` cleanly. PEX callers
+    // always pass one; if it's a non-object truthy value somehow,
+    // that's a typed error.
+    if (submission !== undefined && (submission === null || typeof submission !== 'object')) {
+        throw new VpSubmitError(
+            'invalid_input',
+            '`submission` must be a PresentationSubmission object when provided (omit it entirely for DCQL flows)'
+        );
     }
 
     const fetchImpl = options.fetchImpl ?? globalThis.fetch;
@@ -157,6 +194,7 @@ export const submitPresentation = async (
         state,
         idToken: options.idToken,
     });
+
 
     let response: Response;
     try {
@@ -199,14 +237,21 @@ export const submitPresentation = async (
 
 const encodeFormBody = (args: {
     vpToken: VpToken;
-    submission: PresentationSubmission;
+    submission?: PresentationSubmission;
     state?: string;
     idToken?: string;
 }): string => {
     const params = new URLSearchParams();
 
     params.set('vp_token', stringifyVpToken(args.vpToken));
-    params.set('presentation_submission', JSON.stringify(args.submission));
+
+    // PEX flow includes `presentation_submission`; DCQL flow MUST NOT.
+    // The verifier reads its own auth-request memory to decide which
+    // shape to expect, so an extra/missing field on the wrong side is
+    // an immediate 400 — keep this branch tight.
+    if (args.submission) {
+        params.set('presentation_submission', JSON.stringify(args.submission));
+    }
 
     if (typeof args.idToken === 'string' && args.idToken.length > 0) {
         params.set('id_token', args.idToken);
