@@ -3,8 +3,9 @@ import {
     AlertCircle,
     CheckCircle2,
     Copy,
-    ExternalLink,
+    Globe,
     Loader2,
+    Smartphone,
     X,
 } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -16,6 +17,14 @@ export interface LaunchPanelProps {
     launch: LaunchSuccess;
     scenario: Scenario;
     providerId: ProviderId;
+    /**
+     * Base URL where the LearnCard web app is running locally. Used to
+     * build a same-browser URL (e.g. `http://localhost:3000/oid4vp?
+     * request=...`) so the dev can drive the flow without an OS-level
+     * deep-link handler. The deep-link button still ships for phones
+     * and PWA installs.
+     */
+    lcaBaseUrl: string;
     onClose: () => void;
 }
 
@@ -35,8 +44,10 @@ const LaunchPanel: React.FC<LaunchPanelProps> = ({
     launch,
     scenario,
     providerId,
+    lcaBaseUrl,
     onClose,
 }) => {
+    const browserUrl = buildBrowserUrl(lcaBaseUrl, launch);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [copied, setCopied] = useState(false);
     const [status, setStatus] = useState<StatusState>({ kind: 'idle' });
@@ -146,12 +157,23 @@ const LaunchPanel: React.FC<LaunchPanelProps> = ({
             </div>
 
             <div className="space-y-2 mb-4">
+                {browserUrl && (
+                    <a
+                        href={browserUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+                    >
+                        <Globe className="w-4 h-4" />
+                        Open in browser
+                    </a>
+                )}
                 <a
                     href={launch.deepLink}
-                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
-                    <ExternalLink className="w-4 h-4" />
-                    Open in LearnCard
+                    <Smartphone className="w-4 h-4" />
+                    Open via deep link
                 </a>
                 <button
                     onClick={handleCopy}
@@ -174,6 +196,40 @@ const LaunchPanel: React.FC<LaunchPanelProps> = ({
             <StatusBadge state={status} kind={launch.kind} />
         </aside>
     );
+};
+
+/**
+ * Build a same-browser URL into the locally-running LearnCard app.
+ * Returns `undefined` when the configured `lcaBaseUrl` is missing or
+ * malformed so the UI just hides the “Open in browser” button rather
+ * than render a broken link.
+ *
+ * Routes (from `apps/learn-card-app/src/Routes.tsx`):
+ *   - VCI → `/oid4vci?offer=<credential-offer-uri>`
+ *   - VP  → `/oid4vp?request=<authorization-request-uri>`
+ */
+const buildBrowserUrl = (
+    lcaBaseUrl: string,
+    launch: LaunchSuccess
+): string | undefined => {
+    const trimmed = lcaBaseUrl.trim();
+    if (!trimmed) return undefined;
+
+    let base: URL;
+    try {
+        base = new URL(trimmed);
+    } catch {
+        return undefined;
+    }
+
+    const path = launch.kind === 'vci' ? '/oid4vci' : '/oid4vp';
+    const param = launch.kind === 'vci' ? 'offer' : 'request';
+
+    // Construct via URL so we don't double-encode or drop the host
+    // when the user typed a base URL with a trailing slash.
+    const target = new URL(path, base);
+    target.searchParams.set(param, launch.uri);
+    return target.toString();
 };
 
 const StatusBadge: React.FC<{ state: StatusState; kind: 'vci' | 'vp' }> = ({

@@ -15,22 +15,66 @@
 # Configs live under `./config/{issuer,verifier}/`. They mirror the
 # upstream walt.id defaults at:
 # https://github.com/walt-id/waltid-identity/tree/main/waltid-services
+#
+# ---------------------------------------------------------------------------
+# host-bridge sidecars (did:web:localhost resolution)
+# ---------------------------------------------------------------------------
+# The plugin's interop suite uses `did:jwk` holders that are self-resolving,
+# but the openid4vc-playground (and any developer running LCA locally) uses
+# `did:web:localhost%3A4000:users:<id>` holders backed by brain-service on
+# the host. When walt.id / eudi-verifier try to resolve those DIDs from
+# inside their own container, `localhost:4000` points at the container
+# itself (nothing listening) instead of the host's brain-service — the
+# proof JWT signature can't be verified and the credential / verification
+# endpoint returns 500.
+#
+# Fix: each vendor service shares a network namespace with a tiny `socat`
+# sidecar that listens on `localhost:4000` *inside that namespace* and
+# forwards to `host.docker.internal:4000` (Docker Desktop's host alias,
+# wired via `extra_hosts: host-gateway` for portability across Mac/Windows
+# Docker Desktop and Linux Docker 20.10+).
+#
+# Because the vendor services share a netns with their bridge, all
+# `ports:` declarations live on the bridge — Docker doesn't allow them on
+# the consumer side of `network_mode: service:X`. Healthchecks still
+# probe `localhost:<container-port>` and Just Work because they execute
+# inside the same shared namespace.
+#
+# This setup is transparent to the existing interop tests (their `did:jwk`
+# holders never trigger a did:web fetch), and lights up did:web flows for
+# the playground without any plugin- or app-side changes.
 
 services:
+    host-bridge-issuer:
+        image: alpine/socat
+        container_name: oid4vc-interop-host-bridge-issuer
+        # Forward in-namespace localhost:4000 -> host's port 4000
+        # (brain-service). socat's `fork` keeps each TCP connection in a
+        # child process so concurrent did.json fetches don't serialize.
+        command: TCP-LISTEN:4000,fork,reuseaddr TCP:host.docker.internal:4000
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        # Publishes the walt.id issuer that shares this namespace.
+        # Container port 3000 == walt.id's listener; host port 7002
+        # matches what the playground / interop tests already expect.
+        ports:
+            - '7002:3000'
+        networks:
+            - oid4vc-interop
+
     waltid-issuer:
         image: waltid/issuer-api:latest
         container_name: oid4vc-interop-issuer
-        # walt.id binds its web server to container port 3000
-        # regardless of the service. The `baseUrl` in the mounted
-        # config is the *advertised* origin (embedded in metadata),
-        # which must match this host-side port so the plugin's
-        # callbacks resolve.
-        ports:
-            - '7002:3000'
+        # Share the host-bridge's netns so `localhost:4000` from inside
+        # walt.id reaches brain-service on the host. See the comment
+        # block above for the full rationale.
+        network_mode: 'service:host-bridge-issuer'
+        depends_on:
+            - host-bridge-issuer
         healthcheck:
-            # Health check runs *inside* the container, so we probe
-            # the actual listen port (3000), not the advertised
-            # host-side port (7002).
+            # Health check runs *inside* the container (in the bridge's
+            # netns), so we probe the actual listen port (3000), not
+            # the advertised host-side port (7002).
             test:
                 [
                     'CMD-SHELL',
@@ -42,23 +86,31 @@ services:
             start_period: 30s
         volumes:
             - ./config/issuer:/waltid-issuer-api/config:ro
+
+    host-bridge-verifier:
+        image: alpine/socat
+        container_name: oid4vc-interop-host-bridge-verifier
+        command: TCP-LISTEN:4000,fork,reuseaddr TCP:host.docker.internal:4000
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '7003:3000'
         networks:
             - oid4vc-interop
 
     waltid-verifier:
         image: waltid/verifier-api:latest
         container_name: oid4vc-interop-verifier
-        # Same story as the issuer: web server binds to container
-        # port 3000; `baseUrl` in verifier-service.conf is the
-        # *advertised* host-side URL (port 7003).
-        ports:
-            - '7003:3000'
+        # Shares the verifier-side bridge's netns so VPs signed by a
+        # `did:web:localhost:4000:...` holder can be verified.
+        network_mode: 'service:host-bridge-verifier'
+        depends_on:
+            - host-bridge-verifier
         healthcheck:
-            # Hit container-internal port 3000. We probe root + the
-            # OID4VP verify path — root may not be routed in newer
-            # builds, but POST /openid4vc/verify always exists; any
-            # HTTP response (even 405 Method Not Allowed) proves
-            # the listener is up.
+            # Hit container-internal port 3000. We probe the OID4VP
+            # verify path — root may not be routed in newer builds, but
+            # POST /openid4vc/verify always exists; any HTTP response
+            # (even 405 Method Not Allowed) proves the listener is up.
             test:
                 [
                     'CMD-SHELL',
@@ -70,8 +122,6 @@ services:
             start_period: 30s
         volumes:
             - ./config/verifier:/waltid-verifier-api/config:ro
-        networks:
-            - oid4vc-interop
 
     # EU Digital Identity Wallet reference verifier — the spec-strict
     # DCQL implementation against which the plugin's DCQL emission is
@@ -94,11 +144,25 @@ services:
     #   - VERIFIER_RESPONSE_MODE: DirectPost (`direct_post`) is the
     #     baseline; `direct_post.jwt` (encrypted JWE response) is
     #     out of scope for this slice.
+    host-bridge-eudi:
+        image: alpine/socat
+        container_name: oid4vc-interop-host-bridge-eudi
+        command: TCP-LISTEN:4000,fork,reuseaddr TCP:host.docker.internal:4000
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '7004:8080'
+        networks:
+            - oid4vc-interop
+
     eudi-verifier:
         image: ghcr.io/eu-digital-identity-wallet/eudi-srv-verifier-endpoint:latest
         container_name: oid4vc-interop-eudi-verifier
-        ports:
-            - '7004:8080'
+        # Shares the eudi-side bridge's netns so a `did:web:localhost`
+        # holder can present DCQL VPs through this verifier.
+        network_mode: 'service:host-bridge-eudi'
+        depends_on:
+            - host-bridge-eudi
         environment:
             VERIFIER_PUBLICURL: 'http://localhost:7004'
             VERIFIER_RESPONSE_MODE: 'DirectPost'
@@ -132,8 +196,6 @@ services:
             timeout: 5s
             retries: 60
             start_period: 60s
-        networks:
-            - oid4vc-interop
 
 networks:
     oid4vc-interop:

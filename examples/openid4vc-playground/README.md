@@ -32,10 +32,17 @@ In a separate terminal, run the LearnCard app:
 
 ```bash
 cd ../../apps/learn-card-app
-pnpm dev
+pnpm start
+# → http://localhost:3000
 ```
 
-Then in the playground, click any scenario card → the panel shows a QR code and an **Open in LearnCard** deep link. Use the link to drive the flow on the same machine, or scan the QR with a phone if `pnpm dev --host` is active.
+Then in the playground, click any scenario card. The panel surfaces three ways to drive the flow:
+
+- **Open in browser** (primary) — same-machine link into the running LCA dev server (`http://localhost:3000/oid4vp?...` or `/oid4vci?...`). No OS deep-link handler needed; opens in a new tab.
+- **Open via deep link** — the raw `openid4vp://` / `openid-credential-offer://` URI for installed wallet apps + PWAs.
+- **QR code** — scan from a phone (run `pnpm dev --host` in the playground first so the page is reachable on LAN).
+
+The "LearnCard dev URL" field at the top of the page is persisted to localStorage so you only set it once. Change it if you run the LCA app on a non-default port (e.g. `localhost:4000` via `pnpm start-p-4000`).
 
 ## What's covered in v1
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Download, Send } from 'lucide-react';
 
 import ScenarioCard from './components/ScenarioCard';
@@ -13,6 +13,14 @@ import {
     type ScenarioKind,
 } from './scenarios';
 
+/**
+ * Where the LearnCard web app is running locally. Used to build
+ * browser-openable URLs (vs. the OS-level `openid4vp://` deep links).
+ * Persisted to localStorage so the dev only sets it once per machine.
+ */
+const LCA_BASE_URL_STORAGE_KEY = 'oid4vc-playground:lcaBaseUrl';
+const DEFAULT_LCA_BASE_URL = 'http://localhost:3000';
+
 type LaunchState =
     | { kind: 'idle' }
     | { kind: 'launching'; scenarioId: string }
@@ -23,6 +31,22 @@ const App: React.FC = () => {
     const [tab, setTab] = useState<ScenarioKind>('vci');
     const [providerId, setProviderId] = useState<ProviderId>('waltid');
     const [launchState, setLaunchState] = useState<LaunchState>({ kind: 'idle' });
+
+    const [lcaBaseUrl, setLcaBaseUrl] = useState<string>(() => {
+        if (typeof window === 'undefined') return DEFAULT_LCA_BASE_URL;
+        return (
+            window.localStorage.getItem(LCA_BASE_URL_STORAGE_KEY)
+            ?? DEFAULT_LCA_BASE_URL
+        );
+    });
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(LCA_BASE_URL_STORAGE_KEY, lcaBaseUrl);
+        } catch {
+            // localStorage may be disabled (private mode) — not fatal.
+        }
+    }, [lcaBaseUrl]);
 
     const handleLaunch = async (scenario: Scenario) => {
         setLaunchState({ kind: 'launching', scenarioId: scenario.id });
@@ -56,10 +80,16 @@ const App: React.FC = () => {
             <main className="max-w-7xl mx-auto px-4 py-6">
                 <div className="flex flex-col lg:flex-row gap-6">
                     <div className="flex-1 min-w-0 space-y-5">
-                        <ProviderPicker
-                            providerId={providerId}
-                            onChange={setProviderId}
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ProviderPicker
+                                providerId={providerId}
+                                onChange={setProviderId}
+                            />
+                            <LcaUrlSetting
+                                value={lcaBaseUrl}
+                                onChange={setLcaBaseUrl}
+                            />
+                        </div>
 
                         <Tabs tab={tab} onChange={setTab} />
 
@@ -101,6 +131,7 @@ const App: React.FC = () => {
                                 launch={launchState.launch}
                                 scenario={launchedScenario}
                                 providerId={providerId}
+                                lcaBaseUrl={lcaBaseUrl}
                                 onClose={() => setLaunchState({ kind: 'idle' })}
                             />
                         </div>
@@ -171,6 +202,31 @@ const TabButton: React.FC<{
         {icon}
         {label}
     </button>
+);
+
+const LcaUrlSetting: React.FC<{
+    value: string;
+    onChange: (next: string) => void;
+}> = ({ value, onChange }) => (
+    <div className="bg-white rounded-2xl border border-grayscale-200 p-4">
+        <label
+            htmlFor="lca-base-url"
+            className="text-xs font-medium text-grayscale-700 mb-1.5 block uppercase tracking-wide"
+        >
+            LearnCard dev URL
+        </label>
+        <input
+            id="lca-base-url"
+            type="url"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={DEFAULT_LCA_BASE_URL}
+            className="w-full text-sm text-grayscale-900 bg-white border border-grayscale-300 rounded-xl px-3 py-2 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+        />
+        <p className="text-xs text-grayscale-500 mt-1.5">
+            Used by the &ldquo;Open in browser&rdquo; button. Defaults to {DEFAULT_LCA_BASE_URL}.
+        </p>
+    </div>
 );
 
 const ProviderPicker: React.FC<{
