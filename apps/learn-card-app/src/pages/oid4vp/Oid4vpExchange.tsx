@@ -19,9 +19,12 @@ import type {
 
 import LoggedOutOid4vp from './LoggedOutOid4vp';
 import RequestLoading from './components/RequestLoading';
-import RequestConsent from './components/RequestConsent';
+import RequestConsent, {
+    type ConsentPicks,
+} from './components/RequestConsent';
 import RequestSubmitting from './components/RequestSubmitting';
 import RequestFinished from './components/RequestFinished';
+import RequestCannotSatisfy from './components/RequestCannotSatisfy';
 import {
     loadCandidatePool,
     type PooledCandidate,
@@ -40,6 +43,16 @@ type Phase =
           selection?: SelectionResult;
           dcqlSelection?: DcqlSelectionResult;
           pool: PooledCandidate[];
+      }
+    /**
+     * Verifier asked for credentials the wallet can’t produce. We render
+     * a friendly explainer instead of the consent flow.
+     */
+    | {
+          kind: 'cant_satisfy';
+          request: AuthorizationRequest;
+          selection?: SelectionResult;
+          dcqlSelection?: DcqlSelectionResult;
       }
     | { kind: 'submitting' }
     | { kind: 'finished'; submitted: SubmitPresentationResult }
@@ -87,6 +100,24 @@ const Oid4vpExchange: React.FC = () => {
                     pool as unknown as CandidateCredential[]
                 );
 
+                // If neither selection can be satisfied, surface a
+                // dedicated “missing credentials” screen instead of
+                // letting the user try-and-fail at the consent step.
+                const canSatisfy =
+                    result.selection?.canSatisfy
+                    ?? result.dcqlSelection?.canSatisfy
+                    ?? false;
+
+                if (!canSatisfy) {
+                    setPhase({
+                        kind: 'cant_satisfy',
+                        request: result.request,
+                        selection: result.selection,
+                        dcqlSelection: result.dcqlSelection,
+                    });
+                    return;
+                }
+
                 setPhase({
                     kind: 'consent',
                     request: result.request,
@@ -104,7 +135,7 @@ const Oid4vpExchange: React.FC = () => {
     // -----------------------------------------------------------------
     // Approve handler: build picks, sign, submit.
     // -----------------------------------------------------------------
-    const handleApprove = useCallback(async () => {
+    const handleApprove = useCallback(async (picks: ConsentPicks) => {
         if (phase.kind !== 'consent') return;
         const currentPhase = phase;
 
@@ -117,7 +148,8 @@ const Oid4vpExchange: React.FC = () => {
 
             const chosen = buildChosenList(
                 currentPhase.selection,
-                currentPhase.dcqlSelection
+                currentPhase.dcqlSelection,
+                picks
             );
 
             if (chosen.length === 0) {
@@ -184,6 +216,15 @@ const Oid4vpExchange: React.FC = () => {
                     />
                 )}
 
+                {phase.kind === 'cant_satisfy' && (
+                    <RequestCannotSatisfy
+                        request={phase.request}
+                        selection={phase.selection}
+                        dcqlSelection={phase.dcqlSelection}
+                        onDone={() => history.push('/')}
+                    />
+                )}
+
                 {phase.kind === 'submitting' && <RequestSubmitting />}
 
                 {phase.kind === 'finished' && (
@@ -242,38 +283,41 @@ interface WalletOidcVpInvoke {
 }
 
 /**
- * Auto-pick the first eligible candidate per descriptor (PEX) or per
- * credential-query (DCQL). Stage 4 polish will swap this for an
- * interactive picker when a row has multiple candidates.
+ * Translate the user’s per-row picks into the plugin’s
+ * `ChosenForPresentation[]` shape. Honors picks when present, falls
+ * back to the first eligible candidate per row otherwise.
  */
 const buildChosenList = (
     selection?: SelectionResult,
-    dcqlSelection?: DcqlSelectionResult
+    dcqlSelection?: DcqlSelectionResult,
+    userPicks: ConsentPicks = {}
 ): ChosenForPresentation[] => {
     if (selection) {
-        const picks: ChosenForPresentation[] = [];
+        const out: ChosenForPresentation[] = [];
         for (const d of selection.descriptors) {
-            const first = d.candidates[0];
-            if (!first) continue;
-            picks.push({
+            const idx = userPicks[d.descriptorId] ?? 0;
+            const chosen = d.candidates[idx] ?? d.candidates[0];
+            if (!chosen) continue;
+            out.push({
                 descriptorId: d.descriptorId,
-                candidate: first.candidate,
+                candidate: chosen.candidate,
             });
         }
-        return picks;
+        return out;
     }
 
     if (dcqlSelection) {
-        const picks: ChosenForPresentation[] = [];
+        const out: ChosenForPresentation[] = [];
         for (const [queryId, match] of Object.entries(dcqlSelection.matches)) {
-            const first = match.candidates[0];
-            if (!first) continue;
-            picks.push({
+            const idx = userPicks[queryId] ?? 0;
+            const chosen = match.candidates[idx] ?? match.candidates[0];
+            if (!chosen) continue;
+            out.push({
                 credentialQueryId: queryId,
-                candidate: first as unknown as CandidateCredential,
+                candidate: chosen as unknown as CandidateCredential,
             });
         }
-        return picks;
+        return out;
     }
 
     return [];
