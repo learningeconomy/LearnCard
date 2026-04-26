@@ -49,7 +49,20 @@ export const QRCodeScannerListener: React.FC = () => {
             });
             const interactionData = await response.json();
             console.log('Interaction data', interactionData);
-            if (interactionData?.protocols?.vcapi) {
+            // Prefer OpenID4VC/VP advertisements when present, fall back to VC-API,
+            // then fall back to a website URL. The OIDC URIs are full deep-link URIs
+            // (e.g. `openid-credential-offer://?credential_offer_uri=...`).
+            if (interactionData?.protocols?.openid4vci) {
+                console.log('OID4VCI offer', interactionData?.protocols?.openid4vci);
+                history.push(
+                    `/oid4vci?offer=${encodeURIComponent(interactionData.protocols.openid4vci)}`
+                );
+            } else if (interactionData?.protocols?.openid4vp) {
+                console.log('OID4VP request', interactionData?.protocols?.openid4vp);
+                history.push(
+                    `/oid4vp?request=${encodeURIComponent(interactionData.protocols.openid4vp)}`
+                );
+            } else if (interactionData?.protocols?.vcapi) {
                 console.log('VC API URL', interactionData?.protocols?.vcapi);
                 history.push(`/request?vc_request_url=${interactionData?.protocols?.vcapi}`);
             } else if (interactionData?.protocols?.website) {
@@ -103,6 +116,20 @@ export const QRCodeScannerListener: React.FC = () => {
                 // handles custom schemes and https domains
                 if (eventUrl) {
                     const scheme = eventUrl.protocol.replace(':', '');
+
+                    // OpenID4VC/VP deep links route to dedicated pages so we can
+                    // render OIDC-specific consent UI, instead of being funneled
+                    // through the VC-API exchange page.
+                    if (scheme === 'openid-credential-offer') {
+                        history.push(`/oid4vci?offer=${encodeURIComponent(qrCodeValue)}`);
+                        return;
+                    }
+
+                    if (scheme === 'openid4vp') {
+                        history.push(`/oid4vp?request=${encodeURIComponent(qrCodeValue)}`);
+                        return;
+                    }
+
                     const customSchemes = ['dccrequest', 'msprequest', 'asuprequest'];
                     const httpsDomains = ['https://lcw.app'];
 

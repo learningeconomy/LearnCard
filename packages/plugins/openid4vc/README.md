@@ -8,7 +8,9 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 
 ## Status
 
-**Slices 1–7.5 complete.** End-to-end holder flow — offer intake through signed VP submission — verified live against walt.id. This package is being built incrementally:
+**Holder surface feature-complete.** Every slice that touches the wire — offer intake, both VCI flows, OID4VP with PEX *and* DCQL, JARM-encrypted responses, SIOPv2 — is implemented and verified live against walt.id, Sphereon, and Animo Paradym. The remaining work is wallet-app UI integration (Slice 10) and CI infrastructure (Slice 11).
+
+### OID4VCI — issuance side
 
 | Capability | Status |
 |---|---|
@@ -20,25 +22,37 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 | Wallet index / LearnCloud integration (one-call `acceptAndStoreCredentialOffer`) | ✅ Slice 3 |
 | JWT VC → W3C VC reconstruction (VCDM §6.3.1) with raw JWT preserved under `proof.jwt` | ✅ Slice 3 |
 | Partial-failure reporting (one bad credential doesn't abort a batch) | ✅ Slice 3 |
+| Authorization code flow + PKCE (`beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode`) | ✅ Slice 4 |
+| `ldp_vc` issuance format | ⏳ Slice 5 — `jwt_vc_json` covers every issuer we test against; revisit when a partner needs LD-proof issuance. |
+
+### OID4VP — presentation side
+
+| Capability | Status |
+|---|---|
 | OID4VP Authorization Request URI parsing (inline + `presentation_definition_uri`) | ✅ Slice 6 |
 | DIF PEX v2 matcher (JSONPath subset + JSON Schema filter subset) | ✅ Slice 6 |
 | Candidate selection + `submission_requirements` (`all` / `pick` / `from_nested`) | ✅ Slice 6 |
-| Presentation Submission descriptor_map builder | ✅ Slice 6 |
+| Presentation Submission `descriptor_map` builder | ✅ Slice 6 |
 | Format designation matching (`jwt_vc_json` / `ldp_vc` / `ldp`) | ✅ Slice 6 |
 | VP construction (`buildPresentation`): unsigned VP + PresentationSubmission | ✅ Slice 7a |
 | VP signing (`signPresentation`): `jwt_vp_json` (JWS) + `ldp_vp` (LD proof via host) | ✅ Slice 7b |
 | `direct_post` VP response (`submitPresentation`) | ✅ Slice 7c |
-| End-to-end `presentCredentials()` verified against **WaltID** verifier | ✅ Slice 7 |
+| End-to-end `presentCredentials()` verified against **walt.id**, **Sphereon**, **Animo Paradym** | ✅ Slice 7 |
 | Signed Request Objects (`request` / `request_uri` JWS) — `client_id_scheme=did` (did:jwk, did:web) + `x509_san_dns` (trusted-roots or self-signed-dev) | ✅ Slice 7.5 |
+| **DCQL query** — W3C OID4VP Draft 22 alternative to PEX. Same `prepareVerifiablePresentation` / `presentCredentials` entry points; DCQL takes precedence when both `dcql_query` and `presentation_definition` are present. | ✅ |
+| **JARM** — encrypted `direct_post.jwt` responses (JWE A128CBC-HS256 / ECDH-ES). Selected automatically when the verifier requests `response_mode=direct_post.jwt`. | ✅ |
+
+### SIOPv2 + cross-cutting
+
+| Capability | Status |
+|---|---|
+| SIOPv2 ID token (`signIdToken`) standalone + auto-bundled when `response_type` includes `id_token` | ✅ Slice 8 |
 | Browser-safe runtime (no `node:crypto` / `node:zlib`) — bundles cleanly into `apps/learn-card-app` | ✅ Slice 7.6 |
 | Auto-wired into every seed-based `@learncard/init` function | ✅ Slice 7.6 |
 | Bitstring Status List checking | Extracted into [`@learncard/status-list-plugin`](../status-list/README.md). Auto-wired into the same seed-based init functions; call `lc.invoke.checkCredentialStatus(...)` to use it. |
-| Authorization code flow + PKCE | ⏳ Slice 4 |
-| `ldp_vc` issuance format | ⏳ Slice 5 |
-| SIOPv2 ID token | ⏳ Slice 8 |
-| Deep-link / QR entry points | ⏳ Slice 9 |
-| UI adapter for consent + selection | ⏳ Slice 10 |
-| Self-hosted issuer + verifier for CI | ⏳ Slice 11 |
+| Deep-link / QR entry points in `learn-card-app` | ⏳ Slice 9 |
+| UI adapter for consent + selection in `learn-card-app` / `learn-card-base` | ⏳ Slice 10 |
+| Self-hosted issuer + verifier in CI | ⏳ Slice 11 |
 
 See the California RFP epic for full scope.
 
@@ -82,7 +96,7 @@ const lc = await initLearnCard({
 
 ### Browser compatibility
 
-As of `lc-1794` the plugin's runtime surface is fully cross-platform. The previously node-only dependencies (`node:crypto.X509Certificate`, `node:crypto.randomBytes`, `node:zlib.gunzipSync`) have been swapped for Web Crypto, `crypto.getRandomValues`, `@peculiar/x509`, and `fflate`. The plugin can be bundled directly into a browser app without polyfills, and Slices 6–8 work end-to-end in `apps/learn-card-app`.
+As of `lc-1794` the plugin's runtime surface is fully cross-platform. The previously node-only dependencies (`node:crypto.X509Certificate`, `node:crypto.randomBytes`, `node:zlib.gunzipSync`) have been swapped for Web Crypto, `crypto.getRandomValues`, `@peculiar/x509`, and `fflate`. The plugin can be bundled directly into a browser app without polyfills; the holder methods all run end-to-end in `apps/learn-card-app`.
 
 ## Usage
 
@@ -154,6 +168,60 @@ await lc.invoke.acceptAndStoreCredentialOffer(offerUri, {
     addToIndex: async record => myCustomIndex.insert(record),
 });
 ```
+
+### Slice 4 — authorization code flow with PKCE
+
+When an offer's `grants` carries `authorization_code` (with or without an `issuer_state`), the issuer wants the wallet to bounce the user through their authorization endpoint before issuing. The plugin splits this into two awaits with the user-redirect step in between:
+
+```ts
+// 1. Offer in hand. Build the authorize URL + persist a flow handle
+//    (PKCE verifier, nonce, etc.). Open `authorizationUrl` in a popup
+//    or top-level redirect.
+const { authorizationUrl, flowHandle } = await lc.invoke.beginCredentialOfferAuthCode(
+    offerUri,
+    {
+        redirectUri: 'https://wallet.example.com/callback',
+        clientId: 'wallet.example.com',
+        scope: ['openid'],            // optional
+        // userHint: 'alice@example.com', // optional `login_hint`
+    }
+);
+
+localStorage.setItem('vci.flow', JSON.stringify(flowHandle));
+window.location.href = authorizationUrl;
+
+// 2. After the issuer redirects back to `redirect_uri` with `?code=...&state=...`,
+//    finish the exchange. Same return shape as `acceptCredentialOffer`.
+const flowHandle = JSON.parse(localStorage.getItem('vci.flow')!);
+const { code, state } = parseQuery(window.location.search);
+
+const result = await lc.invoke.completeCredentialOfferAuthCode({
+    flowHandle,
+    code,
+    state,
+});
+
+for (const entry of result.credentials) {
+    console.log(entry.format, entry.credential);
+}
+```
+
+`flowHandle` is a small JSON-safe object — you can persist it in `localStorage`, a cookie, or your wallet's session store. It carries the PKCE `code_verifier`, the offer, and the issuer/AS metadata snapshot so step 2 doesn't need to re-fetch.
+
+### Slice 8 — SIOPv2 ID tokens
+
+Some verifiers want a self-issued ID token instead of (or alongside) a VP. `presentCredentials` does the right thing automatically when `response_type` includes `id_token`, but you can also drive it standalone:
+
+```ts
+const { idToken } = await lc.invoke.signIdToken(authorizationRequestUri, {
+    // All optional — sensible defaults from the host LearnCard.
+    // holder: 'did:jwk:eyJ...',
+    // signer: customSigner,
+    // additionalClaims: { name: 'Alice', email: 'alice@example.com' },
+});
+```
+
+The ID token is a JWS over a SIOPv2 payload (`iss = sub = holder DID`, `aud = client_id`, `nonce` from the request). When the verifier asks for `vp_token id_token`, `presentCredentials` signs both, bundles the ID token into the `direct_post`, and returns it on the result for inspection.
 
 ### Using your own signer
 
@@ -273,6 +341,27 @@ The matcher is spec-correct for the vast majority of Presentation Definitions se
 
 If your verifier lands a PEX feature we haven't modeled, open an issue with the Presentation Definition — the matcher layer is designed to swap for a full `ajv`-backed implementation without touching the plugin surface.
 
+### DCQL — OID4VP Draft 22 query language
+
+DCQL (Digital Credentials Query Language) is OID4VP Draft 22's spec-native alternative to DIF PEX. When a verifier sends `dcql_query` instead of `presentation_definition`, the same entry points work — `prepareVerifiablePresentation` returns DCQL match results in `selection.descriptors`, and `presentCredentials` builds a DCQL `vp_token` (a record keyed by `credential_query_id`) instead of a PEX submission. DCQL takes precedence when a verifier sends both.
+
+```ts
+// Same call as before — no caller-side change needed for DCQL.
+const { request, selection } = await lc.invoke.prepareVerifiablePresentation(
+    uri,
+    candidates
+);
+
+if (request.dcql_query) {
+    // selection.descriptors[i].descriptorId === credential_query.id
+    // selection.descriptors[i].candidates  === DCQL match candidates
+}
+```
+
+### JARM — encrypted response mode
+
+When a verifier requests `response_mode=direct_post.jwt`, the wallet must encrypt the response body to the verifier's JWKS (advertised via `client_metadata.jwks` or `client_metadata.jwks_uri`). The plugin handles this automatically: `submitPresentation` (and therefore `presentCredentials`) inspects the resolved request, discovers the verifier's encryption key, and emits a JWE (`alg=ECDH-ES`, `enc=A128CBC-HS256` by default) wrapping the standard direct_post payload. No caller-side change required — if a verifier asks for JARM, you get JARM.
+
 ## Errors
 
 VCI errors are thrown as `CredentialOfferParseError` / `VciError`; VP errors as `VpError`. Every error carries a stable `code` field so UI can map to friendly copy without string-matching messages.
@@ -390,7 +479,7 @@ docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:latest
 
 - **No wallet integration.** Credentials are decoded and printed, not persisted. Once Slice 10 wires `acceptAndStoreCredentialOffer` into the wallet UI, use the learn-card-app instead for that part of the flow.
 - **No signature verification.** The harness trusts the issuer's response. Verifying the credential JWT against the issuer's published key is a separate concern handled by the VC plugin on read.
-- **Pre-authorized code only.** Authorization-code flows arrive in Slice 4.
+- **Pre-authorized code only.** The harness drives the pre-authorized flow because it's headless. The plugin itself supports the authorization code flow via `beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode` (Slice 4); exercising it requires a real browser to bounce through the issuer's authorization endpoint, so it's covered by the wallet app's e2e tests rather than this harness.
 
 ### Driving a real verifier end-to-end — `try-verify` harness
 
@@ -494,8 +583,9 @@ The plugin's `.gitignore` excludes `my-vc.json`, `my-vc*.json`, `*.vc.json`, and
 
 #### What the harness does NOT cover
 
-- **No `direct_post.jwt`** (encrypted response mode). When a verifier asks for `direct_post.jwt`, we'll need to encrypt the response body with the verifier's JWKS from `client_metadata`. Not wired yet.
 - **No `client_id_scheme=pre-registered` / `verifier_attestation`.** Both surface `unsupported_client_id_scheme` from the Slice 7.5 verifier. `did` (did:jwk + did:web built-in, others via custom `didResolver`) and `x509_san_dns` (with `trustedX509Roots`) are the supported schemes.
+
+  JARM (encrypted `direct_post.jwt`) and DCQL queries are both supported in the plugin and exercised through the wallet's e2e suite, not via this harness.
 
 ## License
 
