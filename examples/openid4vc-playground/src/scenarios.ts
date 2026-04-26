@@ -68,6 +68,26 @@ export const SCENARIOS: Scenario[] = [
             'PKCE + authorize redirect + token exchange (Slice 4 of the VCI plugin).',
         supportedProviders: ['waltid'],
     },
+    {
+        id: 'vci-sdjwt',
+        kind: 'vci',
+        name: 'SD-JWT VC issuance',
+        description:
+            'Issuer mints an IETF SD-JWT VC instead of a W3C JSON-LD credential. Wallet receives a tilde-delimited (`<jwt>~<disclosure>~...`) string.',
+        exercises:
+            'Plugin\u2019s SD-JWT decode path + selective-disclosure storage (different code branch from `jwt_vc_json`).',
+        supportedProviders: ['waltid'],
+    },
+    {
+        id: 'vci-batch',
+        kind: 'vci',
+        name: 'Batch issuance (2 credentials)',
+        description:
+            'Single offer carries multiple credential_configuration_ids. Wallet runs one credential request per id and stores all results.',
+        exercises:
+            'Multi-credential offer loop + per-id POP JWT generation + batched storage indexing.',
+        supportedProviders: ['waltid'],
+    },
 
     /* ----------------------------- VP scenarios ----------------------------- */
 
@@ -93,6 +113,17 @@ export const SCENARIOS: Scenario[] = [
         note: 'Issue at least 2 UniversityDegree VCs first via the VCI scenarios.',
     },
     {
+        id: 'vp-pex-claims',
+        kind: 'vp',
+        name: 'PEX with claims constraint',
+        description:
+            'Verifier sends a custom presentation_definition that requires a specific JSON-path inside the credential to exist (`degree.name`).',
+        exercises:
+            'Wallet\u2019s PEX field-matching path \u2014 different from the type-only PEX scenarios.',
+        supportedProviders: ['waltid'],
+        note: 'Issue a UniversityDegree VC first via the VCI scenarios.',
+    },
+    {
         id: 'vp-jarm',
         kind: 'vp',
         name: 'JARM (encrypted response)',
@@ -101,6 +132,36 @@ export const SCENARIOS: Scenario[] = [
         exercises:
             'JARM badge on consent screen + encrypted response transport.',
         supportedProviders: ['waltid'],
+    },
+
+    /* ------------------- Designed-but-blocked-on-vendor-support ------------- */
+    /*                                                                         */
+    /* These scenarios have wallet-side code paths worth exercising, but no    */
+    /* current playground vendor exposes them on the wire. Listed here so the  */
+    /* matrix gap is visible \u2014 the moment EUDI (or another vendor) is added,  */
+    /* flip `supportedProviders` to enable them in the UI.                     */
+
+    {
+        id: 'vp-dcql',
+        kind: 'vp',
+        name: 'DCQL query',
+        description:
+            'Verifier sends a `dcql_query` instead of `presentation_definition`. Tests the wallet\u2019s DCQL routing layer (Slice 6).',
+        exercises:
+            'DCQL parser + multi-credential matching + per-query VP signing.',
+        supportedProviders: [],
+        note: 'walt.id\u2019s verifier-api silently ignores `dcql_query` and falls back to PEX. Awaiting EUDI integration.',
+    },
+    {
+        id: 'vp-siop-idtoken',
+        kind: 'vp',
+        name: 'SIOPv2 id_token only',
+        description:
+            'Verifier requests `response_type=id_token` \u2014 wallet proves DID control without sharing any VCs.',
+        exercises:
+            'Plugin\u2019s SIOPv2 sign path (Slice 8) standalone.',
+        supportedProviders: [],
+        note: 'walt.id\u2019s verifier-api always emits `response_type=vp_token` and requires `request_credentials`. Awaiting EUDI integration.',
     },
 ];
 

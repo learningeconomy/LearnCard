@@ -20,7 +20,10 @@ import {
     createIssuerKey,
     createWaltidVerifySession,
     getWaltidVerifyStatus,
+    mintWaltidBatchOffer,
     mintWaltidOffer,
+    mintWaltidSdJwtOffer,
+    overridePresentationDefinition,
     resolveAuthorizationRequestToByValue,
     resolveOfferToByValue,
     type CreateVerifySessionOptions,
@@ -95,15 +98,23 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
 
     'waltid:vci-pre-auth-pin': {
         kind: 'vci',
-        label: 'Pre-auth offer with PIN \u2014 walt.id',
+        // The PIN is wallet-side simulation only \u2014 see
+        // `injectTxCodeIntoOffer` in `server/waltid.ts`. walt.id's
+        // community issuer-api has no PIN support on any route, so we
+        // mint a normal offer and rewrite the by-value JSON to add a
+        // `tx_code` descriptor before returning. The wallet's PIN
+        // modal triggers and the PIN flows in the token request, but
+        // walt.id never actually verifies it.
+        label: 'Pre-auth offer with PIN (simulated) \u2014 walt.id',
         run: async () => {
             const issuerKey = await createIssuerKey();
             const rawOfferUri = await mintWaltidOffer({
                 issuerBaseUrl: ISSUER_BASE_URL,
                 issuerKey,
                 authenticationMethod: 'PRE_AUTHORIZED',
-                // Surfaced to the UI alongside the QR \u2014 the dev
-                // types this into the LCA wallet's PIN modal.
+                // Surfaced to the dev via the offer's `tx_code.description`
+                // ("Enter the PIN (hint: 1234)") so the playground UX
+                // doesn't need a separate out-of-band channel.
                 txCode: '1234',
             } satisfies MintOfferOptions);
             return { rawOfferUri };
@@ -112,7 +123,7 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
 
     'waltid:vci-auth-code': {
         kind: 'vci',
-        label: 'Authorization code flow \u2014 walt.id',
+        label: 'Authorization code flow — walt.id',
         run: async () => {
             const issuerKey = await createIssuerKey();
             const rawOfferUri = await mintWaltidOffer({
@@ -127,11 +138,62 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
         },
     },
 
-    /* ----------------------------- VP \u2014 walt.id ----------------------------- */
+    'waltid:vci-sdjwt': {
+        kind: 'vci',
+        label: 'SD-JWT VC issuance — walt.id',
+        run: async () => {
+            const issuerKey = await createIssuerKey();
+            const rawOfferUri = await mintWaltidSdJwtOffer({
+                issuerBaseUrl: ISSUER_BASE_URL,
+                issuerKey,
+                // `UniversityDegree_vc+sd-jwt` ships in the bundled
+                // credential registry of `waltid/issuer-api:latest`
+                // — verified via /.well-known/openid-credential-issuer.
+                credentialConfigurationId: 'UniversityDegree_vc+sd-jwt',
+            });
+            return { rawOfferUri };
+        },
+    },
+
+    'waltid:vci-batch': {
+        kind: 'vci',
+        label: 'Batch JWT VC issuance (2 credentials) — walt.id',
+        run: async () => {
+            const issuerKey = await createIssuerKey();
+            const rawOfferUri = await mintWaltidBatchOffer({
+                issuerBaseUrl: ISSUER_BASE_URL,
+                issuerKey,
+                credentials: [
+                    {
+                        credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
+                        credentialType: 'UniversityDegree',
+                        subjectClaims: {
+                            degree: {
+                                type: 'BachelorDegree',
+                                name: 'Bachelor of Science and Arts',
+                            },
+                        },
+                    },
+                    {
+                        credentialConfigurationId: 'OpenBadgeCredential_jwt_vc_json',
+                        credentialType: 'OpenBadgeCredential',
+                        subjectClaims: {
+                            achievement: {
+                                name: 'Playground Batch Test Achievement',
+                            },
+                        },
+                    },
+                ],
+            });
+            return { rawOfferUri };
+        },
+    },
+
+    /* ----------------------------- VP — walt.id ----------------------------- */
 
     'waltid:vp-pex-single': {
         kind: 'vp',
-        label: 'PEX, single descriptor \u2014 walt.id',
+        label: 'PEX, single descriptor — walt.id',
         run: async () => {
             const session = await createWaltidVerifySession({
                 verifierBaseUrl: VERIFIER_BASE_URL,
@@ -161,6 +223,65 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
             });
             return {
                 rawAuthRequestUri: session.authorizationRequestUri,
+                state: session.state,
+            };
+        },
+    },
+
+    'waltid:vp-pex-claims': {
+        kind: 'vp',
+        // walt.id auto-generates a type-only PD from `request_credentials`
+        // and silently ignores body-level `presentation_definition`
+        // overrides, so we post-process the auth request URI to swap
+        // walt.id's PD for our claims-constrained one. The verifier
+        // session is still walt.id's (state, response endpoint, nonce),
+        // only the PD seen by the wallet is ours \u2014 walt.id will then
+        // verify whatever the wallet submits with its policy stack
+        // unaware of the swap. Honest about the simulation: the
+        // verifier's policies won't enforce our extra claims, but the
+        // wallet's PEX field-matching path is genuinely exercised.
+        label: 'PEX with claims constraint (PD swapped server-side) \u2014 walt.id',
+        run: async () => {
+            const session = await createWaltidVerifySession({
+                verifierBaseUrl: VERIFIER_BASE_URL,
+                requestCredentials: [
+                    { type: 'UniversityDegree', format: 'jwt_vc_json' },
+                ],
+            });
+            const swappedUri = overridePresentationDefinition(
+                session.authorizationRequestUri,
+                {
+                    id: 'playground-claims-constraint',
+                    input_descriptors: [
+                        {
+                            id: 'degree-with-name',
+                            format: { jwt_vc_json: { alg: ['EdDSA'] } },
+                            constraints: {
+                                fields: [
+                                    {
+                                        // Must be a UniversityDegree by type.
+                                        path: ['$.vc.type', '$.type'],
+                                        filter: {
+                                            type: 'array',
+                                            contains: { const: 'UniversityDegree' },
+                                        },
+                                    },
+                                    {
+                                        // AND must have a `degree.name`.
+                                        path: [
+                                            '$.vc.credentialSubject.degree.name',
+                                            '$.credentialSubject.degree.name',
+                                        ],
+                                        filter: { type: 'string' },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                }
+            );
+            return {
+                rawAuthRequestUri: swappedUri,
                 state: session.state,
             };
         },

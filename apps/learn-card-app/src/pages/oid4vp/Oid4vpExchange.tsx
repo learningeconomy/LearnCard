@@ -13,6 +13,7 @@ import type {
     CandidateCredential,
     ChosenForPresentation,
     DcqlSelectionResult,
+    ProofJwtSigner,
     SelectionResult,
     SubmitPresentationResult,
 } from '@learncard/openid4vc-plugin';
@@ -30,6 +31,7 @@ import {
     type PooledCandidate,
     type WalletForCandidates,
 } from './candidatePool';
+import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcSigner';
 
 /**
  * Phases the page can be in. Modeled as a discriminated union so the
@@ -154,13 +156,30 @@ const Oid4vpExchange: React.FC = () => {
 
             if (chosen.length === 0) {
                 throw new Error(
-                    'No credentials matched the verifier\u2019s request \u2014 cannot submit.'
+                    'No credentials matched the verifier’s request — cannot submit.'
                 );
             }
 
+            // Fall back to did:key for local-dev `did:web:localhost`
+            // profiles — foreign verifiers can't HTTPS-resolve them.
+            // When we swap the signer we must also swap the VP holder
+            // so the outer VP's `holder` field matches the proof JWT
+            // issuer (otherwise the verifier rejects the mismatch).
+            const signer = await buildLocalDidWebSignerOverride(
+                wallet as unknown as Parameters<
+                    typeof buildLocalDidWebSignerOverride
+                >[0]
+            );
+            const holder = signer
+                ? (wallet as unknown as {
+                      id: { did: (m?: string) => string };
+                  }).id.did('key')
+                : undefined;
+
             const result = await wallet.invoke.presentCredentials(
                 currentPhase.request,
-                chosen
+                chosen,
+                { signer, holder }
             );
 
             setPhase({ kind: 'finished', submitted: result.submitted });
@@ -275,7 +294,11 @@ interface WalletOidcVpInvoke {
 
     presentCredentials: (
         input: string | AuthorizationRequest,
-        chosen: ChosenForPresentation[]
+        chosen: ChosenForPresentation[],
+        options?: {
+            holder?: string;
+            signer?: ProofJwtSigner;
+        }
     ) => Promise<{
         request: AuthorizationRequest;
         submitted: SubmitPresentationResult;

@@ -17,6 +17,7 @@ import type {
     BeginAuthCodeFlowResult,
     CredentialIssuerMetadata,
     CredentialOffer,
+    ProofJwtSigner,
     StoreAcceptedCredentialsResult,
 } from '@learncard/openid4vc-plugin';
 
@@ -31,6 +32,7 @@ import {
     loadAuthCodeState,
     saveAuthCodeState,
 } from './authCodeStorage';
+import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcSigner';
 
 const PRE_AUTH_GRANT_KEY = 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
@@ -121,10 +123,19 @@ const Oid4vciExchange: React.FC = () => {
                     );
                 }
 
+                // Fall back to did:key for local-dev `did:web:localhost`
+                // profiles — foreign issuers can't HTTPS-resolve them.
+                const signer = await buildLocalDidWebSignerOverride(
+                    wallet as unknown as Parameters<
+                        typeof buildLocalDidWebSignerOverride
+                    >[0]
+                );
+
                 const accepted = await wallet.invoke.completeCredentialOfferAuthCode({
                     flowHandle: persisted.flowHandle,
                     code,
                     state: state ?? undefined,
+                    signer,
                 });
 
                 // `completeCredentialOfferAuthCode` returns the issued
@@ -204,9 +215,17 @@ const Oid4vciExchange: React.FC = () => {
                 if (hasPreAuth) {
                     setPhase({ kind: 'storing' });
 
+                    // Fall back to did:key for local-dev `did:web:localhost`
+                    // profiles — foreign issuers can't HTTPS-resolve them.
+                    const signer = await buildLocalDidWebSignerOverride(
+                        wallet as unknown as Parameters<
+                            typeof buildLocalDidWebSignerOverride
+                        >[0]
+                    );
+
                     const result = await wallet.invoke.acceptAndStoreCredentialOffer(
                         currentOffer,
-                        { txCode }
+                        { txCode, signer }
                     );
 
                     setPhase({
@@ -375,7 +394,7 @@ interface WalletOidcInvoke {
 
     acceptAndStoreCredentialOffer: (
         input: string | CredentialOffer,
-        options?: { txCode?: string }
+        options?: { txCode?: string; signer?: ProofJwtSigner }
     ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
 
     beginCredentialOfferAuthCode: (
@@ -387,6 +406,7 @@ interface WalletOidcInvoke {
         flowHandle: AuthCodeFlowHandle;
         code: string;
         state?: string;
+        signer?: ProofJwtSigner;
     }) => Promise<AcceptedCredentialResult>;
 }
 

@@ -73,15 +73,26 @@ export interface MintOfferOptions {
     credentialSubjectId?: string;
     /**
      * `PRE_AUTHORIZED` (default) \u2192 offer carries a pre-authorized
-     * code grant. `NONE` \u2192 offer carries an `authorization_code`
      * grant where walt.id issues the code without challenging the
      * user (suitable for the auth-code scenario).
      */
     authenticationMethod?: WaltidAuthenticationMethod;
     /**
-     * When set, walt.id issues the offer with `tx_code` enabled \u2014
-     * the wallet will prompt for this PIN before exchanging the
-     * pre-auth code. Used to exercise the LCA PIN modal.
+     * When set, we post-process the offer JSON after walt.id returns
+     * it to inject a `tx_code` descriptor into the pre-authorized_code
+     * grant. The LCA wallet triggers its PIN modal on the presence of
+     * that field, sends the PIN with the token request, and walt.id
+     * ignores the unexpected field in the form body — so the full
+     * wallet UX runs end-to-end, but the PIN itself is never actually
+     * verified (walt.id's community issuer-api has no PIN support).
+     *
+     * We do NOT send `txCode` on the issuance request itself: walt.id's
+     * `IssuanceRequest` schema (kotlinx-serialization, strict mode)
+     * rejects every unknown field with HTTP 406. Confirmed empirically
+     * against `waltid/issuer-api:latest` and in the Kotlin source
+     * (`id/walt/issuer/issuance/IssuanceRequests.kt`). The PIN-capable
+     * `NewIssuanceRequest` type exists in the codebase but isn't wired
+     * to any route.
      */
     txCode?: string;
 }
@@ -139,13 +150,6 @@ export const mintWaltidOffer = async (
         standardVersion: 'DRAFT13',
     };
 
-    if (txCode) {
-        // walt.id reads `tx_code` (the spec's own field name) off the
-        // top level of the issuance request payload to enable PIN
-        // gating on the resulting offer.
-        body.txCode = txCode;
-    }
-
     const res = await fetch(`${issuerBaseUrl}/openid4vc/jwt/issue`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'text/plain' },
@@ -163,6 +167,258 @@ export const mintWaltidOffer = async (
         throw new Error(`walt.id issuer returned unexpected offer URI: ${offerUri}`);
     }
 
+    // Wallet-side PIN simulation. See the `txCode` docstring on
+    // {@link MintOfferOptions} for why we don't pass it to walt.id.
+    if (txCode) {
+        return await injectTxCodeIntoOffer(offerUri, txCode);
+    }
+
+    return offerUri;
+};
+
+/**
+ * Resolve the offer to by-value JSON, inject a `tx_code` descriptor
+ * into the pre-authorized_code grant, and repackage. The wallet will
+ * prompt for the PIN on seeing this field (per OID4VCI Draft 13 §4.1.1)
+ * and include it in the subsequent token request — even though walt.id
+ * never set PIN gating up and silently accepts any value.
+ *
+ * The PIN is embedded in the `description` so the playground UI can
+ * surface it to the dev ("Enter the PIN: 1234") without a separate
+ * out-of-band channel.
+ */
+const injectTxCodeIntoOffer = async (
+    offerUri: string,
+    pin: string
+): Promise<string> => {
+    const params = extractSearchParams(offerUri);
+
+    let offerJson: Record<string, unknown>;
+    const byValue = params.get('credential_offer');
+    const byRef = params.get('credential_offer_uri');
+
+    if (byValue) {
+        offerJson = JSON.parse(byValue);
+    } else if (byRef) {
+        const res = await fetch(byRef);
+        if (!res.ok) {
+            throw new Error(
+                `Failed to resolve credential_offer_uri ${byRef} for PIN injection: HTTP ${res.status}`
+            );
+        }
+        offerJson = (await res.json()) as Record<string, unknown>;
+    } else {
+        throw new Error(`Offer URI has no credential_offer[_uri]: ${offerUri}`);
+    }
+
+    const grants = (offerJson.grants ?? {}) as Record<string, Record<string, unknown>>;
+    const preAuthKey = 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
+    const preAuthGrant = grants[preAuthKey];
+
+    if (!preAuthGrant) {
+        throw new Error(
+            `Offer has no pre-authorized_code grant — cannot simulate PIN gating (grants: ${Object.keys(
+                grants
+            ).join(', ') || 'none'})`
+        );
+    }
+
+    preAuthGrant.tx_code = {
+        input_mode: 'numeric',
+        length: pin.length,
+        description: `Enter the PIN (hint: ${pin})`,
+    };
+
+    return (
+        'openid-credential-offer://?credential_offer=' +
+        encodeURIComponent(JSON.stringify(offerJson))
+    );
+};
+
+/* -------------------------------------------------------------------------- */
+/*                              SD-JWT VC issuance                            */
+/* -------------------------------------------------------------------------- */
+
+export interface MintSdJwtOfferOptions {
+    issuerBaseUrl: string;
+    issuerKey: WaltidIssuerKey;
+    /**
+     * Walt.id config id from `/.well-known/openid-credential-issuer`.
+     * Defaults to `UniversityDegree_vc+sd-jwt`, which is shipped in
+     * the bundled credential registry of `waltid/issuer-api:latest`.
+     */
+    credentialConfigurationId?: string;
+    /**
+     * The `vct` (Verifiable Credential Type) URL the issuer assigns
+     * to this credential. Must match the `vct` declared in the
+     * issuer's metadata for `credentialConfigurationId`. Defaults
+     * matching the bundled registry's `UniversityDegree_vc+sd-jwt`.
+     */
+    vct?: string;
+    /** Subject claims to embed (will be selectively-disclosable). */
+    subjectClaims?: Record<string, unknown>;
+}
+
+/**
+ * POST `/openid4vc/sdjwt/issue` to mint an SD-JWT VC offer.
+ *
+ * Walt.id's SD-JWT route shares the {@link IssuanceRequest} schema
+ * with the JWT route — same body shape — but the `vct` field becomes
+ * required (it's the SD-JWT VC type identifier the wallet looks up
+ * in `/.well-known/vct/<type>` for type metadata).
+ */
+export const mintWaltidSdJwtOffer = async (
+    opts: MintSdJwtOfferOptions
+): Promise<string> => {
+    const {
+        issuerBaseUrl,
+        issuerKey,
+        credentialConfigurationId = 'UniversityDegree_vc+sd-jwt',
+        vct = `${issuerBaseUrl}/draft13/UniversityDegree`,
+        subjectClaims,
+    } = opts;
+
+    const body = {
+        issuerKey: { type: 'jwk', jwk: issuerKey.jwk },
+        issuerDid: issuerKey.did,
+        credentialConfigurationId,
+        vct,
+        credentialData: {
+            // SD-JWT VCs don't strictly require the VCDM context, but
+            // walt.id's bundled mapping pipeline expects W3C-shaped
+            // input it can transform into the SD-JWT payload.
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://www.w3.org/2018/credentials/examples/v1',
+            ],
+            id: `urn:uuid:${crypto.randomUUID()}`,
+            type: ['VerifiableCredential', 'UniversityDegree'],
+            issuer: { id: issuerKey.did },
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+                id: 'did:example:placeholder-replaced-by-holder',
+                ...(subjectClaims ?? {
+                    degree: {
+                        type: 'BachelorDegree',
+                        name: 'Bachelor of Science and Arts',
+                    },
+                }),
+            },
+        },
+        mapping: {
+            id: '<uuid>',
+            issuer: { id: '<issuerDid>' },
+            credentialSubject: { id: '<subjectDid>' },
+            issuanceDate: '<timestamp>',
+            expirationDate: '<timestamp-in:365d>',
+        },
+        authenticationMethod: 'PRE_AUTHORIZED',
+        standardVersion: 'DRAFT13',
+    };
+
+    const res = await fetch(`${issuerBaseUrl}/openid4vc/sdjwt/issue`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'text/plain' },
+        body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+        throw new Error(
+            `walt.id issuer /openid4vc/sdjwt/issue failed ${res.status}: ${await res.text()}`
+        );
+    }
+
+    const offerUri = (await res.text()).trim();
+    if (!offerUri.includes('credential_offer')) {
+        throw new Error(`walt.id issuer returned unexpected offer URI: ${offerUri}`);
+    }
+    return offerUri;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                         Batch JWT VC issuance                              */
+/* -------------------------------------------------------------------------- */
+
+export interface MintBatchOfferOptions {
+    issuerBaseUrl: string;
+    issuerKey: WaltidIssuerKey;
+    /**
+     * One entry per credential to mint into the same offer. Each
+     * entry's `credentialConfigurationId` must exist in the issuer's
+     * metadata. Wallet receives all of them as `credential_configuration_ids`
+     * on a single offer and runs one credential request per id.
+     */
+    credentials: Array<{
+        credentialConfigurationId: string;
+        credentialType: string;
+        subjectClaims?: Record<string, unknown>;
+    }>;
+}
+
+/**
+ * POST `/openid4vc/jwt/issueBatch` with an array of {@link IssuanceRequest}
+ * bodies. Walt.id bundles them into a single pre-auth offer whose
+ * `credential_configuration_ids` lists every credential — the wallet
+ * loops over the ids, issues one POP JWT per request, and stores
+ * each returned credential. Exercises the wallet's batched-issuance
+ * path that the single-offer scenarios don't touch.
+ */
+export const mintWaltidBatchOffer = async (
+    opts: MintBatchOfferOptions
+): Promise<string> => {
+    const { issuerBaseUrl, issuerKey, credentials } = opts;
+
+    if (credentials.length < 2) {
+        throw new Error(
+            `mintWaltidBatchOffer requires at least 2 credentials (got ${credentials.length})`
+        );
+    }
+
+    const body = credentials.map(c => ({
+        issuerKey: { type: 'jwk', jwk: issuerKey.jwk },
+        issuerDid: issuerKey.did,
+        credentialConfigurationId: c.credentialConfigurationId,
+        credentialData: {
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://www.w3.org/2018/credentials/examples/v1',
+            ],
+            id: `urn:uuid:${crypto.randomUUID()}`,
+            type: ['VerifiableCredential', c.credentialType],
+            issuer: { id: issuerKey.did },
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+                id: 'did:example:placeholder-replaced-by-holder',
+                ...(c.subjectClaims ?? {}),
+            },
+        },
+        mapping: {
+            id: '<uuid>',
+            issuer: { id: '<issuerDid>' },
+            credentialSubject: { id: '<subjectDid>' },
+            issuanceDate: '<timestamp>',
+            expirationDate: '<timestamp-in:365d>',
+        },
+        authenticationMethod: 'PRE_AUTHORIZED',
+        standardVersion: 'DRAFT13',
+    }));
+
+    const res = await fetch(`${issuerBaseUrl}/openid4vc/jwt/issueBatch`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'text/plain' },
+        body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+        throw new Error(
+            `walt.id issuer /openid4vc/jwt/issueBatch failed ${res.status}: ${await res.text()}`
+        );
+    }
+
+    const offerUri = (await res.text()).trim();
+    if (!offerUri.includes('credential_offer')) {
+        throw new Error(`walt.id issuer returned unexpected offer URI: ${offerUri}`);
+    }
     return offerUri;
 };
 
@@ -220,13 +476,24 @@ export const createWaltidVerifySession = async (
     };
     if (stateId) headers.stateId = stateId;
 
-    const body: Record<string, unknown> = {};
+    // walt.id's verifier-api requires `request_credentials` to be
+    // present on every request (its handler throws BadRequestException
+    // otherwise), even when we override the resulting authorization
+    // request with a custom `presentation_definition`. Send both: the
+    // PD overrides what the wallet sees on the wire, but
+    // `request_credentials` keeps walt.id's deserializer happy.
+    const body: Record<string, unknown> = {
+        request_credentials: requestCredentials,
+    };
     if (dcqlQuery) {
+        // Note: walt.id's community verifier-api currently ignores
+        // `dcql_query` entirely and falls back to PEX. Kept here for
+        // forward-compat with future walt.id versions or other
+        // vendors that share this client.
         body.dcql_query = dcqlQuery;
-    } else if (presentationDefinition) {
+    }
+    if (presentationDefinition) {
         body.presentation_definition = presentationDefinition;
-    } else {
-        body.request_credentials = requestCredentials;
     }
 
     const res = await fetch(`${verifierBaseUrl}/openid4vc/verify`, {
@@ -315,6 +582,42 @@ export const resolveOfferToByValue = async (offerUri: string): Promise<string> =
         'openid-credential-offer://?credential_offer=' +
         encodeURIComponent(JSON.stringify(offerJson))
     );
+};
+
+/**
+ * Replace the verifier's auto-generated `presentation_definition`
+ * with a caller-supplied one in the authorization request URI.
+ *
+ * walt.id's verifier-api community stack always derives the PD
+ * from `request_credentials` and silently drops the body-level
+ * `presentation_definition` override (we confirmed this empirically
+ * \u2014 the field is read but the resulting auth request still carries
+ * walt.id's auto-generated PD). Consequently, scenarios that need
+ * specific PEX features (claims constraints, multi-descriptor,
+ * fancier `format` filters) post-process the URI here.
+ *
+ * The PD goes inline as `presentation_definition=<json>`, so the
+ * walletside HTTPS guard on `presentation_definition_uri` (same
+ * one that bites `credential_offer_uri`) is sidestepped at the
+ * same time.
+ */
+export const overridePresentationDefinition = (
+    authRequestUri: string,
+    customPd: Record<string, unknown>
+): string => {
+    const queryStart = authRequestUri.indexOf('?');
+    if (queryStart === -1) {
+        throw new Error(
+            `Authorization request URI has no query string: ${authRequestUri}`
+        );
+    }
+    const base = authRequestUri.slice(0, queryStart);
+    const params = new URLSearchParams(authRequestUri.slice(queryStart + 1));
+
+    params.delete('presentation_definition_uri');
+    params.set('presentation_definition', JSON.stringify(customPd));
+
+    return `${base}?${params.toString()}`;
 };
 
 /**
