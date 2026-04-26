@@ -10,7 +10,7 @@
  * without breaking the catalogue.
  */
 
-export type ProviderId = 'waltid' | 'sphereon';
+export type ProviderId = 'waltid' | 'eudi' | 'sphereon';
 
 export type ScenarioKind = 'vci' | 'vp';
 
@@ -134,24 +134,36 @@ export const SCENARIOS: Scenario[] = [
         supportedProviders: ['waltid'],
     },
 
+    /* ----------------------------- VP \u2014 EUDI ------------------------------- */
+
+    {
+        id: 'vp-dcql-sdjwt',
+        kind: 'vp',
+        name: 'DCQL query (SD-JWT VC)',
+        description:
+            'EU reference verifier sends a signed Authorization Request (JAR) with a `dcql_query` asking for a `dc+sd-jwt` UniversityDegree.',
+        exercises:
+            'JAR (signed Request Object) parser + DCQL query routing (Slice 6) + format-gap handling (no held credential matches `dc+sd-jwt`).',
+        supportedProviders: ['eudi'],
+        note: 'Wallet should report \u201ccannot satisfy\u201d \u2014 we issue `vc+sd-jwt` via walt.id, not `dc+sd-jwt`. The JAR + DCQL parse path is what gets exercised.',
+    },
+    {
+        id: 'vp-dcql-mdoc',
+        kind: 'vp',
+        name: 'DCQL query (mDoc)',
+        description:
+            'EU reference verifier sends a JAR with `dcql_query` asking for an `org.iso.18013.5.1.mDL` mDoc credential.',
+        exercises:
+            'JAR + DCQL parser + format-gap handling for mDoc (no playground vendor issues mDocs yet).',
+        supportedProviders: ['eudi'],
+        note: 'Same as above \u2014 the wallet reports cannot-satisfy. Useful for validating the mDoc format string round-trips through the DCQL parser without crashing.',
+    },
+
     /* ------------------- Designed-but-blocked-on-vendor-support ------------- */
     /*                                                                         */
     /* These scenarios have wallet-side code paths worth exercising, but no    */
-    /* current playground vendor exposes them on the wire. Listed here so the  */
-    /* matrix gap is visible \u2014 the moment EUDI (or another vendor) is added,  */
-    /* flip `supportedProviders` to enable them in the UI.                     */
+    /* current playground vendor exposes them on the wire.                     */
 
-    {
-        id: 'vp-dcql',
-        kind: 'vp',
-        name: 'DCQL query',
-        description:
-            'Verifier sends a `dcql_query` instead of `presentation_definition`. Tests the wallet\u2019s DCQL routing layer (Slice 6).',
-        exercises:
-            'DCQL parser + multi-credential matching + per-query VP signing.',
-        supportedProviders: [],
-        note: 'walt.id\u2019s verifier-api silently ignores `dcql_query` and falls back to PEX. Awaiting EUDI integration.',
-    },
     {
         id: 'vp-siop-idtoken',
         kind: 'vp',
@@ -161,7 +173,7 @@ export const SCENARIOS: Scenario[] = [
         exercises:
             'Plugin\u2019s SIOPv2 sign path (Slice 8) standalone.',
         supportedProviders: [],
-        note: 'walt.id\u2019s verifier-api always emits `response_type=vp_token` and requires `request_credentials`. Awaiting EUDI integration.',
+        note: 'Both walt.id and EUDI verifiers require a credential query \u2014 neither exposes pure SIOPv2. Would need a SIOPv2-only verifier (Sphereon, EBSI conformance, or in-process mock).',
     },
 ];
 
@@ -183,6 +195,12 @@ export const PROVIDERS: ProviderInfo[] = [
         id: 'waltid',
         name: 'walt.id',
         blurb: 'Local Docker stack from tests/openid4vc-interop-e2e/compose.yaml',
+        enabled: true,
+    },
+    {
+        id: 'eudi',
+        name: 'EUDI Reference Verifier',
+        blurb: 'EU Digital Identity Wallet reference verifier \u2014 OID4VP 1.0 + JAR + DCQL.',
         enabled: true,
     },
     {

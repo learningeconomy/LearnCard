@@ -29,10 +29,16 @@ import {
     type CreateVerifySessionOptions,
     type MintOfferOptions,
 } from './waltid';
+import {
+    createEudiVerifySession,
+    getEudiVerifyStatus,
+} from './eudi';
 
 /** Resolved on import; lets every endpoint share an env baseline. */
 const ISSUER_BASE_URL = process.env.WALTID_ISSUER_BASE_URL ?? 'http://localhost:7002';
 const VERIFIER_BASE_URL = process.env.WALTID_VERIFIER_BASE_URL ?? 'http://localhost:7003';
+const EUDI_VERIFIER_BASE_URL =
+    process.env.EUDI_VERIFIER_BASE_URL ?? 'http://localhost:7004';
 
 /* -------------------------------------------------------------------------- */
 /*                          provider \u00d7 scenario catalogue                     */
@@ -287,6 +293,67 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
         },
     },
 
+    /* ----------------------------- VP \u2014 EUDI ------------------------------- */
+
+    'eudi:vp-dcql-sdjwt': {
+        kind: 'vp',
+        // EUDI's verifier accepts only `dc+sd-jwt` and `mso_mdoc`. Our
+        // playground vendors don't currently issue `dc+sd-jwt` (walt.id
+        // ships `vc+sd-jwt`, format string mismatch), so the wallet's
+        // PEX/DCQL selector should report `canSatisfy: false` cleanly.
+        // The exercised wallet code paths are: JAR (signed Request
+        // Object) parser, DCQL query parser/router, and graceful
+        // \u201ccannot satisfy\u201d reporting.
+        label: 'DCQL (SD-JWT VC) \u2014 EUDI',
+        run: async () => {
+            const session = await createEudiVerifySession({
+                verifierBaseUrl: EUDI_VERIFIER_BASE_URL,
+                dcqlQuery: {
+                    credentials: [
+                        {
+                            id: 'degree',
+                            format: 'dc+sd-jwt',
+                            meta: {
+                                vct_values: [
+                                    'https://example.com/UniversityDegree',
+                                ],
+                            },
+                        },
+                    ],
+                },
+            });
+            return {
+                rawAuthRequestUri: session.authorizationRequestUri,
+                state: session.transactionId,
+            };
+        },
+    },
+
+    'eudi:vp-dcql-mdoc': {
+        kind: 'vp',
+        label: 'DCQL (mDoc) \u2014 EUDI',
+        run: async () => {
+            const session = await createEudiVerifySession({
+                verifierBaseUrl: EUDI_VERIFIER_BASE_URL,
+                dcqlQuery: {
+                    credentials: [
+                        {
+                            id: 'mdl',
+                            format: 'mso_mdoc',
+                            meta: {
+                                doctype_value: 'org.iso.18013.5.1.mDL',
+                            },
+                        },
+                    ],
+                },
+            });
+            return {
+                rawAuthRequestUri: session.authorizationRequestUri,
+                state: session.transactionId,
+            };
+        },
+    },
+
     'waltid:vp-jarm': {
         kind: 'vp',
         label: 'JARM (encrypted response) \u2014 walt.id',
@@ -384,21 +451,41 @@ export const handleStatus = async (q: StatusQuery): Promise<StatusResult> => {
         throw new ApiError(400, 'VP status query requires `state`');
     }
 
-    if (q.providerId !== 'waltid') {
-        throw new ApiError(
-            400,
-            `VP status polling is only implemented for providerId="waltid" (got "${q.providerId}")`
-        );
+    if (q.providerId === 'waltid') {
+        const status = await getWaltidVerifyStatus(VERIFIER_BASE_URL, q.state);
+        if (status.verificationResult === true) {
+            return { status: 'success' };
+        }
+        if (status.verificationResult === false) {
+            return {
+                status: 'fail',
+                detail: 'walt.id verifier rejected the presentation.',
+            };
+        }
+        return { status: 'pending' };
     }
 
-    const status = await getWaltidVerifyStatus(VERIFIER_BASE_URL, q.state);
-    if (status.verificationResult === true) {
-        return { status: 'success' };
+    if (q.providerId === 'eudi') {
+        // EUDI's reference verifier doesn't yet expose a top-level
+        // success/fail boolean on its session endpoint. We surface
+        // \u201cpending\u201d until a payload appears, then \u201csuccess\u201d if it
+        // includes any presented credentials \u2014 callers that need a
+        // hard verdict should drop down to the raw response.
+        const status = await getEudiVerifyStatus(EUDI_VERIFIER_BASE_URL, q.state);
+        if (status.raw === undefined) {
+            return { status: 'pending' };
+        }
+        return {
+            status: 'success',
+            detail:
+                'EUDI received a wallet response. Reference verifier doesn\u2019t emit a verdict boolean \u2014 inspect the verifier UI for details.',
+        };
     }
-    if (status.verificationResult === false) {
-        return { status: 'fail', detail: 'walt.id verifier rejected the presentation.' };
-    }
-    return { status: 'pending' };
+
+    throw new ApiError(
+        400,
+        `VP status polling is not implemented for providerId="${q.providerId}"`
+    );
 };
 
 /* -------------------------------------------------------------------------- */
