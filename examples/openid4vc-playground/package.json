@@ -1,0 +1,32 @@
+{
+    "name": "@learncard/openid4vc-playground",
+    "private": true,
+    "version": "0.0.1",
+    "description": "Curated OID4VCI + OID4VP scenarios for testing the LearnCard wallet UI end-to-end against real verifiers and issuers.",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "jose": "^5.9.6",
+        "lucide-react": "^0.468.0",
+        "qrcode": "^1.5.4",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.14.0",
+        "@types/qrcode": "^1.5.5",
+        "@types/react": "^18.3.0",
+        "@types/react-dom": "^18.3.0",
+        "@vitejs/plugin-react": "^4.3.0",
+        "autoprefixer": "^10.4.19",
+        "postcss": "^8.4.38",
+        "tailwindcss": "^3.4.4",
+        "typescript": "^5.6.2",
+        "vite": "^5.4.0"
+    }
+}
