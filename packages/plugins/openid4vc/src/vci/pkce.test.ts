@@ -14,7 +14,7 @@ describe('generatePkcePair', () => {
         expect(pair.challenge.length).toBeGreaterThanOrEqual(43);
 
         // Challenge MUST be the base64url SHA-256 of the verifier.
-        expect(computeS256Challenge(pair.verifier)).toBe(pair.challenge);
+        expect(await computeS256Challenge(pair.verifier)).toBe(pair.challenge);
     });
 
     it('produces RFC 7636-compliant character set (unreserved only)', async () => {
@@ -54,38 +54,38 @@ describe('computeS256Challenge', () => {
             challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
         };
 
-        expect(computeS256Challenge(vector.verifier)).toBe(vector.challenge);
+        expect(await computeS256Challenge(vector.verifier)).toBe(vector.challenge);
     });
 
-    it('rejects verifiers shorter than 24 chars', () => {
-        expect(() => computeS256Challenge('too-short')).toThrow(
-            expect.objectContaining({ code: 'invalid_verifier' })
-        );
+    it('rejects verifiers shorter than 24 chars', async () => {
+        await expect(computeS256Challenge('too-short')).rejects.toMatchObject({
+            code: 'invalid_verifier',
+        });
     });
 });
 
 describe('verifyPkce', () => {
     it('returns true for a matching verifier+challenge pair', async () => {
         const pair = await generatePkcePair();
-        expect(verifyPkce(pair)).toBe(true);
+        expect(await verifyPkce(pair)).toBe(true);
     });
 
     it('returns false when the verifier does not match the challenge', async () => {
         const a = await generatePkcePair();
         const b = await generatePkcePair();
         expect(
-            verifyPkce({ verifier: a.verifier, challenge: b.challenge })
+            await verifyPkce({ verifier: a.verifier, challenge: b.challenge })
         ).toBe(false);
     });
 
     it('throws for unsupported methods', async () => {
         const pair = await generatePkcePair();
-        expect(() =>
+        await expect(
             verifyPkce({
                 verifier: pair.verifier,
                 challenge: pair.challenge,
                 method: 'plain' as unknown as 'S256',
             })
-        ).toThrow(expect.objectContaining({ code: 'unsupported_method' }));
+        ).rejects.toMatchObject({ code: 'unsupported_method' });
     });
 });

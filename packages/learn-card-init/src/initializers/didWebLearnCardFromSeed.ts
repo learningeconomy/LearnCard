@@ -14,6 +14,8 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
+import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getStatusListPlugin } from '@learncard/status-list-plugin';
 
 import { DidWebLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -35,6 +37,8 @@ export const didWebLearnCardFromSeed = async ({
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
+    openid4vc,
+    statusList,
     debug,
 }: DidWebLearnCardFromSeed['args']): Promise<DidWebLearnCardFromSeed['returnValue']> => {
     const dynamicLc = await (await generateLearnCard({ debug })).addPlugin(DynamicLoaderPlugin);
@@ -83,5 +87,9 @@ export const didWebLearnCardFromSeed = async ({
 
     const lcLc = await chapiLc.addPlugin(getLearnCardPlugin(chapiLc));
 
-    return lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
+    const didWebLc = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
+
+    const oidcLc = await didWebLc.addPlugin(getOpenID4VCPlugin(didWebLc, openid4vc));
+
+    return oidcLc.addPlugin(getStatusListPlugin(oidcLc, statusList));
 };

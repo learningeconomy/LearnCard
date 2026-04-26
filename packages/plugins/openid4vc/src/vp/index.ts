@@ -111,19 +111,9 @@ export type {
     ResponseObjectPayload,
 } from './encrypt';
 
-export {
-    checkCredentialStatus,
-    StatusCheckError,
-    buildBitstringStatusListCredential,
-} from './status';
-
-export type {
-    CheckCredentialStatusOptions,
-    CredentialStatusEntry,
-    CredentialWithStatus,
-    StatusCheckErrorCode,
-    StatusCheckOutcome,
-    StatusCheckResult,
-    StatusListCredential,
-    StatusListCredentialSubject,
-} from './status';
+// `checkCredentialStatus` and the bitstring status-list types live
+// in `@learncard/status-list-plugin`. They were originally exported
+// from this module while VP and status checking lived in the same
+// package; that has since been split.
+//
+// `import { checkCredentialStatus } from '@learncard/status-list-plugin';`

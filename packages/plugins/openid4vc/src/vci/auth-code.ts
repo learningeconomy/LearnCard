@@ -30,7 +30,6 @@ import {
     resolveAuthorizationServer,
 } from './metadata';
 import {
-    computeS256Challenge,
     generatePkcePair,
     PkcePair,
 } from './pkce';
@@ -579,9 +578,18 @@ const isTokenResponse = (value: unknown): value is TokenResponse => {
 };
 
 const randomId = (): string => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { randomBytes } = require('node:crypto') as typeof import('node:crypto');
-    return randomBytes(16).toString('hex');
+    // Web Crypto is available natively in browsers and Node \u2265 18.
+    // We only need 16 bytes of unpredictable data for a non-secret
+    // session correlation handle (state, nonce, etc.).
+    const c = (globalThis as { crypto?: Crypto }).crypto;
+    if (!c) throw new Error('Web Crypto API not available in this runtime');
+    const bytes = new Uint8Array(16);
+    c.getRandomValues(bytes);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+        hex += bytes[i]!.toString(16).padStart(2, '0');
+    }
+    return hex;
 };
 
 /* Re-export metadata types so plugin consumers can import from a

@@ -12,16 +12,14 @@
  *   4. Wallet sends the original `code_verifier` on the token request.
  *   5. AS compares the hashed verifier with the stored challenge.
  *
- * We only implement the `S256` method — `plain` is spec-allowed but
- * provides no security benefit, and OpenID4VCI §6.2 mandates `S256`
+ * We only implement the `S256` method \u2014 `plain` is spec-allowed but
+ * provides no security benefit, and OpenID4VCI \u00a76.2 mandates `S256`
  * when PKCE is used.
  *
- * Purely synchronous + self-contained: uses `node:crypto`
- * (`randomBytes` + `createHash`) so no dependency on `jose` or the
- * Web Crypto API. Works identically in Node and in browsers via
- * bundler polyfills.
+ * Cross-platform: uses the Web Crypto API (`crypto.getRandomValues` +
+ * `crypto.subtle.digest`) which is available natively in browsers and
+ * in Node \u2265 18. Async because `subtle.digest` is async by spec.
  */
-import { createHash, randomBytes } from 'node:crypto';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -83,7 +81,7 @@ export class PkceError extends Error {
  * Generate a fresh PKCE verifier + S256 challenge.
  *
  * The verifier is produced by base64url-encoding `byteLength` bytes of
- * `node:crypto.randomBytes` — which satisfies RFC 7636 §4.1's
+ * Web Crypto random output — which satisfies RFC 7636 §4.1's
  * "unreserved characters only" requirement without extra normalization.
  */
 export const generatePkcePair = async (
@@ -97,8 +95,8 @@ export const generatePkcePair = async (
         );
     }
 
-    const verifier = toB64url(randomBytes(byteLength));
-    const challenge = computeS256Challenge(verifier);
+    const verifier = toB64url(getRandomBytes(byteLength));
+    const challenge = await computeS256Challenge(verifier);
 
     return { verifier, challenge, method: 'S256' };
 };
@@ -109,8 +107,10 @@ export const generatePkcePair = async (
  * through a redirect (the common case — wallet stores verifier,
  * extracts it later at token-exchange time) can re-derive the
  * challenge for assertions and logs.
+ *
+ * Async because Web Crypto's `subtle.digest` is async by spec.
  */
-export const computeS256Challenge = (verifier: string): string => {
+export const computeS256Challenge = async (verifier: string): Promise<string> => {
     if (typeof verifier !== 'string' || verifier.length < 24) {
         throw new PkceError(
             'invalid_verifier',
@@ -118,8 +118,9 @@ export const computeS256Challenge = (verifier: string): string => {
         );
     }
 
-    const digest = createHash('sha256').update(verifier, 'utf8').digest();
-    return toB64url(digest);
+    const bytes = new TextEncoder().encode(verifier);
+    const digest = await getSubtle().digest('SHA-256', bytes);
+    return toB64url(new Uint8Array(digest));
 };
 
 /**
@@ -128,28 +129,67 @@ export const computeS256Challenge = (verifier: string): string => {
  * in-process test server can validate challenges the same way real
  * ASes do.
  */
-export const verifyPkce = (args: {
+export const verifyPkce = async (args: {
     verifier: string;
     challenge: string;
     method?: PkceCodeChallengeMethod;
-}): boolean => {
+}): Promise<boolean> => {
     const method = args.method ?? 'S256';
     if (method !== 'S256') {
         throw new PkceError('unsupported_method', `PKCE method ${method} not supported`);
     }
 
-    return computeS256Challenge(args.verifier) === args.challenge;
+    return (await computeS256Challenge(args.verifier)) === args.challenge;
 };
 
 /* -------------------------------------------------------------------------- */
 /*                                 internals                                  */
 /* -------------------------------------------------------------------------- */
 
-const toB64url = (input: Buffer | Uint8Array): string => {
-    const buf = Buffer.isBuffer(input) ? input : Buffer.from(input);
-    return buf
-        .toString('base64')
+const toB64url = (input: Uint8Array): string => {
+    // Use Buffer where available (node) for speed; fall back to a
+    // pure-JS path for browsers where Buffer is polyfilled but
+    // hosts may have stripped it.
+    if (typeof Buffer !== 'undefined') {
+        return Buffer.from(input)
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    }
+
+    let binary = '';
+    for (let i = 0; i < input.length; i++) binary += String.fromCharCode(input[i]!);
+    return btoa(binary)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
+};
+
+const getRandomBytes = (byteLength: number): Uint8Array => {
+    const buf = new Uint8Array(byteLength);
+    getCrypto().getRandomValues(buf);
+    return buf;
+};
+
+const getCrypto = (): Crypto => {
+    const c = (globalThis as { crypto?: Crypto }).crypto;
+    if (!c) {
+        throw new PkceError(
+            'invalid_verifier',
+            'Web Crypto API not available in this runtime'
+        );
+    }
+    return c;
+};
+
+const getSubtle = (): SubtleCrypto => {
+    const subtle = getCrypto().subtle;
+    if (!subtle) {
+        throw new PkceError(
+            'invalid_verifier',
+            'crypto.subtle not available in this runtime'
+        );
+    }
+    return subtle;
 };

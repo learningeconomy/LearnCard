@@ -30,6 +30,9 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 | `direct_post` VP response (`submitPresentation`) | ✅ Slice 7c |
 | End-to-end `presentCredentials()` verified against **WaltID** verifier | ✅ Slice 7 |
 | Signed Request Objects (`request` / `request_uri` JWS) — `client_id_scheme=did` (did:jwk, did:web) + `x509_san_dns` (trusted-roots or self-signed-dev) | ✅ Slice 7.5 |
+| Browser-safe runtime (no `node:crypto` / `node:zlib`) — bundles cleanly into `apps/learn-card-app` | ✅ Slice 7.6 |
+| Auto-wired into every seed-based `@learncard/init` function | ✅ Slice 7.6 |
+| Bitstring Status List checking | Extracted into [`@learncard/status-list-plugin`](../status-list/README.md). Auto-wired into the same seed-based init functions; call `lc.invoke.checkCredentialStatus(...)` to use it. |
 | Authorization code flow + PKCE | ⏳ Slice 4 |
 | `ldp_vc` issuance format | ⏳ Slice 5 |
 | SIOPv2 ID token | ⏳ Slice 8 |
@@ -54,14 +57,39 @@ pnpm add @learncard/openid4vc-plugin
 
 Required peer plugins: `@learncard/vc-plugin`, `@learncard/didkit-plugin`.
 
+### Related plugins
+
+The wallet's bitstring revocation/suspension checking lives in [`@learncard/status-list-plugin`](../status-list/README.md), which is auto-wired into the same seed-based init functions. Use `lc.invoke.checkCredentialStatus(credential)` after init to consult the W3C Bitstring Status List for any held credential.
+
+### Bundled by default with `@learncard/init`
+
+Every seed-based initializer in `@learncard/init` (`learnCardFromSeed`, `networkLearnCardFromSeed`, `didWebLearnCardFromSeed`, `didWebNetworkLearnCardFromSeed`) automatically attaches this plugin to the resulting LearnCard. **You do not need to call `getOpenID4VCPlugin()` yourself** unless you're composing a custom LearnCard from `@learncard/core`. Pass plugin config through the init function's `openid4vc` option:
+
+```ts
+import { initLearnCard } from '@learncard/init';
+
+const lc = await initLearnCard({
+    seed: 'a'.repeat(64),
+    openid4vc: {
+        // Optional. Defaults are sensible for most callers.
+        // fetchImpl: customFetch,
+        // trustedX509Roots: [pemString],
+    },
+});
+
+// All OpenID4VC methods are now available on `lc.invoke.*`.
+```
+
+### Browser compatibility
+
+As of `lc-1794` the plugin's runtime surface is fully cross-platform. The previously node-only dependencies (`node:crypto.X509Certificate`, `node:crypto.randomBytes`, `node:zlib.gunzipSync`) have been swapped for Web Crypto, `crypto.getRandomValues`, `@peculiar/x509`, and `fflate`. The plugin can be bundled directly into a browser app without polyfills, and Slices 6–8 work end-to-end in `apps/learn-card-app`.
+
 ## Usage
 
 ```ts
 import { initLearnCard } from '@learncard/init';
-import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
 
-const baseLc = await initLearnCard({ seed: 'a'.repeat(64) });
-const lc = await baseLc.addPlugin(getOpenID4VCPlugin(baseLc));
+const lc = await initLearnCard({ seed: 'a'.repeat(64) });
 
 // Slice 1 — parse a credential offer URI without hitting the network:
 const parsed = lc.invoke.parseCredentialOffer(

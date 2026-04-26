@@ -29,11 +29,11 @@
  */
 import {
     StatusCheckError,
-    buildBitstringStatusListCredential,
     checkCredentialStatus,
     type CredentialWithStatus,
     type StatusListCredential,
 } from './status';
+import { buildBitstringStatusListCredential } from './test-helpers';
 
 const LIST_URL = 'https://example.org/credentials/status/1';
 

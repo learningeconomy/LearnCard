@@ -36,7 +36,7 @@
  * `did:jwk` (inline) and `did:web` (over the caller's fetch). Callers
  * plug in their own resolver to support `did:key`, `did:ion`, etc.
  */
-import { X509Certificate } from 'node:crypto';
+import * as x509 from '@peculiar/x509';
 
 import { importJWK, importX509, jwtVerify, JWK } from 'jose';
 
@@ -494,8 +494,8 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
         );
     }
 
-    // Defensive DER → X509Certificate construction.
-    let chain: X509Certificate[];
+    // Defensive DER → X509Certificate construction (cross-platform via @peculiar/x509).
+    let chain: x509.X509Certificate[];
     try {
         chain = buildCertChain(x5c as string[]);
     } catch (e) {
@@ -510,10 +510,10 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
 
     // SAN DNS binding: client_id (as URL host) MUST appear in leaf SAN.
     const expectedHost = hostFromClientId(clientId);
-    if (!leaf.checkHost(expectedHost)) {
+    if (!leafCoversHost(leaf, expectedHost)) {
         throw new RequestObjectError(
             'client_id_mismatch',
-            `Leaf certificate SAN does not cover client_id host "${expectedHost}" (subjectAltName=${leaf.subjectAltName ?? 'none'})`
+            `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${listLeafSanDnsNames(leaf).join(',') || 'none'})`
         );
     }
 
@@ -529,7 +529,7 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 
     if (trusted.length > 0) {
-        verifyChainToTrustedRoots(chain, trusted);
+        await verifyChainToTrustedRoots(chain, trusted);
     }
 
     // JWS signature must verify against the leaf cert's public key.
@@ -559,24 +559,32 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
 
 const buildCertChain = (
     x5c: string[]
-): X509Certificate[] =>
-    x5c.map(b64 => new X509Certificate(new Uint8Array(Buffer.from(b64, 'base64'))));
+): x509.X509Certificate[] =>
+    // peculiar's constructor accepts base64/PEM strings or BufferSource.
+    // x5c entries are base64-DER per RFC 7515 §4.1.6 (no PEM wrapper);
+    // we wrap them so peculiar's base64 detection works reliably across
+    // versions (some bundlers' typings constrain BufferSource away).
+    x5c.map(b64 => new x509.X509Certificate(derToPem(b64)));
 
 /**
- * Walk the `x5c` chain bottom-up: each cert must be issued by the next,
- * and the topmost cert must be issued by one of the trusted roots.
- * Throws {@link RequestObjectError} on any broken link.
+ * Walk the `x5c` chain bottom-up: each cert must be signed by the next,
+ * and the topmost cert must be signed by (or itself match) one of the
+ * trusted roots. Throws {@link RequestObjectError} on any broken link.
+ *
+ * Async because @peculiar/x509's signature verification routes through
+ * Web Crypto's `subtle.verify` (which is async by spec).
  */
-const verifyChainToTrustedRoots = (
-    chain: X509Certificate[],
+const verifyChainToTrustedRoots = async (
+    chain: x509.X509Certificate[],
     trustedPems: readonly string[]
-): void => {
-    const trusted = trustedPems.map(pem => new X509Certificate(pem));
+): Promise<void> => {
+    const trusted = trustedPems.map(pem => new x509.X509Certificate(pem));
 
     for (let i = 0; i < chain.length - 1; i++) {
         const child = chain[i]!;
         const parent = chain[i + 1]!;
-        if (!child.checkIssued(parent) || !child.verify(parent.publicKey)) {
+        const linkOk = await safeVerify(child, parent);
+        if (!linkOk) {
             throw new RequestObjectError(
                 'request_signer_untrusted',
                 `x5c chain broken at position ${i}: cert is not signed by its successor`
@@ -586,38 +594,99 @@ const verifyChainToTrustedRoots = (
 
     const top = chain[chain.length - 1]!;
 
-    // Self-anchored leaf → the leaf must itself match a trusted root.
+    // Self-anchored leaf → the leaf must itself match a trusted root
+    // (by SHA-256 thumbprint, the canonical "is this the same cert" test).
     if (chain.length === 1) {
-        const match = trusted.find(
-            root => root.fingerprint256 === top.fingerprint256
-        );
-        if (!match) {
-            throw new RequestObjectError(
-                'request_signer_untrusted',
-                'Leaf certificate is self-contained and does not match any trustedX509Roots'
-            );
+        const topFp = await fingerprintHex(top);
+        for (const root of trusted) {
+            if ((await fingerprintHex(root)) === topFp) return;
         }
-        return;
-    }
-
-    const anchor = trusted.find(
-        root =>
-            top.checkIssued(root) &&
-            (() => {
-                try {
-                    return top.verify(root.publicKey);
-                } catch {
-                    return false;
-                }
-            })()
-    );
-
-    if (!anchor) {
         throw new RequestObjectError(
             'request_signer_untrusted',
-            'Top of x5c chain is not rooted in any trustedX509Roots'
+            'Leaf certificate is self-contained and does not match any trustedX509Roots'
         );
     }
+
+    for (const root of trusted) {
+        if (await safeVerify(top, root)) return;
+    }
+
+    throw new RequestObjectError(
+        'request_signer_untrusted',
+        'Top of x5c chain is not rooted in any trustedX509Roots'
+    );
+};
+
+// Verify that `child` is signed by `parent`'s public key. Defensive
+// against algorithm mismatches that throw inside Web Crypto rather
+// than returning false.
+const safeVerify = async (
+    child: x509.X509Certificate,
+    parent: x509.X509Certificate
+): Promise<boolean> => {
+    try {
+        return await child.verify({ publicKey: parent.publicKey });
+    } catch {
+        return false;
+    }
+};
+
+const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
+    const buf = await cert.getThumbprint('SHA-256');
+    const bytes = new Uint8Array(buf);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+        hex += bytes[i]!.toString(16).padStart(2, '0');
+    }
+    return hex;
+};
+
+/**
+ * SAN DNS binding check: returns true when `host` matches any
+ * dNSName entry in the cert's SubjectAlternativeName extension.
+ * Honours wildcard certs (`*.example.com` covers `foo.example.com`
+ * but not `example.com` or `bar.foo.example.com`), per RFC 6125 §6.4.3.
+ */
+const leafCoversHost = (
+    cert: x509.X509Certificate,
+    host: string
+): boolean => {
+    const lower = host.toLowerCase();
+    for (const dns of listLeafSanDnsNames(cert)) {
+        if (matchesDnsName(dns, lower)) return true;
+    }
+    return false;
+};
+
+const listLeafSanDnsNames = (cert: x509.X509Certificate): string[] => {
+    const ext = cert.getExtension(x509.SubjectAlternativeNameExtension);
+    if (!ext) return [];
+    return ext.names
+        .toJSON()
+        .filter(n => n.type === 'dns')
+        .map(n => n.value);
+};
+
+const matchesDnsName = (pattern: string, host: string): boolean => {
+    const p = pattern.toLowerCase();
+    if (p === host) return true;
+    if (!p.startsWith('*.')) return false;
+    // Wildcard matches exactly one label.
+    const suffix = p.slice(1); // ".example.com"
+    if (!host.endsWith(suffix)) return false;
+    const left = host.slice(0, -suffix.length);
+    return left.length > 0 && !left.includes('.');
+};
+
+const b64Decode = (b64: string): Uint8Array => {
+    if (typeof Buffer !== 'undefined') {
+        return new Uint8Array(Buffer.from(b64.replace(/\s+/g, ''), 'base64'));
+    }
+    const clean = b64.replace(/\s+/g, '');
+    const binary = atob(clean);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
 };
 
 const derToPem = (b64: string): string => {

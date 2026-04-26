@@ -63,7 +63,7 @@
  *      legacy/new entry shapes, fetch/network errors, and malformed
  *      list payloads.
  */
-import { gunzipSync } from 'node:zlib';
+import { gunzipSync } from 'fflate';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -540,9 +540,10 @@ const decodeEncodedList = (encoded: string, listUrl: string): Uint8Array => {
         );
     }
 
-    let decompressed: Buffer;
     try {
-        decompressed = gunzipSync(raw);
+        // fflate's gunzipSync works in browsers and Node alike.
+        // Returns a Uint8Array directly — no Buffer dependency.
+        return gunzipSync(raw);
     } catch (e) {
         throw new StatusCheckError(
             'invalid_status_list',
@@ -550,8 +551,6 @@ const decodeEncodedList = (encoded: string, listUrl: string): Uint8Array => {
             { listUrl, cause: e }
         );
     }
-
-    return new Uint8Array(decompressed);
 };
 
 /**
@@ -585,62 +584,6 @@ const describe = (e: unknown): string =>
 /*                            test-only helpers                               */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Build a status-list credential body the unit tests can mount via
- * `fetchStatusList`. Exposed publicly so other plugin tests (and
- * the Sphereon harness, when a future slice exercises status
- * checking interop) can construct lists without re-implementing
- * the encode pipeline.
- *
- * `bitsSet` is a sparse list of indices to flip to 1. Everything
- * else stays 0 (active). The bitstring length defaults to 16 KiB
- * (131,072 bits) per the W3C spec's recommended minimum, which is
- * well under the 1 GiB max and large enough for realistic test
- * scenarios.
- */
-export const buildBitstringStatusListCredential = (args: {
-    bitsSet?: readonly number[];
-    bitstringLengthBytes?: number;
-    statusPurpose?: string;
-    /** Helper for tests that need to assert against the encoded form. */
-    listIssuer?: string;
-}): StatusListCredential & { credentialSubject: StatusListCredentialSubject } => {
-    const lengthBytes = args.bitstringLengthBytes ?? 16 * 1024;
-    const bytes = new Uint8Array(lengthBytes);
-
-    for (const idx of args.bitsSet ?? []) {
-        if (idx < 0 || idx >= lengthBytes * 8) {
-            throw new RangeError(
-                `Cannot set bit ${idx}: bitstring is ${lengthBytes * 8} bits long`
-            );
-        }
-        const byteIndex = idx >> 3;
-        const bitInByte = 7 - (idx & 7);
-        bytes[byteIndex] = (bytes[byteIndex] ?? 0) | (1 << bitInByte);
-    }
-
-    // Lazy-load gzipSync so the production module doesn't pull it
-    // unless a test asks for it. Slight perf win; mostly principle.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { gzipSync } = require('node:zlib') as typeof import('node:zlib');
-    const compressed = gzipSync(bytes);
-    const encodedList = compressed
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-
-    return {
-        '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            'https://w3id.org/vc/status-list/2021/v1',
-        ],
-        type: ['VerifiableCredential', 'BitstringStatusListCredential'],
-        ...(args.listIssuer ? { issuer: args.listIssuer } : {}),
-        credentialSubject: {
-            type: 'BitstringStatusList',
-            statusPurpose: args.statusPurpose ?? 'revocation',
-            encodedList,
-        },
-    };
-};
+// `buildBitstringStatusListCredential(...)` lives in
+// `./status-test-helpers.ts` so the production browser bundle never
+// pulls in `node:zlib`. Tests import directly from that path.
