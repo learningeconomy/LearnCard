@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { IonContent, IonGrid, IonPage, IonSpinner, IonToggle } from '@ionic/react';
 import {
-    LEARNCARD_AI_URL,
-    LEARNCARD_NETWORK_URL,
-    LEARNCLOUD_URL,
+    useApiConfig,
     useAuthCoordinator,
     useCurrentUser,
     useWallet,
@@ -15,8 +13,6 @@ import useShareCredentials from 'learn-card-base/hooks/useShareCredentials';
 import ShareCredentialCards from 'learn-card-base/components/sharecreds/ShareCredentialCards';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
-
-const DEFAULT_AI_URL = LEARNCARD_AI_URL;
 
 type EmbedPhase = 'authenticating' | 'loading-consented-data' | 'review' | 'generating' | 'error';
 
@@ -165,6 +161,7 @@ const EmbedContextPage = () => {
     const { state } = useAuthCoordinator();
     const currentUser = useCurrentUser();
     const { initWallet } = useWallet();
+    const apis = useApiConfig();
     const hasPostedTerminalMessageRef = useRef(false);
     const userDid = currentUser?.did ?? state.did ?? '';
 
@@ -292,8 +289,8 @@ const EmbedContextPage = () => {
         queryFn: async () => {
             const wallet = (await initLearnCard({
                 apiKey: request.apiKey,
-                network: LCN_URL || LEARNCARD_NETWORK_URL,
-                cloud: { url: CLOUD_URL || LEARNCLOUD_URL },
+                network: apis.brainService,
+                cloud: { url: apis.cloudService },
             })) as unknown as EmbedContextWallet;
             const userWallet = await initWallet();
 
@@ -429,7 +426,8 @@ const EmbedContextPage = () => {
 
             const reviewContext = consentedDataQuery.data;
 
-            const response = await fetch(`${DEFAULT_AI_URL}/ai/learner-context/format`, {
+            const aiServiceUrl = apis.aiService ?? 'https://api.learncloud.ai';
+            const response = await fetch(`${aiServiceUrl}/ai/learner-context/format`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
