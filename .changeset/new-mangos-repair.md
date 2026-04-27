@@ -2,7 +2,7 @@
 "learn-card-app": patch
 "@learncard/email-templates": patch
 "@learncard/lca-api-service": patch
-"@learncard/brain-service": patch
+"@learncard/network-brain-service": patch
 "@learncard/sss-key-manager": patch
 ---
 
