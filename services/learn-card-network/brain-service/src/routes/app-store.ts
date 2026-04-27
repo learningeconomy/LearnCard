@@ -587,9 +587,10 @@ const handleSendCredentialEvent = async (
     ctx: { domain: string },
     profile: { profileId: string },
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    perfTracker?: PerfTracker
 ): Promise<Record<string, unknown>> => {
-    const perf = new PerfTracker('handleSendCredentialEvent');
+    const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
 
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
