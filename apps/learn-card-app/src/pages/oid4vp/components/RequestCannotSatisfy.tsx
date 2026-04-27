@@ -49,7 +49,15 @@ const RequestCannotSatisfy: React.FC<RequestCannotSatisfyProps> = ({
     );
 
     return (
-        <div className="min-h-full flex items-center justify-center p-4 font-poppins">
+        <div
+            className="min-h-full flex items-center justify-center font-poppins"
+            style={{
+                paddingTop: 'max(1rem, env(safe-area-inset-top))',
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+                paddingRight: 'max(1rem, env(safe-area-inset-right))',
+            }}
+        >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
                 <div className="px-6 py-7 text-center bg-gradient-to-r from-amber-400 to-amber-500">
                     <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">

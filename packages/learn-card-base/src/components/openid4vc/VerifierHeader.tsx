@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, Eye } from 'lucide-react';
 
 /**
@@ -60,22 +60,16 @@ export const VerifierHeader: React.FC<VerifierHeaderProps> = ({
         isHttps
         && (!clientIdScheme || clientIdScheme === 'redirect_uri' || clientIdScheme.startsWith('x509'));
 
+    const showHostRow = displayName !== host && displayName !== clientId;
+
     return (
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-grayscale-10 border border-grayscale-200">
-            <div className="shrink-0 w-12 h-12 rounded-xl bg-white border border-grayscale-200 overflow-hidden flex items-center justify-center">
-                {display?.logoUri ? (
-                    <img
-                        src={display.logoUri}
-                        alt={`${displayName} logo`}
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        }}
-                    />
-                ) : (
-                    <Eye className="w-6 h-6 text-grayscale-500" />
-                )}
-            </div>
+            <VerifierAvatar
+                logoUri={display?.logoUri}
+                domain={host}
+                seed={host || clientId}
+                altText={`${displayName} logo`}
+            />
 
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-grayscale-500 mb-0.5">
@@ -86,19 +80,112 @@ export const VerifierHeader: React.FC<VerifierHeaderProps> = ({
                     {displayName}
                 </p>
 
-                <div className="flex items-center gap-1.5 mt-0.5">
-                    {showHttpsAffordance && (
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    )}
+                {(showHostRow || showHttpsAffordance) && (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        {showHttpsAffordance && (
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        )}
 
-                    <p className="text-xs text-grayscale-500 truncate">
-                        {host || clientId}
-                    </p>
-                </div>
+                        {showHostRow && (
+                            <p className="text-xs text-grayscale-500 truncate">
+                                {host || clientId}
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
+
+/* -------------------------------------------------------------------------- */
+/*                          three-tier avatar chain                           */
+/* -------------------------------------------------------------------------- */
+
+interface VerifierAvatarProps {
+    logoUri?: string;
+    domain?: string;
+    seed: string;
+    altText: string;
+}
+
+/**
+ * Three-tier verifier avatar (logo → favicon → gradient initials).
+ * Mirrors the IssuerHeader chain so OID4VCI and OID4VP consent
+ * screens have identical trust affordances. The fallback `Eye` icon
+ * is reserved for non-URL `client_id`s like opaque DID schemes,
+ * where no domain favicon makes sense.
+ */
+const VerifierAvatar: React.FC<VerifierAvatarProps> = ({
+    logoUri,
+    domain,
+    seed,
+    altText,
+}) => {
+    const fallbackFavicon = domain
+        ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`
+        : undefined;
+
+    const [tier, setTier] = useState<0 | 1 | 2>(() => {
+        if (logoUri) return 0;
+        if (fallbackFavicon) return 1;
+        return 2;
+    });
+
+    const handleError = () => {
+        setTier(prev => {
+            if (prev === 0 && fallbackFavicon) return 1;
+            return 2;
+        });
+    };
+
+    if (tier === 2) {
+        if (!domain) {
+            // Opaque (non-URL) client_id — no meaningful host or
+            // favicon, so render the neutral Eye glyph rather than a
+            // hash-derived gradient that misleadingly suggests
+            // "I know this verifier".
+            return (
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-white border border-grayscale-200 overflow-hidden flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-grayscale-500" />
+                </div>
+            );
+        }
+        const { background, initials } = avatarGradient(seed);
+        return (
+            <div
+                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background }}
+            >
+                <span className="text-base font-bold text-white">{initials}</span>
+            </div>
+        );
+    }
+
+    const src = tier === 0 ? logoUri : fallbackFavicon;
+    if (!src) {
+        return (
+            <div className="shrink-0 w-12 h-12 rounded-xl bg-white border border-grayscale-200 overflow-hidden flex items-center justify-center">
+                <Eye className="w-6 h-6 text-grayscale-500" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-white border border-grayscale-200 overflow-hidden flex items-center justify-center">
+            <img
+                src={src}
+                alt={altText}
+                className="w-full h-full object-contain"
+                onError={handleError}
+            />
+        </div>
+    );
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                   helpers                                  */
+/* -------------------------------------------------------------------------- */
 
 const safeHost = (url: string): string | undefined => {
     try {
@@ -106,6 +193,37 @@ const safeHost = (url: string): string | undefined => {
     } catch {
         return undefined;
     }
+};
+
+const avatarGradient = (
+    seed: string
+): { background: string; initials: string } => {
+    if (!seed) {
+        return {
+            background: 'linear-gradient(135deg, #8B91A7 0%, #6F7590 100%)',
+            initials: '?',
+        };
+    }
+    let h = 5381;
+    for (let i = 0; i < seed.length; i += 1) {
+        h = ((h << 5) + h) + seed.charCodeAt(i);
+        h = h | 0;
+    }
+    const hash = Math.abs(h);
+    const hueA = hash % 360;
+    const hueB = (hueA + 40) % 360;
+
+    const cleaned = seed.replace(/^https?:\/\//, '').split(/[/.:]/).filter(Boolean);
+    const sld =
+        cleaned.length >= 2
+            ? cleaned[cleaned.length - 2]
+            : cleaned[0] ?? seed;
+    const initials = (sld[0] ?? '?').toUpperCase();
+
+    return {
+        background: `linear-gradient(135deg, hsl(${hueA}, 62%, 52%) 0%, hsl(${hueB}, 58%, 42%) 100%)`,
+        initials,
+    };
 };
 
 export default VerifierHeader;

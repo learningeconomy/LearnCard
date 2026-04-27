@@ -18,7 +18,15 @@ export interface RequestSubmittingProps {
 const RequestSubmitting: React.FC<RequestSubmittingProps> = ({
     message = 'Sharing your credentials...',
 }) => (
-    <div className="min-h-full flex items-center justify-center p-6 font-poppins">
+    <div
+        className="min-h-full flex items-center justify-center font-poppins"
+        style={{
+            paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+            paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
+            paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+        }}
+    >
         <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-8 text-center space-y-5">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />

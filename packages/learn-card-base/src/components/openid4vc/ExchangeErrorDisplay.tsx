@@ -70,60 +70,58 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
     })();
 
     return (
-        <div className="min-h-full bg-gradient-to-br from-rose-50 via-white to-orange-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
-                <div className="bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-8 text-center">
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <AlertCircle className="w-10 h-10 text-white" />
+        <div className="min-h-full flex items-center justify-center p-4 font-poppins">
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden animate-fade-in-up">
+                <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-7 text-center">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <AlertCircle className="w-9 h-9 text-white" />
                     </div>
 
-                    <h1 className="text-2xl font-bold text-white mb-2">
+                    <h1 className="text-xl font-semibold text-white mb-1 leading-snug">
                         {friendlyError.title}
                     </h1>
 
-                    <p className="text-rose-100 text-sm">
-                        We couldn&apos;t complete your request
+                    <p className="text-sm text-white/80 leading-relaxed max-w-xs mx-auto">
+                        We couldn&apos;t complete your request.
                     </p>
                 </div>
 
-                <div className="p-6">
-                    <div className="space-y-4 mb-6">
-                        <p className="text-gray-600 text-center text-sm">
-                            {friendlyError.description}
+                <div className="p-6 space-y-5">
+                    <p className="text-sm text-grayscale-600 leading-relaxed text-center">
+                        {friendlyError.description}
+                    </p>
+
+                    <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-1.5">
+                            What to do
                         </p>
 
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                            <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">
-                                What to do
-                            </p>
-
-                            <p className="text-sm text-amber-800">
-                                {friendlyError.suggestion}
-                            </p>
-                        </div>
-
-                        {rawErrorMessage && rawErrorMessage !== friendlyError.description && (
-                            <details className="group">
-                                <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
-                                    Show technical details
-                                </summary>
-
-                                <div className="mt-2 bg-gray-100 rounded-lg p-3">
-                                    <p className="text-xs text-gray-600 font-mono break-words">
-                                        {rawErrorMessage}
-                                    </p>
-                                </div>
-                            </details>
-                        )}
+                        <p className="text-sm text-amber-800 leading-relaxed">
+                            {friendlyError.suggestion}
+                        </p>
                     </div>
 
-                    <div className="space-y-3">
+                    {rawErrorMessage && rawErrorMessage !== friendlyError.description && (
+                        <details className="group">
+                            <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
+                                Technical details
+                            </summary>
+
+                            <div className="mt-2 rounded-xl bg-grayscale-10 border border-grayscale-200 p-3">
+                                <p className="text-xs text-grayscale-600 font-mono break-words leading-relaxed">
+                                    {rawErrorMessage}
+                                </p>
+                            </div>
+                        </details>
+                    )}
+
+                    <div className="space-y-3 pt-1">
                         {onRetry && (
                             <button
                                 onClick={onRetry}
-                                className="w-full py-4 px-6 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-semibold rounded-xl hover:from-rose-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/25"
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                             >
-                                <RefreshCw className="w-5 h-5" />
+                                <RefreshCw className="w-4 h-4" />
                                 {retryLabel}
                             </button>
                         )}
@@ -131,7 +129,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
                         {onCancel && (
                             <button
                                 onClick={onCancel}
-                                className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Home className="w-4 h-4" />
                                 {cancelLabel}

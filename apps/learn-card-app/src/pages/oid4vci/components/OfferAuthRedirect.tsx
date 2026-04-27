@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Loader2, ArrowLeftRight } from 'lucide-react';
 
 import { IssuerHeader } from 'learn-card-base';
 
 import type { CredentialOffer } from '@learncard/openid4vc-plugin';
+
+import FlowSteps from './FlowSteps';
 
 export interface OfferAuthRedirectProps {
     offer: CredentialOffer;
@@ -58,19 +60,38 @@ const OfferAuthRedirect: React.FC<OfferAuthRedirectProps> = ({
     };
 
     return (
-        <div className="min-h-full flex items-center justify-center p-4 font-poppins">
-            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-6 space-y-5">
+        <div
+            className="min-h-full flex items-center justify-center font-poppins"
+            style={{
+                paddingTop: 'max(1rem, env(safe-area-inset-top))',
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+                paddingRight: 'max(1rem, env(safe-area-inset-right))',
+            }}
+        >
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-6 space-y-5 animate-fade-in-up">
+                <FlowSteps current={2} />
+
                 <div className="text-center space-y-1">
                     <h1 className="text-xl font-semibold text-grayscale-900">
                         Sign in with the issuer
                     </h1>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        We&apos;re sending you to the issuer&apos;s sign-in page. We&apos;ll bring you right back here when they&apos;re done.
+                        Just a quick sign-in step at the issuer, then you'll come right back here.
                     </p>
                 </div>
 
                 <IssuerHeader issuerUrl={offer.credential_issuer} />
+
+                {/* Persistent breadcrumb \u2014 the wallet leaves the user
+                    on a foreign domain. Reassuring them visually that
+                    we'll bring them back is the single biggest
+                    perceived-trust win on this screen. */}
+                <div className="flex items-center justify-center gap-1.5 text-xs text-grayscale-500">
+                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                    We&apos;ll bring you back when they&apos;re done.
+                </div>
 
                 <div className="space-y-3">
                     <button
@@ -96,7 +117,7 @@ const OfferAuthRedirect: React.FC<OfferAuthRedirectProps> = ({
                         disabled={redirecting}
                         className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        Cancel
+                        Not now
                     </button>
                 </div>
             </div>

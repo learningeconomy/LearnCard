@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Award, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 import { IssuerHeader } from 'learn-card-base';
 
@@ -8,6 +8,16 @@ import type {
     CredentialIssuerMetadata,
     TxCode,
 } from '@learncard/openid4vc-plugin';
+
+import {
+    humanizeFormat,
+    prettifyConfigurationId,
+} from '../displayHelpers';
+import CredentialPreviewCard, {
+    type CredentialPreviewClaim,
+} from './CredentialPreviewCard';
+import FlowSteps from './FlowSteps';
+import WhatIsACredential from './WhatIsACredential';
 
 export interface OfferConsentProps {
     offer: CredentialOffer;
@@ -86,17 +96,46 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
         [offer, metadata]
     );
 
+    const issuerDisplayName = issuerDisplay?.name?.trim();
+
+    const headlineLead = issuerDisplayName
+        ? `${issuerDisplayName} wants to add`
+        : 'An issuer wants to add';
+
+    const credentialNoun =
+        credentialItems.length === 1
+            ? credentialItems[0].title.toLowerCase().includes('credential')
+                ? credentialItems[0].title
+                : `your ${credentialItems[0].title}`
+            : `${credentialItems.length} credentials`;
+
+    const primaryCtaLabel = isAuthCodeOnly
+        ? 'Continue to sign in'
+        : credentialItems.length > 1
+        ? 'Save all to wallet'
+        : 'Save to Wallet';
+
     return (
-        <div className="min-h-full flex items-center justify-center p-4 font-poppins">
-            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
+        <div
+            className="min-h-full flex items-center justify-center font-poppins"
+            style={{
+                paddingTop: 'max(1rem, env(safe-area-inset-top))',
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+                paddingRight: 'max(1rem, env(safe-area-inset-right))',
+            }}
+        >
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden animate-fade-in-up">
                 <div className="p-6 space-y-5">
+                    <FlowSteps current={1} />
+
                     <div>
-                        <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
-                            Accept credential?
+                        <h1 className="text-xl font-semibold text-grayscale-900 leading-snug">
+                            {headlineLead} {credentialNoun} to your wallet.
                         </h1>
 
-                        <p className="text-sm text-grayscale-600 leading-relaxed">
-                            An issuer wants to send you the following credentials. Review the details before accepting.
+                        <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
+                            Your wallet keeps it forever — share it whenever you need to prove what it says.
                         </p>
                     </div>
 
@@ -105,41 +144,48 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                         display={issuerDisplay}
                     />
 
-                    <div>
-                        <p className="text-xs font-medium text-grayscale-700 mb-2 uppercase tracking-wide">
-                            Credentials being offered
-                        </p>
+                    <div className="space-y-3">
+                        {credentialItems.slice(0, 3).map(item => (
+                            <CredentialPreviewCard
+                                key={item.id}
+                                title={item.title}
+                                description={item.description}
+                                claims={item.claims}
+                                issuerUrl={offer.credential_issuer}
+                                issuerName={issuerDisplayName}
+                                issuerLogoUri={issuerDisplay?.logo?.uri}
+                            />
+                        ))}
 
-                        <ul className="space-y-2">
-                            {credentialItems.map((item) => (
-                                <li
-                                    key={item.id}
-                                    className="flex items-start gap-3 p-3 rounded-xl border border-grayscale-200 bg-white"
-                                >
-                                    <div className="shrink-0 w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                                        <Award className="w-5 h-5 text-emerald-600" />
-                                    </div>
+                        {credentialItems.length > 3 && (
+                            <p className="text-xs text-grayscale-500 text-center">
+                                +{credentialItems.length - 3} more credential
+                                {credentialItems.length - 3 === 1 ? '' : 's'} in this offer
+                            </p>
+                        )}
 
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-grayscale-900 truncate">
-                                            {item.title}
-                                        </p>
+                        {credentialItems.some(item => item.format) && (
+                            <details className="group">
+                                <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
+                                    Technical details
+                                </summary>
 
-                                        {item.description && (
-                                            <p className="text-xs text-grayscale-500 leading-relaxed mt-0.5 line-clamp-2">
-                                                {item.description}
-                                            </p>
-                                        )}
-
-                                        {item.format && (
-                                            <p className="text-[10px] text-grayscale-400 font-mono mt-0.5">
-                                                {item.format}
-                                            </p>
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                                <ul className="mt-2 space-y-1 text-xs text-grayscale-500">
+                                    {credentialItems.map(item => (
+                                        <li key={`fmt-${item.id}`} className="flex items-baseline gap-2">
+                                            <span className="font-medium text-grayscale-700">
+                                                {item.title}
+                                            </span>
+                                            {item.format && (
+                                                <span className="text-grayscale-400">
+                                                    · {humanizeFormat(item.format) ?? item.format}
+                                                </span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </details>
+                        )}
                     </div>
 
                     {txCodeSpec && (
@@ -155,7 +201,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                             <ShieldAlert className="text-amber-500 w-5 h-5 mt-0.5 shrink-0" />
 
                             <span className="text-xs text-amber-800 leading-relaxed">
-                                The issuer will redirect you to sign in before issuing this credential. We&apos;ll bring you right back when they&apos;re done.
+                                The issuer will ask you to sign in before issuing this credential. We&apos;ll bring you right back when they&apos;re done.
                             </span>
                         </div>
                     )}
@@ -166,15 +212,19 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                             disabled={!txCodeValid}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {isAuthCodeOnly ? 'Continue to issuer' : 'Accept and continue'}
+                            {primaryCtaLabel}
                         </button>
 
                         <button
                             onClick={onCancel}
                             className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
-                            Cancel
+                            Not now
                         </button>
+                    </div>
+
+                    <div className="flex justify-center pt-2">
+                        <WhatIsACredential />
                     </div>
                 </div>
             </div>
@@ -233,6 +283,13 @@ interface CredentialItem {
     title: string;
     description?: string;
     format?: string;
+    /**
+     * Pre-issuance claim labels extracted from `credential_configurations_supported[id].claims`
+     * (or, for ldp_vc / jwt_vc_json, `credential_definition.credentialSubject`). Empty when the
+     * issuer ships no claim metadata. Values are intentionally unset — they're filled in by the
+     * issuer at issuance time, and the preview card shows a placeholder line for each.
+     */
+    claims?: CredentialPreviewClaim[];
 }
 
 const describeCredentials = (
@@ -248,14 +305,21 @@ const describeCredentials = (
                   format?: unknown;
                   display?: unknown[];
                   scope?: unknown;
+                  claims?: unknown;
+                  credential_definition?: unknown;
               }
             | undefined;
 
         const display = pickFirstDisplay(config?.display);
-        const title =
+
+        // Run the metadata-supplied display name (when present) through the
+        // prettifier as a safety net — some issuers ship snake_cased names
+        // that should still be Title-Cased before render.
+        const rawTitle =
             (display && stringField(display, 'name'))
             || stringField(config, 'scope')
-            || id;
+            || undefined;
+        const title = prettifyConfigurationId(id, { displayName: rawTitle });
 
         const description =
             display && stringField(display, 'description')
@@ -263,14 +327,93 @@ const describeCredentials = (
                 : undefined;
 
         const format = config && stringField(config, 'format');
+        const claims = extractClaimLabels(config);
 
         return {
             id,
             title,
             description,
             format,
+            claims: claims.length > 0 ? claims : undefined,
         };
     });
+};
+
+/**
+ * Best-effort extractor for claim label metadata. Walks the multiple
+ * shapes OID4VCI defines depending on credential format:
+ *
+ *   - `dc+sd-jwt` / `vc+sd-jwt`: `claims` is a record keyed by claim name
+ *     with `{ display: [{ name }], mandatory? }`.
+ *   - `jwt_vc_json` / `ldp_vc`: claim labels live under
+ *     `credential_definition.credentialSubject.<name>.display[0].name`.
+ *   - `mso_mdoc`: `claims` is a record keyed by namespace, each containing
+ *     a record of claim names. We flatten the first namespace.
+ *
+ * Returns an empty array when nothing matches — the preview card
+ * gracefully omits the claim list in that case.
+ */
+const extractClaimLabels = (
+    config:
+        | {
+              format?: unknown;
+              claims?: unknown;
+              credential_definition?: unknown;
+          }
+        | undefined
+): CredentialPreviewClaim[] => {
+    if (!config) return [];
+
+    // Shape 1: SD-JWT / draft-15 — `claims` is a flat record.
+    const claimsRecord = config.claims;
+    if (claimsRecord && typeof claimsRecord === 'object' && !Array.isArray(claimsRecord)) {
+        const flat = flattenClaimRecord(claimsRecord as Record<string, unknown>);
+        if (flat.length > 0) return flat;
+    }
+
+    // Shape 2: jwt_vc_json / ldp_vc — dive into
+    // `credential_definition.credentialSubject`.
+    const credDef = config.credential_definition;
+    if (credDef && typeof credDef === 'object') {
+        const subj = (credDef as Record<string, unknown>).credentialSubject;
+        if (subj && typeof subj === 'object' && !Array.isArray(subj)) {
+            const flat = flattenClaimRecord(subj as Record<string, unknown>);
+            if (flat.length > 0) return flat;
+        }
+    }
+
+    return [];
+};
+
+const flattenClaimRecord = (
+    record: Record<string, unknown>
+): CredentialPreviewClaim[] => {
+    const out: CredentialPreviewClaim[] = [];
+    for (const [key, value] of Object.entries(record)) {
+        if (!value || typeof value !== 'object') continue;
+        const v = value as Record<string, unknown>;
+        const display = Array.isArray(v.display) ? v.display[0] : undefined;
+        const labelFromDisplay =
+            display && typeof display === 'object'
+                ? stringField(display, 'name')
+                : undefined;
+
+        // Use the displayed label when ship it, else humanize the key.
+        const label = labelFromDisplay ?? humanizeKey(key);
+        if (label) out.push({ label });
+    }
+    return out;
+};
+
+const humanizeKey = (key: string): string => {
+    return key
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/[_\-.]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .map(w => (w.length === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+        .join(' ');
 };
 
 const pickFirstDisplay = (

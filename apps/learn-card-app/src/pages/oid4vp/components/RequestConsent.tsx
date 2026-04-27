@@ -86,7 +86,15 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     };
 
     return (
-        <div className="min-h-full flex items-center justify-center p-4 font-poppins">
+        <div
+            className="min-h-full flex items-center justify-center font-poppins"
+            style={{
+                paddingTop: 'max(1rem, env(safe-area-inset-top))',
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+                paddingRight: 'max(1rem, env(safe-area-inset-right))',
+            }}
+        >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
                 <div className="p-6 space-y-5">
                     <div>

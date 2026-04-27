@@ -11,6 +11,7 @@ import {
 import {
     fetchCredentialIssuerMetadata,
 } from '@learncard/openid4vc-plugin';
+import type { VC } from '@learncard/types';
 import type {
     AcceptedCredentialResult,
     AuthCodeFlowHandle,
@@ -50,6 +51,17 @@ type Phase =
           kind: 'finished';
           stored: StoreAcceptedCredentialsResult['stored'];
           failures: StoreAcceptedCredentialsResult['failures'];
+          /** Carried forward from the consent or auth-code-return leg so the
+           * success card can render branded issuer info instead of falling
+           * back to the gradient avatar. */
+          issuerUrl: string;
+          issuerName?: string;
+          issuerLogoUri?: string;
+          /**
+           * The issuer's metadata, threaded forward so the success-screen
+           * preview card can read claim metadata for the issued credentials.
+           */
+          metadata?: CredentialIssuerMetadata;
       }
     | { kind: 'error'; error: unknown };
 
@@ -145,8 +157,37 @@ const Oid4vciExchange: React.FC = () => {
                 // indistinguishable wallet entries.
                 const stored = await persistAcceptedCredentials(wallet, accepted);
 
+                // Best-effort metadata refetch so the success card can
+                // brand the issuer. We don't block on it: if it fails,
+                // the card falls through the same avatar chain that
+                // handles unbranded issuers gracefully.
+                let metadata: CredentialIssuerMetadata | undefined;
+                try {
+                    metadata = await fetchCredentialIssuerMetadata(
+                        persisted.flowHandle.issuer
+                    );
+                } catch (metadataError) {
+                    console.warn(
+                        'OID4VCI auth-code return: failed to refetch metadata for success-screen branding',
+                        metadataError
+                    );
+                }
+
+                const issuerInfo = pickIssuerInfo(
+                    persisted.flowHandle.issuer,
+                    metadata
+                );
+
                 clearAuthCodeState();
-                setPhase({ kind: 'finished', stored: stored.stored, failures: stored.failures });
+                setPhase({
+                    kind: 'finished',
+                    stored: stored.stored,
+                    failures: stored.failures,
+                    issuerUrl: persisted.flowHandle.issuer,
+                    issuerName: issuerInfo.name,
+                    issuerLogoUri: issuerInfo.logoUri,
+                    metadata,
+                });
             } catch (error) {
                 console.error('OID4VCI auth-code return failed', error);
                 clearAuthCodeState();
@@ -204,6 +245,10 @@ const Oid4vciExchange: React.FC = () => {
         async ({ txCode }: { txCode?: string }) => {
             if (phase.kind !== 'consent') return;
             const currentOffer = phase.offer;
+            // Capture before any setPhase calls reshape `phase` so we can
+            // forward the metadata into the `finished` state for branded
+            // success-card rendering.
+            const currentMetadata = phase.metadata;
 
             try {
                 const wallet = (await initWallet()) as unknown as {
@@ -228,10 +273,19 @@ const Oid4vciExchange: React.FC = () => {
                         { txCode, signer }
                     );
 
+                    const issuerInfo = pickIssuerInfo(
+                        currentOffer.credential_issuer,
+                        currentMetadata
+                    );
+
                     setPhase({
                         kind: 'finished',
                         stored: result.stored,
                         failures: result.failures,
+                        issuerUrl: currentOffer.credential_issuer,
+                        issuerName: issuerInfo.name,
+                        issuerLogoUri: issuerInfo.logoUri,
+                        metadata: currentMetadata,
                     });
                     return;
                 }
@@ -344,13 +398,24 @@ const Oid4vciExchange: React.FC = () => {
 
                 {phase.kind === 'finished' && (
                     <OfferFinished
-                        stored={phase.stored.map((entry) => ({
+                        stored={phase.stored.map(entry => ({
                             configurationId: entry.configurationId,
                             format: entry.format,
                             title: extractTitle(entry.vc),
+                            description: extractDescription(entry.vc),
+                            // Pass the raw VC body so OfferFinished can
+                            // render `BoostEarnedCard` directly when the
+                            // shape is VCDM-compliant. The component
+                            // gracefully falls back to a metadata-only
+                            // preview otherwise (SD-JWT, mdoc).
+                            vc: entry.vc as VC | undefined,
                         }))}
                         failures={phase.failures}
+                        issuerUrl={phase.issuerUrl}
+                        issuerName={phase.issuerName}
+                        issuerLogoUri={phase.issuerLogoUri}
                         onViewWallet={handleViewWallet}
+                        onShare={() => history.push('/wallet')}
                         onDone={() => history.push('/')}
                     />
                 )}
@@ -456,4 +521,67 @@ const extractTitle = (vc: unknown): string | undefined => {
     }
 
     return undefined;
+};
+
+/**
+ * Best-effort one-line description from a stored credential. Tries the
+ * top-level `description`, then `credentialSubject.achievement.description`
+ * (OBv3 shape). Falls back to `undefined` so the success card omits the
+ * line entirely instead of showing an empty placeholder.
+ */
+const extractDescription = (vc: unknown): string | undefined => {
+    if (!vc || typeof vc !== 'object') return undefined;
+    const v = vc as Record<string, unknown>;
+
+    if (typeof v.description === 'string' && v.description.length > 0) {
+        return v.description;
+    }
+
+    const subject = v.credentialSubject;
+    if (subject && typeof subject === 'object') {
+        const achievement = (subject as Record<string, unknown>).achievement;
+        if (achievement && typeof achievement === 'object') {
+            const a = achievement as Record<string, unknown>;
+            if (typeof a.description === 'string' && a.description.length > 0) {
+                return a.description;
+            }
+        }
+    }
+
+    return undefined;
+};
+
+/**
+ * Pull a stable display name + logo URI from issuer metadata for the
+ * post-issuance success screen. Both are optional \u2014 the components
+ * gracefully fall back to favicon \u2192 gradient avatar when absent.
+ */
+const pickIssuerInfo = (
+    _issuerUrl: string,
+    metadata?: CredentialIssuerMetadata
+): { name?: string; logoUri?: string } => {
+    if (!metadata) return {};
+
+    const display = metadata.display;
+    if (!Array.isArray(display) || display.length === 0) return {};
+
+    const first = display[0];
+    if (!first || typeof first !== 'object') return {};
+
+    const f = first as Record<string, unknown>;
+    const name =
+        typeof f.name === 'string' && f.name.trim().length > 0
+            ? f.name.trim()
+            : undefined;
+
+    let logoUri: string | undefined;
+    const logo = f.logo;
+    if (logo && typeof logo === 'object') {
+        const uri = (logo as Record<string, unknown>).uri;
+        if (typeof uri === 'string' && uri.length > 0) {
+            logoUri = uri;
+        }
+    }
+
+    return { name, logoUri };
 };
