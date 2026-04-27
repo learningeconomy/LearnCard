@@ -2408,18 +2408,18 @@ export const appStoreRouter = t.router({
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
         }),
 
-    // ==================== Bench Routes (Admin) ====================
+    // ==================== Bench Routes (gated client-side via LaunchDarkly) ====================
 
     benchAppEvent: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/app-store/admin/bench-appevent',
-                tags: ['App Store Admin'],
-                summary: 'Run AppEvent perf bench (admin only)',
+                path: '/app-store/bench-appevent',
+                tags: ['App Store'],
+                summary: 'Run AppEvent perf bench',
                 description:
-                    'Runs handleSendCredentialEvent N times against the configured listing and recipient, captures per-phase timings, and emits PostHog events. Admin-only.',
+                    'Runs handleSendCredentialEvent N times against the configured listing and recipient, captures per-phase timings, and emits PostHog events. UI access is gated client-side via LaunchDarkly.',
             },
             requiredScope: 'app-store:write',
         })
@@ -2435,8 +2435,6 @@ export const appStoreRouter = t.router({
         )
         .output(z.record(z.string(), z.unknown()))
         .mutation(async ({ input, ctx }): Promise<BenchRunResult> => {
-            verifyAppStoreAdmin(ctx.user.profile.profileId);
-
             const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
             const recipient = recipientProfiles[0];
             if (!recipient) {
@@ -2493,11 +2491,11 @@ export const appStoreRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/app-store/admin/cleanup-bench-data',
-                tags: ['App Store Admin'],
-                summary: 'Cleanup bench-generated credentials/notifications/activity (admin only)',
+                path: '/app-store/cleanup-bench-data',
+                tags: ['App Store'],
+                summary: 'Cleanup bench-generated credentials/notifications/activity',
                 description:
-                    'Deletes all credentials, notifications, and activity entries for the given recipient profile. Used between perf bench runs.',
+                    'Deletes all credentials, notifications, and activity entries for the given recipient profile. Used between perf bench runs. UI access is gated client-side via LaunchDarkly.',
             },
             requiredScope: 'app-store:write',
         })
@@ -2509,9 +2507,7 @@ export const appStoreRouter = t.router({
                 activityEntriesDeleted: z.number(),
             })
         )
-        .mutation(async ({ input, ctx }) => {
-            verifyAppStoreAdmin(ctx.user.profile.profileId);
-
+        .mutation(async ({ input }) => {
             const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
             const recipient = recipientProfiles[0];
             if (!recipient) {
