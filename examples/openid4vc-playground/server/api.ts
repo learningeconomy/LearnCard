@@ -33,6 +33,7 @@ import {
     createEudiVerifySession,
     getEudiVerifyStatus,
 } from './eudi';
+import { mintHostedEudiOffer } from './eudi-issuer';
 
 /** Resolved on import; lets every endpoint share an env baseline. */
 const ISSUER_BASE_URL = process.env.WALTID_ISSUER_BASE_URL ?? 'http://localhost:7002';
@@ -290,6 +291,50 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
                 rawAuthRequestUri: swappedUri,
                 state: session.state,
             };
+        },
+    },
+
+    /* ----------------------------- VCI \u2014 EUDI ------------------------------ */
+    /*                                                                         */
+    /* These offers point at the **hosted** EU reference issuer at             */
+    /* https://issuer.eudiw.dev/. They're hand-constructed (no admin API on    */
+    /* the EUDI side), all use authorization_code, and rely on the wallet's    */
+    /* OIDC redirect handler to bring the user back with a credential. Format  */
+    /* coverage is the unique value here \u2014 dc+sd-jwt and mso_mdoc, neither     */
+    /* of which the local walt.id stack issues.                                */
+
+    'eudi:vci-eudi-diploma-sdjwt': {
+        kind: 'vci',
+        label: 'Academic diploma (SD-JWT VC) \u2014 EUDI hosted',
+        run: async () => {
+            const { rawOfferUri } = mintHostedEudiOffer({
+                credentialConfigurationIds: [
+                    'eu.europa.ec.eudi.diploma_vc_sd_jwt',
+                ],
+            });
+            return { rawOfferUri };
+        },
+    },
+
+    'eudi:vci-eudi-pid-sdjwt': {
+        kind: 'vci',
+        label: 'Personal ID (SD-JWT VC) \u2014 EUDI hosted',
+        run: async () => {
+            const { rawOfferUri } = mintHostedEudiOffer({
+                credentialConfigurationIds: ['eu.europa.ec.eudi.pid_vc_sd_jwt'],
+            });
+            return { rawOfferUri };
+        },
+    },
+
+    'eudi:vci-eudi-mdl-mdoc': {
+        kind: 'vci',
+        label: 'Mobile Driving Licence (mDoc) \u2014 EUDI hosted',
+        run: async () => {
+            const { rawOfferUri } = mintHostedEudiOffer({
+                credentialConfigurationIds: ['eu.europa.ec.eudi.mdl_mdoc'],
+            });
+            return { rawOfferUri };
         },
     },
 

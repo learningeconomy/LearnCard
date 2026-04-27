@@ -7,6 +7,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
 
 import { ApiError, handleLaunch, handleStatus } from './api';
+import { handleEudiProxy } from './eudi-proxy';
 
 export const playgroundApiPlugin = (): Plugin => ({
     name: 'openid4vc-playground-api',
@@ -15,6 +16,11 @@ export const playgroundApiPlugin = (): Plugin => ({
             const url = req.url ?? '';
 
             try {
+                // EUDI reverse proxy intercepts before any other route \u2014
+                // its handler returns true once it has written the
+                // response, false if the URL didn't match its prefix.
+                if (await handleEudiProxy(req, res)) return;
+
                 if (req.method === 'POST' && url.startsWith('/api/launch')) {
                     const body = await readJson(req);
                     const result = await handleLaunch(body);

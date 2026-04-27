@@ -89,6 +89,47 @@ export const SCENARIOS: Scenario[] = [
         supportedProviders: ['waltid'],
     },
 
+    /* ----------------------------- VCI \u2014 EUDI ------------------------------ */
+    /*                                                                         */
+    /* Hand-constructed credential offers pointing at the hosted EU reference  */
+    /* issuer (https://issuer.eudiw.dev/). All EUDI offers are auth-code only  */
+    /* \u2014 the wallet bounces the user to EUDI's OIDC where a self-serve dev    */
+    /* login produces the credential. Format coverage is what these scenarios  */
+    /* unlock: dc+sd-jwt and mso_mdoc, neither of which walt.id ships.         */
+
+    {
+        id: 'vci-eudi-diploma-sdjwt',
+        kind: 'vci',
+        name: 'Academic diploma (SD-JWT VC) \u2014 EUDI',
+        description:
+            'Auth-code offer for the EU `eu.europa.ec.eudi.diploma_vc_sd_jwt` credential, format `dc+sd-jwt`. Wallet redirects to EUDI\u2019s OIDC and brings back a real-EU diploma VC.',
+        exercises:
+            'OID4VCI draft-15 wire compatibility + `dc+sd-jwt` format string handling + EUDI OIDC redirect roundtrip.',
+        supportedProviders: ['eudi'],
+        note: 'EUDI uses DPoP and (optionally) credential response encryption \u2014 if the wallet plugin doesn\u2019t support these, this scenario surfaces the gap precisely where it fails.',
+    },
+    {
+        id: 'vci-eudi-pid-sdjwt',
+        kind: 'vci',
+        name: 'Personal ID (SD-JWT VC) \u2014 EUDI',
+        description:
+            'Auth-code offer for `eu.europa.ec.eudi.pid_vc_sd_jwt` \u2014 the canonical EU Personal Identification credential.',
+        exercises:
+            'Same as the diploma path, but with EUDI\u2019s most heavily-tested credential type. Use this as the smoke test.',
+        supportedProviders: ['eudi'],
+    },
+    {
+        id: 'vci-eudi-mdl-mdoc',
+        kind: 'vci',
+        name: 'Mobile Driving Licence (mDoc) \u2014 EUDI',
+        description:
+            'Auth-code offer for `eu.europa.ec.eudi.mdl_mdoc`, format `mso_mdoc` (ISO 18013-5). Wallet stores the CBOR-encoded credential rather than a JWT/SD-JWT.',
+        exercises:
+            'mDoc storage + decode path. The wallet plugin currently only stores JWT/SD-JWT VCs \u2014 expect this scenario to surface gaps in mDoc support.',
+        supportedProviders: ['eudi'],
+        note: 'May fail at the storage step depending on wallet plugin coverage \u2014 the failure mode tells us what mDoc-side work remains.',
+    },
+
     /* ----------------------------- VP scenarios ----------------------------- */
 
     {
