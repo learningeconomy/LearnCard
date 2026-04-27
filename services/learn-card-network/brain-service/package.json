@@ -87,6 +87,7 @@
         "mustache": "^4.2.0",
         "neo4j-driver": "5.18.0",
         "neogma": "1.13.0",
+        "posthog-node": "^4.0.0",
         "postmark": "^4.0.5",
         "sift": "^17.0.1",
         "trpc-to-openapi": "^3.1.0",
