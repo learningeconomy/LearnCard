@@ -42,6 +42,9 @@ export const AnalyticsEvents = {
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
     LAUNCHPAD_QUICKNAV_ACTION_CLICKED: 'launchpad_quicknav_action_clicked',
     LAUNCHPAD_APP_INSTALLED: 'launchpad_app_installed',
+
+    // LC-1644 perf bench (admin-only)
+    BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -158,6 +161,15 @@ export interface AnalyticsEventPayloads {
         appName: string;
         appId: string;
         category?: string;
+    };
+
+    [AnalyticsEvents.BENCH_APPEVENT_RUN_TRIGGERED]: {
+        run_id: string;
+        iterations: number;
+        warmup: number;
+        listing_id: string;
+        recipient_profile_id: string;
+        run_label: string;
     };
 }
 
