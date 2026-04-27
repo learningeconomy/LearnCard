@@ -2202,6 +2202,17 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.appEvent.mutate({ listingId, event });
             },
 
+            benchAppEvent: async (_learnCard, input) => {
+                await ensureUser();
+                // tRPC output is z.record(), cast to known shape
+                return client.appStore.benchAppEvent.mutate(input) as any;
+            },
+
+            cleanupBenchAppEventData: async (_learnCard, input) => {
+                await ensureUser();
+                return client.appStore.cleanupBenchAppEventData.mutate(input);
+            },
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 

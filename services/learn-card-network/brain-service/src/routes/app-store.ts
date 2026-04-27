@@ -6,10 +6,13 @@ import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
 
+import { neogma } from '@instance';
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { PerfTracker } from '@helpers/perf';
+import { runBench, type BenchRunResult } from '@helpers/bench-appevent.helpers';
+import { benchContextStorage, type BenchContext } from '@helpers/bench-context.helpers';
 import cache from '@cache';
 import { getLRUCache } from '@cache/in-memory-lru';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -587,9 +590,10 @@ const handleSendCredentialEvent = async (
     ctx: { domain: string },
     profile: { profileId: string },
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    perfTracker?: PerfTracker
 ): Promise<Record<string, unknown>> => {
-    const perf = new PerfTracker('handleSendCredentialEvent');
+    const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
 
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
@@ -2394,6 +2398,158 @@ export const appStoreRouter = t.router({
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
+        }),
+
+    // ==================== Bench Routes (Admin) ====================
+
+    benchAppEvent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/admin/bench-appevent',
+                tags: ['App Store Admin'],
+                summary: 'Run AppEvent perf bench (admin only)',
+                description:
+                    'Runs handleSendCredentialEvent N times against the configured listing and recipient, captures per-phase timings, and emits PostHog events. Admin-only.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipientProfileId: z.string(),
+                templateAlias: z.string(),
+                iterations: z.number().int().min(1).max(100),
+                warmup: z.number().int().min(0).max(10).default(2),
+                runLabel: z.string().optional(),
+            })
+        )
+        .output(z.record(z.string(), z.unknown()))
+        .mutation(async ({ input, ctx }): Promise<BenchRunResult> => {
+            verifyAppStoreAdmin(ctx.user.profile.profileId);
+
+            const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
+            const recipient = recipientProfiles[0];
+            if (!recipient) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+            const listing = await readAppStoreListingByIdOrSlug(input.listingId);
+            if (!listing) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App Store Listing not found',
+                });
+            }
+
+            const runLabel = input.runLabel ?? `bench-${new Date().toISOString()}`;
+
+            const runIteration = async () => {
+                const benchCtx: BenchContext = { sa_http_ms: 0, sa_didauthvp_ms: 0 };
+                const tracker = new PerfTracker('bench-appevent-iteration');
+                await benchContextStorage.run(benchCtx, async () => {
+                    await handleSendCredentialEvent(
+                        ctx,
+                        { profileId: recipient.profileId },
+                        listing.listing_id,
+                        {
+                            type: 'send-credential',
+                            templateAlias: input.templateAlias,
+                            templateData: {},
+                        },
+                        tracker
+                    );
+                });
+                return {
+                    captured: tracker.capture(),
+                    saHttpMs: benchCtx.sa_http_ms,
+                    saDidAuthVpMs: benchCtx.sa_didauthvp_ms,
+                };
+            };
+
+            return runBench({
+                iterations: input.iterations,
+                warmup: input.warmup,
+                runLabel,
+                listingId: listing.listing_id,
+                recipientProfileId: recipient.profileId,
+                runIteration,
+            });
+        }),
+
+    cleanupBenchAppEventData: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/admin/cleanup-bench-data',
+                tags: ['App Store Admin'],
+                summary: 'Cleanup bench-generated credentials/notifications/activity (admin only)',
+                description:
+                    'Deletes all credentials, notifications, and activity entries for the given recipient profile. Used between perf bench runs.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ recipientProfileId: z.string() }))
+        .output(
+            z.object({
+                credentialsDeleted: z.number(),
+                notificationsDeleted: z.number(),
+                activityEntriesDeleted: z.number(),
+            })
+        )
+        .mutation(async ({ input, ctx }) => {
+            verifyAppStoreAdmin(ctx.user.profile.profileId);
+
+            const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
+            const recipient = recipientProfiles[0];
+            if (!recipient) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+
+            // Delete credentials received by this profile (CREDENTIAL_RECEIVED)
+            const credResult = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})<-[:CREDENTIAL_RECEIVED]-(c:Credential)
+                 WITH collect(c) AS creds
+                 FOREACH (n IN creds | DETACH DELETE n)
+                 RETURN size(creds) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const credentialsDeleted =
+                (credResult.records[0]?.get('cnt') as number) ?? 0;
+
+            // Delete inbox credentials (notifications) connected to this profile.
+            // In the model, Profile has outgoing relationships to InboxCredential
+            // (DELIVERED_INBOX_CREDENTIAL, CLAIMED_INBOX_CREDENTIAL, etc.).
+            const notifResult = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})-[r]->(i:InboxCredential)
+                 WITH collect(DISTINCT i) AS inboxes
+                 FOREACH (n IN inboxes | DETACH DELETE n)
+                 RETURN size(inboxes) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const notificationsDeleted =
+                (notifResult.records[0]?.get('cnt') as number) ?? 0;
+
+            // Delete credential activity entries where this profile is the recipient
+            // (TO_RECIPIENT relationship from CredentialActivity to Profile).
+            const actResult = await neogma.queryRunner.run(
+                `MATCH (a:CredentialActivity)-[:TO_RECIPIENT]->(p:Profile {profileId: $profileId})
+                 WITH collect(a) AS activities
+                 FOREACH (n IN activities | DETACH DELETE n)
+                 RETURN size(activities) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const activityEntriesDeleted =
+                (actResult.records[0]?.get('cnt') as number) ?? 0;
+
+            return { credentialsDeleted, notificationsDeleted, activityEntriesDeleted };
         }),
 
     // ==================== Admin Routes ====================
