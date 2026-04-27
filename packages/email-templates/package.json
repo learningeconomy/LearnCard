@@ -1,6 +1,6 @@
 {
     "name": "@learncard/email-templates",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "private": true,
     "description": "Git-managed, tenant-branded email and SMS templates for LearnCard services",
     "main": "dist/index.js",
