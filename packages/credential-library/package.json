@@ -1,6 +1,6 @@
 {
     "name": "@learncard/credential-library",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Comprehensive library of Verifiable Credential fixtures for testing, development, and regression prevention across the VC ecosystem",
     "main": "./dist/index.js",
     "module": "./dist/credential-library.esm.js",

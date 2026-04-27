@@ -1,6 +1,6 @@
 {
     "name": "@learncard/app-store-demo-request-learner-context",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "private": true,
     "type": "module",
     "scripts": {
@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@learncard/partner-connect": "workspace:*",
-        "astro": "^5.0.0"
+        "astro": "6.0.6"
     },
     "devDependencies": {
         "@astrojs/tailwind": "^6.0.2",
