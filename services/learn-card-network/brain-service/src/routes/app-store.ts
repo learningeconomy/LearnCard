@@ -10,6 +10,8 @@ import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { PerfTracker } from '@helpers/perf';
+import { runBench, type BenchRunResult } from '@helpers/bench-appevent.helpers';
+import { benchContextStorage, type BenchContext } from '@helpers/bench-context.helpers';
 import cache from '@cache';
 import { getLRUCache } from '@cache/in-memory-lru';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -2395,6 +2397,129 @@ export const appStoreRouter = t.router({
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
+        }),
+
+    // ==================== Bench Routes (Admin) ====================
+
+    benchAppEvent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/admin/bench-appevent',
+                tags: ['App Store Admin'],
+                summary: 'Run AppEvent perf bench (admin only)',
+                description:
+                    'Runs handleSendCredentialEvent N times against the configured listing and recipient, captures per-phase timings, and emits PostHog events. Admin-only.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipientProfileId: z.string(),
+                templateAlias: z.string(),
+                iterations: z.number().int().min(1).max(100),
+                warmup: z.number().int().min(0).max(10).default(2),
+                runLabel: z.string().optional(),
+            })
+        )
+        .output(z.record(z.string(), z.unknown()))
+        .mutation(async ({ input, ctx }): Promise<BenchRunResult> => {
+            verifyAppStoreAdmin(ctx.user.profile.profileId);
+
+            const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
+            const recipient = recipientProfiles[0];
+            if (!recipient) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+            const listing = await readAppStoreListingByIdOrSlug(input.listingId);
+            if (!listing) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App Store Listing not found',
+                });
+            }
+
+            const runLabel = input.runLabel ?? `bench-${new Date().toISOString()}`;
+
+            const runIteration = async () => {
+                const benchCtx: BenchContext = { sa_http_ms: 0, sa_didauthvp_ms: 0 };
+                const tracker = new PerfTracker('bench-appevent-iteration');
+                await benchContextStorage.run(benchCtx, async () => {
+                    await handleSendCredentialEvent(
+                        ctx,
+                        { profileId: recipient.profileId },
+                        listing.listing_id,
+                        {
+                            type: 'send-credential',
+                            templateAlias: input.templateAlias,
+                            templateData: {},
+                        },
+                        tracker
+                    );
+                });
+                return {
+                    captured: tracker.capture(),
+                    saHttpMs: benchCtx.sa_http_ms,
+                    saDidAuthVpMs: benchCtx.sa_didauthvp_ms,
+                };
+            };
+
+            return runBench({
+                iterations: input.iterations,
+                warmup: input.warmup,
+                runLabel,
+                listingId: listing.listing_id,
+                recipientProfileId: recipient.profileId,
+                runIteration,
+            });
+        }),
+
+    cleanupBenchAppEventData: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/admin/cleanup-bench-data',
+                tags: ['App Store Admin'],
+                summary: 'Cleanup bench-generated credentials/notifications/activity (admin only)',
+                description:
+                    'Deletes all credentials, notifications, and activity entries for the given recipient profile. Used between perf bench runs.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ recipientProfileId: z.string() }))
+        .output(
+            z.object({
+                credentialsDeleted: z.number(),
+                notificationsDeleted: z.number(),
+                activityEntriesDeleted: z.number(),
+            })
+        )
+        .mutation(async ({ input, ctx }) => {
+            verifyAppStoreAdmin(ctx.user.profile.profileId);
+
+            const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
+            const recipient = recipientProfiles[0];
+            if (!recipient) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+
+            // STUB — real implementation in Task 8a (next dispatch task).
+            // For now return zeros so the route shape and frontend integration
+            // can be developed against a working endpoint.
+            return {
+                credentialsDeleted: 0,
+                notificationsDeleted: 0,
+                activityEntriesDeleted: 0,
+            };
         }),
 
     // ==================== Admin Routes ====================
