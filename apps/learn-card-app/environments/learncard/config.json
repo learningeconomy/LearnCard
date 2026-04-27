@@ -108,6 +108,6 @@
             "lcw.app"
         ],
         "customSchemes": ["dccrequest", "msprequest", "asuprequest"],
-        "capgoChannel": "1.0.4"
+        "capgoChannel": "1.0.6"
     }
 }
