@@ -3,4 +3,4 @@
 'learn-card-app': patch
 ---
 
-Grow Skills redesign and modal
+Add widgets and My Skill Profile to AI Insights

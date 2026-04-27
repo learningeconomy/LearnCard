@@ -21,6 +21,7 @@ import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/qu
 import X from 'learn-card-base/svgs/X';
 import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
 import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import AddToLearnCardQuickNav from '../../../components/svgs/quicknav/AddToLearnCardQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
 import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
@@ -77,8 +78,11 @@ import {
     useGetCredentialList,
     CredentialCategoryEnum,
     switchedProfileStore,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
+import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
 
 const getIconForActionButton = (
     label: string,
@@ -143,6 +147,8 @@ const getIconForActionButton = (
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'Request Learner Insights':
             return <RequestInsightsQuickNav className="w-[50px] h-auto" />;
+        case 'Add to LearnCard':
+            return <AddToLearnCardQuickNav className="w-[50px] h-auto" />;
         case 'Boost Child':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
         case 'Create API Token':
@@ -392,7 +398,13 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${!bgHex ? bg : ''} w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${!textColor ? 'text-grayscale-900' : ''} rounded-[20px] text-center border-solid border-[3px] ${!borderColor ? 'border-white' : ''} shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${
+                !bgHex ? bg : ''
+            } w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${
+                !textColor ? 'text-grayscale-900' : ''
+            } rounded-[20px] text-center border-solid border-[3px] ${
+                !borderColor ? 'border-white' : ''
+            } shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
             style={{
                 ...(bgHex ? { backgroundColor: bgHex } : {}),
                 ...(textColor ? { color: textColor } : {}),
@@ -426,6 +438,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { familyCredential } = useGetFamilyCredential();
     const { data: familyList } = useGetCredentialList(CredentialCategoryEnum.family);
     const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
+    const { isDesktop } = useDeviceTypeByWidth();
 
     type ConsentFlowContractLike = { name?: string; uri?: string };
 
@@ -439,6 +452,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const roleScrollRef = useRef<HTMLDivElement>(null);
     const selectedRoleRef = useRef<HTMLButtonElement>(null);
     const isCenteringRef = useRef(false);
+    const isInitialRoleSetRef = useRef(true);
 
     // Filter out counselor for the visible roles list
     const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
@@ -472,10 +486,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             await wallet?.invoke?.updateProfile({
                 role: newRole,
             });
-            presentToast('Role updated', {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
         } catch (e) {
             setOptimisticRole(null);
             setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
@@ -492,12 +502,20 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             isCenteringRef.current = true;
             const container = roleScrollRef.current;
             const selectedElement = selectedRoleRef.current;
-            const containerWidth = container.offsetWidth;
-            const elementLeft = selectedElement.offsetLeft;
-            const elementWidth = selectedElement.offsetWidth;
-            const scrollPosition = elementLeft - containerWidth / 2 + elementWidth / 2;
+
+            // Use getBoundingClientRect for accurate pill center positioning
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = selectedElement.getBoundingClientRect();
+
+            // Calculate the center of the pill relative to the container's visible area
+            const elementCenterInViewport = elementRect.left + elementRect.width / 2;
+            const containerCenterInViewport = containerRect.left + containerRect.width / 2;
+
+            // Adjust scroll by the difference to center the pill
+            const scrollAdjustment = elementCenterInViewport - containerCenterInViewport;
+
             container.scrollTo({
-                left: scrollPosition,
+                left: container.scrollLeft + scrollAdjustment,
                 behavior: smooth ? 'smooth' : 'instant',
             });
             // Re-enable infinite scroll after animation completes
@@ -510,17 +528,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         }
     };
 
-    // Center on role change
+    // Center on role change (instant for initial set, smooth for user changes)
     useEffect(() => {
-        const timer = setTimeout(() => centerRole(true), 50);
+        if (role === null) return;
+        const useInstant = isInitialRoleSetRef.current;
+        isInitialRoleSetRef.current = false;
+        const timer = setTimeout(() => centerRole(!useInstant), useInstant ? 150 : 50);
         return () => clearTimeout(timer);
     }, [role]);
-
-    // Center on initial mount (instant, longer delay for layout)
-    useEffect(() => {
-        const timer = setTimeout(() => centerRole(false), 150);
-        return () => clearTimeout(timer);
-    }, []);
 
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
@@ -609,6 +624,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
+            'Add to LearnCard',
             'New AI Tutoring Session',
             'Understand My Skills',
             'Customize AI Sessions',
@@ -616,6 +632,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Build My LearnCard',
         ],
         [LearnCardRolesEnum.teacher]: [
+            'Add to LearnCard',
             'View Learner Insights',
             'Request Learner Insights',
             'Issue Credential',
@@ -623,6 +640,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Edit Skills Frameworks',
         ],
         [LearnCardRolesEnum.guardian]: [
+            'Add to LearnCard',
             'Create Family',
             'Boost Child',
             'Add Child',
@@ -630,6 +648,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'View Child Insights',
         ],
         [LearnCardRolesEnum.developer]: [
+            'Add to LearnCard',
             'Create API Token',
             'Create Signing Authority',
             'Create ConsentFlow',
@@ -637,6 +656,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Read Docs',
         ],
         [LearnCardRolesEnum.admin]: [
+            'Add to LearnCard',
             'Edit Skills Frameworks',
             'Import Credentials',
             'Create Organization',
@@ -644,6 +664,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Switch Account',
         ],
         [LearnCardRolesEnum.counselor]: [
+            'Add to LearnCard',
             'Manage Skills Frameworks',
             'Import Credentials',
             'Create Organization',
@@ -655,7 +676,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     let actions = RoleActions[activeRole] ?? [];
     if (activeRole === LearnCardRolesEnum.guardian) {
         if (familyCredential) {
-            actions = ['View Family', ...actions.filter(a => a !== 'Create Family')];
+            actions = [
+                'Add to LearnCard',
+                'View Family',
+                ...actions.filter(a => a !== 'Create Family' && a !== 'Add to LearnCard'),
+            ];
         } else {
             actions = actions.filter(a => a !== 'View Family');
         }
@@ -718,6 +743,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Create ConsentFlow': 'bg-[var(--ion-color-lime-300)]',
         'Switch Network': 'bg-[var(--ion-color-yellow-300)]',
         'Read Docs': 'bg-[var(--ion-color-teal-200)]',
+        'Add to LearnCard': 'bg-[var(--ion-color-grayscale-100)]',
     };
 
     const handleViewChildInsights = () => {
@@ -784,6 +810,24 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         }
     };
 
+    const handleAddToLearnCard = () => {
+        if (isDesktop) {
+            newModal(
+                <AddToLearnCardMenuWrapper />,
+                {
+                    sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
+                },
+                { desktop: ModalTypes.Center }
+            );
+        } else {
+            newModal(
+                <AddToLearnCardMenu />,
+                { sectionClassName: '!max-w-[500px]' },
+                { mobile: ModalTypes.BottomSheet }
+            );
+        }
+    };
+
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px]">
             <button
@@ -796,8 +840,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 <X className="w-[20px] h-[20px]" />
             </button>
             <div
-                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${!actionModalCardBgColor ? 'bg-white' : ''}`}
-                style={actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined}
+                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${
+                    !actionModalCardBgColor ? 'bg-white' : ''
+                }`}
+                style={
+                    actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined
+                }
             >
                 <div className="w-full flex items-center justify-center mb-[5px]">
                     <ProfilePicture
@@ -808,8 +856,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 </div>
                 <div className="flex flex-col items-center justify-center mb-[15px]">
                     <p
-                        className={`text-center text-[16px] font-poppins font-normal mb-[5px] ${!actionModalCardTextColor ? 'text-grayscale-800' : ''}`}
-                        style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
+                        className={`text-center text-[16px] font-poppins font-normal mb-[5px] ${
+                            !actionModalCardTextColor ? 'text-grayscale-800' : ''
+                        }`}
+                        style={
+                            actionModalCardTextColor
+                                ? { color: actionModalCardTextColor }
+                                : undefined
+                        }
                     >
                         {roleDescriptions[activeRole]}
                     </p>
@@ -906,7 +960,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             </div>
 
             <h3
-                className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${!actionModalCardTextColor ? 'text-grayscale-900' : ''}`}
+                className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${
+                    !actionModalCardTextColor ? 'text-grayscale-900' : ''
+                }`}
                 style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
             >
                 What would you like to do?
@@ -917,8 +973,16 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     <ActionButton
                         key={`${label}-${i}`}
                         label={label}
-                        bg={!actionModalButtonColors ? (colorByLabel[label] ?? bgColors[i % bgColors.length]) : ''}
-                        bgHex={actionModalButtonColors ? actionModalButtonColors[i % actionModalButtonColors.length] : undefined}
+                        bg={
+                            !actionModalButtonColors
+                                ? colorByLabel[label] ?? bgColors[i % bgColors.length]
+                                : ''
+                        }
+                        bgHex={
+                            actionModalButtonColors
+                                ? actionModalButtonColors[i % actionModalButtonColors.length]
+                                : undefined
+                        }
                         textColor={actionModalTextColor}
                         borderColor={actionModalButtonBorderColor}
                         role={activeRole}
@@ -944,6 +1008,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                 ? handleEditSkillsFrameworks
                                 : label === 'Request Learner Insights'
                                 ? () => void handleRequestLearnerInsights()
+                                : label === 'Add to LearnCard'
+                                ? handleAddToLearnCard
                                 : undefined
                         }
                     />

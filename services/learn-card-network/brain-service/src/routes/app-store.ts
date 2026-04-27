@@ -87,7 +87,12 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
+import {
+    getAppDidWeb,
+    getDidWeb,
+    getProfileIdFromDid,
+    getProfileIdFromString,
+} from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import {
     getContractTermsForProfile,
@@ -1158,10 +1163,7 @@ const handleRequestLearnerContextEvent = async (
             const contractDetails = await getContractDetailsByUri(contractUri);
 
             if (contractDetails?.contract) {
-                const terms = await getContractTermsForProfile(
-                    profile,
-                    contractDetails.contract
-                );
+                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
 
                 if (event.includeCredentials && terms?.terms?.read?.credentials) {
                     const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
@@ -2378,7 +2380,13 @@ export const appStoreRouter = t.router({
             }
 
             if (eventType === 'request-learner-context') {
-                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event, listing);
+                return handleRequestLearnerContextEvent(
+                    ctx,
+                    profile,
+                    resolvedListingId,
+                    event,
+                    listing
+                );
             }
 
             if (eventType === 'send-notification') {

@@ -12,6 +12,7 @@ import CustomSpinner from '../svgs/CustomSpinner';
 import BurgerIcon from '../../components/svgs/Burger';
 import AddToLearnCardMenu from '../../components/add-to-learncard-menu/AddToLearnCardMenu';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 
 import {
     getNavBarColor,
@@ -62,7 +63,10 @@ const MobileNavBar: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const isWalletSyncing = walletStore.useTracked.syncState();
 
-    const { newModal } = useModal();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Freeform,
+        mobile: ModalTypes.Freeform,
+    });
     const { gate } = useLCNGatedAction();
     const { data } = useGetUnreadUserNotifications();
 
@@ -73,16 +77,10 @@ const MobileNavBar: React.FC = () => {
         const { prompted } = await gate();
         if (prompted) return;
 
-        newModal(
-            <AddToLearnCardMenu />,
-            {
-                sectionClassName: '!max-w-[500px]',
-            },
-            {
-                desktop: ModalTypes.Cancel,
-                mobile: ModalTypes.Cancel,
-            }
-        );
+        newModal(<LaunchPadActionModal />, {
+            className: 'w-full flex items-center justify-center !bg-white/70 !backdrop-blur-[5px]',
+            sectionClassName: '!max-w-[500px] !disable-scrollbars',
+        });
     };
 
     const activePathname = location.pathname;
@@ -97,9 +95,9 @@ const MobileNavBar: React.FC = () => {
     let walletText = 'Passport';
     if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
 
-    let walletTextStyles = 'mt-[6px]';
-    if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[6px] pb-[2px]`;
-    if (isCompleted) walletTextStyles = `${colors?.completedColor} mt-[6px] pb-[2px]`;
+    let walletTextStyles = 'mt-[3px]';
+    if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[3px] pb-[2px]`;
+    if (isCompleted) walletTextStyles = `${colors?.completedColor} mt-[3px] pb-[2px]`;
 
     return (
         <GenericErrorBoundary>
@@ -156,7 +154,7 @@ const MobileNavBar: React.FC = () => {
                                             className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px]`}
                                         />
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[14px] ${
+                                            className={`font-notoSans font-bold text-[12px] ${
                                                 isWalletTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -201,7 +199,7 @@ const MobileNavBar: React.FC = () => {
                                             className="h-[35px] w-[35px] mt-[0px] mb-0"
                                         />
                                         <IonLabel
-                                            className={`font-notoSans font-bold mt-[6px] text-[14px] ${
+                                            className={`font-notoSans font-bold mt-[3px] text-[12px] ${
                                                 isLaunchPadTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -227,8 +225,17 @@ const MobileNavBar: React.FC = () => {
                                                 className="h-[40px] w-[40px] mt-[0px] mb-0"
                                             />
                                             {unreadCount > 0 && (
-                                                <div className="absolute top-0 right-0 h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
+                                                <div className="absolute top-0 right-[5px] h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
                                             )}
+                                            <IonLabel
+                                                className={`font-notoSans font-bold text-[12px] ${
+                                                    isNotificationTabActive
+                                                        ? colors?.activeColor
+                                                        : colors?.inactiveColor
+                                                }`}
+                                            >
+                                                {link.label}
+                                            </IonLabel>
                                         </div>
                                     </IonTabButton>
                                 );
