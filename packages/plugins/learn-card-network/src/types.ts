@@ -811,6 +811,26 @@ export type LearnCardNetworkPluginMethods = {
     // App Events (discriminated union)
     sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;
 
+    // LC-1644 perf bench (admin-only)
+    benchAppEvent: (input: {
+        listingId: string;
+        recipientProfileId: string;
+        templateAlias: string;
+        iterations: number;
+        warmup?: number;
+        runLabel?: string;
+    }) => Promise<{
+        runId: string;
+        perIteration: Array<Record<string, unknown>>;
+        summary: Record<string, unknown>;
+        posthogDashboardUrl?: string;
+    }>;
+    cleanupBenchAppEventData: (input: { recipientProfileId: string }) => Promise<{
+        credentialsDeleted: number;
+        notificationsDeleted: number;
+        activityEntriesDeleted: number;
+    }>;
+
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
