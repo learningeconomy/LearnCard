@@ -6,6 +6,7 @@ import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
 
+import { neogma } from '@instance';
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
@@ -2512,14 +2513,43 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            // STUB — real implementation in Task 8a (next dispatch task).
-            // For now return zeros so the route shape and frontend integration
-            // can be developed against a working endpoint.
-            return {
-                credentialsDeleted: 0,
-                notificationsDeleted: 0,
-                activityEntriesDeleted: 0,
-            };
+            // Delete credentials received by this profile (CREDENTIAL_RECEIVED)
+            const credResult = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})<-[:CREDENTIAL_RECEIVED]-(c:Credential)
+                 WITH collect(c) AS creds
+                 FOREACH (n IN creds | DETACH DELETE n)
+                 RETURN size(creds) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const credentialsDeleted =
+                (credResult.records[0]?.get('cnt') as number) ?? 0;
+
+            // Delete inbox credentials (notifications) connected to this profile.
+            // In the model, Profile has outgoing relationships to InboxCredential
+            // (DELIVERED_INBOX_CREDENTIAL, CLAIMED_INBOX_CREDENTIAL, etc.).
+            const notifResult = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})-[r]->(i:InboxCredential)
+                 WITH collect(DISTINCT i) AS inboxes
+                 FOREACH (n IN inboxes | DETACH DELETE n)
+                 RETURN size(inboxes) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const notificationsDeleted =
+                (notifResult.records[0]?.get('cnt') as number) ?? 0;
+
+            // Delete credential activity entries where this profile is the recipient
+            // (TO_RECIPIENT relationship from CredentialActivity to Profile).
+            const actResult = await neogma.queryRunner.run(
+                `MATCH (a:CredentialActivity)-[:TO_RECIPIENT]->(p:Profile {profileId: $profileId})
+                 WITH collect(a) AS activities
+                 FOREACH (n IN activities | DETACH DELETE n)
+                 RETURN size(activities) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const activityEntriesDeleted =
+                (actResult.records[0]?.get('cnt') as number) ?? 0;
+
+            return { credentialsDeleted, notificationsDeleted, activityEntriesDeleted };
         }),
 
     // ==================== Admin Routes ====================
