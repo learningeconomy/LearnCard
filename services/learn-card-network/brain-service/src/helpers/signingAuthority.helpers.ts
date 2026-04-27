@@ -6,6 +6,7 @@ import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
 import { trace, traceCrypto, traceHttp } from '@tracing';
 import { PerfTracker } from '@helpers/perf';
+import { benchContextStorage } from '@helpers/bench-context.helpers';
 
 dotenv.config();
 
@@ -319,6 +320,12 @@ export async function issueCredentialWithSigningAuthority(
                         saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
                         attempts: i + 1,
                     });
+                    const benchCtx = benchContextStorage.getStore();
+                    if (benchCtx) {
+                        const captured = perf.capture();
+                        benchCtx.sa_http_ms = captured.phases.http ?? 0;
+                        benchCtx.sa_didauthvp_ms = captured.phases.didAuthVp ?? 0;
+                    }
                     return result;
                 } catch (err) {
                     if (!(err instanceof SaIssueError)) throw err; // unexpected: let it bubble
