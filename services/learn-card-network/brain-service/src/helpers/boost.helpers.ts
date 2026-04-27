@@ -10,6 +10,12 @@ import {
 } from '@learncard/types';
 import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import {
+    CredentialIssuer,
+    getIssuerDisplayName,
+    getIssuerOwnerProfile,
+    getIssuerProfileId,
+} from '../types/issuer';
 import { trace, traceDb, traceCrypto, traceInternal } from '@tracing';
 import {
     injectObv3AlignmentsIntoCredentialForBoost,
@@ -29,14 +35,13 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createListingSentCredentialRelationship,
     createCredentialIssuedViaContractRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { BoostStatus } from 'types/boost';
+import { BoostStatus, getBoostOwnerProfile } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
 
@@ -49,7 +54,10 @@ export const isProfileBoostOwner = async (
 ): Promise<boolean> => {
     const owner = await getBoostOwner(boost);
 
-    return owner?.profileId === profile.profileId;
+    if (!owner) return false;
+
+    const ownerProfile = getBoostOwnerProfile(owner);
+    return ownerProfile.profileId === profile.profileId;
 };
 
 export const isDraftBoost = (boost: BoostInstance): boolean => {
@@ -82,7 +90,7 @@ export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string
 ): string => {
-    const template = { ...credential };
+    const template = cloneDeep(credential);
 
     delete template.proof;
     template.issuer = defaultIssuerDid ?? 'did:example:123';
@@ -373,9 +381,8 @@ export const sendBoost = async ({
     metadata,
     activityId,
     integrationId,
-    listingId,
 }: {
-    from: ProfileType;
+    from: CredentialIssuer;
     to: ProfileType;
     boost: BoostInstance;
     credential: VC | JWE;
@@ -387,7 +394,6 @@ export const sendBoost = async ({
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
-    listingId?: string;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -395,6 +401,7 @@ export const sendBoost = async ({
         async () => {
             const decryptedCredential = await decryptCredential(credential);
             let boostUri: string | undefined;
+            const fromProfile = getIssuerOwnerProfile(from);
 
             // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
             let _skipCertification =
@@ -413,7 +420,6 @@ export const sendBoost = async ({
                     const credentialInstance = await traceDb('storeCredential', () =>
                         storeCredential(certifiedBoost)
                     );
-
                     const tasks = [
                         createBoostInstanceOfRelationship(credentialInstance, boost),
                         createSentCredentialRelationship(
@@ -526,10 +532,10 @@ export const sendBoost = async ({
                         addNotificationToQueue({
                             type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
                             to: to,
-                            from: from,
+                            from: fromProfile,
                             message: {
                                 title: 'Boost Received',
-                                body: `${from.displayName} has boosted you!`,
+                                body: `${getIssuerDisplayName(from)} has boosted you!`,
                             },
                             data: {
                                 vcUris: [boostUri!],
@@ -543,7 +549,7 @@ export const sendBoost = async ({
                 throw new Error('Error sending boost.');
             }
         },
-        { from: from.profileId, to: to.profileId }
+        { from: getIssuerProfileId(from), to: to.profileId }
     );
 };
 
@@ -580,7 +586,7 @@ export const constructCertifiedBoostCredential = async (
 export const issueClaimLinkBoost = async (
     boost: BoostInstance,
     domain: string,
-    from: ProfileType,
+    from: CredentialIssuer,
     to: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType
 ): Promise<string> => {

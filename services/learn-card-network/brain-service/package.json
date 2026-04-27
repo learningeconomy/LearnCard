@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.14.0",
+    "version": "3.14.1",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -60,6 +60,7 @@
         "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/encryption-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
+        "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

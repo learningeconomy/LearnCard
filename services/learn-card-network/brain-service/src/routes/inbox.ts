@@ -125,7 +125,7 @@ export const inboxRouter = t.router({
                     guardianEmail,
                     ttlHours
                 );
-                const approvalUrl = generateGuardianApprovalUrl(token);
+                const approvalUrl = generateGuardianApprovalUrl(token, ctx.tenant?.emailBranding?.appUrl);
 
                 // Send email via delivery service
                 const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
@@ -146,6 +146,7 @@ export const inboxRouter = t.router({
                         ...injectedTemplateFields,
                         ...(template?.model || {}),
                     },
+                    branding: ctx.tenant?.emailBranding,
                     // messageStream: 'guardian-approval',
                 });
 
@@ -173,7 +174,7 @@ export const inboxRouter = t.router({
         })
         .input(z.object({ token: z.string() }))
         .output(z.object({ message: z.string() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { token } = input;
 
             // Validate token with detailed result
@@ -240,6 +241,7 @@ export const inboxRouter = t.router({
                                     profileId: requester.profileId,
                                 },
                             },
+                            branding: ctx.tenant?.emailBranding,
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -257,6 +259,7 @@ export const inboxRouter = t.router({
                     : 'Profile approved successfully.',
             };
         }),
+
     // Open route (GET): approve via path parameter for direct email link usage
     approveGuardianRequestByPath: openRoute
         .meta({
@@ -270,7 +273,7 @@ export const inboxRouter = t.router({
         })
         .input(z.object({ token: z.string() }))
         .output(z.object({ message: z.string() }))
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
             const { token } = input;
 
             // Validate token with detailed result
@@ -336,6 +339,7 @@ export const inboxRouter = t.router({
                                     profileId: requester.profileId,
                                 },
                             },
+                            branding: ctx.tenant?.emailBranding,
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -848,7 +852,7 @@ export const inboxRouter = t.router({
         })
         .input(z.object({ token: z.string() }))
         .output(z.object({ message: z.string() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { token } = input;
 
             const validation = await validateGuardianApprovalTokenDetailed(token);
@@ -892,6 +896,7 @@ export const inboxRouter = t.router({
                 templateModel: {
                     verificationCode: otpCode,
                 },
+                branding: ctx.tenant?.emailBranding,
                 messageStream: 'universal-inbox',
             });
 
@@ -912,7 +917,7 @@ export const inboxRouter = t.router({
         })
         .input(z.object({ token: z.string(), otpCode: z.string() }))
         .output(z.object({ message: z.string(), alreadyLinked: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { token, otpCode } = input;
 
             const validation = await validateGuardianApprovalTokenDetailed(token);
@@ -1007,6 +1012,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
@@ -1031,7 +1037,7 @@ export const inboxRouter = t.router({
         })
         .input(z.object({ token: z.string(), otpCode: z.string() }))
         .output(z.object({ message: z.string() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { token, otpCode } = input;
 
             const validation = await validateGuardianApprovalTokenDetailed(token);
@@ -1089,6 +1095,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
@@ -1186,6 +1193,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }
@@ -1276,6 +1284,7 @@ export const inboxRouter = t.router({
                         templateModel: {
                             issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
                         },
+                        branding: ctx.tenant?.emailBranding,
                         messageStream: 'universal-inbox',
                     });
                 }

@@ -81,9 +81,12 @@ export const AiSessionsContainer: React.FC<{
 
     const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
 
-    const topicUri = _topicUri || query.get('topicBoostUri');
+    // Producers URL-encode the `topicBoostUri` query param before navigation;
+    // URLSearchParams.get() returns the decoded value, so no further decoding
+    // is needed here.
+    const topicUri = _topicUri ?? query.get('topicBoostUri') ?? '';
     const { data: enrichedSessionData, isLoading: isLoadingEnrichedSessions } =
-        useGetEnrichedSession(topicUri as string);
+        useGetEnrichedSession(topicUri);
 
     const topicRecord = enrichedSessionData?.topicRecord;
     const topicVc = enrichedSessionData?.topicVc;
@@ -131,9 +134,8 @@ export const AiSessionsContainer: React.FC<{
 
             <GenericErrorBoundary>
                 <div
-                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${
-                        !isDesktop ? 'pb-[90px]' : ''
-                    }`}
+                    className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide mx-auto ${styles} ${!isDesktop ? 'pb-[90px]' : ''
+                        }`}
                 >
                     <div className="w-full ml-2 px-2 py-0">
                         {isDesktop && (

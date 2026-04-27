@@ -6,12 +6,12 @@ The Partner Connect SDK transforms complex `postMessage` communication into clea
 
 ## Features
 
--   **🔒 Secure**: Multi-layered origin validation prevents unauthorized access
--   **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions
--   **⚡ Promise-based**: Modern async/await API eliminates callback complexity
--   **🧹 Clean**: Abstracts away all postMessage implementation details
--   **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
--   **🛡️ Robust**: Built-in timeout handling and structured error management
+- **🔒 Secure**: Multi-layered origin validation prevents unauthorized access
+- **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions
+- **⚡ Promise-based**: Modern async/await API eliminates callback complexity
+- **🧹 Clean**: Abstracts away all postMessage implementation details
+- **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
+- **🛡️ Robust**: Built-in timeout handling and structured error management
 
 ## Installation
 
@@ -73,7 +73,7 @@ Creates a new Partner Connect SDK instance.
 
 **Parameters:**
 
--   `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
+- `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
 
 **Returns:** `PartnerConnect` instance
 
@@ -177,7 +177,7 @@ Issue a credential using a pre-configured boost template attached to your App St
 
 **Parameters:**
 
--   `input` (`TemplateCredentialInput`): Template alias and optional data
+- `input` (`TemplateCredentialInput`): Template alias and optional data
 
 **Returns:** `Promise<TemplateCredentialResponse>`
 
@@ -198,7 +198,7 @@ Send a pre-signed verifiable credential directly. Your backend must issue and si
 
 **Parameters:**
 
--   `input` (`unknown`): A signed verifiable credential object
+- `input` (`unknown`): A signed verifiable credential object
 
 **Returns:** `Promise<SendCredentialResponse>`
 
@@ -221,8 +221,8 @@ Launch a feature in the LearnCard host application.
 
 **Parameters:**
 
--   `featurePath` (`string`): Path to the feature (e.g., '/ai/topics')
--   `initialPrompt` (`string`, optional): Initial prompt or data
+- `featurePath` (`string`): Path to the feature (e.g., '/ai/topics')
+- `initialPrompt` (`string`, optional): Initial prompt or data
 
 **Returns:** `Promise<void>`
 
@@ -245,7 +245,7 @@ Request credentials from the user's wallet using query criteria.
 
 **Parameters:**
 
--   `verifiablePresentationRequest` (`VerifiablePresentationRequest`): Query specification
+- `verifiablePresentationRequest` (`VerifiablePresentationRequest`): Query specification
 
 **Returns:** `Promise<CredentialSearchResponse>`
 
@@ -279,7 +279,7 @@ Request a specific credential by ID.
 
 **Parameters:**
 
--   `credentialId` (`string`): The ID of the credential to request
+- `credentialId` (`string`): The ID of the credential to request
 
 **Returns:** `Promise<CredentialSpecificResponse>`
 
@@ -302,8 +302,8 @@ Request user consent for data access permissions.
 
 **Parameters:**
 
--   `contractUri` (`string`, optional): URI of the consent contract. Can be omitted for App Store apps with configured contracts.
--   `options` (`RequestConsentOptions`, optional): Additional options for the consent flow
+- `contractUri` (`string`, optional): URI of the consent contract. Can be omitted for App Store apps with configured contracts.
+- `options` (`RequestConsentOptions`, optional): Additional options for the consent flow
 
 | Option     | Type      | Default | Description                                                                 |
 | ---------- | --------- | ------- | --------------------------------------------------------------------------- |
@@ -343,8 +343,8 @@ Initiate a template-based credential issuance flow.
 
 **Parameters:**
 
--   `templateId` (`string`): ID of the template/boost to issue
--   `draftRecipients` (`string[]`, optional): Array of recipient DIDs
+- `templateId` (`string`): ID of the template/boost to issue
+- `draftRecipients` (`string[]`, optional): Array of recipient DIDs
 
 **Returns:** `Promise<TemplateIssueResponse>`
 
@@ -371,14 +371,14 @@ This method retrieves the user's credentials and personal data (with their conse
 
 **Use Cases:**
 
--   AI tutors that adapt to learner's existing skills and credentials
--   Personalized learning pathway recommendations
--   Smart content that adjusts based on learner history
--   Intelligent assessment systems
+- AI tutors that adapt to learner's existing skills and credentials
+- Personalized learning pathway recommendations
+- Smart content that adjusts based on learner history
+- Intelligent assessment systems
 
 **Parameters:**
 
--   `options` (`RequestLearnerContextOptions`, optional): Configuration for what data to include and how to format it
+- `options` (`RequestLearnerContextOptions`, optional): Configuration for what data to include and how to format it
 
 | Option                | Type                       | Default     | Description                                          |
 | --------------------- | -------------------------- | ----------- | ---------------------------------------------------- |
@@ -489,38 +489,6 @@ try {
 }
 ```
 
-### Notifications & Counters
-
-#### `sendNotification(input)`
-
-Send a notification to the current user from your app. The notification appears in the user's LearnCard notification inbox and triggers a real-time toast overlay while the app is open.
-
-**Parameters:**
-- `input` (`AppNotificationInput`): Notification content
-
-**Returns:** `Promise<AppNotificationResponse>`
-
-```typescript
-await learnCard.sendNotification({
-  title: 'Achievement Unlocked!',
-  body: 'You earned the Gold Star badge',
-  actionPath: '/achievements',  // Deep link path within your app
-  category: 'reward',            // Grouping label
-  priority: 'normal',            // 'normal' | 'high'
-});
-```
-
-**Input Type:**
-```typescript
-interface AppNotificationInput {
-  title?: string;                // At least title or body required
-  body?: string;
-  actionPath?: string;           // Deep link path (e.g. '/prizes')
-  category?: string;             // Grouping (e.g. 'reward', 'announcement')
-  priority?: 'normal' | 'high'; // Default: 'normal'
-}
-```
-
 {% hint style="info" %}
 **Prerequisites for Learner Context:**
 
@@ -531,95 +499,171 @@ interface AppNotificationInput {
 Use `requestConsent()` before calling `requestLearnerContext()` if the user hasn't consented yet.
 {% endhint %}
 
-{% hint style="info" %}
-**Rate limit:** Max 10 notifications per user per app per hour. High-priority notifications display with an orange toast instead of the default blue.
-{% endhint %}
+#### `sendAiSessionCredential(input)`
 
-{% hint style="info" %}
-**Deep linking:** When a user taps a notification with an `actionPath`, the embedded app's iframe navigates to that path. Use this to direct users to specific content.
-{% endhint %}
+Send an AI Session credential to record a learning interaction. AI Sessions are organized under AI Topics, creating a structured history of AI tutoring sessions that appears in the user's AI Topics page.
 
-#### `incrementCounter(key, amount)`
+**Use Cases:**
 
-Atomically increment or decrement an app-scoped counter for the current user. Counters are scoped to (user, app, key). If the counter does not exist, it is created with the given amount as its initial value.
+- **AI Tutoring Apps** - Record what was learned during a tutoring session
+- **Learning Assistants** - Track learning progress and outcomes
+- **Skill Assessment** - Document demonstrated competencies
+- **Learning Pathways** - Build a history of learning interactions
 
 **Parameters:**
-- `key` (`string`): Counter name (alphanumeric, underscore, hyphen; max 64 chars)
-- `amount` (`number`): Value to add (use negative numbers to decrement)
 
-**Returns:** `Promise<IncrementCounterResponse>`
+- `input` (`SendAiSessionCredentialInput`): Session details
+
+| Property       | Type                      | Required | Description                            |
+| -------------- | ------------------------- | -------- | -------------------------------------- |
+| `sessionTitle` | `string`                  | Yes      | Title of this specific AI session      |
+| `summaryData`  | `SummaryCredentialData`   | Yes      | Structured data about what was learned |
+| `metadata`     | `Record<string, unknown>` | No       | Optional metadata for the session      |
+
+**Summary Data Structure:**
 
 ```typescript
-// Increment
-const result = await learnCard.incrementCounter('coins', 10);
-console.log(result.previousValue); // 0
-console.log(result.newValue);      // 10
+interface SummaryCredentialData {
+    /** Key takeaways from the session */
+    keyTakeaways: string[];
+    /** Skills demonstrated during the session */
+    skillsDemonstrated: string[];
+    /** Learning outcomes achieved */
+    learningOutcomes: string[];
+    /** Recommended follow-up activities */
+    nextSteps: SummaryCredentialNextStep[];
+    /** Reflections on the learning experience */
+    reflections: SummaryCredentialReflection[];
+}
 
-// Decrement
-const result2 = await learnCard.incrementCounter('coins', -5);
-console.log(result2.newValue);     // 5
-```
+interface SummaryCredentialNextStep {
+    title: string;
+    description?: string;
+    type?: 'course' | 'practice' | 'assessment' | 'resource';
+}
 
-**Response Type:**
-```typescript
-interface IncrementCounterResponse {
-  key: string;
-  previousValue: number;
-  newValue: number;
+interface SummaryCredentialReflection {
+    prompt: string;
+    response: string;
 }
 ```
 
-{% hint style="info" %}
-**Limits:** Max 50 counter keys per user per app. Max 100 counter writes per user per app per minute.
-{% endhint %}
-
-#### `getCounter(key)`
-
-Read the current value of an app-scoped counter for the current user. Returns `{ value: 0 }` if the counter does not exist.
-
-**Parameters:**
-- `key` (`string`): Counter name
-
-**Returns:** `Promise<GetCounterResponse>`
+**Returns:** `Promise<SendAiSessionCredentialResponse>`
 
 ```typescript
-const { value, updatedAt } = await learnCard.getCounter('coins');
-console.log('Balance:', value);        // e.g. 42
-console.log('Last updated:', updatedAt); // e.g. '2025-03-15T10:30:00.000Z'
-```
-
-**Response Type:**
-```typescript
-interface GetCounterResponse {
-  key: string;
-  value: number;
-  updatedAt: string | null;
+interface SendAiSessionCredentialResponse {
+    topicUri: string; // URI of the AI Topic (parent) boost
+    sessionCredentialUri: string; // URI of the created AI Session credential
+    sessionBoostUri: string; // URI of the session boost (child of topic)
+    isNewTopic: boolean; // True if new topic created, false if reused
 }
 ```
 
-#### `getCounters(keys?)`
-
-Read multiple app-scoped counters at once for the current user. If `keys` is omitted, returns all counters for this app.
-
-**Parameters:**
-- `keys` (`string[]`, optional): Counter names to fetch (max 50). Omit to get all.
-
-**Returns:** `Promise<GetCountersResponse>`
+**Example - Recording a Learning Session:**
 
 ```typescript
-// Get specific counters
-const { counters } = await learnCard.getCounters(['coins', 'streak', 'level']);
-counters.forEach(c => console.log(c.key, c.value));
+// After conducting an AI tutoring session
+const session = await learnCard.sendAiSessionCredential({
+    sessionTitle: 'Introduction to Machine Learning',
+    summaryData: {
+        keyTakeaways: [
+            'Machine learning is a subset of AI focused on pattern recognition',
+            'Supervised learning uses labeled training data',
+            'Neural networks are inspired by biological neurons',
+        ],
+        skillsDemonstrated: [
+            'Understanding ML fundamentals',
+            'Distinguishing supervised vs unsupervised learning',
+            'Basic neural network concepts',
+        ],
+        learningOutcomes: [
+            'Can explain what machine learning is',
+            'Understands the role of training data',
+            'Recognizes common ML applications',
+        ],
+        nextSteps: [
+            {
+                title: 'Deep Learning Fundamentals',
+                description: 'Learn about neural network architectures',
+                type: 'course',
+            },
+            {
+                title: 'Build a Simple Classifier',
+                description: 'Hands-on practice with scikit-learn',
+                type: 'practice',
+            },
+        ],
+        reflections: [
+            {
+                prompt: 'What was the most surprising concept?',
+                response:
+                    'How simple the basic idea of training data is, yet how powerful it becomes at scale.',
+            },
+        ],
+    },
+    metadata: {
+        duration: 1800, // 30 minutes in seconds
+        difficulty: 'beginner',
+        topics: ['machine-learning', 'ai', 'neural-networks'],
+    },
+});
 
-// Get all counters for this app
-const all = await learnCard.getCounters();
-console.log(`${all.counters.length} counters`);
+console.log('Topic URI:', session.topicUri);
+console.log('Session Credential:', session.sessionCredentialUri);
+console.log('New topic created?', session.isNewTopic);
 ```
 
-**Response Type:**
+**How It Works:**
+
+1. **Topic Creation/Reuse**: The first session from your app creates an AI Topic. Subsequent sessions reuse this topic.
+2. **Session Credential**: Each call creates a new AI Session credential under the topic.
+3. **Automatic Storage**: Credentials are immediately stored in the user's LearnCloud wallet.
+4. **AI Topics Page**: Sessions appear in the user's AI Topics section for review.
+
+**Session Hierarchy:**
+
+```
+AI Topic (App-level)
+├── AI Session 1 (Introduction to Machine Learning)
+├── AI Session 2 (Advanced ML Concepts)
+├── AI Session 3 (Neural Network Architecture)
+└── ...
+```
+
+{% hint style="info" %}
+**Prerequisites for AI Sessions:**
+
+1. Your app must be installed from the LearnCard App Store
+2. The user must have consented to share their learning data
+3. Call `requestConsent()` before sending AI sessions if not already consented
+
+The AI Topic is automatically created on the first session and reused for all subsequent sessions from your app.
+{% endhint %}
+
+**Error Handling:**
+
 ```typescript
-interface GetCountersResponse {
-  counters: GetCounterResponse[];
+try {
+    const session = await learnCard.sendAiSessionCredential({
+        sessionTitle: 'Learning Session',
+        summaryData: {
+            /* ... */
+        },
+    });
+} catch (error) {
+    switch (error.code) {
+        case 'LC_UNAUTHENTICATED':
+            showLoginPrompt('Please log in to LearnCard');
+            break;
+        case 'UNAUTHORIZED':
+            showMessage('App not properly configured for AI sessions');
+            break;
+        case 'USER_REJECTED':
+            showMessage('User declined to store the session');
+            break;
+        default:
+            console.error('Failed to send session:', error.message);
+    }
 }
 ```
 
@@ -644,9 +688,9 @@ The Partner Connect SDK implements comprehensive security measures:
 
 **Strict Enforcement:**
 
--   Incoming messages must exactly match the configured host origin
--   No wildcard (`*`) origins are ever used
--   Query parameter overrides are validated against whitelist
+- Incoming messages must exactly match the configured host origin
+- No wildcard (`*`) origins are ever used
+- Query parameter overrides are validated against whitelist
 
 **Configuration Hierarchy:**
 
@@ -675,10 +719,10 @@ const learnCard = createPartnerConnect({
 
 ### Message Security
 
--   **Protocol Verification**: Messages must match expected protocol version
--   **Request ID Tracking**: Only tracked requests are processed
--   **Timeout Protection**: Requests automatically timeout to prevent hanging
--   **Cleanup on Destroy**: Pending requests are properly rejected
+- **Protocol Verification**: Messages must match expected protocol version
+- **Request ID Tracking**: Only tracked requests are processed
+- **Timeout Protection**: Requests automatically timeout to prevent hanging
+- **Cleanup on Destroy**: Pending requests are properly rejected
 
 ## Error Handling
 
@@ -777,17 +821,17 @@ const learnCard = createPartnerConnect({
 
 ## Browser Support
 
--   **Chrome/Edge**: 90+
--   **Firefox**: 88+
--   **Safari**: 14+
--   **Mobile**: iOS Safari 14+, Android Chrome 90+
+- **Chrome/Edge**: 90+
+- **Firefox**: 88+
+- **Safari**: 14+
+- **Mobile**: iOS Safari 14+, Android Chrome 90+
 
 **Required APIs:**
 
--   `postMessage`
--   `Promise`
--   `URLSearchParams`
--   `addEventListener`
+- `postMessage`
+- `Promise`
+- `URLSearchParams`
+- `addEventListener`
 
 ## Migration Guide
 
@@ -857,11 +901,11 @@ const identity = await learnCard.requestIdentity();
 
 **Benefits:**
 
--   **85% code reduction** in typical integrations
--   **Type safety** with full TypeScript support
--   **Better error handling** with structured error codes
--   **Security improvements** with origin validation
--   **No manual cleanup** required
+- **85% code reduction** in typical integrations
+- **Type safety** with full TypeScript support
+- **Better error handling** with structured error codes
+- **Security improvements** with origin validation
+- **No manual cleanup** required
 
 ## Examples
 
@@ -992,13 +1036,6 @@ import type {
     ConsentResponse,
     RequestConsentOptions,
 
-    // Notifications & Counters
-    AppNotificationInput,
-    AppNotificationResponse,
-    IncrementCounterResponse,
-    GetCounterResponse,
-    GetCountersResponse,
-
     // Credential queries
     VerifiablePresentationRequest,
     VPRQuery,
@@ -1011,6 +1048,13 @@ import type {
     AppEvent,
     AppEventResponse,
     SendCredentialEvent,
+
+    // AI Sessions
+    SendAiSessionCredentialInput,
+    SendAiSessionCredentialResponse,
+    SummaryCredentialData,
+    SummaryCredentialNextStep,
+    SummaryCredentialReflection,
 } from '@learncard/partner-connect';
 ```
 
@@ -1061,6 +1105,38 @@ interface LearnerContextResponse {
     displayName?: string;
 }
 
+interface SendAiSessionCredentialInput {
+    sessionTitle: string;
+    summaryData: SummaryCredentialData;
+    metadata?: Record<string, unknown>;
+}
+
+interface SummaryCredentialData {
+    keyTakeaways: string[];
+    skillsDemonstrated: string[];
+    learningOutcomes: string[];
+    nextSteps: SummaryCredentialNextStep[];
+    reflections: SummaryCredentialReflection[];
+}
+
+interface SummaryCredentialNextStep {
+    title: string;
+    description?: string;
+    type?: 'course' | 'practice' | 'assessment' | 'resource';
+}
+
+interface SummaryCredentialReflection {
+    prompt: string;
+    response: string;
+}
+
+interface SendAiSessionCredentialResponse {
+    topicUri: string;
+    sessionCredentialUri: string;
+    sessionBoostUri: string;
+    isNewTopic: boolean;
+}
+
 type ErrorCode =
     | 'LC_TIMEOUT'
     | 'LC_UNAUTHENTICATED'
@@ -1076,18 +1152,10 @@ interface LearnCardError {
 }
 ```
 
-## Rate Limits Summary
-
-| Scope | Limit | Window |
-|---|---|---|
-| Notifications (per user per app) | 10 | 1 hour |
-| Counter writes (per user per app) | 100 | 1 minute |
-| Counter keys (per user per app) | 50 | — |
-
 ## Related Documentation
 
--   [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) - Step-by-step guide for App Store credential issuance
--   [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
--   [LearnCard Network](/sdks/learncard-network/) - Network integration
--   [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
--   [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem
+- [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) - Step-by-step guide for App Store credential issuance
+- [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
+- [LearnCard Network](/sdks/learncard-network/) - Network integration
+- [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
+- [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem

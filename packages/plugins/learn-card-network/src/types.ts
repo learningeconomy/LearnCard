@@ -803,6 +803,11 @@ export type LearnCardNetworkPluginMethods = {
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
+    associateBoostWithListing: (
+        listingId: string,
+        boostUri: string,
+        templateAlias: string
+    ) => Promise<boolean>;
     removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
     getAppBoosts: (
         listingId: string

@@ -1,6 +1,6 @@
 {
   "name": "@learncard/smoketests",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
     "test": "echo \"Skipping smoketests in unit-test runs. Use 'pnpm smoke' locally, or trigger the smoketest.yml workflow in CI.\"",

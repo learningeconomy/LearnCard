@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -44,6 +44,7 @@
         "@fastify/cors": "^11.2.0",
         "@fastify/static": "^9.0.0",
         "@learncard/core": "workspace:*",
+        "@learncard/email-templates": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/didkit-plugin-node": "workspace:*",
