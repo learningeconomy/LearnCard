@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ler-rs-plugin",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "description": "LER-RS plugin for LearnCard: create, package, and verify Learning & Employment Record Resumes",
     "main": "./dist/index.js",
     "module": "./dist/ler-rs-plugin.esm.js",
