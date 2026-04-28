@@ -223,7 +223,7 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                                 vc: sessionVc,
                                 record: sessionRecord,
                                 hasAssessment,
-                                completed: Boolean(sessionVc?.completed),
+                                completed: hasAssessment || Boolean(sessionVc?.completed),
                             };
                         })
                     );
@@ -239,11 +239,13 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                         topicBoost,
                         topicVc,
                         sessions: sessions.map(
-                            ({ boost, vc, record }) =>
+                            ({ boost, vc, record, hasAssessment, completed }) =>
                                 ({
                                     boost,
                                     vc,
                                     record,
+                                    hasAssessment,
+                                    completed,
                                 } as AiSession)
                         ),
                         hasUnfinishedSessions,

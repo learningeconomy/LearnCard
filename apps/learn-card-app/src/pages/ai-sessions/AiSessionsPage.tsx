@@ -199,7 +199,14 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         });
 
         if (filterBy === AiSessionsFilterOptionsEnum.unfinished) {
-            items = items.filter(session => !session?.vc?.completed);
+            items = items.filter(session => {
+                const isFinished = Boolean(
+                    (session as any)?.completed ||
+                        (session as any)?.hasAssessment ||
+                        session?.vc?.completed
+                );
+                return !isFinished;
+            });
         }
 
         if (sortBy === AiSessionsSortOptionsEnum.alphabetical) {
@@ -218,8 +225,24 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             });
         }
 
+        if (sortBy === AiSessionsSortOptionsEnum.newlyAdded) {
+            return items.slice().sort((a, b) => {
+                const aDate = new Date(a?.vc?.issuanceDate ?? 0).getTime();
+                const bDate = new Date(b?.vc?.issuanceDate ?? 0).getTime();
+                return bDate - aDate;
+            });
+        }
+
         return items;
-    }, [view, allSessions, selectedTopicData?.sessions, searchInput, filterBy, sortBy]);
+    }, [
+        view,
+        allSessions,
+        selectedTopicData?.sessions,
+        selectedGroupedTopic?.sessions,
+        searchInput,
+        filterBy,
+        sortBy,
+    ]);
 
     const selectedTopicTitle = selectedGroupedTopic
         ? selectedGroupedTopic.groupTitle
