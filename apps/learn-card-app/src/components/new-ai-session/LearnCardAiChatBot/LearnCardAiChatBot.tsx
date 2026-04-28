@@ -292,12 +292,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             {(!loading || mode !== AiSessionMode.insights) && (
                 <>
                     <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
-                    <div className="flex flex-col flex-1 min-h-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
+                    <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
                     <div
                         ref={chatContainerRef}
-                        className="flex-1 overflow-y-auto flex flex-col px-4 relative"
+                        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col px-4 relative"
                     >
-                        <div ref={chatContentRef} className="flex flex-col">
+                        <div ref={chatContentRef} className="flex flex-col min-w-0">
                             {mode !== AiSessionMode.insights && <AiSessionPlan />}
 
                             {messagesToShow.map((msg, index) => {

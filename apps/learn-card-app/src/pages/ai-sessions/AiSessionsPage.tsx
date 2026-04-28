@@ -76,14 +76,14 @@ const AiSessionsPage: React.FC = () => {
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                <MainHeader
+                    category={CredentialCategoryEnum.aiTopic}
+                    showBackButton={false}
+                    subheaderType={SubheaderTypeEnum.AiSessions}
+                    hidePlusBtn={true}
+                    customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
+                />
                 <IonContent fullscreen color={backgroundSecondaryColor}>
-                    <MainHeader
-                        category={CredentialCategoryEnum.aiTopic}
-                        showBackButton={false}
-                        subheaderType={SubheaderTypeEnum.AiSessions}
-                        hidePlusBtn={true}
-                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
-                    />
                     <AiFeatureGate>
                         <div className="flex justify-center w-full">
                             <div className="w-full max-w-[600px] px-4 pt-5 pb-[120px]">
