@@ -8,7 +8,6 @@ import {
     ChecklistItem,
     checklistItems,
 } from 'learn-card-base';
-import ExperimentalFeatureBox from '../../generic/ExperimentalFeatureBox';
 
 export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
     activeChecklistStep,
