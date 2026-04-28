@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { IonSpinner } from '@ionic/react';
-import SlimCaretRight from '../../svgs/SlimCaretRight';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 import AiSessionAssessmentPreviewContainer from '../../ai-assessment/AiSessionAssessmentPreviewContainer';
 
@@ -9,7 +8,6 @@ import { VC } from '@learncard/types';
 import { getAiSessionTitle } from '../aiSessions.helpers';
 import {
     ModalTypes,
-    useDeviceTypeByWidth,
     useGetSummaryInfo,
     useModal,
     LaunchPadAppListItem,
@@ -19,7 +17,7 @@ import { AiSession } from 'learn-card-base';
 import { AiAssessmentQuestion } from '../../ai-assessment/AiAssessment/ai-assessment.helpers';
 
 export const AiSessionItem: React.FC<{
-    app: LaunchPadAppListItem;
+    app?: LaunchPadAppListItem;
     session: AiSession;
     topicRecord?: LCR;
     topicVc?: VC;
@@ -36,37 +34,18 @@ export const AiSessionItem: React.FC<{
         session?: VC;
         showAssessment?: boolean;
         assessment?: AiAssessmentQuestion[];
-    };
+    } | null;
     index: number;
-}> = ({ app, session, topicRecord, topicVc, handleTopicSession, selectedSession, index }) => {
+    forceSingleView?: boolean;
+}> = ({ app, session, topicRecord, topicVc, handleTopicSession, selectedSession, forceSingleView }) => {
     const { newModal } = useModal();
-
     const { data: { assessmentVc } = {}, isLoading } = useGetSummaryInfo(session?.record?.uri);
 
-    const { isDesktop } = useDeviceTypeByWidth();
-
-    useEffect(() => {
-        if (index === 0) {
-            handleTopicSession({
-                topic: topicVc,
-                topicBoost: topicRecord?.boostCredential,
-                session,
-            });
-        }
-    }, []);
-
     const handleViewSession = () => {
-        if (isDesktop) {
-            handleTopicSession({
-                topic: topicVc,
-                topicBoost: topicRecord?.boostCredential,
-                session,
-            });
-            return;
-        } else {
+        if (forceSingleView || !app) {
             newModal(
                 <AiSessionAssessmentPreviewContainer
-                    app={app}
+                    app={app as any}
                     topicRecord={topicRecord}
                     topicVc={topicVc}
                     session={session}
@@ -74,45 +53,59 @@ export const AiSessionItem: React.FC<{
                 {},
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
+            return;
         }
+
+        handleTopicSession({
+            topic: topicVc,
+            topicBoost: topicRecord?.boostCredential,
+            session,
+        });
     };
 
     const isSelectedSession =
         selectedSession && selectedSession?.session?.vc?.id === session?.vc?.id;
-    const selectedStyles =
-        isSelectedSession && isDesktop
-            ? 'bg-cyan-50 rounded-[16px] px-2'
-            : 'bg-white last:pb-[200px] first:mt-1';
-    const styles = isDesktop ? 'first:mt-4 px-2' : '';
+
+    const sessionCredential = session?.vc ?? session?.boost?.boost;
+    const isCompleted = Boolean(session?.vc?.completed || assessmentVc);
+    const subtitleTopic = topicVc?.boostCredential?.topicInfo?.title || 'Session';
+    const subtitleApp = session?.record?.app || '';
+    const dateLabel = isCompleted
+        ? new Date(session?.vc?.issuanceDate ?? Date.now()).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+          })
+        : 'Unfinished';
 
     return (
         <button
             disabled={isLoading}
             onClick={handleViewSession}
-            className={`flex items-center justify-between w-full pb-[12px] pt-[12px] cursor-pointer ${styles} ${selectedStyles}`}
+            className={`flex items-center justify-between w-full bg-white rounded-2xl shadow-sm px-4 py-3 mb-3 ${isSelectedSession ? 'ring-2 ring-cyan-200' : ''}`}
         >
-            <div className="flex items-center justify-start w-full">
-                <p className="w-full text-grayscale-900 text-[17px] font-notoSans font-semibold capitalize ml-2 text-left line-clamp-2">
-                    {getAiSessionTitle(session.vc ?? session.boost.boost)}
-                </p>
+            <div className="flex items-center justify-start w-full min-w-0">
+                <div className="flex flex-col items-start w-full min-w-0">
+                    <p className="w-full text-grayscale-900 text-[24px] leading-tight font-poppins font-semibold text-left line-clamp-1">
+                        {getAiSessionTitle(sessionCredential as any) || 'Untitled Session'}
+                    </p>
+                    <p className="text-grayscale-600 text-sm font-poppins text-left line-clamp-1">
+                        <span className="font-semibold text-grayscale-700">{subtitleTopic}</span>
+                        {subtitleApp ? ` • ${subtitleApp}` : ''}
+                        <span className="text-grayscale-500"> • </span>
+                        <span className={isCompleted ? 'text-grayscale-600' : 'text-rose-500'}>{dateLabel}</span>
+                    </p>
+                </div>
             </div>
 
-            {isLoading && (
-                <span className="flex items-center justify-end text-grayscale-600 font-poppins text-sm">
-                    <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
-                </span>
-            )}
-
-            {!isLoading && (
-                <span className="flex items-center justify-end text-grayscale-600 font-poppins text-sm">
-                    {session?.vc?.completed || assessmentVc ? (
-                        <VerifiedBadge size="20" />
-                    ) : (
-                        <div className="w-[10px] h-[10px] bg-rose-500  font-bold rounded-full z-50" />
-                    )}
-                    <SlimCaretRight className="text-grayscale-400 w-[20px] h-auto" />
-                </span>
-            )}
+            <span className="flex items-center justify-end text-grayscale-600 font-poppins text-sm ml-2 shrink-0">
+                {isLoading ? (
+                    <IonSpinner name="crescent" color="dark" className="scale-[0.9] mr-1" />
+                ) : isCompleted ? (
+                    <VerifiedBadge size="20" />
+                ) : (
+                    <div className="w-[9px] h-[9px] bg-rose-500 rounded-full" />
+                )}
+            </span>
         </button>
     );
 };
