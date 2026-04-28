@@ -130,7 +130,7 @@ export const AiSessionItem: React.FC<{
                 ) : (
                     <div className="w-[9px] h-[9px] bg-rose-500 rounded-full" />
                 )}
-                <IonIcon icon={ellipsisVertical} className="text-grayscale-400 text-[18px]" />
+                {/* <IonIcon icon={ellipsisVertical} className="text-grayscale-400 text-[18px]" /> */}
             </span>
         </button>
     );
