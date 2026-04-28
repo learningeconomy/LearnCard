@@ -130,8 +130,13 @@ export async function issueCredentialWithSigningAuthority(
     // without threading the param through every caller. Takes precedence over the
     // caller-supplied override so benches against remote SAs can redirect all calls
     // to a registered owner — only set in bench/dev environments.
+    //
+    // We treat empty string as "unset" because compose interpolation (e.g. `${VAR:-}`)
+    // produces `""` when the host var is missing, and `??` would otherwise let that
+    // empty string through and break the SA lookup.
+    const envOverride = process.env.SA_OWNER_DID_OVERRIDE;
     const ownerDid =
-        process.env.SA_OWNER_DID_OVERRIDE
+        (envOverride && envOverride.length > 0 ? envOverride : undefined)
         ?? ownerDidOverride
         ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
