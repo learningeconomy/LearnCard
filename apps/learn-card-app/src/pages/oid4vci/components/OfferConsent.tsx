@@ -1,18 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 
-import { IssuerHeader } from 'learn-card-base';
-
 import type {
     CredentialOffer,
     CredentialIssuerMetadata,
     TxCode,
 } from '@learncard/openid4vc-plugin';
 
-import {
-    humanizeFormat,
-    prettifyConfigurationId,
-} from '../displayHelpers';
+import { prettifyConfigurationId } from '../displayHelpers';
 import CredentialPreviewCard, {
     type CredentialPreviewClaim,
 } from './CredentialPreviewCard';
@@ -97,23 +92,34 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
     );
 
     const issuerDisplayName = issuerDisplay?.name?.trim();
+    const issuerHost = safeHost(offer.credential_issuer);
+    const senderLabel = issuerDisplayName ?? issuerHost ?? offer.credential_issuer;
 
-    const headlineLead = issuerDisplayName
-        ? `${issuerDisplayName} wants to add`
-        : 'An issuer wants to add';
+    const isSingleCredential = credentialItems.length === 1;
+    const singleTitle = isSingleCredential ? credentialItems[0].title : undefined;
 
-    const credentialNoun =
-        credentialItems.length === 1
-            ? credentialItems[0].title.toLowerCase().includes('credential')
-                ? credentialItems[0].title
-                : `your ${credentialItems[0].title}`
-            : `${credentialItems.length} credentials`;
+    // Headline leads with the credential itself, not the actor — "Your
+    // University Degree is ready to claim." reads as a fact, where
+    // "An issuer wants to..." reads as paperwork. Multi-credential
+    // collapses to a count for clarity.
+    const headline = isSingleCredential
+        ? `${singleTitle} ready to claim.`
+        : `${credentialItems.length} credentials ready to claim.`;
+
+    // Subhead surfaces the sender (the missing context from the
+    // headline) without using the word "issuer". Auth-code-only
+    // offers get a different subhead that previews the redirect.
+    const subhead = isAuthCodeOnly
+        ? `From ${senderLabel}. Sign in with them to claim it — we'll bring you right back.`
+        : isSingleCredential
+        ? `From ${senderLabel}. Claim it to keep it forever — share it whenever you need to prove what it says.`
+        : `From ${senderLabel}. Claim them to keep them forever — share them whenever you need to prove what they say.`;
 
     const primaryCtaLabel = isAuthCodeOnly
         ? 'Continue to sign in'
-        : credentialItems.length > 1
-        ? 'Save all to wallet'
-        : 'Save to Wallet';
+        : isSingleCredential
+        ? `Claim my ${singleTitle}`
+        : `Claim all ${credentialItems.length}`;
 
     return (
         <div
@@ -131,18 +137,19 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
 
                     <div>
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-snug">
-                            {headlineLead} {credentialNoun} to your wallet.
+                            {headline}
                         </h1>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
-                            Your wallet keeps it forever — share it whenever you need to prove what it says.
+                            {subhead}
                         </p>
                     </div>
 
-                    <IssuerHeader
-                        issuerUrl={offer.credential_issuer}
-                        display={issuerDisplay}
-                    />
+                    {/* Issuer identity is rendered inside
+                        CredentialPreviewCard's gradient header — a
+                        separate IssuerHeader block above the card
+                        produced a duplicate "Issued by ..." line that
+                        added clutter without adding signal. */}
 
                     <div className="space-y-3">
                         {credentialItems.slice(0, 3).map(item => (
@@ -160,31 +167,8 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                         {credentialItems.length > 3 && (
                             <p className="text-xs text-grayscale-500 text-center">
                                 +{credentialItems.length - 3} more credential
-                                {credentialItems.length - 3 === 1 ? '' : 's'} in this offer
+                                {credentialItems.length - 3 === 1 ? '' : 's'}
                             </p>
-                        )}
-
-                        {credentialItems.some(item => item.format) && (
-                            <details className="group">
-                                <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
-                                    Technical details
-                                </summary>
-
-                                <ul className="mt-2 space-y-1 text-xs text-grayscale-500">
-                                    {credentialItems.map(item => (
-                                        <li key={`fmt-${item.id}`} className="flex items-baseline gap-2">
-                                            <span className="font-medium text-grayscale-700">
-                                                {item.title}
-                                            </span>
-                                            {item.format && (
-                                                <span className="text-grayscale-400">
-                                                    · {humanizeFormat(item.format) ?? item.format}
-                                                </span>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </details>
                         )}
                     </div>
 
@@ -431,6 +415,14 @@ const stringField = (
     if (!obj || typeof obj !== 'object') return undefined;
     const v = (obj as Record<string, unknown>)[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;
+};
+
+const safeHost = (url: string): string | undefined => {
+    try {
+        return new URL(url).host;
+    } catch {
+        return undefined;
+    }
 };
 
 export default OfferConsent;

@@ -1,4 +1,4 @@
-import { decodeJwt } from 'jose';
+import { decodeJwt, decodeProtectedHeader } from 'jose';
 
 import { VciError } from './errors';
 
@@ -156,12 +156,63 @@ const decodeJwtVc = (credential: unknown, format: string): NormalizedCredential 
     // Preserve the original JWS as a JwtProof2020 so verifiers that only
     // accept JSON-LD proofs see the signature, and anyone re-parsing from
     // `proof.jwt` can verify against the issuer's key.
+    //
+    // We populate the full set of fields the wallet's `ProofValidator`
+    // (zod, packages/learn-card-types/src/vc.ts) marks as required
+    // — `created`, `proofPurpose`, `verificationMethod`. Without them,
+    // `learnCard.read.get(uri)` calls `VCValidator.parseAsync(...)` on
+    // the decrypted JWE, the strict parse throws on the missing fields,
+    // LearnCloud's `read.get` swallows the throw with `return undefined`,
+    // and the credential becomes indexed-but-unreadable (the lc-1794
+    // empty-JSON symptom). The strings here are correctness-preserving
+    // placeholders — actual signature verification re-parses
+    // `proof.jwt` against the issuer's key, so the JsonLD-flavored
+    // metadata only needs to satisfy the schema, not the cryptography.
+    const created =
+        vc.issuanceDate ??
+        (typeof vc.validFrom === 'string' ? vc.validFrom : undefined) ??
+        new Date().toISOString();
+
+    const issuerId = pickIssuerId(vc.issuer) ?? (typeof payload.iss === 'string' ? payload.iss : undefined);
+
+    let kid: string | undefined;
+    try {
+        const header = decodeProtectedHeader(credential) as { kid?: unknown };
+        if (typeof header?.kid === 'string' && header.kid.length > 0) {
+            kid = header.kid;
+        }
+    } catch {
+        // Header malformed — fall through to the issuer-derived placeholder.
+    }
+
+    const verificationMethod = kid
+        ? // Absolute kid (e.g. `did:jwk:...#0`) — use as-is. Relative kid
+          // (e.g. `#key-1`) — anchor to the issuer DID.
+          kid.startsWith('#') && issuerId
+            ? `${issuerId}${kid}`
+            : kid
+        : issuerId
+        ? `${issuerId}#0`
+        : 'urn:openid4vci:unknown-verification-method';
+
     vc.proof = {
         type: 'JwtProof2020',
+        created,
+        proofPurpose: 'assertionMethod',
+        verificationMethod,
         jwt: credential,
     };
 
     return { vc, rawFormat: format, jwt: credential };
+};
+
+const pickIssuerId = (issuer: unknown): string | undefined => {
+    if (typeof issuer === 'string') return issuer;
+    if (issuer && typeof issuer === 'object') {
+        const id = (issuer as Record<string, unknown>).id;
+        if (typeof id === 'string' && id.length > 0) return id;
+    }
+    return undefined;
 };
 
 const isVcObject = (value: unknown): value is W3CVerifiableCredential => {

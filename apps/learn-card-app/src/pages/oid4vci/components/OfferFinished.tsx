@@ -9,10 +9,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import {
-    humanizeFormat,
-    prettifyConfigurationId,
-} from '../displayHelpers';
+import { prettifyConfigurationId } from '../displayHelpers';
 import CredentialPreviewCard, {
     type CredentialPreviewClaim,
 } from './CredentialPreviewCard';
@@ -103,20 +100,20 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
         : undefined;
 
     const headline = fullFailure
-        ? "Couldn\u2019t save credentials"
+        ? "Couldn’t claim credentials"
         : partialSuccess
-        ? 'Saved with some warnings'
+        ? 'Claimed with some warnings'
         : isSingleCredential
-        ? `Your ${featuredTitle ?? 'credential'} is in your wallet`
-        : `${stored.length} credentials saved`;
+        ? `${featuredTitle ?? 'Credential'} claimed`
+        : `${stored.length} credentials claimed`;
 
     const subhead = fullFailure
-        ? 'No credentials were successfully stored.'
+        ? "None of the credentials could be claimed."
         : partialSuccess
-        ? `${stored.length} of ${totalAttempted} saved \u2014 the rest had problems.`
+        ? `${stored.length} of ${totalAttempted} claimed — the rest had problems.`
         : isSingleCredential
         ? "It's yours to keep. Share it whenever you need to prove what it says."
-        : 'All set \u2014 your wallet is up to date.';
+        : 'They’re yours to keep. Share them whenever you need to prove what they say.';
 
     return (
         <div
@@ -279,7 +276,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="text-grayscale-400 shrink-0">•</span>
-                                    Bundle it with other credentials in your wallet.
+                                    Pair it with your other credentials.
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="text-grayscale-400 shrink-0">•</span>
@@ -287,34 +284,6 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                                 </li>
                             </ul>
                         </div>
-                    )}
-
-                    {stored.some(s => s.format) && (
-                        <details className="group">
-                            <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
-                                Technical details
-                            </summary>
-
-                            <ul className="mt-2 space-y-1 text-xs text-grayscale-500">
-                                {stored.map(entry => (
-                                    <li
-                                        key={`fmt-${entry.configurationId}`}
-                                        className="flex items-baseline gap-2"
-                                    >
-                                        <span className="font-medium text-grayscale-700">
-                                            {prettifyConfigurationId(entry.configurationId, {
-                                                displayName: entry.title,
-                                            })}
-                                        </span>
-                                        {entry.format && (
-                                            <span className="text-grayscale-400">
-                                                · {humanizeFormat(entry.format) ?? entry.format}
-                                            </span>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                        </details>
                     )}
 
                     <div className="space-y-3 pt-1">
@@ -326,7 +295,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                                 <ArrowUpRight className="w-4 h-4" />
                                 {isSingleCredential
                                     ? `Open my ${featuredTitle ?? 'credential'}`
-                                    : 'Open my wallet'}
+                                    : 'View my credentials'}
                             </button>
                         )}
 

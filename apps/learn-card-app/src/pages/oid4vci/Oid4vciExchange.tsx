@@ -9,6 +9,11 @@ import {
     useWallet,
 } from 'learn-card-base';
 import {
+    getCredentialName,
+    getCredentialSubjectName,
+    getDefaultCategoryForCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
+import {
     fetchCredentialIssuerMetadata,
 } from '@learncard/openid4vc-plugin';
 import type { VC } from '@learncard/types';
@@ -155,7 +160,11 @@ const Oid4vciExchange: React.FC = () => {
                 // delegated to the same `storeAcceptedCredentials` helper
                 // the pre-auth path uses, so the two flows produce
                 // indistinguishable wallet entries.
-                const stored = await persistAcceptedCredentials(wallet, accepted);
+                const stored = await persistAcceptedCredentials(
+                    wallet,
+                    accepted,
+                    buildStoreOptions()
+                );
 
                 // Best-effort metadata refetch so the success card can
                 // brand the issuer. We don't block on it: if it fails,
@@ -270,7 +279,11 @@ const Oid4vciExchange: React.FC = () => {
 
                     const result = await wallet.invoke.acceptAndStoreCredentialOffer(
                         currentOffer,
-                        { txCode, signer }
+                        {
+                            txCode,
+                            signer,
+                            ...buildStoreOptions(),
+                        }
                     );
 
                     const issuerInfo = pickIssuerInfo(
@@ -459,7 +472,16 @@ interface WalletOidcInvoke {
 
     acceptAndStoreCredentialOffer: (
         input: string | CredentialOffer,
-        options?: { txCode?: string; signer?: ProofJwtSigner }
+        options?: {
+            txCode?: string;
+            signer?: ProofJwtSigner;
+            // Storage-side overrides forwarded to `storeAcceptedCredentials`.
+            // Typed loosely here because we don't import the VC shape from the
+            // plugin and the helper is the source of truth.
+            category?: string | ((vc: any, index: number) => string);
+            title?: string | ((vc: any, index: number) => string | undefined);
+            imgUrl?: string | ((vc: any, index: number) => string | undefined);
+        }
     ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
 
     beginCredentialOfferAuthCode: (
@@ -490,16 +512,45 @@ const persistAcceptedCredentials = async (
     wallet: { invoke: WalletOidcInvoke } & {
         invoke: { storeAcceptedCredentials?: unknown };
     },
-    accepted: AcceptedCredentialResult
+    accepted: AcceptedCredentialResult,
+    options: ReturnType<typeof buildStoreOptions>
 ): Promise<StoreAcceptedCredentialsResult> => {
     // Lazy import keeps the plugin out of the initial bundle for users
     // who never hit this code path.
     const { storeAcceptedCredentials } = await import('@learncard/openid4vc-plugin');
     return storeAcceptedCredentials(
         wallet as unknown as Parameters<typeof storeAcceptedCredentials>[0],
-        accepted
+        accepted,
+        options
     );
 };
+
+/**
+ * Build the storage-side options bag passed to `acceptAndStoreCredentialOffer`
+ * (pre-auth path) and `storeAcceptedCredentials` (auth-code path).
+ *
+ * Two concerns, shared between the two call sites so the resulting
+ * wallet entries are indistinguishable:
+ *
+ *  1. **Canonical category routing**. The plugin ships a small VC-type
+ *     heuristic that classifies `UniversityDegreeCredential` as
+ *     `Achievement`. The host wallet's canonical mapper
+ *     (`getDefaultCategoryForCredential`) routes it to `Learning History`.
+ *     Pass the canonical mapper so the OIDC and `/request` paths put a
+ *     given credential in the same wallet shelf.
+ *
+ *  2. **Canonical title extraction**. Without a `title` override the
+ *     plugin omits the field on the IndexRecord, and the wallet falls
+ *     back to displaying the *category* name (e.g. "ACHIEVEMENTS") on
+ *     the credential card. We thread the wallet's `getCredentialName`
+ *     (with a `credentialSubject.name` fallback) so each entry has a
+ *     real human-readable title.
+ */
+const buildStoreOptions = () => ({
+    category: (vc: any) => getDefaultCategoryForCredential(vc),
+    title: (vc: any) =>
+        getCredentialName(vc) || getCredentialSubjectName(vc) || undefined,
+});
 
 /**
  * Best-effort title extraction from a stored credential. Falls back to

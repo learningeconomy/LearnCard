@@ -34,7 +34,56 @@ describe('normalizeIssuedCredential — jwt_vc_json', () => {
         const subject = result.vc.credentialSubject as { id?: string; name?: string };
         expect(subject.id).toBe('did:key:z6Mkholder');
         expect(subject.name).toBe('Alice');
-        expect(result.vc.proof).toEqual({ type: 'JwtProof2020', jwt });
+        // Proof block must carry every field the wallet's strict
+        // ProofValidator (packages/learn-card-types/src/vc.ts) marks
+        // as required — missing any of them caused
+        // `learnCard.read.get(uri)` to silently return undefined
+        // (lc-1794 “indexed but unreadable” symptom).
+        expect(result.vc.proof).toEqual({
+            type: 'JwtProof2020',
+            created: result.vc.issuanceDate,
+            proofPurpose: 'assertionMethod',
+            verificationMethod: 'did:web:issuer.example.com#0',
+            jwt,
+        });
+    });
+
+    it('uses the JWT `kid` header verbatim when it is an absolute identifier', async () => {
+        const { privateKey } = await generateKeyPair('EdDSA', { extractable: true });
+        const jwt = await new SignJWT({
+            iss: 'did:jwk:abc',
+            vc: {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                credentialSubject: { id: 'did:key:z6M' },
+            },
+        })
+            .setProtectedHeader({ alg: 'EdDSA', kid: 'did:jwk:abc#key-7' })
+            .sign(privateKey);
+
+        const result = normalizeIssuedCredential(jwt, 'jwt_vc_json');
+        const proof = result.vc.proof as Record<string, unknown>;
+
+        expect(proof.verificationMethod).toBe('did:jwk:abc#key-7');
+    });
+
+    it('anchors a relative `#kid` header to the issuer DID', async () => {
+        const { privateKey } = await generateKeyPair('EdDSA', { extractable: true });
+        const jwt = await new SignJWT({
+            iss: 'did:web:issuer.example.com',
+            vc: {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                credentialSubject: { id: 'did:key:z6M' },
+            },
+        })
+            .setProtectedHeader({ alg: 'EdDSA', kid: '#key-1' })
+            .sign(privateKey);
+
+        const result = normalizeIssuedCredential(jwt, 'jwt_vc_json');
+        const proof = result.vc.proof as Record<string, unknown>;
+
+        expect(proof.verificationMethod).toBe('did:web:issuer.example.com#key-1');
     });
 
     it('does not overwrite an explicitly-set vc.issuer with the iss claim', async () => {
