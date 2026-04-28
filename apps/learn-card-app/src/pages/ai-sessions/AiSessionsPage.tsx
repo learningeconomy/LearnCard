@@ -97,7 +97,10 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     const isLoading = credentialsLoading || topicsLoading;
 
     const topicsCount = topics?.length ?? 0;
-    const allSessions = useMemo(() => topics?.flatMap(topic => topic.sessions ?? []) ?? [], [topics]);
+    const allSessions = useMemo(
+        () => topics?.flatMap(topic => topic.sessions ?? []) ?? [],
+        [topics]
+    );
     const totalSessionsCount = allSessions.length;
     const unfinishedCount = useMemo(
         () => topics?.reduce((acc, t) => acc + (t.unfinishedSessionsCount ?? 0), 0) ?? 0,
@@ -134,7 +137,8 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             const group = groups.get(normalized)!;
             group.topics.push(topic);
             group.sessions.push(...(topic?.sessions ?? []));
-            group.hasUnfinishedSessions = group.hasUnfinishedSessions || Boolean(topic?.hasUnfinishedSessions);
+            group.hasUnfinishedSessions =
+                group.hasUnfinishedSessions || Boolean(topic?.hasUnfinishedSessions);
             group.unfinishedSessionsCount += topic?.unfinishedSessionsCount ?? 0;
 
             if (appName && !group.providerNames.includes(appName)) {
@@ -160,9 +164,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                 : withSearch;
 
         if (sortBy === AiSessionsSortOptionsEnum.alphabetical) {
-            return withFilter
-                .slice()
-                .sort((a, b) => a.groupTitle.localeCompare(b.groupTitle));
+            return withFilter.slice().sort((a, b) => a.groupTitle.localeCompare(b.groupTitle));
         }
 
         return withFilter
@@ -184,8 +186,8 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             view === 'sessions'
                 ? allSessions
                 : selectedGroupedTopic
-                  ? selectedGroupedTopic.sessions
-                  : selectedTopicData?.sessions ?? [];
+                ? selectedGroupedTopic.sessions
+                : selectedTopicData?.sessions ?? [];
 
         const lower = searchInput.toLowerCase();
 
@@ -347,9 +349,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                         </h2>
                                         <p className="text-sm font-poppins mt-1">
                                             <span className="text-grayscale-700">
-                                                {(selectedGroupedTopic?.sessions?.length ??
+                                                {selectedGroupedTopic?.sessions?.length ??
                                                     selectedTopicData?.sessions?.length ??
-                                                    0)}{' '}
+                                                    0}{' '}
                                                 {pluralize(
                                                     'Session',
                                                     selectedGroupedTopic?.sessions?.length ??
@@ -391,7 +393,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                 {view === 'topicDetail' && (
                                     <div className="mt-3 mb-3">
                                         <NewAiSessionButton
-                                            type={NewAiSessionButtonEnum.mobile}
+                                            type={NewAiSessionButtonEnum.icon}
                                             text={`New Session in ${selectedTopicTitle}`}
                                         />
                                     </div>
@@ -419,7 +421,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                         }
                                                         providerLogoUrls={t.providerLogos}
                                                         topicSessionsCount={t.sessions?.length || 0}
-                                                        hasUnfinishedSessions={t.hasUnfinishedSessions}
+                                                        hasUnfinishedSessions={
+                                                            t.hasUnfinishedSessions
+                                                        }
                                                         hasFinishedSessions={true}
                                                         onSelectTopic={() => {
                                                             if (t.topics.length > 1) {
@@ -431,14 +435,17 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                             }
 
                                                             const nextTopicUri =
-                                                                t.topics?.[0]?.topicBoost?.uri ?? '';
+                                                                t.topics?.[0]?.topicBoost?.uri ??
+                                                                '';
                                                             setSelectedGroupedTopicKey('');
                                                             setSelectedTopicUri(nextTopicUri);
                                                             setView('topicDetail');
                                                             resetFilters();
                                                             if (nextTopicUri) {
                                                                 history.push(
-                                                                    `/ai/sessions?topicBoostUri=${encodeURIComponent(nextTopicUri)}`
+                                                                    `/ai/sessions?topicBoostUri=${encodeURIComponent(
+                                                                        nextTopicUri
+                                                                    )}`
                                                                 );
                                                             } else {
                                                                 history.push('/ai/sessions');
