@@ -1,5 +1,36 @@
 # @learncard/network-brain-service
 
+## 2.5.13
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+    -   @learncard/core@9.4.16
+    -   @learncard/helpers@1.2.16
+    -   @learncard/did-web-plugin@1.1.16
+    -   @learncard/didkey-plugin@1.1.16
+    -   @learncard/didkit-plugin@1.8.6
+    -   @learncard/didkit-plugin-node@0.2.12
+    -   @learncard/encryption-plugin@1.1.16
+    -   @learncard/learn-card-plugin@1.2.16
+    -   @learncard/vc-plugin@1.4.12
+    -   @learncard/vc-templates-plugin@1.1.16
+    -   @learncard/crypto-plugin@1.1.16
+    -   @learncard/expiration-plugin@1.2.16
+
 ## 2.5.12
 
 ### Patch Changes

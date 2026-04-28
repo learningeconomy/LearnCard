@@ -15,6 +15,7 @@ export const networkStore = createStore('networkStore')<{
     xapiUrl: string;
     apiEndpoint: string;
     aiServiceUrl: string;
+    tenantId: string;
 }>(
     {
         networkUrl: LEARNCARD_NETWORK_URL,
@@ -23,6 +24,7 @@ export const networkStore = createStore('networkStore')<{
         xapiUrl: '',
         apiEndpoint: LCA_API_ENDPOINT,
         aiServiceUrl: 'https://api.learncloud.ai',
+        tenantId: '',
     },
     { persist: { name: 'networkStore', enabled: true } }
 );
@@ -34,11 +36,13 @@ export const networkStore = createStore('networkStore')<{
  * Values set here will override the hardcoded defaults from Networks.ts.
  * The persisted store means subsequent boots will use these until overridden again.
  */
-export const initNetworkStoreFromTenant = (apis: TenantApiConfig): void => {
+export const initNetworkStoreFromTenant = (apis: TenantApiConfig, tenantId?: string): void => {
     networkStore.set.networkUrl(apis.brainService);
     networkStore.set.networkApiUrl(apis.brainServiceApi);
     networkStore.set.cloudUrl(apis.cloudService);
     networkStore.set.xapiUrl(apis.xapi ?? apis.cloudService.replace(/\/trpc\/?$/, '/xapi'));
     networkStore.set.apiEndpoint(apis.lcaApi);
     networkStore.set.aiServiceUrl(apis.aiService ?? 'https://api.learncloud.ai');
+
+    if (tenantId) networkStore.set.tenantId(tenantId);
 };
