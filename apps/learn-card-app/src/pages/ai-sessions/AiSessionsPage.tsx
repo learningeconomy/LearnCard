@@ -85,7 +85,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     const isLoading = credentialsLoading || topicsLoading;
 
     const topicsCount = topics?.length ?? 0;
-    const allSessions = useMemo(() => topics?.flatMap(t => t.sessions ?? []) ?? [], [topics]);
+    const allSessions = useMemo(() => topics?.flatMap(topic => topic.sessions ?? []) ?? [], [topics]);
     const totalSessionsCount = allSessions.length;
     const unfinishedCount = useMemo(
         () => topics?.reduce((acc, t) => acc + (t.unfinishedSessionsCount ?? 0), 0) ?? 0,
