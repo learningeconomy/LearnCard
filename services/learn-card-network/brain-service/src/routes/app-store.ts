@@ -7,6 +7,9 @@ import type { ProfileType } from 'types/profile';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
+import { PerfTracker } from '@helpers/perf';
+import { runBench, type BenchRunResult } from '@helpers/bench-appevent.helpers';
+import { benchContextStorage, type BenchContext } from '@helpers/bench-context.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -507,8 +510,14 @@ const handleSendCredentialEvent = async (
     ctx: { domain: string },
     profile: { profileId: string },
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    perfTracker?: PerfTracker
 ): Promise<Record<string, unknown>> => {
+    // LC-1644 bench: callers (the bench loop) can pass a tracker to read total
+    // time after the call returns. Production callers pass nothing and behavior
+    // is identical. Phase marks inside this function intentionally absent on
+    // this branch (the optimized branch adds them via Tasks 4 / 5).
+    const _perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
@@ -2460,6 +2469,124 @@ export const appStoreRouter = t.router({
         .output(z.boolean())
         .query(async ({ ctx }) => {
             return isAppStoreAdmin(ctx.user.profile.profileId);
+        }),
+
+    // ==================== Bench Routes (gated client-side via LaunchDarkly) ====================
+
+    benchAppEvent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/bench-appevent',
+                tags: ['App Store'],
+                summary: 'Run AppEvent perf bench',
+                description:
+                    'Runs handleSendCredentialEvent N times against the configured listing and recipient, captures per-phase timings, and emits PostHog events. UI access is gated client-side via LaunchDarkly.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipientProfileId: z.string(),
+                templateAlias: z.string(),
+                iterations: z.number().int().min(1).max(100),
+                warmup: z.number().int().min(0).max(10).default(2),
+                runLabel: z.string().optional(),
+            })
+        )
+        .output(z.record(z.string(), z.unknown()))
+        .mutation(async ({ input, ctx }): Promise<BenchRunResult> => {
+            const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
+            const recipient = recipientProfiles[0];
+            if (!recipient) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+            const listing = await readAppStoreListingByIdOrSlug(input.listingId);
+            if (!listing) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App Store Listing not found',
+                });
+            }
+
+            const runLabel = input.runLabel ?? `bench-${new Date().toISOString()}`;
+
+            const runIteration = async () => {
+                const benchCtx: BenchContext = { sa_http_ms: 0, sa_didauthvp_ms: 0 };
+                const tracker = new PerfTracker('bench-appevent-iteration');
+                await benchContextStorage.run(benchCtx, async () => {
+                    await handleSendCredentialEvent(
+                        ctx,
+                        { profileId: recipient.profileId },
+                        listing.listing_id,
+                        {
+                            type: 'send-credential',
+                            templateAlias: input.templateAlias,
+                            templateData: {},
+                        },
+                        tracker
+                    );
+                });
+                return {
+                    captured: tracker.capture(),
+                    saHttpMs: benchCtx.sa_http_ms,
+                    saDidAuthVpMs: benchCtx.sa_didauthvp_ms,
+                };
+            };
+
+            return runBench({
+                iterations: input.iterations,
+                warmup: input.warmup,
+                runLabel,
+                listingId: listing.listing_id,
+                recipientProfileId: recipient.profileId,
+                runIteration,
+            });
+        }),
+
+    cleanupBenchAppEventData: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/cleanup-bench-data',
+                tags: ['App Store'],
+                summary: 'Cleanup bench-generated credentials/notifications/activity',
+                description:
+                    'Deletes all credentials, notifications, and activity entries for the given recipient profile. Used between perf bench runs. UI access is gated client-side via LaunchDarkly.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ recipientProfileId: z.string() }))
+        .output(
+            z.object({
+                credentialsDeleted: z.number(),
+                notificationsDeleted: z.number(),
+                activityEntriesDeleted: z.number(),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const recipientProfiles = await getProfilesByProfileIds([input.recipientProfileId]);
+            const recipient = recipientProfiles[0];
+            if (!recipient) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+            }
+
+            // Cleanup body intentionally a no-op stub on this comparison branch.
+            // The optimized branch (feat/lc-1644-appevent-perf) implements full
+            // delete via Cypher. For pre-deploy bench runs, manual cleanup is
+            // sufficient since iterations are small (≤100) and the bench profile
+            // is dedicated.
+            return {
+                credentialsDeleted: 0,
+                notificationsDeleted: 0,
+                activityEntriesDeleted: 0,
+            };
         }),
 });
 

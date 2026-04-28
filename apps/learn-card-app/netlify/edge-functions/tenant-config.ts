@@ -23,6 +23,21 @@ export default async (request: Request, _context: Context) => {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
+    // Local development: return empty overlay so the baked /tenant-config.json
+    // wins the merge. This lets devs edit public/tenant-config.json (e.g. to
+    // flip analyticsProvider to "posthog") without the edge function clobbering
+    // their changes with the production-default config.
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return new Response('{}', {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-store',
+                'Access-Control-Allow-Origin': '*',
+            },
+        });
+    }
+
     const resolvedConfig = resolveTenantConfig(hostname);
 
     return new Response(JSON.stringify(resolvedConfig), {

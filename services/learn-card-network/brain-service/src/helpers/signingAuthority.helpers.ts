@@ -4,6 +4,8 @@ import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
 import { trace, traceCrypto, traceHttp } from '@tracing';
+import { PerfTracker } from '@helpers/perf';
+import { benchContextStorage } from '@helpers/bench-context.helpers';
 
 dotenv.config();
 
@@ -28,8 +30,15 @@ export async function issueCredentialWithSigningAuthority(
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
+    // LC-1644 bench: allow SA_OWNER_DID_OVERRIDE env var to force a specific ownerDid
+    // without threading the param through every caller. Treat empty string as unset
+    // so that compose interpolation (`${VAR:-}`) producing "" doesn't break the SA
+    // lookup.
+    const envOverride = process.env.SA_OWNER_DID_OVERRIDE;
     const ownerDid =
-        ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
+        (envOverride && envOverride.length > 0 ? envOverride : undefined)
+        ?? ownerDidOverride
+        ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
     const logContext = {
         owner: owner.profileId,
@@ -41,6 +50,7 @@ export async function issueCredentialWithSigningAuthority(
     };
 
     return trace('signing-authority', 'issueCredentialWithSigningAuthority', async () => {
+        const perf = new PerfTracker('issueCredentialWithSigningAuthority');
         try {
 
             if (IS_TEST_ENVIRONMENT) {
@@ -50,6 +60,7 @@ export async function issueCredentialWithSigningAuthority(
             console.log('[SA Helper] Initiating credential issuance', logContext);
 
             const learnCard = await trace('init', 'getDidWebLearnCard', () => getDidWebLearnCard());
+            perf.mark('initDid');
 
             const brainDid = learnCard.id.did();
             console.log('[SA Helper] Brain DID resolved:', brainDid);
@@ -57,6 +68,7 @@ export async function issueCredentialWithSigningAuthority(
             const didJwt = await traceCrypto('getDidAuthVp', () =>
                 learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
             );
+            perf.mark('didAuthVp');
 
             if (!didJwt) {
                 console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
@@ -108,6 +120,7 @@ export async function issueCredentialWithSigningAuthority(
             }, { endpoint: issuerEndpoint });
 
             clearTimeout(timeoutId);
+            perf.mark('http');
 
             console.log('[SA Helper] LCA-API response status:', response.status, response.statusText);
 
@@ -125,12 +138,23 @@ export async function issueCredentialWithSigningAuthority(
             }
 
             const res = await trace('internal', 'parseResponse', () => response.json());
+            perf.mark('parse');
 
             if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
                 console.error('[SA Helper] LCA-API returned error in body:', JSON.stringify(res));
                 throw new Error(
                     `LCA-API error response: ${JSON.stringify(res)}`
                 );
+            }
+
+            // LC-1644 bench: surface http + didAuthVp timings to the bench loop
+            // via AsyncLocalStorage when a bench context is present. No-op in
+            // production (no context = no writes).
+            const benchCtx = benchContextStorage.getStore();
+            if (benchCtx) {
+                const captured = perf.capture();
+                benchCtx.sa_http_ms = captured.phases.http ?? 0;
+                benchCtx.sa_didauthvp_ms = captured.phases.didAuthVp ?? 0;
             }
 
             if (encryption) {

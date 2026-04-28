@@ -9,6 +9,7 @@ export enum AdminToolOptionsEnum {
     SYNC_ALL_CREDENTIALS = 'Sync All Credentials',
     CLI = 'CLI',
     GUARDIAN_CREDENTIAL_TEST = 'Guardian Credential Test',
+    APPEVENT_PERF_BENCH = 'AppEvent Perf Bench',
 }
 
 export type AdminToolOption = {
@@ -46,6 +47,15 @@ export const adminToolOptions: AdminToolOption[] = [
         description: 'Send a guardian-gated test credential to test the guardian credential flow.',
         actionLabel: 'Open Test UI',
         type: AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST,
+    },
+    {
+        id: 4,
+        label: 'AppEvent Perf Bench',
+        title: 'AppEvent Perf Bench',
+        description:
+            'Run the sendCredential APP_EVENT flow N times against staging and capture per-phase timings in PostHog.',
+        actionLabel: 'Open Perf Bench',
+        type: AdminToolOptionsEnum.APPEVENT_PERF_BENCH,
     },
 ];
 
