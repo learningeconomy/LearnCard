@@ -6,6 +6,7 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import CredentialGeneralPlus from '../../../svgs/CredentialGeneralPlus';
 import BoostAddressBookContactItem from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
+import { getTopmostCancelPortal } from '../../boostCMS/boostCMSForms/boostCMSMedia/boostCMSMedia.helpers';
 
 import { BoostCMSIssueTo, BoostCMSState } from '../../boost';
 import { BoostAddressBookEditMode } from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
@@ -65,7 +66,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
     const { closeModal } = useModal();
     const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
     useLayoutEffect(() => {
-        setSectionPortal(document.getElementById('section-cancel-portal'));
+        setSectionPortal(getTopmostCancelPortal());
     }, []);
 
     const color = boostCategoryMetadata[category]?.color ?? 'grayscale-900';

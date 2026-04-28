@@ -60,12 +60,14 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                          * flows (e.g. ShortBoostSomeoneScreen) where the parent modal does
                          * render its own action buttons via the section-cancel-portal.
                          */}
-                        <button
-                            onClick={() => closeModal()}
-                            className="absolute right-4 top-0 p-1 text-grayscale-600 hover:text-grayscale-900 transition-colors z-9999"
-                        >
-                            <X className="w-6 h-6 text-grayscale-900" />
-                        </button>
+                        {hideCloseButton && (
+                            <button
+                                onClick={() => closeModal()}
+                                className="absolute right-4 top-0 p-1 text-grayscale-600 hover:text-grayscale-900 transition-colors z-9999"
+                            >
+                                <X className="w-6 h-6 text-grayscale-900" />
+                            </button>
+                        )}
                     </div>
                 </IonHeader>
 
