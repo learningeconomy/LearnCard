@@ -1,5 +1,25 @@
 # @learncard/open-badge-v2-plugin
 
+## 1.1.17
+
+### Patch Changes
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+    -   @learncard/core@9.4.16
+    -   @learncard/vc-plugin@1.4.12
+    -   @learncard/crypto-plugin@1.1.16
+
+## 1.1.16
+
+### Patch Changes
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/types@5.13.5
+    -   @learncard/core@9.4.15
+    -   @learncard/vc-plugin@1.4.11
+    -   @learncard/crypto-plugin@1.1.15
+
 ## 1.1.15
 
 ### Patch Changes

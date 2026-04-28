@@ -1,5 +1,61 @@
 # @learncard/network-brain-service
 
+## 2.5.13
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+    -   @learncard/core@9.4.16
+    -   @learncard/helpers@1.2.16
+    -   @learncard/did-web-plugin@1.1.16
+    -   @learncard/didkey-plugin@1.1.16
+    -   @learncard/didkit-plugin@1.8.6
+    -   @learncard/didkit-plugin-node@0.2.12
+    -   @learncard/encryption-plugin@1.1.16
+    -   @learncard/learn-card-plugin@1.2.16
+    -   @learncard/vc-plugin@1.4.12
+    -   @learncard/vc-templates-plugin@1.1.16
+    -   @learncard/crypto-plugin@1.1.16
+    -   @learncard/expiration-plugin@1.2.16
+
+## 2.5.12
+
+### Patch Changes
+
+-   [#1118](https://github.com/learningeconomy/LearnCard/pull/1118) [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564) Thanks [@Computer8004](https://github.com/Computer8004)! - Added optional `delete` method to the Store Control Plane, allowing storage plugins to support credential deletion. When implemented, this method removes stored credentials and automatically invalidates the read cache.
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/types@5.13.5
+    -   @learncard/core@9.4.15
+    -   @learncard/helpers@1.2.15
+    -   @learncard/did-web-plugin@1.1.15
+    -   @learncard/didkey-plugin@1.1.15
+    -   @learncard/didkit-plugin@1.8.5
+    -   @learncard/didkit-plugin-node@0.2.11
+    -   @learncard/encryption-plugin@1.1.15
+    -   @learncard/learn-card-plugin@1.2.15
+    -   @learncard/vc-plugin@1.4.11
+    -   @learncard/vc-templates-plugin@1.1.15
+    -   @learncard/crypto-plugin@1.1.15
+    -   @learncard/expiration-plugin@1.2.15
+
 ## 2.5.11
 
 ### Patch Changes

@@ -74,17 +74,13 @@
         "analytics": true,
         "themeSwitching": true,
         "introSlides": true,
-        "launchPadQuickActions": true
+        "launchPadQuickActions": false
     },
 
     "observability": {
         "sentryDsn": "https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704",
         "sentryEnv": "production",
-        "sentryTraceDomains": [
-            "network.learncard.com",
-            "api.learncard.app",
-            "cloud.learncard.com"
-        ],
+        "sentryTraceDomains": ["network.learncard.com", "api.learncard.app", "cloud.learncard.com"],
         "launchDarklyClientId": "63dabf3982caed12cac3e55c",
         "userflowToken": "ct_qq6z63mixbhyzbzsgmivgrftda",
         "analyticsProvider": "posthog",
@@ -112,6 +108,6 @@
             "lcw.app"
         ],
         "customSchemes": ["dccrequest", "msprequest", "asuprequest"],
-        "capgoChannel": "1.0.4"
+        "capgoChannel": "1.0.6"
     }
 }

@@ -1,5 +1,35 @@
 # learn-card-types
 
+## 5.13.6
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   [#1181](https://github.com/learningeconomy/LearnCard/pull/1181) [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1758] Add Plugins filter and Plugins category when building an app
+
+## 5.13.5
+
+### Patch Changes
+
+-   [#1116](https://github.com/learningeconomy/LearnCard/pull/1116) [`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1742] feat: App-Scoped Counters + In-App Notifications
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
 ## 5.13.4
 
 ### Patch Changes

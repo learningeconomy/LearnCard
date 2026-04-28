@@ -6,6 +6,8 @@ import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 
+import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
+
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 
@@ -26,6 +28,7 @@ export type Context = {
         authorizedDid?: boolean;
     };
     domain: string;
+    tenant: ResolvedTenant;
     debug?: boolean;
     clientIp?: string;
 };
@@ -44,6 +47,13 @@ export const createContext = async (
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
             : domainName;
+
+    // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
+    const rawHeaders = 'event' in options
+        ? (options.event.headers as Record<string, string | undefined>)
+        : (options.req.headers as Record<string, string | string[] | undefined>);
+
+    const tenant = resolveTenantFromRequest(rawHeaders);
 
     // Extract client IP for rate limiting (available on all return paths)
     let clientIp: string | undefined;
@@ -88,6 +98,7 @@ export const createContext = async (
                         return {
                             user: { did, isChallengeValid: false, authorizedDid },
                             domain,
+                            tenant,
                             debug,
                             clientIp,
                         };
@@ -98,6 +109,7 @@ export const createContext = async (
                     return {
                         user: { did, isChallengeValid: Boolean(cacheResponse), authorizedDid },
                         domain,
+                        tenant,
                         debug,
                         clientIp,
                     };
@@ -108,7 +120,7 @@ export const createContext = async (
         console.error(e);
     }
 
-    return { domain, clientIp };
+    return { domain, tenant, clientIp };
 };
 
 export const openRoute = t.procedure
