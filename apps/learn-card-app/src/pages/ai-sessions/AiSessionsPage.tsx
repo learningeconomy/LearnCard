@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { IonContent, IonPage } from '@ionic/react';
 import { VC } from '@learncard/types';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
@@ -35,7 +36,9 @@ import useTheme from '../../theme/hooks/useTheme';
 
 type ViewMode = 'topics' | 'sessions' | 'topicDetail';
 
-const AiSessionsPage: React.FC = () => {
+const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
+    const history = useHistory();
+    const location = useLocation();
     const { getThemedCategoryColors } = useTheme();
     const { isDesktop } = useDeviceTypeByWidth();
 
@@ -171,6 +174,13 @@ const AiSessionsPage: React.FC = () => {
         setSortBy(AiSessionsSortOptionsEnum.newlyAdded);
     };
 
+    useEffect(() => {
+        if (!topicUri) return;
+        setSelectedTopicUri(topicUri);
+        setView('topicDetail');
+        resetFilters();
+    }, [topicUri]);
+
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
@@ -191,6 +201,10 @@ const AiSessionsPage: React.FC = () => {
                                         <button
                                             className="text-grayscale-800 font-poppins text-[22px] font-semibold flex items-center gap-2"
                                             onClick={() => {
+                                                if (location.pathname === '/ai/sessions') {
+                                                    history.push('/ai/topics');
+                                                    return;
+                                                }
                                                 setView('topics');
                                                 resetFilters();
                                             }}
@@ -311,11 +325,18 @@ const AiSessionsPage: React.FC = () => {
                                                         }
                                                         hasFinishedSessions={t.hasFinishedSessions}
                                                         onSelectTopic={() => {
-                                                            setSelectedTopicUri(
-                                                                t.topicBoost?.uri ?? ''
-                                                            );
+                                                            const nextTopicUri =
+                                                                t.topicBoost?.uri ?? '';
+                                                            setSelectedTopicUri(nextTopicUri);
                                                             setView('topicDetail');
                                                             resetFilters();
+                                                            if (nextTopicUri) {
+                                                                history.push(
+                                                                    `/ai/sessions?topicBoostUri=${encodeURIComponent(nextTopicUri)}`
+                                                                );
+                                                            } else {
+                                                                history.push('/ai/sessions');
+                                                            }
                                                         }}
                                                     />
                                                 ))
