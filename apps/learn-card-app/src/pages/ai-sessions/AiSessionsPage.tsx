@@ -90,7 +90,6 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
 
     const { data: selectedTopicData, isLoading: selectedTopicLoading } = useGetEnrichedSession(
         selectedTopicUri,
-        undefined,
         Boolean(selectedTopicUri)
     );
 
