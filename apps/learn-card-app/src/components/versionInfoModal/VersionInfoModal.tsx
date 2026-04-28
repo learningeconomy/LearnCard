@@ -15,10 +15,11 @@
  *   - Middle: labeled key/value rows for the build. Plain language where
  *     we can use it ("App version", "Update channel"), technical terms only
  *     where they help support ("Content version" = Capgo bundle).
- *   - Bottom primary action: "Copy details" — pastes a pre-formatted,
- *     support-ready block to the clipboard.
- *   - Advanced (collapsed by default): device ID, builtin bundle version,
- *     native build number, Capgo plugin version. Hidden unless expanded.
+ *   - Primary action: "Copy details" — pastes a pre-formatted, support-ready
+ *     block to the clipboard.
+ *   - Advanced (collapsed by default): account, tenant, build commit, device
+ *     ID, network, plus a "Check for updates" action and a flag-gated
+ *     channel switcher.
  *
  * Gracefully degrades on web: fields that require the native
  * CapacitorUpdater plugin are hidden rather than rendered as "—".
@@ -30,19 +31,36 @@ import {
     chevronDownOutline,
     chevronUpOutline,
     checkmarkCircleOutline,
+    cloudDownloadOutline,
     copyOutline,
     informationCircleOutline,
+    swapHorizontalOutline,
+    warningOutline,
 } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import { App, type AppInfo } from '@capacitor/app';
 import { Clipboard } from '@capacitor/clipboard';
+import { Network } from '@capacitor/network';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { useBrandingConfig, useToast, ToastTypeEnum } from 'learn-card-base';
+import {
+    useBrandingConfig,
+    useConfirmation,
+    useGetCurrentLCNUser,
+    useTenantConfig,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 type Platform = 'ios' | 'android' | 'web';
+
+interface NetworkSummary {
+    connected: boolean;
+    label: string;
+}
 
 interface VersionInfo {
     platform: Platform;
@@ -69,6 +87,10 @@ interface VersionInfo {
     pluginVersion?: string;
     /** Version of the JS bundle that shipped in the native binary. */
     builtinVersion?: string;
+    /** ISO timestamp of when the current OTA bundle was downloaded. Empty for builtin. */
+    lastUpdateApplied?: string;
+    /** Connectivity summary (works on web + native). */
+    network?: NetworkSummary;
 }
 
 const PLATFORM_LABELS: Record<Platform, string> = {
@@ -84,15 +106,87 @@ const shorten = (value: string | undefined, head = 6, tail = 4): string => {
     return `${value.slice(0, head)}…${value.slice(-tail)}`;
 };
 
+/**
+ * Render an ISO timestamp as a friendly relative string ("3 hours ago").
+ * Falls back to a locale date string for anything older than a week so the
+ * exact day is still visible — useful in support screenshots.
+ */
+const formatRelative = (iso: string | undefined): string | undefined => {
+    if (!iso) return undefined;
+
+    const ts = new Date(iso).getTime();
+
+    if (Number.isNaN(ts)) return undefined;
+
+    const ms = Date.now() - ts;
+    const sec = Math.floor(ms / 1000);
+
+    if (sec < 60) return 'Just now';
+
+    const min = Math.floor(sec / 60);
+
+    if (min < 60) return `${min} minute${min === 1 ? '' : 's'} ago`;
+
+    const hr = Math.floor(min / 60);
+
+    if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`;
+
+    const day = Math.floor(hr / 24);
+
+    if (day < 7) return `${day} day${day === 1 ? '' : 's'} ago`;
+
+    return new Date(iso).toLocaleDateString();
+};
+
+const formatNetwork = (
+    status: { connected: boolean; connectionType: string } | null,
+): NetworkSummary | undefined => {
+    if (!status) return undefined;
+
+    if (!status.connected) return { connected: false, label: 'Offline' };
+
+    switch (status.connectionType) {
+        case 'wifi':
+            return { connected: true, label: 'Wi-Fi · Connected' };
+        case 'cellular':
+            return { connected: true, label: 'Cellular · Connected' };
+        case 'none':
+            return { connected: false, label: 'Offline' };
+        default:
+            return { connected: true, label: 'Connected' };
+    }
+};
+
+const formatBuildDate = (iso: string | undefined): string | undefined => {
+    if (!iso) return undefined;
+
+    const ts = new Date(iso).getTime();
+
+    if (Number.isNaN(ts)) return undefined;
+
+    return new Date(iso).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
 const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo> => {
     const platform = Capacitor.getPlatform() as Platform;
     const isNative = Capacitor.isNativePlatform();
+
+    // Network status works on both web and native, so collect it unconditionally.
+    const networkStatus = await Network.getStatus().catch(() => null);
+    const network = formatNetwork(networkStatus);
 
     if (!isNative) {
         return {
             platform,
             isNative,
             displayVersion: fallbackVersion,
+            network,
         };
     }
 
@@ -111,6 +205,15 @@ const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo>
             ? bundleVersion
             : (appInfo?.version ?? fallbackVersion);
 
+    // The current bundle's `downloaded` field is the timestamp the OTA bundle
+    // was applied to this device. Empty / 'builtin' means we're still on the
+    // bundle that shipped in the binary, in which case we hide the row.
+    const downloaded = bundle?.bundle?.downloaded;
+    const lastUpdateApplied =
+        bundleVersion && bundleVersion !== 'builtin' && downloaded && downloaded.trim() !== ''
+            ? downloaded
+            : undefined;
+
     return {
         platform,
         isNative,
@@ -125,12 +228,22 @@ const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo>
         deviceId: (deviceIdResult as { deviceId?: string } | null)?.deviceId,
         pluginVersion: (pluginVersionResult as { version?: string } | null)?.version,
         builtinVersion: (builtinResult as { version?: string } | null)?.version,
+        lastUpdateApplied,
+        network,
     };
 };
 
-const buildCopyPayload = (info: VersionInfo, appName: string): string => {
+interface CopyPayloadContext {
+    appName: string;
+    profileId?: string;
+    tenantId?: string;
+    buildSha?: string;
+    buildDate?: string;
+}
+
+const buildCopyPayload = (info: VersionInfo, ctx: CopyPayloadContext): string => {
     const lines = [
-        `${appName} — version details`,
+        `${ctx.appName} — version details`,
         `Platform: ${PLATFORM_LABELS[info.platform]}`,
         `App version: ${info.displayVersion}`,
     ];
@@ -138,8 +251,14 @@ const buildCopyPayload = (info: VersionInfo, appName: string): string => {
     if (info.nativeVersion) lines.push(`Native version: ${info.nativeVersion} (${info.nativeBuild ?? '—'})`);
     if (info.bundleVersion) lines.push(`Content version: ${info.bundleVersion}`);
     if (info.channel) lines.push(`Update channel: ${info.channel}`);
+    if (info.lastUpdateApplied) lines.push(`Last updated: ${info.lastUpdateApplied}`);
+    if (info.network) lines.push(`Network: ${info.network.label}`);
+    if (ctx.profileId) lines.push(`Account: ${ctx.profileId}`);
+    if (ctx.tenantId) lines.push(`Tenant: ${ctx.tenantId}`);
     if (info.bundleId) lines.push(`Bundle id: ${info.bundleId}`);
     if (info.deviceId) lines.push(`Device id: ${info.deviceId}`);
+    if (ctx.buildSha) lines.push(`Build commit: ${ctx.buildSha}`);
+    if (ctx.buildDate) lines.push(`Build date: ${ctx.buildDate}`);
     if (info.pluginVersion) lines.push(`Updater plugin: v${info.pluginVersion}`);
     if (info.builtinVersion) lines.push(`Shipped bundle: ${info.builtinVersion}`);
     lines.push(`Captured: ${new Date().toISOString()}`);
@@ -196,12 +315,32 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const brandingConfig = useBrandingConfig();
     const { appIcon } = useTenantBrandingAssets();
     const { presentToast } = useToast();
+    const tenantConfig = useTenantConfig();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const flags = useFlags();
+    const confirm = useConfirmation();
 
     const [info, setInfo] = useState<VersionInfo | null>(null);
     const [advancedOpen, setAdvancedOpen] = useState(false);
     const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+    const [checkingForUpdate, setCheckingForUpdate] = useState(false);
+    const [showChannelInput, setShowChannelInput] = useState(false);
+    const [channelInput, setChannelInput] = useState('');
+    const [switchingChannel, setSwitchingChannel] = useState(false);
 
     const appName = brandingConfig?.name ?? 'App';
+    const tenantId = tenantConfig?.tenantId;
+    const profileId = currentLCNUser?.profileId;
+    const buildSha = typeof __BUILD_SHA__ === 'string' ? __BUILD_SHA__ : undefined;
+    const buildDateRaw = typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : undefined;
+    const buildDate = formatBuildDate(buildDateRaw);
+    const channelSwitcherEnabled = Boolean(flags?.enableChannelSwitcher);
+
+    const refreshInfo = async (): Promise<void> => {
+        const next = await collectVersionInfo(fallbackVersion);
+
+        setInfo(next);
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -218,8 +357,17 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     }, [fallbackVersion]);
 
     const copyPayload = useMemo(
-        () => (info ? buildCopyPayload(info, appName) : ''),
-        [info, appName],
+        () =>
+            info
+                ? buildCopyPayload(info, {
+                      appName,
+                      profileId,
+                      tenantId,
+                      buildSha,
+                      buildDate: buildDateRaw,
+                  })
+                : '',
+        [info, appName, profileId, tenantId, buildSha, buildDateRaw],
     );
 
     const copyString = async (value: string, label: string): Promise<void> => {
@@ -250,6 +398,115 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+        }
+    };
+
+    /**
+     * Manually ask Capgo whether a newer bundle is available on the assigned
+     * channel. Capgo's `getLatest()` throws a non-error "No new version available"
+     * when the device is already up to date — we catch that specifically and
+     * surface a friendly success toast.
+     */
+    const handleCheckForUpdates = async (): Promise<void> => {
+        if (!Capacitor.isNativePlatform()) {
+            presentToast('Update checks only run on the installed app.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            return;
+        }
+
+        setCheckingForUpdate(true);
+
+        try {
+            const latest = await CapacitorUpdater.getLatest();
+            const version = (latest as { version?: string } | null)?.version;
+
+            presentToast(
+                version
+                    ? `Update available: v${version}. It will install next time you reopen the app.`
+                    : `An update is available. It will install next time you reopen the app.`,
+                { type: ToastTypeEnum.Success, hasDismissButton: true },
+            );
+        } catch (err) {
+            const msg = (err as { message?: string } | null)?.message ?? '';
+            const upToDate =
+                msg.includes('No new version') ||
+                msg.includes('no_new_version_available') ||
+                msg.includes('Already up to date');
+
+            if (upToDate) {
+                presentToast(`You're on the latest version.`, {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+            } else {
+                presentToast(`Couldn't check for updates${msg ? `: ${msg}` : '.'}`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
+        } finally {
+            setCheckingForUpdate(false);
+        }
+    };
+
+    /**
+     * Switch the device to a different Capgo channel. Two layers of friction:
+     *   1. The whole switcher is hidden unless `enableChannelSwitcher` is on in
+     *      LaunchDarkly.
+     *   2. We require an explicit confirmation dialog before the channel
+     *      change goes through, because switching to a channel with an
+     *      incompatible native binary will break the app on next reload.
+     */
+    const handleSwitchChannel = async (): Promise<void> => {
+        const next = channelInput.trim();
+
+        if (!next || !info) return;
+
+        if (next === info.channel) {
+            presentToast(`Already on channel ${next}.`, { hasDismissButton: true });
+            return;
+        }
+
+        const ok = await confirm({
+            title: 'Switch update channel?',
+            text: (
+                <span className="text-sm text-grayscale-700 leading-relaxed">
+                    This will switch your device to channel{' '}
+                    <strong className="text-grayscale-900">{next}</strong>. The app will start
+                    receiving updates from that channel and may download a different version of
+                    the content. Only do this if support has asked you to.
+                </span>
+            ),
+            confirmText: `Switch to ${next}`,
+            cancelText: 'Cancel',
+        });
+
+        if (!ok) return;
+
+        setSwitchingChannel(true);
+
+        try {
+            await CapacitorUpdater.setChannel({ channel: next, triggerAutoUpdate: true });
+
+            presentToast(`Switched to channel ${next}. Updates will apply on next reload.`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+
+            setShowChannelInput(false);
+            setChannelInput('');
+            await refreshInfo();
+        } catch (err) {
+            const msg = (err as { message?: string } | null)?.message ?? 'unknown error';
+
+            presentToast(`Couldn't switch channel: ${msg}`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setSwitchingChannel(false);
         }
     };
 
@@ -333,6 +590,14 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                         onCopy={copyString}
                     />
                 ) : null}
+                {info.lastUpdateApplied ? (
+                    <VersionInfoRow
+                        label="Last updated"
+                        value={formatRelative(info.lastUpdateApplied)}
+                        copyValue={info.lastUpdateApplied}
+                        onCopy={copyString}
+                    />
+                ) : null}
             </div>
 
             {/* ---- Primary action ------------------------------------------------ */}
@@ -354,24 +619,42 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 )}
             </button>
 
-            {/* ---- Advanced (collapsible) ---------------------------------------- */}
-            {info.isNative && (info.deviceId || info.pluginVersion || info.builtinVersion || info.bundleId || info.bundleInternalId || info.bundleChecksum) ? (
-                <div className="mt-4 w-full">
-                    <button
-                        type="button"
-                        onClick={() => setAdvancedOpen(o => !o)}
-                        aria-expanded={advancedOpen}
-                        className="w-full flex items-center justify-between py-2 px-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-700 transition-colors"
-                    >
-                        <span className="uppercase tracking-wide">Advanced</span>
-                        <IonIcon
-                            icon={advancedOpen ? chevronUpOutline : chevronDownOutline}
-                            className="text-base"
-                        />
-                    </button>
+            {/* ---- Advanced (collapsible) ----------------------------------------
+              * Always rendered (even on web): some fields like `network`, `tenant`,
+              * `account`, and the build commit make sense in every environment.
+              */}
+            <div className="mt-4 w-full">
+                <button
+                    type="button"
+                    onClick={() => setAdvancedOpen(o => !o)}
+                    aria-expanded={advancedOpen}
+                    className="w-full flex items-center justify-between py-2 px-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-700 transition-colors"
+                >
+                    <span className="uppercase tracking-wide">Advanced</span>
+                    <IonIcon
+                        icon={advancedOpen ? chevronUpOutline : chevronDownOutline}
+                        className="text-base"
+                    />
+                </button>
 
-                    {advancedOpen ? (
-                        <div className="mt-1 w-full bg-grayscale-10 border border-grayscale-200 rounded-2xl px-4 py-1">
+                {advancedOpen ? (
+                    <div className="mt-1 w-full flex flex-col gap-3">
+                        <div className="w-full bg-grayscale-10 border border-grayscale-200 rounded-2xl px-4 py-1">
+                            {profileId ? (
+                                <VersionInfoRow
+                                    label="Account"
+                                    value={shorten(profileId, 8, 6)}
+                                    copyValue={profileId}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
+                            {tenantId ? (
+                                <VersionInfoRow
+                                    label="Tenant"
+                                    value={tenantId}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
                             {info.bundleId ? (
                                 <VersionInfoRow
                                     label="Bundle ID"
@@ -384,6 +667,27 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                     label="Device ID"
                                     value={shorten(info.deviceId)}
                                     copyValue={info.deviceId}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
+                            {info.network ? (
+                                <VersionInfoRow
+                                    label="Network"
+                                    value={info.network.label}
+                                />
+                            ) : null}
+                            {buildSha ? (
+                                <VersionInfoRow
+                                    label="Build commit"
+                                    value={buildSha}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
+                            {buildDate ? (
+                                <VersionInfoRow
+                                    label="Build date"
+                                    value={buildDate}
+                                    copyValue={buildDateRaw}
                                     onCopy={copyString}
                                 />
                             ) : null}
@@ -414,9 +718,102 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                 />
                             ) : null}
                         </div>
-                    ) : null}
-                </div>
-            ) : null}
+
+                        {/* ---- Check-for-updates action ------------------------- */}
+                        {info.isNative ? (
+                            <button
+                                type="button"
+                                onClick={handleCheckForUpdates}
+                                disabled={checkingForUpdate}
+                                className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {checkingForUpdate ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin" />
+                                        Checking…
+                                    </>
+                                ) : (
+                                    <>
+                                        <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                                        Check for updates
+                                    </>
+                                )}
+                            </button>
+                        ) : null}
+
+                        {/* ---- Channel switcher (LaunchDarkly-gated) ------------ */}
+                        {channelSwitcherEnabled && info.isNative ? (
+                            !showChannelInput ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setChannelInput(info.channel ?? '');
+                                        setShowChannelInput(true);
+                                    }}
+                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <IonIcon icon={swapHorizontalOutline} className="text-base" />
+                                    Switch update channel…
+                                </button>
+                            ) : (
+                                <div className="w-full bg-amber-50 border border-amber-100 rounded-2xl p-3 flex flex-col gap-2.5">
+                                    <div className="flex items-start gap-2">
+                                        <IonIcon
+                                            icon={warningOutline}
+                                            className="text-amber-600 text-base mt-0.5 shrink-0"
+                                        />
+                                        <p className="text-xs text-amber-900 leading-relaxed">
+                                            Switching channels can cause the app to download a
+                                            version of the content that&rsquo;s incompatible with
+                                            your installed app. Only continue if support has asked
+                                            you to.
+                                        </p>
+                                    </div>
+
+                                    <label className="text-xs font-medium text-grayscale-700 mt-1">
+                                        Channel name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={channelInput}
+                                        onChange={e => setChannelInput(e.target.value)}
+                                        placeholder="e.g. 1.0.7"
+                                        spellCheck={false}
+                                        autoCapitalize="off"
+                                        autoCorrect="off"
+                                        className="w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                    />
+
+                                    <div className="flex gap-2 mt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowChannelInput(false);
+                                                setChannelInput('');
+                                            }}
+                                            className="flex-1 py-2.5 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleSwitchChannel}
+                                            disabled={
+                                                switchingChannel ||
+                                                !channelInput.trim() ||
+                                                channelInput.trim() === info.channel
+                                            }
+                                            className="flex-1 py-2.5 px-3 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            {switchingChannel ? 'Switching…' : 'Apply'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
         </div>
     );
 };
