@@ -26,6 +26,7 @@ import {
 } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import { LCR } from 'learn-card-base/types/credential-records';
+import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
 
 import {
     AiFilteringTypes,
@@ -35,6 +36,16 @@ import {
 import useTheme from '../../theme/hooks/useTheme';
 
 type ViewMode = 'topics' | 'sessions' | 'topicDetail';
+type TopicGroup = {
+    key: string;
+    groupTitle: string;
+    topics: any[];
+    sessions: any[];
+    providerNames: string[];
+    providerLogos: string[];
+    hasUnfinishedSessions: boolean;
+    unfinishedSessionsCount: number;
+};
 
 const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     const history = useHistory();
@@ -47,6 +58,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
 
     const [view, setView] = useState<ViewMode>('topics');
     const [selectedTopicUri, setSelectedTopicUri] = useState<string>('');
+    const [selectedGroupedTopicKey, setSelectedGroupedTopicKey] = useState<string>('');
 
     const [searchInput, setSearchInput] = useState('');
     const [filterBy, setFilterBy] = useState<AiSessionsFilterOptionsEnum>(
@@ -92,13 +104,55 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         [topics]
     );
 
+    const groupedTopics = useMemo<TopicGroup[]>(() => {
+        const groups = new Map<string, TopicGroup>();
+
+        (topics ?? []).forEach(topic => {
+            const title = topic?.topicVc?.boostCredential?.topicInfo?.title ?? '';
+            const normalized = title.trim().toLowerCase();
+            if (!normalized) return;
+
+            const app = aiPassportApps?.find(
+                appItem => appItem?.contractUri === topic?.topicRecord?.contractUri
+            );
+            const appName = app?.name ?? topic?.topicRecord?.contractUri ?? 'Provider';
+            const appLogo = app?.img ?? topic?.topicVc?.image;
+
+            if (!groups.has(normalized)) {
+                groups.set(normalized, {
+                    key: normalized,
+                    groupTitle: title,
+                    topics: [],
+                    sessions: [],
+                    providerNames: [],
+                    providerLogos: [],
+                    hasUnfinishedSessions: false,
+                    unfinishedSessionsCount: 0,
+                });
+            }
+
+            const group = groups.get(normalized)!;
+            group.topics.push(topic);
+            group.sessions.push(...(topic?.sessions ?? []));
+            group.hasUnfinishedSessions = group.hasUnfinishedSessions || Boolean(topic?.hasUnfinishedSessions);
+            group.unfinishedSessionsCount += topic?.unfinishedSessionsCount ?? 0;
+
+            if (appName && !group.providerNames.includes(appName)) {
+                group.providerNames.push(appName);
+            }
+            if (appLogo && !group.providerLogos.includes(appLogo)) {
+                group.providerLogos.push(appLogo);
+            }
+        });
+
+        return Array.from(groups.values());
+    }, [topics]);
+
     const filteredTopics = useMemo(() => {
-        const source = topics ?? [];
+        const source = groupedTopics;
         const lower = searchInput.toLowerCase();
 
-        const withSearch = source.filter(t =>
-            (t.topicVc?.boostCredential?.topicInfo?.title ?? '').toLowerCase().includes(lower)
-        );
+        const withSearch = source.filter(t => t.groupTitle.toLowerCase().includes(lower));
 
         const withFilter =
             filterBy === AiSessionsFilterOptionsEnum.unfinished
@@ -108,24 +162,30 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         if (sortBy === AiSessionsSortOptionsEnum.alphabetical) {
             return withFilter
                 .slice()
-                .sort((a, b) =>
-                    (a.topicVc?.boostCredential?.topicInfo?.title ?? '').localeCompare(
-                        b.topicVc?.boostCredential?.topicInfo?.title ?? ''
-                    )
-                );
+                .sort((a, b) => a.groupTitle.localeCompare(b.groupTitle));
         }
 
         return withFilter
             .slice()
             .sort(
                 (a, b) =>
-                    new Date(b?.topicVc?.issuanceDate ?? '').getTime() -
-                    new Date(a?.topicVc?.issuanceDate ?? '').getTime()
+                    new Date(b?.topics?.[0]?.topicVc?.issuanceDate ?? '').getTime() -
+                    new Date(a?.topics?.[0]?.topicVc?.issuanceDate ?? '').getTime()
             );
-    }, [topics, searchInput, filterBy, sortBy]);
+    }, [groupedTopics, searchInput, filterBy, sortBy]);
+
+    const selectedGroupedTopic = useMemo(
+        () => groupedTopics.find(group => group.key === selectedGroupedTopicKey),
+        [groupedTopics, selectedGroupedTopicKey]
+    );
 
     const filteredSessions = useMemo(() => {
-        const source = view === 'sessions' ? allSessions : selectedTopicData?.sessions ?? [];
+        const source =
+            view === 'sessions'
+                ? allSessions
+                : selectedGroupedTopic
+                  ? selectedGroupedTopic.sessions
+                  : selectedTopicData?.sessions ?? [];
 
         const lower = searchInput.toLowerCase();
 
@@ -161,10 +221,12 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         return items;
     }, [view, allSessions, selectedTopicData?.sessions, searchInput, filterBy, sortBy]);
 
-    const selectedTopicTitle =
-        selectedTopicData?.topicVc?.boostCredential?.topicInfo?.title ?? 'Topic';
-    const selectedTopicUnfinished =
-        selectedTopicData?.sessions?.filter(session => !session?.vc?.completed).length ?? 0;
+    const selectedTopicTitle = selectedGroupedTopic
+        ? selectedGroupedTopic.groupTitle
+        : selectedTopicData?.topicVc?.boostCredential?.topicInfo?.title ?? 'Topic';
+    const selectedTopicUnfinished = selectedGroupedTopic
+        ? selectedGroupedTopic.unfinishedSessionsCount
+        : selectedTopicData?.sessions?.filter(session => !session?.vc?.completed).length ?? 0;
 
     const searchPlaceholder = view === 'topics' ? 'Browse topics...' : 'Browse sessions...';
 
@@ -177,6 +239,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     useEffect(() => {
         if (!topicUri) return;
         setSelectedTopicUri(topicUri);
+        setSelectedGroupedTopicKey('');
         setView('topicDetail');
         resetFilters();
     }, [topicUri]);
@@ -205,6 +268,8 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                     history.push('/ai/topics');
                                                     return;
                                                 }
+                                                setSelectedGroupedTopicKey('');
+                                                setSelectedTopicUri('');
                                                 setView('topics');
                                                 resetFilters();
                                             }}
@@ -259,10 +324,14 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                         </h2>
                                         <p className="text-sm font-poppins mt-1">
                                             <span className="text-grayscale-700">
-                                                {selectedTopicData?.sessions?.length ?? 0}{' '}
+                                                {(selectedGroupedTopic?.sessions?.length ??
+                                                    selectedTopicData?.sessions?.length ??
+                                                    0)}{' '}
                                                 {pluralize(
                                                     'Session',
-                                                    selectedTopicData?.sessions?.length ?? 0
+                                                    selectedGroupedTopic?.sessions?.length ??
+                                                        selectedTopicData?.sessions?.length ??
+                                                        0
                                                 )}
                                             </span>
                                             <span className="text-grayscale-500 mx-1">•</span>
@@ -316,17 +385,31 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                 filteredTopics.map((t, i) => (
                                                     <AiSessionTopicItem
                                                         key={i}
-                                                        topicVc={t.topicVc}
-                                                        topicBoost={t.topicBoost}
-                                                        topicRecord={t.topicRecord}
-                                                        topicSessionsCount={t.sessions?.length || 0}
-                                                        hasUnfinishedSessions={
-                                                            t.hasUnfinishedSessions
+                                                        topicVc={t.topics?.[0]?.topicVc}
+                                                        topicBoost={t.topics?.[0]?.topicBoost}
+                                                        topicRecord={t.topics?.[0]?.topicRecord}
+                                                        topicTitleOverride={t.groupTitle}
+                                                        topicSubtitleOverride={
+                                                            t.providerNames.length > 1
+                                                                ? `With ${t.providerNames.length} providers`
+                                                                : undefined
                                                         }
-                                                        hasFinishedSessions={t.hasFinishedSessions}
+                                                        providerLogoUrls={t.providerLogos}
+                                                        topicSessionsCount={t.sessions?.length || 0}
+                                                        hasUnfinishedSessions={t.hasUnfinishedSessions}
+                                                        hasFinishedSessions={true}
                                                         onSelectTopic={() => {
+                                                            if (t.topics.length > 1) {
+                                                                setSelectedGroupedTopicKey(t.key);
+                                                                setSelectedTopicUri('');
+                                                                setView('topicDetail');
+                                                                resetFilters();
+                                                                return;
+                                                            }
+
                                                             const nextTopicUri =
-                                                                t.topicBoost?.uri ?? '';
+                                                                t.topics?.[0]?.topicBoost?.uri ?? '';
+                                                            setSelectedGroupedTopicKey('');
                                                             setSelectedTopicUri(nextTopicUri);
                                                             setView('topicDetail');
                                                             resetFilters();
