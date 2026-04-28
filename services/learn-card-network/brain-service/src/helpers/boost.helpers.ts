@@ -36,6 +36,7 @@ import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationsh
 import {
     createSentCredentialRelationship,
     createCredentialIssuedViaContractRelationship,
+    createListingSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
@@ -381,6 +382,7 @@ export const sendBoost = async ({
     metadata,
     activityId,
     integrationId,
+    listingId,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -394,6 +396,7 @@ export const sendBoost = async ({
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
+    listingId?: string;
 }): Promise<string> => {
     return trace(
         'boost',
