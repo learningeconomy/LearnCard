@@ -34,7 +34,6 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
                     ))}
                 </ul>
             </div>
-            <ExperimentalFeatureBox className="mt-[20px]" />
         </div>
     );
 };
