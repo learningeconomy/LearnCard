@@ -442,7 +442,7 @@ const LaunchPad: React.FC = () => {
                 <IonContent fullscreen scrollY={true} color="grayscale-100">
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
-                            <div className="flex flex-col gap-3 w-full max-w-[600px] px-3">
+                            <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
                                 <LaunchPadAppTabs tab={tab} setTab={setTab} />
                                 {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
                                 {featuredCarouselApps && featuredCarouselApps.length > 0 && (
