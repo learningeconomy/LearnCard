@@ -16,6 +16,8 @@ type BoostCMSMediaOptionsProps = {
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
     showCloseButton?: boolean;
     hideCloseButton?: boolean;
+    keepModalOpenOnSave?: boolean;
+    onSaveComplete?: () => void;
 };
 
 const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
@@ -25,6 +27,8 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
     displayType,
     showCloseButton,
     hideCloseButton,
+    keepModalOpenOnSave = false,
+    onSaveComplete,
 }) => {
     const { closeModal, closeAllModals } = useModal();
     const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
@@ -72,6 +76,8 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                     displayType={displayType}
                     showCloseButtonState={showCloseButtonState}
                     setShowCloseButtonState={setShowCloseButtonState}
+                    keepModalOpenOnSave={keepModalOpenOnSave}
+                    onSaveComplete={onSaveComplete}
                 />
             </section>
             {sectionPortal &&

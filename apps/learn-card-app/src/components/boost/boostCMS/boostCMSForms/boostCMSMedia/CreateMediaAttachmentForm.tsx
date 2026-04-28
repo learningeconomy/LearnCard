@@ -42,6 +42,8 @@ type CreateMediaAttachmentFormProps = {
     showCloseButtonState?: boolean;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
     hideCloseButton?: boolean;
+    keepModalOpenOnSave?: boolean;
+    onSaveComplete?: () => void;
 };
 
 type BoostCMSMediaTypeSelectorProps = {
@@ -160,6 +162,8 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
     showCloseButtonState,
     setShowCloseButtonState,
     hideCloseButton,
+    keepModalOpenOnSave = false,
+    onSaveComplete,
 }) => {
     const { closeModal } = useModal();
 
@@ -203,8 +207,11 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         } else {
             handleSave(state);
         }
-        closeModal?.();
+        if (!keepModalOpenOnSave) {
+            closeModal?.();
+        }
         handleCloseModal?.();
+        onSaveComplete?.();
     };
 
     const onUpload = (data: UploadRes) => {
