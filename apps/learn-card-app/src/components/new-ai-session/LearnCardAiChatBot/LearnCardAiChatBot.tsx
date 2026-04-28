@@ -260,9 +260,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
         <div
-            className={`flex flex-col h-full min-h-[32rem] w-full max-w-[829px] mx-auto sm:pb-[30px] bg-white ${
-                isDesktop ? 'pt-[100px]' : ''
-            }`}
+            className="flex flex-col h-full min-h-[32rem] w-full bg-white"
             style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
         >
             {isEnding && showEndingLoader && (
@@ -294,6 +292,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             {(!loading || mode !== AiSessionMode.insights) && (
                 <>
                     <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
+                    <div className="flex flex-col flex-1 min-h-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
                     <div
                         ref={chatContainerRef}
                         className="flex-1 overflow-y-auto flex flex-col px-4 relative"
@@ -360,6 +359,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     </div>
 
                     <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                    </div>
                 </>
             )}
         </div>

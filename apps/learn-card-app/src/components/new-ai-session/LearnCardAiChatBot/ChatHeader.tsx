@@ -15,9 +15,6 @@ import {
     currentThreadId,
     threads,
     messages,
-    sessionEnded,
-    isEndingSession,
-    isTyping,
     finishSession,
     closeInsightsSession,
     resetChatStores,
@@ -46,9 +43,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $messages = useStore(messages);
-    const $sessionEnded = useStore(sessionEnded);
-    const $isEndingSession = useStore(isEndingSession);
-    const $isTyping = useStore(isTyping);
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -56,18 +50,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     const currentThread = $threads.find(t => t.id === $currentThreadId);
     const isInsights = mode === AiSessionMode.insights;
 
-    // Sessions → topic title (fallback to initialTopic, else generic label).
-    // Insights → first user question (fallback to initialTopic, else generic label).
+    // Sessions → topic title (fallback to initialTopic).
+    // Insights → first user question (fallback to initialTopic).
+    // When undefined we render a skeleton instead of a generic fallback string,
+    // since "AI Session" / "AI Insights" reads as an actual title rather than a
+    // loading state.
     const derivedTitle = isInsights
         ? $messages.find(m => m.role === 'user')?.content ?? initialTopic
         : currentThread?.title ?? initialTopic;
-    const fallbackTitle = isInsights ? 'AI Insights' : 'AI Session';
-    const title = derivedTitle || fallbackTitle;
-
-    // Hide X during completion flows so the user can't bail mid-finish.
-    const hasSessionEnded =
-        $sessionEnded || (currentThread?.summaries && currentThread.summaries.length > 0);
-    const hideClose = hasSessionEnded || $isEndingSession || $isTyping;
+    const isTitleLoading = !derivedTitle;
 
     const handleFinishSession = async () => {
         if (onClose) {
@@ -102,31 +93,39 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     const showEndSessionHint = !isInsights && !!currentThread;
 
     return (
-        <div className="sticky top-0 z-[100] bg-white flex items-start gap-3 px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[calc(12px+env(safe-area-inset-top))] sm:pt-3">
-            <div className="flex-shrink-0 mt-[2px]">
-                {isInsights ? (
-                    <AiInsightsIconWithShape className="h-[28px] w-[28px] text-grayscale-900" />
-                ) : aiApp?.img ? (
-                    <img
-                        src={aiApp.img}
-                        alt={`${aiApp.name ?? 'AI'} logo`}
-                        className="h-[28px] w-[28px] rounded-full object-cover bg-white border-[1px] border-solid border-grayscale-200"
-                    />
-                ) : (
-                    <AiSessionsIconWithShape className="h-[28px] w-[28px] text-grayscale-900" />
-                )}
-            </div>
-            <div className="flex-1 min-w-0">
-                <h2 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-tight line-clamp-2 m-0">
-                    {title}
-                </h2>
-                {showEndSessionHint && (
-                    <p className="text-[13px] font-poppins text-grayscale-600 mt-[2px] leading-tight">
-                        Close to End Session
-                    </p>
-                )}
-            </div>
-            {!hideClose && (
+        <div className="sticky top-0 z-[100] w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[calc(12px+env(safe-area-inset-top))] sm:pt-3 pb-3 px-4">
+            <div className="w-full max-w-[829px] mx-auto flex items-start gap-3">
+                <div className="flex-shrink-0 mt-[2px]">
+                    {isInsights ? (
+                        <AiInsightsIconWithShape className="h-[28px] w-[28px] text-grayscale-900" />
+                    ) : aiApp?.img ? (
+                        <img
+                            src={aiApp.img}
+                            alt={`${aiApp.name ?? 'AI'} logo`}
+                            className="h-[28px] w-[28px] rounded-full object-cover bg-white border-[1px] border-solid border-grayscale-200"
+                        />
+                    ) : (
+                        <AiSessionsIconWithShape className="h-[28px] w-[28px] text-grayscale-900" />
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    {isTitleLoading ? (
+                        <div
+                            className="h-[20px] w-[60%] max-w-[280px] rounded-[6px] bg-grayscale-100 animate-pulse"
+                            aria-label="Loading title"
+                            role="status"
+                        />
+                    ) : (
+                        <h2 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-tight line-clamp-2 m-0">
+                            {derivedTitle}
+                        </h2>
+                    )}
+                    {showEndSessionHint && !isTitleLoading && (
+                        <p className="text-[13px] font-poppins text-grayscale-600 mt-[2px] leading-tight">
+                            Close to End Session
+                        </p>
+                    )}
+                </div>
                 <button
                     type="button"
                     onClick={handleFinishSession}
@@ -135,7 +134,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 >
                     <X className="text-grayscale-800 w-[24px] h-[24px]" strokeWidth="3" />
                 </button>
-            )}
+            </div>
         </div>
     );
 };
