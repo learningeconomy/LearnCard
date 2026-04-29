@@ -1,21 +1,16 @@
 import React from 'react';
 
 import { useHistory } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { ModalTypes, useGetCurrentLCNUser, useModal } from 'learn-card-base';
-import { useWallet } from 'learn-card-base/hooks/useWallet';
 
 import NewAiSessionContainer from './NewAiSessionContainer';
+import TopicNewSessionGate from './TopicNewSessionGate';
 import { NewAiSessionStepEnum } from './newAiSession.helpers';
 import {
     ChatBotQA,
     ChatBotQuestionsEnum,
 } from './NewAiSessionChatBot/newAiSessionChatbot.helpers';
 import { AiPassportAppsEnum } from '../ai-passport-apps/aiPassport-apps.helpers';
-import {
-    fetchLearningPathwaysForSession,
-    learningPathwaysQueryKey,
-} from './AiSessionLearningPathways/ai-learningPathways.helpers';
 import { chatBotStore } from '../../stores/chatBotStore';
 
 type AiAppContext = { type?: string; url?: string } | undefined;
@@ -93,10 +88,8 @@ export const useNewSessionForTopicMobile = () => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const history = useHistory();
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const { initWallet } = useWallet();
-    const queryClient = useQueryClient();
 
-    return async ({
+    return ({
         topicUri,
         topicTitle,
         sessionCount,
@@ -106,36 +99,31 @@ export const useNewSessionForTopicMobile = () => {
     }: TopicNewSessionParams) => {
         if (!topicUri) return;
 
-        // Pre-check pathways before opening the modal so we don't flash the
-        // Revisit pill on topics that have no pathways. The picker inside
-        // the modal would just fall back to the same nav anyway.
-        const navTarget = topicBoostUri ?? topicUri;
+        // Sync fast-path: if the topic has no sessions at all, no pathways
+        // are possible — skip the modal entirely and direct-nav.
         if (sessionCount === 0 || !firstSessionUri) {
-            navToFreshChat(history, navTarget, app, currentLCNUser?.did);
+            navToFreshChat(
+                history,
+                topicBoostUri ?? topicUri,
+                app,
+                currentLCNUser?.did
+            );
             return;
         }
 
-        try {
-            const pathways = await queryClient.fetchQuery({
-                queryKey: learningPathwaysQueryKey(firstSessionUri),
-                queryFn: async () => {
-                    const wallet = await initWallet();
-                    return fetchLearningPathwaysForSession(wallet, firstSessionUri);
-                },
-            });
-
-            if (!pathways || pathways.length === 0) {
-                navToFreshChat(history, navTarget, app, currentLCNUser?.did);
-                return;
-            }
-        } catch {
-            navToFreshChat(history, navTarget, app, currentLCNUser?.did);
-            return;
-        }
-
-        seedRevisitWithTopic(topicUri, topicTitle);
+        // Otherwise open the modal immediately and let the gate decide
+        // whether to render the pathway picker (after fetch resolves) or
+        // close the modal + navigate to a fresh chat. Avoids the perceived
+        // click-delay of awaiting the pathway query before showing anything.
         newModal(
-            <NewAiSessionContainer shortCircuitStep={NewAiSessionStepEnum.revisitTopic} />,
+            <TopicNewSessionGate
+                topicUri={topicUri}
+                topicTitle={topicTitle}
+                firstSessionUri={firstSessionUri}
+                topicBoostUri={topicBoostUri}
+                app={app}
+                seedRevisit={seedRevisitWithTopic}
+            />,
             { hideButton: true },
             { mobile: ModalTypes.Right, desktop: ModalTypes.Right }
         );
