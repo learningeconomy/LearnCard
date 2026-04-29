@@ -44,14 +44,17 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
 
     useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];
+        let visibleSlot = 0;
 
         chatBotQA.forEach((qa, index) => {
-            if (index === 0) {
+            if (qa.hidden || index === 0) {
                 setVisibleIndexes(prev => [...prev, index]);
+                if (!qa.hidden) visibleSlot += 1;
                 return;
             }
 
-            const delay = index * 1000;
+            const delay = visibleSlot * 1000;
+            visibleSlot += 1;
 
             timeouts.push(
                 setTimeout(() => {
@@ -118,14 +121,22 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
         }, 1000);
     };
 
+    const introAnswer = chatBotQA[0]?.answer;
+    const headerTitle =
+        typeof introAnswer === 'string' && introAnswer.length > 0
+            ? introAnswer
+            : 'Revisit Topic';
+
     return (
         <div
             className={`w-full flex flex-col overflow-y-auto ${
-                isDesktop ? 'max-w-[800px]' : ''
+                isDesktop ? 'max-w-[800px] pt-[80px]' : ''
             } scrollbar-hide relative`}
         >
-            <OnboardingHeader title="Revisit Topic" onClose={isDesktop ? handleStartOver : undefined} />
+            <OnboardingHeader title={headerTitle} onClose={isDesktop ? handleStartOver : undefined} />
             {chatBotQA.map((qa, index) => {
+                if (qa.hidden) return null;
+
                 const isVisible = visibleIndexes.includes(index);
                 const isTyping = typingIndex === index;
 
@@ -133,7 +144,11 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
 
                 const isIntro = index === 0;
                 const hasAnswer = !!qa.answer;
-                const showQuestion = index === 1 || (index > 1 && chatBotQA[index - 1]?.answer);
+                const prevQa = chatBotQA
+                    .slice(0, index)
+                    .reverse()
+                    .find(prev => !prev.hidden);
+                const showQuestion = index === 1 || (index > 1 && !!prevQa?.answer);
 
                 return (
                     <React.Fragment key={qa.id}>

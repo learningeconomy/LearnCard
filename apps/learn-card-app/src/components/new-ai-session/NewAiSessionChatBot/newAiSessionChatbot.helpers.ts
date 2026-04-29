@@ -11,6 +11,7 @@ export type ChatBotQA = {
     answer?: null | string | number | undefined;
     type?: ChatBotQuestionsEnum;
     phraseToEmphasize?: string;
+    hidden?: boolean;
 };
 
 export const newSessionQAInitState: ChatBotQA[] = [
