@@ -279,7 +279,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                 )}
                 <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
                     <form
-                        className="flex-1 min-w-0 flex items-center bg-white pr-[8px] sm:pr-0 sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
+                        className="flex-1 min-w-0 flex items-center bg-white pr-[8px] sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
                         onSubmit={e => {
                             e.preventDefault();
