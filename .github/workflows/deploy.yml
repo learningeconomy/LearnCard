@@ -760,6 +760,11 @@ jobs:
             )
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
             - name: Generate release name
               id: release-info
               run: |
@@ -807,6 +812,37 @@ jobs:
 
                   PROJECT_ID=$(echo "$PROJECT_BODY" | jq -r '.id')
 
+                  # ============================================================
+                  # Find the previous released version's commit SHA
+                  # ============================================================
+                  # Every version we create embeds the source commit SHA in its
+                  # description ("Deployed from commit <SHA> via GitHub Actions").
+                  # We query the most recent released versions, walk them in
+                  # release-date-desc order, and use the first SHA that still
+                  # exists in our local git history as the lower bound for issue
+                  # linking. This is done BEFORE creating the new version so our
+                  # own entry does not shadow the previous one.
+                  PREV_VERSIONS=$(curl -s -G \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    --data-urlencode "orderBy=-releaseDate" \
+                    --data-urlencode "status=released" \
+                    --data-urlencode "maxResults=10" \
+                    "${JIRA_BASE_URL}/rest/api/3/project/${PROJECT_ID}/version")
+
+                  CANDIDATE_SHAS=$(echo "$PREV_VERSIONS" \
+                    | jq -r '.values[]? | .description // empty' 2>/dev/null \
+                    | grep -oE 'commit [0-9a-f]{7,40}' \
+                    | awk '{print $2}')
+
+                  PREV_SHA=""
+                  for sha in $CANDIDATE_SHAS; do
+                    if git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+                      PREV_SHA="$sha"
+                      break
+                    fi
+                  done
+
                   # Create the release version
                   RESPONSE=$(curl -s -w "\n%{http_code}" \
                     -H "${AUTH_HEADER}" \
@@ -828,7 +864,62 @@ jobs:
                     echo "$BODY" | jq .
                   else
                     echo "::warning::Failed to create Jira release (HTTP $HTTP_CODE): $BODY"
+                    # If the version was not created, there is nothing to link issues to.
+                    exit 0
                   fi
+
+                  # ============================================================
+                  # Associate issues with the release via fixVersions
+                  # ============================================================
+                  # Use the previous released version's commit SHA (found above)
+                  # as the lower bound. Fall back to the last 100 commits on the
+                  # first-ever release or if no previous SHA could be resolved.
+                  if [[ -n "$PREV_SHA" ]]; then
+                    RANGE="${PREV_SHA}..HEAD"
+                    echo "Previous Jira release commit: $PREV_SHA"
+                  else
+                    RANGE="HEAD~100..HEAD"
+                    echo "No previous Jira release SHA found; scanning last 100 commits."
+                  fi
+                  echo "Scanning commits in range: $RANGE"
+
+                  # Case-insensitive extraction of "<KEY>-<NUMBER>" tokens from
+                  # commit subjects and bodies. Jira issue keys are always
+                  # uppercase in the API, so normalize after matching.
+                  ISSUE_KEYS=$(git log "$RANGE" --pretty=format:'%s%n%b' 2>/dev/null \
+                    | grep -oEi "\b${JIRA_PROJECT_KEY}-[0-9]+\b" \
+                    | tr '[:lower:]' '[:upper:]' \
+                    | sort -u || true)
+
+                  if [[ -z "$ISSUE_KEYS" ]]; then
+                    echo "No ${JIRA_PROJECT_KEY} issue keys referenced in commits; skipping issue linking."
+                    exit 0
+                  fi
+
+                  echo "Linking issues to release ${RELEASE_NAME}:"
+                  echo "$ISSUE_KEYS"
+
+                  SUCCESS_COUNT=0
+                  FAIL_COUNT=0
+                  while IFS= read -r KEY; do
+                    [[ -z "$KEY" ]] && continue
+                    LINK_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                      -H "${AUTH_HEADER}" \
+                      -H "Content-Type: application/json" \
+                      -X PUT "${JIRA_BASE_URL}/rest/api/3/issue/${KEY}" \
+                      -d "{\"update\":{\"fixVersions\":[{\"add\":{\"name\":\"${RELEASE_NAME}\"}}]}}")
+                    LINK_CODE=$(echo "$LINK_RESPONSE" | tail -n1)
+                    LINK_BODY=$(echo "$LINK_RESPONSE" | sed '$d')
+                    if [[ "$LINK_CODE" -ge 200 && "$LINK_CODE" -lt 300 ]]; then
+                      echo "  ok   $KEY (HTTP $LINK_CODE)"
+                      SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+                    else
+                      echo "::warning::  fail $KEY (HTTP $LINK_CODE): $LINK_BODY"
+                      FAIL_COUNT=$((FAIL_COUNT + 1))
+                    fi
+                  done <<< "$ISSUE_KEYS"
+
+                  echo "Linked ${SUCCESS_COUNT} issue(s) to ${RELEASE_NAME}; ${FAIL_COUNT} failure(s)."
 
     # ============================================================================
     # NATIVE APP STORE PUBLISHING
