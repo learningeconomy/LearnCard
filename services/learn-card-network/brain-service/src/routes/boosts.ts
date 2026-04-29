@@ -30,7 +30,11 @@ import {
     SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
-import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    renderBoostTemplate,
+    parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
+} from '@helpers/template.helpers';
 import {
     logCredentialSent,
     logCredentialClaimed,
@@ -91,6 +95,7 @@ import {
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
+    appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
 import {
     BoostValidator,
@@ -3381,6 +3386,7 @@ export const boostsRouter = t.router({
 
             try {
                 let boostJsonString = boost.dataValues.boost;
+                const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
                 if (input.templateData && Object.keys(input.templateData).length > 0) {
                     boostJsonString = renderBoostTemplate(
@@ -3390,6 +3396,11 @@ export const boostsRouter = t.router({
                 }
 
                 unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+                appendTemplateEvidenceToCredential(
+                    unsignedVc,
+                    input.templateData as Record<string, unknown> | undefined,
+                    allowAutoAppendEvidence
+                );
 
                 if (isVC2Format(unsignedVc)) {
                     unsignedVc.validFrom = new Date().toISOString();

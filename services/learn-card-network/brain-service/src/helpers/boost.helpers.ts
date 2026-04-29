@@ -25,6 +25,7 @@ import {
     hasMustacheVariables,
     renderBoostTemplate,
     parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
 } from '@helpers/template.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -35,6 +36,7 @@ import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationsh
 import {
     createSentCredentialRelationship,
     createCredentialIssuedViaContractRelationship,
+    createListingSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
@@ -380,6 +382,7 @@ export const sendBoost = async ({
     metadata,
     activityId,
     integrationId,
+    listingId,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -393,6 +396,7 @@ export const sendBoost = async ({
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
+    listingId?: string;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -419,7 +423,6 @@ export const sendBoost = async ({
                     const credentialInstance = await traceDb('storeCredential', () =>
                         storeCredential(certifiedBoost)
                     );
-
                     const tasks = [
                         createBoostInstanceOfRelationship(credentialInstance, boost),
                         createSentCredentialRelationship(
@@ -431,6 +434,19 @@ export const sendBoost = async ({
                             integrationId
                         ),
                     ];
+
+                    if (listingId) {
+                        tasks.push(
+                            createListingSentCredentialRelationship(
+                                listingId,
+                                to,
+                                credentialInstance,
+                                metadata,
+                                activityId,
+                                integrationId
+                            )
+                        );
+                    }
 
                     // If this credential is being issued via a contract, create that relationship
                     if (contractTerms) {
@@ -479,6 +495,19 @@ export const sendBoost = async ({
                         integrationId
                     ),
                 ];
+
+                if (listingId) {
+                    tasks.push(
+                        createListingSentCredentialRelationship(
+                            listingId,
+                            to,
+                            credentialInstance,
+                            metadata,
+                            activityId,
+                            integrationId
+                        )
+                    );
+                }
 
                 if (contractTerms) {
                     tasks.push(
@@ -647,6 +676,7 @@ export const prepareCredentialFromBoost = async (
     const { templateData, recipientDid, recipientName, issuerDid } = options;
 
     let boostJsonString = boost.dataValues.boost;
+    const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
     // Auto-inject known system variables into templateData
     const autoData: Record<string, unknown> = {};
@@ -659,6 +689,8 @@ export const prepareCredentialFromBoost = async (
     }
 
     const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+
+    appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
     // Set issuance date based on VC version
     const now = new Date().toISOString();
@@ -695,6 +727,86 @@ export const prepareCredentialFromBoost = async (
 
     // Inject OBv3 alignments
     await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+
+    return credential;
+};
+
+/**
+ * Merges `evidence` entries from `templateData` onto a credential's top-level
+ * `evidence` array, in-place.
+ *
+ * Why this exists: not every boost template opts into rendering evidence via
+ * a `{{evidence}}` / `{{#evidence}}...{{/evidence}}` section. For those
+ * templates we still want evidence supplied at send-time (e.g. a
+ * recipient-specific media attachment from the issuer UI) to land on the
+ * final credential — this helper is the post-render append step that makes
+ * that happen.
+ *
+ * Callers should pair this with `shouldAutoAppendTemplateEvidence` from
+ * `@helpers/template.helpers`:
+ *   - If the boost JSON already references `{{evidence}}`, pass
+ *     `allowAutoAppend = false` so we don't duplicate what the template
+ *     already rendered.
+ *   - Otherwise pass `true` and this helper will append.
+ *
+ * Normalization details:
+ *   - `templateData.evidence` may be a single object or an array; both are
+ *     coerced to an array.
+ *   - Any `last` field on an evidence item is stripped — it's a rendering
+ *     hint used by Mustache iteration (`{{#last}}`) and must not leak onto
+ *     the credential.
+ *   - Existing `credential.evidence` (single object or array) is preserved
+ *     and the new entries are appended after it.
+ *
+ * NOTE: This function mutates `credential.evidence` in place (and also
+ * returns the same reference for chaining convenience).
+ *
+ * @param credential      The unsigned VC produced by parsing the rendered boost
+ * @param templateData    The same template data used for rendering; may carry `evidence`
+ * @param allowAutoAppend `false` when the template already renders evidence itself
+ * @returns               The (possibly-mutated) credential reference
+ */
+export const appendTemplateEvidenceToCredential = (
+    credential: UnsignedVC,
+    templateData?: Record<string, unknown>,
+    allowAutoAppend: boolean = true
+): UnsignedVC => {
+    // Template author is handling evidence themselves — leave the credential alone.
+    if (!allowAutoAppend) return credential;
+
+    const templateEvidence = templateData?.evidence;
+
+    // Nothing to append.
+    if (!templateEvidence) return credential;
+
+    // Accept either a single evidence object or an array of them, and strip
+    // the `last` marker used upstream for Mustache iteration hints — it has
+    // no meaning on the final credential.
+    const normalizedTemplateEvidence = (
+        Array.isArray(templateEvidence) ? templateEvidence : [templateEvidence]
+    ).map(evidenceItem => {
+        if (evidenceItem && typeof evidenceItem === 'object' && 'last' in evidenceItem) {
+            const { last, ...rest } = evidenceItem as Record<string, unknown>;
+
+            return rest;
+        }
+
+        return evidenceItem;
+    });
+
+    // An empty array (or an array that was all-falsy after normalization)
+    // shouldn't clobber existing evidence.
+    if (normalizedTemplateEvidence.length === 0) return credential;
+
+    // Preserve any evidence that was already baked into the credential by
+    // the template, coercing a single-object shape to an array so we can spread.
+    const existingEvidence = credential.evidence
+        ? Array.isArray(credential.evidence)
+            ? credential.evidence
+            : [credential.evidence]
+        : [];
+
+    credential.evidence = [...existingEvidence, ...normalizedTemplateEvidence];
 
     return credential;
 };

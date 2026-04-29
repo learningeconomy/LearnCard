@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn-card-base';
@@ -6,10 +6,11 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import CredentialGeneralPlus from '../../../svgs/CredentialGeneralPlus';
 import BoostAddressBookContactItem from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
+import { getTopmostCancelPortal } from '../../boostCMS/boostCMSForms/boostCMSMedia/boostCMSMedia.helpers';
 
-import { BoostCMSState } from '../../boost';
+import { BoostCMSIssueTo, BoostCMSState } from '../../boost';
 import { BoostAddressBookEditMode } from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
-import { BoostCMSIssueTo, ShortBoostState } from '../../boost';
+import { ShortBoostState } from '../../boost';
 
 type ShortBoostSomeoneScreenProps = {
     boostUri: string;
@@ -38,22 +39,35 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
     showBoostContext = false,
     boostName,
 }) => {
+    const setIssuedTo: React.Dispatch<React.SetStateAction<BoostCMSIssueTo[]>> = action => {
+        setState(prevState => ({
+            ...prevState,
+            issueTo: typeof action === 'function' ? action(prevState.issueTo) : action,
+        }));
+    };
+
     const renderIssuedTo = issuedTo?.map((contact, index) => {
         return (
             <BoostAddressBookContactItem
-                state={state}
-                setState={setState}
+                state={state as unknown as BoostCMSState}
+                setState={
+                    setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>
+                }
                 contact={contact}
                 key={index}
                 mode={BoostAddressBookEditMode.delete}
-                // _issueTo={_issueTo}
-                // _setIssueTo={_setIssueTo}
+                _issueTo={issuedTo}
+                _setIssueTo={setIssuedTo}
+                showRecipientAttachments
                 version="sleek"
             />
         );
     });
     const { closeModal } = useModal();
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
 
     const color = boostCategoryMetadata[category]?.color ?? 'grayscale-900';
 

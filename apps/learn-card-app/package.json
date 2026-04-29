@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.95.7",
+    "version": "1.95.8",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^9.0.0",
