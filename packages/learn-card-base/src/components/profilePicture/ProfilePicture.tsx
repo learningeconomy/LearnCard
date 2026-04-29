@@ -2,7 +2,7 @@ import React from 'react';
 import { resizeAndChangeQuality } from '@learncard/helpers';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { transformWeb3AuthProfileImage } from 'learn-card-base/helpers/web3AuthHelpers';
-import { getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
+import { ensureVisibleBaseColor, getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
 
 type ProfilePictureProps = {
     customContainerClass?: string;
@@ -28,7 +28,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
     children,
 }) => {
     const currentUser = useCurrentUser();
-    const baseColor = ignoreBaseColor ? '' : currentUser?.baseColor;
+    const baseColor = ignoreBaseColor ? '' : ensureVisibleBaseColor(currentUser?.baseColor);
     let src = resizeAndChangeQuality(
         transformWeb3AuthProfileImage(currentUser?.profileImage, currentUser?.typeOfLogin),
         customSize,
@@ -61,7 +61,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
             <div
                 aria-label="profile-picture"
                 onClick={onClick}
-                className={`rounded-full flex items-center justify-center font-bold uppercase ${customContainerClass} ${baseColor}`}
+                className={`rounded-full flex items-center justify-center font-bold uppercase ${customContainerClass} ${baseColor} ${baseColor ? 'text-white' : ''}`}
             >
                 {letterToDisplay}
                 {children}

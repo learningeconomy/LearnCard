@@ -31,7 +31,7 @@ export const AiSessionsLayout: React.FC<{
     };
 
     return (
-        <div className="h-full w-full relative safe-area-top-margin">
+        <div className="h-full w-full relative">
             <div className="flex h-full items-center justify-start relative">
                 <div
                     className={` flex flex-col h-full items-center justify-center relative border-r-[1px] border-solid border-grayscale-100 ${

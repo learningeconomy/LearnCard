@@ -277,9 +277,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         />
                     </div>
                 )}
-                <div className="flex-1 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
+                <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
                     <form
-                        className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
+                        className="flex-1 min-w-0 flex items-center bg-white pr-[8px] sm:pr-0 sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
                         onSubmit={e => {
                             e.preventDefault();
@@ -312,7 +312,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         ></textarea>
                         <button
                             type="submit"
-                            className={`flex-shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full phone:!mr-[8px]`}
+                            className={`flex-shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
                             disabled={disableSend}
                         >
                             {$isTyping ? (
