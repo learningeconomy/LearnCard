@@ -256,21 +256,34 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     const selectedTopicSessionCount = selectedGroupedTopic
         ? selectedGroupedTopic.sessions.length
         : selectedTopicData?.sessions?.length ?? 0;
-    const selectedTopicBoostUri = selectedTopicData?.topicBoost?.uri;
-    const selectedTopicApp = getAiPassportAppByContractUri(
-        selectedTopicData?.topicRecord?.contractUri ?? ''
+
+    // For grouped (multi-provider) topics fall through to the first topic in
+    // the group. We don't have a story yet for which provider's pathways to
+    // open across a grouped topic — picking the first lets the modal open
+    // and the user can refine grouped-pathway behavior later.
+    const newSessionTopicUri =
+        selectedTopicUri ||
+        selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri ||
+        '';
+    const newSessionTopicBoostUri =
+        selectedTopicData?.topicBoost?.uri ||
+        selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri;
+    const newSessionApp = getAiPassportAppByContractUri(
+        selectedTopicData?.topicRecord?.contractUri ??
+            selectedGroupedTopic?.topics?.[0]?.topicRecord?.contractUri ??
+            ''
     );
 
     const triggerNewSessionForTopic = useNewSessionForTopicMobile();
 
     const handleNewSessionForSelectedTopic = () => {
-        if (!selectedTopicUri) return;
+        if (!newSessionTopicUri) return;
         triggerNewSessionForTopic({
-            topicUri: selectedTopicUri,
+            topicUri: newSessionTopicUri,
             topicTitle: selectedTopicTitle,
             sessionCount: selectedTopicSessionCount,
-            topicBoostUri: selectedTopicBoostUri,
-            app: selectedTopicApp,
+            topicBoostUri: newSessionTopicBoostUri,
+            app: newSessionApp,
         });
     };
 

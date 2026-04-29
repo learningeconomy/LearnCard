@@ -90,16 +90,8 @@ export const useNewSessionForTopicMobile = () => {
     return ({
         topicUri,
         topicTitle,
-        sessionCount,
-        topicBoostUri,
-        app,
     }: TopicNewSessionParams) => {
         if (!topicUri) return;
-
-        if (sessionCount === 0) {
-            navToFreshChat(history, topicBoostUri ?? topicUri, app, currentLCNUser?.did);
-            return;
-        }
 
         seedRevisitWithTopic(topicUri, topicTitle);
         newModal(
