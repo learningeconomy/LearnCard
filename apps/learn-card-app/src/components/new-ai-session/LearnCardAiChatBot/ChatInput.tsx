@@ -9,7 +9,6 @@ import { ArrowUp } from 'lucide-react';
 import {
     currentThreadId,
     threads,
-    isTyping,
     sendMessage,
     planReady,
     continuePlan,
@@ -51,7 +50,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
     const { closeAllModals } = useModal();
     const history = useHistory();
     const $planReady = useStore(planReady);
-    const $isTyping = useStore(isTyping);
     const $sessionEnded = useStore(sessionEnded);
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
@@ -262,7 +260,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
         }
     };
 
-    const disableSend = !$input.trim() || $isTyping;
+    const disableSend = !$input.trim();
     const resolvedPlaceholder = placeholder ?? getDefaultPlaceholder(mode);
     // const showFinishButton = !showContinue && !$isTyping;
 
@@ -315,11 +313,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                             className={`flex-shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
                             disabled={disableSend}
                         >
-                            {$isTyping ? (
-                                <CustomSpinner className="text-gray-700 h-[30px] w-[30px]" />
-                            ) : (
-                                <ArrowUp className={disableSend ? 'text-white' : 'text-white'} />
-                            )}
+                            <ArrowUp className="text-white" />
                         </button>
                     </form>
                     {/* <div className="h-full px-[15px] hidden sm:block">

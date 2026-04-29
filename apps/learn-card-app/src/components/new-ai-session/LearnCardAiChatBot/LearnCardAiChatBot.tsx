@@ -348,13 +348,22 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                             )}
                         </div>
 
-                        {!isAtBottom && (
-                            <button
-                                onClick={() => scrollToBottom('smooth')}
-                                className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 w-fit shadow-button-bottom text-grayscale-900"
-                            >
-                                <CaretDown version="2" />
-                            </button>
+                        {(!isAtBottom || streaming) && (
+                            <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
+                                <button
+                                    onClick={() => scrollToBottom('smooth')}
+                                    className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
+                                    aria-label={streaming ? 'AI is responding — scroll to bottom' : 'Scroll to bottom'}
+                                >
+                                    {streaming && (
+                                        <span
+                                            className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-grayscale-900 animate-spin"
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                    <CaretDown version="2" />
+                                </button>
+                            </div>
                         )}
                     </div>
 
