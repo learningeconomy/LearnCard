@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
 import { useGetCurrentLCNUser, useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
+import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
 import NewAiSessionContainer from './NewAiSessionContainer';
 import {
@@ -109,12 +110,21 @@ const TopicNewSessionGate: React.FC<Props> = ({
 
     return (
         <div
-            className={`w-full flex flex-col items-center justify-center gap-4 ${
+            className={`absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-5 ${
                 isDesktop ? 'max-w-[800px]' : ''
-            } min-h-[300px] py-12`}
+            }`}
         >
-            <IonSpinner name="crescent" color="dark" className="scale-150" />
-            <p className="text-grayscale-700 font-poppins text-[15px] m-0">Loading chat...</p>
+            <div className="relative flex items-center justify-center">
+                <AiSessionsIconWithShape className="w-[72px] h-auto" />
+                <IonSpinner
+                    name="crescent"
+                    color="dark"
+                    className="absolute -inset-3 w-[96px] h-[96px] opacity-70"
+                />
+            </div>
+            <p className="text-grayscale-800 font-poppins font-semibold text-[16px] m-0">
+                Spinning up your session...
+            </p>
         </div>
     );
 };
