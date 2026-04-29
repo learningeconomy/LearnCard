@@ -357,7 +357,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                 >
                                     {streaming && (
                                         <span
-                                            className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-grayscale-900 animate-spin"
+                                            className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
                                             aria-hidden="true"
                                         />
                                     )}
