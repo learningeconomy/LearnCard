@@ -45,19 +45,19 @@ export const TopicInput: React.FC<{
                     customImageClass="w-full h-full object-cover rounded-full"
                 />
             </div>
-            <div className="flex-1 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid bg-white">
+            <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid bg-white">
                 <input
                     type="text"
                     value={topic}
                     onChange={e => setTopic(e.target.value)}
-                    className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[15px] py-[12px] focus:outline-none"
+                    className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[15px] py-[12px] focus:outline-none"
                     placeholder="Something else..."
                     autoComplete="off"
                 />
                 <button
                     type="submit"
                     disabled={isEmpty}
-                    className={`mr-[6px] p-[7px] sm:p-[10px] rounded-full disabled:opacity-50 disabled:hover:cursor-not-allowed hover:cursor-pointer ${
+                    className={`flex-shrink-0 mr-[8px] p-[7px] sm:p-[10px] rounded-full disabled:opacity-50 disabled:hover:cursor-not-allowed hover:cursor-pointer ${
                         isEmpty ? 'bg-grayscale-400' : `bg-${primaryColor}`
                     }`}
                 >
