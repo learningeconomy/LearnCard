@@ -28,6 +28,7 @@ import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth
 import { LCR } from 'learn-card-base/types/credential-records';
 import { aiPassportApps, getAiPassportAppByContractUri } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
 import { useNewSessionForTopicMobile } from '../../components/new-ai-session/useNewSessionForTopic';
+import { chatBotStore } from '../../stores/chatBotStore';
 
 import {
     AiFilteringTypes,
@@ -321,15 +322,25 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                     {view === 'topicDetail' ? (
                                         <button
                                             className="text-grayscale-800 font-poppins text-[22px] font-semibold flex items-center gap-2"
-                                            onClick={() => {
-                                                if (location.pathname === '/ai/sessions') {
-                                                    history.push('/ai/topics');
-                                                    return;
-                                                }
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                // Clear any leftover chat / chatbot store
+                                                // state so a closed-but-not-cleaned-up chat
+                                                // session can't re-trigger the modal.
+                                                chatBotStore.set.resetStore();
                                                 setSelectedGroupedTopicKey('');
                                                 setSelectedTopicUri('');
                                                 setView('topics');
                                                 resetFilters();
+                                                // Drop any URL params (topicBoostUri,
+                                                // threadId, etc.) so a back/forward press
+                                                // can't hydrate the topic-detail view from
+                                                // a stale query string.
+                                                if (location.pathname !== '/ai/topics') {
+                                                    history.replace('/ai/topics');
+                                                } else if (location.search) {
+                                                    history.replace('/ai/topics');
+                                                }
                                             }}
                                         >
                                             <SlimCaretLeft className="text-grayscale-600" />
