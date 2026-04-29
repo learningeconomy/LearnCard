@@ -273,6 +273,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             selectedGroupedTopic?.topics?.[0]?.topicRecord?.contractUri ??
             ''
     );
+    const newSessionFirstSessionUri = selectedGroupedTopic
+        ? selectedGroupedTopic.sessions?.[0]?.boost?.uri
+        : selectedTopicData?.sessions?.[0]?.boost?.uri;
 
     const triggerNewSessionForTopic = useNewSessionForTopicMobile();
 
@@ -282,6 +285,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             topicUri: newSessionTopicUri,
             topicTitle: selectedTopicTitle,
             sessionCount: selectedTopicSessionCount,
+            firstSessionUri: newSessionFirstSessionUri,
             topicBoostUri: newSessionTopicBoostUri,
             app: newSessionApp,
         });
