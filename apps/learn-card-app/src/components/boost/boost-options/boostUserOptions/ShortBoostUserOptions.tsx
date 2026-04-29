@@ -18,6 +18,7 @@ import {
     ProfilePicture,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
+    boostSupportsDynamicEvidence,
 } from 'learn-card-base';
 
 import { UnsignedVC, VC } from '@learncard/types';
@@ -317,6 +318,7 @@ const ShortBoostUserOptions: React.FC<{
                 category={category}
                 showBoostContext={showBoostContext}
                 boostName={boostName}
+                supportsRecipientAttachments={boostSupportsDynamicEvidence(boostCredential)}
             />
         );
     }
