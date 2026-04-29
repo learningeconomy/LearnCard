@@ -13,12 +13,16 @@ import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
 import NewAiSessionContainer from './NewAiSessionContainer';
+import { LearnCardAiChatBot } from './LearnCardAiChatBot/LearnCardAiChatBot';
 import {
     fetchLearningPathwaysForSession,
     learningPathwaysQueryKey,
 } from './AiSessionLearningPathways/ai-learningPathways.helpers';
 import { NewAiSessionStepEnum } from './newAiSession.helpers';
-import { AiPassportAppsEnum } from '../ai-passport-apps/aiPassport-apps.helpers';
+import {
+    AiPassportAppContractUri,
+    AiPassportAppsEnum,
+} from '../ai-passport-apps/aiPassport-apps.helpers';
 
 type AiAppContext = { type?: string; url?: string } | undefined;
 
@@ -52,12 +56,12 @@ const TopicNewSessionGate: React.FC<Props> = ({
 
     const { data: enriched, isLoading: enrichedLoading } = useGetEnrichedSession(topicUri);
 
-    const [phase, setPhase] = useState<'checking' | 'ready'>('checking');
+    const [phase, setPhase] = useState<'checking' | 'picker' | 'chat'>('checking');
     const [readyVisible, setReadyVisible] = useState(false);
     const [decided, setDecided] = useState(false);
 
     useEffect(() => {
-        if (phase !== 'ready') return;
+        if (phase === 'checking') return;
         const id = requestAnimationFrame(() => setReadyVisible(true));
         return () => cancelAnimationFrame(id);
     }, [phase]);
@@ -68,18 +72,19 @@ const TopicNewSessionGate: React.FC<Props> = ({
 
         let cancelled = false;
 
-        const navAway = () => {
-            const uri = topicBoostUri ?? topicUri;
-            closeAllModals?.();
-            if (app?.type === AiPassportAppsEnum.learncardapp) {
-                history.push(`/chats?topicUri=${encodeURIComponent(uri)}`);
-            } else if (app?.url) {
+        const fallback = () => {
+            // External AI providers (ChatGPT etc) can only run in their own
+            // app — close the modal and redirect away. learncardapp keeps the
+            // chat inside the existing right modal.
+            if (app && app.type !== AiPassportAppsEnum.learncardapp && app.url) {
+                closeAllModals?.();
+                const uri = topicBoostUri ?? topicUri;
                 window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(
                     uri
                 )}&did=${encodeURIComponent(currentLCNUser?.did ?? '')}`;
-            } else {
-                history.push(`/chats?topicUri=${encodeURIComponent(uri)}`);
+                return;
             }
+            setPhase('chat');
         };
 
         const run = async () => {
@@ -89,7 +94,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
             if (!firstSessionUri) {
                 if (!cancelled) {
                     setDecided(true);
-                    navAway();
+                    fallback();
                 }
                 return;
             }
@@ -106,16 +111,16 @@ const TopicNewSessionGate: React.FC<Props> = ({
                 setDecided(true);
 
                 if (!pathways || pathways.length === 0) {
-                    navAway();
+                    fallback();
                     return;
                 }
 
                 seedRevisit(topicUri, topicTitle);
-                setPhase('ready');
+                setPhase('picker');
             } catch {
                 if (!cancelled) {
                     setDecided(true);
-                    navAway();
+                    fallback();
                 }
             }
         };
@@ -126,7 +131,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
         };
     }, [enrichedLoading, enriched, decided]);
 
-    if (phase === 'ready') {
+    if (phase === 'picker') {
         return (
             <div
                 className={`w-full h-full transition-opacity duration-300 ${
@@ -136,6 +141,23 @@ const TopicNewSessionGate: React.FC<Props> = ({
                 <NewAiSessionContainer
                     shortCircuitStep={NewAiSessionStepEnum.revisitTopic}
                     disableEdit
+                />
+            </div>
+        );
+    }
+
+    if (phase === 'chat') {
+        return (
+            <div
+                className={`w-full h-full transition-opacity duration-300 ${
+                    readyVisible ? 'opacity-100' : 'opacity-0'
+                }`}
+            >
+                <LearnCardAiChatBot
+                    initialMessages={[]}
+                    initialTopicUri={topicBoostUri ?? topicUri}
+                    contractUri={AiPassportAppContractUri.learncardapp}
+                    handleStartOver={closeAllModals}
                 />
             </div>
         );
