@@ -14,6 +14,8 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useAcceptCredentialMutation } from './mutations';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { queueAiInsightCredentialRefresh } from './ai-passport';
 
 export type ConsentRecord = {
     credentialUri: string;
@@ -114,7 +116,10 @@ export const useSyncConsentContractsMutation = () => {
 
                 let contractTerms = terms;
                 try {
-                    const validSharedUris = await getSharedUrisForOwner(learnCard, contract.owner.did);
+                    const validSharedUris = await getSharedUrisForOwner(
+                        learnCard,
+                        contract.owner.did
+                    );
                     const { nextTerms, removed } = pruneStaleSharedUris(terms, validSharedUris);
 
                     if (removed > 0) {
@@ -133,9 +138,9 @@ export const useSyncConsentContractsMutation = () => {
                         });
                     }
                 } catch (err) {
-                    const msg = `Prune failed for owner=${contract.owner.did} termsUri=${termsUri} :: ${
-                        (err as any)?.message || String(err)
-                    }`;
+                    const msg = `Prune failed for owner=${
+                        contract.owner.did
+                    } termsUri=${termsUri} :: ${(err as any)?.message || String(err)}`;
                     try {
                         console.error('[ConsentSync] ERROR', msg, err);
                         syncProgressStore.set.lastError(msg);
@@ -148,7 +153,8 @@ export const useSyncConsentContractsMutation = () => {
                 await Promise.all(
                     (Object.entries(recordsByCategory) as [CredentialCategory, string[]][]).map(
                         async ([category, credUris]) => {
-                            const categoryInfo = contractTerms.read.credentials.categories[category];
+                            const categoryInfo =
+                                contractTerms.read.credentials.categories[category];
 
                             if (
                                 categoryInfo &&
@@ -209,6 +215,12 @@ export const useSyncConsentContractsMutation = () => {
                             termsUri,
                             categoryMap as Record<string, string[]>
                         );
+                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                            await queueAiInsightCredentialRefresh({
+                                wallet: learnCard,
+                                queryClient,
+                            });
+                        }
                         queryClient.invalidateQueries({
                             queryKey: ['useTermsTransactions', termsUri],
                         });

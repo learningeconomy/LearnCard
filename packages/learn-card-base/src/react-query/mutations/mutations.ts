@@ -1,9 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CredentialCategory, useWallet } from 'learn-card-base';
+import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CredentialCategory } from 'learn-card-base';
+import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { useWallet } from 'learn-card-base';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
 import { cloneDeep } from 'lodash';
 import { UnsignedVC, VC } from '@learncard/types';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { queueAiInsightCredentialRefresh } from './ai-passport';
 
 // ** CONNECTION MUTATIONS **
 
@@ -141,7 +145,21 @@ export const useDeleteCredentialRecord = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    return useMutation<{ uri: string; category: string | undefined }, Error, LCR>({
+    type DeleteCredentialResult = {
+        uri: string;
+        category: string | undefined;
+        contractUri?: string;
+    };
+
+    type DeleteCredentialContext = {
+        currentQuery?: LCR[];
+        oldStaleTime?: unknown;
+        oldListStaleTime?: unknown;
+        category?: string;
+        uri: string;
+    };
+
+    return useMutation<DeleteCredentialResult, Error, LCR, DeleteCredentialContext>({
         mutationFn: async record => {
             try {
                 console.log('deleting record (in mutation)', record);
@@ -172,6 +190,7 @@ export const useDeleteCredentialRecord = () => {
                 return {
                     uri: record.uri,
                     category: record.metadata?.category,
+                    contractUri: record.metadata?.contractUri,
                 };
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
@@ -184,7 +203,7 @@ export const useDeleteCredentialRecord = () => {
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (!category) {
-                return { uri };
+                return { uri } satisfies DeleteCredentialContext;
             }
 
             // Cancel related queries
@@ -199,40 +218,38 @@ export const useDeleteCredentialRecord = () => {
             });
 
             // Get current cached data
-            const currentQuery = queryClient.getQueryData([
+            const currentQuery = queryClient.getQueryData<LCR[]>([
                 'useGetCredentials',
                 didWeb ?? '',
                 category,
-            ]);
-            const currentQueryList = queryClient.getQueryData([
-                'useGetCredentialList',
-                didWeb ?? '',
-                category,
-            ]);
+            ]) as LCR[] | undefined;
+            const currentQueryList = queryClient.getQueryData<
+                InfiniteData<{
+                    cursor?: string;
+                    hasMore: boolean;
+                    records: LCR[];
+                }>
+            >(['useGetCredentialList', didWeb ?? '', category]);
 
             console.log('optimistic update');
 
             // Update cache optimistically
             if (currentQuery || currentQueryList) {
                 // Filter out the credential from useGetCredentials cache
-                const updatedQuery = currentQuery
-                    ? currentQuery.filter((index: any) => {
-                          return index?.uri !== uri;
-                      })
-                    : undefined;
+                const updatedQuery = currentQuery?.filter(index => index?.uri !== uri);
 
                 // Update useGetCredentialList cache
                 const updatedQueryList = cloneDeep(currentQueryList);
-                if ((updatedQueryList as any)?.pages?.[0]?.records) {
-                    (updatedQueryList as any).pages[0].records = (
-                        updatedQueryList as any
-                    ).pages[0].records.filter((index: any) => {
-                        return index.uri !== uri;
-                    });
+                if (updatedQueryList?.pages?.[0]?.records) {
+                    updatedQueryList.pages[0].records = updatedQueryList.pages[0].records.filter(
+                        index => {
+                            return index.uri !== uri;
+                        }
+                    );
                 }
 
                 // Save original stale times to restore later
-                const oldStaleTime =
+                const oldStaleTime: any =
                     queryClient.getQueryDefaults([
                         'useGetCredentials',
                         didWeb ?? '',
@@ -240,7 +257,7 @@ export const useDeleteCredentialRecord = () => {
                         true,
                     ])?.staleTime ?? 0;
 
-                const oldListStaleTime =
+                const oldListStaleTime: any =
                     queryClient.getQueryDefaults(['useGetCredentialList', didWeb ?? '', category])
                         ?.staleTime ?? 0;
 
@@ -264,17 +281,21 @@ export const useDeleteCredentialRecord = () => {
                     updatedQueryList
                 );
 
-                // Return context for onError
-                return {
-                    currentQuery,
+                const context: DeleteCredentialContext = {
+                    uri,
+                    ...(category ? { category } : {}),
+                    ...(currentQuery ? { currentQuery } : {}),
                     oldStaleTime,
                     oldListStaleTime,
-                    category,
-                    uri,
                 };
+
+                return context;
             }
 
-            return { uri, category };
+            return {
+                uri,
+                ...(category ? { category } : {}),
+            };
         },
         onError: (_, __, context) => {
             // On error, restore previous query data if it exists
@@ -289,7 +310,7 @@ export const useDeleteCredentialRecord = () => {
             }
         },
         onSuccess: result => {
-            const { category, uri } = result;
+            const { category, contractUri } = result;
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (category) {
@@ -303,6 +324,19 @@ export const useDeleteCredentialRecord = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
                 });
+            }
+
+            if (contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                initWallet()
+                    .then(wallet =>
+                        queueAiInsightCredentialRefresh({
+                            wallet,
+                            queryClient,
+                        })
+                    )
+                    .catch(error => {
+                        console.error('Failed to queue AI Insight refresh after delete:', error);
+                    });
             }
 
             queryClient.invalidateQueries({ queryKey: ['boosts'] });

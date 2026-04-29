@@ -1,7 +1,12 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useWallet } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import {
+    aiInsightRefreshStore,
+    clearAiInsightRefreshState,
+} from 'learn-card-base/stores/aiInsightRefreshStore';
 
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -27,6 +32,8 @@ interface PathwayItem {
 }
 
 const queryKey = ['useAiInsightCredential'];
+const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
+const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 
 export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
     const did = wallet.id.did();
@@ -96,12 +103,57 @@ export const getOrCreateAiInsightCredential = async (
 export const useAiInsightCredential = () => {
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
+    const refreshStatus = aiInsightRefreshStore.use.status();
+    const requestedAt = aiInsightRefreshStore.use.requestedAt();
+    const baselineCredentialId = aiInsightRefreshStore.use.baselineCredentialId();
 
-    return useQuery({
+    const query = useQuery({
         queryKey: ['useAiInsightCredential'],
         queryFn: async () => getOrCreateAiInsightCredential(await initWallet(), queryClient, true),
         staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
+        refetchInterval: refreshStatus === 'pending' ? AI_INSIGHT_REFRESH_POLL_INTERVAL_MS : false,
     });
+
+    useEffect(() => {
+        if (refreshStatus !== 'pending' || !requestedAt) return;
+
+        const timeoutId = setTimeout(() => {
+            const currentStatus = aiInsightRefreshStore.get.status();
+            const currentRequestedAt = aiInsightRefreshStore.get.requestedAt();
+
+            if (currentStatus === 'pending' && currentRequestedAt === requestedAt) {
+                clearAiInsightRefreshState();
+            }
+        }, AI_INSIGHT_REFRESH_MAX_WAIT_MS);
+
+        return () => clearTimeout(timeoutId);
+    }, [refreshStatus, requestedAt]);
+
+    useEffect(() => {
+        if (refreshStatus !== 'pending' || !query.data || !requestedAt) return;
+
+        const issuanceDateMs = query.data.issuanceDate
+            ? new Date(query.data.issuanceDate).getTime()
+            : NaN;
+        const hasNewCredential =
+            (Number.isFinite(issuanceDateMs) && issuanceDateMs >= requestedAt) ||
+            (baselineCredentialId ? query.data.id !== baselineCredentialId : false);
+
+        if (hasNewCredential) {
+            clearAiInsightRefreshState();
+            queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
+            queryClient.invalidateQueries({ queryKey: ['training-programs'] });
+        }
+    }, [
+        baselineCredentialId,
+        query.data?.id,
+        query.data?.issuanceDate,
+        queryClient,
+        refreshStatus,
+        requestedAt,
+    ]);
+
+    return query;
 };
 
 export const useAiPathways = () => {
@@ -179,6 +231,7 @@ export const useAiInsightCredentialMutation = () => {
     return useMutation({
         mutationFn: async () => createAiInsightCredential(await initWallet()),
         onSuccess: aiInsightCredential => {
+            clearAiInsightRefreshState();
             queryClient.setQueryData(queryKey, aiInsightCredential);
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
             queryClient.invalidateQueries({ queryKey: ['training-programs'] });
