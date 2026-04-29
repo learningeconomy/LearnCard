@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth, useKeyboardHeight } from 'learn-card-base';
+import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import ChatHeader from './ChatHeader';
@@ -57,11 +57,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
-    // Apply paddingBottom = keyboard height on both iOS and Android. iOS native
-    // WebView resize doesn't reliably shrink this view (the chat outer's
-    // min-h-[32rem] + non-IonPage layout means the WebView resize doesn't
-    // propagate down to the input), so we offset manually here.
-    const keyboardInset = useKeyboardHeight();
+    // iOS Capacitor's WebView resizes natively when the keyboard opens, so we
+    // only manually offset on Android — same pattern as TopicInput.
+    const kbHeight = useKeyboardHeight();
+    const keyboardInset = isPlatformIOS() ? 0 : kbHeight;
     const aiApp = useMemo(() => getAiPassportAppByContractUri(contractUri), [contractUri]);
     const [showInitialMessages, setShowInitialMessages] = useState(true);
     const [topicInitialized, setTopicInitialized] = useState(() => {
@@ -261,7 +260,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
         <div
-            className="flex flex-col h-full min-h-[32rem] w-full bg-white"
+            className="flex flex-col h-full min-h-0 w-full bg-white"
             style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
         >
             {isEnding && showEndingLoader && (
