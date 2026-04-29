@@ -107,6 +107,14 @@ const shorten = (value: string | undefined, head = 6, tail = 4): string => {
 };
 
 /**
+ * Anything older than this is almost certainly a sentinel — Capgo occasionally
+ * returns epoch 0 / `1970-01-01T00:00:00.000Z` for bundles it hasn't actually
+ * delivered OTA (e.g. the builtin bundle, or when the field isn't populated).
+ * Treat those as "unset" rather than rendering "Last updated: 12/31/1969".
+ */
+const MIN_MEANINGFUL_TS = new Date('2020-01-01T00:00:00Z').getTime();
+
+/**
  * Render an ISO timestamp as a friendly relative string ("3 hours ago").
  * Falls back to a locale date string for anything older than a week so the
  * exact day is still visible — useful in support screenshots.
@@ -116,7 +124,7 @@ const formatRelative = (iso: string | undefined): string | undefined => {
 
     const ts = new Date(iso).getTime();
 
-    if (Number.isNaN(ts)) return undefined;
+    if (Number.isNaN(ts) || ts < MIN_MEANINGFUL_TS) return undefined;
 
     const ms = Date.now() - ts;
     const sec = Math.floor(ms / 1000);
@@ -206,11 +214,19 @@ const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo>
             : (appInfo?.version ?? fallbackVersion);
 
     // The current bundle's `downloaded` field is the timestamp the OTA bundle
-    // was applied to this device. Empty / 'builtin' means we're still on the
-    // bundle that shipped in the binary, in which case we hide the row.
+    // was applied to this device. Capgo returns one of several "unset" values
+    // when the bundle hasn't actually been delivered OTA (empty string, epoch
+    // 0, or '1970-01-01T00:00:00.000Z'), so we also reject anything before the
+    // MIN_MEANINGFUL_TS sentinel rather than rendering "12/31/1969".
     const downloaded = bundle?.bundle?.downloaded;
+    const downloadedTs = downloaded ? new Date(downloaded).getTime() : NaN;
     const lastUpdateApplied =
-        bundleVersion && bundleVersion !== 'builtin' && downloaded && downloaded.trim() !== ''
+        bundleVersion &&
+        bundleVersion !== 'builtin' &&
+        downloaded &&
+        downloaded.trim() !== '' &&
+        !Number.isNaN(downloadedTs) &&
+        downloadedTs >= MIN_MEANINGFUL_TS
             ? downloaded
             : undefined;
 
@@ -522,7 +538,15 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const platformLabel = PLATFORM_LABELS[info.platform];
 
     return (
-        <div className="font-poppins px-6 pt-6 pb-5 flex flex-col items-center w-full max-w-[400px] mx-auto">
+        <div
+            className="font-poppins px-6 pb-5 flex flex-col items-center w-full max-w-[400px] mx-auto"
+            style={{
+                // Match the app-wide pattern (AppStoreDetailModal, ShareCredentialModal
+                // etc.): respect the iOS notch/dynamic-island inset when the modal is
+                // rendered as a fullscreen cancel sheet, fall back to 1.5rem elsewhere.
+                paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+            }}
+        >
             {/* ---- Hero ---------------------------------------------------------- */}
             <img
                 src={appIcon}
