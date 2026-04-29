@@ -98,9 +98,13 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
         );
     };
 
-    if (isLoading) {
+    if (isLoading || isLoadingPathways) {
         return (
-            <div className="w-full bg-grayscale-100 ion-padding">
+            <div
+                className={`w-full bg-grayscale-100 ion-padding ${
+                    isDesktop ? 'rounded-[20px] mt-4' : ''
+                }`}
+            >
                 <Swiper spaceBetween={16} slidesPerView={'auto'} style={{ paddingBottom: '2px' }}>
                     {Array.from({ length: 3 }).map((_, index) => (
                         <SwiperSlide key={index} style={{ width: '240px', height: '194px' }}>

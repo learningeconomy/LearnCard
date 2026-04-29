@@ -44,17 +44,16 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
 
     useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];
-        let visibleSlot = 0;
+        let typedPos = 0;
 
         chatBotQA.forEach((qa, index) => {
             if (qa.hidden || index === 0) {
                 setVisibleIndexes(prev => [...prev, index]);
-                if (!qa.hidden) visibleSlot += 1;
                 return;
             }
 
-            const delay = visibleSlot * 1000;
-            visibleSlot += 1;
+            const delay = typedPos * 1000;
+            typedPos += 1;
 
             timeouts.push(
                 setTimeout(() => {
@@ -129,9 +128,10 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
 
     return (
         <div
-            className={`w-full flex flex-col overflow-y-auto ${
-                isDesktop ? 'max-w-[800px] pt-[80px]' : ''
+            className={`w-full flex flex-col overflow-y-auto pt-[80px] ${
+                isDesktop ? 'max-w-[800px]' : ''
             } scrollbar-hide relative`}
+            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
         >
             <OnboardingHeader title={headerTitle} onClose={isDesktop ? handleStartOver : undefined} />
             {chatBotQA.map((qa, index) => {
@@ -144,11 +144,7 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
 
                 const isIntro = index === 0;
                 const hasAnswer = !!qa.answer;
-                const prevQa = chatBotQA
-                    .slice(0, index)
-                    .reverse()
-                    .find(prev => !prev.hidden);
-                const showQuestion = index === 1 || (index > 1 && !!prevQa?.answer);
+                const showQuestion = index === 1 || (index > 1 && chatBotQA[index - 1]?.answer);
 
                 return (
                     <React.Fragment key={qa.id}>

@@ -81,14 +81,16 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];
+        let typedPos = 0;
 
         chatBotQA.forEach((qa, index) => {
-            if (index === 0) {
+            if (qa.hidden || index === 0) {
                 setVisibleIndexes(prev => [...prev, index]);
                 return;
             }
 
-            const delay = index * 1000;
+            const delay = typedPos * 1000;
+            typedPos += 1;
 
             timeouts.push(
                 setTimeout(() => {
@@ -220,12 +222,17 @@ export const NewAiSessionChatBotContainer: React.FC<{
     }
 
     return (
-        <div className={`relative w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
+        <div
+            className={`relative w-full flex flex-col pt-[80px] ${isDesktop ? 'max-w-[800px]' : ''}`}
+            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+        >
             <OnboardingHeader title="New Topic" onClose={isDesktop ? handleStartOver : undefined} />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}
             {chatBotQA.map((qa, index) => {
+                if (qa.hidden) return null;
+
                 const isVisible = visibleIndexes.includes(index);
                 const isTyping = typingIndex === index;
 

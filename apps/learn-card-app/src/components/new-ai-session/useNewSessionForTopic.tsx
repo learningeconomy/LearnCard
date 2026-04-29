@@ -26,6 +26,7 @@ const seedRevisitWithTopic = (topicUri: string, topicTitle?: string) => {
             question: null,
             answer: hasTitle ? `New Session for ${trimmed}` : 'Revisit Topic',
             phraseToEmphasize: undefined,
+            hidden: true,
         },
         {
             id: 1,

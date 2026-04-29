@@ -20,6 +20,7 @@ export const newSessionQAInitState: ChatBotQA[] = [
         question: null,
         answer: 'New Topic',
         phraseToEmphasize: undefined,
+        hidden: true,
     },
     {
         id: 1,
@@ -43,6 +44,7 @@ export const existingSessionQAInitState: ChatBotQA[] = [
         question: null,
         answer: 'Revisit Topic',
         phraseToEmphasize: undefined,
+        hidden: true,
     },
     {
         id: 1,
