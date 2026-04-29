@@ -134,8 +134,6 @@ jobs:
                       sections.push('- include the marker **`[skip-channel-bump]`** somewhere in the PR description (with a one-line rationale, please).');
                       sections.push('');
                       sections.push('Either will dismiss this check.');
-                      sections.push('');
-                      sections.push('_Background: this guard exists because of the PR #1063 incident, where a channel bump landed in one config file but not the other and new clients reverted to old OTA bundles._');
 
                       const marker = '<!-- capgo-channel-guard -->';
                       const body = `${marker}\n${sections.join('\n')}`;
