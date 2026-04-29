@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.95.9
+
+### Patch Changes
+
+-   [#1177](https://github.com/learningeconomy/LearnCard/pull/1177) [`95e6dd7f450fb97a8295465755c7cf3d6f208522`](https://github.com/learningeconomy/LearnCard/commit/95e6dd7f450fb97a8295465755c7cf3d6f208522) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1752][LC-1785] AI chat UI updates
+
+-   [#1177](https://github.com/learningeconomy/LearnCard/pull/1177) [`95e6dd7f450fb97a8295465755c7cf3d6f208522`](https://github.com/learningeconomy/LearnCard/commit/95e6dd7f450fb97a8295465755c7cf3d6f208522) Thanks [@goblincore](https://github.com/goblincore)! - chore: LC-1785 - AI Topics & Sessions UI Refresh (Desktop)
+
+-   [#1192](https://github.com/learningeconomy/LearnCard/pull/1192) [`1a3834a8004118351fddbd25bb535de4ed9be569`](https://github.com/learningeconomy/LearnCard/commit/1a3834a8004118351fddbd25bb535de4ed9be569) Thanks [@Custard7](https://github.com/Custard7)! - feat: Capgo Fixes + CI Check + Version Modal
+
+-   [#1197](https://github.com/learningeconomy/LearnCard/pull/1197) [`11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e`](https://github.com/learningeconomy/LearnCard/commit/11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e) Thanks [@gerardopar](https://github.com/gerardopar)! - add context check >=1.0.3+
+
 ## 1.95.8
 
 ### Patch Changes
