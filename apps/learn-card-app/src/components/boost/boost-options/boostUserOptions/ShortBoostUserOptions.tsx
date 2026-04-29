@@ -30,7 +30,7 @@ import {
 } from '../../boost';
 import { closeAll } from 'apps/learn-card-app/src/helpers/uiHelpers';
 import { BoostIssuanceLoading } from '../../boostLoader/BoostLoader';
-import { getDefaultDisplayType } from '../../boostHelpers';
+import { getDefaultDisplayType, summarizeRecipientAttachments } from '../../boostHelpers';
 
 export enum ShortBoostStepsEnum {
     boostUserTypeOptions = 'boostUserTypeOptions',
@@ -128,6 +128,16 @@ const ShortBoostUserOptions: React.FC<{
             boostType: boost?.type,
             method: 'Managed Boost',
         });
+
+        const attachmentsAnalytics = summarizeRecipientAttachments(state.issueTo);
+        if (attachmentsAnalytics.recipientsWithAttachments > 0) {
+            track(AnalyticsEvents.SEND_BOOST_WITH_ATTACHMENTS, {
+                category: boost?.category,
+                boostType: boost?.type,
+                method: 'Managed Boost',
+                ...attachmentsAnalytics,
+            });
+        }
         setIssueLoading(false);
         onSuccess?.();
         if (!overrideClosingAllModals) {
