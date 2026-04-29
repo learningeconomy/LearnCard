@@ -18,6 +18,7 @@ import {
     finishSession,
     closeInsightsSession,
     resetChatStores,
+    disconnectWebSocket,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import X from '../../svgs/X';
@@ -75,11 +76,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             return;
         }
 
-        // Empty thread → just dismiss, no summary flow.
+        // Empty thread (or still loading the first AI response) → tear down
+        // the WebSocket so the in-flight reply can't repopulate `messages`
+        // after we reset, then navigate back to the topics list. closeAllModals
+        // alone is insufficient because /chats can be reached as a route, not
+        // just a modal.
         if ($messages.length === 0) {
+            disconnectWebSocket();
             resetChatStores();
             chatBotStore.set.resetStore();
             closeAllModals();
+            history.push('/ai/topics');
             return;
         }
 
