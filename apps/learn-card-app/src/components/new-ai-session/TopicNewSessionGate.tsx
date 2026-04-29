@@ -47,6 +47,15 @@ const TopicNewSessionGate: React.FC<Props> = ({
     const { isDesktop } = useDeviceTypeByWidth();
 
     const [phase, setPhase] = useState<'checking' | 'ready'>('checking');
+    const [readyVisible, setReadyVisible] = useState(false);
+
+    useEffect(() => {
+        if (phase !== 'ready') return;
+        // Defer the fade-in until after the picker has mounted in the next
+        // paint, otherwise the opacity transition won't run.
+        const id = requestAnimationFrame(() => setReadyVisible(true));
+        return () => cancelAnimationFrame(id);
+    }, [phase]);
 
     useEffect(() => {
         let cancelled = false;
@@ -101,10 +110,16 @@ const TopicNewSessionGate: React.FC<Props> = ({
 
     if (phase === 'ready') {
         return (
-            <NewAiSessionContainer
-                shortCircuitStep={NewAiSessionStepEnum.revisitTopic}
-                disableEdit
-            />
+            <div
+                className={`w-full h-full transition-opacity duration-300 ${
+                    readyVisible ? 'opacity-100' : 'opacity-0'
+                }`}
+            >
+                <NewAiSessionContainer
+                    shortCircuitStep={NewAiSessionStepEnum.revisitTopic}
+                    disableEdit
+                />
+            </div>
         );
     }
 
