@@ -1,5 +1,11 @@
 # @learncard/app-store-demo-mozilla-social-badges
 
+## 0.0.21
+
+### Patch Changes
+
+-   [#1193](https://github.com/learningeconomy/LearnCard/pull/1193) [`1da7471f52a7003417a883b9f768a5a17ea8ad4c`](https://github.com/learningeconomy/LearnCard/commit/1da7471f52a7003417a883b9f768a5a17ea8ad4c) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix build failures
+
 ## 0.0.20
 
 ### Patch Changes

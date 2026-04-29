@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.11.2
+
+### Patch Changes
+
+-   [#1184](https://github.com/learningeconomy/LearnCard/pull/1184) [`d34e3d32d844d99128071fe63d23585806349c35`](https://github.com/learningeconomy/LearnCard/commit/d34e3d32d844d99128071fe63d23585806349c35) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1746] - Per-Recipient Dynamic Evidence for Boost Credentials
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.30
+
 ## 2.11.1
 
 ### Patch Changes
