@@ -37,6 +37,10 @@ import {
 } from '../new-ai-session/NewAiSessionButton/NewAiSessionButton';
 import { NewAiSessionStepEnum } from '../new-ai-session/newAiSession.helpers';
 import {
+    useNewSessionForTopicDesktop,
+    useNewSessionForTopicMobile,
+} from '../new-ai-session/useNewSessionForTopic';
+import {
     AiAssessmentQuestion,
     finishedAssessmentText,
 } from '../ai-assessment/AiAssessment/ai-assessment.helpers';
@@ -80,6 +84,9 @@ export const AiSessionsContainer: React.FC<{
     } | null>(null);
 
     const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
+
+    const triggerMobileNewSession = useNewSessionForTopicMobile();
+    const triggerDesktopNewSession = useNewSessionForTopicDesktop();
 
     // Producers URL-encode the `topicBoostUri` query param before navigation;
     // URLSearchParams.get() returns the decoded value, so no further decoding
@@ -203,6 +210,18 @@ export const AiSessionsContainer: React.FC<{
                     <NewAiSessionButton
                         iconType="light"
                         type={NewAiSessionButtonEnum.mobile}
+                        onClick={
+                            topicUri
+                                ? () =>
+                                      triggerMobileNewSession({
+                                          topicUri,
+                                          topicTitle: topicsTitle,
+                                          sessionCount: sessions?.length ?? 0,
+                                          topicBoostUri: topicBoost?.uri,
+                                          app,
+                                      })
+                                : undefined
+                        }
                         className="!bg-indigo-500 !text-center !flex !items-center !justify-center !flex-row-reverse !text-white !rounded-full"
                     />
                 </div>
@@ -220,6 +239,14 @@ export const AiSessionsContainer: React.FC<{
             <NewAiSessionContainer
                 showAiAppSelector
                 shortCircuitStep={chatBotSelected}
+                disableEdit
+            />
+        );
+    } else if (chatBotSelected === NewAiSessionStepEnum.revisitTopic) {
+        rightColumn = (
+            <NewAiSessionContainer
+                shortCircuitStep={NewAiSessionStepEnum.revisitTopic}
+                handleStartOver={() => setChatBotSelected(null)}
                 disableEdit
             />
         );
@@ -257,6 +284,24 @@ export const AiSessionsContainer: React.FC<{
                     handleSetChatBotSelected={handleSetChatBotSelected}
                     leftColumn={leftColumn}
                     rightColumn={rightColumn}
+                    currentTopicHasSessions={
+                        !!topicUri && (sessions?.length ?? 0) >= 1
+                    }
+                    onNewSessionForTopic={
+                        topicUri
+                            ? () =>
+                                  triggerDesktopNewSession(
+                                      {
+                                          topicUri,
+                                          topicTitle: topicsTitle,
+                                          sessionCount: sessions?.length ?? 0,
+                                          topicBoostUri: topicBoost?.uri,
+                                          app,
+                                      },
+                                      setChatBotSelected
+                                  )
+                            : undefined
+                    }
                 />
             </>
         </AiFeatureGate>
