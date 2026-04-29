@@ -221,7 +221,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     return (
         <div className={`w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
-            <OnboardingHeader title="New Topic" />
+            {!isDesktop && <OnboardingHeader title="New Topic" />}
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}
