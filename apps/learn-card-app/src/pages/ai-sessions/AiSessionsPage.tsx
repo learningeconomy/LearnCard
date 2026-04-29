@@ -273,15 +273,6 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             selectedGroupedTopic?.topics?.[0]?.topicRecord?.contractUri ??
             ''
     );
-    // For grouped topics the modal opens against the FIRST topic in the
-    // group (topics[0]), so the pathway pre-fetch needs to use sessions
-    // from that topic specifically — not the flattened group.sessions
-    // (which mixes sessions across all providers and may have a
-    // different sessions[0] than what the picker re-derives).
-    const newSessionFirstSessionUri = selectedGroupedTopic
-        ? selectedGroupedTopic.topics?.[0]?.sessions?.[0]?.boost?.uri
-        : selectedTopicData?.sessions?.[0]?.boost?.uri;
-
     const triggerNewSessionForTopic = useNewSessionForTopicMobile();
 
     const handleNewSessionForSelectedTopic = () => {
@@ -290,7 +281,6 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             topicUri: newSessionTopicUri,
             topicTitle: selectedTopicTitle,
             sessionCount: selectedTopicSessionCount,
-            firstSessionUri: newSessionFirstSessionUri,
             topicBoostUri: newSessionTopicBoostUri,
             app: newSessionApp,
         });

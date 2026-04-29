@@ -78,48 +78,26 @@ const navToFreshChat = (
 type TopicNewSessionParams = {
     topicUri: string;
     topicTitle?: string;
-    sessionCount: number;
-    firstSessionUri?: string;
+    sessionCount?: number;
     topicBoostUri?: string;
     app?: AiAppContext;
 };
 
 export const useNewSessionForTopicMobile = () => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
-    const history = useHistory();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
-    return ({
-        topicUri,
-        topicTitle,
-        sessionCount,
-        firstSessionUri,
-        topicBoostUri,
-        app,
-    }: TopicNewSessionParams) => {
+    return ({ topicUri, topicTitle, topicBoostUri, app }: TopicNewSessionParams) => {
         if (!topicUri) return;
 
-        // Sync fast-path: if the topic has no sessions at all, no pathways
-        // are possible — skip the modal entirely and direct-nav.
-        if (sessionCount === 0 || !firstSessionUri) {
-            navToFreshChat(
-                history,
-                topicBoostUri ?? topicUri,
-                app,
-                currentLCNUser?.did
-            );
-            return;
-        }
-
-        // Otherwise open the modal immediately and let the gate decide
-        // whether to render the pathway picker (after fetch resolves) or
-        // close the modal + navigate to a fresh chat. Avoids the perceived
-        // click-delay of awaiting the pathway query before showing anything.
+        // Always open the modal immediately. The gate self-loads the topic's
+        // enriched session data and pathways, then either renders the picker
+        // (when pathways exist) or closes the modal and navigates to a fresh
+        // chat. This way clicks made before the parent page's session data
+        // has finished loading still flow through the in-modal experience.
         newModal(
             <TopicNewSessionGate
                 topicUri={topicUri}
                 topicTitle={topicTitle}
-                firstSessionUri={firstSessionUri}
                 topicBoostUri={topicBoostUri}
                 app={app}
                 seedRevisit={seedRevisitWithTopic}

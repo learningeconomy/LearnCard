@@ -3,7 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
-import { useGetCurrentLCNUser, useModal, useDeviceTypeByWidth } from 'learn-card-base';
+import {
+    useGetCurrentLCNUser,
+    useGetEnrichedSession,
+    useModal,
+    useDeviceTypeByWidth,
+} from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
@@ -20,21 +25,20 @@ type AiAppContext = { type?: string; url?: string } | undefined;
 type Props = {
     topicUri: string;
     topicTitle?: string;
-    firstSessionUri?: string;
     topicBoostUri?: string;
     app?: AiAppContext;
     seedRevisit: (topicUri: string, topicTitle?: string) => void;
 };
 
-// Mounted inside the modal opened by useNewSessionForTopicMobile. Shows the
-// pathway skeleton while fetching the topic's pathways, then either swaps to
-// the Revisit picker when pathways exist, or closes the modal and navigates
-// to a fresh chat when they don't. Keeps the modal-open animation snappy
+// Mounted inside the modal opened by useNewSessionForTopicMobile. Self-loads
+// the topic's enriched session data (so it works even when the parent page
+// hasn't finished loading yet) plus its pathways, then either swaps to the
+// Revisit picker when pathways exist, or closes the modal and navigates to
+// a fresh chat when they don't. Keeps the modal-open animation snappy
 // without showing the Revisit content for a topic that has no pathways.
 const TopicNewSessionGate: React.FC<Props> = ({
     topicUri,
     topicTitle,
-    firstSessionUri,
     topicBoostUri,
     app,
     seedRevisit,
@@ -46,18 +50,22 @@ const TopicNewSessionGate: React.FC<Props> = ({
     const { closeAllModals } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
 
+    const { data: enriched, isLoading: enrichedLoading } = useGetEnrichedSession(topicUri);
+
     const [phase, setPhase] = useState<'checking' | 'ready'>('checking');
     const [readyVisible, setReadyVisible] = useState(false);
+    const [decided, setDecided] = useState(false);
 
     useEffect(() => {
         if (phase !== 'ready') return;
-        // Defer the fade-in until after the picker has mounted in the next
-        // paint, otherwise the opacity transition won't run.
         const id = requestAnimationFrame(() => setReadyVisible(true));
         return () => cancelAnimationFrame(id);
     }, [phase]);
 
     useEffect(() => {
+        if (decided) return;
+        if (enrichedLoading) return;
+
         let cancelled = false;
 
         const navAway = () => {
@@ -75,8 +83,14 @@ const TopicNewSessionGate: React.FC<Props> = ({
         };
 
         const run = async () => {
+            const sessions = enriched?.sessions ?? [];
+            const firstSessionUri = sessions[0]?.boost?.uri;
+
             if (!firstSessionUri) {
-                if (!cancelled) navAway();
+                if (!cancelled) {
+                    setDecided(true);
+                    navAway();
+                }
                 return;
             }
 
@@ -89,6 +103,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
                     },
                 });
                 if (cancelled) return;
+                setDecided(true);
 
                 if (!pathways || pathways.length === 0) {
                     navAway();
@@ -98,7 +113,10 @@ const TopicNewSessionGate: React.FC<Props> = ({
                 seedRevisit(topicUri, topicTitle);
                 setPhase('ready');
             } catch {
-                if (!cancelled) navAway();
+                if (!cancelled) {
+                    setDecided(true);
+                    navAway();
+                }
             }
         };
 
@@ -106,7 +124,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [enrichedLoading, enriched, decided]);
 
     if (phase === 'ready') {
         return (
