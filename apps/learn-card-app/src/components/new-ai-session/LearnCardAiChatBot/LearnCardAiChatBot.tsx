@@ -43,6 +43,7 @@ type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
     initialTopic?: string | undefined;
     initialTopicUri?: string | undefined;
+    initialPathwayUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
     mode?: AiSessionMode;
@@ -52,6 +53,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     initialMessages = [],
     initialTopic = undefined,
     initialTopicUri: _initialTopicUri = undefined,
+    initialPathwayUri: _initialPathwayUri = undefined,
     contractUri = AiPassportAppContractUri.learncardapp,
     handleStartOver: _handleStartOver,
     mode = AiSessionMode.tutor,
@@ -104,7 +106,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const initialTopicUri = _initialTopicUri || urlParams.get('topicUri');
-        const pathwayUri = urlParams.get('pathwayUri');
+        const pathwayUri = _initialPathwayUri || urlParams.get('pathwayUri');
 
         // If there is already an active thread or messages, do not re-initialize
         const existingThread = currentThreadId.get?.();
@@ -142,7 +144,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 startTopic(initialTopic, mode);
             }
         }
-    }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
+    }, [initialTopic, _initialTopicUri, _initialPathwayUri, topicInitialized, authState?.did]);
 
     // notify backend on visibility change (hidden/visible) for session management
     // Only trigger after being hidden for a substantial period to avoid brief tab switches

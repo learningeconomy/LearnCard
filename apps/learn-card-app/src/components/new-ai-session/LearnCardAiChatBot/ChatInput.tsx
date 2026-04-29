@@ -133,7 +133,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     onClick={() => {
                                         closeAllModals();
                                         chatBotStore.set.resetStore();
-                                        history.push('/');
+                                        history.push('/ai/topics');
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
