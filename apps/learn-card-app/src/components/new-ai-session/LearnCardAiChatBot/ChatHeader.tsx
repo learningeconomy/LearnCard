@@ -1,6 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useStore } from '@nanostores/react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     LaunchPadAppListItem,
@@ -49,6 +50,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
+    const queryClient = useQueryClient();
 
     const currentThread = $threads.find(t => t.id === $currentThreadId);
     const isInsights = mode === AiSessionMode.insights;
@@ -110,6 +112,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         finishSession(async () => {
             await fetchNewContractCredentials();
             await fetchTopics();
+            // The topic-detail page reads its sessions from
+            // useGetEnrichedSession; invalidate so the new session shows up
+            // immediately when the user closes the modal.
+            await queryClient.invalidateQueries({ queryKey: ['useGetEnrichedSession'] });
+            await queryClient.invalidateQueries({ queryKey: ['useGetEnrichedTopicsList'] });
+            await queryClient.invalidateQueries({ queryKey: ['useGetSummaryInfo'] });
         });
     };
 

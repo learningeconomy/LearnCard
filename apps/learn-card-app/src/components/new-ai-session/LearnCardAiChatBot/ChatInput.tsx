@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ProfilePicture, useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
 import { ArrowUp } from 'lucide-react';
@@ -62,6 +63,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
+    const queryClient = useQueryClient();
+
+    const invalidateSessionQueries = async () => {
+        // Topic-detail reads sessions from useGetEnrichedSession; the topics
+        // list reads from useGetEnrichedTopicsList. Invalidate both so the
+        // newly-completed session shows up immediately when the user returns.
+        await queryClient.invalidateQueries({ queryKey: ['useGetEnrichedSession'] });
+        await queryClient.invalidateQueries({ queryKey: ['useGetEnrichedTopicsList'] });
+        await queryClient.invalidateQueries({ queryKey: ['useGetSummaryInfo'] });
+    };
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -130,9 +141,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         {thread?.topicCredentialUri && !thread?.summaries?.[0] && (
                             <>
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         closeAllModals();
                                         chatBotStore.set.resetStore();
+                                        await invalidateSessionQueries();
                                         history.push('/ai/topics');
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -147,6 +159,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 onClick={async () => {
                                     closeAllModals();
                                     await fetchNewContractCredentials();
+                                    await invalidateSessionQueries();
                                     chatBotStore.set.resetStore();
 
                                     setTimeout(() => {
@@ -250,6 +263,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
         finishSession(async () => {
             await fetchNewContractCredentials();
             await fetchTopics();
+            await invalidateSessionQueries();
         });
     };
 
