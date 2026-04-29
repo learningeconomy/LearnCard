@@ -15,6 +15,7 @@ import {
     currentThreadId,
     threads,
     messages,
+    sessionEnded,
     finishSession,
     closeInsightsSession,
     resetChatStores,
@@ -44,6 +45,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $messages = useStore(messages);
+    const $sessionEnded = useStore(sessionEnded);
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -73,6 +75,21 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             chatBotStore.set.resetStore();
             resetChatStores();
             history.push('/ai/insights');
+            return;
+        }
+
+        // Already-finished session (Session Summary / Keep Going state) →
+        // exit cleanly to topics. Without this, X retriggers finishSession
+        // which just rebuilds the same end state.
+        const hasEndedAlready =
+            $sessionEnded ||
+            (currentThread?.summaries && currentThread.summaries.length > 0);
+        if (hasEndedAlready) {
+            disconnectWebSocket();
+            resetChatStores();
+            chatBotStore.set.resetStore();
+            closeAllModals();
+            history.push('/ai/topics');
             return;
         }
 
