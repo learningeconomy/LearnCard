@@ -8,7 +8,6 @@ import ChatBotAppList from './helpers/ChatBotAppList';
 import AiSessionLoader from '../AiSessionLoader';
 import TopicInput from './helpers/TopicInput';
 import OnboardingHeader from './helpers/OnboardingHeader';
-import X from '../../svgs/X';
 
 import {
     ChatBotQA,
@@ -222,17 +221,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     return (
         <div className={`relative w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
-            {!isDesktop && <OnboardingHeader title="New Topic" />}
-            {isDesktop && handleStartOver && (
-                <button
-                    type="button"
-                    onClick={handleStartOver}
-                    className="absolute top-3 right-3 z-10 flex items-center justify-center w-[32px] h-[32px] rounded-full bg-white/90 hover:bg-white border-[1px] border-grayscale-200 shadow-sm text-grayscale-700"
-                    aria-label="Back to session options"
-                >
-                    <X className="w-[16px] h-[16px]" strokeWidth="3" />
-                </button>
-            )}
+            <OnboardingHeader title="New Topic" onClose={isDesktop ? handleStartOver : undefined} />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}

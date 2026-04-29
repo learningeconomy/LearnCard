@@ -5,7 +5,7 @@ import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBub
 import ExistingAiTopics from './ExistingAiTopics/ExistingAiTopics';
 import ChatBotTypingIndicator from './helpers/TypingIndicator';
 import ExistingTopicSearch from './helpers/ExistingTopicSearch';
-import X from '../../svgs/X';
+import OnboardingHeader from './helpers/OnboardingHeader';
 
 import {
     ChatBotQA,
@@ -124,16 +124,7 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
                 isDesktop ? 'max-w-[800px]' : ''
             } scrollbar-hide relative`}
         >
-            {isDesktop && handleStartOver && (
-                <button
-                    type="button"
-                    onClick={handleStartOver}
-                    className="absolute top-3 right-3 z-10 flex items-center justify-center w-[32px] h-[32px] rounded-full bg-white/90 hover:bg-white border-[1px] border-grayscale-200 shadow-sm text-grayscale-700"
-                    aria-label="Back to session options"
-                >
-                    <X className="w-[16px] h-[16px]" strokeWidth="3" />
-                </button>
-            )}
+            <OnboardingHeader title="Revisit Topic" onClose={isDesktop ? handleStartOver : undefined} />
             {chatBotQA.map((qa, index) => {
                 const isVisible = visibleIndexes.includes(index);
                 const isTyping = typingIndex === index;
