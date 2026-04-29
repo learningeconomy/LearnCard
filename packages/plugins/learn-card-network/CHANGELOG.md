@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 2.11.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.31
+
 ## 2.11.2
 
 ### Patch Changes

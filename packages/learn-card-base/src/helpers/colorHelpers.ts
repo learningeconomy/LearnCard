@@ -13,6 +13,13 @@ export const getRandomBaseColor = (): string => {
     return baseColors[Math.floor(Math.random() * baseColors.length)];
 };
 
+const LIGHT_OR_EMPTY_BG = /^(|bg-white|bg-(grayscale|gray|neutral|stone|zinc|slate)-(50|100|200))$/;
+
+export const ensureVisibleBaseColor = (color?: string | null): string => {
+    if (!color || LIGHT_OR_EMPTY_BG.test(color)) return 'bg-indigo-500';
+    return color;
+};
+
 export const getNotificationButtonColor = (path?: string) => {
     if (
         path === '/passport' ||

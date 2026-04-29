@@ -1,6 +1,10 @@
 import moment from 'moment';
 import { VerificationItem, BoostRecipientInfo, LCNBoostStatusEnum, VC } from '@learncard/types';
-import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSMediaAttachment } from './boost';
+import {
+    BoostCMSAppearanceDisplayTypeEnum,
+    BoostCMSIssueTo,
+    BoostCMSMediaAttachment,
+} from './boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
 import {
@@ -74,6 +78,57 @@ const getRecipientMediaAttachmentTemplateData = (
                 last: index === evidence.length - 1,
             })),
         },
+    };
+};
+
+/**
+ * Builds an anonymized analytics payload describing per-recipient media
+ * attachments for a send-boost event. No DIDs, profileIds, or contact info
+ * are included — just counts and attachment types — so the event is safe to
+ * send to product analytics.
+ *
+ * Returned shape:
+ *   - recipientCount: total recipients in the send
+ *   - recipientsWithAttachments: how many of those had at least one attachment
+ *   - totalAttachments: sum of attachments across all recipients
+ *   - attachmentTypeCounts: aggregate count by media type (photo/document/video/link/...)
+ *   - perRecipient: ordered breakdown { attachmentCount, types[] } per recipient
+ */
+export const summarizeRecipientAttachments = (
+    issueTo: BoostCMSIssueTo[] = []
+): {
+    recipientCount: number;
+    recipientsWithAttachments: number;
+    totalAttachments: number;
+    attachmentTypeCounts: Record<string, number>;
+    perRecipient: Array<{ attachmentCount: number; types: string[] }>;
+} => {
+    const attachmentTypeCounts: Record<string, number> = {};
+    let totalAttachments = 0;
+    let recipientsWithAttachments = 0;
+
+    const perRecipient = issueTo.map(recipient => {
+        const attachments = recipient.mediaAttachments ?? [];
+        const types: string[] = [];
+
+        attachments.forEach(att => {
+            const type = (att.type as string) || 'unknown';
+            attachmentTypeCounts[type] = (attachmentTypeCounts[type] ?? 0) + 1;
+            types.push(type);
+        });
+
+        if (attachments.length > 0) recipientsWithAttachments += 1;
+        totalAttachments += attachments.length;
+
+        return { attachmentCount: attachments.length, types };
+    });
+
+    return {
+        recipientCount: issueTo.length,
+        recipientsWithAttachments,
+        totalAttachments,
+        attachmentTypeCounts,
+        perRecipient,
     };
 };
 

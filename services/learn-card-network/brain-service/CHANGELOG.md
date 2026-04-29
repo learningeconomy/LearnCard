@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.14.3
+
+### Patch Changes
+
+-   [#1197](https://github.com/learningeconomy/LearnCard/pull/1197) [`11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e`](https://github.com/learningeconomy/LearnCard/commit/11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e) Thanks [@gerardopar](https://github.com/gerardopar)! - add context check >=1.0.3+
+
 ## 3.14.2
 
 ### Patch Changes

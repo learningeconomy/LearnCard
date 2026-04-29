@@ -1,6 +1,7 @@
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { v4 as uuidv4 } from 'uuid';
+import { TRPCError } from '@trpc/server';
 import {
     VC,
     JWE,
@@ -798,6 +799,18 @@ export const appendTemplateEvidenceToCredential = (
     // shouldn't clobber existing evidence.
     if (normalizedTemplateEvidence.length === 0) return credential;
 
+    // Refuse to append onto a boost whose @context can't expand the
+    // EvidenceFile subterms — otherwise the signer fails later with an opaque
+    // JSON-LD key-expansion error. Surface a clear message instead so the
+    // caller can prompt the user to republish the boost.
+    if (!credentialContextSupportsDynamicEvidence(credential)) {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message:
+                'This boost was created before per-recipient evidence was supported. Republish the boost against the latest boost context (>= 1.0.3) to enable recipient attachments.',
+        });
+    }
+
     // Preserve any evidence that was already baked into the credential by
     // the template, coercing a single-object shape to an array so we can spread.
     const existingEvidence = credential.evidence
@@ -809,6 +822,30 @@ export const appendTemplateEvidenceToCredential = (
     credential.evidence = [...existingEvidence, ...normalizedTemplateEvidence];
 
     return credential;
+};
+
+/**
+ * Returns true when the credential's `@context` array references a boost
+ * context that defines `EvidenceFile`/`fileName`/`fileType`/`fileSize`
+ * (LearnCard boost context 1.0.3 or newer), or already has those terms
+ * defined inline. Used as a precondition for auto-appending the dynamic
+ * `EvidenceFile` shape produced by `convertAttachmentsToEvidence`.
+ */
+const credentialContextSupportsDynamicEvidence = (credential: UnsignedVC): boolean => {
+    const ctx = (credential as Record<string, unknown>)['@context'];
+    const entries = Array.isArray(ctx) ? ctx : ctx ? [ctx] : [];
+
+    return entries.some(entry => {
+        if (typeof entry === 'string') {
+            return /\/ctx\.learncard\.com\/boosts\/1\.(?:(?:0\.(?:[3-9]|\d{2,}))|(?:[1-9]\d*\.\d+))/.test(
+                entry
+            );
+        }
+        if (entry && typeof entry === 'object') {
+            return 'EvidenceFile' in (entry as Record<string, unknown>);
+        }
+        return false;
+    });
 };
 
 /**

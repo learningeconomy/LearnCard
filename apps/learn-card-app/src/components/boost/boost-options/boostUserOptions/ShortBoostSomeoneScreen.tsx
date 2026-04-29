@@ -24,6 +24,12 @@ type ShortBoostSomeoneScreenProps = {
     category: BoostCategoryOptionsEnum;
     showBoostContext?: boolean;
     boostName?: string;
+    /**
+     * Whether the underlying boost's @context supports per-recipient dynamic
+     * evidence (boost context >= 1.0.3). Older boosts must be republished
+     * before recipient-specific media attachments can be signed onto them.
+     */
+    supportsRecipientAttachments?: boolean;
 };
 
 const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
@@ -38,6 +44,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
     category,
     showBoostContext = false,
     boostName,
+    supportsRecipientAttachments = false,
 }) => {
     const setIssuedTo: React.Dispatch<React.SetStateAction<BoostCMSIssueTo[]>> = action => {
         setState(prevState => ({
@@ -58,7 +65,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                 mode={BoostAddressBookEditMode.delete}
                 _issueTo={issuedTo}
                 _setIssueTo={setIssuedTo}
-                showRecipientAttachments
+                showRecipientAttachments={supportsRecipientAttachments}
                 version="sleek"
             />
         );
