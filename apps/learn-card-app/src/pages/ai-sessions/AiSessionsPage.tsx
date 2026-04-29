@@ -144,7 +144,10 @@ const AiSessionsPage: React.FC = () => {
 
                                 {/* New Session button */}
                                 <div className="mt-3 mb-4">
-                                    <NewAiSessionButton type={NewAiSessionButtonEnum.mobile} />
+                                    <NewAiSessionButton
+                                        type={NewAiSessionButtonEnum.mobile}
+                                        text="New Topic"
+                                    />
                                 </div>
 
                                 {/* Topic list */}

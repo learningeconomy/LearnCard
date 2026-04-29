@@ -38,7 +38,7 @@ export const NewAiSessionButton: React.FC<{
     onClick?: () => void;
     className?: string;
     iconType?: 'dark' | 'light';
-}> = ({ type, shortCircuitStep, selectedApp, onClick, className, iconType = 'dark' }) => {
+}> = ({ type, shortCircuitStep, selectedApp, text, onClick, className, iconType = 'dark' }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -176,7 +176,7 @@ export const NewAiSessionButton: React.FC<{
                 className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid !bg-grayscale-200 border-grayscale-200 p-[10px] w-full flex items-center justify-start mt-[10px] gap-1 ${className}`}
             >
                 {iconType && <NewAiSessionIcon version={iconType} />}
-                New Session
+                {text ?? 'New Session'}
             </button>
         );
     }
