@@ -26,7 +26,8 @@ import {
 } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import { aiPassportApps, getAiPassportAppByContractUri } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import { useNewSessionForTopicMobile } from '../../components/new-ai-session/useNewSessionForTopic';
 
 import {
     AiFilteringTypes,
@@ -252,6 +253,27 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         ? selectedGroupedTopic.unfinishedSessionsCount
         : selectedTopicData?.sessions?.filter(session => !session?.vc?.completed).length ?? 0;
 
+    const selectedTopicSessionCount = selectedGroupedTopic
+        ? selectedGroupedTopic.sessions.length
+        : selectedTopicData?.sessions?.length ?? 0;
+    const selectedTopicBoostUri = selectedTopicData?.topicBoost?.uri;
+    const selectedTopicApp = getAiPassportAppByContractUri(
+        selectedTopicData?.topicRecord?.contractUri ?? ''
+    );
+
+    const triggerNewSessionForTopic = useNewSessionForTopicMobile();
+
+    const handleNewSessionForSelectedTopic = () => {
+        if (!selectedTopicUri) return;
+        triggerNewSessionForTopic({
+            topicUri: selectedTopicUri,
+            topicTitle: selectedTopicTitle,
+            sessionCount: selectedTopicSessionCount,
+            topicBoostUri: selectedTopicBoostUri,
+            app: selectedTopicApp,
+        });
+    };
+
     const searchPlaceholder = view === 'topics' ? 'Browse topics...' : 'Browse sessions...';
 
     const resetFilters = () => {
@@ -392,8 +414,10 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                 {view === 'topicDetail' && (
                                     <div className="mt-3 mb-3">
                                         <NewAiSessionButton
-                                            type={NewAiSessionButtonEnum.icon}
-                                            text={`New Session in ${selectedTopicTitle}`}
+                                            type={NewAiSessionButtonEnum.mobile}
+                                            text="New Session"
+                                            onClick={handleNewSessionForSelectedTopic}
+                                            className="!bg-white !border-grayscale-200 shadow-soft-bottom !mt-0"
                                         />
                                     </div>
                                 )}
