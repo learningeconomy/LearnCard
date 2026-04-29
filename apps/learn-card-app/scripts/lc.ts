@@ -1534,6 +1534,21 @@ const handleShortcuts = async (): Promise<boolean> => {
             runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme');
             return true;
 
+        case 'bump-default-capgo-channel':
+        case 'bump-capgo-channel': {
+            // pnpm lc bump-default-capgo-channel [newChannel]
+            const newChannel = arg ? ` ${arg}` : '';
+
+            runCommand(
+                `npx tsx scripts/bump-default-capgo-channel.ts${newChannel}`,
+                'Bump Capgo defaultChannel in capacitor.config.ts',
+                arg
+                    ? `pnpm lc bump-default-capgo-channel ${arg}`
+                    : 'pnpm lc bump-default-capgo-channel',
+            );
+            return true;
+        }
+
         case 'viewer':
             launchCredentialViewer();
             return true;
@@ -1629,6 +1644,7 @@ const printHelp = () => {
     console.log('');
     console.log(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
     console.log(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
+    console.log(`  ${cyan('pnpm lc bump-default-capgo-channel')} ${dim('Bump Capgo OTA channel (native compat break)')}`);
     console.log(`  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim('Generate icons/splash from a logo')}`);
     console.log(`  ${cyan('pnpm lc validate')}                   ${dim('Run all config + theme validators')}`);
     console.log(`  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`);
