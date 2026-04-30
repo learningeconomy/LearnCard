@@ -46,7 +46,8 @@
         "@peculiar/x509": "^1.12.0",
         "dcql": "^3.0.0",
         "jose": "^5.9.6",
-        "safe-regex": "^2.1.1"
+        "safe-regex": "^2.1.1",
+        "re2": "^1.24.0"
     },
     "sideEffects": false
 }

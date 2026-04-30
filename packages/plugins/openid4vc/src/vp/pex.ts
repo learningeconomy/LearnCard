@@ -1,4 +1,5 @@
 import safeRegex from 'safe-regex';
+import RE2 from 're2';
 import { Constraints, Field, InputDescriptor } from './types';
 
 /**
@@ -417,9 +418,9 @@ export const satisfiesFilter = (value: unknown, filter: Record<string, unknown>)
         // essentially every ReDoS pattern we've seen in the wild.
         if (!safeRegex(pattern)) return false;
 
-        let re: RegExp;
+        let re: RE2;
         try {
-            re = new RegExp(pattern);
+            re = new RE2(pattern);
         } catch {
             return false;
         }
