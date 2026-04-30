@@ -32,7 +32,7 @@
         "@web3auth/single-factor-auth": "^9.5.0",
         "@learncard/lca-api-plugin": "workspace:*",
         "async": "^3.2.6",
-        "axios": "^0.27.2",
+        "axios": "^0.31.0",
         "capacitor-plugin-safe-area": "^5.0.0",
         "class-variance-authority": "0.7.0",
         "clsx": "2.0.0",
