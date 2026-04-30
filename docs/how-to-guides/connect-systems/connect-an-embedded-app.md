@@ -777,6 +777,206 @@ For a complete, runnable AI Tutor walkthrough that wires `requestConsent → req
 - Mapping AI tutor outputs to the real `summaryData` schema
 - Bridging notifications back into the wallet via the `actionPath` + `launchFeature` pattern
 
+## Tracking App State with Counters
+
+Many embedded apps need to remember small bits of per-user state across sessions — _"how many lessons has this user completed?"_, _"what's their current streak?"_, _"have they hit the threshold to unlock a credential yet?"_. The Partner Connect SDK provides a lightweight counter API for exactly this, scoped to **(user, app)** pairs and stored in the user's LearnCard account.
+
+### When to use counters
+
+- **Progress tracking** — lessons completed, quizzes passed, sessions recorded
+- **Streaks** — daily-use streaks, consecutive-correct streaks
+- **Threshold-gated credential issuance** — "issue the badge after 10 sessions"
+- **Lightweight feature flags** — "has this user seen the onboarding tour?" (use `0` / `1`)
+
+### When **not** to use counters
+
+- **Anything not an integer** — values must be whole numbers. Pre-aggregate fractional state.
+- **High-cardinality keys** — there's a hard cap of **50 distinct keys per (user, app)**. If you'd need a counter per lesson ID, consolidate instead (e.g. one `lessons_completed` counter, plus a separate credential or `sendAiSessionCredential` call to record specifics).
+- **High-frequency writes** — there's a **100 writes/minute per (user, app)** rate limit. Don't increment a counter on every keystroke; debounce or batch on the client and increment once per meaningful event.
+- **Cross-user state** — counters are scoped per-user. There is no shared/global counter.
+- **Sensitive or large data** — counters store integers only.
+
+### Limits (load-bearing — design around these)
+
+| Limit                       | Value                                            |
+| --------------------------- | ------------------------------------------------ |
+| Distinct keys per user-app  | **50**                                           |
+| Writes per minute per user-app | **100**                                       |
+| Value type                  | Signed integer only                              |
+| Key character set           | `^[a-zA-Z0-9_-]+$` (alphanumeric, `_`, `-`)      |
+| Key length                  | 1–64 characters                                  |
+| Batch read (`getCounters`)  | Up to 50 keys per call                           |
+
+### API
+
+The SDK exposes three methods. All take **positional arguments** (not options objects).
+
+```typescript
+// Increment (or decrement with a negative amount)
+incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse>;
+
+// Read a single counter
+getCounter(key: string): Promise<GetCounterResponse>;
+
+// Read multiple counters in one round-trip; omit `keys` to read all
+getCounters(keys?: string[]): Promise<GetCountersResponse>;
+```
+
+**Response shapes:**
+
+```typescript
+interface IncrementCounterResponse {
+    key: string;
+    previousValue: number;
+    newValue: number;
+}
+
+interface GetCounterResponse {
+    key: string;
+    value: number;
+    updatedAt: string | null; // ISO 8601, or null if the counter has never been set
+}
+
+interface GetCountersResponse {
+    counters: GetCounterResponse[];
+}
+```
+
+A counter that has never been incremented reads as `value: 0, updatedAt: null` from `getCounter`. You don't need to "create" a counter — the first `incrementCounter` call brings it into existence atomically.
+
+{% hint style="warning" %}
+**Asymmetry to be aware of:** `getCounter('foo')` returns `{ key: 'foo', value: 0, updatedAt: null }` for keys that have never been set. `getCounters(['foo', 'bar'])` only returns entries for keys that **do** exist — missing keys are simply absent from the `counters` array. Use `??` defaults when reading via `getCounters`, as shown in the dashboard example below.
+{% endhint %}
+
+### Example: simple progress tracking
+
+```typescript
+import { createPartnerConnect } from '@learncard/partner-connect';
+
+const learnCard = createPartnerConnect();
+
+async function onLessonComplete(lessonId: string) {
+    // Atomic increment — no read-modify-write race condition
+    const { newValue } = await learnCard.incrementCounter('lessons_completed', 1);
+    showProgress(`You've completed ${newValue} lessons!`);
+}
+
+async function loadDashboard() {
+    const { counters } = await learnCard.getCounters([
+        'lessons_completed',
+        'quizzes_passed',
+        'streak_days',
+    ]);
+
+    const lookup = Object.fromEntries(counters.map(c => [c.key, c.value]));
+    renderDashboard({
+        lessons: lookup.lessons_completed ?? 0,
+        quizzes: lookup.quizzes_passed ?? 0,
+        streak: lookup.streak_days ?? 0,
+    });
+}
+```
+
+### Example: threshold-gated credential issuance
+
+A common pattern is "issue a badge once the user crosses a threshold". Because `incrementCounter` returns the **new value** atomically, you can gate issuance on the response without a separate read:
+
+```typescript
+async function recordSessionAndMaybeAwardBadge() {
+    // Record the session credential first
+    await learnCard.sendAiSessionCredential({ /* ... */ });
+
+    // Then bump the counter and check the threshold in one call
+    const { previousValue, newValue } = await learnCard.incrementCounter(
+        'sessions_completed',
+        1
+    );
+
+    // Use the *previous* value to make this idempotent: only issue when
+    // we just crossed the threshold, not every call after it.
+    if (previousValue < 10 && newValue >= 10) {
+        await learnCard.sendCredential({
+            templateAlias: 'ten-session-badge',
+        });
+        await learnCard.sendNotification({
+            title: '🎉 10 sessions complete!',
+            body: 'You earned the Persistent Learner badge.',
+            actionPath: '/badges',
+            priority: 'high',
+        });
+    }
+}
+```
+
+{% hint style="info" %}
+**Why use `previousValue < threshold && newValue >= threshold`?** This guarantees the badge is issued exactly once even if the user hits the threshold, you call again, and the counter has already moved past it. It's the idempotent way to react to "the moment of crossing".
+{% endhint %}
+
+### Example: daily streaks
+
+```typescript
+async function recordDailyVisit() {
+    const { value: lastVisitDay } = await learnCard.getCounter('last_visit_day');
+    const today = Math.floor(Date.now() / 86_400_000); // days since epoch
+
+    if (lastVisitDay === today) return; // already counted today
+
+    await learnCard.incrementCounter('last_visit_day', today - lastVisitDay);
+
+    if (lastVisitDay === today - 1) {
+        // Visited yesterday — extend the streak
+        await learnCard.incrementCounter('streak_days', 1);
+    } else if (lastVisitDay !== 0) {
+        // Missed at least one day — reset
+        const { value } = await learnCard.getCounter('streak_days');
+        await learnCard.incrementCounter('streak_days', -value + 1);
+    } else {
+        // First-ever visit
+        await learnCard.incrementCounter('streak_days', 1);
+    }
+}
+```
+
+This is intentionally illustrative — for serious streak logic you'd record the date as part of an AI Session credential, not as a counter. Counters shine for simple monotonic counts.
+
+### Error handling
+
+```typescript
+try {
+    await learnCard.incrementCounter('sessions_completed', 1);
+} catch (err) {
+    if (err instanceof PartnerConnectError) {
+        switch (err.code) {
+            case 'LC_UNAUTHENTICATED':
+                // User signed out mid-session
+                showLoginPrompt();
+                break;
+            case 'BAD_REQUEST':
+                // Most common causes:
+                //   - invalid key (failed the regex or length check)
+                //   - > 50 distinct keys for this user-app
+                //   - rate limit exceeded (> 100 writes/min)
+                console.error('Counter rejected:', err.message);
+                break;
+            case 'UNAUTHORIZED':
+                // App is missing the counters permission in its listing
+                console.error('App not allowed to use counters');
+                break;
+            default:
+                console.error(err);
+        }
+    }
+}
+```
+
+### Best practices
+
+- **Pick stable, well-named keys.** Treat counter keys like database column names — once your app is in production, renaming a key effectively zeroes out everyone's history.
+- **Consolidate aggressively.** Prefer one `lessons_completed` counter over `lesson_1_complete`, `lesson_2_complete`, … (the 50-key cap is unforgiving).
+- **Pair counters with credentials, don't replace them.** Counters are for cheap aggregate state. The actual record of what the user did should still be a credential (`sendCredential`, `sendAiSessionCredential`).
+- **Debounce writes on the client.** If a user can tap a button 30 times in 5 seconds, increment once with `amount: 30` instead of calling 30 times.
+- **Use `incrementCounter`'s return value** rather than read-then-write — it's atomic, so you avoid race conditions and save a round-trip.
+
 ## Complete Example
 
 Here's a full example of a simple embedded app:

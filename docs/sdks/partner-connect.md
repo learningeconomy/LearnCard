@@ -813,17 +813,28 @@ Lightweight per-user-app counters for tracking app-defined integer state (e.g. "
 
 If you need to track more than 50 things, consolidate (e.g. one `lessons_completed` counter rather than one counter per lesson).
 
+**Signatures:**
+
 ```typescript
-// Increment
-await learnCard.incrementCounter({ key: 'sessions_completed', amount: 1 });
+incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse>;
+getCounter(key: string): Promise<GetCounterResponse>;
+getCounters(keys?: string[]): Promise<GetCountersResponse>; // omit `keys` to fetch all
+```
+
+**Examples:**
+
+```typescript
+// Increment by 1 (or any signed integer — pass a negative to decrement)
+const { newValue } = await learnCard.incrementCounter('sessions_completed', 1);
 
 // Read one
-const { value } = await learnCard.getCounter({ key: 'sessions_completed' });
+const { value, updatedAt } = await learnCard.getCounter('sessions_completed');
 
-// Read multiple (omit `keys` to fetch all)
-const all = await learnCard.getCounters({
-    keys: ['sessions_completed', 'streak_days'],
-});
+// Read several (omit the array to fetch every counter for this user-app)
+const { counters } = await learnCard.getCounters([
+    'sessions_completed',
+    'streak_days',
+]);
 ```
 
 **Errors:** `LC_UNAUTHENTICATED`, `UNAUTHORIZED`, `BAD_REQUEST` (invalid key format, > 50 keys, or rate-limit exceeded), `LC_TIMEOUT`
