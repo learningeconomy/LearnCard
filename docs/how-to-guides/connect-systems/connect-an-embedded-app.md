@@ -4,6 +4,10 @@ description: 'How-To Guide: Issue Credentials from Embedded Apps in the LearnCar
 
 # Connect an Embedded App
 
+{% hint style="info" %}
+**Last verified against `@learncard/partner-connect` v0.2.16.** Schemas in this guide match the runtime types; the source of truth is `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types`.
+{% endhint %}
+
 Build apps that run inside LearnCard and issue credentials directly to users. This guide covers the App Store integration for embedded applications that want to award badges, certificates, or other verifiable credentials.
 
 ## Overview
@@ -607,17 +611,21 @@ async function recordLearningSession(sessionData) {
         const session = await learnCard.sendAiSessionCredential({
             sessionTitle: sessionData.title,
             summaryData: {
-                keyTakeaways: sessionData.takeaways,
-                skillsDemonstrated: sessionData.skills,
-                learningOutcomes: sessionData.outcomes,
+                title: sessionData.title,
+                summary: sessionData.summary,
+                learned: sessionData.takeaways,
+                skills: sessionData.skills.map(s => ({
+                    title: s.name,
+                    description: s.description,
+                })),
                 nextSteps: sessionData.recommendations.map(r => ({
                     title: r.title,
                     description: r.description,
-                    type: r.type, // 'course' | 'practice' | 'assessment' | 'resource'
+                    // keywords is optional — omit unless you have taxonomy data
                 })),
                 reflections: sessionData.reflections.map(r => ({
-                    prompt: r.question,
-                    response: r.answer,
+                    title: r.question,
+                    description: r.answer,
                 })),
             },
             metadata: {
@@ -629,6 +637,11 @@ async function recordLearningSession(sessionData) {
 
         console.log('Session recorded:', session.sessionCredentialUri);
         console.log('Topic:', session.topicUri);
+
+        // 🎉 Celebrate the user's first AI session ever from this app
+        if (session.isNewTopic) {
+            showCelebration('First AI session recorded!');
+        }
     } catch (error) {
         console.error('Failed to record session:', error);
     }
@@ -682,9 +695,13 @@ class AITutor {
         const session = await learnCard.sendAiSessionCredential({
             sessionTitle: data.title,
             summaryData: {
-                keyTakeaways: data.takeaways,
-                skillsDemonstrated: data.demonstratedSkills,
-                learningOutcomes: data.outcomes,
+                title: data.title,
+                summary: data.summary,
+                learned: data.takeaways,
+                skills: data.demonstratedSkills.map(s => ({
+                    title: s.name,
+                    description: s.description,
+                })),
                 nextSteps: data.recommendations,
                 reflections: data.userReflections,
             },
@@ -702,35 +719,63 @@ await tutor.conductSession('How do I learn advanced TypeScript?');
 
 ### Session Data Best Practices
 
-**Key Takeaways:**
+**`title`:**
 
-- Focus on 3-5 main concepts learned
+- Short, scannable headline for the session
+- Reuse across `sessionTitle` if you have nothing fancier
+
+**`summary`:**
+
+- One paragraph capturing what happened in the session
+- Written so the user (and the AI) can re-orient at a glance
+
+**`learned` (string array):**
+
+- 3–5 main concepts gained, one per bullet
 - Use clear, concise language
 - Connect to practical applications
 
-**Skills Demonstrated:**
+**`skills` (array of `{ title, description }`):**
 
-- List specific competencies shown
+- Group related competencies under a category title
+- Description explains what the user can now do
 - Use standard skill taxonomy when possible
-- Include proficiency level if known
 
-**Learning Outcomes:**
-
-- State what the learner can now do
-- Use action verbs (explain, demonstrate, apply)
-- Make outcomes measurable when possible
-
-**Next Steps:**
+**`nextSteps` (array of `{ title, description, keywords? }`):**
 
 - Recommend specific follow-up activities
-- Include resource links when available
 - Vary types (courses, practice, assessments)
+- `keywords` is **optional** — only include it if you actually have taxonomy data; otherwise omit the field entirely
 
-**Reflections:**
+**`reflections` (array of `{ title, description }`):**
 
-- Capture learner insights
-- Document "aha moments"
+- Capture learner insights and "aha moments"
 - Record self-assessments
+
+### 🎉 Use `isNewTopic` for first-run UX
+
+`sendAiSessionCredential` returns an `isNewTopic: boolean`. The first call from your app creates the AI Topic; subsequent calls reuse it. Use this flag to celebrate first-run, onboard the user, or show a different UI:
+
+```typescript
+const session = await learnCard.sendAiSessionCredential(/* ... */);
+
+if (session.isNewTopic) {
+    // First time the user has used this app's AI Tutor.
+    // Celebrate, show a one-time tour, or send a welcome notification.
+    showFirstSessionCelebration();
+} else {
+    showQuickConfirmation();
+}
+```
+
+### End-to-End AI Tutor Tutorial
+
+For a complete, runnable AI Tutor walkthrough that wires `requestConsent → requestLearnerContext → sendAiSessionCredential → sendNotification` together, see the working example app at [`examples/app-store-apps/4-request-learner-context-app`](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/4-request-learner-context-app). It demonstrates:
+
+- Resolving the consent contract automatically from your App Store listing
+- Caching `requestLearnerContext` (it takes 2–5s in production — cache, render, revalidate)
+- Mapping AI tutor outputs to the real `summaryData` schema
+- Bridging notifications back into the wallet via the `actionPath` + `launchFeature` pattern
 
 ## Complete Example
 
