@@ -131,8 +131,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'asuprequest',
             'openid-credential-offer',
             'openid4vp',
-        ],
-        capgoChannel: '1.0.4',
+        ]
     },
 };
 

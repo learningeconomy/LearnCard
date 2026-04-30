@@ -80,12 +80,20 @@ import type {
     AppStoreListingUpdateType,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
+import {
+    sendBoost,
+    getBoostUri,
+    isDraftBoost,
+    appendTemplateEvidenceToCredential,
+} from '@helpers/boost.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
-
-import { sendBoost, isDraftBoost, getBoostUri } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
-import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    renderBoostTemplate,
+    parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
+} from '@helpers/template.helpers';
 import {
     getAppDidWeb,
     getDidWeb,
@@ -626,12 +634,14 @@ const handleSendCredentialEvent = async (
 
     try {
         let boostJsonString = boost.boost;
+        const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
         if (templateData && Object.keys(templateData).length > 0) {
             boostJsonString = renderBoostTemplate(boostJsonString, templateData);
         }
 
         unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+        appendTemplateEvidenceToCredential(unsignedVc, templateData, allowAutoAppendEvidence);
 
         if (isVC2Format(unsignedVc)) {
             unsignedVc.validFrom = new Date().toISOString();

@@ -89,7 +89,6 @@
             "vetpass.app",
             "learncard.app"
         ],
-        "customSchemes": ["dccrequest", "msprequest", "asuprequest"],
-        "capgoChannel": "1.0.0"
+        "customSchemes": ["dccrequest", "msprequest", "asuprequest"]
     }
 }
