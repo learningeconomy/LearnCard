@@ -43,6 +43,15 @@ export const AnalyticsEvents = {
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
     LAUNCHPAD_QUICKNAV_ACTION_CLICKED: 'launchpad_quicknav_action_clicked',
     LAUNCHPAD_APP_INSTALLED: 'launchpad_app_installed',
+
+    // OpenID4VC / OpenID4VP
+    /**
+     * Fired when a user explicitly taps "Tell LearnCard about this" on an
+     * OID4VC/VP exchange error screen. Distinct from a Sentry exception
+     * — this is product-prioritization signal (which formats / verifiers
+     * are users *trying* to use), not a crash report.
+     */
+    OPENID_EXCHANGE_ERROR_REPORTED: 'openid_exchange_error_reported',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -170,6 +179,44 @@ export interface AnalyticsEventPayloads {
         appName: string;
         appId: string;
         category?: string;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_ERROR_REPORTED]: {
+        /** Which OID4VC surface the error came from. */
+        surface: 'vci' | 'vp';
+        /**
+         * UX-meaningful classification from `FriendlyErrorInfo.kind`. Use
+         * this for top-level dashboards — "how many trust gaps this
+         * week?" "which formats are users hitting most?".
+         */
+        kind: 'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
+        /**
+         * Stable plugin-side error code when present (e.g.
+         * `unsupported_client_id_scheme`, `unknown_credential_format`).
+         * Useful for drilling down inside a `kind`.
+         */
+        code?: string;
+        /**
+         * `error.name` from the plugin (`VciError`, `RequestObjectError`,
+         * …). Lets us split aggregate counts by which plugin module
+         * surfaced the error.
+         */
+        errorName?: string;
+        /**
+         * Sanitized counterparty identifier — verifier `client_id` (host
+         * only) or issuer URL (host only). Never carries query strings,
+         * user secrets, or PII. `undefined` when we couldn't extract
+         * anything safe to log.
+         */
+        counterparty?: string;
+        /**
+         * Optional free-text the user typed into the report textarea.
+         * Treat as user-supplied PII downstream; do not enrich with
+         * automatic classification.
+         */
+        userNote?: string;
+        /** Wallet build version (from package.json). */
+        walletVersion?: string;
     };
 }
 

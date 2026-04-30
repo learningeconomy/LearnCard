@@ -5,9 +5,15 @@ import { IonContent, IonPage } from '@ionic/react';
 
 import {
     ExchangeErrorDisplay,
+    getFriendlyOpenID4VCError,
     useIsLoggedIn,
     useWallet,
 } from 'learn-card-base';
+
+import {
+    sanitizeCounterparty,
+    useExchangeErrorReporting,
+} from '../../hooks/useExchangeErrorReporting';
 import {
     getCredentialName,
     getCredentialSubjectName,
@@ -68,7 +74,20 @@ type Phase =
            */
           metadata?: CredentialIssuerMetadata;
       }
-    | { kind: 'error'; error: unknown };
+    | {
+          kind: 'error';
+          error: unknown;
+          /**
+           * Best-effort issuer identity captured before (or during) the
+           * failure. When present, the error screen renders an
+           * `IssuerHeader` so the user keeps brand context even when
+           * the exchange fails. Undefined for early-stage errors
+           * (before we resolved the offer).
+           */
+          issuerUrl?: string;
+          issuerName?: string;
+          issuerLogoUri?: string;
+      };
 
 /**
  * The full OpenID4VCI credential-issuance flow. Drives a small state
@@ -103,6 +122,12 @@ const Oid4vciExchange: React.FC = () => {
     // Guard against double-effects under React 18 strict mode.
     const initialized = useRef(false);
 
+    // Bound at component scope so call sites just pass the error +
+    // classification. Fans out to Sentry (engineering) AND the
+    // configured analytics provider (product), with both rails kept
+    // independent so a failure in one doesn't break the other.
+    const reportError = useExchangeErrorReporting('vci');
+
     // -----------------------------------------------------------------
     // Drive auth-code RETURN leg (resume from issuer redirect).
     // -----------------------------------------------------------------
@@ -121,11 +146,16 @@ const Oid4vciExchange: React.FC = () => {
                         name: 'VciError',
                         code: 'token_request_failed',
                         message:
-                            'We couldn\u2019t resume your sign-in flow. The flow may have expired or the wallet was opened in a different tab. Please scan the offer again.',
+                            'We couldn’t resume your sign-in flow. The flow may have expired or the wallet was opened in a different tab. Please scan the offer again.',
                     },
                 });
                 return;
             }
+
+            // Branded issuer context for the error screen — captured up-front
+            // from the persisted flow handle so even early failures inside
+            // the try block render a branded `IssuerHeader`.
+            const persistedIssuerUrl = persisted.flowHandle.issuer;
 
             try {
                 setPhase({ kind: 'storing', message: 'Finishing sign-in...' });
@@ -200,7 +230,13 @@ const Oid4vciExchange: React.FC = () => {
             } catch (error) {
                 console.error('OID4VCI auth-code return failed', error);
                 clearAuthCodeState();
-                setPhase({ kind: 'error', error });
+                // Best-effort: we know the issuer URL from the persisted
+                // flow handle even if metadata fetching failed mid-flight.
+                setPhase({
+                    kind: 'error',
+                    error,
+                    issuerUrl: persistedIssuerUrl,
+                });
             }
         })();
     }, [phase.kind, isLoggedIn, code, state, initWallet]);
@@ -236,7 +272,13 @@ const Oid4vciExchange: React.FC = () => {
                 setPhase({ kind: 'consent', offer: resolved, metadata });
             } catch (error) {
                 console.error('OID4VCI: failed to resolve offer', error);
-                setPhase({ kind: 'error', error });
+                // No issuer context here — we failed before resolving the
+                // offer so we don't yet know the issuer URL. Error screen
+                // falls back gracefully without an `IssuerHeader` slot.
+                setPhase({
+                    kind: 'error',
+                    error,
+                });
             }
         })();
     }, [phase.kind, isLoggedIn, offer, initWallet]);
@@ -329,8 +371,9 @@ const Oid4vciExchange: React.FC = () => {
                             name: 'VciError',
                             code: 'token_request_failed',
                             message:
-                                'Storage is unavailable, so we can\u2019t resume after the issuer redirect. Try again with browsing data enabled.',
+                                'Storage is unavailable, so we can’t resume after the issuer redirect. Try again with browsing data enabled.',
                         },
+                        issuerUrl: currentOffer.credential_issuer,
                     });
                     return;
                 }
@@ -342,7 +385,20 @@ const Oid4vciExchange: React.FC = () => {
                 });
             } catch (error) {
                 console.error('OID4VCI: accept failed', error);
-                setPhase({ kind: 'error', error });
+                // Carry issuer context forward so the error screen still
+                // renders a branded `IssuerHeader` — the user keeps brand
+                // context even when the exchange fails.
+                const issuerInfoSnapshot = pickIssuerInfo(
+                    currentOffer.credential_issuer,
+                    currentMetadata
+                );
+                setPhase({
+                    kind: 'error',
+                    error,
+                    issuerUrl: currentOffer.credential_issuer,
+                    issuerName: issuerInfoSnapshot.name,
+                    issuerLogoUri: issuerInfoSnapshot.logoUri,
+                });
             }
         },
         [phase, initWallet, offer]
@@ -366,6 +422,7 @@ const Oid4vciExchange: React.FC = () => {
                 <IonContent>
                     <ExchangeErrorDisplay
                         friendly={{
+                            kind: 'request_invalid',
                             title: 'No credential offer',
                             description:
                                 'This page expects an `offer` query parameter pointing at an OpenID4VCI credential offer.',
@@ -436,6 +493,30 @@ const Oid4vciExchange: React.FC = () => {
                 {phase.kind === 'error' && (
                     <ExchangeErrorDisplay
                         error={phase.error}
+                        issuerInfo={
+                            phase.issuerUrl
+                                ? {
+                                      issuerUrl: phase.issuerUrl,
+                                      display: {
+                                          name: phase.issuerName,
+                                          logo: phase.issuerLogoUri
+                                              ? { uri: phase.issuerLogoUri }
+                                              : undefined,
+                                      },
+                                      caption: 'From',
+                                  }
+                                : undefined
+                        }
+                        onReport={userNote =>
+                            reportError(
+                                phase.error,
+                                getFriendlyOpenID4VCError(phase.error).kind,
+                                {
+                                    counterparty: sanitizeCounterparty(phase.issuerUrl),
+                                    userNote,
+                                }
+                            )
+                        }
                         onCancel={() => history.push('/')}
                     />
                 )}

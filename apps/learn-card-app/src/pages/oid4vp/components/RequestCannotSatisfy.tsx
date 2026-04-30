@@ -38,15 +38,16 @@ const RequestCannotSatisfy: React.FC<RequestCannotSatisfyProps> = ({
         [request]
     );
 
-    const summary =
-        selection?.reason
-        || dcqlSelection?.reason
-        || 'Some of the requested credentials aren\u2019t in your wallet yet.';
-
     const unsatisfiedRows = useMemo(
         () => buildUnsatisfiedRows(request, selection, dcqlSelection),
         [request, selection, dcqlSelection]
     );
+
+    // Drive the subtitle off the row list rather than the plugin's
+    // debug-flavored `reason` string. When it's a single missing
+    // descriptor we name it; otherwise we count. Either way, the copy
+    // is written for a user, not an engineer.
+    const summary = buildFriendlySummary(unsatisfiedRows);
 
     return (
         <div
@@ -151,9 +152,16 @@ const buildUnsatisfiedRows = (
 
                 return {
                     id: d.descriptorId,
-                    title: inputDescriptor?.name?.trim() || d.descriptorId,
+                    title:
+                        inputDescriptor?.name?.trim()
+                        || humanizeIdentifier(d.descriptorId),
                     purpose: inputDescriptor?.purpose,
-                    reason: d.reason ?? 'No matching credential in your wallet.',
+                    // Ignore `d.reason` — it's engineer-speak
+                    // ("No credential satisfies ... (required format:
+                    // jwt_vc_json)"). The row title already tells the
+                    // user which credential is missing; this line just
+                    // frames the status in plain language.
+                    reason: 'Not in your wallet yet.',
                 };
             });
     }
@@ -161,14 +169,84 @@ const buildUnsatisfiedRows = (
     if (dcqlSelection) {
         return Object.entries(dcqlSelection.matches)
             .filter(([, m]) => m.candidates.length === 0)
-            .map(([queryId, m]) => ({
+            .map(([queryId]) => ({
                 id: queryId,
-                title: queryId,
-                reason: m.reason ?? 'No matching credential in your wallet.',
+                title: humanizeIdentifier(queryId),
+                reason: 'Not in your wallet yet.',
             }));
     }
 
     return [];
+};
+
+/**
+ * Pick user-facing subtitle copy from the unsatisfied-row list.
+ *
+ *   - 0 rows: generic fallback (shouldn't happen — we only render
+ *     this screen when rows > 0 — but keeps the return typed).
+ *   - 1 row: name it specifically ("You don’t have a University
+ *     Degree in your wallet yet.").
+ *   - N rows: count-driven ("You’re missing 2 of the credentials
+ *     the verifier asked for."). We avoid listing names inline
+ *     because long lists render poorly in the header strip — the
+ *     titled row list below already enumerates them.
+ */
+const buildFriendlySummary = (rows: UnsatisfiedRow[]): string => {
+    if (rows.length === 0) {
+        return 'Some of the requested credentials aren’t in your wallet yet.';
+    }
+
+    if (rows.length === 1) {
+        return `You don’t have ${withArticle(rows[0].title)} in your wallet yet.`;
+    }
+
+    return `You’re missing ${rows.length} of the credentials the verifier asked for.`;
+};
+
+/**
+ * Humanize a bare identifier (e.g. `UniversityDegree`,
+ * `driver_license`, `degree-of-philosophy`) into a title-cased,
+ * space-separated phrase. Used only when the verifier didn’t ship
+ * a human `name` on the input descriptor, so this is a fallback —
+ * a well-formed PEX request should never hit it.
+ *
+ * We avoid over-processing: no acronym detection, no i18n, no
+ * dictionary lookup. The goal is to turn an identifier into
+ * something a user can parse at a glance without making it feel
+ * auto-generated.
+ */
+const humanizeIdentifier = (identifier: string): string => {
+    if (!identifier) return identifier;
+
+    // Split on explicit separators first, then on camelCase boundaries.
+    const parts = identifier
+        .split(/[_\-\s]+/)
+        .flatMap((chunk) =>
+            chunk
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+                .split(/\s+/)
+        )
+        .filter(Boolean);
+
+    if (parts.length === 0) return identifier;
+
+    return parts
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+        .join(' ');
+};
+
+/**
+ * Very light article picker for the "You don’t have {x} in your
+ * wallet yet." copy. Vowel-sound heuristic only — correct enough
+ * for the descriptor names we actually see ("University Degree"
+ * → "a", "Open Badge" → "an"). Not trying to ship a full English
+ * grammar engine.
+ */
+const withArticle = (phrase: string): string => {
+    const first = phrase.trim().charAt(0).toLowerCase();
+    const article = 'aeiou'.includes(first) ? 'an' : 'a';
+    return `${article} ${phrase}`;
 };
 
 const extractVerifierDisplay = (request: AuthorizationRequest) => {

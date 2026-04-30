@@ -5,10 +5,16 @@ import { IonContent, IonPage } from '@ionic/react';
 
 import {
     ExchangeErrorDisplay,
+    getFriendlyOpenID4VCError,
     type VerifierDisplayInfo,
     useIsLoggedIn,
     useWallet,
 } from 'learn-card-base';
+
+import {
+    sanitizeCounterparty,
+    useExchangeErrorReporting,
+} from '../../hooks/useExchangeErrorReporting';
 import type { VC } from '@learncard/types';
 import type {
     AuthorizationRequest,
@@ -81,7 +87,18 @@ type Phase =
            */
            sharedCredentials: VC[];
       }
-    | { kind: 'error'; error: unknown };
+    | {
+          kind: 'error';
+          error: unknown;
+          /**
+           * Best-effort verifier identity captured before (or during)
+           * the failure. When present, the error screen renders a
+           * `VerifierHeader` so the user keeps brand context even when
+           * the exchange fails. Undefined for early-stage errors
+           * (before the request was parsed).
+           */
+          clientInfo?: ClientInfo;
+      };
 
 /**
  * Full OID4VP presentation flow. Drives a small state machine over
@@ -103,6 +120,12 @@ const Oid4vpExchange: React.FC = () => {
 
     const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
     const initialized = useRef(false);
+
+    // Bound at component scope so call sites just pass the error +
+    // classification. Fans out to Sentry (engineering) AND the
+    // configured analytics provider (product), with both rails kept
+    // independent so a failure in one doesn't break the other.
+    const reportError = useExchangeErrorReporting('vp');
 
     // -----------------------------------------------------------------
     // Resolve the request + load the candidate pool.
@@ -152,6 +175,10 @@ const Oid4vpExchange: React.FC = () => {
                 });
             } catch (error) {
                 console.error('OID4VP: failed to resolve request', error);
+                // No `clientInfo` here — we failed before resolving the
+                // request, so we don't yet know who the verifier was.
+                // The error screen falls back to a clean kind-themed
+                // header without a `VerifierHeader` slot in that case.
                 setPhase({ kind: 'error', error });
             }
         })();
@@ -226,7 +253,10 @@ const Oid4vpExchange: React.FC = () => {
             });
         } catch (error) {
             console.error('OID4VP: presentation failed', error);
-            setPhase({ kind: 'error', error });
+            // Carry `clientInfo` through to the error phase so the
+            // failure screen still renders the branded `VerifierHeader`
+            // — the user keeps brand context even when the share fails.
+            setPhase({ kind: 'error', error, clientInfo });
         }
     }, [phase, initWallet]);
 
@@ -248,6 +278,7 @@ const Oid4vpExchange: React.FC = () => {
                 <IonContent>
                     <ExchangeErrorDisplay
                         friendly={{
+                            kind: 'request_invalid',
                             title: 'No presentation request',
                             description:
                                 'This page expects a `request` query parameter pointing at an OpenID4VP authorization request.',
@@ -305,6 +336,28 @@ const Oid4vpExchange: React.FC = () => {
                 {phase.kind === 'error' && (
                     <ExchangeErrorDisplay
                         error={phase.error}
+                        verifierInfo={
+                            phase.clientInfo
+                                ? {
+                                      clientId: phase.clientInfo.clientId,
+                                      clientIdScheme: phase.clientInfo.clientIdScheme,
+                                      display: phase.clientInfo.display,
+                                      caption: 'From',
+                                  }
+                                : undefined
+                        }
+                        onReport={userNote =>
+                            reportError(
+                                phase.error,
+                                getFriendlyOpenID4VCError(phase.error).kind,
+                                {
+                                    counterparty: sanitizeCounterparty(
+                                        phase.clientInfo?.clientId
+                                    ),
+                                    userNote,
+                                }
+                            )
+                        }
                         onCancel={() => history.push('/')}
                     />
                 )}
