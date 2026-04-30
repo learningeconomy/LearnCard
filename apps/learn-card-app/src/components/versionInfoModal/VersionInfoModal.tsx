@@ -226,7 +226,7 @@ const summarizeDevice = (info: DeviceInfo | null): DeviceSummary | undefined => 
         osLabel = osName;
     }
 
-    const webViewVersion = info.webViewVersion?.trim() ? info.webViewVersion : undefined;
+    const webViewVersion = info.webViewVersion?.trim() || undefined;
 
     const summary: DeviceSummary = {
         model: info.model?.trim() || undefined,
