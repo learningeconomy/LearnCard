@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
+import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
-import FinishSessionButton from './FinishSessionButton';
-import MessageWithQuestions from './MessageWithQuestions';
+import { MessageWithQuestions, StreamingMessage } from './MessageWithQuestions';
 
 import {
     messages,
-    isTyping,
     startTopic,
     startTopicWithUri,
     startLearningPathway,
@@ -23,14 +22,20 @@ import {
     showEndingSessionLoader,
     disconnectWebSocket,
     startInsightsSession,
+    streamingMessage,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
 import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
-import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
+import {
+    AiPassportAppContractUri,
+    getAiPassportAppByContractUri,
+} from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
+import { useStickToBottom } from '../../../hooks/useStickToBottom';
+import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -67,6 +72,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
+    // iOS Capacitor's WebView resizes natively when the keyboard opens, so we
+    // only manually offset on Android — same pattern as TopicInput.
+    const kbHeight = useKeyboardHeight();
+    const keyboardInset = isPlatformIOS() ? 0 : kbHeight;
+    const aiApp = useMemo(() => getAiPassportAppByContractUri(contractUri), [contractUri]);
     const [showInitialMessages, setShowInitialMessages] = useState(true);
     const [topicInitialized, setTopicInitialized] = useState(() => {
         try {
@@ -82,18 +92,28 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         }
     });
     const allMessages = useStore(messages);
-    const typing = useStore(isTyping);
     const isEnding = useStore(isEndingSession);
     const showEndingLoader = useStore(showEndingSessionLoader);
     const loading = useStore(isLoading);
     const authState = useStore(auth);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const streaming = useStore(streamingMessage);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    const chatInnerScrollRef = useRef<HTMLDivElement>(null);
-    const [scrollOffset, setScrollOffset] = useState(0);
-    const [isAtBottom, setIsAtBottom] = useState(true);
-    const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const chatContentRef = useRef<HTMLDivElement>(null);
+    // autoFollow: false — AI responses are long-form; the user should read
+    // top-down from the pinned last-user-message, not be yanked to the bottom.
+    const { isAtBottom, scrollToBottom } = useStickToBottom(chatContainerRef, {
+        threshold: 64,
+        contentRef: chatContentRef,
+        autoFollow: false,
+    });
+
+    // Pin-user-message refs
+    const lastUserMessageRef = useRef<HTMLDivElement | null>(null);
+    const prevUserCountRef = useRef(0);
+
+    // Viewport height for min-height pin calculation
+    const [viewportAllowance, setViewportAllowance] = useState(0);
 
     // Handle initial topic or topicUri when component mounts (and when auth is ready)
     useEffect(() => {
@@ -140,7 +160,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 startTopic(initialTopic, mode);
             }
         }
-    }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
+    }, [initialTopic, _initialTopicUri, _initialPathwayUri, topicInitialized, authState?.did]);
 
     // notify backend on visibility change (hidden/visible) for session management
     // Only trigger after being hidden for a substantial period to avoid brief tab switches
@@ -205,6 +225,24 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         };
     }, []);
 
+    // Warm the markdown renderer chunk before the first assistant token arrives,
+    // so streaming doesn't flash the Suspense "Rendering…" fallback.
+    useEffect(() => {
+        preloadMarkdownRenderer();
+    }, []);
+
+    // Track viewport height for pin-user-message min-height
+    useEffect(() => {
+        const update = () => {
+            if (chatContainerRef.current) {
+                setViewportAllowance(chatContainerRef.current.clientHeight);
+            }
+        };
+        update();
+        window.addEventListener('resize', update);
+        return () => window.removeEventListener('resize', update);
+    }, []);
+
     useEffect(() => {
         if (initialMessages?.length > 0) {
             const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
@@ -215,149 +253,33 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         setShowInitialMessages(false);
     }, [initialMessages]);
 
-    let messagesToShow = (showInitialMessages ? initialMessages : allMessages) ?? [];
+    const messagesToShow = (showInitialMessages ? initialMessages : allMessages) ?? [];
 
-    const [scrollToBottomSmooth, setScrollToBottomSmooth] = useState(false);
-    const [scrollToBottomInstant, setScrollToBottomInstant] = useState(false);
+    const lastUserIdx = useMemo(() => {
+        for (let i = messagesToShow.length - 1; i >= 0; i--) {
+            if (messagesToShow[i].role === 'user') return i;
+        }
+        return -1;
+    }, [messagesToShow]);
 
+    // Pin user message to top of viewport when a new user message is sent.
+    // The min-height style on the user bubble reserves viewport space so the
+    // assistant reply can grow beneath it without the view moving.
     useEffect(() => {
-        // This useEffect is specifically for handling new messages added to the chat
-        // In certain cases (the second assistant message + all user messages) when a new message is added:
-        //   put that new message at the top of the chat
-        //   by setting the scroll offset to the container height - last message height
-        //   and scrolling to the bottom of the chat
-
-        if (messagesToShow.length > 1) {
-            // we only want to change the scroll offset if the last message is an user message
-            const lastIndex = messagesToShow.length - 1;
-            const secondToLastIndex = messagesToShow.length - 2;
-
-            const latestMessage = messagesToShow[lastIndex];
-
-            const indexToUse =
-                messagesToShow.length === 2 || messagesToShow[lastIndex].role === 'user'
-                    ? lastIndex
-                    : secondToLastIndex;
-
-            if (messagesToShow.length > 2 && latestMessage.role === 'assistant') {
-                // we don't want to mess with the offset if the newest message is an assistant message
-                // that's a response to a user message
-                return;
-            }
-
-            const scrollAnchorMessageElement = messageRefs.current[indexToUse];
-
-            if (scrollAnchorMessageElement) {
-                const chatContainerHeight = chatContainerRef.current?.offsetHeight;
-                const scrollAnchorMessageHeight = scrollAnchorMessageElement.offsetHeight;
-
-                let offset = chatContainerHeight! - scrollAnchorMessageHeight;
-                offset = Math.max(0, offset);
-
-                setScrollOffset(offset);
-
-                setScrollToBottomSmooth(true);
-            }
+        const userCount = messagesToShow.filter(m => m.role === 'user').length;
+        if (userCount > prevUserCountRef.current) {
+            prevUserCountRef.current = userCount;
+            lastUserMessageRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        } else {
+            prevUserCountRef.current = userCount;
         }
     }, [messagesToShow.length]);
-
-    // Handle scroll events to detect if we're at the bottom
-    useEffect(() => {
-        const handleScroll = () => {
-            if (!chatContainerRef.current) return;
-            const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-            const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-            const isBottom = distanceFromBottom < 50; // 50px threshold
-            setIsAtBottom(isBottom);
-        };
-
-        const container = chatContainerRef.current;
-        container?.addEventListener('scroll', handleScroll);
-
-        // Initial check after a small delay to ensure container is rendered
-        const timer = setTimeout(() => {
-            handleScroll();
-        }, 200);
-
-        return () => {
-            clearTimeout(timer);
-            container?.removeEventListener('scroll', handleScroll);
-        };
-    }, [messageRefs.current[messagesToShow.length - 1]?.offsetHeight]);
-
-    useEffect(() => {
-        if (scrollToBottomSmooth) {
-            chatContainerRef.current?.scrollTo({
-                top: chatContainerRef.current?.scrollHeight,
-                behavior: 'smooth',
-            });
-            setIsAtBottom(true);
-            setScrollToBottomSmooth(false);
-        }
-    }, [scrollToBottomSmooth]);
-
-    useEffect(() => {
-        if (scrollToBottomInstant) {
-            chatContainerRef.current?.scrollTo({
-                top: chatContainerRef.current?.scrollHeight,
-                behavior: 'instant',
-            });
-            setScrollToBottomInstant(false);
-        }
-    }, [scrollToBottomInstant]);
-
-    useEffect(() => {
-        // When the last message's height changes, we want to update the scroll offset
-        // so that there isn't just a bunch of extra whitespace at the bottom of the chat
-
-        if (messagesToShow.length > 1) {
-            const lastIndex = messagesToShow.length - 1;
-            const secondToLastIndex = messagesToShow.length - 2;
-
-            const latestMessage = messagesToShow[lastIndex];
-            const latestMessageElement = messageRefs.current[lastIndex];
-            const secondToLastMessageElement = messageRefs.current[secondToLastIndex];
-
-            if (latestMessageElement) {
-                const chatContainerHeight = chatContainerRef.current?.offsetHeight;
-                const secondToLastMessageHeight = secondToLastMessageElement?.offsetHeight;
-                const latestMessageHeight = latestMessageElement.offsetHeight;
-
-                let offset;
-                if (messagesToShow.length === 2) {
-                    // This is the second assistant message (i.e. the first prompt after the initial assistant message)
-                    offset = chatContainerHeight! - latestMessageHeight!;
-                } else if (messagesToShow.length > 2 && latestMessage.role === 'assistant') {
-                    // This is the assistant response to a user message
-                    //   We want to keep the user message at the top, but shrink the whitespace as the assistant message is typed
-                    offset =
-                        chatContainerHeight! - latestMessageHeight! - secondToLastMessageHeight!;
-
-                    // Note: We don't want to change antying if the latestMessage is a user message since all that scrolling and offset handling
-                    //       was done in the first useEffect
-                }
-
-                if (offset !== undefined) {
-                    offset = Math.max(0, offset);
-
-                    if (offset !== scrollOffset) {
-                        setScrollOffset(offset);
-
-                        if (offset > 0) {
-                            setScrollToBottomInstant(true);
-                        }
-                    }
-                }
-            }
-        }
-    }, [messageRefs.current[messagesToShow.length - 1]?.offsetHeight, typing]);
 
     return (
         <AiFeatureGate>
         <div
-            className={`flex flex-col h-full min-h-[32rem] w-full max-w-[829px] mx-auto sm:pb-[30px] bg-white ${
-                isDesktop ? 'pt-[100px]' : ''
-            }`}
+            className="flex flex-col h-full min-h-0 w-full bg-white"
+            style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
         >
             {isEnding && showEndingLoader && (
                 <AiSessionLoader
@@ -387,67 +309,84 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
             {(!loading || mode !== AiSessionMode.insights) && (
                 <>
+                    <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
+                    <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
                     <div
                         ref={chatContainerRef}
-                        className="flex-1 pt-[150px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
+                        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col px-4 relative"
                     >
-                        <div
-                            ref={chatInnerScrollRef}
-                            className="flex flex-col transition-transform duration-300 ease-out"
-                            style={{ paddingBottom: `${scrollOffset}px` }}
-                        >
+                        <div ref={chatContentRef} className="flex flex-col min-w-0">
                             {mode !== AiSessionMode.insights && <AiSessionPlan />}
+
                             {messagesToShow.map((msg, index) => {
+                                const isLastUser = index === lastUserIdx;
+                                const isTail = index === messagesToShow.length - 1;
+                                // Reserve viewport space on whatever is the last rendered block.
+                                // When streaming, that's the StreamingMessage below; otherwise
+                                // it's the tail message wrapper. Keeps the user bubble pinned
+                                // to the top without creating a gap before the assistant reply.
+                                const pinStyle =
+                                    isTail && !streaming && viewportAllowance > 0
+                                        ? {
+                                              minHeight: `${Math.max(
+                                                  0,
+                                                  viewportAllowance - 24
+                                              )}px`,
+                                          }
+                                        : undefined;
+
                                 return (
                                     <div
-                                        ref={el => (messageRefs.current[index] = el)}
-                                        key={index}
+                                        key={msg.id ?? index}
+                                        ref={isLastUser ? lastUserMessageRef : undefined}
                                         className="w-full"
+                                        style={pinStyle}
                                     >
-                                        <MessageWithQuestions message={msg} />
-                                        {index < messagesToShow.length - 1 &&
-                                            msg.role === 'assistant' &&
-                                            messagesToShow[index + 1].role === 'assistant' && (
-                                                <hr className="border-black w-full my-4" />
-                                            )}
-
-                                        {typing && index === messagesToShow.length - 1 && (
-                                            <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
-                                                <div className="flex space-x-2">
-                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                                    <div
-                                                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                                        style={{ animationDelay: '0.2s' }}
-                                                    ></div>
-                                                    <div
-                                                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                                        style={{ animationDelay: '0.4s' }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <MessageWithQuestions message={msg} aiApp={aiApp} />
                                     </div>
                                 );
                             })}
+
+                            {streaming && (
+                                <div
+                                    className="w-full"
+                                    style={
+                                        viewportAllowance > 0
+                                            ? {
+                                                  minHeight: `${Math.max(
+                                                      0,
+                                                      viewportAllowance - 24
+                                                  )}px`,
+                                              }
+                                            : undefined
+                                    }
+                                >
+                                    <StreamingMessage aiApp={aiApp} />
+                                </div>
+                            )}
                         </div>
 
-                        <div ref={messagesEndRef} />
-
-                        {!isAtBottom && (
-                            <button
-                                onClick={() => {
-                                    // setScrollOffset(0);
-                                    setScrollToBottomSmooth(true);
-                                }}
-                                className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 w-fit shadow-button-bottom text-grayscale-900"
-                            >
-                                <CaretDown version="2" />
-                            </button>
+                        {(!isAtBottom || streaming) && (
+                            <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
+                                <button
+                                    onClick={() => scrollToBottom('smooth')}
+                                    className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
+                                    aria-label={streaming ? 'AI is responding — scroll to bottom' : 'Scroll to bottom'}
+                                >
+                                    {streaming && (
+                                        <span
+                                            className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                    <CaretDown version="2" />
+                                </button>
+                            </div>
                         )}
                     </div>
 
-                    {mode !== AiSessionMode.insights && <FinishSessionButton />}
                     <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                    </div>
                 </>
             )}
         </div>

@@ -24,32 +24,42 @@ export const getLearningPathways = (sessions: VC[]) => {
     return learningPathways;
 };
 
+export const learningPathwaysQueryKey = (sessionUri?: string) =>
+    ['useGetLearningPathwaysForSession', sessionUri] as const;
+
+export const fetchLearningPathwaysForSession = async (
+    wallet: any,
+    sessionUri: string
+) => {
+    const learningPathways = await wallet.invoke.getBoostChildren(sessionUri, {
+        numberOfGenerations: 1,
+        query: {
+            category:
+                categoryMetadata[CredentialCategoryEnum.aiPathway]
+                    .contractCredentialTypeOverride,
+        },
+        limit: 100,
+    });
+    return Promise.all(
+        learningPathways.records.map(async result => {
+            const boost = await wallet.invoke.getBoost(result.uri);
+
+            return {
+                boost,
+                learningPathway: boost.boost.learningPathway?.step!,
+            };
+        })
+    );
+};
+
 export const useGetLearningPathwaysForSession = (sessionUri?: string) => {
     const { initWallet } = useWallet();
 
     return useQuery({
-        queryKey: ['useGetLearningPathwaysForSession', sessionUri],
+        queryKey: learningPathwaysQueryKey(sessionUri),
         queryFn: async () => {
             const wallet = await initWallet();
-            const learningPathways = await wallet.invoke.getBoostChildren(sessionUri!, {
-                numberOfGenerations: 1,
-                query: {
-                    category:
-                        categoryMetadata[CredentialCategoryEnum.aiPathway]
-                            .contractCredentialTypeOverride,
-                },
-                limit: 100,
-            });
-            return Promise.all(
-                learningPathways.records.map(async result => {
-                    const boost = await wallet.invoke.getBoost(result.uri);
-
-                    return {
-                        boost,
-                        learningPathway: boost.boost.learningPathway?.step!,
-                    };
-                })
-            );
+            return fetchLearningPathwaysForSession(wallet, sessionUri!);
         },
         enabled: !!sessionUri,
     });

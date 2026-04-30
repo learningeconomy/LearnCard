@@ -1,5 +1,86 @@
 # Changelog
 
+## 1.95.9
+
+### Patch Changes
+
+-   [#1177](https://github.com/learningeconomy/LearnCard/pull/1177) [`95e6dd7f450fb97a8295465755c7cf3d6f208522`](https://github.com/learningeconomy/LearnCard/commit/95e6dd7f450fb97a8295465755c7cf3d6f208522) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1752][LC-1785] AI chat UI updates
+
+-   [#1177](https://github.com/learningeconomy/LearnCard/pull/1177) [`95e6dd7f450fb97a8295465755c7cf3d6f208522`](https://github.com/learningeconomy/LearnCard/commit/95e6dd7f450fb97a8295465755c7cf3d6f208522) Thanks [@goblincore](https://github.com/goblincore)! - chore: LC-1785 - AI Topics & Sessions UI Refresh (Desktop)
+
+-   [#1192](https://github.com/learningeconomy/LearnCard/pull/1192) [`1a3834a8004118351fddbd25bb535de4ed9be569`](https://github.com/learningeconomy/LearnCard/commit/1a3834a8004118351fddbd25bb535de4ed9be569) Thanks [@Custard7](https://github.com/Custard7)! - feat: Capgo Fixes + CI Check + Version Modal
+
+-   [#1197](https://github.com/learningeconomy/LearnCard/pull/1197) [`11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e`](https://github.com/learningeconomy/LearnCard/commit/11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e) Thanks [@gerardopar](https://github.com/gerardopar)! - add context check >=1.0.3+
+
+## 1.95.8
+
+### Patch Changes
+
+-   [#1184](https://github.com/learningeconomy/LearnCard/pull/1184) [`d34e3d32d844d99128071fe63d23585806349c35`](https://github.com/learningeconomy/LearnCard/commit/d34e3d32d844d99128071fe63d23585806349c35) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1746] - Per-Recipient Dynamic Evidence for Boost Credentials
+
+-   [#1190](https://github.com/learningeconomy/LearnCard/pull/1190) [`a09f9360fa7e769007b10202e935b662f8130afc`](https://github.com/learningeconomy/LearnCard/commit/a09f9360fa7e769007b10202e935b662f8130afc) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1787] Assorted Polishes
+
+## 1.95.7
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   [#1174](https://github.com/learningeconomy/LearnCard/pull/1174) [`7417b530b76a9e6a2f5f6ce8c26dd45c723a58db`](https://github.com/learningeconomy/LearnCard/commit/7417b530b76a9e6a2f5f6ce8c26dd45c723a58db) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1778] - Add Youtube API support
+
+-   [#1182](https://github.com/learningeconomy/LearnCard/pull/1182) [`45a18ec836103649a95b0dc7886a91dcac276468`](https://github.com/learningeconomy/LearnCard/commit/45a18ec836103649a95b0dc7886a91dcac276468) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1762] Plus Button Updates
+
+-   [`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1749] React-Email + Tenant Branding
+
+    Introduces git-managed, tenant-branded email and SMS templates via the new `@learncard/email-templates` package, and wires tenant-aware email delivery through `lca-api` and `brain-service`.
+
+    ### What's new
+
+    -   **`@learncard/email-templates` (new package)** — React Email templates for every transactional email the platform sends (login OTP, recovery email code, recovery key, inbox claim, endorsement request, guardian approval, account approved, guardian credential approval, etc.). Includes an SMS renderer, a tenant registry with per-tenant branding overrides, and a local preview server (`pnpm --filter @learncard/email-templates dev`).
+    -   **`lca-api` + `brain-service`** — PostmarkAdapter now renders templates locally with tenant branding and delivers the result as raw HTML via Postmark's `sendEmail` API. Tenant is resolved from the request in `createContext` via `resolveTenantFromRequest()` and attached as `ctx.tenant` for every route.
+    -   **`@learncard/sss-key-manager`** — `createSSSStrategy({ tenantId })` now forwards an `X-Tenant-Id` header on every call to `lca-api` so recovery / OTP emails are branded for the tenant the user is signed into.
+    -   **`learn-card-app`** — Resolves the active tenant at SSS factory time and passes it into `createSSSStrategy`, so VetPass (and any future tenant) gets branded recovery emails out of the box.
+
+    ### Behavior changes
+
+    -   **Recovery / OTP emails are always branded.** Previously, emails fell back to unstyled plain-text when the corresponding `POSTMARK_*_TEMPLATE_ALIAS` env var was unset. The server now renders the React Email template with tenant branding on every send; unset env vars are fine.
+    -   **New observable request header.** The SSS client sends `X-Tenant-Id: <tenant>` on all requests to `lca-api`. Proxies, WAFs, and log pipelines may surface this.
+
+    ### Deployment notes (self-hosters)
+
+    -   The `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` and `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` env vars are no longer required — they're pure overrides now. You can remove them from your deployment config.
+    -   `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` and `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS` are likewise optional overrides; the adapter renders locally by default.
+    -   An optional `DEFAULT_TENANT_ID` env var is now honored as the fallback when neither `X-Tenant-Id` nor `Origin` resolves to a known tenant.
+    -   Existing Postmark template customizations are not used unless the corresponding env var is set. To move your branding into version control, add an entry to `TENANT_EMAIL_BRANDING` in `packages/email-templates/src/tenant-registry.ts`.
+
+    See [Configure Tenant-Branded Emails](../docs/how-to-guides/configure-tenant-branded-emails.md) and [Tenant-Branded Emails (architecture)](../docs/core-concepts/tenant-branded-emails.md) for details.
+
+-   [#1178](https://github.com/learningeconomy/LearnCard/pull/1178) [`12fb1bc0419c5aac63d43895d5b68380a8cc26d8`](https://github.com/learningeconomy/LearnCard/commit/12fb1bc0419c5aac63d43895d5b68380a8cc26d8) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1747] - Mobile AI Sessions UI Redesign
+
+-   [#1181](https://github.com/learningeconomy/LearnCard/pull/1181) [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1758] Add Plugins filter and Plugins category when building an app
+
+-   [#1186](https://github.com/learningeconomy/LearnCard/pull/1186) [`b01970cd13620becee42a880e3d1dc49a96e44e6`](https://github.com/learningeconomy/LearnCard/commit/b01970cd13620becee42a880e3d1dc49a96e44e6) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1789] Apps page and Quick Nav Updates
+
+-   [#1180](https://github.com/learningeconomy/LearnCard/pull/1180) [`7e85a856b7694ebb43ed79bc4a3b96b3fce43cc3`](https://github.com/learningeconomy/LearnCard/commit/7e85a856b7694ebb43ed79bc4a3b96b3fce43cc3) Thanks [@smurflo2](https://github.com/smurflo2)! - Add widgets and My Skill Profile to AI Insights
+
+-   Updated dependencies [[`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2)]:
+    -   @learncard/sss-key-manager@0.1.6
+    -   @learncard/helpers@1.2.16
+    -   @learncard/lca-api-plugin@1.2.6
+    -   @learncard/ler-rs-plugin@0.1.7
+    -   @learncard/open-badge-v2-plugin@1.1.17
+    -   @learncard/react@2.9.23
+
 ## 1.95.6
 
 ### Patch Changes

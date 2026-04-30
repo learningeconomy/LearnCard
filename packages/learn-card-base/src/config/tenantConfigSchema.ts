@@ -177,7 +177,6 @@ export const tenantNativeConfigSchema = z.object({
     displayName: z.string(),
     deepLinkDomains: z.array(z.string()),
     customSchemes: z.array(z.string()).optional(),
-    capgoChannel: z.string().optional(),
 }).passthrough();
 
 /**

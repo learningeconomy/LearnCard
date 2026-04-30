@@ -108,7 +108,6 @@
             "learncardapp.netlify.com",
             "lcw.app"
         ],
-        "customSchemes": ["dccrequest", "msprequest", "asuprequest"],
-        "capgoChannel": "1.0.4"
+        "customSchemes": ["dccrequest", "msprequest", "asuprequest"]
     }
 }

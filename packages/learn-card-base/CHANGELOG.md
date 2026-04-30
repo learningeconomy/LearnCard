@@ -1,5 +1,46 @@
 # learn-card-base
 
+## 0.1.30
+
+### Patch Changes
+
+-   [#1177](https://github.com/learningeconomy/LearnCard/pull/1177) [`95e6dd7f450fb97a8295465755c7cf3d6f208522`](https://github.com/learningeconomy/LearnCard/commit/95e6dd7f450fb97a8295465755c7cf3d6f208522) Thanks [@goblincore](https://github.com/goblincore)! - chore: LC-1785 - AI Topics & Sessions UI Refresh (Desktop)
+
+-   [#1192](https://github.com/learningeconomy/LearnCard/pull/1192) [`1a3834a8004118351fddbd25bb535de4ed9be569`](https://github.com/learningeconomy/LearnCard/commit/1a3834a8004118351fddbd25bb535de4ed9be569) Thanks [@Custard7](https://github.com/Custard7)! - feat: Capgo Fixes + CI Check + Version Modal
+
+-   [#1197](https://github.com/learningeconomy/LearnCard/pull/1197) [`11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e`](https://github.com/learningeconomy/LearnCard/commit/11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e) Thanks [@gerardopar](https://github.com/gerardopar)! - add context check >=1.0.3+
+
+## 0.1.29
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   [#1174](https://github.com/learningeconomy/LearnCard/pull/1174) [`7417b530b76a9e6a2f5f6ce8c26dd45c723a58db`](https://github.com/learningeconomy/LearnCard/commit/7417b530b76a9e6a2f5f6ce8c26dd45c723a58db) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1778] - Add Youtube API support
+
+-   [#1182](https://github.com/learningeconomy/LearnCard/pull/1182) [`45a18ec836103649a95b0dc7886a91dcac276468`](https://github.com/learningeconomy/LearnCard/commit/45a18ec836103649a95b0dc7886a91dcac276468) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1762] Plus Button Updates
+
+-   [#1178](https://github.com/learningeconomy/LearnCard/pull/1178) [`12fb1bc0419c5aac63d43895d5b68380a8cc26d8`](https://github.com/learningeconomy/LearnCard/commit/12fb1bc0419c5aac63d43895d5b68380a8cc26d8) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1747] - Mobile AI Sessions UI Redesign
+
+-   [#1180](https://github.com/learningeconomy/LearnCard/pull/1180) [`7e85a856b7694ebb43ed79bc4a3b96b3fce43cc3`](https://github.com/learningeconomy/LearnCard/commit/7e85a856b7694ebb43ed79bc4a3b96b3fce43cc3) Thanks [@smurflo2](https://github.com/smurflo2)! - Add widgets and My Skill Profile to AI Insights
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+    -   @learncard/sss-key-manager@0.1.6
+    -   @learncard/helpers@1.2.16
+    -   @learncard/lca-api-plugin@1.2.6
+    -   @learncard/ler-rs-plugin@0.1.7
+
 ## 0.1.28
 
 ### Patch Changes

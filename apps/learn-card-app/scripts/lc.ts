@@ -345,7 +345,27 @@ const asDevMode = (s?: string): DevMode | undefined => {
     return map[s.toLowerCase()];
 };
 
-const startDev = async (tenantId?: string, stageId?: string, devMode?: DevMode) => {
+/**
+ * Recognized CLI keywords that mean "skip docker --build".
+ * Use a positive keyword (`fast`) and the literal flag (`no-build`) so the
+ * intent is obvious either way.
+ */
+const NO_BUILD_KEYWORDS = new Set(['fast', 'no-build', 'nobuild']);
+
+const asNoBuild = (s?: string): boolean | undefined => {
+    if (!s) return undefined;
+    if (NO_BUILD_KEYWORDS.has(s.toLowerCase())) return true;
+    if (s.toLowerCase() === 'build' || s.toLowerCase() === 'rebuild') return false;
+
+    return undefined;
+};
+
+const startDev = async (
+    tenantId?: string,
+    stageId?: string,
+    devMode?: DevMode,
+    noBuild?: boolean,
+) => {
     const tenants = discoverTenants();
 
     if (!tenantId) {
@@ -406,8 +426,22 @@ const startDev = async (tenantId?: string, stageId?: string, devMode?: DevMode) 
         devMode = modeChoice === '2' ? 'app' : modeChoice === '3' ? 'services' : 'full';
     }
 
+    // Only Docker-backed modes care about --build; ask once if the caller
+    // didn't already decide via the CLI shortcut.
+    const usesDocker = devMode === 'full' || devMode === 'services';
+
+    if (usesDocker && noBuild === undefined) {
+        console.log('');
+        console.log(dim('  Tip: skip --build to start ~10× faster when nothing in Docker has changed.'));
+        const buildAns = await ask(`Rebuild Docker images? ${dim('(Y/n)')}: `);
+
+        noBuild = buildAns.trim().toLowerCase() === 'n';
+    }
+
     const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
     const modeArg = devMode === 'full' ? '' : ` ${devMode}`;
+    const buildFlag = noBuild ? '' : ' --build';
+    const fastArg = noBuild ? ' fast' : '';
 
     switch (devMode) {
         case 'app':
@@ -420,18 +454,18 @@ const startDev = async (tenantId?: string, stageId?: string, devMode?: DevMode) 
 
         case 'services':
             runCommand(
-                'docker compose -f compose-local.yaml up --build --scale app=0',
-                'Starting Docker services (no app)',
-                `pnpm lc dev ${tenantId}${stageArg} services`,
+                `docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
+                `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
+                `pnpm lc dev ${tenantId}${stageArg} services${fastArg}`,
             );
             break;
 
         case 'full':
         default:
             runCommand(
-                `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up --build`,
-                `Starting ${displayName}${stageLabel} — full stack`,
-                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}`,
+                `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
+                `Starting ${displayName}${stageLabel} — full stack${noBuild ? ' (skipping rebuild)' : ''}`,
+                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}${fastArg}`,
             );
             break;
     }
@@ -1411,22 +1445,32 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'dev': {
-            // pnpm lc dev [tenant] [stage] [full|app|services]
-            const devAllArgs = [arg, arg2, args[3]];
+            // pnpm lc dev [tenant] [stage] [full|app|services] [fast|no-build]
+            const devAllArgs = [arg, arg2, args[3], args[4]];
 
             const devModeArg = devAllArgs.reduce<DevMode | undefined>(
                 (found, a) => found ?? asDevMode(a), undefined,
             );
 
+            const devNoBuildArg = devAllArgs.reduce<boolean | undefined>(
+                (found, a) => found ?? asNoBuild(a), undefined,
+            );
+
             const devStageArg = devAllArgs.reduce<string | undefined>(
-                (found, a) => found ?? (asDevMode(a) ? undefined : asStage(a)), undefined,
+                (found, a) => {
+                    if (found !== undefined) return found;
+                    if (asDevMode(a) || asNoBuild(a) !== undefined) return undefined;
+
+                    return asStage(a);
+                },
+                undefined,
             );
 
             const devTenantArg = devAllArgs.find(
-                a => a && !asDevMode(a) && !asStage(a),
+                a => a && !asDevMode(a) && !asStage(a) && asNoBuild(a) === undefined,
             );
 
-            await startDev(devTenantArg, devStageArg, devModeArg);
+            await startDev(devTenantArg, devStageArg, devModeArg, devNoBuildArg);
             return true;
         }
 
@@ -1541,6 +1585,21 @@ const handleShortcuts = async (): Promise<boolean> => {
             runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme');
             return true;
 
+        case 'bump-default-capgo-channel':
+        case 'bump-capgo-channel': {
+            // pnpm lc bump-default-capgo-channel [newChannel]
+            const newChannel = arg ? ` ${arg}` : '';
+
+            runCommand(
+                `npx tsx scripts/bump-default-capgo-channel.ts${newChannel}`,
+                'Bump Capgo defaultChannel in capacitor.config.ts',
+                arg
+                    ? `pnpm lc bump-default-capgo-channel ${arg}`
+                    : 'pnpm lc bump-default-capgo-channel',
+            );
+            return true;
+        }
+
         case 'viewer':
             launchCredentialViewer();
             return true;
@@ -1613,14 +1672,16 @@ const printHelp = () => {
     console.log('');
     console.log(bold('  ⚡ Start'));
     console.log('');
-    console.log(`  ${cyan('pnpm lc dev <tenant> [stage] [mode]')}  ${dim('Web dev server (mode: full|app|services)')}`);
-    console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}        ${dim('Cap sync + tenant config patching')}`);
-    console.log(`  ${cyan('pnpm lc open <tenant> [platform]')}     ${dim('Sync tenant + open Xcode / Android Studio')}`);
+    console.log(`  ${cyan('pnpm lc dev <tenant> [stage] [mode] [fast]')}  ${dim('Web dev server (mode: full|app|services)')}`);
+    console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}              ${dim('Cap sync + tenant config patching')}`);
+    console.log(`  ${cyan('pnpm lc open <tenant> [platform]')}           ${dim('Sync tenant + open Xcode / Android Studio')}`);
     console.log('');
     console.log(dim('  Examples:'));
-    console.log(dim('    pnpm lc dev vetpass alpha           # prompts for run mode'));
-    console.log(dim('    pnpm lc dev vetpass alpha app       # app only, no prompt'));
-    console.log(dim('    pnpm lc dev vetpass alpha full      # full stack, no prompt'));
+    console.log(dim('    pnpm lc dev vetpass alpha                # prompts for run mode + rebuild'));
+    console.log(dim('    pnpm lc dev vetpass alpha app            # app only, no prompt'));
+    console.log(dim('    pnpm lc dev vetpass alpha full           # full stack, no prompt'));
+    console.log(dim('    pnpm lc dev vetpass alpha full fast      # full stack, skip docker --build'));
+    console.log(dim('    pnpm lc dev vetpass alpha services fast  # services only, skip docker --build'));
     console.log(dim('    pnpm lc sync vetpass alpha'));
     console.log(dim('    pnpm lc open vetpass ios'));
     console.log('');
@@ -1634,6 +1695,7 @@ const printHelp = () => {
     console.log('');
     console.log(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
     console.log(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
+    console.log(`  ${cyan('pnpm lc bump-default-capgo-channel')} ${dim('Bump Capgo OTA channel (native compat break)')}`);
     console.log(`  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim('Generate icons/splash from a logo')}`);
     console.log(`  ${cyan('pnpm lc validate')}                   ${dim('Run all config + theme validators')}`);
     console.log(`  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`);

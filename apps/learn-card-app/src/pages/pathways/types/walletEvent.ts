@@ -13,8 +13,10 @@
  *     SDK (`useLearnCardMessageHandlers`).
  *   - A consent-flow sync pulls in a fresh credential in the
  *     background.
- *   - An AI tutor session ends (`FinishSessionButton`,
- *     `finishSession` in the chat nanostore).
+ *   - An AI tutor session ends (`ChatHeader.handleFinishSession`,
+ *     `finishSession` in the chat nanostore). Historically lived in
+ *     `FinishSessionButton`; the publish call moved to `ChatHeader`
+ *     when the chat UI was refactored upstream.
  *   - Future: artifact uploads, self-attest confirmations, endorsement
  *     arrivals — each a different upstream, each eventually
  *     interesting to the pathway reactor.

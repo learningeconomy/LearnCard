@@ -1,42 +1,68 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { IonContent, IonPage } from '@ionic/react';
+import { VC } from '@learncard/types';
+import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
-import AiSessionTopicItem from '../../components/ai-sessions/AiSessionTopics/AiSessionTopicItem';
-import AiSessionTopicItemSkeleton from '../../components/ai-sessions/AiSessionTopics/AiSessionTopicItemSkeleton';
 import {
     NewAiSessionButton,
     NewAiSessionButtonEnum,
 } from '../../components/new-ai-session/NewAiSessionButton/NewAiSessionButton';
-import X from '../../components/svgs/X';
+import AiSessionsSearch from '../../components/ai-sessions/AiSessionsSearch/AiSessionsSearch';
+import AiSessionTopicItem from '../../components/ai-sessions/AiSessionTopics/AiSessionTopicItem';
+import AiSessionItem from '../../components/ai-sessions/AiSessions/AiSessionItem';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
     CredentialCategoryEnum,
     pluralize,
     useGetCredentialList,
+    useGetEnrichedSession,
     useGetEnrichedTopicsList,
 } from 'learn-card-base';
-import Search from 'learn-card-base/svgs/Search';
-import AiSessionsSearch from '../../components/ai-sessions/AiSessionsSearch/AiSessionsSearch';
+import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
+import { LCR } from 'learn-card-base/types/credential-records';
+import { aiPassportApps, getAiPassportAppByContractUri } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import { useNewSessionForTopicMobile } from '../../components/new-ai-session/useNewSessionForTopic';
+import { chatBotStore } from '../../stores/chatBotStore';
+
 import {
+    AiFilteringTypes,
     AiSessionsFilterOptionsEnum,
     AiSessionsSortOptionsEnum,
 } from '../../components/ai-sessions/AiSessionsSearch/aiSessions-search.helpers';
-
 import useTheme from '../../theme/hooks/useTheme';
 
-const AiSessionsPage: React.FC = () => {
+type ViewMode = 'topics' | 'sessions' | 'topicDetail';
+type TopicGroup = {
+    key: string;
+    groupTitle: string;
+    topics: any[];
+    sessions: any[];
+    providerNames: string[];
+    providerLogos: string[];
+    hasUnfinishedSessions: boolean;
+    unfinishedSessionsCount: number;
+};
+
+const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
+    const history = useHistory();
+    const location = useLocation();
     const { getThemedCategoryColors } = useTheme();
+    const { isDesktop } = useDeviceTypeByWidth();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiTopic);
     const { backgroundSecondaryColor } = colors;
 
+    const [view, setView] = useState<ViewMode>('topics');
+    const [selectedTopicUri, setSelectedTopicUri] = useState<string>('');
+    const [selectedGroupedTopicKey, setSelectedGroupedTopicKey] = useState<string>('');
+
     const [searchInput, setSearchInput] = useState('');
-    const [showSearch, setShowSearch] = useState(false);
     const [filterBy, setFilterBy] = useState<AiSessionsFilterOptionsEnum>(
         AiSessionsFilterOptionsEnum.showAll
     );
@@ -44,34 +70,238 @@ const AiSessionsPage: React.FC = () => {
         AiSessionsSortOptionsEnum.newlyAdded
     );
 
-    const { data: records, isLoading: credentialsLoading } = useGetCredentialList('AI Topic');
+    const {
+        data: records,
+        isLoading: credentialsLoading,
+        isFetching: credentialsFetching,
+        hasNextPage,
+        fetchNextPage,
+    } = useGetCredentialList('AI Topic');
+
+    useEffect(() => {
+        if (hasNextPage && !credentialsFetching) {
+            fetchNextPage();
+        }
+    }, [hasNextPage, credentialsFetching, fetchNextPage]);
 
     const topicRecords = useMemo(() => {
-        return records?.pages?.flatMap(page => page?.records) || [];
+        return (records?.pages?.flatMap(page => page?.records) || []) as LCR[];
     }, [records?.pages]);
 
     const { data: topics, isLoading: topicsLoading } = useGetEnrichedTopicsList(topicRecords);
 
+    const { data: selectedTopicData, isLoading: selectedTopicLoading } = useGetEnrichedSession(
+        selectedTopicUri,
+        Boolean(selectedTopicUri)
+    );
+
     const isLoading = credentialsLoading || topicsLoading;
 
     const topicsCount = topics?.length ?? 0;
-    const totalSessionsCount = useMemo(
-        () => topics?.reduce((acc, t) => acc + (t.sessions?.length || 0), 0) ?? 0,
+    const allSessions = useMemo(
+        () => topics?.flatMap(topic => topic.sessions ?? []) ?? [],
         [topics]
     );
+    const totalSessionsCount = allSessions.length;
     const unfinishedCount = useMemo(
         () => topics?.reduce((acc, t) => acc + (t.unfinishedSessionsCount ?? 0), 0) ?? 0,
         [topics]
     );
 
-    const displayTopics = useMemo(() => {
-        if (!topics) return [];
-        if (!searchInput) return topics;
+    const groupedTopics = useMemo<TopicGroup[]>(() => {
+        const groups = new Map<string, TopicGroup>();
+
+        (topics ?? []).forEach(topic => {
+            const title = topic?.topicVc?.boostCredential?.topicInfo?.title ?? '';
+            const normalized = title.trim().toLowerCase();
+            if (!normalized) return;
+
+            const app = aiPassportApps?.find(
+                appItem => appItem?.contractUri === topic?.topicRecord?.contractUri
+            );
+            const appName = app?.name ?? topic?.topicRecord?.contractUri ?? 'Provider';
+            const appLogo = app?.img ?? topic?.topicVc?.image;
+
+            if (!groups.has(normalized)) {
+                groups.set(normalized, {
+                    key: normalized,
+                    groupTitle: title,
+                    topics: [],
+                    sessions: [],
+                    providerNames: [],
+                    providerLogos: [],
+                    hasUnfinishedSessions: false,
+                    unfinishedSessionsCount: 0,
+                });
+            }
+
+            const group = groups.get(normalized)!;
+            group.topics.push(topic);
+            group.sessions.push(...(topic?.sessions ?? []));
+            group.hasUnfinishedSessions =
+                group.hasUnfinishedSessions || Boolean(topic?.hasUnfinishedSessions);
+            group.unfinishedSessionsCount += topic?.unfinishedSessionsCount ?? 0;
+
+            if (appName && !group.providerNames.includes(appName)) {
+                group.providerNames.push(appName);
+            }
+            if (appLogo && !group.providerLogos.includes(appLogo)) {
+                group.providerLogos.push(appLogo);
+            }
+        });
+
+        return Array.from(groups.values());
+    }, [topics]);
+
+    const filteredTopics = useMemo(() => {
+        const source = groupedTopics;
         const lower = searchInput.toLowerCase();
-        return topics.filter(t =>
-            (t.topicVc?.boostCredential?.topicInfo?.title ?? '').toLowerCase().includes(lower)
-        );
-    }, [topics, searchInput]);
+
+        const withSearch = source.filter(t => t.groupTitle.toLowerCase().includes(lower));
+
+        const withFilter =
+            filterBy === AiSessionsFilterOptionsEnum.unfinished
+                ? withSearch.filter(t => t.hasUnfinishedSessions)
+                : withSearch;
+
+        if (sortBy === AiSessionsSortOptionsEnum.alphabetical) {
+            return withFilter.slice().sort((a, b) => a.groupTitle.localeCompare(b.groupTitle));
+        }
+
+        return withFilter
+            .slice()
+            .sort(
+                (a, b) =>
+                    new Date(b?.topics?.[0]?.topicVc?.issuanceDate ?? '').getTime() -
+                    new Date(a?.topics?.[0]?.topicVc?.issuanceDate ?? '').getTime()
+            );
+    }, [groupedTopics, searchInput, filterBy, sortBy]);
+
+    const selectedGroupedTopic = useMemo(
+        () => groupedTopics.find(group => group.key === selectedGroupedTopicKey),
+        [groupedTopics, selectedGroupedTopicKey]
+    );
+
+    const filteredSessions = useMemo(() => {
+        const source =
+            view === 'sessions'
+                ? allSessions
+                : selectedGroupedTopic
+                ? selectedGroupedTopic.sessions
+                : selectedTopicData?.sessions ?? [];
+
+        const lower = searchInput.toLowerCase();
+
+        let items = source.filter(session => {
+            const title = (
+                session?.vc?.boostCredential?.summaryInfo?.title ??
+                session?.vc?.name ??
+                ''
+            ).toLowerCase();
+            return title.includes(lower);
+        });
+
+        if (filterBy === AiSessionsFilterOptionsEnum.unfinished) {
+            items = items.filter(session => {
+                const isFinished = Boolean(
+                    (session as any)?.completed ||
+                        (session as any)?.hasAssessment ||
+                        session?.vc?.completed
+                );
+                return !isFinished;
+            });
+        }
+
+        if (sortBy === AiSessionsSortOptionsEnum.alphabetical) {
+            return items.slice().sort((a, b) => {
+                const aTitle = (
+                    a?.vc?.boostCredential?.summaryInfo?.title ??
+                    a?.vc?.name ??
+                    ''
+                ).toLowerCase();
+                const bTitle = (
+                    b?.vc?.boostCredential?.summaryInfo?.title ??
+                    b?.vc?.name ??
+                    ''
+                ).toLowerCase();
+                return aTitle.localeCompare(bTitle);
+            });
+        }
+
+        if (sortBy === AiSessionsSortOptionsEnum.newlyAdded) {
+            return items.slice().sort((a, b) => {
+                const aDate = new Date(a?.vc?.issuanceDate ?? 0).getTime();
+                const bDate = new Date(b?.vc?.issuanceDate ?? 0).getTime();
+                return bDate - aDate;
+            });
+        }
+
+        return items;
+    }, [
+        view,
+        allSessions,
+        selectedTopicData?.sessions,
+        selectedGroupedTopic?.sessions,
+        searchInput,
+        filterBy,
+        sortBy,
+    ]);
+
+    const selectedTopicTitle = selectedGroupedTopic
+        ? selectedGroupedTopic.groupTitle
+        : selectedTopicData?.topicVc?.boostCredential?.topicInfo?.title ?? 'Topic';
+    const selectedTopicUnfinished = selectedGroupedTopic
+        ? selectedGroupedTopic.unfinishedSessionsCount
+        : selectedTopicData?.sessions?.filter(session => !session?.vc?.completed).length ?? 0;
+
+    const selectedTopicSessionCount = selectedGroupedTopic
+        ? selectedGroupedTopic.sessions.length
+        : selectedTopicData?.sessions?.length ?? 0;
+
+    // For grouped (multi-provider) topics fall through to the first topic in
+    // the group. We don't have a story yet for which provider's pathways to
+    // open across a grouped topic — picking the first lets the modal open
+    // and the user can refine grouped-pathway behavior later.
+    const newSessionTopicUri =
+        selectedTopicUri ||
+        selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri ||
+        '';
+    const newSessionTopicBoostUri =
+        selectedTopicData?.topicBoost?.uri ||
+        selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri;
+    const newSessionApp = getAiPassportAppByContractUri(
+        selectedTopicData?.topicRecord?.contractUri ??
+            selectedGroupedTopic?.topics?.[0]?.topicRecord?.contractUri ??
+            ''
+    );
+    const triggerNewSessionForTopic = useNewSessionForTopicMobile();
+
+    const handleNewSessionForSelectedTopic = () => {
+        if (!newSessionTopicUri) return;
+        triggerNewSessionForTopic({
+            topicUri: newSessionTopicUri,
+            topicTitle: selectedTopicTitle,
+            sessionCount: selectedTopicSessionCount,
+            topicBoostUri: newSessionTopicBoostUri,
+            app: newSessionApp,
+        });
+    };
+
+    const searchPlaceholder = view === 'topics' ? 'Browse topics...' : 'Browse sessions...';
+
+    const resetFilters = () => {
+        setSearchInput('');
+        setFilterBy(AiSessionsFilterOptionsEnum.showAll);
+        setSortBy(AiSessionsSortOptionsEnum.newlyAdded);
+    };
+
+    useEffect(() => {
+        if (!topicUri) return;
+        setSelectedTopicUri(topicUri);
+        setSelectedGroupedTopicKey('');
+        setView('topicDetail');
+        resetFilters();
+    }, [topicUri]);
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
@@ -84,91 +314,227 @@ const AiSessionsPage: React.FC = () => {
                         hidePlusBtn={true}
                         customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
+
                     <AiFeatureGate>
                         <div className="flex justify-center w-full">
                             <div className="w-full max-w-[600px] px-4 pt-5 pb-[120px]">
-                                {/* Stats + search row */}
-                                <div className="flex items-center justify-between mb-1 pt-6">
-                                    <div>
-                                        <h2 className="text-grayscale-800 font-poppins font-bold text-[22px] leading-tight">
-                                            {isLoading ? (
-                                                <IonSpinner
-                                                    name="crescent"
-                                                    color="dark"
-                                                    className="scale-[0.8] mr-1"
-                                                />
-                                            ) : (
-                                                <>
-                                                    {topicsCount} {pluralize('Topic', topicsCount)},{' '}
-                                                    {totalSessionsCount}{' '}
-                                                    {pluralize('Session', totalSessionsCount)}
-                                                </>
-                                            )}
-                                        </h2>
-                                        {!isLoading && unfinishedCount > 0 && (
-                                            <p className="flex items-center gap-1.5 text-red-500 font-poppins font-semibold text-[14px] mt-0.5">
-                                                <span className="w-[8px] h-[8px] rounded-full bg-red-500 shrink-0" />
-                                                {unfinishedCount} Unfinished{' '}
-                                                {pluralize('Session', unfinishedCount)}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <button
-                                        className="p-2 text-grayscale-800"
-                                        onClick={() => {
-                                            setShowSearch(v => !v);
-                                            if (showSearch) setSearchInput('');
-                                        }}
-                                    >
-                                        {showSearch ? (
-                                            <X className="w-[24px] h-[24px]" />
-                                        ) : (
-                                            <Search className="w-[24px] h-[24px]" />
-                                        )}
-                                    </button>
+                                <div className="flex items-center justify-between mb-4 pt-6">
+                                    {view === 'topicDetail' ? (
+                                        <button
+                                            className="text-grayscale-800 font-poppins text-[22px] font-semibold flex items-center gap-2"
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                // Clear any leftover chat / chatbot store
+                                                // state so a closed-but-not-cleaned-up chat
+                                                // session can't re-trigger the modal.
+                                                chatBotStore.set.resetStore();
+                                                setSelectedGroupedTopicKey('');
+                                                setSelectedTopicUri('');
+                                                setView('topics');
+                                                resetFilters();
+                                                // Drop any URL params (topicBoostUri,
+                                                // threadId, etc.) so a back/forward press
+                                                // can't hydrate the topic-detail view from
+                                                // a stale query string.
+                                                if (location.pathname !== '/ai/topics') {
+                                                    history.replace('/ai/topics');
+                                                } else if (location.search) {
+                                                    history.replace('/ai/topics');
+                                                }
+                                            }}
+                                        >
+                                            <SlimCaretLeft className="text-grayscale-600" />
+                                            <span className="text-[17px]">All Topics</span>
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-1 pl-1">
+                                            <button
+                                                onClick={() => {
+                                                    setView('topics');
+                                                    resetFilters();
+                                                }}
+                                                className={`py-[8px] px-[16px] rounded-[5px] text-base ${
+                                                    view === 'topics'
+                                                        ? 'bg-white text-grayscale-900'
+                                                        : 'text-grayscale-600'
+                                                }`}
+                                            >
+                                                {topicsCount} Topics
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setView('sessions');
+                                                    resetFilters();
+                                                }}
+                                                className={`py-[8px] px-[16px] rounded-[5px] text-base flex items-center gap-1 ${
+                                                    view === 'sessions'
+                                                        ? 'bg-white text-grayscale-900'
+                                                        : 'text-grayscale-600'
+                                                }`}
+                                            >
+                                                {totalSessionsCount} Sessions
+                                                {unfinishedCount > 0 && (
+                                                    <span className="w-[8px] h-[8px] rounded-full bg-rose-500" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <NewAiSessionButton
+                                        type={NewAiSessionButtonEnum.icon}
+                                        className="!mt-0 !justify-center"
+                                    />
                                 </div>
 
-                                {/* Search bar */}
-                                {showSearch && (
-                                    <AiSessionsSearch
-                                        searchInput={searchInput}
-                                        setSearchInput={setSearchInput}
-                                        filterBy={filterBy}
-                                        setFilterBy={setFilterBy}
-                                        sortBy={sortBy}
-                                        setSortBy={setSortBy}
-                                        className="!bg-grayscale-200"
-                                        hidePopover={true}
-                                    />
+                                {view === 'topicDetail' && (
+                                    <div className="mb-4 border-t border-grayscale-200 pt-4">
+                                        <h2 className="text-grayscale-900 text-[28px] font-semibold font-poppins leading-tight">
+                                            {selectedTopicTitle}
+                                        </h2>
+                                        <p className="text-sm font-poppins mt-1">
+                                            <span className="text-grayscale-700">
+                                                {selectedGroupedTopic?.sessions?.length ??
+                                                    selectedTopicData?.sessions?.length ??
+                                                    0}{' '}
+                                                {pluralize(
+                                                    'Session',
+                                                    selectedGroupedTopic?.sessions?.length ??
+                                                        selectedTopicData?.sessions?.length ??
+                                                        0
+                                                )}
+                                            </span>
+                                            <span className="text-grayscale-500 mx-1">•</span>
+                                            <span className="text-rose-500">
+                                                {selectedTopicUnfinished} Unfinished
+                                            </span>
+                                        </p>
+                                    </div>
                                 )}
 
-                                {/* New Session button */}
-                                <div className="mt-3 mb-4">
-                                    <NewAiSessionButton type={NewAiSessionButtonEnum.mobile} />
-                                </div>
-
-                                {/* Topic list */}
-                                {isLoading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <AiSessionTopicItemSkeleton key={i} />
-                                    ))
-                                ) : displayTopics?.length ? (
-                                    displayTopics.map((t, i) => (
-                                        <AiSessionTopicItem
-                                            key={i}
-                                            topicVc={t.topicVc}
-                                            topicBoost={t.topicBoost}
-                                            topicRecord={t.topicRecord}
-                                            topicSessionsCount={t.sessions?.length || 0}
-                                            hasUnfinishedSessions={t.hasUnfinishedSessions}
-                                            hasFinishedSessions={t.hasFinishedSessions}
-                                        />
-                                    ))
-                                ) : (
-                                    <p className="text-center text-grayscale-500 font-poppins text-sm mt-8">
-                                        No topics yet
+                                {view === 'sessions' && unfinishedCount > 0 && (
+                                    <p className="text-rose-500 font-poppins font-semibold text-[14px] mb-2">
+                                        {unfinishedCount} Unfinished Sessions
                                     </p>
                                 )}
+
+                                <AiSessionsSearch
+                                    searchInput={searchInput}
+                                    setSearchInput={setSearchInput}
+                                    filterBy={filterBy}
+                                    setFilterBy={setFilterBy}
+                                    sortBy={sortBy}
+                                    setSortBy={setSortBy}
+                                    showFilterOptions
+                                    filteringType={
+                                        view === 'topics'
+                                            ? AiFilteringTypes.topics
+                                            : AiFilteringTypes.sessions
+                                    }
+                                    placeholder={searchPlaceholder}
+                                    className="!bg-grayscale-200 !w-full"
+                                />
+
+                                {view === 'topicDetail' && (
+                                    <div className="mt-3 mb-3">
+                                        <NewAiSessionButton
+                                            type={NewAiSessionButtonEnum.mobile}
+                                            text="New Session"
+                                            onClick={handleNewSessionForSelectedTopic}
+                                            className="!bg-white !border-grayscale-200 shadow-soft-bottom !mt-0"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="mt-3">
+                                    {view === 'topics' && (
+                                        <>
+                                            {isLoading ? (
+                                                <p className="text-grayscale-500 font-poppins text-sm mt-8">
+                                                    Loading topics...
+                                                </p>
+                                            ) : filteredTopics.length ? (
+                                                filteredTopics.map((t, i) => (
+                                                    <AiSessionTopicItem
+                                                        key={i}
+                                                        topicVc={t.topics?.[0]?.topicVc}
+                                                        topicBoost={t.topics?.[0]?.topicBoost}
+                                                        topicRecord={t.topics?.[0]?.topicRecord}
+                                                        topicTitleOverride={t.groupTitle}
+                                                        topicSubtitleOverride={
+                                                            t.providerNames.length > 1
+                                                                ? `With ${t.providerNames.length} providers`
+                                                                : undefined
+                                                        }
+                                                        providerLogoUrls={t.providerLogos}
+                                                        topicSessionsCount={t.sessions?.length || 0}
+                                                        hasUnfinishedSessions={
+                                                            t.hasUnfinishedSessions
+                                                        }
+                                                        hasFinishedSessions={true}
+                                                        onSelectTopic={() => {
+                                                            if (t.topics.length > 1) {
+                                                                setSelectedGroupedTopicKey(t.key);
+                                                                setSelectedTopicUri('');
+                                                                setView('topicDetail');
+                                                                resetFilters();
+                                                                return;
+                                                            }
+
+                                                            const nextTopicUri =
+                                                                t.topics?.[0]?.topicBoost?.uri ??
+                                                                '';
+                                                            setSelectedGroupedTopicKey('');
+                                                            setSelectedTopicUri(nextTopicUri);
+                                                            setView('topicDetail');
+                                                            resetFilters();
+                                                            if (nextTopicUri) {
+                                                                history.push(
+                                                                    `/ai/sessions?topicBoostUri=${encodeURIComponent(
+                                                                        nextTopicUri
+                                                                    )}`
+                                                                );
+                                                            } else {
+                                                                history.push('/ai/sessions');
+                                                            }
+                                                        }}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <p className="text-center text-grayscale-500 font-poppins text-sm mt-8">
+                                                    No topics yet
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {(view === 'sessions' || view === 'topicDetail') && (
+                                        <>
+                                            {selectedTopicLoading && view === 'topicDetail' ? (
+                                                <p className="text-grayscale-500 font-poppins text-sm mt-8">
+                                                    Loading sessions...
+                                                </p>
+                                            ) : filteredSessions.length ? (
+                                                filteredSessions.map((session, index) => (
+                                                    <AiSessionItem
+                                                        key={index}
+                                                        app={undefined as any}
+                                                        session={session}
+                                                        topicRecord={selectedTopicData?.topicRecord}
+                                                        topicVc={selectedTopicData?.topicVc as VC}
+                                                        handleTopicSession={() => {}}
+                                                        index={index}
+                                                        selectedSession={null}
+                                                        forceSingleView={isDesktop}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <p className="text-center text-grayscale-500 font-poppins text-sm mt-8">
+                                                    No sessions found
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </AiFeatureGate>

@@ -18,7 +18,9 @@ export const AiSessionsLayout: React.FC<{
     leftColumn: React.ReactNode;
     rightColumn: React.ReactNode;
     handleSetChatBotSelected?: (chatBotType: NewAiSessionStepEnum) => void;
-}> = ({ leftColumn, rightColumn, handleSetChatBotSelected }) => {
+    currentTopicHasSessions?: boolean;
+    onNewSessionForTopic?: () => void;
+}> = ({ leftColumn, rightColumn, currentTopicHasSessions, onNewSessionForTopic }) => {
     const { newModal } = useModal();
     const { isMobile, isDesktop } = useDeviceTypeByWidth();
 
@@ -31,7 +33,7 @@ export const AiSessionsLayout: React.FC<{
     };
 
     return (
-        <div className="h-full w-full relative safe-area-top-margin">
+        <div className="h-full w-full relative">
             <div className="flex h-full items-center justify-start relative">
                 <div
                     className={` flex flex-col h-full items-center justify-center relative border-r-[1px] border-solid border-grayscale-100 ${
@@ -41,20 +43,23 @@ export const AiSessionsLayout: React.FC<{
                     <GenericErrorBoundary>{leftColumn}</GenericErrorBoundary>
 
                     {isDesktop && (
-                        <IonFooter className="absolute bottom-0 w-full bg-cyan-50 flex items-center justify-around ion-padding ion-no-border">
+                        <IonFooter className="absolute bottom-0 w-full bg-cyan-50 flex items-center justify-around ion-padding ion-no-border gap-3">
                             <button
                                 onClick={handlePersonalizeMyAi}
-                                className="flex-1 bg-white text-grayscale-900 flex items-center justify-center p-4 py-2 rounded-[20px] font-semibold text-[17px] mr-4 shadow-soft-bottom"
+                                className="flex-1 h-[60px] bg-white text-grayscale-900 flex items-center justify-center px-4 py-2 rounded-[20px] font-semibold text-[17px] shadow-soft-bottom"
                             >
                                 <UnicornIcon className="w-[35px] h-auto mr-2" />
                                 Personalize My AI
                             </button>
-                            <NewAiSessionButton
-                                type={NewAiSessionButtonEnum.mini}
-                                onClick={() =>
-                                    handleSetChatBotSelected?.(NewAiSessionStepEnum.newTopic)
-                                }
-                            />
+                            {currentTopicHasSessions && onNewSessionForTopic && (
+                                <NewAiSessionButton
+                                    type={NewAiSessionButtonEnum.mobile}
+                                    iconType="light"
+                                    text="New Session"
+                                    onClick={onNewSessionForTopic}
+                                    className="!flex-1 !mt-0 !h-[60px] !px-4 !py-2 !rounded-[20px] !bg-indigo-500 !border-indigo-500 !text-white !text-center !flex !items-center !justify-center !flex-row-reverse"
+                                />
+                            )}
                         </IonFooter>
                     )}
                 </div>
