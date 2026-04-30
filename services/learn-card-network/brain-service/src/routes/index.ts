@@ -12,8 +12,9 @@ import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
+import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     isProfileManaged,
     getProfilesThatManageAProfile,
@@ -49,6 +50,7 @@ export type Context = {
     };
     contactMethod?: ContactMethodType;
     domain: string;
+    tenant: ResolvedTenant;
     _guardianApprovalToken?: string;
 };
 
@@ -91,6 +93,15 @@ export const createContext = async (
 
     const domain = process.env.DOMAIN_NAME || _domain;
 
+    // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
+    const rawHeaders = 'event' in options
+        ? (options.event.headers as Record<string, string | undefined>)
+        : 'get' in event.headers
+            ? Object.fromEntries(event.headers as Map<string, string>)
+            : (event.headers as Record<string, string | string[] | undefined>);
+
+    const tenant = resolveTenantFromRequest(rawHeaders as Record<string, string | string[] | undefined>);
+
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');
 
@@ -113,6 +124,7 @@ export const createContext = async (
                     return {
                         user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
                         domain,
+                        tenant,
                     };
 
                 let isChallengeValid = false;
@@ -129,6 +141,7 @@ export const createContext = async (
                         return {
                             contactMethod,
                             domain,
+                            tenant,
                         };
                     }
                     // If the user is using a real auth grant i.e. an API Token.
@@ -148,12 +161,12 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain, _guardianApprovalToken };
+                return { user: { did, isChallengeValid, scope }, domain, tenant, _guardianApprovalToken };
             }
         }
     }
 
-    return { domain, _guardianApprovalToken };
+    return { domain, tenant, _guardianApprovalToken };
 };
 
 export const openRoute = t.procedure
@@ -177,6 +190,14 @@ export const resolveProfileFromContextDid = async (
     // User authenticated with their did:web. Resolve it and use their controller did to find profile.
     if (didParts[1] === 'web' && didParts[2] === domain) {
         if (didParts[3] === 'manager') return null;
+
+        // For managed profiles (did:web:domain:users:profileId), try direct profileId lookup first.
+        // Managed DID docs have a `controller` pointing to the parent, so following controller
+        // would incorrectly resolve to the parent's profile instead of the managed one.
+        if (didParts[3] === 'users' && didParts[4]) {
+            const directProfile = await getProfileByProfileId(didParts[4]);
+            if (directProfile) return directProfile;
+        }
 
         const learnCard = await getEmptyLearnCard();
         const didDoc = await learnCard.invoke.resolveDid(

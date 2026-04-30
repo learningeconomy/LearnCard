@@ -119,6 +119,19 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const issueTo = _issueTo ?? localIssueTo;
     const setIssueTo = _setIssueTo ?? setLocalIssueTo;
 
+    const setSavedCollection: React.Dispatch<React.SetStateAction<BoostCMSIssueTo[]>> = action => {
+        setState(prevState => {
+            const currentCollection = prevState?.[collectionKey] ?? [];
+            const nextCollection =
+                typeof action === 'function' ? action(currentCollection) : action;
+
+            return {
+                ...prevState,
+                [collectionKey]: nextCollection,
+            };
+        });
+    };
+
     useEffect(() => {
         if (state?.[collectionKey]?.length > 0) {
             setLocalIssueTo(state?.[collectionKey] ?? []);
@@ -445,9 +458,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={state?.[collectionKey] ?? []}
                             mode={mode}
-                            _issueTo={issueTo}
-                            _setIssueTo={setIssueTo}
+                            _issueTo={state?.[collectionKey] ?? []}
+                            _setIssueTo={setSavedCollection}
                             collectionPropName={collectionKey}
+                            showRecipientAttachments={collectionKey === 'issueTo'}
                         />
                     </IonCol>
                 </IonRow>

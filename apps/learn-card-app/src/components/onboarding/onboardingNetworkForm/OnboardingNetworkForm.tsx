@@ -60,6 +60,7 @@ import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
+import GuardianLinkedModal from '../GuardianLinkedModal';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -107,6 +108,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     pendingInstall,
 }) => {
     const brandingConfig = useBrandingConfig();
+    const { appIcon } = useTenantBrandingAssets();
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
@@ -353,6 +355,15 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         role: role ?? undefined,
                         country: country ?? undefined,
                     });
+
+                    // Check for pending guardian approvals linked to this email (non-blocking)
+                    let claimedChildren: Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }> = [];
+                    try {
+                        claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
+                    } catch (err) {
+                        console.error('claimPendingGuardianLinks failed (non-blocking):', err);
+                    }
+
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();
@@ -397,6 +408,17 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 sectionClassName: '!max-w-full',
                             },
                             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        );
+                    }
+
+                    if (claimedChildren.length > 0) {
+                        newModal(
+                            <GuardianLinkedModal
+                                children={claimedChildren}
+                                onDismiss={closeModal}
+                            />,
+                            { sectionClassName: '!max-w-[400px]' },
+                            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                         );
                     }
                 }
@@ -497,7 +519,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
                             <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
                                 <img
-                                    src={useTenantBrandingAssets().appIcon}
+                                    src={appIcon}
                                     alt="App logo"
                                     className="w-full h-full object-cover"
                                 />

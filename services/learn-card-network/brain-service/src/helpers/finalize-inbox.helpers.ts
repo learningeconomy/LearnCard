@@ -23,13 +23,20 @@ import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.hel
 export async function finalizeInboxCredentialsForProfile(
     profile: ProfileType,
     domain: string
-): Promise<{ processed: number; claimed: number; errors: number; verifiableCredentials: VC[] }> {
+): Promise<{
+    processed: number;
+    claimed: number;
+    errors: number;
+    guardianPending: number;
+    verifiableCredentials: VC[];
+}> {
     const contactMethods = await getContactMethodsForProfile(profile.did);
     const verifiedContacts = contactMethods.filter(cm => cm.isVerified);
 
     let processed = 0;
     let claimed = 0;
     let errors = 0;
+    let guardianPending = 0;
 
     // Preload LC DID for webhooks
     let lcDid: string | null = null;
@@ -43,6 +50,15 @@ export async function finalizeInboxCredentialsForProfile(
     for (const cm of verifiedContacts) {
         const pending = await getAcceptedPendingInboxCredentialsForContactMethodId(cm.id);
         for (const inboxCredential of pending) {
+            // Skip credentials still awaiting or rejected by a guardian
+            if (
+                inboxCredential.guardianStatus === 'AWAITING_GUARDIAN' ||
+                inboxCredential.guardianStatus === 'GUARDIAN_REJECTED'
+            ) {
+                guardianPending += 1;
+                continue;
+            }
+
             processed += 1;
 
             // Look up the sender/issuer profile outside try/catch so it's
@@ -62,14 +78,11 @@ export async function finalizeInboxCredentialsForProfile(
                 let finalCredential: VC;
 
                 if (!inboxCredential.isSigned) {
-                    const unsignedCredential = JSON.parse(
-                        inboxCredential.credential
-                    ) as UnsignedVC;
+                    const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
 
                     const endpoint =
                         (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
-                    const name =
-                        (inboxCredential.signingAuthority?.name as string) ?? undefined;
+                    const name = (inboxCredential.signingAuthority?.name as string) ?? undefined;
                     if (!endpoint || !name)
                         throw new Error('Inbox credential missing signing authority info');
 
@@ -81,8 +94,7 @@ export async function finalizeInboxCredentialsForProfile(
                         endpoint,
                         name
                     );
-                    if (!signingAuthorityForUser)
-                        throw new Error('Signing authority not found');
+                    if (!signingAuthorityForUser) throw new Error('Signing authority not found');
 
                     // Set subject DID to the authenticated user's DID
                     if (Array.isArray(unsignedCredential.credentialSubject)) {
@@ -102,14 +114,15 @@ export async function finalizeInboxCredentialsForProfile(
                     unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
                     // For app-based SAs (listings), use the app did:web as ownerDid
-                    const listingSlug = (inboxCredential.signingAuthority as any)
-                        ?.listingSlug as string | undefined;
+                    const listingSlug = (inboxCredential.signingAuthority as any)?.listingSlug as
+                        | string
+                        | undefined;
                     const ownerDidOverride = listingSlug
                         ? getAppDidWeb(domain, listingSlug)
                         : undefined;
 
                     finalCredential = (await issueCredentialWithSigningAuthority(
-                        issuerProfile,
+                        { type: 'profile', profile: issuerProfile },
                         unsignedCredential,
                         signingAuthorityForUser,
                         domain,
@@ -122,11 +135,7 @@ export async function finalizeInboxCredentialsForProfile(
 
                 await markInboxCredentialAsIssued(inboxCredential.id);
                 await markInboxCredentialAsIsAccepted(inboxCredential.id);
-                await createClaimedRelationship(
-                    profile.profileId,
-                    inboxCredential.id,
-                    'finalize'
-                );
+                await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
 
                 // Trigger webhook if configured
                 if (inboxCredential.webhookUrl) {
@@ -178,10 +187,7 @@ export async function finalizeInboxCredentialsForProfile(
                 claimed += 1;
                 verifiableCredentials.push(finalCredential);
             } catch (error) {
-                console.error(
-                    `Failed to finalize inbox credential ${inboxCredential.id}:`,
-                    error
-                );
+                console.error(`Failed to finalize inbox credential ${inboxCredential.id}:`, error);
 
                 // Log FAILED activity - chain to original activityId/integrationId if available
                 try {
@@ -239,5 +245,5 @@ export async function finalizeInboxCredentialsForProfile(
         }
     }
 
-    return { processed, claimed, errors, verifiableCredentials };
+    return { processed, claimed, errors, guardianPending, verifiableCredentials };
 }

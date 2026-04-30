@@ -30,6 +30,7 @@ export const ProfileManager = ModelFactory<ProfileManagerType, ProfileManagerRel
             email: { type: 'string', required: false },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },
+            managerType: { type: 'string', required: false },
         },
         primaryKeyField: 'id',
         relationships: {

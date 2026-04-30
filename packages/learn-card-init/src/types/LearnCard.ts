@@ -83,6 +83,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
         network: true | string;
         trustedBoostRegistry?: string;
         guardianApprovalGetter?: GuardianApprovalGetter;
+        extraHeaders?: Record<string, string>;
     },
     keyof LearnCardConfig,
     LearnCard<
@@ -113,6 +114,7 @@ export type NetworkLearnCardFromApiKey = InitFunction<
         network: true | string;
         trustedBoostRegistry?: string;
         guardianApprovalGetter?: GuardianApprovalGetter;
+        extraHeaders?: Record<string, string>;
     },
     'didkit' | 'allowRemoteContexts' | 'debug',
     LearnCard<
@@ -164,6 +166,7 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
         didWeb: string;
         trustedBoostRegistry?: string;
         guardianApprovalGetter?: GuardianApprovalGetter;
+        extraHeaders?: Record<string, string>;
     },
     keyof LearnCardConfig,
     LearnCard<

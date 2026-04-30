@@ -1,5 +1,73 @@
 # learn-card-base
 
+## 0.1.30
+
+### Patch Changes
+
+-   [#1177](https://github.com/learningeconomy/LearnCard/pull/1177) [`95e6dd7f450fb97a8295465755c7cf3d6f208522`](https://github.com/learningeconomy/LearnCard/commit/95e6dd7f450fb97a8295465755c7cf3d6f208522) Thanks [@goblincore](https://github.com/goblincore)! - chore: LC-1785 - AI Topics & Sessions UI Refresh (Desktop)
+
+-   [#1192](https://github.com/learningeconomy/LearnCard/pull/1192) [`1a3834a8004118351fddbd25bb535de4ed9be569`](https://github.com/learningeconomy/LearnCard/commit/1a3834a8004118351fddbd25bb535de4ed9be569) Thanks [@Custard7](https://github.com/Custard7)! - feat: Capgo Fixes + CI Check + Version Modal
+
+-   [#1197](https://github.com/learningeconomy/LearnCard/pull/1197) [`11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e`](https://github.com/learningeconomy/LearnCard/commit/11a2c3a0c0cffd0c594cc08b4c5f2bee1085ed4e) Thanks [@gerardopar](https://github.com/gerardopar)! - add context check >=1.0.3+
+
+## 0.1.29
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   [#1174](https://github.com/learningeconomy/LearnCard/pull/1174) [`7417b530b76a9e6a2f5f6ce8c26dd45c723a58db`](https://github.com/learningeconomy/LearnCard/commit/7417b530b76a9e6a2f5f6ce8c26dd45c723a58db) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1778] - Add Youtube API support
+
+-   [#1182](https://github.com/learningeconomy/LearnCard/pull/1182) [`45a18ec836103649a95b0dc7886a91dcac276468`](https://github.com/learningeconomy/LearnCard/commit/45a18ec836103649a95b0dc7886a91dcac276468) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1762] Plus Button Updates
+
+-   [#1178](https://github.com/learningeconomy/LearnCard/pull/1178) [`12fb1bc0419c5aac63d43895d5b68380a8cc26d8`](https://github.com/learningeconomy/LearnCard/commit/12fb1bc0419c5aac63d43895d5b68380a8cc26d8) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1747] - Mobile AI Sessions UI Redesign
+
+-   [#1180](https://github.com/learningeconomy/LearnCard/pull/1180) [`7e85a856b7694ebb43ed79bc4a3b96b3fce43cc3`](https://github.com/learningeconomy/LearnCard/commit/7e85a856b7694ebb43ed79bc4a3b96b3fce43cc3) Thanks [@smurflo2](https://github.com/smurflo2)! - Add widgets and My Skill Profile to AI Insights
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+    -   @learncard/sss-key-manager@0.1.6
+    -   @learncard/helpers@1.2.16
+    -   @learncard/lca-api-plugin@1.2.6
+    -   @learncard/ler-rs-plugin@0.1.7
+
+## 0.1.28
+
+### Patch Changes
+
+-   [#1164](https://github.com/learningeconomy/LearnCard/pull/1164) [`b3d1e4234c8d2bf6251f33d350850086e98d59b0`](https://github.com/learningeconomy/LearnCard/commit/b3d1e4234c8d2bf6251f33d350850086e98d59b0) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1678 - Pathways 2.0: Explore Roles
+
+-   [#1169](https://github.com/learningeconomy/LearnCard/pull/1169) [`46ab1ec6c928ba4b5a9d1e522ad1b42a9a9bc7ac`](https://github.com/learningeconomy/LearnCard/commit/46ab1ec6c928ba4b5a9d1e522ad1b42a9a9bc7ac) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1285] Skip published step for Boost
+
+-   [#1168](https://github.com/learningeconomy/LearnCard/pull/1168) [`ac87f698a64b5f40d23d115a8b55da3039c07cb0`](https://github.com/learningeconomy/LearnCard/commit/ac87f698a64b5f40d23d115a8b55da3039c07cb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Grow Skills redesign and modal
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1171](https://github.com/learningeconomy/LearnCard/pull/1171) [`7b517d7323fbc91e625cf93d79c579d3c5d3a08a`](https://github.com/learningeconomy/LearnCard/commit/7b517d7323fbc91e625cf93d79c579d3c5d3a08a) Thanks [@smurflo2](https://github.com/smurflo2)! - Allow over 18 children to access AI features with guardian approval
+
+-   [#1155](https://github.com/learningeconomy/LearnCard/pull/1155) [`bc4e363d499f4426ebb957ac34eb6ef13a0ac654`](https://github.com/learningeconomy/LearnCard/commit/bc4e363d499f4426ebb957ac34eb6ef13a0ac654) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1675] - What would you like to do card?
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/types@5.13.5
+    -   @learncard/lca-api-plugin@1.2.5
+    -   @learncard/helpers@1.2.15
+    -   @learncard/ler-rs-plugin@0.1.6
+    -   @learncard/sss-key-manager@0.1.5
+
 ## 0.1.27
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 ---
 import '../styles/global.css';
+
+// Server-side data (if needed for backend integration in the future)
+const hostOriginEnv = import.meta.env.HOST_ORIGIN || 'https://learncard.app';
+// Split by spaces to support multiple origins (e.g., "https://learncard.app https://staging.learncard.app")
+const hostOrigin = hostOriginEnv.includes(' ') ? hostOriginEnv.split(/\s+/) : hostOriginEnv;
+
+const config = {
+    hostOrigin,
+};
 ---
 
 <!DOCTYPE html>
@@ -201,10 +210,193 @@ import '../styles/global.css';
                             Get Learner Context
                         </button>
 
+                        <!-- AI Session Test Section -->
+                        <div
+                            class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200"
+                        >
+                            <h3 class="text-lg font-bold text-gray-800 mb-2">🤖 AI Session Test</h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Create a test AI Session credential. Uses ConsentFlow contract if
+                                write permission granted, otherwise falls back to manual send.
+                            </p>
+
+                            <!-- Preset Buttons -->
+                            <div class="mb-6">
+                                <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                                    Quick Presets
+                                </h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button
+                                        id="preset-learning-btn"
+                                        class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
+                                        data-preset="learning"
+                                        data-testid="ai-session-preset-learning"
+                                    >
+                                        📚 Learning Session
+                                    </button>
+                                    <button
+                                        id="preset-coding-btn"
+                                        class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
+                                        data-preset="coding"
+                                        data-testid="ai-session-preset-coding"
+                                    >
+                                        💻 Coding Practice
+                                    </button>
+                                    <button
+                                        id="preset-design-btn"
+                                        class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
+                                        data-preset="design"
+                                        data-testid="ai-session-preset-design"
+                                    >
+                                        🎨 Design Workshop
+                                    </button>
+                                    <button
+                                        id="preset-minimal-btn"
+                                        class="btn-secondary text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg"
+                                        data-preset="minimal"
+                                        data-testid="ai-session-preset-minimal"
+                                    >
+                                        ⚡ Minimal Test
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Custom Form -->
+                            <div class="border-t border-purple-200 pt-4 mb-4">
+                                <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                                    Custom Session
+                                </h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1"
+                                            >Session Title</label
+                                        >
+                                        <input
+                                            type="text"
+                                            id="custom-session-title"
+                                            data-testid="ai-session-custom-title"
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            placeholder="My Custom Learning Session"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1"
+                                            >Summary Title</label
+                                        >
+                                        <input
+                                            type="text"
+                                            id="custom-summary-title"
+                                            data-testid="ai-session-custom-summary-title"
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            placeholder="Session Summary"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1"
+                                            >Summary Text</label
+                                        >
+                                        <textarea
+                                            id="custom-summary-text"
+                                            data-testid="ai-session-custom-summary-text"
+                                            rows="2"
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            placeholder="Brief description of what was learned..."
+                                        ></textarea>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label
+                                                class="block text-xs font-medium text-gray-600 mb-1"
+                                                >Learned Items (one per line)</label
+                                            >
+                                            <textarea
+                                                id="custom-learned"
+                                                rows="3"
+                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                placeholder="Item 1
+Item 2
+Item 3"></textarea>
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block text-xs font-medium text-gray-600 mb-1"
+                                                >Skills (Title: Description)</label
+                                            >
+                                            <textarea
+                                                id="custom-skills"
+                                                rows="3"
+                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                placeholder="Skill 1: Description
+Skill 2: Description"
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1"
+                                            >Next Steps (Title: Description)</label
+                                        >
+                                        <textarea
+                                            id="custom-next-steps"
+                                            rows="2"
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            placeholder="Step 1: What to do next
+Step 2: Another action"
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1"
+                                            >Reflections (Title: Description)</label
+                                        >
+                                        <textarea
+                                            id="custom-reflections"
+                                            rows="2"
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            placeholder="Reflection 1: Key insight
+Reflection 2: Takeaway"
+                                        ></textarea>
+                                    </div>
+                                    <button
+                                        id="create-custom-session-btn"
+                                        data-testid="ai-session-create-custom"
+                                        class="btn-secondary w-full text-white font-bold py-3 rounded-xl text-sm shadow-lg"
+                                    >
+                                        Create Custom Session
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div
+                                id="ai-session-result"
+                                data-testid="ai-session-result"
+                                class="hidden mt-4 space-y-3"
+                            >
+                                <div class="glass-panel rounded-xl p-4">
+                                    <span class="text-sm font-medium">Topic URI:</span>
+                                    <code
+                                        id="topic-uri-display"
+                                        data-testid="ai-session-topic-uri"
+                                        class="text-purple-600 text-xs break-all block mt-1"></code>
+                                </div>
+                                <div class="glass-panel rounded-xl p-4">
+                                    <span class="text-sm font-medium">Session Credential:</span>
+                                    <code
+                                        id="session-credential-display"
+                                        data-testid="ai-session-session-credential-uri"
+                                        class="text-purple-600 text-xs break-all block mt-1"></code>
+                                </div>
+                                <div class="glass-panel rounded-xl p-4">
+                                    <span class="text-sm font-medium">New Topic?</span>
+                                    <span
+                                        id="is-new-topic-display"
+                                        data-testid="ai-session-is-new-topic"
+                                        class="text-gray-800"></span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="results" class="hidden space-y-6">
                             <h3 class="text-xl font-bold text-gray-800">Results</h3>
 
-                            <!-- Prompt display (shown when format=prompt) -->
                             <div id="prompt-section" class="result-card rounded-2xl p-6">
                                 <pre
                                     id="prompt-display"
@@ -212,19 +404,32 @@ import '../styles/global.css';
                                 </pre>
                             </div>
 
-                            <!-- Structured data display (shown when format=structured) -->
                             <div id="structured-section" class="hidden space-y-4">
-                                <div id="personal-data-section" class="hidden glass-panel rounded-2xl p-6 space-y-3">
-                                    <h4 class="text-lg font-semibold text-gray-800">Personal Data</h4>
+                                <div
+                                    id="personal-data-section"
+                                    class="hidden glass-panel rounded-2xl p-6 space-y-3"
+                                >
+                                    <h4 class="text-lg font-semibold text-gray-800">
+                                        Personal Data
+                                    </h4>
                                     <div id="personal-data-display" class="space-y-2"></div>
                                 </div>
 
-                                <div id="credentials-section" class="hidden glass-panel rounded-2xl p-6 space-y-3">
+                                <div
+                                    id="credentials-section"
+                                    class="hidden glass-panel rounded-2xl p-6 space-y-3"
+                                >
                                     <h4 class="text-lg font-semibold text-gray-800">
                                         Credentials
-                                        <span id="credentials-count" class="text-sm font-normal text-gray-500"></span>
+                                        <span
+                                            id="credentials-count"
+                                            class="text-sm font-normal text-gray-500"></span>
                                     </h4>
-                                    <div id="credentials-display" class="space-y-3 max-h-[400px] overflow-y-auto"></div>
+                                    <div
+                                        id="credentials-display"
+                                        class="space-y-3 max-h-[400px] overflow-y-auto"
+                                    >
+                                    </div>
                                 </div>
                             </div>
 
@@ -244,26 +449,472 @@ import '../styles/global.css';
                     </div>
                 </div>
             </div>
+            <!-- Config variables for the module script -->
+            <script define:vars={{ config }}>
+                window.__LC_CONFIG = config;
+            </script>
 
             <script>
                 import { createPartnerConnect } from '@learncard/partner-connect';
-                const learnCard = createPartnerConnect();
+                const learnCard = createPartnerConnect({
+                    hostOrigin: window.__LC_CONFIG.hostOrigin,
+                });
+
+                let sessionCount = 0;
+
+                // AI Session Presets
+                const AI_SESSION_PRESETS: Record<
+                    string,
+                    {
+                        sessionTitle: string;
+                        summaryTitle: string;
+                        summary: string;
+                        learned: string[];
+                        skills: Array<{ title: string; description: string }>;
+                        nextSteps: Array<{
+                            title: string;
+                            description: string;
+                            keywords: {
+                                occupations: string[];
+                                careers: string[];
+                                jobs: string[];
+                                skills: string[];
+                                fieldOfStudy: string;
+                            };
+                        }>;
+                        reflections: Array<{ title: string; description: string }>;
+                    }
+                > = {
+                    learning: {
+                        sessionTitle: 'General Learning Session',
+                        summaryTitle: 'Learning Summary',
+                        summary:
+                            'A comprehensive learning session covering various educational topics and skill development areas.',
+                        learned: [
+                            'Understanding core concepts',
+                            'Applying theoretical knowledge',
+                            'Developing practical skills',
+                            'Building foundational understanding',
+                        ],
+                        skills: [
+                            {
+                                title: 'Critical Thinking',
+                                description: 'Analyzing and evaluating information objectively',
+                            },
+                            {
+                                title: 'Problem Solving',
+                                description: 'Developing solutions to complex challenges',
+                            },
+                        ],
+                        nextSteps: [
+                            {
+                                title: 'Practice Exercises',
+                                description: 'Complete related practice problems',
+                                keywords: {
+                                    occupations: ['Student'],
+                                    careers: ['Education'],
+                                    jobs: ['Learner'],
+                                    skills: ['Practice', 'Study'],
+                                    fieldOfStudy: 'General Education',
+                                },
+                            },
+                            {
+                                title: 'Review Materials',
+                                description: 'Revisit key concepts for retention',
+                                keywords: {
+                                    occupations: ['Student'],
+                                    careers: ['Education'],
+                                    jobs: ['Learner'],
+                                    skills: ['Review', 'Memorization'],
+                                    fieldOfStudy: 'General Education',
+                                },
+                            },
+                        ],
+                        reflections: [
+                            {
+                                title: 'Learning Progress',
+                                description:
+                                    'Made significant progress in understanding the material',
+                            },
+                            {
+                                title: 'Areas for Improvement',
+                                description: 'Need to focus on practical application',
+                            },
+                        ],
+                    },
+                    coding: {
+                        sessionTitle: 'Coding Practice Session',
+                        summaryTitle: 'Programming Practice',
+                        summary:
+                            'Hands-on coding session focused on algorithm design, code implementation, and debugging techniques.',
+                        learned: [
+                            'Algorithm optimization techniques',
+                            'Code refactoring best practices',
+                            'Debugging strategies',
+                            'Design pattern applications',
+                        ],
+                        skills: [
+                            {
+                                title: 'TypeScript Programming',
+                                description: 'Writing type-safe JavaScript applications',
+                            },
+                            {
+                                title: 'Problem Decomposition',
+                                description: 'Breaking complex problems into manageable pieces',
+                            },
+                        ],
+                        nextSteps: [
+                            {
+                                title: 'Build a Project',
+                                description: 'Apply learned concepts in a real project',
+                                keywords: {
+                                    occupations: ['Software Developer'],
+                                    careers: ['Technology'],
+                                    jobs: ['Developer'],
+                                    skills: ['TypeScript', 'JavaScript'],
+                                    fieldOfStudy: 'Computer Science',
+                                },
+                            },
+                            {
+                                title: 'Code Review',
+                                description: 'Review and refactor existing code',
+                                keywords: {
+                                    occupations: ['Software Engineer'],
+                                    careers: ['Technology'],
+                                    jobs: ['Engineer'],
+                                    skills: ['Code Review', 'Refactoring'],
+                                    fieldOfStudy: 'Software Engineering',
+                                },
+                            },
+                        ],
+                        reflections: [
+                            {
+                                title: 'Technical Growth',
+                                description: 'Improved coding efficiency and code quality',
+                            },
+                            {
+                                title: 'Tool Mastery',
+                                description:
+                                    'Better understanding of development tools and workflows',
+                            },
+                        ],
+                    },
+                    design: {
+                        sessionTitle: 'Design Workshop',
+                        summaryTitle: 'Design Exploration',
+                        summary:
+                            'Creative design session exploring visual concepts, user experience principles, and design system patterns.',
+                        learned: [
+                            'Visual hierarchy principles',
+                            'Color theory applications',
+                            'Typography best practices',
+                            'User-centered design approaches',
+                        ],
+                        skills: [
+                            {
+                                title: 'UI Design',
+                                description: 'Creating intuitive and beautiful user interfaces',
+                            },
+                            {
+                                title: 'UX Research',
+                                description: 'Understanding user needs and behaviors',
+                            },
+                        ],
+                        nextSteps: [
+                            {
+                                title: 'Create Mockups',
+                                description: 'Design high-fidelity interface mockups',
+                                keywords: {
+                                    occupations: ['UI Designer'],
+                                    careers: ['Design'],
+                                    jobs: ['Designer'],
+                                    skills: ['Figma', 'UI Design'],
+                                    fieldOfStudy: 'Design',
+                                },
+                            },
+                            {
+                                title: 'User Testing',
+                                description: 'Conduct usability tests with real users',
+                                keywords: {
+                                    occupations: ['UX Researcher'],
+                                    careers: ['Design'],
+                                    jobs: ['Researcher'],
+                                    skills: ['User Testing', 'Research'],
+                                    fieldOfStudy: 'User Experience',
+                                },
+                            },
+                        ],
+                        reflections: [
+                            {
+                                title: 'Creative Process',
+                                description: 'Discovered new approaches to design challenges',
+                            },
+                            {
+                                title: 'User Focus',
+                                description: 'Better appreciation for user-centered design',
+                            },
+                        ],
+                    },
+                    minimal: {
+                        sessionTitle: 'Quick Test Session',
+                        summaryTitle: 'Minimal Test',
+                        summary: 'A minimal test session for quick validation.',
+                        learned: ['Basic concept testing'],
+                        skills: [{ title: 'Testing', description: 'Basic test execution' }],
+                        nextSteps: [
+                            {
+                                title: 'Validate',
+                                description: 'Check if everything works',
+                                keywords: {
+                                    occupations: ['Tester'],
+                                    careers: ['QA'],
+                                    jobs: ['QA Engineer'],
+                                    skills: ['Testing'],
+                                    fieldOfStudy: 'Quality Assurance',
+                                },
+                            },
+                        ],
+                        reflections: [
+                            {
+                                title: 'Quick Check',
+                                description: 'Everything appears to be functioning',
+                            },
+                        ],
+                    },
+                };
+
+                // Helper: Parse text area content into array of strings
+                function parseLines(value: string): string[] {
+                    return value
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0);
+                }
+
+                // Helper: Parse skills from "Title: Description" format
+                function parseSkills(value: string): Array<{ title: string; description: string }> {
+                    return parseLines(value).map(line => {
+                        const separatorIndex = line.indexOf(':');
+                        if (separatorIndex > 0) {
+                            return {
+                                title: line.substring(0, separatorIndex).trim(),
+                                description: line.substring(separatorIndex + 1).trim(),
+                            };
+                        }
+                        return { title: line, description: '' };
+                    });
+                }
+
+                // Helper: Parse next steps from "Title: Description" format with default keywords
+                function parseNextSteps(value: string): Array<{
+                    title: string;
+                    description: string;
+                    keywords: {
+                        occupations: string[];
+                        careers: string[];
+                        jobs: string[];
+                        skills: string[];
+                        fieldOfStudy: string;
+                    };
+                }> {
+                    return parseLines(value).map(line => {
+                        const separatorIndex = line.indexOf(':');
+                        const title =
+                            separatorIndex > 0 ? line.substring(0, separatorIndex).trim() : line;
+                        const description =
+                            separatorIndex > 0 ? line.substring(separatorIndex + 1).trim() : '';
+                        return {
+                            title,
+                            description,
+                            keywords: {
+                                occupations: ['Professional'],
+                                careers: ['General'],
+                                jobs: ['Specialist'],
+                                skills: ['General Skills'],
+                                fieldOfStudy: 'General',
+                            },
+                        };
+                    });
+                }
+
+                // Helper: Parse reflections from "Title: Description" format
+                function parseReflections(
+                    value: string
+                ): Array<{ title: string; description: string }> {
+                    return parseLines(value).map(line => {
+                        const separatorIndex = line.indexOf(':');
+                        if (separatorIndex > 0) {
+                            return {
+                                title: line.substring(0, separatorIndex).trim(),
+                                description: line.substring(separatorIndex + 1).trim(),
+                            };
+                        }
+                        return { title: line, description: '' };
+                    });
+                }
+
+                // Helper: Build AI session payload from preset
+                function buildPresetPayload(presetKey: string) {
+                    sessionCount++;
+                    const preset = AI_SESSION_PRESETS[presetKey];
+                    if (!preset) return null;
+                    return {
+                        sessionTitle: `${preset.sessionTitle} #${sessionCount}`,
+                        summaryData: {
+                            title: `${preset.summaryTitle} ${sessionCount}`,
+                            summary: preset.summary,
+                            learned: preset.learned,
+                            skills: preset.skills,
+                            nextSteps: preset.nextSteps,
+                            reflections: preset.reflections,
+                        },
+                        metadata: {
+                            testSession: true,
+                            createdAt: new Date().toISOString(),
+                            sessionNumber: sessionCount,
+                            preset: presetKey,
+                        },
+                    };
+                }
+
+                // Helper: Build AI session payload from custom form
+                function buildCustomPayload() {
+                    const sessionTitleInput = document.getElementById(
+                        'custom-session-title'
+                    ) as HTMLInputElement | null;
+                    const summaryTitleInput = document.getElementById(
+                        'custom-summary-title'
+                    ) as HTMLInputElement | null;
+                    const summaryTextInput = document.getElementById(
+                        'custom-summary-text'
+                    ) as HTMLTextAreaElement | null;
+                    const learnedInput = document.getElementById(
+                        'custom-learned'
+                    ) as HTMLTextAreaElement | null;
+                    const skillsInput = document.getElementById(
+                        'custom-skills'
+                    ) as HTMLTextAreaElement | null;
+                    const nextStepsInput = document.getElementById(
+                        'custom-next-steps'
+                    ) as HTMLTextAreaElement | null;
+                    const reflectionsInput = document.getElementById(
+                        'custom-reflections'
+                    ) as HTMLTextAreaElement | null;
+
+                    if (
+                        !sessionTitleInput ||
+                        !summaryTitleInput ||
+                        !summaryTextInput ||
+                        !learnedInput ||
+                        !skillsInput ||
+                        !nextStepsInput ||
+                        !reflectionsInput
+                    ) {
+                        return null;
+                    }
+
+                    const sessionTitle = sessionTitleInput.value.trim();
+                    const summaryTitle = summaryTitleInput.value.trim();
+                    const summaryText = summaryTextInput.value.trim();
+
+                    if (!sessionTitle || !summaryTitle || !summaryText) {
+                        alert(
+                            'Please fill in at least the Session Title, Summary Title, and Summary Text.'
+                        );
+                        return null;
+                    }
+
+                    sessionCount++;
+                    return {
+                        sessionTitle: `${sessionTitle} #${sessionCount}`,
+                        summaryData: {
+                            title: `${summaryTitle} ${sessionCount}`,
+                            summary: summaryText,
+                            learned: parseLines(learnedInput.value),
+                            skills: parseSkills(skillsInput.value),
+                            nextSteps: parseNextSteps(nextStepsInput.value),
+                            reflections: parseReflections(reflectionsInput.value),
+                        },
+                        metadata: {
+                            testSession: true,
+                            createdAt: new Date().toISOString(),
+                            sessionNumber: sessionCount,
+                            preset: 'custom',
+                        },
+                    };
+                }
+
+                // Helper: Send AI session and display results
+                async function sendAiSession(
+                    payload: ReturnType<typeof buildCustomPayload>,
+                    button: HTMLButtonElement | null,
+                    originalText: string
+                ): Promise<void> {
+                    if (!payload) return;
+                    if (button) {
+                        button.disabled = true;
+                        button.textContent = 'Creating...';
+                    }
+
+                    try {
+                        const result = await learnCard.sendAiSessionCredential(payload);
+
+                        const topicUriDisplay = document.getElementById('topic-uri-display');
+                        const sessionCredentialDisplay = document.getElementById(
+                            'session-credential-display'
+                        );
+                        const isNewTopicDisplay = document.getElementById('is-new-topic-display');
+                        const aiSessionResult = document.getElementById('ai-session-result');
+                        const authStatus = document.getElementById('auth-status');
+
+                        if (topicUriDisplay) topicUriDisplay.textContent = result.topicUri || 'N/A';
+                        if (sessionCredentialDisplay)
+                            sessionCredentialDisplay.textContent =
+                                result.sessionCredentialUri || 'N/A';
+                        if (isNewTopicDisplay)
+                            isNewTopicDisplay.textContent = result.isNewTopic
+                                ? 'Yes (first session)'
+                                : 'No (existing topic)';
+                        if (aiSessionResult) aiSessionResult.classList.remove('hidden');
+                        if (authStatus)
+                            authStatus.textContent =
+                                'AI Session created! Check your AI Sessions page in LearnCard.';
+                    } catch (error: unknown) {
+                        const authStatus = document.getElementById('auth-status');
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (authStatus)
+                            authStatus.textContent = 'AI Session failed: ' + errorMessage;
+                    } finally {
+                        if (button) {
+                            button.disabled = false;
+                            button.textContent = originalText;
+                        }
+                    }
+                }
 
                 async function handleConnect() {
                     try {
                         await learnCard.requestIdentity();
-                        document.getElementById('auth-status').textContent = 'Connected!';
-                        document.getElementById('auth-section').classList.add('hidden');
-                        document.getElementById('controls').classList.remove('hidden');
-                        document.getElementById('setup-banner').classList.add('hidden');
-                    } catch (error: any) {
-                        document.getElementById('auth-status').textContent =
-                            'Failed: ' + error.message;
+                        const authStatus = document.getElementById('auth-status');
+                        const authSection = document.getElementById('auth-section');
+                        const controls = document.getElementById('controls');
+                        const setupBanner = document.getElementById('setup-banner');
+                        if (authStatus) authStatus.textContent = 'Connected!';
+                        if (authSection) authSection.classList.add('hidden');
+                        if (controls) controls.classList.remove('hidden');
+                        if (setupBanner) setupBanner.classList.add('hidden');
+                    } catch (error: unknown) {
+                        const authStatus = document.getElementById('auth-status');
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (authStatus) authStatus.textContent = 'Failed: ' + errorMessage;
                     }
                 }
 
                 async function handleRequestConsent() {
-                    const btn = document.getElementById('request-consent-btn') as HTMLButtonElement;
+                    const btn = document.getElementById(
+                        'request-consent-btn'
+                    ) as HTMLButtonElement | null;
+                    if (!btn) return;
                     btn.disabled = true;
                     btn.textContent = 'Requesting...';
 
@@ -273,63 +924,102 @@ import '../styles/global.css';
 
                         if (consentResult.granted) {
                             // Consent granted - show request options
-                            document.getElementById('consent-section').classList.add('hidden');
-                            document.getElementById('request-options').classList.remove('hidden');
-                            document.getElementById('auth-status').textContent =
-                                'Consent granted! Configure your request below.';
+                            const consentSection = document.getElementById('consent-section');
+                            const requestOptions = document.getElementById('request-options');
+                            const authStatus = document.getElementById('auth-status');
+                            if (consentSection) consentSection.classList.add('hidden');
+                            if (requestOptions) requestOptions.classList.remove('hidden');
+                            if (authStatus)
+                                authStatus.textContent =
+                                    'Consent granted! Configure your request below.';
                         } else {
                             // Consent denied
                             btn.disabled = false;
                             btn.textContent = 'Grant Access';
-                            document.getElementById('auth-status').textContent =
-                                'Consent denied. Cannot access learner context without permission.';
+                            const authStatus = document.getElementById('auth-status');
+                            if (authStatus)
+                                authStatus.textContent =
+                                    'Consent denied. Cannot access learner context without permission.';
                         }
-                    } catch (error: any) {
+                    } catch (error: unknown) {
                         btn.disabled = false;
                         btn.textContent = 'Grant Access';
-                        document.getElementById('auth-status').textContent =
-                            'Consent request failed: ' + error.message;
+                        const authStatus = document.getElementById('auth-status');
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (authStatus)
+                            authStatus.textContent = 'Consent request failed: ' + errorMessage;
                     }
                 }
 
-                function renderStructuredData(raw: { credentials?: unknown[]; personalData?: Record<string, unknown> } | undefined) {
-                    const structuredSection = document.getElementById('structured-section')!;
-                    const personalDataSection = document.getElementById('personal-data-section')!;
-                    const personalDataDisplay = document.getElementById('personal-data-display')!;
-                    const credentialsSection = document.getElementById('credentials-section')!;
-                    const credentialsDisplay = document.getElementById('credentials-display')!;
-                    const credentialsCount = document.getElementById('credentials-count')!;
+                function renderStructuredData(
+                    raw:
+                        | { credentials?: unknown[]; personalData?: Record<string, unknown> }
+                        | undefined
+                ) {
+                    const structuredSection = document.getElementById('structured-section');
+                    const personalDataSection = document.getElementById('personal-data-section');
+                    const personalDataDisplay = document.getElementById('personal-data-display');
+                    const credentialsSection = document.getElementById('credentials-section');
+                    const credentialsDisplay = document.getElementById('credentials-display');
+                    const credentialsCount = document.getElementById('credentials-count');
+
+                    if (
+                        !structuredSection ||
+                        !personalDataSection ||
+                        !personalDataDisplay ||
+                        !credentialsSection ||
+                        !credentialsDisplay ||
+                        !credentialsCount
+                    ) {
+                        return;
+                    }
 
                     structuredSection.classList.remove('hidden');
 
-                    // Personal data
                     if (raw?.personalData && Object.keys(raw.personalData).length > 0) {
                         personalDataSection.classList.remove('hidden');
                         personalDataDisplay.innerHTML = Object.entries(raw.personalData)
-                            .map(([key, value]) => `
+                            .map(
+                                ([key, value]) => `
                                 <div class="flex items-baseline gap-2 py-1 border-b border-gray-100 last:border-0">
                                     <span class="text-sm font-medium text-gray-500 min-w-[120px]">${key}</span>
-                                    <span class="text-sm text-gray-800 break-all">${typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                                    <span class="text-sm text-gray-800 break-all">${
+                                        typeof value === 'object'
+                                            ? JSON.stringify(value)
+                                            : String(value)
+                                    }</span>
                                 </div>
-                            `).join('');
+                            `
+                            )
+                            .join('');
                     } else {
                         personalDataSection.classList.add('hidden');
                     }
 
-                    // Credentials
                     if (raw?.credentials && raw.credentials.length > 0) {
                         credentialsSection.classList.remove('hidden');
                         credentialsCount.textContent = `(${raw.credentials.length})`;
                         credentialsDisplay.innerHTML = raw.credentials
                             .map((cred: any, i: number) => {
-                                const name = cred?.name || cred?.credentialSubject?.achievement?.name || `Credential ${i + 1}`;
-                                const type = (Array.isArray(cred?.type) ? cred.type : [cred?.type]).filter((t: string) => t !== 'VerifiableCredential').join(', ') || 'VerifiableCredential';
-                                const issuer = typeof cred?.issuer === 'string' ? cred.issuer : cred?.issuer?.name || cred?.issuer?.id || 'Unknown';
+                                const name =
+                                    cred?.name ||
+                                    cred?.credentialSubject?.achievement?.name ||
+                                    `Credential ${i + 1}`;
+                                const type =
+                                    (Array.isArray(cred?.type) ? cred.type : [cred?.type])
+                                        .filter((t: string) => t !== 'VerifiableCredential')
+                                        .join(', ') || 'VerifiableCredential';
+                                const issuer =
+                                    typeof cred?.issuer === 'string'
+                                        ? cred.issuer
+                                        : cred?.issuer?.name || cred?.issuer?.id || 'Unknown';
 
                                 return `
                                     <details class="group rounded-xl border-2 border-gray-200 overflow-hidden">
                                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors">
-                                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">${i + 1}</div>
+                                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">${
+                                                i + 1
+                                            }</div>
                                             <div class="flex-1 min-w-0">
                                                 <div class="font-semibold text-gray-800 truncate">${name}</div>
                                                 <div class="text-xs text-gray-500">${type} · ${issuer}</div>
@@ -337,11 +1027,16 @@ import '../styles/global.css';
                                             <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                         </summary>
                                         <div class="p-4 bg-gray-900 border-t border-gray-200">
-                                            <pre class="text-xs text-green-300 whitespace-pre-wrap break-all">${JSON.stringify(cred, null, 2)}</pre>
+                                            <pre class="text-xs text-green-300 whitespace-pre-wrap break-all">${JSON.stringify(
+                                                cred,
+                                                null,
+                                                2
+                                            )}</pre>
                                         </div>
                                     </details>
                                 `;
-                            }).join('');
+                            })
+                            .join('');
                     } else {
                         credentialsSection.classList.add('hidden');
                     }
@@ -350,54 +1045,108 @@ import '../styles/global.css';
                 async function handleRequest() {
                     const credsToggle = document.getElementById(
                         'include-credentials'
-                    ) as HTMLInputElement;
+                    ) as HTMLInputElement | null;
                     const personalDataToggle = document.getElementById(
                         'include-personal-data'
-                    ) as HTMLInputElement;
-                    const formatSelect = document.getElementById('format') as HTMLSelectElement;
+                    ) as HTMLInputElement | null;
+                    const formatSelect = document.getElementById(
+                        'format'
+                    ) as HTMLSelectElement | null;
                     const detailSelect = document.getElementById(
                         'detail-level'
-                    ) as HTMLSelectElement;
-
+                    ) as HTMLSelectElement | null;
                     const isStructured = formatSelect?.value === 'structured';
 
                     try {
                         const context = await learnCard.requestLearnerContext({
                             includeCredentials: credsToggle?.checked ?? true,
                             includePersonalData: personalDataToggle?.checked ?? false,
-                            format: formatSelect?.value as 'prompt' | 'structured',
-                            detailLevel: detailSelect?.value as 'compact' | 'expanded',
+                            format: (formatSelect?.value as 'prompt' | 'structured') ?? 'prompt',
+                            detailLevel:
+                                (detailSelect?.value as 'compact' | 'expanded') ?? 'expanded',
                         });
 
-                        const promptSection = document.getElementById('prompt-section')!;
-                        const structuredSection = document.getElementById('structured-section')!;
+                        const promptSection = document.getElementById('prompt-section');
+                        const structuredSection = document.getElementById('structured-section');
+                        const promptDisplay = document.getElementById('prompt-display');
+                        const didDisplay = document.getElementById('did-display');
+                        const nameDisplay = document.getElementById('name-display');
+                        const results = document.getElementById('results');
+                        const authStatus = document.getElementById('auth-status');
 
                         if (isStructured) {
-                            promptSection.classList.add('hidden');
-                            renderStructuredData(context.raw as { credentials?: unknown[]; personalData?: Record<string, unknown> } | undefined);
+                            if (promptSection) promptSection.classList.add('hidden');
+                            renderStructuredData(
+                                context.raw as
+                                    | {
+                                          credentials?: unknown[];
+                                          personalData?: Record<string, unknown>;
+                                      }
+                                    | undefined
+                            );
                         } else {
-                            promptSection.classList.remove('hidden');
-                            structuredSection.classList.add('hidden');
-                            document.getElementById('prompt-display')!.textContent = context.prompt;
+                            if (promptSection) promptSection.classList.remove('hidden');
+                            if (structuredSection) structuredSection.classList.add('hidden');
+                            if (promptDisplay) promptDisplay.textContent = context.prompt;
                         }
 
-                        document.getElementById('did-display')!.textContent = context.did;
-                        document.getElementById('name-display')!.textContent =
-                            context.displayName || 'N/A';
-                        document.getElementById('results')!.classList.remove('hidden');
-                        document.getElementById('auth-status')!.textContent =
-                            'Context retrieved successfully!';
-                    } catch (error: any) {
-                        document.getElementById('auth-status')!.textContent =
-                            'Request failed: ' + error.message;
+                        if (didDisplay) didDisplay.textContent = context.did;
+                        if (nameDisplay) nameDisplay.textContent = context.displayName || 'N/A';
+                        if (results) results.classList.remove('hidden');
+                        if (authStatus) authStatus.textContent = 'Context retrieved successfully!';
+                    } catch (error: unknown) {
+                        const authStatus = document.getElementById('auth-status');
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (authStatus) authStatus.textContent = 'Request failed: ' + errorMessage;
                     }
                 }
 
-                document.getElementById('connect-btn').addEventListener('click', handleConnect);
-                document
-                    .getElementById('request-consent-btn')
-                    .addEventListener('click', handleRequestConsent);
-                document.getElementById('request-btn').addEventListener('click', handleRequest);
+                // Handler for preset buttons
+                async function handlePresetClick(event: Event) {
+                    const target = event.currentTarget as HTMLButtonElement;
+                    const preset = target.dataset.preset as keyof typeof AI_SESSION_PRESETS;
+                    if (!preset || !(preset in AI_SESSION_PRESETS)) return;
+
+                    const originalText = target.textContent || '';
+                    const payload = buildPresetPayload(preset);
+                    await sendAiSession(payload, target, originalText);
+                }
+
+                // Handler for custom form submission
+                async function handleCustomSession() {
+                    const btn = document.getElementById(
+                        'create-custom-session-btn'
+                    ) as HTMLButtonElement | null;
+                    const payload = buildCustomPayload();
+                    if (!payload || !btn) return;
+
+                    const originalText = btn.textContent || '';
+                    await sendAiSession(payload, btn, originalText);
+                }
+
+                // Event listeners
+                const connectBtn = document.getElementById('connect-btn');
+                const requestConsentBtn = document.getElementById('request-consent-btn');
+                const requestBtn = document.getElementById('request-btn');
+                const customSessionBtn = document.getElementById('create-custom-session-btn');
+
+                if (connectBtn) connectBtn.addEventListener('click', handleConnect);
+                if (requestConsentBtn)
+                    requestConsentBtn.addEventListener('click', handleRequestConsent);
+                if (requestBtn) requestBtn.addEventListener('click', handleRequest);
+                if (customSessionBtn)
+                    customSessionBtn.addEventListener('click', handleCustomSession);
+
+                // Preset button listeners
+                [
+                    'preset-learning-btn',
+                    'preset-coding-btn',
+                    'preset-design-btn',
+                    'preset-minimal-btn',
+                ].forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) btn.addEventListener('click', handlePresetClick);
+                });
             </script>
         </div>
     </body>

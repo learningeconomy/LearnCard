@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import _ from 'lodash';
 
 import type { CareerOneStopOccupation, OccupationDetailsResponse } from '../../types/careerOneStop';
@@ -6,15 +6,21 @@ import { useWallet } from 'learn-card-base';
 
 import { networkStore } from '../../stores/NetworkStore';
 
-const fetchOccupationDetailsForKeyword = async (
-    keyword: string
-): Promise<OccupationDetailsResponse[]> => {
+export const fetchOccupationDetailsForKeyword = async ({
+    keyword,
+    limit,
+    topNDetails,
+}: {
+    keyword: string;
+    limit?: number;
+    topNDetails?: number;
+}): Promise<OccupationDetailsResponse[]> => {
     const res = await fetch(`${networkStore.get.aiServiceUrl()}/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ keyword }),
+        body: JSON.stringify({ keyword, limit, topNDetails }),
     });
 
     if (!res.ok) {
@@ -29,18 +35,22 @@ export const useOccupationSuggestionsForKeyword = (keyword: string) => {
     return useQuery({
         queryKey: ['occupation-suggestions', keyword],
         queryFn: async () => {
-            return fetchOccupationDetailsForKeyword(keyword);
+            return fetchOccupationDetailsForKeyword({ keyword });
         },
         enabled: keyword.length >= 2,
         staleTime: 1000 * 60 * 5,
     });
 };
 
-export const useOccupationDetailsForKeyword = (keyword: string) => {
+export const useOccupationDetailsForKeyword = (
+    keyword: string,
+    limit?: number,
+    topNDetails?: number
+) => {
     return useQuery({
-        queryKey: ['occupation-details', keyword],
+        queryKey: ['occupation-details', keyword, limit, topNDetails],
         queryFn: async () => {
-            return fetchOccupationDetailsForKeyword(keyword);
+            return fetchOccupationDetailsForKeyword({ keyword, limit, topNDetails });
         },
         enabled: Boolean(keyword),
     });
@@ -187,7 +197,7 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
             // Step 1-2: Fetch occupation details for each keyword
             const occupationPromises = keywords
                 .slice(0, 3)
-                .map(keyword => fetchOccupationDetailsForKeyword(keyword));
+                .map(keyword => fetchOccupationDetailsForKeyword({ keyword }));
 
             const occupationResults = await Promise.all(occupationPromises);
 
@@ -242,3 +252,88 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
         refetchOnMount: false,
     });
 };
+
+export interface YouTubeVideo {
+    videoId: string;
+    title: string;
+    description: string;
+    channelTitle: string;
+    publishedAt: string;
+    thumbnailUrl: string;
+    url: string;
+}
+
+export const searchYouTubeVideos = async (keyword: string): Promise<YouTubeVideo[]> => {
+    const url = new URL('/api/youtube/search', networkStore.get.aiServiceUrl());
+    url.searchParams.set('keyword', keyword);
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || `Failed to search videos: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+        throw new Error('Invalid response: expected an array of videos');
+    }
+
+    const validatedVideos = data.filter((item: any): item is YouTubeVideo => {
+        return (
+            typeof item === 'object' &&
+            item !== null &&
+            typeof item.videoId === 'string' &&
+            typeof item.title === 'string' &&
+            typeof item.description === 'string' &&
+            typeof item.channelTitle === 'string' &&
+            typeof item.publishedAt === 'string' &&
+            typeof item.thumbnailUrl === 'string' &&
+            typeof item.url === 'string'
+        );
+    });
+
+    if (validatedVideos.length === 0 && data.length > 0) {
+        throw new Error('Invalid response: no valid video objects found');
+    }
+
+    return validatedVideos;
+};
+
+interface UseYouTubeSearchOptions {
+    enabled?: boolean;
+    staleTime?: number;
+}
+
+export function useYouTubeSearch(keyword: string, options: UseYouTubeSearchOptions = {}) {
+    const { enabled = true, staleTime = 5 * 60 * 1000 } = options;
+
+    return useQuery<YouTubeVideo[], Error>({
+        queryKey: ['youtube-search', keyword],
+        queryFn: () => searchYouTubeVideos(keyword),
+        enabled: enabled && keyword.trim().length > 0,
+        staleTime,
+        gcTime: 30 * 60 * 1000,
+        retry: (failureCount, error) => {
+            if (error.message.includes('required') || error.message.includes('not configured')) {
+                return false;
+            }
+            return failureCount < 2;
+        },
+    });
+}
+
+export function useRefreshYouTubeSearch() {
+    const queryClient = useQueryClient();
+
+    return (keyword: string) => {
+        queryClient.invalidateQueries({
+            queryKey: ['youtube-search', keyword],
+        });
+    };
+}

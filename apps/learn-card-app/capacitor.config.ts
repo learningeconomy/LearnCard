@@ -53,7 +53,16 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'com.learncard.app',
             autoUpdate: true,
-            defaultChannel: '1.0.6', // bumped here -> https://github.com/learningeconomy/LearnCard/pull/1063
+            // SINGLE SOURCE OF TRUTH for the Capgo channel.
+            // - CI reads this value via `tools/capgo/getCapgoChannel.js` (regex match) to pick
+            //   the channel that OTA bundles are uploaded to in the deploy workflow.
+            // - `npx cap sync` propagates this into ios/.../capacitor.config.json and
+            //   android/.../capacitor.config.json so installed binaries listen on the same
+            //   channel that CI uploads to.
+            // Bump this value whenever you bump native binaries; do NOT add a parallel
+            // tenant-level override — that's how channels drift and OTA updates land in
+            // an empty channel (see PR #1063 incident).
+            defaultChannel: '1.0.6',
         },
     },
 };

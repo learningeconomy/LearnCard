@@ -251,6 +251,25 @@ console.log(result);
 **Pre-Signed Credentials**: When you provide only `signedCredential` (without `templateUri` or `template`), the system automatically creates a template from your credential. This is ideal when you've already signed the credential yourself and don't need the server to sign it. Your original proof is preserved through the entire flow, including email inbox claims.
 {% endhint %}
 
+### Guardian-Gated Credentials
+
+To require guardian (parent) approval before a minor can claim a credential, add `guardianEmail` to `options`:
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student@school.edu',
+    templateUri: 'urn:lc:boost:abc123',
+    options: {
+        guardianEmail: 'parent@example.com',
+    },
+});
+
+console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
+```
+
+The guardian receives an approval email with an OTP challenge. The student cannot claim the credential until the guardian approves. See [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md) for the full guide.
+
 ### Response
 
 ```typescript
@@ -268,6 +287,10 @@ interface SendResponse {
             | 'CLAIMED';     // Claimed via claim link
         claimUrl?: string;   // Present when suppressDelivery=true
         recipientDid?: string; // DID of recipient (present when ISSUED)
+        guardianStatus?:       // Present when guardianEmail was specified
+            | 'AWAITING_GUARDIAN'  // Waiting for guardian approval
+            | 'GUARDIAN_APPROVED'  // Guardian approved
+            | 'GUARDIAN_REJECTED'; // Guardian rejected
     };
 }
 ```

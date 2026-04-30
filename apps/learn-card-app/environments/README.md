@@ -164,12 +164,32 @@ The config is a partial `TenantConfig` object. Fields are deep-merged onto
 | `branding`     | App name, colors, category labels            |
 | `features`     | Feature toggles                              |
 | `native`       | Bundle ID, deep link domains, Capgo channel  |
+| `email`        | Email branding for recovery / OTP / notification emails |
 
 The config supports an optional `schemaVersion` field (defaults to the current
 version). When the schema version changes, stale localStorage caches are
 automatically invalidated.
 
 See `tenantConfigSchema.ts` for the full schema with defaults.
+
+### Email branding
+
+The `auth.keyDerivation: 'sss'` client forwards `X-Tenant-Id` on every request
+to `lca-api`. Server-side, the active tenant is resolved and used to brand
+recovery / OTP / notification emails (subject, from-address, logo, colors,
+copy). See [Configure Tenant-Branded Emails](../../../docs/how-to-guides/configure-tenant-branded-emails.md)
+for the end-to-end setup, and the `tenantEmailConfigSchema` in
+`packages/learn-card-base/src/config/tenantConfigSchema.ts` for the field list.
+
+{% hint style="info" %}
+**Backend registration required.** The `email` section of `config.json` is
+validated by the schema but is **not yet read by `lca-api` / `brain-service`**.
+To brand emails for a new tenant today, add an entry to
+`TENANT_EMAIL_BRANDING` and `ORIGIN_MAP` in
+`packages/email-templates/src/tenant-registry.ts` and open a PR. The
+`config.json` `email` section is reserved for future work that will let
+tenants override branding without a package change.
+{% endhint %}
 
 ## Config precedence
 

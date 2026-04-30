@@ -145,6 +145,24 @@ describe('Boost Templating (Mustache)', () => {
                 const result = renderBoostTemplate(template, { score: 95 });
                 expect(result).toBe('{"score": "95"}');
             });
+
+            it('should support Mustache sections with arrays of objects', () => {
+                const template =
+                    '{"evidence":[{{#evidence}}{"id":"{{id}}","name":"{{name}}"}{{^last}},{{/last}}{{/evidence}}]}';
+                const result = renderBoostTemplate(template, {
+                    evidence: [
+                        { id: 'urn:evidence:1', name: 'Photo 1', last: false },
+                        { id: 'urn:evidence:2', name: 'Photo 2', last: true },
+                    ],
+                });
+
+                expect(JSON.parse(result)).toEqual({
+                    evidence: [
+                        { id: 'urn:evidence:1', name: 'Photo 1' },
+                        { id: 'urn:evidence:2', name: 'Photo 2' },
+                    ],
+                });
+            });
         });
 
         describe('parseRenderedTemplate', () => {

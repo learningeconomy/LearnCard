@@ -1,5 +1,106 @@
 # learn-card-core
 
+## 2.11.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.31
+
+## 2.11.2
+
+### Patch Changes
+
+-   [#1184](https://github.com/learningeconomy/LearnCard/pull/1184) [`d34e3d32d844d99128071fe63d23585806349c35`](https://github.com/learningeconomy/LearnCard/commit/d34e3d32d844d99128071fe63d23585806349c35) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1746] - Per-Recipient Dynamic Evidence for Boost Credentials
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.30
+
+## 2.11.1
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.29
+    -   @learncard/core@9.4.16
+    -   @learncard/helpers@1.2.16
+
+## 2.11.0
+
+### Minor Changes
+
+-   [#1094](https://github.com/learningeconomy/LearnCard/pull/1094) [`c94799c5364d48188683ba18c8591b7eaf587384`](https://github.com/learningeconomy/LearnCard/commit/c94799c5364d48188683ba18c8591b7eaf587384) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Thin Federation: Cross-instance credential exchange
+
+    ### New Features
+
+    **External URI Resolution**
+
+    -   URI resolution now automatically detects external domains and fetches resources from remote brain-service instances
+    -   Storage resolve endpoint handles both local and external URI resolution transparently
+    -   Boost URIs from external domains are now correctly preserved when fetched
+
+    **Federated Inbox API**
+
+    -   New `POST /api/inbox/receive` endpoint accepts credentials from trusted external brain-services
+    -   DID Auth JWT authentication for service-to-service communication
+    -   Creates federated inbox credential records with issuer tracking
+    -   Sends notifications to recipients when credentials are received
+
+    **Trust Registry**
+
+    -   Environment-based service whitelist via `TRUSTED_BRAIN_SERVICES`
+    -   `isServiceTrusted()` checks if a service is trusted by extracting server DID from user DID
+    -   `getTrustedServices()` returns list of trusted brain-services
+
+    **Seamless SDK Integration**
+
+    -   `sendCredential()` now automatically detects external DIDs and federates
+    -   No separate method needed - existing API works for both local and cross-instance sends
+    -   DID resolution finds inbox service endpoints from DID Documents
+
+    **DID Document Updates**
+
+    -   Added `UniversalInboxService` endpoint to DID documents
+    -   Added `LearnCardBrainService` endpoint for service discovery
+    -   Services can now discover each other via DID resolution
+
+    ### Bug Fixes
+
+    -   Fixed `getBoost()` to preserve original URI domain when returning boosts from external services
+    -   Fixed trust check to properly extract server DID from user DID for comparison
+    -   Fixed external URI resolution to use correct domain comparison
+
+    ### Testing
+
+    -   Added comprehensive federation E2E tests in `tests/federation-e2e/`
+    -   Tests cover: trust registry, DID resolution, federated inbox, external URI resolution
+    -   Docker Compose setup for multi-instance testing
+
+### Patch Changes
+
+-   [#1151](https://github.com/learningeconomy/LearnCard/pull/1151) [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc) Thanks [@goblincore](https://github.com/goblincore)! - [Feat] [LC-1729][LC-1730][LC-1731] Guardian-Gated Credential Issuance
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564)]:
+    -   @learncard/core@9.4.15
+    -   @learncard/helpers@1.2.15
+    -   @learncard/network-brain-client@2.5.28
+
 ## 2.10.15
 
 ### Patch Changes

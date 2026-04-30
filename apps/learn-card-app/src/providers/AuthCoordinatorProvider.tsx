@@ -60,7 +60,7 @@ import {
     type KeyDerivationStrategy,
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
-import { walletStore } from 'learn-card-base/stores/walletStore';
+import { walletStore, switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { pushUtilities } from 'learn-card-base/utils/pushUtilities';
 import { getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
@@ -99,6 +99,8 @@ import {
     getFirebaseRedirectDomain,
     getFirebaseDynamicLinkDomain,
     getNativeBundleId,
+    getTenantHeaders,
+    getResolvedTenantConfig,
 } from '../config/bootstrapTenantConfig';
 
 import {
@@ -229,6 +231,18 @@ const DeviceLinkOverlay: React.FC<{
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
 
+    // Resolve the active tenant so recovery / OTP emails sent by the
+    // lca-api are branded for the tenant the user signed up under.
+    // The factory runs after bootstrapTenantConfig() resolves, but we
+    // guard defensively for test / edge-case paths.
+    let tenantId: string | undefined;
+
+    try {
+        tenantId = getResolvedTenantConfig().tenantId;
+    } catch {
+        tenantId = undefined;
+    }
+
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
@@ -237,6 +251,7 @@ registerKeyDerivationFactory('sss', () => {
         // user has enabled "public computer" mode.
         storage: Capacitor.isNativePlatform() ? createNativeSSSStorage() : createAdaptiveStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
+        tenantId,
     });
 });
 
@@ -872,7 +887,10 @@ const AuthSessionManager: React.FC<{
 
         const initializeWallet = async () => {
             try {
-                const newWallet = await getBespokeLearnCard(privateKey);
+                // Restore switched profile from localStorage so hard refresh
+                // keeps the user on the org/child account they selected.
+                const persistedSwitchedDid = switchedProfileStore.get.switchedDid();
+                const newWallet = await getBespokeLearnCard(privateKey, persistedSwitchedDid);
 
                 if (!newWallet) {
                     console.error('Failed to initialize wallet from private key');
@@ -1195,7 +1213,7 @@ const AuthSessionManager: React.FC<{
 
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', ...getTenantHeaders() },
                             body: JSON.stringify({ email }),
                         });
 
@@ -1457,6 +1475,7 @@ const AuthSessionManager: React.FC<{
                         return {
                             'Content-Type': 'application/json',
                             ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                            ...getTenantHeaders(),
                         };
                     };
 

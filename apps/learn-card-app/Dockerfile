@@ -57,6 +57,7 @@ COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY packages/learn-card-embed-sdk/package.json packages/learn-card-embed-sdk/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
+COPY packages/email-templates/package.json packages/email-templates/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 # Install dependencies - done before copying source for caching
@@ -100,6 +101,7 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 COPY packages/sss-key-manager packages/sss-key-manager
+COPY packages/email-templates packages/email-templates
 COPY apps/learn-card-app apps/learn-card-app
 
 RUN rm -rf node_modules/.cache/nx

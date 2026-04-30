@@ -72,6 +72,16 @@
         "appStoreUrl": "TODO_APP_STORE_URL",
         "playStoreUrl": "TODO_PLAY_STORE_URL"
     },
+    "email": {
+        "brandName": "VetPass",
+        "logoAlt": "VetPass",
+        "primaryColor": "#1B5E20",
+        "supportEmail": "support@vetpass.app",
+        "websiteUrl": "https://vetpass.app",
+        "appUrl": "https://vetpass.app",
+        "fromDomain": "vetpass.app",
+        "copyrightHolder": "VetPass"
+    },
     "native": {
         "bundleId": "com.vetpass.app",
         "displayName": "VetPass",
@@ -79,7 +89,6 @@
             "vetpass.app",
             "learncard.app"
         ],
-        "customSchemes": ["dccrequest", "msprequest", "asuprequest"],
-        "capgoChannel": "1.0.0"
+        "customSchemes": ["dccrequest", "msprequest", "asuprequest"]
     }
 }

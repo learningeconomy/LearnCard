@@ -15,44 +15,74 @@ export type {
  */
 export interface PartnerConnectOptions {
     /**
-     * The origin(s) of the LearnCard host
+     * The origin(s) of the LearnCard host.
      *
-     * This can be a single string or an array of strings to serve as a whitelist for
-     * the `lc_host_override` query parameter.
+     * Each entry may be either an **exact origin** (`https://learncard.app`) or a
+     * **wildcard pattern** where `*` stands in for a single DNS label portion in
+     * the host portion of the origin (e.g. `https://*.learncard.app`,
+     * `https://*.vetpass.app`). Wildcards are **only** allowed in the host and
+     * only as label(s); the protocol and port must always match exactly.
      *
-     * **Origin Configuration Hierarchy:**
-     * 1. **Hardcoded Default**: `https://learncard.app` (security anchor)
-     * 2. **Query Parameter Override**: `?lc_host_override=https://staging.learncard.app`
-     *    - Checked against whitelist if `hostOrigin` is provided
-     *    - Used for staging/testing environments
-     * 3. **Configured Origin**: First value in array or single string value
+     * Wildcard patterns match any non-empty chain of labels. So
+     * `https://*.learncard.app` matches both `https://staging.learncard.app` and
+     * `https://pr-123.preview.learncard.app`, but **not** `https://learncard.app`
+     * itself (include the bare origin explicitly if you need it) and **not**
+     * `https://evil.learncard.app.attacker.com` (the suffix must match).
      *
-     * **Security Model:**
-     * - The SDK enforces STRICT origin validation
-     * - Incoming messages must EXACTLY match the active host origin
-     * - Prevents origin spoofing: even if malicious query param is added,
-     *   messages from unauthorized origins are rejected
+     * **Origin Configuration Hierarchy at runtime:**
+     * 1. `window.location.ancestorOrigins[0]` (when available) — the real parent
+     *    origin as reported by the browser, validated against the effective
+     *    whitelist. This source cannot be spoofed by a malicious query param.
+     * 2. `?lc_host_override=<origin>` query parameter — validated against the
+     *    whitelist. Used by the LearnCard host to tell the SDK which origin it
+     *    is loading from.
+     * 3. `sessionStorage['lc_host_override']` — a previously-validated override
+     *    persisted across in-iframe navigation.
+     * 4. First value in the configured `hostOrigin` array / single string.
+     * 5. `PartnerConnect.DEFAULT_HOST_ORIGIN` (`https://learncard.app`).
+     *
+     * The partner app's configured whitelist is combined with a small built-in
+     * list of LearnCard tenant domains (see `disableDefaultTenants` to opt out).
+     * This lets a partner app work out-of-the-box inside any current or future
+     * `*.learncard.app`, `*.learncard.ai`, or `*.vetpass.app` tenant without a
+     * re-deploy.
      *
      * **Examples:**
      *
-     * Single origin (production):
+     * Single origin (production only):
      * ```typescript
      * hostOrigin: 'https://learncard.app'
-     * // Uses: https://learncard.app
-     * // Override: ?lc_host_override=https://staging.learncard.app (not validated)
      * ```
      *
-     * Multiple origins (whitelist for staging):
+     * Wildcard whitelist (covers staging + preview):
      * ```typescript
-     * hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
-     * // Default: https://learncard.app
-     * // Override: ?lc_host_override=https://staging.learncard.app (validated)
-     * // Invalid: ?lc_host_override=https://evil.com (rejected)
+     * hostOrigin: ['https://learncard.app', 'https://*.learncard.app']
+     * ```
+     *
+     * Custom tenant alongside the built-in LearnCard defaults:
+     * ```typescript
+     * hostOrigin: ['https://partner.example.com']
+     * // learncard.app / *.learncard.app / *.learncard.ai / vetpass.app / *.vetpass.app
+     * // are ALSO trusted because disableDefaultTenants is false.
      * ```
      *
      * @default 'https://learncard.app'
      */
     hostOrigin?: string | string[];
+
+    /**
+     * Opt out of the built-in LearnCard tenant whitelist.
+     *
+     * By default, the SDK merges `hostOrigin` with a curated list of LearnCard
+     * and tenant domains (see `PartnerConnect.DEFAULT_TRUSTED_TENANTS`) so that
+     * partner apps work on any LearnCard-managed tenant without reconfiguration.
+     *
+     * Set to `true` if you want the partner app to **only** trust the origins
+     * you pass in `hostOrigin`.
+     *
+     * @default false
+     */
+    disableDefaultTenants?: boolean;
 
     /**
      * Whether to allow native app origins (default: true)
@@ -341,6 +371,89 @@ export interface LearnerContextResponse {
 
     /** User's display name if available */
     displayName?: string;
+}
+
+/**
+ * Keywords for next steps in summary credential data
+ */
+export interface SummaryCredentialKeyword {
+    occupations: string[] | null;
+    careers: string[] | null;
+    jobs: string[] | null;
+    skills: string[] | null;
+    fieldOfStudy: string | null;
+}
+
+/**
+ * Skill item in summary credential data
+ */
+export interface SummaryCredentialSkill {
+    title: string;
+    description: string;
+}
+
+/**
+ * Next step item in summary credential data
+ */
+export interface SummaryCredentialNextStep {
+    title: string;
+    description: string;
+    keywords: SummaryCredentialKeyword;
+}
+
+/**
+ * Reflection item in summary credential data
+ */
+export interface SummaryCredentialReflection {
+    title: string;
+    description: string;
+}
+
+/**
+ * Summary data for an AI Session credential
+ * Contains structured information about what was learned
+ */
+export interface SummaryCredentialData {
+    /** Short, concise title for the learning session or credential */
+    title: string;
+    /** Comprehensive summary of what happened during the session */
+    summary: string;
+    /** Bullet points of key knowledge gained */
+    learned: string[];
+    /** Categorized skills learned during the session */
+    skills: SummaryCredentialSkill[];
+    /** Recommended follow-up activities or learning modules */
+    nextSteps: SummaryCredentialNextStep[];
+    /** Reflections on the learning experience */
+    reflections: SummaryCredentialReflection[];
+}
+
+/**
+ * Input for creating and sending an AI Session credential
+ */
+export interface SendAiSessionCredentialInput {
+    /** Title of this specific AI session */
+    sessionTitle: string;
+    /** Structured summary data about what was learned */
+    summaryData: SummaryCredentialData;
+    /** Optional metadata for the session */
+    metadata?: Record<string, unknown>;
+}
+
+/**
+ * Response from sending an AI Session credential
+ */
+export interface SendAiSessionCredentialResponse {
+    /** URI of the AI Topic (parent) boost */
+    topicUri: string;
+    /** URI of the topic credential, if a new topic was created */
+    topicCredentialUri?: string;
+    /** URI of the created AI Session credential */
+    sessionCredentialUri: string;
+    /** URI of the session boost (child of topic) */
+    sessionBoostUri: string;
+    /** Whether a new topic was created (true) or existing was used (false) */
+    isNewTopic: boolean;
 }
 
 /**

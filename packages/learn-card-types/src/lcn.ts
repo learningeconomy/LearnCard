@@ -438,6 +438,13 @@ export const SendBrandingOptionsValidator = z.object({
 });
 export type SendBrandingOptions = z.infer<typeof SendBrandingOptionsValidator>;
 
+export const GuardianStatusValidator = z.enum([
+    'AWAITING_GUARDIAN',
+    'GUARDIAN_APPROVED',
+    'GUARDIAN_REJECTED',
+]);
+export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
+
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
     webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),
@@ -446,6 +453,11 @@ export const SendOptionsValidator = z.object({
         .optional()
         .describe('If true, returns claimUrl without sending email/SMS'),
     branding: SendBrandingOptionsValidator.optional().describe('Branding for email/SMS delivery'),
+    guardianEmail: z
+        .string()
+        .email()
+        .optional()
+        .describe('Guardian email that must approve before student can claim'),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
 
@@ -467,7 +479,19 @@ export const SendBoostInputValidator = z
     .refine(data => data.templateUri || data.template || data.signedCredential, {
         message: 'Either templateUri, template, or signedCredential must be provided.',
         path: ['templateUri'],
-    });
+    })
+    .refine(
+        data => {
+            if (data.options?.guardianEmail) {
+                return data.options.guardianEmail.toLowerCase() !== data.recipient.toLowerCase();
+            }
+            return true;
+        },
+        {
+            message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+            path: ['options', 'guardianEmail'],
+        }
+    );
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
 // Inbox-specific response fields (only present when sent via email/phone)
@@ -475,6 +499,9 @@ export const SendInboxResponseValidator = z.object({
     issuanceId: z.string(),
     status: z.enum(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']),
     claimUrl: z.string().url().optional().describe('Present when suppressDelivery=true'),
+    guardianStatus: GuardianStatusValidator.optional().describe(
+        'Present when guardianEmail was specified'
+    ),
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
@@ -862,6 +889,9 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_REJECTED',
     'APP_LISTING_WITHDRAWN',
     'DEVICE_LINK_REQUEST',
+    'GUARDIAN_APPROVAL_PENDING',
+    'GUARDIAN_APPROVED',
+    'GUARDIAN_REJECTED',
     'APP_NOTIFICATION',
 ]);
 
@@ -916,7 +946,10 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
     to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    from: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
+    from: z.union([
+        z.string(),
+        LCNProfileValidator.partial().and(z.object({ did: z.string() })),
+    ]),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.iso.datetime().optional(),
@@ -1087,6 +1120,11 @@ export const InboxCredentialValidator = z.object({
             name: z.string().optional(),
         })
         .optional(),
+    // Guardian gate fields (all optional — absent on pre-existing credentials)
+    guardianEmail: z.string().email().optional(),
+    guardianStatus: GuardianStatusValidator.optional(),
+    guardianApprovedAt: z.string().optional(),
+    guardianApprovedByDid: z.string().optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
@@ -1913,6 +1951,65 @@ export const RequestLearnerContextEventValidator = z.object({
 
 export type RequestLearnerContextEvent = z.infer<typeof RequestLearnerContextEventValidator>;
 
+export const SummaryCredentialKeywordValidator = z.object({
+    occupations: z.array(z.string()).nullable(),
+    careers: z.array(z.string()).nullable(),
+    jobs: z.array(z.string()).nullable(),
+    skills: z.array(z.string()).nullable(),
+    fieldOfStudy: z.string().nullable(),
+});
+
+export type SummaryCredentialKeyword = z.infer<typeof SummaryCredentialKeywordValidator>;
+
+export const SummaryCredentialDataValidator = z.object({
+    title: z.string().describe('Short, concise title for the learning session or credential'),
+    summary: z.string().describe('Comprehensive summary of what happened during the session'),
+    learned: z.array(z.string()).describe('Bullet points of key knowledge gained'),
+    skills: z
+        .array(
+            z.object({
+                title: z.string().describe('Name of the skill category'),
+                description: z
+                    .string()
+                    .describe('Detailed description of what this skill category involves'),
+            })
+        )
+        .describe('Categorized skills learned during the session'),
+    nextSteps: z
+        .array(
+            z.object({
+                title: z.string().describe('Title of the suggested next step'),
+                description: z
+                    .string()
+                    .describe('Description explaining why this next step is recommended'),
+                keywords: SummaryCredentialKeywordValidator,
+            })
+        )
+        .describe('Recommended follow-up activities or learning modules'),
+    reflections: z
+        .array(
+            z.object({
+                title: z.string().describe('Title of the reflection'),
+                description: z
+                    .string()
+                    .describe('Detailed description of what this reflection involves'),
+            })
+        )
+        .describe('Reflections on the learning experience'),
+});
+
+export type SummaryCredentialData = z.infer<typeof SummaryCredentialDataValidator>;
+
+// AI Session credential event for creating AI tutoring sessions
+export const SendAiSessionCredentialEventValidator = z.object({
+    type: z.literal('send-ai-session-credential'),
+    sessionTitle: z.string(),
+    summaryData: SummaryCredentialDataValidator,
+    metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SendAiSessionCredentialEvent = z.infer<typeof SendAiSessionCredentialEventValidator>;
+
 export const SendNotificationEventValidator = z.object({
     type: z.literal('send-notification'),
     title: z.string().optional(),
@@ -1959,6 +2056,7 @@ export const AppEventValidator = z.discriminatedUnion('type', [
     CheckIssuanceStatusEventValidator,
     GetTemplateRecipientsEventValidator,
     RequestLearnerContextEventValidator,
+    SendAiSessionCredentialEventValidator,
     SendNotificationEventValidator,
     IncrementCounterEventValidator,
     GetCounterEventValidator,
@@ -2012,7 +2110,7 @@ export const CredentialActivityValidator = z.object({
     activityId: z.string(),
     eventType: CredentialActivityEventTypeValidator,
     timestamp: z.string(),
-    actorProfileId: z.string(),
+    actorProfileId: z.string().optional(),
     recipientType: CredentialActivityRecipientTypeValidator,
     recipientIdentifier: z.string(),
     boostUri: z.string().optional(),

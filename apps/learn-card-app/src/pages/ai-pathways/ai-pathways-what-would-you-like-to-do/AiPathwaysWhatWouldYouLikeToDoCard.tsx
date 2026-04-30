@@ -4,14 +4,12 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
+import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 
 import PathwaySearchInput from './PathwaySearchInput';
 import ExplorePathwaysModal from '../ExplorePathwaysModal';
-
-export enum AiPathwaysWhatWouldYouLikeToDoCardOptions {
-    GrowSkills = 'grow-skills',
-    FindRoles = 'find-roles',
-}
+import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './AiPathwaysWhatWouldYouLikeToDoCard.types';
 
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
     const { newModal } = useModal();
@@ -25,6 +23,8 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
         CredentialCategoryEnum.aiPathway
     );
     const { IconWithShape: SkillsIcon } = getThemedCategoryIcons(CredentialCategoryEnum.skill);
+    const ResolvedPathwaysIcon = PathwaysIcon ?? AiPathwaysIconWithShape;
+    const ResolvedSkillsIcon = SkillsIcon ?? SkillsIconWithShape;
 
     const openExplorePathwaysModal = ({
         query,
@@ -47,12 +47,13 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
 
     return (
         <div className="flex items-center justify-center w-full rounded-[15px] px-4 max-w-[600px]">
-            <div className="w-full bg-white rounded-lg p-4 shadow-sm flex flex-col gap-4">
+            <div className="w-full bg-white rounded-lg p-4 shadow-bottom-4-4 flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
                     <IonLabel className="text-grayscale-900 font-poppins text-xl">
                         What would you like to do?
                     </IonLabel>
                     <PathwaySearchInput
+                        variant="simple"
                         value={searchQuery}
                         onValueChange={setSearchQuery}
                         onSearchSubmit={query => openExplorePathwaysModal({ query })}
@@ -76,7 +77,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         }
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
-                        <SkillsIcon className="w-[50px] h-[50px]" />
+                        <ResolvedSkillsIcon className="w-[50px] h-[50px]" />
                         Grow Skills
                     </button>
 
@@ -89,7 +90,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         }
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
-                        <PathwaysIcon className="w-[50px] h-[50px]" />
+                        <ResolvedPathwaysIcon className="w-[50px] h-[50px]" />
                         Find Roles
                     </button>
                 </div>

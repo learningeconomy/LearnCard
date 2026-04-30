@@ -121,6 +121,7 @@ export type LearnCardNetworkPluginDependentMethods = {
     clearDidWebCache?: () => Promise<void>;
     createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
     decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
+    resolveDid: (did: string) => Promise<DidDocument>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -144,6 +145,12 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    claimPendingGuardianLinks: () => Promise<
+        Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
+    >;
+    getMyManagedChildren: () => Promise<LCNProfile[]>;
+    getMyGuardians: () => Promise<LCNProfile[]>;
+    removeManagesRelationship: (profileId: string) => Promise<boolean>;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;
@@ -589,6 +596,7 @@ export type LearnCardNetworkPluginMethods = {
         processed: number;
         claimed: number;
         errors: number;
+        guardianPending: number;
         verifiableCredentials: VC[];
     }>;
 
@@ -600,6 +608,20 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<{ message: string; approvalUrl: string }>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
+    getGuardianPendingCredential: (token: string) => Promise<{
+        inboxCredentialId: string;
+        guardianStatus: string;
+        issuer: { displayName: string; profileId: string };
+        credentialName?: string;
+        createdAt: string;
+        expiresAt: string;
+        canApproveInApp: boolean;
+    }>;
+    sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
+    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
+    rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
+    rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
@@ -781,6 +803,11 @@ export type LearnCardNetworkPluginMethods = {
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
+    associateBoostWithListing: (
+        listingId: string,
+        boostUri: string,
+        templateAlias: string
+    ) => Promise<boolean>;
     removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
     getAppBoosts: (
         listingId: string
@@ -812,6 +839,18 @@ export type LearnCardNetworkPluginMethods = {
     getActivity: (options: { activityId: string }) => Promise<CredentialActivityRecord | null>;
 
     getActivityChain: (options: { activityId: string }) => Promise<CredentialActivityRecord[]>;
+
+    // Federation
+
+    isServiceTrusted: (serviceDid: string) => Promise<boolean>;
+
+    getTrustedServices: () => Promise<
+        Array<{
+            did: string;
+            name: string;
+            endpoint: string;
+        }>
+    >;
 };
 
 /** @group LearnCardNetwork Plugin */
