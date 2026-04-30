@@ -18,16 +18,11 @@ on:
 jobs:
     upload-ios-to-appetize:
         name: ${{ inputs.environment || 'learn-card-app-production' }} iOS Upload
-        runs-on: macos-14
+        runs-on: macos-15
         environment: ${{ inputs.environment || 'learn-card-app-production' }}
 
         steps:
-            - uses: actions/checkout@v3
-
-            - name: Select Xcode 15.4
-              uses: maxim-lobanov/setup-xcode@v1
-              with:
-                  xcode-version: "15.4"
+            - uses: actions/checkout@v4
 
             - name: Setup Node.js 22.x
               uses: actions/setup-node@v4
@@ -99,14 +94,21 @@ jobs:
                   echo "Re-patching tenant config after cap sync: $TENANT $STAGE_FLAG"
                   npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
-            - name: Select Xcode 16.x
+            - name: Select Xcode 26.x
               uses: maxim-lobanov/setup-xcode@v1
               with:
-                  xcode-version: "16"
+                  xcode-version: "26"
+
+            - name: Setup Ruby + Bundler
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: "3.3"
+                  bundler-cache: true
+                  working-directory: tools/fastlane
 
             - name: Upload iOS App to Appetize
               id: upload_ios
-              run: fastlane ios upload_to_appetize --verbose
+              run: bundle exec fastlane ios upload_to_appetize --verbose
               working-directory: "./tools/fastlane/fastlane"
               env:
                   MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
@@ -147,10 +149,10 @@ jobs:
 
     upload-android-to-appetize:
         name: ${{ inputs.environment || 'learn-card-app-production' }} Android Upload
-        runs-on: macos-latest
+        runs-on: macos-15
         environment: ${{ inputs.environment || 'learn-card-app-production' }}
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
 
             - name: Setup Node.js 22.x
               uses: actions/setup-node@v4
@@ -223,10 +225,17 @@ jobs:
                   npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
             - name: Setup JDK
-              uses: actions/setup-java@v3
+              uses: actions/setup-java@v4
               with:
                   distribution: "corretto" # See 'Supported distributions' for available options
                   java-version: "21"
+
+            - name: Setup Ruby + Bundler
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: "3.3"
+                  bundler-cache: true
+                  working-directory: tools/fastlane
 
             - name: Decode Keystore File
               uses: timheuer/base64-to-file@v1
@@ -237,7 +246,7 @@ jobs:
 
             - name: Upload Android App to Appetize
               id: upload_android
-              run: fastlane android upload_to_appetize --verbose
+              run: bundle exec fastlane android upload_to_appetize --verbose
               working-directory: "./tools/fastlane/fastlane"
               env:
                   APP_ID: ${{ vars.APP_ID }}
