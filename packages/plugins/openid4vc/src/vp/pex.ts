@@ -1,3 +1,4 @@
+import safeRegex from 'safe-regex';
 import { Constraints, Field, InputDescriptor } from './types';
 
 /**
@@ -392,6 +393,7 @@ export const satisfiesFilter = (value: unknown, filter: Record<string, unknown>)
         if (typeof value !== 'string') return false;
         const pattern = filter.pattern;
         if (typeof pattern !== 'string') return false;
+        if (!safeRegex(pattern)) return false;
 
         let re: RegExp;
         try {
