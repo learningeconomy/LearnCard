@@ -15,44 +15,74 @@ export type {
  */
 export interface PartnerConnectOptions {
     /**
-     * The origin(s) of the LearnCard host
+     * The origin(s) of the LearnCard host.
      *
-     * This can be a single string or an array of strings to serve as a whitelist for
-     * the `lc_host_override` query parameter.
+     * Each entry may be either an **exact origin** (`https://learncard.app`) or a
+     * **wildcard pattern** where `*` stands in for a single DNS label portion in
+     * the host portion of the origin (e.g. `https://*.learncard.app`,
+     * `https://*.vetpass.app`). Wildcards are **only** allowed in the host and
+     * only as label(s); the protocol and port must always match exactly.
      *
-     * **Origin Configuration Hierarchy:**
-     * 1. **Hardcoded Default**: `https://learncard.app` (security anchor)
-     * 2. **Query Parameter Override**: `?lc_host_override=https://staging.learncard.app`
-     *    - Checked against whitelist if `hostOrigin` is provided
-     *    - Used for staging/testing environments
-     * 3. **Configured Origin**: First value in array or single string value
+     * Wildcard patterns match any non-empty chain of labels. So
+     * `https://*.learncard.app` matches both `https://staging.learncard.app` and
+     * `https://pr-123.preview.learncard.app`, but **not** `https://learncard.app`
+     * itself (include the bare origin explicitly if you need it) and **not**
+     * `https://evil.learncard.app.attacker.com` (the suffix must match).
      *
-     * **Security Model:**
-     * - The SDK enforces STRICT origin validation
-     * - Incoming messages must EXACTLY match the active host origin
-     * - Prevents origin spoofing: even if malicious query param is added,
-     *   messages from unauthorized origins are rejected
+     * **Origin Configuration Hierarchy at runtime:**
+     * 1. `window.location.ancestorOrigins[0]` (when available) — the real parent
+     *    origin as reported by the browser, validated against the effective
+     *    whitelist. This source cannot be spoofed by a malicious query param.
+     * 2. `?lc_host_override=<origin>` query parameter — validated against the
+     *    whitelist. Used by the LearnCard host to tell the SDK which origin it
+     *    is loading from.
+     * 3. `sessionStorage['lc_host_override']` — a previously-validated override
+     *    persisted across in-iframe navigation.
+     * 4. First value in the configured `hostOrigin` array / single string.
+     * 5. `PartnerConnect.DEFAULT_HOST_ORIGIN` (`https://learncard.app`).
+     *
+     * The partner app's configured whitelist is combined with a small built-in
+     * list of LearnCard tenant domains (see `disableDefaultTenants` to opt out).
+     * This lets a partner app work out-of-the-box inside any current or future
+     * `*.learncard.app`, `*.learncard.ai`, or `*.vetpass.app` tenant without a
+     * re-deploy.
      *
      * **Examples:**
      *
-     * Single origin (production):
+     * Single origin (production only):
      * ```typescript
      * hostOrigin: 'https://learncard.app'
-     * // Uses: https://learncard.app
-     * // Override: ?lc_host_override=https://staging.learncard.app (not validated)
      * ```
      *
-     * Multiple origins (whitelist for staging):
+     * Wildcard whitelist (covers staging + preview):
      * ```typescript
-     * hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
-     * // Default: https://learncard.app
-     * // Override: ?lc_host_override=https://staging.learncard.app (validated)
-     * // Invalid: ?lc_host_override=https://evil.com (rejected)
+     * hostOrigin: ['https://learncard.app', 'https://*.learncard.app']
+     * ```
+     *
+     * Custom tenant alongside the built-in LearnCard defaults:
+     * ```typescript
+     * hostOrigin: ['https://partner.example.com']
+     * // learncard.app / *.learncard.app / *.learncard.ai / vetpass.app / *.vetpass.app
+     * // are ALSO trusted because disableDefaultTenants is false.
      * ```
      *
      * @default 'https://learncard.app'
      */
     hostOrigin?: string | string[];
+
+    /**
+     * Opt out of the built-in LearnCard tenant whitelist.
+     *
+     * By default, the SDK merges `hostOrigin` with a curated list of LearnCard
+     * and tenant domains (see `PartnerConnect.DEFAULT_TRUSTED_TENANTS`) so that
+     * partner apps work on any LearnCard-managed tenant without reconfiguration.
+     *
+     * Set to `true` if you want the partner app to **only** trust the origins
+     * you pass in `hostOrigin`.
+     *
+     * @default false
+     */
+    disableDefaultTenants?: boolean;
 
     /**
      * Whether to allow native app origins (default: true)
