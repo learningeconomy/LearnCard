@@ -122,7 +122,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                                 {credentialsToShow.map((vc, index) => (
                                     <div
                                         key={index}
-                                        className="w-[150px] shrink-0"
+                                        className="w-[184px] shrink-0"
                                     >
                                         <BoostEarnedCard
                                             credential={vc}
@@ -133,7 +133,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                                             boostPageViewMode={BoostPageViewMode.Card}
                                             useWrapper={false}
                                             hideOptionsMenu
-                                            className="shadow-md"
+                                            className="!mt-0 shadow-md"
                                         />
                                     </div>
                                 ))}

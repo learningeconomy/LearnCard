@@ -240,7 +240,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
 
             {hasCandidate && !hasMultiple && row.candidates[0] && (
                 <div className="flex justify-center pt-1">
-                    <div className="w-[160px] shrink-0">
+                    <div className="w-[200px] shrink-0">
                         <BoostEarnedCard
                             credential={row.candidates[0].candidate.credential as VC}
                             categoryType={
@@ -251,7 +251,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
                             boostPageViewMode={BoostPageViewMode.Card}
                             useWrapper={false}
                             hideOptionsMenu
-                            className="shadow-md"
+                            className="!mt-0 shadow-md"
                         />
                     </div>
                 </div>
@@ -263,7 +263,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
                         You have {row.candidates.length} that match — tap one to share.
                     </p>
 
-                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                    <div className="flex gap-3 overflow-x-auto py-3 -mx-2 px-2">
                         {row.candidates.map((c, i) => {
                             const isPicked = i === pickedIndex;
                             return (
@@ -272,9 +272,9 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
                                     type="button"
                                     onClick={() => onPick(i)}
                                     aria-pressed={isPicked}
-                                    className={`w-[150px] shrink-0 rounded-2xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                                    className={`flex shrink-0 rounded-2xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                         isPicked
-                                            ? 'ring-2 ring-emerald-500 ring-offset-2'
+                                            ? 'ring-2 ring-emerald-500'
                                             : 'opacity-60 hover:opacity-90'
                                     }`}
                                 >
@@ -289,7 +289,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
                                             boostPageViewMode={BoostPageViewMode.Card}
                                             useWrapper={false}
                                             hideOptionsMenu
-                                            className="shadow-md"
+                                            className="!mt-0 shadow-md"
                                         />
                                     </div>
                                 </button>
