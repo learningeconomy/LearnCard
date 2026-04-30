@@ -34,10 +34,12 @@ export const getNotificationButtonColor = (path?: string) => {
         path === '/verify/resume' ||
         path === '/invite' ||
         path === '/connect' ||
+        path === '/skills' ||
         path?.includes('/admin-tools') ||
         path?.includes('/ai/insights') ||
         path?.includes('/ai/chat') ||
-        path?.includes('/ai/pathways')
+        path?.includes('/ai/pathways') ||
+        path?.includes('ai/topics')
     ) {
         return 'text-black';
     }
