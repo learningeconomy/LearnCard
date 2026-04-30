@@ -3322,7 +3322,7 @@ importers:
         specifier: ^6.2.1
         version: 6.2.1(postcss@8.5.6)(webpack@5.103.0(@swc/core@1.15.2(@swc/helpers@0.5.17))(esbuild@0.27.1))
       rollup:
-        specifier: ^2.80.0
+        specifier: ^2.71.1
         version: 2.80.0
       rollup-plugin-delete:
         specifier: ^2.0.0
