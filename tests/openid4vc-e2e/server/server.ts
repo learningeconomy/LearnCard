@@ -99,6 +99,15 @@ const handleRequest = async (
 
         writeResponse(res, handler);
     } catch (e) {
+        // Intentional: this is the in-process mock issuer/verifier used
+        // by the `openid4vc-e2e` jest suite. Echoing the underlying
+        // error message to the HTTP client is how the test runner
+        // surfaces failures in a readable way — muting it would make
+        // broken cases show up as opaque `500`s with no signal for the
+        // assertion layer. This process never binds to a public
+        // interface and is never reused outside the test harness, so
+        // the "information disclosure" shape CodeQL recognizes here
+        // doesn't apply. Do NOT replace with a sanitized message.
         writeJson(res, 500, {
             error: 'internal_server_error',
             message: e instanceof Error ? e.message : String(e),

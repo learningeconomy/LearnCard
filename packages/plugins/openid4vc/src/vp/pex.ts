@@ -2,6 +2,15 @@ import safeRegex from 'safe-regex';
 import { Constraints, Field, InputDescriptor } from './types';
 
 /**
+ * Upper bound on the length of a JSONSchema `pattern` string we'll
+ * compile and execute from a verifier-supplied filter. Real-world PEX
+ * patterns are short (tens of characters); 512 is generous for any
+ * legitimate use while ruling out adversarial oversized payloads that
+ * could stress `safe-regex` or the regex engine itself.
+ */
+const MAX_PEX_PATTERN_LENGTH = 512;
+
+/**
  * Presentation Exchange v2 matcher — tests whether a single candidate VC
  * satisfies an input_descriptor's constraints.
  *
@@ -393,6 +402,19 @@ export const satisfiesFilter = (value: unknown, filter: Record<string, unknown>)
         if (typeof value !== 'string') return false;
         const pattern = filter.pattern;
         if (typeof pattern !== 'string') return false;
+
+        // Reject adversarial verifier patterns before handing bytes to
+        // the regex engine. Real-world PEX patterns are tiny (mDL field
+        // shapes, ISO dates, email prefixes) — anything over 512 chars
+        // is either a bug on the verifier side or a ReDoS probe, so we
+        // treat oversized patterns as a non-match. This bounds the
+        // worst-case work `safe-regex` and `new RegExp` can do before
+        // either detects trouble.
+        if (pattern.length > MAX_PEX_PATTERN_LENGTH) return false;
+
+        // `safe-regex` rejects star-height >= 2 regexes (the usual
+        // ReDoS shape). Combined with the length cap above it catches
+        // essentially every ReDoS pattern we've seen in the wild.
         if (!safeRegex(pattern)) return false;
 
         let re: RegExp;
@@ -401,7 +423,16 @@ export const satisfiesFilter = (value: unknown, filter: Record<string, unknown>)
         } catch {
             return false;
         }
-        if (!re.test(value)) return false;
+
+        // Even with `safe-regex` passing, some pathological patterns
+        // (deep alternation, lookaround recursion) can throw
+        // `RangeError` / overflow during execution. Fail the descriptor
+        // rather than crashing the whole selection pass.
+        try {
+            if (!re.test(value)) return false;
+        } catch {
+            return false;
+        }
     }
 
     // Numeric bounds — only apply when the value is a number. Non-numbers
