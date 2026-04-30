@@ -244,6 +244,19 @@ export class PartnerConnect {
     }
 
     /**
+     * Internal placeholder substituted in for `*` so that `new URL(...)` can
+     * parse a wildcard pattern. Chosen to be a syntactically-valid DNS label
+     * that cannot collide with a real hostname.
+     */
+    private static readonly WILDCARD_PLACEHOLDER = '__lc_wildcard__';
+
+    /** `*` (any number of occurrences) for replacement in the pattern. */
+    private static readonly WILDCARD_REGEX = /\*/g;
+
+    /** The required leading-label form a wildcard pattern must take. */
+    private static readonly WILDCARD_LEADING_PREFIX = `${PartnerConnect.WILDCARD_PLACEHOLDER}.`;
+
+    /**
      * Check whether a candidate origin matches a configured whitelist entry.
      *
      * Supports exact matches and wildcard patterns. A wildcard entry has the
@@ -257,8 +270,11 @@ export class PartnerConnect {
      * - `https://learncard.app`              → no match (no subdomain)
      * - `http://staging.learncard.app`       → no match (protocol mismatch)
      * - `https://learncard.app.attacker.com` → no match (suffix mismatch)
+     *
+     * Exposed as a public static so it can be unit-tested directly without
+     * standing up a full SDK instance.
      */
-    private static matchesOriginPattern(candidate: string, pattern: string): boolean {
+    public static matchesOriginPattern(candidate: string, pattern: string): boolean {
         if (candidate === pattern) return true;
         if (!pattern.includes('*')) return false;
 
@@ -268,7 +284,12 @@ export class PartnerConnect {
         try {
             // Replace the wildcard labels with a syntactically-valid host so
             // URL() can parse it; we validate the real shape ourselves below.
-            patternUrl = new URL(pattern.replace(/\*/g, '__lc_wildcard__'));
+            patternUrl = new URL(
+                pattern.replace(
+                    PartnerConnect.WILDCARD_REGEX,
+                    PartnerConnect.WILDCARD_PLACEHOLDER
+                )
+            );
             candidateUrl = new URL(candidate);
         } catch {
             return false;
@@ -283,13 +304,13 @@ export class PartnerConnect {
 
         // Only allow wildcards as leading label(s): `*.foo.bar`, not `a*.b` or
         // `foo.*.bar`. This keeps the matching rule predictable and safe.
-        if (!patternHost.startsWith('__lc_wildcard__.')) return false;
+        if (!patternHost.startsWith(PartnerConnect.WILDCARD_LEADING_PREFIX)) return false;
 
-        const patternSuffix = patternHost.slice('__lc_wildcard__.'.length);
+        const patternSuffix = patternHost.slice(PartnerConnect.WILDCARD_LEADING_PREFIX.length);
 
         if (patternSuffix.length === 0) return false;
         // No further wildcards anywhere else in the pattern.
-        if (patternSuffix.includes('__lc_wildcard__')) return false;
+        if (patternSuffix.includes(PartnerConnect.WILDCARD_PLACEHOLDER)) return false;
 
         // Candidate must end with `.<suffix>` and have at least one label
         // before the suffix (the portion that the `*` stands in for).
