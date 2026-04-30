@@ -5,9 +5,11 @@ import { IonContent, IonPage } from '@ionic/react';
 
 import {
     ExchangeErrorDisplay,
+    type VerifierDisplayInfo,
     useIsLoggedIn,
     useWallet,
 } from 'learn-card-base';
+import type { VC } from '@learncard/types';
 import type {
     AuthorizationRequest,
     CandidateCredential,
@@ -37,6 +39,17 @@ import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcS
  * Phases the page can be in. Modeled as a discriminated union so the
  * compiler enforces "this field is only available in this state".
  */
+/**
+ * Branded identity of the requesting app, threaded forward from the
+ * resolved `AuthorizationRequest` so the submitting + finished screens
+ * can render the same `VerifierHeader` the consent screen uses.
+ */
+interface ClientInfo {
+    clientId: string;
+    clientIdScheme?: string;
+    display?: VerifierDisplayInfo;
+}
+
 type Phase =
     | { kind: 'loading' }
     | {
@@ -47,8 +60,8 @@ type Phase =
           pool: PooledCandidate[];
       }
     /**
-     * Verifier asked for credentials the wallet can’t produce. We render
-     * a friendly explainer instead of the consent flow.
+     * Requesting app asked for credentials the wallet can’t produce.
+     * We render a friendly explainer instead of the consent flow.
      */
     | {
           kind: 'cant_satisfy';
@@ -56,8 +69,18 @@ type Phase =
           selection?: SelectionResult;
           dcqlSelection?: DcqlSelectionResult;
       }
-    | { kind: 'submitting' }
-    | { kind: 'finished'; submitted: SubmitPresentationResult }
+    | { kind: 'submitting'; clientInfo: ClientInfo }
+    | {
+          kind: 'finished';
+          submitted: SubmitPresentationResult;
+          clientInfo: ClientInfo;
+          /**
+           * The W3C VCs the user just shared. Empty when the picked
+           * candidates were SD-JWT VCs / mDLs we can't render with the
+           * BoostEarnedCard — the success screen falls back gracefully.
+           */
+           sharedCredentials: VC[];
+      }
     | { kind: 'error'; error: unknown };
 
 /**
@@ -140,9 +163,13 @@ const Oid4vpExchange: React.FC = () => {
     const handleApprove = useCallback(async (picks: ConsentPicks) => {
         if (phase.kind !== 'consent') return;
         const currentPhase = phase;
+        // Capture branded identity once so we can thread it through the
+        // submitting and finished states without re-deriving after the
+        // network round-trip.
+        const clientInfo = extractClientInfo(currentPhase.request);
 
         try {
-            setPhase({ kind: 'submitting' });
+            setPhase({ kind: 'submitting', clientInfo });
 
             const wallet = (await initWallet()) as unknown as {
                 invoke: WalletOidcVpInvoke;
@@ -156,7 +183,7 @@ const Oid4vpExchange: React.FC = () => {
 
             if (chosen.length === 0) {
                 throw new Error(
-                    'No credentials matched the verifier’s request — cannot submit.'
+                    'No credentials matched the requesting app’s request — cannot submit.'
                 );
             }
 
@@ -182,7 +209,21 @@ const Oid4vpExchange: React.FC = () => {
                 { signer, holder }
             );
 
-            setPhase({ kind: 'finished', submitted: result.submitted });
+            // Pull the W3C VCs out of the picked candidates so the
+            // finished screen can render them as `BoostEarnedCard`s.
+            // Anything that isn't a JSON-LD VC (raw JWT compact strings,
+            // SD-JWT envelopes, mDLs) is skipped — the screen handles
+            // an empty array by hiding the hero strip entirely.
+            const sharedCredentials = chosen
+                .map(c => extractW3cVc(c.candidate?.credential))
+                .filter((vc): vc is VC => Boolean(vc));
+
+            setPhase({
+                kind: 'finished',
+                submitted: result.submitted,
+                clientInfo,
+                sharedCredentials,
+            });
         } catch (error) {
             console.error('OID4VP: presentation failed', error);
             setPhase({ kind: 'error', error });
@@ -244,11 +285,19 @@ const Oid4vpExchange: React.FC = () => {
                     />
                 )}
 
-                {phase.kind === 'submitting' && <RequestSubmitting />}
+                {phase.kind === 'submitting' && (
+                    <RequestSubmitting
+                        clientName={phase.clientInfo.display?.name?.trim()}
+                    />
+                )}
 
                 {phase.kind === 'finished' && (
                     <RequestFinished
                         redirectUri={phase.submitted.redirectUri}
+                        clientId={phase.clientInfo.clientId}
+                        clientIdScheme={phase.clientInfo.clientIdScheme}
+                        clientDisplay={phase.clientInfo.display}
+                        sharedCredentials={phase.sharedCredentials}
                         onDone={() => history.push('/')}
                     />
                 )}
@@ -304,6 +353,53 @@ interface WalletOidcVpInvoke {
         submitted: SubmitPresentationResult;
     }>;
 }
+
+/**
+ * Pull `client_metadata.client_name` / `logo_uri` (and the legacy
+ * `client_logo` alias some implementations use) off the resolved
+ * AuthorizationRequest so downstream phases can render branded copy.
+ */
+const extractClientInfo = (request: AuthorizationRequest): ClientInfo => {
+    const meta = request.client_metadata as Record<string, unknown> | undefined;
+
+    const display: VerifierDisplayInfo | undefined = meta && typeof meta === 'object'
+        ? {
+              name: stringField(meta, 'client_name'),
+              logoUri: stringField(meta, 'logo_uri') ?? stringField(meta, 'client_logo'),
+              policyUri: stringField(meta, 'policy_uri'),
+              tosUri: stringField(meta, 'tos_uri'),
+          }
+        : undefined;
+
+    return {
+        clientId: request.client_id,
+        clientIdScheme: request.client_id_scheme,
+        display,
+    };
+};
+
+const stringField = (
+    obj: Record<string, unknown>,
+    key: string
+): string | undefined => {
+    const v = obj[key];
+    return typeof v === 'string' && v.length > 0 ? v : undefined;
+};
+
+/**
+ * Best-effort extraction of a W3C-shaped VC from a `CandidateCredential.credential`
+ * payload, which the plugin types as `unknown` because it may also carry
+ * a compact JWS, an SD-JWT, or a CBOR-encoded mDL. We render the JSON-LD
+ * shape only; everything else is skipped on the finished screen.
+ */
+const extractW3cVc = (credential: unknown): VC | undefined => {
+    if (!credential || typeof credential !== 'object' || Array.isArray(credential)) {
+        return undefined;
+    }
+    const c = credential as Record<string, unknown>;
+    if (!c['@context'] || !c.type) return undefined;
+    return credential as VC;
+};
 
 /**
  * Translate the user’s per-row picks into the plugin’s

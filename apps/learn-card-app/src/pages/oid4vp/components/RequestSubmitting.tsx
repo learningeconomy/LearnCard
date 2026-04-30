@@ -3,21 +3,33 @@ import { Loader2 } from 'lucide-react';
 
 export interface RequestSubmittingProps {
     /**
-     * Optional contextual progress text. Defaults to a generic
-     * "Sharing credentials..." message.
+     * Optional contextual progress text. If omitted, we derive one from
+     * `clientName` (when present) or fall back to a generic message.
      */
     message?: string;
+    /**
+     * Branded name of the requesting app (from `client_metadata.client_name`
+     * or the client host). Used to generate jargon-free contextual copy
+     * like "Sharing with Acme..." when `message` isn't explicitly set.
+     */
+    clientName?: string;
 }
 
 /**
  * Indeterminate spinner shown while the wallet is signing the
- * Verifiable Presentation and POSTing it to the verifier's
+ * Verifiable Presentation and POSTing it to the requesting app's
  * `response_uri`. Mirrors the visual language of OfferStoring on the
  * VCI page.
  */
 const RequestSubmitting: React.FC<RequestSubmittingProps> = ({
-    message = 'Sharing your credentials...',
-}) => (
+    message,
+    clientName,
+}) => {
+    const resolvedMessage =
+        message
+        ?? (clientName ? `Sharing with ${clientName}...` : 'Sharing your credentials...');
+
+    return (
     <div
         className="min-h-full flex items-center justify-center font-poppins"
         style={{
@@ -38,11 +50,12 @@ const RequestSubmitting: React.FC<RequestSubmittingProps> = ({
                 </h1>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                    {message}
+                    {resolvedMessage}
                 </p>
             </div>
         </div>
     </div>
-);
+    );
+};
 
 export default RequestSubmitting;

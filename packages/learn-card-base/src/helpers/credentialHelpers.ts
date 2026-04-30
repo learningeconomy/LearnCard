@@ -86,7 +86,7 @@ const CREDENTIAL_CONTEXTS = {
  * (`OpenBadgeCredential` -> `Open Badge`, not `Open Badge Credential`).
  * Returns `undefined` for empty input so callers can fall through.
  */
-const humanizeCredentialType = (type: string | undefined): string | undefined => {
+export const humanizeCredentialType = (type: string | undefined): string | undefined => {
     if (!type || typeof type !== 'string') return undefined;
 
     const spaced = type

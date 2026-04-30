@@ -1,7 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Award, ChevronDown, Lock, ShieldAlert } from 'lucide-react';
+import { Lock, ShieldAlert } from 'lucide-react';
 
-import { VerifierHeader } from 'learn-card-base';
+import { BoostPageViewMode, VerifierHeader } from 'learn-card-base';
+import {
+    getDefaultCategoryForCredential,
+    humanizeCredentialType,
+} from 'learn-card-base/helpers/credentialHelpers';
+import type { VC } from '@learncard/types';
 
 import type {
     AuthorizationRequest,
@@ -10,6 +15,8 @@ import type {
 } from '@learncard/openid4vc-plugin';
 
 import type { PooledCandidate } from '../candidatePool';
+
+import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
 /**
  * User\u2019s per-row pick. Keys are PEX descriptor ids or DCQL credential
@@ -58,6 +65,13 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
         [request]
     );
 
+    /**
+     * Branded display name when the request supplied `client_metadata.client_name`,
+     * otherwise undefined — UI strings fall back to the generic “An app” phrasing.
+     */
+    const clientName = verifierDisplay?.name?.trim();
+    const subjectLabel = clientName || 'An app';
+
     const purpose = useMemo(() => extractPurpose(request), [request]);
     const isJarm = request.response_mode === 'direct_post.jwt';
 
@@ -103,7 +117,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </h1>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            A verifier is asking to view some of your credentials. Review what they&rsquo;ll see before approving.
+                            {subjectLabel} is asking to see some of your credentials. Review what they&rsquo;ll see before sharing.
                         </p>
                     </div>
 
@@ -121,7 +135,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                     Encrypted response
                                 </p>
                                 <p className="text-xs text-emerald-700 leading-relaxed mt-0.5">
-                                    Your reply is sealed to the verifier&rsquo;s key, so only they can read it.
+                                    Your reply is sealed to the requesting app&rsquo;s key, so only they can read it.
                                 </p>
                             </div>
                         </div>
@@ -160,7 +174,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             <ShieldAlert className="text-amber-500 w-5 h-5 mt-0.5 shrink-0" />
 
                             <span className="text-xs text-amber-800 leading-relaxed">
-                                Some requested credentials aren&apos;t in your wallet, so the verifier may reject the response. You can still try.
+                                Some requested credentials aren&apos;t in your wallet, so the request may be rejected. You can still try.
                             </span>
                         </div>
                     )}
@@ -171,7 +185,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             disabled={!allRowsHaveCandidate}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            Approve and share
+                            Share
                         </button>
 
                         <button
@@ -198,117 +212,89 @@ interface ConsentRowProps {
 }
 
 const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => {
-    const [showFields, setShowFields] = useState(false);
-
     const hasCandidate = row.candidates.length > 0;
-    const picked = hasCandidate ? row.candidates[pickedIndex] ?? row.candidates[0] : undefined;
     const hasMultiple = row.candidates.length > 1;
-    const hasFields = row.fields.length > 0;
 
     return (
-        <li className="rounded-xl border border-grayscale-200 bg-white">
-            <div className="flex items-start gap-3 p-3">
-                <div
-                    className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
-                        hasCandidate ? 'bg-emerald-50' : 'bg-amber-50'
-                    }`}
-                >
-                    <Award
-                        className={`w-5 h-5 ${
-                            hasCandidate ? 'text-emerald-600' : 'text-amber-500'
-                        }`}
-                    />
-                </div>
+        <li className="rounded-xl border border-grayscale-200 bg-white p-4 space-y-3">
+            <div>
+                <p className="text-sm font-semibold text-grayscale-900">
+                    {row.title}
+                </p>
 
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-grayscale-900 truncate">
-                        {row.title}
+                {row.purpose && (
+                    <p className="text-xs text-grayscale-500 leading-relaxed mt-0.5">
+                        {row.purpose}
                     </p>
-
-                    {row.purpose && (
-                        <p className="text-xs text-grayscale-500 leading-relaxed mt-0.5 line-clamp-2">
-                            {row.purpose}
-                        </p>
-                    )}
-
-                    {!hasCandidate && (
-                        <p className="text-xs text-amber-700 mt-1">
-                            {row.reason ?? 'No matching credential in your wallet'}
-                        </p>
-                    )}
-
-                    {hasCandidate && !hasMultiple && picked && (
-                        <p className="text-xs text-grayscale-600 mt-1 truncate">
-                            Sharing: <span className="font-medium">{picked.label}</span>
-                        </p>
-                    )}
-
-                    {hasCandidate && hasMultiple && (
-                        <div className="mt-2">
-                            <label
-                                htmlFor={`pick-${row.id}`}
-                                className="text-xs text-grayscale-500 mb-1 block"
-                            >
-                                Choose which to share
-                            </label>
-                            <select
-                                id={`pick-${row.id}`}
-                                value={pickedIndex}
-                                onChange={(e) => onPick(Number(e.target.value))}
-                                className="w-full text-sm text-grayscale-900 bg-white border border-grayscale-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                            >
-                                {row.candidates.map((c, i) => (
-                                    <option key={c.id || i} value={i}>
-                                        {c.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-
-                    {hasFields && (
-                        <button
-                            type="button"
-                            onClick={() => setShowFields((v) => !v)}
-                            className="mt-2 inline-flex items-center gap-1 text-xs text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                        >
-                            <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform ${
-                                    showFields ? 'rotate-180' : ''
-                                }`}
-                            />
-                            {showFields ? 'Hide claims' : `View claims (${row.fields.length})`}
-                        </button>
-                    )}
-                </div>
+                )}
             </div>
 
-            {hasFields && showFields && (
-                <div className="px-3 pb-3 pt-0">
-                    <div className="bg-grayscale-10 border border-grayscale-200 rounded-lg p-3">
-                        <p className="text-xs font-medium text-grayscale-700 uppercase tracking-wide mb-2">
-                            Claims requested
-                        </p>
-                        <ul className="space-y-1.5">
-                            {row.fields.map((f, i) => (
-                                <li
-                                    key={`${row.id}-field-${i}`}
-                                    className="text-xs text-grayscale-700 leading-relaxed"
+            {!hasCandidate && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100">
+                    <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                        {row.reason ?? 'No matching credential in your wallet'}
+                    </p>
+                </div>
+            )}
+
+            {hasCandidate && !hasMultiple && row.candidates[0] && (
+                <div className="flex justify-center pt-1">
+                    <div className="w-[160px] shrink-0">
+                        <BoostEarnedCard
+                            credential={row.candidates[0].candidate.credential as VC}
+                            categoryType={
+                                getDefaultCategoryForCredential(
+                                    row.candidates[0].candidate.credential as VC
+                                ) || 'Achievement'
+                            }
+                            boostPageViewMode={BoostPageViewMode.Card}
+                            useWrapper={false}
+                            hideOptionsMenu
+                            className="shadow-md"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {hasCandidate && hasMultiple && (
+                <div className="space-y-2">
+                    <p className="text-xs text-grayscale-500">
+                        You have {row.candidates.length} that match — tap one to share.
+                    </p>
+
+                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                        {row.candidates.map((c, i) => {
+                            const isPicked = i === pickedIndex;
+                            return (
+                                <button
+                                    key={c.id || i}
+                                    type="button"
+                                    onClick={() => onPick(i)}
+                                    aria-pressed={isPicked}
+                                    className={`w-[150px] shrink-0 rounded-2xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                                        isPicked
+                                            ? 'ring-2 ring-emerald-500 ring-offset-2'
+                                            : 'opacity-60 hover:opacity-90'
+                                    }`}
                                 >
-                                    <span className="font-medium text-grayscale-900">
-                                        {f.label}
-                                    </span>
-                                    {f.optional && (
-                                        <span className="ml-1 text-grayscale-500">(optional)</span>
-                                    )}
-                                    {f.purpose && (
-                                        <span className="block text-grayscale-500 mt-0.5">
-                                            {f.purpose}
-                                        </span>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+                                    <div className="pointer-events-none">
+                                        <BoostEarnedCard
+                                            credential={c.candidate.credential as VC}
+                                            categoryType={
+                                                getDefaultCategoryForCredential(
+                                                    c.candidate.credential as VC
+                                                ) || 'Achievement'
+                                            }
+                                            boostPageViewMode={BoostPageViewMode.Card}
+                                            useWrapper={false}
+                                            hideOptionsMenu
+                                            className="shadow-md"
+                                        />
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -316,22 +302,11 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
     );
 };
 
-// -----------------------------------------------------------------
-// Row construction
-// -----------------------------------------------------------------
 
 interface ConsentRowCandidate {
-    label: string;
     candidate: PooledCandidate;
-    /** Stable identifier for React keys; falls back to label. */
+    /** Stable identifier for React keys; falls back to array index. */
     id?: string;
-}
-
-interface ConsentRowField {
-    /** Short user-facing label \u2014 falls back to JSONPath leaf. */
-    label: string;
-    purpose?: string;
-    optional?: boolean;
 }
 
 interface ConsentRowModel {
@@ -339,163 +314,78 @@ interface ConsentRowModel {
     title: string;
     purpose?: string;
     candidates: ConsentRowCandidate[];
-    /** Per-claim disclosure entries surfaced via "View claims". */
-    fields: ConsentRowField[];
     /** Why no candidates matched. */
     reason?: string;
 }
 
 const buildRows = (
-    request: AuthorizationRequest,
-    selection?: SelectionResult,
-    dcqlSelection?: DcqlSelectionResult
+  request: AuthorizationRequest,
+  selection?: SelectionResult,
+  dcqlSelection?: DcqlSelectionResult
 ): ConsentRowModel[] => {
-    if (selection) {
-        return selection.descriptors.map((d) => {
-            const inputDescriptor = request.presentation_definition?.input_descriptors?.find(
-                (id) => id.id === d.descriptorId
-            );
+  if (selection) {
+    return selection.descriptors.map((d) => {
+      const inputDescriptor = request.presentation_definition?.input_descriptors?.find(
+        (id) => id.id === d.descriptorId
+      );
 
-            const candidates: ConsentRowCandidate[] = d.candidates.map((dc) => {
-                const candidate = dc.candidate as PooledCandidate;
-                return {
-                    candidate,
-                    label: candidate.title || trimUri(candidate.id),
-                    id: candidate.id,
-                };
-            });
+      const candidates: ConsentRowCandidate[] = d.candidates.map((dc) => {
+        const candidate = dc.candidate as PooledCandidate;
+        return { candidate, id: candidate.id };
+      });
 
-            const fields: ConsentRowField[] = (
-                inputDescriptor?.constraints?.fields ?? []
-            ).map((field) => ({
-                label:
-                    field.name?.trim()
-                    || field.id?.trim()
-                    || jsonPathLeaf(field.path?.[0])
-                    || 'claim',
-                purpose: field.purpose,
-                optional: field.optional,
-            }));
-
-            return {
-                id: d.descriptorId,
-                title: inputDescriptor?.name?.trim() || d.descriptorId,
-                purpose: inputDescriptor?.purpose,
-                candidates,
-                fields,
-                reason: d.reason,
-            };
-        });
-    }
-
-    if (dcqlSelection) {
-        return Object.entries(dcqlSelection.matches).map(([queryId, match]) => {
-            const candidates: ConsentRowCandidate[] = match.candidates.map((c) => {
-                const candidate = c as PooledCandidate;
-                return {
-                    candidate,
-                    label: candidate.title || trimUri(candidate.id),
-                    id: candidate.id,
-                };
-            });
-
-            const fields = extractDcqlFields(request, queryId);
-
-            return {
-                id: queryId,
-                title: queryId,
-                candidates,
-                fields,
-                reason: match.reason,
-            };
-        });
-    }
-
-    return [];
-};
-
-// -----------------------------------------------------------------
-// Display helpers
-// -----------------------------------------------------------------
-
-/**
- * Pull `claims[]` (if present) off a DCQL credential query for the
- * given queryId. The DCQL types vary by credential format and aren\u2019t
- * exposed structurally on `AuthorizationRequest.dcql_query`, so we
- * walk the parsed object defensively.
- */
-const extractDcqlFields = (
-    request: AuthorizationRequest,
-    queryId: string
-): ConsentRowField[] => {
-    const dq = request.dcql_query as unknown;
-    if (!dq || typeof dq !== 'object') return [];
-
-    const credentials = (dq as { credentials?: unknown }).credentials;
-    if (!Array.isArray(credentials)) return [];
-
-    const entry = credentials.find(
-        (c) => typeof c === 'object' && c && (c as { id?: unknown }).id === queryId
-    ) as { claims?: unknown } | undefined;
-    if (!entry) return [];
-
-    const claims = entry.claims;
-    if (!Array.isArray(claims)) return [];
-
-    return claims.map((claim) => {
-        if (!claim || typeof claim !== 'object') {
-            return { label: 'claim' };
-        }
-        const c = claim as Record<string, unknown>;
-        const path = c.path;
-        const labelFromPath = Array.isArray(path) && path.length > 0
-            ? String(path[path.length - 1])
-            : undefined;
-        return {
-            label:
-                stringOrUndef(c.id)
-                || labelFromPath
-                || 'claim',
-            purpose: stringOrUndef(c.purpose),
-            optional:
-                typeof c.optional === 'boolean'
-                    ? c.optional
-                    : undefined,
-        };
+      return {
+        id: d.descriptorId,
+        title:
+          inputDescriptor?.name?.trim() ||
+          humanizeCredentialType(d.descriptorId) ||
+          d.descriptorId,
+        purpose: inputDescriptor?.purpose,
+        candidates,
+        reason: d.reason,
+      };
     });
-};
+  }
 
-const stringOrUndef = (v: unknown): string | undefined =>
-    typeof v === 'string' && v.length > 0 ? v : undefined;
+  if (dcqlSelection) {
+    return Object.entries(dcqlSelection.matches).map(([queryId, match]) => {
+      const candidates: ConsentRowCandidate[] = match.candidates.map((c) => {
+        const candidate = c as PooledCandidate;
+        return { candidate, id: candidate.id };
+      });
 
-const jsonPathLeaf = (path: string | undefined): string | undefined => {
-    if (!path) return undefined;
-    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
-    const leaf = parts[parts.length - 1];
-    if (!leaf || leaf === '$' || leaf === '') return undefined;
-    return leaf;
+      return {
+        id: queryId,
+        title: humanizeCredentialType(queryId) || queryId,
+        candidates,
+        reason: match.reason,
+      };
+    });
+  }
+
+  return [];
 };
 
 const extractVerifierDisplay = (request: AuthorizationRequest) => {
-    const meta = request.client_metadata;
-    if (!meta || typeof meta !== 'object') return undefined;
+  const meta = request.client_metadata;
+  if (!meta || typeof meta !== 'object') return undefined;
 
-    const m = meta as Record<string, unknown>;
-    return {
-        name: stringField(m, 'client_name'),
-        logoUri: stringField(m, 'logo_uri') ?? stringField(m, 'client_logo'),
-        policyUri: stringField(m, 'policy_uri'),
-        tosUri: stringField(m, 'tos_uri'),
-    };
+  const m = meta as Record<string, unknown>;
+  return {
+    name: stringField(m, 'client_name'),
+    logoUri: stringField(m, 'logo_uri') ?? stringField(m, 'client_logo'),
+    policyUri: stringField(m, 'policy_uri'),
+    tosUri: stringField(m, 'tos_uri'),
+  };
 };
 
 const extractPurpose = (request: AuthorizationRequest): string | undefined => {
-    if (request.presentation_definition?.purpose) {
-        return request.presentation_definition.purpose;
-    }
-    const firstDescriptorPurpose =
-        request.presentation_definition?.input_descriptors?.find((d) => d.purpose)?.purpose;
-    return firstDescriptorPurpose;
+  if (request.presentation_definition?.purpose) {
+    return request.presentation_definition.purpose;
+  }
+  const firstDescriptorPurpose =
+    request.presentation_definition?.input_descriptors?.find((d) => d.purpose)?.purpose;
+  return firstDescriptorPurpose;
 };
 
 const stringField = (
@@ -504,12 +394,6 @@ const stringField = (
 ): string | undefined => {
     const v = obj[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;
-};
-
-const trimUri = (uri: string | undefined): string => {
-    if (!uri) return 'Credential';
-    if (uri.length <= 32) return uri;
-    return `${uri.slice(0, 16)}\u2026${uri.slice(-12)}`;
 };
 
 export default RequestConsent;
