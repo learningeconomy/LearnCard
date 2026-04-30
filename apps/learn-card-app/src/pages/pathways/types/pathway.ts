@@ -156,7 +156,16 @@ export type Policy = z.infer<typeof PolicySchema>;
 
 // Termination is recursive (composite branches). Keep the non-composite
 // variants as their own schema so the composite case can reference them.
-const BaseTerminationSchema = z.union([
+//
+// The non-recursive half uses `z.discriminatedUnion` rather than a plain
+// `z.union` — every leaf carries a `kind` literal, and the discriminated
+// form gives Zod cheaper parsing + **much** better error messages
+// ("Invalid literal value at kind: expected 'artifact-count' | 'endorsement' | ..."
+// instead of a stacked "one of the following types was expected"
+// list). The outer recursion stays as `z.union([Base, composite])`
+// because the composite branch needs `z.lazy`, which Zod 4's
+// `discriminatedUnion` doesn't cleanly mix with in all corners.
+const BaseTerminationSchema = z.discriminatedUnion('kind', [
     z.object({
         kind: z.literal('artifact-count'),
         count: z.number().int().positive(),
@@ -304,7 +313,34 @@ export const EvidenceSchema = z.object({
 });
 export type Evidence = z.infer<typeof EvidenceSchema>;
 
-export const NodeProgressSchema = z.object({
+/**
+ * Node progress is entirely system-written (reducer fan-out from
+ * wallet events, outcome bindings, and learner actions), not
+ * author-written. The `.refine()` below pins the handful of
+ * status ↔ timestamp invariants the reducers already maintain by
+ * convention, so any future reducer drift becomes a validation
+ * error the moment it persists:
+ *
+ *   - `status: 'completed'`   requires `completedAt`
+ *   - `status: 'in-progress'` requires `startedAt` (because moving
+ *     into `in-progress` is always caused by a first user action)
+ *   - `completedAt` is only meaningful on a completed node (other
+ *     statuses with a non-empty `completedAt` indicate a stale
+ *     reducer forgot to clear it on un-complete / retry)
+ *
+ * Deliberately *not* enforced:
+ *   - `startedAt` on `not-started` is tolerated — some fixtures
+ *     seed a planned start date before the learner moves.
+ *   - `stalled`/`skipped` carry no timestamp requirements; they're
+ *     terminal-ish branches whose history is read from upstream
+ *     events, not from these fields.
+ *
+ * Parsing surfaces these as targeted path errors (`path: ['status']`
+ * or `path: ['completedAt']`) so the validator's internal-path
+ * suppression can drop them cleanly — these are reducer bugs, not
+ * author-actionable issues.
+ */
+const NodeProgressBaseSchema = z.object({
     status: z.enum(['not-started', 'in-progress', 'stalled', 'completed', 'skipped']),
     artifacts: z.array(EvidenceSchema).default([]),
     reviewsDue: z.number().int().nonnegative().default(0),
@@ -317,6 +353,34 @@ export const NodeProgressSchema = z.object({
         .default({ current: 0, longest: 0 }),
     startedAt: z.string().datetime().optional(),
     completedAt: z.string().datetime().optional(),
+});
+
+export const NodeProgressSchema = NodeProgressBaseSchema.superRefine((value, ctx) => {
+    // Use the string literal `'custom'` rather than `z.ZodIssueCode.custom`
+    // — the latter moved between Zod 3 and 4, the literal is stable.
+    if (value.status === 'completed' && !value.completedAt) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['completedAt'],
+            message: 'completedAt is required when status is completed',
+        });
+    }
+
+    if (value.status === 'in-progress' && !value.startedAt) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['startedAt'],
+            message: 'startedAt is required when status is in-progress',
+        });
+    }
+
+    if (value.completedAt && value.status !== 'completed') {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['completedAt'],
+            message: 'completedAt is only valid on a completed node',
+        });
+    }
 });
 export type NodeProgress = z.infer<typeof NodeProgressSchema>;
 

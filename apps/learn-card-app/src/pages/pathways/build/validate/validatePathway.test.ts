@@ -225,6 +225,165 @@ describe('validatePathway — Zod-driven errors', () => {
     });
 });
 
+describe('validatePathway — action section classification', () => {
+    // Action-field errors should land in the new `action` section
+    // so the ValidationBanner can deep-link to the matching inspector
+    // panel, not fall through to `identity` like they used to.
+
+    it('classifies an invalid external-url URL as an action-section error', () => {
+        const p = pathway({
+            nodes: [
+                node('a', {
+                    action: {
+                        kind: 'external-url',
+                        url: 'not a url',
+                    } as never,
+                }),
+            ],
+            destinationNodeId: 'a',
+        });
+
+        const issues = validatePathway(p);
+        const urlIssue = issues.find(i => i.nodeId === 'a' && i.section === 'action');
+
+        expect(urlIssue?.level).toBe('error');
+        expect(urlIssue?.message).toMatch(/full URL/i);
+    });
+
+    it('classifies an empty app-listing listingId as an action-section error', () => {
+        const p = pathway({
+            nodes: [
+                node('a', {
+                    action: {
+                        kind: 'app-listing',
+                        listingId: '',
+                    } as never,
+                }),
+            ],
+            destinationNodeId: 'a',
+        });
+
+        const issues = validatePathway(p);
+        const listingIssue = issues.find(i => i.nodeId === 'a' && i.section === 'action');
+
+        expect(listingIssue?.level).toBe('error');
+        expect(listingIssue?.message).toMatch(/app listing/i);
+    });
+
+    it('classifies an empty ai-session topicUri as an action-section error', () => {
+        const p = pathway({
+            nodes: [
+                node('a', {
+                    action: {
+                        kind: 'ai-session',
+                        topicUri: '',
+                    } as never,
+                }),
+            ],
+            destinationNodeId: 'a',
+        });
+
+        const issues = validatePathway(p);
+        const topicIssue = issues.find(i => i.nodeId === 'a' && i.section === 'action');
+
+        expect(topicIssue?.level).toBe('error');
+        expect(topicIssue?.message).toMatch(/tutor topic/i);
+    });
+
+    it('classifies an in-app-route with empty `to` as an action-section error', () => {
+        const p = pathway({
+            nodes: [
+                node('a', {
+                    action: {
+                        kind: 'in-app-route',
+                        to: '',
+                    } as never,
+                }),
+            ],
+            destinationNodeId: 'a',
+        });
+
+        const issues = validatePathway(p);
+        const routeIssue = issues.find(i => i.nodeId === 'a' && i.section === 'action');
+
+        expect(routeIssue?.level).toBe('error');
+        expect(routeIssue?.message).toMatch(/in-app route/i);
+    });
+});
+
+describe('validatePathway — internal-field suppression', () => {
+    // The internal-path suppression is path-aware rather than segment-
+    // aware — it must drop errors on system-written fields without
+    // over-suppressing user-authored fields that happen to share a
+    // segment name (e.g. a prompt field containing "id").
+
+    it('suppresses errors on node.progress subtree', () => {
+        // Build the invalid progress via an `as never` cast — the
+        // structural TS type permits this but Zod's `.superRefine`
+        // will bounce it at runtime. The point of this test is that
+        // the runtime bounce never reaches the author-facing banner
+        // (progress is system-written, not author-written).
+        const p = pathway({
+            nodes: [
+                node('a', {
+                    progress: {
+                        status: 'completed',
+                        artifacts: [],
+                        reviewsDue: 0,
+                        streak: { current: 0, longest: 0 },
+                        // No completedAt — violates the refine'd invariant.
+                    } as never,
+                }),
+            ],
+            destinationNodeId: 'a',
+        });
+
+        const issues = validatePathway(p);
+        const progressIssue = issues.find(i =>
+            i.message.toLowerCase().includes('completedat'),
+        );
+
+        // The reducer-level invariant failed, but it's not author-
+        // actionable, so it shouldn't reach the UI.
+        expect(progressIssue).toBeUndefined();
+    });
+
+    it('does NOT suppress user-authored fields that share a segment name with internals', () => {
+        // Path-aware suppression: an artifact policy's `prompt` field
+        // is user-authored; a malformed prompt should still surface.
+        // (Regression guard for the `some(seg === 'id')` style of
+        // over-match that the earlier implementation had.)
+        const p = pathway({
+            nodes: [
+                node('a', {
+                    stage: {
+                        initiation: [],
+                        policy: {
+                            kind: 'composite',
+                            pathwayRef: '',
+                            renderStyle: 'inline-expandable',
+                        },
+                        termination: {
+                            kind: 'pathway-completed',
+                            pathwayRef: '',
+                        },
+                    },
+                }),
+            ],
+            destinationNodeId: 'a',
+        });
+
+        const issues = validatePathway(p);
+
+        // The composite pathwayRef is a user-authored field; despite
+        // `pathwayRef` sharing no segment with internals, the point
+        // is that the nested path surfaces at all. If the over-match
+        // bug returned, this would disappear.
+        const refError = issues.find(i => i.message.match(/Pick a nested pathway/i));
+        expect(refError?.level).toBe('error');
+    });
+});
+
 describe('validatePathway — sort order', () => {
     it('puts errors before warnings', () => {
         // Empty composite pathwayRef → error

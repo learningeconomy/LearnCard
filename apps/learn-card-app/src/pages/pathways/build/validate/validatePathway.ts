@@ -35,10 +35,16 @@ import { type Pathway, PathwaySchema } from '../../types';
  * Which inspector section does this issue live in? Used by the UI to
  * jump the author to the right place — tapping an issue in the
  * banner should scroll/expand the matching section.
+ *
+ * `action` was added alongside the ActionSection inspector panel so
+ * author-actionable `node.action.*` errors (invalid URL, missing
+ * topic URI, unresolved listing id) land in the right place instead
+ * of falling through to `identity`.
  */
 export type IssueSection =
     | 'identity'
     | 'what'
+    | 'action'
     | 'done'
     | 'connections'
     | 'pathway';
@@ -80,6 +86,11 @@ const classifyNodePath = (path: ReadonlyArray<PropertyKey>): IssueSection => {
     if (first === 'title' || first === 'description') return 'identity';
     if (first === 'stage' && second === 'policy') return 'what';
     if (first === 'stage' && second === 'termination') return 'done';
+    // `action` lives directly on the node (not under `stage`), so its
+    // classification is a single-segment check — everything from an
+    // invalid URL in `external-url` to an unresolved `app-listing`
+    // listingId surfaces here.
+    if (first === 'action') return 'action';
 
     return 'identity';
 };
@@ -89,39 +100,82 @@ const classifyNodePath = (path: ReadonlyArray<PropertyKey>): IssueSection => {
 // ---------------------------------------------------------------------------
 
 /**
- * Fields that are system-supplied, never user-authored. Zod errors
- * on these paths are not actionable by the author (e.g. "pathwayId
- * must be a UUID" isn't something the user can fix from the form),
- * so we suppress them. If one of these ever *does* get malformed in
- * production, other telemetry catches it — surfacing it here only
- * adds noise.
+ * Internal (system-supplied) field locations — Zod errors on these
+ * paths are not actionable by the author ("pathwayId must be a UUID"
+ * is not a form-fixable problem), so we suppress them. If one ever
+ * goes malformed in production, other telemetry catches it — surfacing
+ * it to the Builder would only add noise.
+ *
+ * Each matcher describes a path *shape* rather than a single segment.
+ * An earlier iteration matched by "any segment equals one of these
+ * names", which over-suppressed: a user-authored MCP `defaultArgs`
+ * key called "id" would get its error dropped because some nested
+ * `id` segment appeared. Shape-matching fixes that class of bug.
+ *
+ * Segment `null` in a pattern is a wildcard (matches any value);
+ * other values match exactly.
  */
-const INTERNAL_FIELDS: ReadonlySet<string> = new Set([
-    'id',
-    'pathwayId',
-    'ownerDid',
-    'status',
-    'visibility',
-    'source',
-    'templateRef',
-    'sourceUri',
-    'sourceCtid',
-    'createdAt',
-    'updatedAt',
-    'createdBy',
-    'destinationNodeId',
-    'endorsements',
-    'progress',
-    'credentialProjection',
-    'initiation',
-]);
+type PathPattern = ReadonlyArray<PropertyKey | null>;
+
+const INTERNAL_PATH_PATTERNS: ReadonlyArray<PathPattern> = [
+    // Pathway-level system fields
+    ['id'],
+    ['ownerDid'],
+    ['status'],
+    ['visibility'],
+    ['source'],
+    ['templateRef'],
+    ['sourceUri'],
+    ['sourceCtid'],
+    ['createdAt'],
+    ['updatedAt'],
+    ['revision'],
+    ['schemaVersion'],
+    ['destinationNodeId'],
+    // Per-node system fields ([..., null, ...] = any node index)
+    ['nodes', null, 'id'],
+    ['nodes', null, 'pathwayId'],
+    ['nodes', null, 'createdBy'],
+    ['nodes', null, 'createdAt'],
+    ['nodes', null, 'updatedAt'],
+    ['nodes', null, 'progress'],
+    ['nodes', null, 'endorsements'],
+    ['nodes', null, 'credentialProjection'],
+    ['nodes', null, 'sourceUri'],
+    ['nodes', null, 'sourceCtid'],
+    ['nodes', null, 'stage', 'initiation'],
+];
 
 /**
- * Is any segment of this path an internal (non-authored) field?
- * Used to drop Zod errors the author can't act on.
+ * Does `path` match `pattern`? `pattern` matches a *prefix* of `path`,
+ * so errors deep inside a suppressed subtree (e.g. inside `progress`)
+ * also get suppressed — `['nodes', 0, 'progress', 'streak', 'current']`
+ * is rightly dropped when `['nodes', null, 'progress']` is internal.
+ */
+const matchesPathPattern = (
+    path: ReadonlyArray<PropertyKey>,
+    pattern: PathPattern,
+): boolean => {
+    if (path.length < pattern.length) return false;
+
+    for (let i = 0; i < pattern.length; i += 1) {
+        const expected = pattern[i];
+
+        // Wildcard segment — any value matches.
+        if (expected === null) continue;
+
+        if (path[i] !== expected) return false;
+    }
+
+    return true;
+};
+
+/**
+ * Is this path one the author can't act on? Used to drop Zod errors
+ * the Builder can't show the author a fix for.
  */
 const isInternalPath = (path: ReadonlyArray<PropertyKey>): boolean =>
-    path.some(seg => typeof seg === 'string' && INTERNAL_FIELDS.has(seg));
+    INTERNAL_PATH_PATTERNS.some(pattern => matchesPathPattern(path, pattern));
 
 /**
  * Translate a Zod issue to a user-facing `Issue`. Returns `null` for
@@ -218,6 +272,98 @@ const mapZodIssue = (issue: ZodIssue, pathway: Pathway): Issue | null => {
                 nodeId: node.id,
                 section: 'done',
                 message: 'This sub-goal group needs at least one sub-goal.',
+            };
+        }
+
+        // Termination-level requirement fields — the
+        // `requirement-satisfied` termination wraps a full
+        // `NodeRequirement` tree; friendly copy for its most common
+        // empty-field shapes keeps the validation banner speaking
+        // the author's language instead of Zod's.
+        if (tail === 'stage.termination.requirement.type') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'done',
+                message: 'Name the credential type this step is waiting for.',
+            };
+        }
+
+        if (tail === 'stage.termination.requirement.uri') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'done',
+                message: 'Paste the LearnCard boost URI to match.',
+            };
+        }
+
+        if (tail === 'stage.termination.topicUri') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'done',
+                message: 'Set the AI tutor topic this session will cover.',
+            };
+        }
+
+        // Action-field messages — the inspector's ActionSection is
+        // the right deep-link target, and most errors here are easy
+        // for the author to fix with concrete copy.
+        if (tail === 'action.url') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'action',
+                message: 'Enter a full URL for this step\u2019s launch destination.',
+            };
+        }
+
+        if (tail === 'action.listingId') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'action',
+                message: 'Pick an app listing for this step.',
+            };
+        }
+
+        if (tail === 'action.topicUri') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'action',
+                message: 'Set the AI tutor topic this step will launch.',
+            };
+        }
+
+        if (tail === 'action.to') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'action',
+                message: 'Set the in-app route this step links to.',
+            };
+        }
+
+        if (tail.startsWith('action.ref')) {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'action',
+                message: 'Pick an MCP server and tool for this step.',
+            };
+        }
+
+        // Any other `action.*` issue — route to the section but
+        // lean on Zod's prose. Gives the author a deep-link even
+        // when the specific message isn't friendly yet.
+        if (path[2] === 'action') {
+            return {
+                level: 'error',
+                nodeId: node.id,
+                section: 'action',
+                message: `This step\u2019s launch has a problem: ${issue.message}`,
             };
         }
 
@@ -342,9 +488,10 @@ export const validatePathway = (
 const SECTION_ORDER: Record<IssueSection, number> = {
     identity: 0,
     what: 1,
-    done: 2,
-    connections: 3,
-    pathway: 4,
+    action: 2,
+    done: 3,
+    connections: 4,
+    pathway: 5,
 };
 
 const sortIssues = (issues: Issue[], pathway: Pathway): Issue[] => {

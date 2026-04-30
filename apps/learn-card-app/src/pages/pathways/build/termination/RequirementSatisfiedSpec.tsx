@@ -150,12 +150,22 @@ const RequirementSatisfiedEditor: React.FC<{
  * the shared `summarizeRequirement` helper, which handles composite
  * depth and bracketed grouping so deeply-nested rules still read as
  * sentences rather than as a wall of `any of: (all of: …)` noise.
+ *
+ * Accessibility: the card wraps its live text region in
+ * `aria-live="polite"` so assistive tech announces updates as the
+ * author edits fields — without it the summary was silently visual-
+ * only, which made the whole "build it while reading what it does"
+ * feedback loop inaccessible.
  */
 const SummaryCard: React.FC<{
     requirement: NodeRequirement;
     minTrustTier: OutcomeTrustTier;
 }> = ({ requirement, minTrustTier }) => (
-    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+    <div
+        className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-100"
+        role="status"
+        aria-live="polite"
+    >
         <div className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-600 text-white">
             <svg
                 aria-hidden
