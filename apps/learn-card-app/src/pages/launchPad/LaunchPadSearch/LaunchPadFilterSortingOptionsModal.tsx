@@ -41,7 +41,7 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
                         (option.type === LaunchPadSortOptionsEnum.mostUsed ||
                             option.type === LaunchPadSortOptionsEnum.recentlyAdded)
                     ) {
-                        return <></>;
+                        return null;
                     }
 
                     return (
