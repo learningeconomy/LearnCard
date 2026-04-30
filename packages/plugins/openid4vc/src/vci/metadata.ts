@@ -160,17 +160,51 @@ export const resolveAuthorizationServer = (
 // ---------- helpers ----------
 
 const joinWellKnown = (base: string, path: string): string => {
-    // Strip any trailing slash from the base, add the well-known path.
-    const trimmed = base.replace(/\/+$/, '');
-    return `${trimmed}${path}`;
+    // Strip any trailing slashes from the base, then append the well-known path.
+    // Implemented as a loop rather than `base.replace(/\/+$/, '')` to silence
+    // CodeQL's polynomial-ReDoS heuristic (the regex is linear, but static
+    // analyzers flag any `+` quantifier on network-sourced input).
+    let end = base.length;
+    while (end > 0 && base.charCodeAt(end - 1) === 0x2f /* '/' */) end--;
+    return `${base.slice(0, end)}${path}`;
 };
 
 const originsMatch = (a: string, b: string): boolean => {
-    // Compare canonicalized forms — strip trailing slash + lower-case scheme/host.
-    const normalize = (s: string) =>
-        s.replace(/\/+$/, '').replace(/^([a-z]+):\/\//i, (_, scheme) => `${scheme.toLowerCase()}://`);
+    // Compare canonicalized forms — strip trailing slashes and lower-case
+    // the scheme. Host is compared case-sensitively and the path (if any)
+    // is preserved, matching the previous regex-based normalizer.
+    return normalizeIssuerId(a) === normalizeIssuerId(b);
+};
 
-    return normalize(a) === normalize(b);
+const normalizeIssuerId = (s: string): string => {
+    // 1. Trim trailing slashes (character-wise loop — linear, no regex).
+    let end = s.length;
+    while (end > 0 && s.charCodeAt(end - 1) === 0x2f /* '/' */) end--;
+    const trimmed = s.slice(0, end);
+
+    // 2. Lower-case the scheme if present. A URL scheme is
+    //    `<scheme>://`, where `<scheme>` is ASCII letters only and
+    //    terminates at the first `://`. We split on the literal `://`
+    //    rather than a regex to keep the analysis straightforwardly
+    //    linear.
+    const schemeEnd = trimmed.indexOf('://');
+    if (schemeEnd <= 0) return trimmed;
+
+    const scheme = trimmed.slice(0, schemeEnd);
+    if (!isAsciiAlpha(scheme)) return trimmed;
+
+    return `${scheme.toLowerCase()}${trimmed.slice(schemeEnd)}`;
+};
+
+const isAsciiAlpha = (s: string): boolean => {
+    if (s.length === 0) return false;
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        const isUpper = c >= 0x41 && c <= 0x5a;
+        const isLower = c >= 0x61 && c <= 0x7a;
+        if (!isUpper && !isLower) return false;
+    }
+    return true;
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
