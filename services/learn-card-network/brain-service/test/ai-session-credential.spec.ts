@@ -55,7 +55,8 @@ const sampleSummaryData = (title = 'Intro to Cryptography') => ({
         {
             title: 'Explore zero-knowledge proofs',
             description: 'Dig into zk-SNARKs and their applications.',
-            keywords: { occupations: ['Cryptographer'] },
+            // keywords is optional; coverage for well-formed + malformed keywords
+            // lives in the dedicated tests at the bottom of this file.
         },
     ],
     reflections: [
@@ -305,5 +306,73 @@ describe('sendAiSessionCredential (App Event)', () => {
                 },
             })
         ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    });
+
+    it('accepts a well-formed nextSteps[].keywords object', async () => {
+        const { listing } = await seedListingWithSigningAuthority('usera');
+        await installAppForProfile('userb', listing.listing_id);
+
+        const summaryData = {
+            ...sampleSummaryData(),
+            nextSteps: [
+                {
+                    title: 'Explore zero-knowledge proofs',
+                    description: 'Dig into zk-SNARKs and their applications.',
+                    keywords: {
+                        occupations: ['Cryptographer'],
+                        careers: null,
+                        jobs: null,
+                        skills: null,
+                        fieldOfStudy: null,
+                    },
+                },
+            ],
+        };
+
+        const result = await userB.clients.fullAuth.appStore.appEvent({
+            listingId: listing.listing_id,
+            event: {
+                type: 'send-ai-session-credential',
+                sessionTitle: 'Session 1',
+                summaryData,
+            },
+        });
+
+        expect(result.isNewTopic).toBe(true);
+        expect(result.sessionCredentialUri).toBeTruthy();
+    });
+
+    it('rejects a partial nextSteps[].keywords object with BAD_REQUEST', async () => {
+        // Regression guard: the /app-store/event route must deep-validate the
+        // event payload against AppEventValidator. Before that was wired up,
+        // partial `keywords` objects slipped through and produced broken
+        // credentials downstream (partner feedback #12).
+        const { listing } = await seedListingWithSigningAuthority('usera');
+        await installAppForProfile('userb', listing.listing_id);
+
+        const summaryData = {
+            ...sampleSummaryData(),
+            nextSteps: [
+                {
+                    title: 'Explore zero-knowledge proofs',
+                    description: 'Dig into zk-SNARKs and their applications.',
+                    // Intentionally partial: missing careers/jobs/skills/fieldOfStudy.
+                    // SummaryCredentialKeywordValidator requires all five keys
+                    // (nullable but not optional).
+                    keywords: { occupations: ['Cryptographer'] },
+                },
+            ],
+        };
+
+        await expect(
+            userB.clients.fullAuth.appStore.appEvent({
+                listingId: listing.listing_id,
+                event: {
+                    type: 'send-ai-session-credential',
+                    sessionTitle: 'Session 1',
+                    summaryData,
+                },
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     });
 });
