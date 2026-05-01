@@ -29,7 +29,8 @@ const LearningHistoryPage = lazyWithRetry(
     () => import('./pages/learninghistory/LearningHistoryPage')
 );
 const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
-import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
+import DelayedFallback from './components/generic/DelayedFallback';
+import RouteTransitionLoader from './components/generic/RouteTransitionLoader';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
 const CredentialStorage = lazyWithRetry(
@@ -111,7 +112,13 @@ const DeveloperPortalProvider = lazyWithRetry(() =>
 
 // Wrapper to provide DeveloperPortalContext for admin dashboard
 const AppStoreAdminWithProvider: React.FC = () => (
-    <Suspense fallback={<LoadingPageDumb />}>
+    <Suspense
+        fallback={
+            <DelayedFallback delayMs={200}>
+                <RouteTransitionLoader />
+            </DelayedFallback>
+        }
+    >
         <DeveloperPortalProvider>
             <AppStoreAdminDashboard />
         </DeveloperPortalProvider>
@@ -190,7 +197,13 @@ export const Routes: React.FC = () => {
 
     return (
         <ChunkBoundary>
-            <Suspense fallback={<LoadingPageDumb />}>
+            <Suspense
+                fallback={
+                    <DelayedFallback delayMs={200}>
+                        <RouteTransitionLoader />
+                    </DelayedFallback>
+                }
+            >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
                         <SentryRoute exact path="/login" component={LoginPage} />
@@ -399,4 +412,34 @@ export const Routes: React.FC = () => {
             </Suspense>
         </ChunkBoundary>
     );
+};
+
+/**
+ * Idle-prefetch wallet sub-route chunks so first-time navigation never flashes
+ * the Suspense fallback. Called from WalletPage on mount via requestIdleCallback.
+ */
+export const prefetchWalletRoutes = (): void => {
+    const ric: typeof window.requestIdleCallback | undefined =
+        (window as any).requestIdleCallback;
+    const schedule = (cb: () => void) =>
+        ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
+
+    schedule(() => {
+        // Order: most-likely-tapped wallet category routes first.
+        AchievementsPage.preload();
+        SkillsPage.preload();
+        IdsPage.preload();
+        LearningHistoryPage.preload();
+        SocialBadgesPage.preload();
+        AccomplishmentsPage.preload();
+        AccommodationsPage.preload();
+        WorkHistoryPage.preload();
+        MembershipPage.preload();
+        CurrenciesPage.preload();
+        FamilyPage.preload();
+        // AI category routes (gated by flags but cheap to warm).
+        AiInsights.preload();
+        AiPathways.preload();
+        AiSessionTopicsContainer.preload();
+    });
 };

@@ -33,6 +33,7 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
+import { prefetchWalletRoutes } from '../../Routes';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -79,6 +80,10 @@ const WalletPage: React.FC = () => {
         CredentialCategoryEnum.aiPathway,
         CredentialCategoryEnum.aiInsight,
     ];
+
+    useEffect(() => {
+        prefetchWalletRoutes();
+    }, []);
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
