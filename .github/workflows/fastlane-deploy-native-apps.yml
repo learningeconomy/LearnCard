@@ -69,6 +69,12 @@ on:
         default: "- Critical Bug Fixes and Security Patches"
         type: string
 
+env:
+  # Skip mongodb-memory-server's postinstall binary download — it races when
+  # multiple workspace packages depend on it, and we don't run brain-service
+  # tests in this workflow.
+  MONGOMS_DISABLE_POSTINSTALL: "1"
+
 jobs:
   deploy-production-learn-card-app-ios:
     name: ${{ inputs.environment }} iOS Deploy

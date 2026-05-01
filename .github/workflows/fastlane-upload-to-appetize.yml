@@ -15,6 +15,12 @@ on:
                 default: "learn-card-app-production"
                 type: environment
 
+env:
+    # Skip mongodb-memory-server's postinstall binary download — it races when
+    # multiple workspace packages depend on it, and we don't run brain-service
+    # tests in this workflow.
+    MONGOMS_DISABLE_POSTINSTALL: "1"
+
 jobs:
     upload-ios-to-appetize:
         name: ${{ inputs.environment || 'learn-card-app-production' }} iOS Upload
