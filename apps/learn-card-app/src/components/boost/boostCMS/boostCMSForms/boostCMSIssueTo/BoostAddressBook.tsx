@@ -32,6 +32,8 @@ import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
 
+import { useBrandingConfig } from 'learn-card-base';
+
 export enum BoostAddressBookEditMode {
     edit = 'edit',
     delete = 'delete',
@@ -103,6 +105,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         mobile: ModalTypes.FullScreen,
     });
 
+    const brandingConfig = useBrandingConfig();
+
     const [connections, setConnections] = useState<BoostCMSIssueTo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
@@ -114,6 +118,19 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     const issueTo = _issueTo ?? localIssueTo;
     const setIssueTo = _setIssueTo ?? setLocalIssueTo;
+
+    const setSavedCollection: React.Dispatch<React.SetStateAction<BoostCMSIssueTo[]>> = action => {
+        setState(prevState => {
+            const currentCollection = prevState?.[collectionKey] ?? [];
+            const nextCollection =
+                typeof action === 'function' ? action(currentCollection) : action;
+
+            return {
+                ...prevState,
+                [collectionKey]: nextCollection,
+            };
+        });
+    };
 
     useEffect(() => {
         if (state?.[collectionKey]?.length > 0) {
@@ -243,7 +260,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     <div className="flex items-center justify-start w-full">
                                         <IonInput
                                             autocapitalize="on"
-                                            placeholder="Search LearnCard Network..."
+                                            placeholder={`Search ${brandingConfig?.name} Network...`}
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                                             onIonInput={e => handleSearch(e?.detail?.value ?? '')}
@@ -307,11 +324,13 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             collectionPropName={collectionKey}
                         />
                     )}
-                    {!isLoading && (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) === 0 && (
-                        <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <strong>No search results</strong>
-                        </section>
-                    )}
+                    {!isLoading &&
+                        (search?.length ?? 0) > 0 &&
+                        (searchResults?.length ?? 0) === 0 && (
+                            <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
+                                <strong>No search results</strong>
+                            </section>
+                        )}
                 </IonContent>
                 <IonFooter className="bg-white">
                     <IonToolbar className="w-full ion-no-border bg-white pt-5">
@@ -439,9 +458,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={state?.[collectionKey] ?? []}
                             mode={mode}
-                            _issueTo={issueTo}
-                            _setIssueTo={setIssueTo}
+                            _issueTo={state?.[collectionKey] ?? []}
+                            _setIssueTo={setSavedCollection}
                             collectionPropName={collectionKey}
+                            showRecipientAttachments={collectionKey === 'issueTo'}
                         />
                     </IonCol>
                 </IonRow>

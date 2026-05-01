@@ -26,7 +26,13 @@ export const validateCredentialJsonLd = async (
         // doesn't choke on `{{variable_name}}` strings.
         const sanitized = replaceMustacheForValidation(credential);
 
-        await jsonld.expand(sanitized, {
+        // Strip embedded verifiableCredential from CLR credentialSubject before
+        // expansion. These are pre-signed VCs with their own @context arrays that
+        // our bundled document loader doesn't cover. They're already validated by
+        // their original issuers — we only need to validate the CLR wrapper.
+        const forExpansion = stripEmbeddedVCs(sanitized as Record<string, unknown>);
+
+        await jsonld.expand(forExpansion, {
             documentLoader: bundledDocumentLoader,
         });
 
@@ -37,6 +43,33 @@ export const validateCredentialJsonLd = async (
         return { valid: false, errors };
     }
 };
+
+/**
+ * Deep-clone a credential, removing credentialSubject.verifiableCredential if present.
+ * Embedded signed VCs reference their own @context arrays (VC v1, signing contexts, etc.)
+ * that our bundled document loader doesn't cover. Since they're pre-signed and already
+ * validated by their issuers, we only need to validate the CLR wrapper structure.
+ */
+function stripEmbeddedVCs(credential: Record<string, unknown>): Record<string, unknown> {
+    const subject = credential.credentialSubject;
+
+    if (!subject || typeof subject !== 'object' || Array.isArray(subject)) {
+        return credential;
+    }
+
+    const subjectObj = subject as Record<string, unknown>;
+
+    if (!('verifiableCredential' in subjectObj)) {
+        return credential;
+    }
+
+    const { verifiableCredential: _stripped, ...restSubject } = subjectObj;
+
+    return {
+        ...credential,
+        credentialSubject: restSubject,
+    };
+}
 
 /**
  * Deep-clone a credential object, replacing Mustache template variables
@@ -94,6 +127,15 @@ function parseJsonLdError(message: string): string[] {
         );
     }
 
+    // Pattern: CLR-specific invalid properties
+    if (/ClrSubject|ClrCredential|association|Association/i.test(message) && /not valid|expansion failed/i.test(message)) {
+        const clrPropMatch = message.match(/"([^"]+)"/);
+        errors.push(
+            `CLR 2.0 property "${clrPropMatch ? clrPropMatch[1] : 'unknown'}" is not valid. ` +
+            'Check that the property name matches the CLR 2.0 specification.'
+        );
+    }
+
     // Pattern: invalid @id / IRI
     if (/@id.*invalid|invalid.*IRI|compaction.*IRI/i.test(message)) {
         errors.push(
@@ -107,7 +149,7 @@ function parseJsonLdError(message: string): string[] {
         const urlMatch = message.match(/(https?:\/\/[^\s"]+)/);
         errors.push(
             `Unknown JSON-LD context URL${urlMatch ? `: ${urlMatch[1]}` : ''}. ` +
-            'Only standard OBv3 and VC v2 contexts are supported.'
+            'Only standard OBv3, CLR 2.0, and VC v2 contexts are supported.'
         );
     }
 

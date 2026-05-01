@@ -13,7 +13,7 @@ import React, { useCallback } from 'react';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 
-import { QrLoginApprover, getAuthConfig } from 'learn-card-base';
+import { QrLoginApprover, getSSSConfig } from 'learn-card-base';
 
 interface DeviceLinkModalProps {
     /** The device share from this device's local storage */
@@ -39,8 +39,6 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
     shareVersion,
     onClose,
 }) => {
-    const authConfig = getAuthConfig();
-
     const handleScanQr = useCallback(async (): Promise<string | null> => {
         try {
             // Check and request camera permission before scanning
@@ -77,7 +75,7 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
 
     return (
         <QrLoginApprover
-            serverUrl={authConfig.serverUrl}
+            serverUrl={getSSSConfig().serverUrl}
             deviceShare={deviceShare}
             approverDid={approverDid}
             accountHint={accountHint}

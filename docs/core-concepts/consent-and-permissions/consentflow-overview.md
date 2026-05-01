@@ -106,5 +106,115 @@ The consent flow includes:
 
 Options when consenting:
 
-* **expiresAt**: Date when the consent expires
-* **oneTime**: If true, marks terms as "stale" after consent
+-   **expiresAt**: Date when the consent expires
+-   **oneTime**: If true, marks terms as "stale" after consent
+
+---
+
+## App Store Integration Contracts
+
+App Store listings can have a **configured consent contract** that simplifies the consent flow for embedded applications. Instead of managing contract URIs in your code, you configure the contract once in your App Store listing, and the SDK automatically resolves it at runtime.
+
+### How It Works
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Embedded App   │────▶│  LearnCard Host  │────▶│  App Listing    │
+│                 │     │                  │     │                 │
+│ requestConsent()│     │  Resolve contract│     │  Integration    │
+│  (no contractUri)│    │  from listing    │     │  Config         │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                                                          │
+                                                          ▼
+                                                   ┌─────────────────┐
+                                                   │  ConsentFlow    │
+                                                   │  Contract       │
+                                                   └─────────────────┘
+```
+
+**The Resolution Flow:**
+
+1. **Embedded app** calls `requestConsent()` without a `contractUri`
+2. **LearnCard host** identifies the current app from the iframe context
+3. **Host looks up** the app's listing integration configuration
+4. **Configured contract** is retrieved and used for the consent request
+5. **User sees** the standard consent modal with the contract terms
+
+### Benefits
+
+-   **Simplified Code** - No need to hardcode or manage contract URIs
+-   **Consistent Terms** - All users consent to the same contract
+-   **Easy Updates** - Change the contract in your listing without code changes
+-   **Environment Flexibility** - Different contracts for staging/production
+
+### Configuration
+
+To configure a contract for your App Store listing:
+
+1. Go to your app listing in the LearnCard Developer Portal
+2. Navigate to the **Integration** tab
+3. Select a **Consent Contract** from your existing contracts
+4. Save the configuration
+
+Once configured, your embedded app can request consent without specifying the contract:
+
+```typescript
+// The contract is automatically resolved from your listing
+const result = await learnCard.requestConsent();
+
+if (result.granted) {
+    // User has consented to your configured contract
+    proceedWithDataAccess();
+}
+```
+
+### Comparison: With vs Without Configured Contract
+
+**Without Configured Contract (External Apps):**
+
+```typescript
+// You must manage the contract URI
+const CONTRACT_URI = 'lc:network:network.learncard.com/trpc:contract:abc123';
+
+async function requestDataAccess() {
+    const result = await learnCard.requestConsent(CONTRACT_URI);
+    return result.granted;
+}
+```
+
+**With Configured Contract (App Store Apps):**
+
+```typescript
+// Contract is resolved automatically from listing
+async function requestDataAccess() {
+    const result = await learnCard.requestConsent();
+    return result.granted;
+}
+```
+
+### Use Cases
+
+**AI Tutor Apps**
+
+-   Configure a contract that grants access to credentials and learning history
+-   Use `requestConsent()` followed by `requestLearnerContext()` for AI personalization
+
+**Data Visualization Apps**
+
+-   Configure a contract for accessing credential data
+-   Build dashboards without hardcoding contract references
+
+**Multi-Environment Workflows**
+
+-   Different contracts for development, staging, and production
+-   Same code works across all environments
+
+### Prerequisites
+
+-   Your app must be published in the LearnCard App Store
+-   You must have created a ConsentFlow contract
+-   The contract must be linked in your listing's integration settings
+
+{% hint style="info" %}
+If your listing doesn't have a configured contract and you call `requestConsent()` without a `contractUri`, the request will fail with an error indicating no contract is configured.
+{% endhint %}

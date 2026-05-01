@@ -13,7 +13,7 @@ import {
     PaginatedBoostRecipientsValidator,
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
-    PaginatedLCNProfilesValidator,
+    PaginatedVisibleLCNProfilesValidator,
     PaginatedSkillFrameworksValidator,
     BoostPermissions,
     BoostQueryValidator,
@@ -30,7 +30,11 @@ import {
     SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
-import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    renderBoostTemplate,
+    parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
+} from '@helpers/template.helpers';
 import {
     logCredentialSent,
     logCredentialClaimed,
@@ -91,6 +95,7 @@ import {
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
+    appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
 import {
     BoostValidator,
@@ -98,7 +103,9 @@ import {
     BoostStatus,
     BoostType,
     BoostWithClaimPermissionsValidator,
+    getBoostOwnerProfile,
 } from 'types/boost';
+import { ProfileType } from 'types/profile';
 import { SkillFrameworkValidator } from 'types/skill-framework';
 import { SkillValidator } from 'types/skill';
 import { deleteBoost } from '@accesslayer/boost/delete';
@@ -149,7 +156,7 @@ import {
     removeProfileAsBoostAdmin,
     removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
-import { getIdFromUri } from '@helpers/uri.helpers';
+import { getIdFromUri, getUriParts } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import {
     EMPTY_PERMISSIONS,
@@ -165,7 +172,16 @@ import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationship
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
+import { findInboxServiceEndpoint } from '@helpers/federation.helpers';
+import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { SendOptions } from '@learncard/types';
+import {
+    canViewerSeeFullBoostRecipientList,
+    sanitizeBoostRecipientRecords,
+    resolveProfileTier,
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
 
 /**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
@@ -176,6 +192,7 @@ const buildInboxConfig = (
 ): {
     webhookUrl?: string;
     boostUri?: string;
+    guardianEmail?: string;
     delivery?: {
         suppress: boolean;
         template?: {
@@ -190,6 +207,7 @@ const buildInboxConfig = (
     const config: ReturnType<typeof buildInboxConfig> = {
         webhookUrl: options?.webhookUrl,
         boostUri,
+        ...(options?.guardianEmail ? { guardianEmail: options.guardianEmail } : {}),
     };
 
     if (options?.suppressDelivery || options?.branding) {
@@ -644,7 +662,7 @@ export const boostsRouter = t.router({
             });
 
             const credentialUri = await sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: targetProfile,
                 boost,
                 credential,
@@ -687,6 +705,7 @@ export const boostsRouter = t.router({
                     let boost = null as BoostInstance | null;
                     let boostUri = '';
                     let boostCreated = false;
+                    let boostCreatedFromSignedCredential = false;
 
                     if (input.templateUri) {
                         const resolved = await traceDb('getBoostByUri', () =>
@@ -725,12 +744,31 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
+                    } else if (input.signedCredential) {
+                        // Auto-create boost from the signed credential
+                        const credential = input.signedCredential as Record<string, unknown>;
+                        const name =
+                            typeof credential.name === 'string' ? credential.name : undefined;
+
+                        boost = await traceDb('createBoost:fromSignedCredential', () =>
+                            createBoost(
+                                input.signedCredential!,
+                                profile,
+                                { ...(name ? { name } : {}) },
+                                domain
+                            )
+                        );
+
+                        boostUri = getBoostUri(boost.id, domain);
+                        boostCreated = true;
+                        boostCreatedFromSignedCredential = true;
                     }
 
                     if (!boost) {
                         throw new TRPCError({
                             code: 'BAD_REQUEST',
-                            message: 'A templateUri or template creation payload is required.',
+                            message:
+                                'A templateUri, template, or signedCredential must be provided.',
                         });
                     }
 
@@ -850,6 +888,9 @@ export const boostsRouter = t.router({
                                     issuanceId: inboxResult.inboxCredential.id,
                                     status: inboxResult.status,
                                     claimUrl: inboxResult.claimUrl,
+                                    ...(inboxResult.guardianStatus
+                                        ? { guardianStatus: inboxResult.guardianStatus }
+                                        : {}),
                                 },
                             };
                         } catch (error) {
@@ -876,6 +917,144 @@ export const boostsRouter = t.router({
                     }
 
                     // Existing flow for DID/profileId recipients
+                    const remoteInboxResult = input.recipient.startsWith('did:web:')
+                        ? await traceInternal('findInboxServiceEndpoint', () =>
+                              findInboxServiceEndpoint(input.recipient, domain)
+                          )
+                        : null;
+
+                    if (remoteInboxResult?.type === 'remote') {
+                        let signedVc: VC | JWE;
+
+                        if (input.signedCredential) {
+                            signedVc = input.signedCredential;
+                        } else {
+                            const signingAuthority = await traceDb(
+                                'getPrimarySigningAuthorityForUser:remoteInbox',
+                                () => getPrimarySigningAuthorityForUser(profile)
+                            );
+
+                            if (!signingAuthority) {
+                                throw new TRPCError({
+                                    code: 'PRECONDITION_FAILED',
+                                    message:
+                                        'You must register a signing authority before using send without a pre-signed credential. Please register one via registerSigningAuthority or sign the credential client-side.',
+                                });
+                            }
+
+                            let unsignedVc: UnsignedVC;
+
+                            try {
+                                unsignedVc = await traceInternal(
+                                    'prepareCredentialFromBoost:remoteInbox',
+                                    () =>
+                                        prepareCredentialFromBoost(boost!, boostUri, domain, {
+                                            templateData: input.templateData as Record<
+                                                string,
+                                                unknown
+                                            >,
+                                            issuerDid: signingAuthority.relationship.did,
+                                            recipientDid: input.recipient,
+                                        })
+                                );
+                            } catch (e) {
+                                console.error('Failed to prepare boost credential', e);
+                                throw new TRPCError({
+                                    code: 'INTERNAL_SERVER_ERROR',
+                                    message: 'Failed to prepare boost credential',
+                                });
+                            }
+
+                            signedVc = await traceInternal(
+                                'issueCredentialWithSigningAuthority:remoteInbox',
+                                () =>
+                                    issueCredentialWithSigningAuthority(
+                                        { type: 'profile', profile },
+                                        unsignedVc,
+                                        signingAuthority,
+                                        domain,
+                                        false
+                                    )
+                            );
+                        }
+
+                        const activityId = await traceDb('logCredentialSent:remoteInbox', () =>
+                            logCredentialSent({
+                                actorProfileId: profile.profileId,
+                                recipientType: 'profile',
+                                recipientIdentifier: input.recipient,
+                                boostUri,
+                                source: 'send',
+                                integrationId: input.integrationId,
+                                metadata: { templateData: input.templateData },
+                            })
+                        );
+
+                        const learnCard = await getDidWebLearnCard();
+                        const didAuthJwt = await learnCard.invoke.getDidAuthVp({
+                            proofFormat: 'jwt',
+                            challenge: `inbox-federation-${uuid()}`,
+                        });
+
+                        const response = await fetch(remoteInboxResult.endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${didAuthJwt}`,
+                            },
+                            body: JSON.stringify({
+                                recipientDid: input.recipient,
+                                credential: signedVc,
+                                issuerDid: profile.did,
+                                issuerDisplayName: profile.displayName,
+                                configuration: {
+                                    boostUri,
+                                    activityId,
+                                    integrationId: input.integrationId,
+                                    federatedFrom: profile.did,
+                                },
+                            }),
+                            signal: AbortSignal.timeout(10000),
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.text();
+                            await traceDb('logCredentialFailed:remoteInbox', () =>
+                                logCredentialFailed({
+                                    activityId,
+                                    actorProfileId: profile.profileId,
+                                    recipientType: 'profile',
+                                    recipientIdentifier: input.recipient,
+                                    boostUri,
+                                    integrationId: input.integrationId,
+                                    source: 'send',
+                                    metadata: { error },
+                                })
+                            );
+                            throw new TRPCError({
+                                code: 'BAD_REQUEST',
+                                message: error,
+                            });
+                        }
+
+                        const inboxResult = (await response.json()) as {
+                            issuanceId: string;
+                            claimUrl?: string;
+                        };
+
+                        return {
+                            type: 'boost' as const,
+                            credentialUri: '',
+                            uri: boostUri,
+                            activityId,
+                            inbox: {
+                                issuanceId: inboxResult.issuanceId,
+                                status: 'PENDING',
+                                claimUrl: inboxResult.claimUrl,
+                            },
+                        };
+                    }
+
                     const recipientProfileId = await traceInternal('getProfileIdFromString', () =>
                         getProfileIdFromString(input.recipient, domain)
                     );
@@ -990,7 +1169,7 @@ export const boostsRouter = t.router({
 
                         signedVc = await traceInternal('issueCredentialWithSigningAuthority', () =>
                             issueCredentialWithSigningAuthority(
-                                profile,
+                                { type: 'profile', profile },
                                 unsignedVc,
                                 signingAuthority,
                                 domain,
@@ -1017,12 +1196,13 @@ export const boostsRouter = t.router({
 
                     try {
                         const credentialUri = await sendBoost({
-                            from: profile,
+                            from: { type: 'profile', profile },
                             to: targetProfile,
                             boost,
                             credential: signedVc,
                             domain,
                             skipNotification,
+                            skipCertification: boostCreatedFromSignedCredential,
                             contractTerms: contractTerms ?? undefined,
                             activityId,
                             integrationId: input.integrationId,
@@ -1219,6 +1399,7 @@ export const boostsRouter = t.router({
             const { uri } = input;
 
             const decodedUri = decodeURIComponent(uri);
+            const { domain: uriDomain } = getUriParts(decodedUri, true);
             const [boost, boostInstance] = await Promise.all([
                 getBoostByUriWithDefaultClaimPermissions(decodedUri),
                 getBoostByUri(decodedUri),
@@ -1236,13 +1417,9 @@ export const boostsRouter = t.router({
 
             const { id, boost: _boost, ...remaining } = boost;
             const parsedBoost = JSON.parse(_boost);
-            await injectObv3AlignmentsIntoCredentialForBoost(
-                parsedBoost,
-                boostInstance,
-                ctx.domain
-            );
+            await injectObv3AlignmentsIntoCredentialForBoost(parsedBoost, boostInstance, uriDomain);
 
-            return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, ctx.domain) };
+            return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, uriDomain) };
         }),
 
     getBoostFrameworks: profileRoute
@@ -1434,13 +1611,20 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipientsSkipLimit(boost, {
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
+
+            const records = await getBoostRecipientsSkipLimit(boost, {
                 limit,
                 skip,
                 includeUnacceptedBoosts,
                 domain,
             });
+
+            return sanitizeBoostRecipientRecords(ctx.user.profile, records, !canViewFullList);
         }),
 
     getPaginatedBoostRecipients: profileRoute
@@ -1472,6 +1656,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getBoostRecipients(boost, {
                 limit: limit + 1,
@@ -1483,10 +1672,16 @@ export const boostsRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1544,6 +1739,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getConnectedBoostRecipients(ctx.user.profile, boost, {
                 limit: limit + 1,
@@ -1555,10 +1755,16 @@ export const boostsRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1647,9 +1853,8 @@ export const boostsRouter = t.router({
             }
 
             // Get the credential instance for this boost + recipient
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
+            const { getCredentialInstanceForBoostAndProfile } =
+                await import('@accesslayer/credential/read');
             const credential = await getCredentialInstanceForBoostAndProfile(
                 boost.id,
                 resolvedRecipientProfileId
@@ -1663,9 +1868,8 @@ export const boostsRouter = t.router({
             }
 
             // Revoke the credential
-            const { revokeCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { revokeCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const revoked = await revokeCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -1827,6 +2031,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getBoostRecipientsWithChildren(boost, {
                 limit: limit + 1,
@@ -1848,10 +2057,16 @@ export const boostsRouter = t.router({
                     newCursor = lastRecord.to.profileId;
                 }
             }
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -2317,7 +2532,7 @@ export const boostsRouter = t.router({
                 uri: z.string(),
             })
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedVisibleLCNProfilesValidator)
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, includeSelf } = input;
 
@@ -2338,11 +2553,17 @@ export const boostsRouter = t.router({
 
             const hasMore = results.length > limit;
             const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+            const sanitizedRecords = await Promise.all(
+                results.slice(0, limit).map(async profile => {
+                    const tier = await resolveProfileTier(ctx.user.profile, profile);
+                    return stripSensitiveProfileListFields(sanitizeProfileForTier(profile, tier));
+                })
+            );
 
             return {
                 hasMore,
                 ...(nextCursor && { cursor: nextCursor }),
-                records: results.slice(0, limit),
+                records: sanitizedRecords,
             };
         }),
 
@@ -2885,11 +3106,24 @@ export const boostsRouter = t.router({
 
             // Use the generator's profile for SA lookup if available, fall back to boost owner
             const saOwner = generatorProfileId
-                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+                ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
                 : boostOwner;
 
+            const saOwnerProfile: ProfileType =
+                'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
+            const saOwnerIssuer =
+                'profileId' in saOwner
+                    ? { type: 'profile' as const, profile: saOwner }
+                    : saOwner.type === 'profile'
+                      ? { type: 'profile' as const, profile: saOwner.profile }
+                      : {
+                            type: 'appStoreListing' as const,
+                            listing: saOwner.listing,
+                            ownerProfile: saOwner.ownerProfile,
+                        };
+
             const signingAuthority = await getSigningAuthorityForUserByName(
-                saOwner,
+                saOwnerProfile,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
@@ -2903,7 +3137,7 @@ export const boostsRouter = t.router({
 
             // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
             const activityId = await logCredentialSent({
-                actorProfileId: saOwner.profileId,
+                actorProfileId: saOwnerProfile.profileId,
                 recipientType: 'profile',
                 recipientIdentifier: profile.profileId,
                 recipientProfileId: profile.profileId,
@@ -2915,7 +3149,7 @@ export const boostsRouter = t.router({
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,
-                    saOwner,
+                    saOwnerIssuer,
                     profile,
                     signingAuthority
                 );
@@ -2923,7 +3157,7 @@ export const boostsRouter = t.router({
                 // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
                 await logCredentialClaimed({
                     activityId,
-                    actorProfileId: saOwner.profileId,
+                    actorProfileId: saOwnerProfile.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
@@ -2946,7 +3180,7 @@ export const boostsRouter = t.router({
                 try {
                     await logCredentialFailed({
                         activityId,
-                        actorProfileId: saOwner.profileId,
+                        actorProfileId: saOwnerProfile.profileId,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,
@@ -3152,6 +3386,7 @@ export const boostsRouter = t.router({
 
             try {
                 let boostJsonString = boost.dataValues.boost;
+                const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
                 if (input.templateData && Object.keys(input.templateData).length > 0) {
                     boostJsonString = renderBoostTemplate(
@@ -3161,6 +3396,11 @@ export const boostsRouter = t.router({
                 }
 
                 unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+                appendTemplateEvidenceToCredential(
+                    unsignedVc,
+                    input.templateData as Record<string, unknown> | undefined,
+                    allowAutoAppendEvidence
+                );
 
                 if (isVC2Format(unsignedVc)) {
                     unsignedVc.validFrom = new Date().toISOString();
@@ -3206,7 +3446,7 @@ export const boostsRouter = t.router({
             let credential: VC | JWE;
             try {
                 credential = await issueCredentialWithSigningAuthority(
-                    profile,
+                    { type: 'profile', profile },
                     unsignedVc,
                     sa,
                     ctx.domain
@@ -3223,7 +3463,7 @@ export const boostsRouter = t.router({
             if (options?.skipNotification) skipNotification = options?.skipNotification;
 
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: targetProfile,
                 boost,
                 credential,

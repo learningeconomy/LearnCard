@@ -3,24 +3,53 @@ import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
 import { useGetPreferencesForDid } from 'learn-card-base';
+import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 
 export type UseSentryIdentifyOptions = {
     debug?: boolean;
 };
 
-// Set TRUE for development testing of sentry
-const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
+/**
+ * Initialize Sentry from the resolved TenantConfig.
+ *
+ * Call this after bootstrapTenantConfig() has resolved.
+ * Falls back to Vite-injected globals if TenantConfig is not yet available.
+ */
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-if (isSentryEnabled) {
-    Sentry.init({
-        dsn: SENTRY_DSN,
-        environment: SENTRY_ENV,
-        tracePropagationTargets: [
+export const initSentryFromTenant = (): void => {
+    let dsn: string | undefined;
+    let env: string | undefined;
+    let traceDomains: (string | RegExp)[] = ['localhost'];
+
+    try {
+        const config = getResolvedTenantConfig();
+        dsn = config.observability.sentryDsn;
+        env = config.observability.sentryEnv;
+
+        if (config.observability.sentryTraceDomains) {
+            traceDomains = [
+                'localhost',
+                ...config.observability.sentryTraceDomains.map(d => new RegExp(`^https://${escapeRegExp(d)}`)),
+            ];
+        }
+    } catch {
+        dsn = typeof SENTRY_DSN !== 'undefined' ? SENTRY_DSN : undefined;
+        env = typeof SENTRY_ENV !== 'undefined' ? SENTRY_ENV : undefined;
+        traceDomains = [
             'localhost',
             /^https:\/\/network\.learncard\.com\/trpc/,
             /^https:\/\/api\.learncard\.app\/trpc/,
             /^https:\/\/cloud\.learncard\.com\/trpc/,
-        ],
+        ];
+    }
+
+    if (!env || env === 'development' || !dsn) return;
+
+    Sentry.init({
+        dsn,
+        environment: env,
+        tracePropagationTargets: traceDomains,
         integrations: [
             Sentry.feedbackIntegration({
                 // Additional SDK configuration goes in here, for example:
@@ -55,7 +84,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
 
     useEffect(() => {
-        if (isSentryEnabled) {
+        if (Sentry.getClient()) {
             if (currentUser && bugReportsEnabled) {
                 if (options.debug) console.debug('Identify user! 🎸', currentUser);
                 getDID()

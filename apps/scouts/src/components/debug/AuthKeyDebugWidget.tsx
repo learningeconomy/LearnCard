@@ -26,6 +26,7 @@ import {
     authUserStore,
     currentUserStore,
     getAuthConfig,
+    getSSSConfig,
 } from 'learn-card-base';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
@@ -435,7 +436,9 @@ export const AuthKeyDebugWidget: React.FC = () => {
             return;
         }
 
-        if (!authConfig.serverUrl) {
+        const { serverUrl: sssServerUrl } = getSSSConfig();
+
+        if (!sssServerUrl) {
             setServerError('No SSS server URL configured');
             return;
         }
@@ -454,7 +457,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
             const token = await liveUser.getIdToken();
 
-            const response = await fetch(`${authConfig.serverUrl}/keys/auth-share`, {
+            const response = await fetch(`${sssServerUrl}/keys/auth-share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
@@ -491,7 +494,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
         } finally {
             setServerLoading(false);
         }
-    }, [authUser, authConfig.serverUrl]);
+    }, [authUser]);
 
     // --- Derive both DID formats for comparison ---
     useEffect(() => {
@@ -682,15 +685,15 @@ export const AuthKeyDebugWidget: React.FC = () => {
                         >
                             <KVRow label="Auth Provider" value={authConfig.authProvider} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Key Derivation" value={authConfig.keyDerivation} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="SSS Server URL" value={truncate(authConfig.serverUrl, 32)} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="SSS Server URL" value={truncate(getSSSConfig().serverUrl, 32)} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Public Computer Mode" value={isPublicComputerMode()} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Storage Backend" value={isPublicComputerMode() ? 'sessionStorage (ephemeral)' : 'IndexedDB (persistent)'} mono={false} copied={copied} onCopy={copyToClipboard} />
 
                             <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">Web3Auth</p>
-                            <KVRow label="Client ID" value={authConfig.web3AuthClientId ? truncate(authConfig.web3AuthClientId, 20) : '—'} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Network" value={authConfig.web3AuthNetwork || '—'} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Verifier ID" value={authConfig.web3AuthVerifierId || '—'} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="RPC Target" value={authConfig.web3AuthRpcTarget ? truncate(authConfig.web3AuthRpcTarget, 30) : '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Client ID" value={(authConfig.providerConfig.web3Auth?.clientId as string) ? truncate((authConfig.providerConfig.web3Auth.clientId as string), 20) : '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Network" value={(authConfig.providerConfig.web3Auth?.network as string) || '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Verifier ID" value={(authConfig.providerConfig.web3Auth?.verifierId as string) || '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="RPC Target" value={(authConfig.providerConfig.web3Auth?.rpcTarget as string) ? truncate((authConfig.providerConfig.web3Auth.rpcTarget as string), 30) : '—'} copied={copied} onCopy={copyToClipboard} />
                         </Section>
 
                         {/* ── Auth Layers ── */}

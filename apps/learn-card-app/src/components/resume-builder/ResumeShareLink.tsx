@@ -10,6 +10,7 @@ import {
     useShareBoostMutation,
     useToast,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import X from 'learn-card-base/svgs/X';
 
 type ResumeShareLinkProps = {
@@ -19,6 +20,7 @@ type ResumeShareLinkProps = {
 };
 
 const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, resumeUri }) => {
+    const brandingConfig = useBrandingConfig();
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string>('');
     const { mutate: shareResume, isPending } = useShareBoostMutation();
@@ -110,7 +112,7 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
 
                     <div className="mt-3 w-full flex flex-col gap-[10px] bg-sky-50 border border-sky-200 rounded-[15px] p-[14px]">
                         <p className="text-sky-900 font-poppins text-[16px] font-[600] m-0">
-                            Share your LearnCard resume
+                            Share your {brandingConfig?.name} resume
                         </p>
                         <p className="text-sky-800 text-sm m-0">
                             This link and QR code let others view your shared resume.

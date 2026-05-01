@@ -73,6 +73,7 @@ export const useFinalizeInboxCredentials = () => {
                 if (!needsFinalize(profileId)) return;
 
                 const result = await wallet.invoke?.finalizeInboxCredentials();
+
                 const vcs: VC[] = result?.verifiableCredentials || [];
 
                 if (!vcs.length) {

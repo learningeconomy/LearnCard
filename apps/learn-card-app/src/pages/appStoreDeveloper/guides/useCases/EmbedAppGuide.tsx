@@ -80,6 +80,7 @@ import type {
     LLMIntegrationMetadata,
     TemplateMetadata,
 } from '../types';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -6723,7 +6724,11 @@ initializeApp();`);
                             </p>
 
                             {urlRequiredError && (
-                                <p id="embed-url-error" className="text-sm text-red-500 mt-2 flex items-center gap-1" role="alert">
+                                <p
+                                    id="embed-url-error"
+                                    className="text-sm text-red-500 mt-2 flex items-center gap-1"
+                                    role="alert"
+                                >
                                     <AlertCircle className="w-4 h-4" />
                                     Please enter your embed URL before continuing
                                 </p>
@@ -6912,27 +6917,25 @@ initializeApp();`);
 
             {/* Resources */}
             <div className="flex flex-wrap gap-3">
-                <a
-                    href="https://docs.learncard.com/sdks/partner-connect"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={() =>
+                        openExternalLink('https://docs.learncard.com/sdks/partner-connect')
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <FileText className="w-4 h-4" />
                     SDK Documentation
                     <ExternalLink className="w-3 h-3" />
-                </a>
+                </button>
 
-                <a
-                    href="https://github.com/learningeconomy/LearnCard"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={() => openExternalLink('https://github.com/learningeconomy/LearnCard')}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <Code className="w-4 h-4" />
                     GitHub Examples
                     <ExternalLink className="w-3 h-3" />
-                </a>
+                </button>
             </div>
 
             {/* Navigation */}
@@ -6946,13 +6949,40 @@ initializeApp();`);
                 </button>
 
                 <button
-                    onClick={() => {
+                    onClick={async () => {
                         if (!embedUrl.trim()) {
                             setUrlRequiredError(true);
                             setShowConfigEditor(true);
                             return;
                         }
                         setUrlRequiredError(false);
+
+                        // Save the config before completing to persist embedUrl
+                        if (selectedListing) {
+                            try {
+                                const newConfig: LaunchConfig = {
+                                    url: embedUrl,
+                                    permissions: selectedPermissions,
+                                    contractUri: contractUri || undefined,
+                                };
+
+                                await updateMutation.mutateAsync({
+                                    listingId: selectedListing.listing_id,
+                                    integrationId,
+                                    updates: {
+                                        launch_config_json: JSON.stringify(newConfig, null, 2),
+                                    },
+                                });
+                            } catch (error) {
+                                console.error('Failed to save config before continuing:', error);
+                                presentToast('Failed to save configuration. Please try again.', {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
+                                return;
+                            }
+                        }
+
                         onComplete();
                     }}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-200"

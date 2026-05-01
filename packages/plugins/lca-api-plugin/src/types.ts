@@ -7,6 +7,7 @@ import {
     LCNNotificationTypeEnumValidator,
     LCNNotificationValidator,
     LCNProfile,
+    LCNVisibleProfile,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -72,10 +73,19 @@ export enum ThemeEnum {
 }
 
 export const PreferencesValidator = z.object({
-    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
+    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]).optional(),
+    aiEnabled: z.boolean().optional(),
+    aiAutoDisabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+    analyticsAutoDisabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
+    isMinor: z.boolean().optional(),
 });
 
 export type PreferencesType = z.infer<typeof PreferencesValidator>;
+export type CreatePreferencesType = {
+    theme: ThemeEnum;
+};
 
 /** @group LCA API Plugin */
 export const SigningAuthorityValidator = z.object({
@@ -171,6 +181,7 @@ export const NotificationQueryInputValidator = z
         'from.profileId': z.string().optional(),
         'data.vcUris': z.union([z.string(), z.array(z.string())]).optional(),
         'data.vpUris': z.union([z.string(), z.array(z.string())]).optional(),
+        'data.metadata.listingId': z.string().optional(),
         read: z.boolean().optional(),
         archived: z.boolean().optional(),
         actionStatus: NotificationActionStatusEnumValidator.optional(),
@@ -216,21 +227,23 @@ export const RecoveryMethodInfoValidator = z.object({
 });
 export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
 
-export const GetAuthShareResponseValidator = z.object({
-    authShare: ServerEncryptedShareValidator.nullable(),
-    primaryDid: z.string().nullable(),
-    securityLevel: SecurityLevelValidator,
-    recoveryMethods: z.array(RecoveryMethodInfoValidator),
-    keyProvider: KeyProviderValidator,
-    shareVersion: z.number(),
-    maskedRecoveryEmail: z.string().nullable(),
-}).nullable();
+export const GetAuthShareResponseValidator = z
+    .object({
+        authShare: ServerEncryptedShareValidator.nullable(),
+        primaryDid: z.string().nullable(),
+        securityLevel: SecurityLevelValidator,
+        recoveryMethods: z.array(RecoveryMethodInfoValidator),
+        keyProvider: KeyProviderValidator,
+        shareVersion: z.number(),
+        maskedRecoveryEmail: z.string().nullable(),
+    })
+    .nullable();
 export type GetAuthShareResponse = z.infer<typeof GetAuthShareResponseValidator>;
 
 /** @group LCA API Plugin */
 export type LCAPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
-    getProfile: () => Promise<LCNProfile | undefined>;
+    getProfile: () => Promise<LCNVisibleProfile | undefined>;
     generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
     keyToDid: (type: 'key', keypair: JWKWithPrivateKey) => string;
     resolveDid: (did: string) => Promise<DidDocument>;
@@ -270,7 +283,10 @@ export type LCAPluginMethods = {
     ) => Promise<PaginatedNotificationsType | false>;
     updateNotificationMeta: (_id: string, meta: NotificationMetaType) => Promise<boolean>;
     markAllNotificationsRead: () => Promise<boolean>;
-    createSigningAuthority: (name: string, ownerDid?: string) => Promise<SigningAuthorityType | false>;
+    createSigningAuthority: (
+        name: string,
+        ownerDid?: string
+    ) => Promise<SigningAuthorityType | false>;
     getSigningAuthorities: () => Promise<SigningAuthorityType[] | false>;
     authorizeSigningAuthority: (
         name: string,
@@ -316,7 +332,7 @@ export type LCAPluginMethods = {
         token: string
     ) => Promise<{ success: boolean; error?: string; vp?: string }>;
     updatePreferences: (preferences: PreferencesType) => Promise<boolean>;
-    createPreferences: (preferences: PreferencesType) => Promise<boolean>;
+    createPreferences: (preferences: CreatePreferencesType) => Promise<boolean>;
     getPreferencesForDid: () => Promise<PreferencesType>;
     sendEndorsementShareLink: (
         email: string,

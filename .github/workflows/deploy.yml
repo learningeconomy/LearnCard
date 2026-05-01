@@ -42,6 +42,11 @@ on:
                 required: false
                 default: false
                 type: boolean
+            publish-app-stores:
+                description: 'Publish Native Apps to App Stores (iOS + Android)'
+                required: false
+                default: false
+                type: boolean
             push-docker:
                 description: 'Push Docker Images'
                 required: false
@@ -95,8 +100,10 @@ jobs:
             - name: Check if this is a release commit
               id: check_release
               if: github.event_name != 'workflow_dispatch'
+              env:
+                  COMMIT_MSG: ${{ github.event.head_commit.message }}
               run: |
-                  if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
+                  if [[ "$COMMIT_MSG" == *"chore(release):"* ]]; then
                     echo "is_release=true" >> $GITHUB_OUTPUT
                     echo "This is a release commit"
                   else
@@ -399,6 +406,8 @@ jobs:
                   SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
                   SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
                   SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
+                  OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
+                  OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -670,6 +679,22 @@ jobs:
                   CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
+            # Prepare tenant config for learn-card-app builds.
+            # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
+            # Scouts app does not use the tenant config system yet — skip for non-LCA projects.
+            - name: Prepare tenant config
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: |
+                  TENANT="${{ vars.TENANT || 'learncard' }}"
+                  STAGE="${{ vars.STAGE || '' }}"
+                  STAGE_FLAG=""
+                  if [[ -n "$STAGE" ]]; then
+                    STAGE_FLAG="--stage $STAGE"
+                  fi
+                  echo "Preparing tenant config: $TENANT $STAGE_FLAG"
+                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+
             - name: Build App
               run: pnpm exec nx build ${{ steps.vars.outputs.project_name }}
               env:
@@ -712,6 +737,237 @@ jobs:
                     -b ${{ steps.app-version.outputs.version }} \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
+
+    # ============================================================================
+    # JIRA RELEASE TAGGING (production only, non-blocking)
+    # ============================================================================
+    tag-jira-release:
+        name: Tag Jira Release
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        continue-on-error: true
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                needs.determine-affected.outputs.is_release == 'true' ||
+                (needs.determine-affected.outputs.is_manual == 'true' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
+            ) &&
+            (
+                needs.deploy-brain-service.result == 'success' ||
+                needs.deploy-learn-cloud.result == 'success' ||
+                needs.deploy-lca-api.result == 'success' ||
+                needs.deploy-frontend.result == 'success'
+            )
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Generate release name
+              id: release-info
+              run: |
+                  SHORT_SHA="${GITHUB_SHA::7}"
+                  RELEASE_DATE=$(date -u +%Y-%m-%d)
+                  RELEASE_NAME="${RELEASE_DATE}-${SHORT_SHA}"
+                  echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+                  echo "Release name: $RELEASE_NAME"
+
+            - name: Create Jira release
+              env:
+                  JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+                  JIRA_USER_EMAIL: ${{ vars.JIRA_USER_EMAIL }}
+                  JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+                  JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+              run: |
+                  set -o pipefail
+
+                  RELEASE_NAME="${{ steps.release-info.outputs.release_name }}"
+
+                  echo "Creating Jira release: $RELEASE_NAME"
+                  echo "Project: $JIRA_PROJECT_KEY"
+                  echo "Jira URL: $JIRA_BASE_URL"
+
+                  # Build the Basic auth header per Atlassian docs:
+                  # Base64-encode "email:api_token" and pass as Authorization header.
+                  # NOTE: GNU base64 wraps at 76 columns by default, which injects a
+                  # newline into the header and makes curl fail with exit 43. Strip
+                  # newlines explicitly so this works on both GNU and BSD base64.
+                  AUTH_HEADER="Authorization: Basic $(printf '%s' "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" | base64 | tr -d '\n')"
+
+                  # Look up the Jira project ID from the project key
+                  PROJECT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    "${JIRA_BASE_URL}/rest/api/3/project/${JIRA_PROJECT_KEY}")
+
+                  HTTP_CODE=$(echo "$PROJECT_RESPONSE" | tail -n1)
+                  PROJECT_BODY=$(echo "$PROJECT_RESPONSE" | sed '$d')
+
+                  if [[ "$HTTP_CODE" -ne 200 ]]; then
+                    echo "::error::Failed to fetch Jira project (HTTP $HTTP_CODE): $PROJECT_BODY"
+                    exit 1
+                  fi
+
+                  PROJECT_ID=$(echo "$PROJECT_BODY" | jq -r '.id')
+
+                  # ============================================================
+                  # Find the previous released version's commit SHA
+                  # ============================================================
+                  # Every version we create embeds the source commit SHA in its
+                  # description ("Deployed from commit <SHA> via GitHub Actions").
+                  # We query the most recent released versions, walk them in
+                  # release-date-desc order, and use the first SHA that still
+                  # exists in our local git history as the lower bound for issue
+                  # linking. This is done BEFORE creating the new version so our
+                  # own entry does not shadow the previous one.
+                  PREV_VERSIONS_RESPONSE=$(curl -s -G -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    --data-urlencode "orderBy=-releaseDate" \
+                    --data-urlencode "status=released" \
+                    --data-urlencode "maxResults=10" \
+                    "${JIRA_BASE_URL}/rest/api/3/project/${PROJECT_ID}/version")
+
+                  PREV_VERSIONS_CODE=$(echo "$PREV_VERSIONS_RESPONSE" | tail -n1)
+                  PREV_VERSIONS_BODY=$(echo "$PREV_VERSIONS_RESPONSE" | sed '$d')
+
+                  PREV_SHA=""
+                  if [[ "$PREV_VERSIONS_CODE" -ge 200 && "$PREV_VERSIONS_CODE" -lt 300 ]]; then
+                    CANDIDATE_SHAS=$(echo "$PREV_VERSIONS_BODY" \
+                      | jq -r '.values[]? | .description // empty' 2>/dev/null \
+                      | grep -oE 'commit [0-9a-f]{7,40}' \
+                      | awk '{print $2}')
+
+                    for sha in $CANDIDATE_SHAS; do
+                      if git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+                        PREV_SHA="$sha"
+                        break
+                      fi
+                    done
+                  else
+                    echo "::warning::Failed to fetch previous Jira versions (HTTP $PREV_VERSIONS_CODE): $PREV_VERSIONS_BODY"
+                    echo "::warning::Will use fallback commit range for issue linking."
+                  fi
+
+                  # Create the release version
+                  RESPONSE=$(curl -s -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    -X POST "${JIRA_BASE_URL}/rest/api/3/version" \
+                    -d "{
+                      \"name\": \"${RELEASE_NAME}\",
+                      \"projectId\": ${PROJECT_ID},
+                      \"released\": true,
+                      \"releaseDate\": \"$(date -u +%Y-%m-%d)\",
+                      \"description\": \"Deployed from commit ${GITHUB_SHA} via GitHub Actions\"
+                    }")
+
+                  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+                  BODY=$(echo "$RESPONSE" | sed '$d')
+
+                  if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
+                    echo "Jira release created successfully"
+                    echo "$BODY" | jq .
+                  else
+                    echo "::warning::Failed to create Jira release (HTTP $HTTP_CODE): $BODY"
+                    # If the version was not created, there is nothing to link issues to.
+                    exit 0
+                  fi
+
+                  # ============================================================
+                  # Associate issues with the release via fixVersions
+                  # ============================================================
+                  # Use the previous released version's commit SHA (found above)
+                  # as the lower bound. Fall back to the last N commits on the
+                  # first-ever release or if no previous SHA could be resolved.
+                  # N is configurable via the JIRA_FALLBACK_DEPTH env var on the
+                  # job (defaults to 100).
+                  FALLBACK_DEPTH="${JIRA_FALLBACK_DEPTH:-100}"
+                  if [[ -n "$PREV_SHA" ]]; then
+                    RANGE="${PREV_SHA}..HEAD"
+                    echo "Previous Jira release commit: $PREV_SHA"
+                  else
+                    RANGE="HEAD~${FALLBACK_DEPTH}..HEAD"
+                    echo "No previous Jira release SHA found; scanning last ${FALLBACK_DEPTH} commits."
+                  fi
+                  echo "Scanning commits in range: $RANGE"
+
+                  # Validate the range resolves to at least one commit before
+                  # scanning. Protects against shallow-clone edge cases and an
+                  # unreachable PREV_SHA that slipped past the cat-file check.
+                  if ! git rev-list --count "$RANGE" >/dev/null 2>&1; then
+                    echo "::warning::Invalid commit range ${RANGE}; skipping issue linking."
+                    exit 0
+                  fi
+
+                  # Case-insensitive extraction of "<KEY>-<NUMBER>" tokens from
+                  # commit subjects and bodies. The surrounding [^A-Za-z0-9_]
+                  # (or start/end) boundaries are stricter than \b and prevent
+                  # false matches like "XLC-123" when JIRA_PROJECT_KEY is "LC".
+                  # Jira issue keys are always uppercase in the API, so
+                  # normalize after matching.
+                  ISSUE_KEYS=$(git log "$RANGE" --pretty=format:'%s%n%b' 2>/dev/null \
+                    | grep -oEi "(^|[^A-Za-z0-9_])${JIRA_PROJECT_KEY}-[0-9]+([^A-Za-z0-9_]|$)" \
+                    | grep -oEi "${JIRA_PROJECT_KEY}-[0-9]+" \
+                    | tr '[:lower:]' '[:upper:]' \
+                    | sort -u || true)
+
+                  if [[ -z "$ISSUE_KEYS" ]]; then
+                    echo "No ${JIRA_PROJECT_KEY} issue keys referenced in commits; skipping issue linking."
+                    exit 0
+                  fi
+
+                  echo "Linking issues to release ${RELEASE_NAME}:"
+                  echo "$ISSUE_KEYS"
+
+                  SUCCESS_COUNT=0
+                  FAIL_COUNT=0
+                  while IFS= read -r KEY; do
+                    [[ -z "$KEY" ]] && continue
+                    LINK_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                      -H "${AUTH_HEADER}" \
+                      -H "Content-Type: application/json" \
+                      -X PUT "${JIRA_BASE_URL}/rest/api/3/issue/${KEY}" \
+                      -d "{\"update\":{\"fixVersions\":[{\"add\":{\"name\":\"${RELEASE_NAME}\"}}]}}")
+                    LINK_CODE=$(echo "$LINK_RESPONSE" | tail -n1)
+                    LINK_BODY=$(echo "$LINK_RESPONSE" | sed '$d')
+                    if [[ "$LINK_CODE" -ge 200 && "$LINK_CODE" -lt 300 ]]; then
+                      echo "  ok   $KEY (HTTP $LINK_CODE)"
+                      SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+                    else
+                      echo "::warning::  fail $KEY (HTTP $LINK_CODE): $LINK_BODY"
+                      FAIL_COUNT=$((FAIL_COUNT + 1))
+                    fi
+                  done <<< "$ISSUE_KEYS"
+
+                  echo "Linked ${SUCCESS_COUNT} issue(s) to ${RELEASE_NAME}; ${FAIL_COUNT} failure(s)."
+
+    # ============================================================================
+    # NATIVE APP STORE PUBLISHING
+    # Triggers:
+    #   - Release: Publish if lca_app_changed
+    #   - Manual: Publish if publish-app-stores selected
+    # ============================================================================
+    publish-native-apps:
+        name: Publish Native Apps to App Stores
+        needs: [determine-affected, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-app-stores == 'true') ||
+                (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
+            ) &&
+            !contains(needs.deploy-frontend.result, 'failure')
+        uses: ./.github/workflows/fastlane-deploy-native-apps.yml
+        with:
+            environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
+            googlePlayReleaseTrack: "production"
+            submitToAppStore: true
+            releaseNotes: "- Critical Bug Fixes and Security Patches"
+        secrets: inherit
 
     # ============================================================================
     # DOCKER IMAGES
@@ -831,6 +1087,71 @@ jobs:
 
             - name: Publish to NPM
               run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
+
+    # ============================================================================
+    # SMOKETEST (after deploys — one job per target environment)
+    # Fires when any deploy in this run succeeded, gated on the run's target.
+    # ============================================================================
+    smoketest-staging:
+        name: Smoketest Staging
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                (needs.determine-affected.outputs.is_release != 'true' && needs.determine-affected.outputs.is_manual != 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'staging')
+            ) &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: staging
+        secrets: inherit
+
+    smoketest-production:
+        name: Smoketest Production
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                needs.determine-affected.outputs.is_release == 'true' ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'production')
+            ) &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: production
+        secrets: inherit
+
+    smoketest-scouts:
+        name: Smoketest Scouts
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.outputs.is_manual == 'true' &&
+            github.event.inputs.target-environment == 'scouts' &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: scouts
+        secrets: inherit
 
     # ============================================================================
     # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)

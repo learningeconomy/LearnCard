@@ -5,13 +5,12 @@ import { redirectStore } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import ClaimLoginPage from '../login/ClaimLoginPage';
 import DoubleTrapezoid from 'learn-card-base/svgs/DoubeTrapezoid';
-import LCAColorBlockPlus from 'learn-card-base/svgs/LCAColorBlockPlus';
 import { IonRow } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
-import LearnCardTextLogo from '../../components/svgs/LearnCardTextLogo';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import GenericErrorBoundary from 'learn-card-base/components/generic/GenericErrorBoundary';
 import LoginFooter from '../login/LoginFooter';
-import LearnCardBrandmark from '../../components/svgs/LearnCardBrandmark';
 import InteractWithWallet from './InteractWithWallet';
 const LoggedOutRequest: React.FC<{ vc_request_url?: string | (string | null)[] | null }> = ({
     vc_request_url,
@@ -36,6 +35,8 @@ export default LoggedOutRequest;
 export const SomeoneSentYouACredentialRequest: React.FC<{
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ vc_request_url }) => {
+    const brandingConfig = useBrandingConfig();
+    const { appIcon } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
     const handleInteractionModal = () => {
         newModal(
@@ -46,30 +47,36 @@ export const SomeoneSentYouACredentialRequest: React.FC<{
     };
 
     return (
-        <div className="relative h-full w-full flex flex-col items-center justify-center">
-            <div className="w-full h-full max-w-[650px] max-h-[650px] z-0">
-                <DoubleTrapezoid className="w-full h-full z-0" />
+        <div className="relative h-full w-full flex flex-col items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 z-0 flex items-center justify-center">
+                <DoubleTrapezoid
+                    className="w-full h-full max-w-[650px] max-h-[650px] opacity-[0.12]"
+                    fill="#ffffff"
+                />
+            </div>
 
-                <div className="absolute top-[0px] flex flex-col items-center justify-center w-full h-full px-8 z-10 max-w-[650px] px-[50px]">
-                    <div className="flex w-full justify-center items-center mb-[20px]">
-                        <LCAColorBlockPlus className="top-[0px] flex flex-col w-[127px] h-[127px] z-10 max-w-[200px]" />
-                    </div>
-
-                    <h1 className="text-[30px] font-semibold text-center mb-4 max-w-[300px]">
-                        Someone sent you a credential
-                    </h1>
-                    <p className="text-[17px] font-semibold text-center px-[20px] my-[10px]">
-                        Sign into LearnCard to view and claim,
-                        <br />
-                        <span onClick={handleInteractionModal}>
-                            or{' '}
-                            <span className="underline cursor-pointer">
-                                {' '}
-                                claim with another wallet.
-                            </span>
-                        </span>
-                    </p>
+            <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-[500px] px-[50px] text-center">
+                <div className="flex w-full justify-center items-center mb-[24px]">
+                    <img
+                        src={appIcon}
+                        alt={`${brandingConfig?.name ?? ''} app icon`}
+                        className="w-[120px] h-[120px] rounded-[24px] object-cover shadow-2xl"
+                    />
                 </div>
+
+                <h1 className="text-white text-[30px] font-semibold mb-3 leading-snug drop-shadow-sm">
+                    Someone sent you a credential
+                </h1>
+                <p className="text-white/85 text-[17px] font-medium leading-relaxed max-w-[380px]">
+                    Sign into {brandingConfig?.name} to view and claim,
+                    <br />
+                    <span onClick={handleInteractionModal}>
+                        or{' '}
+                        <span className="underline cursor-pointer text-white hover:text-white/90">
+                            claim with another wallet.
+                        </span>
+                    </span>
+                </p>
             </div>
         </div>
     );
@@ -79,6 +86,8 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
     onClick?: () => void;
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ onClick, vc_request_url }) => {
+    const { textLogo, brandMark, appIcon } = useTenantBrandingAssets();
+    const brandingConfig = useBrandingConfig();
     const { newModal, closeModal } = useModal();
     const handleInteractionModal = () => {
         newModal(
@@ -89,44 +98,52 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
     };
 
     return (
-        <div className="relative h-full w-full flex flex-col items-center justify-center">
-            <div className="w-full h-full max-w-[650px] max-h-[650px] z-0">
-                <DoubleTrapezoid className="w-full h-full z-0" />
-
-                <div className="absolute top-[0px] flex flex-col items-center justify-center w-full h-full px-8 z-10 max-w-[650px] px-[20px]">
-                    <div className="flex w-full justify-center items-center mb-[20px]">
-                        <LCAColorBlockPlus className="top-[0px] flex flex-col w-[127px] h-[127px] z-10 max-w-[200px]" />
-                    </div>
-
-                    <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
-                        <div className="flex flex-col items-center justify-center w-full">
-                            <LearnCardTextLogo />
-                        </div>
-                    </IonRow>
-
-                    <h1 className="text-[24px] font-semibold text-center mb-4 max-w-[300px]">
-                        Someone sent you a credential
-                    </h1>
-                    <button
-                        className="bg-white text-grayscale-800 font-semibold flex items-center justify-center p-4 py-2 rounded-[15px] h-[54px]font-semibold text-[17px] shadow-soft-bottom"
-                        onClick={onClick}
-                    >
-                        <LearnCardBrandmark className="rounded-full h-[40px] w-[40px] mr-[10px]" />
-                        Sign In to View and Claim
-                    </button>
-                    <div className="flex w-full items-center justify-center text-white font-semibold text-[14px] mt-[40px]">
-                        <hr className="w-[25%] mr-[20px]" />
-                        OR
-                        <hr className="w-[25%] ml-[20px]" />
-                    </div>
-                    <span
-                        className="mt-[25px] text-white underline cursor-pointer font-semibold flex items-center justify-center p-4 py-2  h-[54px] font-semibold text-[17px]"
-                        onClick={handleInteractionModal}
-                    >
-                        Claim with Other Wallet
-                    </span>
-                </div>
+        <div className="relative h-full w-full flex flex-col items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 z-0 flex items-center justify-center">
+                <DoubleTrapezoid
+                    className="w-full h-full max-w-[650px] max-h-[650px] opacity-[0.12]"
+                    fill="#ffffff"
+                />
             </div>
+
+            <div className="relative z-10 flex flex-col items-center justify-center w-full px-[20px] max-w-[500px]">
+                <div className="flex w-full justify-center items-center mb-[20px]">
+                    <img
+                        src={appIcon}
+                        alt={`${brandingConfig?.name ?? ''} app icon`}
+                        className="w-[120px] h-[120px] rounded-[24px] object-cover shadow-2xl"
+                    />
+                </div>
+
+                <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
+                    <div className="flex flex-col items-center justify-center w-full">
+                        <img src={textLogo} alt="Logo" className="object-contain" />
+                    </div>
+                </IonRow>
+
+                <h1 className="text-white text-[24px] font-semibold text-center mb-4 max-w-[300px] drop-shadow-sm">
+                    Someone sent you a credential
+                </h1>
+                <button
+                    className="bg-white text-grayscale-800 font-semibold flex items-center justify-center p-4 py-2 rounded-[15px] h-[54px] text-[17px] shadow-soft-bottom"
+                    onClick={onClick}
+                >
+                    <img src={brandMark} alt="Brand mark" className="rounded-full h-[40px] w-[40px] mr-[10px]" />
+                    Sign In to View and Claim
+                </button>
+                <div className="flex w-full items-center justify-center text-white/90 font-semibold text-[14px] mt-[40px]">
+                    <hr className="w-[25%] mr-[20px] border-white/30" />
+                    OR
+                    <hr className="w-[25%] ml-[20px] border-white/30" />
+                </div>
+                <span
+                    className="mt-[25px] text-white underline cursor-pointer font-semibold flex items-center justify-center p-4 py-2 h-[54px] text-[17px]"
+                    onClick={handleInteractionModal}
+                >
+                    Claim with Other Wallet
+                </span>
+            </div>
+
             <GenericErrorBoundary hideGoHome>
                 <LoginFooter hideSelfCustodialLogin />
             </GenericErrorBoundary>

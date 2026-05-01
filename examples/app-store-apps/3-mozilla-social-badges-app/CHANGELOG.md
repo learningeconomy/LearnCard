@@ -1,5 +1,59 @@
 # @learncard/app-store-demo-mozilla-social-badges
 
+## 0.0.21
+
+### Patch Changes
+
+-   [#1193](https://github.com/learningeconomy/LearnCard/pull/1193) [`1da7471f52a7003417a883b9f768a5a17ea8ad4c`](https://github.com/learningeconomy/LearnCard/commit/1da7471f52a7003417a883b9f768a5a17ea8ad4c) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix build failures
+
+## 0.0.20
+
+### Patch Changes
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f)]:
+    -   @learncard/partner-connect@0.2.16
+    -   @learncard/init@2.3.14
+
+## 0.0.19
+
+### Patch Changes
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/partner-connect@0.2.15
+    -   @learncard/init@2.3.13
+
+## 0.0.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.12
+    -   @learncard/partner-connect@0.2.14
+
+## 0.0.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.11
+    -   @learncard/partner-connect@0.2.13
+
+## 0.0.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.10
+    -   @learncard/partner-connect@0.2.12
+
+## 0.0.15
+
+### Patch Changes
+
+-   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2)]:
+    -   @learncard/partner-connect@0.2.11
+    -   @learncard/init@2.3.9
+
 ## 0.0.14
 
 ### Patch Changes

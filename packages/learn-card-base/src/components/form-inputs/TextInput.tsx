@@ -3,12 +3,13 @@ import { IonInput } from '@ionic/react';
 
 type TextInputProps = {
     value: string | number | null | undefined;
-    onChange: (value: string | null | undefined) => void;
+    onChange: (value: string) => void;
     placeholder?: string;
     type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url';
     disabled?: boolean;
     debounce?: number;
     maxLength?: number;
+    autoFocus?: boolean;
     startIcon?: React.ReactNode;
     endIcon?: React.ReactNode;
     startButton?: React.ReactNode;
@@ -29,6 +30,7 @@ const TextInput: React.FC<TextInputProps> = ({
     disabled = false,
     debounce,
     maxLength,
+    autoFocus,
     startIcon,
     endIcon,
     startButton,
@@ -63,8 +65,9 @@ const TextInput: React.FC<TextInputProps> = ({
                 disabled={disabled}
                 debounce={debounce}
                 maxlength={maxLength}
+                autoFocus={autoFocus}
                 autocapitalize={autocapitalize}
-                onIonInput={e => onChange(e.detail.value)}
+                onIonInput={e => onChange(e.detail.value ?? '')}
                 onIonFocus={onFocus}
                 onIonBlur={onBlur}
                 onKeyDown={onKeyDown}

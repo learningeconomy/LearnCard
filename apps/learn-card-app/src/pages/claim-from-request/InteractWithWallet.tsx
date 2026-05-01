@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { IonList, IonItem } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useModal, ModalTypes } from 'learn-card-base';
-import LearnCardBrandmark from '../../components/svgs/LearnCardBrandmark';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 
 // Simple wallet option type
@@ -20,6 +22,12 @@ interface WalletOption {
 const InteractWithWallet: React.FC<{
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ vc_request_url }) => {
+    const { brandMark, appIcon } = useTenantBrandingAssets();
+    const brandingConfig = useBrandingConfig();
+    const tenantId = getResolvedTenantConfig().tenantId;
+    const tenantBaseUrl = getAppBaseUrl();
+    const isLearnCardTenant = tenantId === 'learncard';
+
     const vcRequestUrl: string | undefined = useMemo(() => {
         if (!vc_request_url) return undefined;
 
@@ -63,25 +71,53 @@ const InteractWithWallet: React.FC<{
         return 'Open in Wallet';
     }, [workflowId]);
 
-    const wallets: WalletOption[] = useMemo(
-        () => [
-            {
-                name: 'LearnCard',
+    const wallets: WalletOption[] = useMemo(() => {
+        const learnCardWallet: WalletOption = {
+            name: 'LearnCard',
 
-                urlTemplate: url =>
-                    `https://learncard.app/request?vc_request_url=${encodeURIComponent(url)}`,
+            urlTemplate: url =>
+                `https://learncard.app/request?vc_request_url=${encodeURIComponent(url)}`,
 
-                icon: <LearnCardBrandmark className="rounded-2xl h-10 w-10" />,
-            },
-            {
-                name: 'Learner Credential Wallet',
+            // Always use the canonical LearnCard brand mark here so users can
+            // recognise the LearnCard option regardless of which tenant they
+            // are currently on.
+            icon: (
+                <img
+                    src="https://learncard.app/branding/brand-mark.png"
+                    alt="LearnCard brand mark"
+                    className="rounded-2xl h-10 w-10"
+                />
+            ),
+        };
 
-                urlTemplate: url =>
-                    `https://lcw.app/request?vc_request_url=${encodeURIComponent(url)}`,
-            },
-        ],
-        []
-    );
+        const lcwWallet: WalletOption = {
+            name: 'Learner Credential Wallet',
+
+            urlTemplate: url =>
+                `https://lcw.app/request?vc_request_url=${encodeURIComponent(url)}`,
+        };
+
+        if (isLearnCardTenant) return [learnCardWallet, lcwWallet];
+
+        const tenantWallet: WalletOption = {
+            name: brandingConfig?.name ?? 'This App',
+
+            urlTemplate: url =>
+                `${tenantBaseUrl}/request?vc_request_url=${encodeURIComponent(url)}`,
+
+            icon: (
+                <img
+                    src={appIcon}
+                    alt={`${brandingConfig?.name ?? 'Tenant'} icon`}
+                    className="rounded-2xl h-10 w-10 object-cover"
+                />
+            ),
+        };
+
+        // LearnCard is always listed first for brand consistency; the current
+        // tenant sits directly below it for users who prefer staying in-app.
+        return [learnCardWallet, tenantWallet, lcwWallet];
+    }, [isLearnCardTenant, tenantBaseUrl, brandingConfig?.name, appIcon]);
 
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
@@ -109,7 +145,7 @@ const InteractWithWallet: React.FC<{
             <div className="max-w-lg w-full bg-white">
                 <div className="flex flex-col items-center text-center">
                     <div className="mb-4 mt-[20px]">
-                        <LearnCardBrandmark className="rounded-2xl h-16 w-16" />
+                        <img src={brandMark} alt="Brand mark" className="rounded-2xl h-16 w-16" />
                     </div>
 
                     <h1 className="text-2xl font-bold mb-2">{headingText}</h1>

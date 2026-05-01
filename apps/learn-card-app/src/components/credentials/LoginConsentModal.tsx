@@ -1,4 +1,5 @@
 import React from 'react';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type LoginConsentModalProps = {
     appName: string;
@@ -13,6 +14,8 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
     onAccept,
     onReject,
 }) => {
+    const brandingConfig = useBrandingConfig();
+
     return (
         <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
             {/* Header */}
@@ -23,7 +26,7 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
                 }}
             >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">
-                    Login with LearnCard
+                    Login with {brandingConfig?.name}
                 </h2>
             </div>
 
@@ -51,7 +54,8 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
                     {/* App Info */}
                     <div>
                         <p className="text-lg font-semibold text-grayscale-900 mb-2">
-                            <span className="font-bold">{appName}</span> wants to connect to your LearnCard
+                            <span className="font-bold">{appName}</span> wants to connect to your{' '}
+                            {brandingConfig?.name}
                         </p>
                         <p className="text-sm text-grayscale-600">
                             {appOrigin}

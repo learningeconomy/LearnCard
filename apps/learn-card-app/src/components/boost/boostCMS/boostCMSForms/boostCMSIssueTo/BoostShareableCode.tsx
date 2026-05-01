@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import moment from 'moment';
 import base64url from 'base64url';
 import { createPortal } from 'react-dom';
 import { Clipboard } from '@capacitor/clipboard';
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
@@ -138,7 +139,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             challenge: challenge,
         };
         const boostBase64Url = base64url.encode(JSON.stringify(data));
-        return `https://learncard.app/interactions/claim/${boostBase64Url}?iuv=1`;
+        return `${getAppBaseUrl()}/interactions/claim/${boostBase64Url}?iuv=1`;
     };
 
     const getCurrentClaimLink = () => {
@@ -185,7 +186,9 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                     );
 
                     setBoostClaimLink(
-                        `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            _boostClaimLink?.boostUri
+                        }&challenge=${_boostClaimLink?.challenge}`
                     );
                     setInteroperableClaimLink(
                         constructInteroperableLink(
@@ -226,7 +229,9 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         );
 
                         setBoostClaimLink(
-                            `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                                _boostClaimLink?.boostUri
+                            }&challenge=${_boostClaimLink?.challenge}`
                         );
                         setInteroperableClaimLink(
                             constructInteroperableLink(
@@ -379,7 +384,10 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
         closeModal();
     };
 
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(document.getElementById('section-cancel-portal'));
+    }, []);
 
     return (
         <>
@@ -496,7 +504,11 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                                 copyBoostLinkToClipBoard();
                                                             }
                                                         }}
-                                                        className={`w-[20%] flex items-center justify-end ${!getCurrentClaimLink() ? 'opacity-30 pointer-events-none' : 'cursor-pointer'}`}
+                                                        className={`w-[20%] flex items-center justify-end ${
+                                                            !getCurrentClaimLink()
+                                                                ? 'opacity-30 pointer-events-none'
+                                                                : 'cursor-pointer'
+                                                        }`}
                                                     >
                                                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                                                     </div>
@@ -521,7 +533,9 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                             }
                                                         );
                                                     }}
-                                                    disabled={isLinkLoading || !getCurrentClaimLink()}
+                                                    disabled={
+                                                        isLinkLoading || !getCurrentClaimLink()
+                                                    }
                                                     className="flex items-center justify-center bg-grayscale-900 disabled:bg-grayscale-400 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
                                                 >
                                                     <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2 " />{' '}

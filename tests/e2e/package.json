@@ -15,6 +15,7 @@
     },
     "dependencies": {
         "@learncard/core": "workspace:*",
+        "@learncard/credential-library": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",

@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
-import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import { ProfilePicture, useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
 import { ArrowUp } from 'lucide-react';
 
 import {
     currentThreadId,
     threads,
-    isTyping,
     sendMessage,
     planReady,
     continuePlan,
@@ -31,17 +31,26 @@ import {
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
-import FinishSessionButton from './FinishSessionButton';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
-const ChatInput: React.FC = () => {
+interface ChatInputProps {
+    placeholder?: string;
+    /** Show the user's profile picture inside the input (new Figma design). Defaults to true. */
+    showUserAvatar?: boolean;
+}
+
+const getDefaultPlaceholder = (mode: AiSessionMode): string => {
+    if (mode === AiSessionMode.insights) return 'Ask anything...';
+    return 'Say anything...';
+};
+
+const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
     const { closeAllModals } = useModal();
     const history = useHistory();
     const $planReady = useStore(planReady);
-    const $isTyping = useStore(isTyping);
     const $sessionEnded = useStore(sessionEnded);
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
@@ -54,6 +63,16 @@ const ChatInput: React.FC = () => {
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
+    const queryClient = useQueryClient();
+
+    const invalidateSessionQueries = async () => {
+        // Topic-detail reads sessions from useGetEnrichedSession; the topics
+        // list reads from useGetEnrichedTopicsList. Invalidate both so the
+        // newly-completed session shows up immediately when the user returns.
+        await queryClient.invalidateQueries({ queryKey: ['useGetEnrichedSession'] });
+        await queryClient.invalidateQueries({ queryKey: ['useGetEnrichedTopicsList'] });
+        await queryClient.invalidateQueries({ queryKey: ['useGetSummaryInfo'] });
+    };
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -122,9 +141,11 @@ const ChatInput: React.FC = () => {
                         {thread?.topicCredentialUri && !thread?.summaries?.[0] && (
                             <>
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         closeAllModals();
-                                        history.push('/');
+                                        chatBotStore.set.resetStore();
+                                        await invalidateSessionQueries();
+                                        history.push('/ai/topics');
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
@@ -138,11 +159,19 @@ const ChatInput: React.FC = () => {
                                 onClick={async () => {
                                     closeAllModals();
                                     await fetchNewContractCredentials();
+                                    await invalidateSessionQueries();
                                     chatBotStore.set.resetStore();
 
                                     setTimeout(() => {
+                                        const topicParam = encodeURIComponent(
+                                            thread?.topicCredentialUri ?? ''
+                                        );
+                                        const summaryParam = encodeURIComponent(
+                                            thread?.summaries?.[0]?.credential_uri ?? ''
+                                        );
+
                                         history.push(
-                                            `/ai/sessions?topicBoostUri=${thread?.topicCredentialUri}&summaryUri=${thread?.summaries?.[0]?.credential_uri}`
+                                            `/ai/sessions?topicBoostUri=${topicParam}&summaryUri=${summaryParam}`
                                         );
                                     }, 500);
                                 }}
@@ -234,6 +263,7 @@ const ChatInput: React.FC = () => {
         finishSession(async () => {
             await fetchNewContractCredentials();
             await fetchTopics();
+            await invalidateSessionQueries();
         });
     };
 
@@ -244,16 +274,24 @@ const ChatInput: React.FC = () => {
         }
     };
 
-    const disableSend = !$input.trim() || $isTyping;
+    const disableSend = !$input.trim();
+    const resolvedPlaceholder = placeholder ?? getDefaultPlaceholder(mode);
     // const showFinishButton = !showContinue && !$isTyping;
 
     return (
         <>
-            <FinishSessionButton />
-            <div className="flex flex-col gap-[10px] p-[15px] sm:p-0">
-                <div className="flex rounded-[15px] overflow-hidden w-full items-center border-[1px] border-grayscale-200 border-solid">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)] bg-grayscale-50">
+                {showUserAvatar && (
+                    <div className="flex-shrink-0 pb-[6px]">
+                        <ProfilePicture
+                            customContainerClass="h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
+                            customImageClass="w-full h-full object-cover rounded-full"
+                        />
+                    </div>
+                )}
+                <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
                     <form
-                        className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
+                        className="flex-1 min-w-0 flex items-center bg-white pr-[8px] sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
                         onSubmit={e => {
                             e.preventDefault();
@@ -263,7 +301,7 @@ const ChatInput: React.FC = () => {
                     >
                         <textarea
                             rows={1}
-                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
+                            className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
                             value={$input}
                             onChange={e => {
                                 chatInputText.set(e.target.value);
@@ -275,7 +313,7 @@ const ChatInput: React.FC = () => {
                             }}
                             onKeyDown={handleKeyPress}
                             // disabled={$isTyping}
-                            placeholder={'Ask anything...'}
+                            placeholder={resolvedPlaceholder}
                             style={{ resize: 'none' }}
                             ref={el => {
                                 if (el) {
@@ -286,14 +324,10 @@ const ChatInput: React.FC = () => {
                         ></textarea>
                         <button
                             type="submit"
-                            className={`bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full phone:!mr-[8px]`}
+                            className={`flex-shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
                             disabled={disableSend}
                         >
-                            {$isTyping ? (
-                                <CustomSpinner className="text-gray-700 h-[30px] w-[30px]" />
-                            ) : (
-                                <ArrowUp className={disableSend ? 'text-white' : 'text-white'} />
-                            )}
+                            <ArrowUp className="text-white" />
                         </button>
                     </form>
                     {/* <div className="h-full px-[15px] hidden sm:block">

@@ -37,7 +37,7 @@ export const CenteredSubHeader: React.FC<{ subheaderType: SubheaderTypeEnum }> =
         title = 'Skills Hub';
     } else if (subheaderType === SubheaderTypeEnum.AiInsights) {
         icon = <AiInsightsIconWithShape />;
-        title = 'AI Insights Hub';
+        title = 'AI Insights';
     }
 
     return (

@@ -20,6 +20,7 @@ import { useImmer } from 'use-immer';
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type AddGamePromptConfirmationPromptProps = {
     user?: LCNProfile;
@@ -40,6 +41,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const history = useHistory();
     const { newModal, closeAllModals } = useModal();
@@ -117,7 +119,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                         <div className="w-full text-center text-grayscale-900 text-[17px] font-notoSans px-[30px]">
                             Add <span className="font-[600] tracking-[0.25px]">{gameTitle}</span> to{' '}
                             <span className="font-[600]">{user?.displayName ?? user?.name}'s</span>{' '}
-                            LearnCard
+                            {brandingConfig?.name}
                         </div>
                     )}
                     {hasConsented && (
@@ -125,7 +127,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                             <span className="font-[600] tracking-[0.25px]">{gameTitle}</span> is
                             already connected to{' '}
                             <span className="font-[600]">{user?.displayName ?? user?.name}'s</span>{' '}
-                            LearnCard
+                            {brandingConfig?.name}
                         </div>
                     )}
                 </div>

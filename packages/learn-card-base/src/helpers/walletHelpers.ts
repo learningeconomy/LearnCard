@@ -11,11 +11,7 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 import { isPlatformWeb } from 'learn-card-base/helpers/platformHelpers';
 import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
-import {
-    LCA_API_ENDPOINT,
-    LEARNCLOUD_URL,
-    LEARNCARD_NETWORK_URL,
-} from 'learn-card-base/constants/Networks';
+import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
 import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
@@ -54,15 +50,13 @@ export const getBespokeLearnCard = async (
 
     let network: string | boolean = networkStore.get.networkUrl();
     if (!network || network === LEARNCARD_NETWORK_URL) network = true;
-    if (LCN_URL) network = LCN_URL;
 
-    let cloudUrl = networkStore.get.cloudUrl();
-    if (!cloudUrl) cloudUrl = LEARNCLOUD_URL;
-    if (CLOUD_URL) cloudUrl = CLOUD_URL;
+    const cloudUrl = networkStore.get.cloudUrl();
 
-    let apiEndpoint = networkStore.get.apiEndpoint();
-    if (!apiEndpoint) apiEndpoint = LCA_API_ENDPOINT;
-    if (API_URL) apiEndpoint = API_URL;
+    const apiEndpoint = networkStore.get.apiEndpoint();
+
+    const tenantId = networkStore.get.tenantId();
+    const extraHeaders = tenantId ? { 'X-Tenant-Id': tenantId } : undefined;
 
     const networkLearnCard = await initLearnCard({
         seed,
@@ -70,11 +64,12 @@ export const getBespokeLearnCard = async (
         cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
         allowRemoteContexts: true,
         guardianApprovalGetter: getGuardianApprovalVP,
+        extraHeaders,
         ...(didWeb && { didWeb }),
     });
 
     const lcaLearnCard = await networkLearnCard.addPlugin(
-        await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb))
+        await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb), extraHeaders)
     );
 
     const linkedClaimsLca = await lcaLearnCard.addPlugin(await getLinkedClaimsPlugin(lcaLearnCard));

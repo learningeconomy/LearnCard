@@ -18,6 +18,7 @@ import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
+import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
 import { getDidWebLearnCard, isTrustedLoginProviderDID } from '@helpers/learnCard.helpers';
 import jwtDecode from 'jwt-decode';
 import {
@@ -162,6 +163,13 @@ export const contactMethodsRouter = t.router({
                 });
             }
 
+            // Safety net: claim any pending guardian MANAGES relationships for this email
+            try {
+                await claimPendingGuardianLinksForProfile(profile);
+            } catch (err) {
+                console.error('[verifyWithCredential] Auto-claim guardian links failed (non-fatal):', err);
+            }
+
             return {
                 message: 'Contact method verified successfully.',
                 contactMethod: updated,
@@ -292,6 +300,7 @@ export const contactMethodsRouter = t.router({
                     verificationCode: verificationToken,
                     verificationEmail: value,
                 },
+                branding: ctx.tenant?.emailBranding,
             });
 
             return {
@@ -388,6 +397,7 @@ export const contactMethodsRouter = t.router({
                 templateModel: {
                     verificationToken,
                 },
+                branding: ctx.tenant?.emailBranding,
             });
 
             return {
@@ -454,6 +464,13 @@ export const contactMethodsRouter = t.router({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to verify contact method',
                 });
+            }
+
+            // Safety net: claim any pending guardian MANAGES relationships for this email
+            try {
+                await claimPendingGuardianLinksForProfile(profile);
+            } catch (err) {
+                console.error('[verifyContactMethod] Auto-claim guardian links failed (non-fatal):', err);
             }
 
             return {

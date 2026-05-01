@@ -2,19 +2,16 @@ import { UnsignedVC } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import {
-    useModal,
-    useToast,
-    ToastTypeEnum,
     UploadTypesEnum,
-    LEARNCARD_AI_URL,
 } from 'learn-card-base';
+import { networkStore } from '../../stores/NetworkStore';
 
 export const usePreloadAssessment = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
-            const res = await fetch(`${LEARNCARD_AI_URL}/assessment?did=${did}`, {
+            const res = await fetch(`${networkStore.get.aiServiceUrl()}/assessment?did=${did}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ summaryCredential }),
@@ -44,7 +41,7 @@ type FinishAssessmentPayload = {
 export const useFinishAssessmentMutation = () => {
     return useMutation({
         mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
-            const response = await fetch(`${LEARNCARD_AI_URL}/finish-assessment?did=${did}`, {
+            const response = await fetch(`${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ assessmentQA, session, sessionUri }),
@@ -60,9 +57,6 @@ export const useFinishAssessmentMutation = () => {
 };
 
 export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
-    const { closeModal } = useModal();
-    const { presentToast } = useToast();
-
     return useMutation({
         mutationFn: async ({
             did,
@@ -75,7 +69,7 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
         }) => {
             try {
                 const response = await fetch(
-                    `${LEARNCARD_AI_URL}/credentials/parse-file?did=${did}`,
+                    `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -96,35 +90,6 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
                 console.error('Failed to upload resume:', error);
                 throw new Error(error as string);
             }
-        },
-        onSuccess: async () => {
-            closeModal();
-            setTimeout(() => {
-                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    title: `${fileType} Successfully Parsed`,
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Success,
-                    hasCheckmark: true,
-                    duration: 5000,
-                });
-            }, 500);
-        },
-        onError: async error => {
-            let message = `Something went wrong uploading your ${fileType}.`;
-
-            if (typeof error === 'object' && error !== null && 'message' in error) {
-                message = (error as any).message ?? message;
-            }
-
-            setTimeout(() => {
-                presentToast(message, {
-                    title: 'Error',
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Error,
-                    hasX: true,
-                    duration: 5000,
-                });
-            }, 500);
         },
     });
 };

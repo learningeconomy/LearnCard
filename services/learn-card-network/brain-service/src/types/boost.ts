@@ -8,6 +8,8 @@ import {
     LCNBoostStatus,
     LCNBoostStatusEnum,
 } from '@learncard/types';
+import { ProfileType } from './profile';
+import { AppStoreListingType } from './app-store-listing';
 
 export const BoostStatus = LCNBoostStatus;
 export type BoostStatusEnum = LCNBoostStatusEnum;
@@ -45,3 +47,38 @@ export const BoostClaimLinkCacheValueValidator = z.object({
     generatorProfileId: z.string().optional(),
 });
 export type BoostClaimLinkCacheValueType = z.infer<typeof BoostClaimLinkCacheValueValidator>;
+
+export type ProfileBoostOwner = {
+    type: 'profile';
+    profile: ProfileType;
+};
+
+export type AppStoreListingBoostOwner = {
+    type: 'appStoreListing';
+    listing: AppStoreListingType;
+    ownerProfile: ProfileType;
+};
+
+export type BoostOwner = ProfileBoostOwner | AppStoreListingBoostOwner;
+
+export function getBoostOwnerProfile(owner: BoostOwner): ProfileType {
+    if (owner.type === 'profile') {
+        return owner.profile;
+    }
+    return owner.ownerProfile;
+}
+
+export function getBoostOwnerDisplayName(owner: BoostOwner): string {
+    if (owner.type === 'profile') {
+        return owner.profile.displayName ?? owner.profile.profileId;
+    }
+    return owner.listing.display_name;
+}
+
+export function isProfileBoostOwner(owner: BoostOwner): owner is ProfileBoostOwner {
+    return owner.type === 'profile';
+}
+
+export function isAppStoreListingBoostOwner(owner: BoostOwner): owner is AppStoreListingBoostOwner {
+    return owner.type === 'appStoreListing';
+}

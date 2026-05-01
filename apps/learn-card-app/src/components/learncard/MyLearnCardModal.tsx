@@ -66,6 +66,8 @@ import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
@@ -88,6 +90,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const [user, setUser] = useState(_user);
     const { theme } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
+    const brandingConfig = useBrandingConfig();
+    const buildMyLCTitle = `Build My ${brandingConfig.name}`;
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -104,7 +108,13 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     const { data: connections } = useGetConnections();
 
-    const { keyDerivation, capabilities, showDeviceLinkModal, authProvider: contextAuthProvider, refreshAuthSession } = useAppAuth();
+    const {
+        keyDerivation,
+        capabilities,
+        showDeviceLinkModal,
+        authProvider: contextAuthProvider,
+        refreshAuthSession,
+    } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -201,7 +211,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         <UserProfileSetup
                             title="My Account"
                             handleCloseModal={closeModal}
-                            handleLogout={() => handleLogout(branding)}
+                            handleLogout={() => handleLogout()}
                             showNetworkSettings={true}
                             showNotificationsModal={false}
                         />,
@@ -242,7 +252,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Build My LearnCard',
+                title: buildMyLCTitle,
                 Icon: BuildColorBlocksIcon,
                 caretText: checkListItemText,
                 onClick: async () => {
@@ -344,7 +354,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     newModal(
                         <PrivacySettingsModal />,
                         { sectionClassName: '!bg-transparent !shadow-none' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Cancel }
                     );
                 },
             },
@@ -361,7 +371,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
                 },
-            },
+            }
         );
 
         if (capabilities.recovery) {
@@ -377,10 +387,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const showReAuth = () => {
                         newModal(
-                            <ReAuthOverlay
-                                onSuccess={closeModal}
-                                onCancel={closeModal}
-                            />,
+                            <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
                             { sectionClassName: '!max-w-[480px]' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
@@ -412,11 +419,17 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         try {
                             const token = await contextAuthProvider.getIdToken();
                             const providerType = contextAuthProvider.getProviderType();
-                            existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+                            existingMethods = await keyDerivation.getAvailableRecoveryMethods(
+                                token,
+                                providerType
+                            );
 
                             // Fetch masked recovery email from server key status
                             if (keyDerivation.fetchServerKeyStatus) {
-                                const status = await keyDerivation.fetchServerKeyStatus(token, providerType);
+                                const status = await keyDerivation.fetchServerKeyStatus(
+                                    token,
+                                    providerType
+                                );
                                 fetchedMaskedRecoveryEmail = status.maskedRecoveryEmail ?? null;
                             }
                         } catch {
@@ -427,13 +440,18 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     const canSetup = !!keyDerivation.setupRecoveryMethod;
 
                     const setupMethod = canSetup
-                        ? async (input: { method: string; password?: string; did?: string }, authUser?: unknown) => {
+                        ? async (
+                              input: { method: string; password?: string; did?: string },
+                              authUser?: unknown
+                          ) => {
                               let token: string;
 
                               try {
                                   token = await contextAuthProvider.getIdToken();
                               } catch {
-                                  throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                                  throw new Error(
+                                      'Your session has expired. Please close this dialog and sign in again.'
+                                  );
                               }
 
                               const providerType = contextAuthProvider.getProviderType();
@@ -443,7 +461,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                   const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
-                                  if (!jwt || typeof jwt !== 'string') throw new Error('Failed to sign DID-Auth VP');
+                                  if (!jwt || typeof jwt !== 'string')
+                                      throw new Error('Failed to sign DID-Auth VP');
 
                                   return jwt;
                               };
@@ -453,14 +472,18 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                   providerType,
                                   privateKey: currentUser.privateKey!,
                                   input: input as import('@learncard/sss-key-manager').RecoverySetupInput,
-                                  authUser: (authUser as import('@learncard/sss-key-manager').AuthUser) ?? undefined,
+                                  authUser:
+                                      (authUser as import('@learncard/sss-key-manager').AuthUser) ??
+                                      undefined,
                                   signDidAuthVp: signVp,
                               });
                           }
                         : null;
 
                     const requireAuth = async () => {
-                        throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                        throw new Error(
+                            'Your session has expired. Please close this dialog and sign in again.'
+                        );
                     };
 
                     const { serverUrl } = getAuthConfig();
@@ -477,7 +500,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         return {
                             'Content-Type': 'application/json',
-                            ...(vpJwt && typeof vpJwt === 'string' ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                            ...(vpJwt && typeof vpJwt === 'string'
+                                ? { Authorization: `Bearer ${vpJwt}` }
+                                : {}),
+                            ...getTenantHeaders(),
                         };
                     };
 
@@ -485,25 +511,36 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         <RecoverySetupModal
                             existingMethods={existingMethods.map(m => ({
                                 type: m.type,
-                                createdAt: m.createdAt instanceof Date
-                                    ? m.createdAt.toISOString()
-                                    : String(m.createdAt),
+                                createdAt:
+                                    m.createdAt instanceof Date
+                                        ? m.createdAt.toISOString()
+                                        : String(m.createdAt),
                             }))}
                             maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {
-                                          const authUser = await contextAuthProvider.getCurrentUser();
-                                          const result = await setupMethod({ method: 'passkey' }, authUser);
-                                          return result?.method === 'passkey' ? result.credentialId : 'Passkey created';
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          const result = await setupMethod(
+                                              { method: 'passkey' },
+                                              authUser
+                                          );
+                                          return result?.method === 'passkey'
+                                              ? result.credentialId
+                                              : 'Passkey created';
                                       }
                                     : requireAuth
                             }
                             onGeneratePhrase={
                                 setupMethod
                                     ? async () => {
-                                          const authUser = await contextAuthProvider.getCurrentUser();
-                                          const result = await setupMethod({ method: 'phrase' }, authUser);
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          const result = await setupMethod(
+                                              { method: 'phrase' },
+                                              authUser
+                                          );
                                           return result?.method === 'phrase' ? result.phrase : '';
                                       }
                                     : requireAuth
@@ -511,11 +548,19 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onSetupBackup={
                                 setupMethod
                                     ? async (backupPw: string) => {
-                                          const authUser = await contextAuthProvider.getCurrentUser();
-                                          const lc = await getSigningLearnCard(currentUser.privateKey!);
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          const lc = await getSigningLearnCard(
+                                              currentUser.privateKey!
+                                          );
                                           const did = lc?.id?.did() || '';
-                                          const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
-                                          return result?.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
+                                          const result = await setupMethod(
+                                              { method: 'backup', password: backupPw, did },
+                                              authUser
+                                          );
+                                          return result?.method === 'backup'
+                                              ? JSON.stringify(result.backupFile, null, 2)
+                                              : '';
                                       }
                                     : requireAuth
                             }
@@ -531,7 +576,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                 if (!res.ok) {
                                     const data = await res.json().catch(() => ({}));
-                                    throw new Error(data?.message || 'Failed to send verification code.');
+                                    throw new Error(
+                                        data?.message || 'Failed to send verification code.'
+                                    );
                                 }
                             }}
                             onVerifyRecoveryEmail={async (code: string) => {
@@ -554,7 +601,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onSetupEmailRecovery={
                                 setupMethod
                                     ? async () => {
-                                          const authUser = await contextAuthProvider.getCurrentUser();
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
                                           await setupMethod({ method: 'email' }, authUser);
                                       }
                                     : requireAuth
@@ -723,7 +771,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                 let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
 
-                                if (title === 'Build My LearnCard') {
+                                if (title === buildMyLCTitle) {
                                     icon = (
                                         <img
                                             src={buildMyLCIcon}
@@ -748,7 +796,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         {!hideLogout && (
                             <button
                                 onClick={() =>
-                                    handleLogout(branding, { overrideRedirectUrl: '/login' })
+                                    handleLogout({ overrideRedirectUrl: '/login' })
                                 }
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}

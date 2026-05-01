@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
-import { useLocation, useHistory } from 'react-router-dom';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 import {
@@ -17,6 +16,7 @@ import {
     useIonModal,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import Camera from 'learn-card-base/svgs/Camera';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -32,9 +32,8 @@ import {
 
 import { ModalTypes, QRCodeScannerStore, useModal, useToast, ToastTypeEnum } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
-
+import useTheme from '../../../../../theme/hooks/useTheme';
 import { useWallet } from 'learn-card-base';
-import { usePathQuery } from 'learn-card-base';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 
 import { BoostUserTypeEnum } from 'learn-card-base';
@@ -78,14 +77,13 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal();
     const { initWallet } = useWallet();
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
 
     const { presentToast } = useToast();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(state?.[collectionPropName]);
     const [walletDid, setWalletDid] = useState<string>('');
-    const query = usePathQuery();
-    const history = useHistory();
-    const location = useLocation();
 
     useEffect(() => {
         const getWalletDid = async () => {
@@ -194,7 +192,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://learncard.app/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
             presentToast('Contact link copied to clipboard', {
                 duration: 3000,
@@ -213,7 +211,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://learncard.app/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {
@@ -260,16 +258,6 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
 
     const handleAddSomeoneElse = () => {
         setIssueMode?.(BoostUserTypeEnum.someone);
-
-        if (history) {
-            let searchParams = new URLSearchParams(window.location.search);
-            searchParams.set('boostUserType', BoostUserTypeEnum.someone);
-
-            history.replace({
-                pathname: location?.pathname,
-                search: searchParams.toString(),
-            });
-        }
 
         presentAddressBook();
         // newModal(
@@ -322,8 +310,14 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 <IonGrid className="ion-padding">
                     <IonRow className="w-full flex items-center justify-center mt-8">
                         <button
-                            onClick={() => handleAddYoself()}
-                            className="bg-gradient-rainbow text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom"
+                            onClick={event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleAddYoself();
+                            }}
+                            className={`${
+                                primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
+                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
                         >
                             Boost Myself
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
@@ -331,8 +325,14 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                     </IonRow>
                     <IonRow className="w-full flex items-center justify-center mt-4">
                         <button
-                            onClick={() => handleAddSomeoneElse()}
-                            className="bg-gradient-rainbow text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom"
+                            onClick={event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleAddSomeoneElse();
+                            }}
+                            className={`${
+                                primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
+                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
                         >
                             Boost Others
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
@@ -368,7 +368,11 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                     {Capacitor.isNativePlatform() && (
                         <IonCol className="w-full flex items-center justify-center mt-1">
                             <button
-                                onClick={handleScan}
+                                onClick={event => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    handleScan();
+                                }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg modal-btn-mobile normal tracking-wide"
                             >
                                 <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code

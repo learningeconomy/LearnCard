@@ -176,6 +176,7 @@ export type BoostCMSIssueTo = {
     displayName?: string;
     email?: string;
     image?: string;
+    mediaAttachments?: BoostCMSMediaAttachment[];
 };
 
 export type BoostCMSAdmin = {

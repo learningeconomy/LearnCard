@@ -15,6 +15,7 @@ import {
     checklistStore,
     checklistItems,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type CheckListButtonMode = 'default' | 'inline';
 
@@ -26,16 +27,25 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     const { newModal } = useModal();
     const { completedItems } = useGetCheckListStatus();
     const { gate } = useLCNGatedAction();
+    const brandingConfig = useBrandingConfig();
 
     const { theme, colors } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
     const primaryColor = colors?.defaults?.primaryColor;
+    const featuredCardBgColor = colors?.defaults?.featuredCardBgColor;
+    const featuredCardTextColor = colors?.defaults?.featuredCardTextColor;
 
     const { resume, certificate, transcript, diploma, rawVC } =
         checklistStore.useTracked.isParsing();
     const isParsing = resume || certificate || transcript || diploma || rawVC;
     const optimizedPercent =
         checklistItems.length > 0 ? Math.round((completedItems / checklistItems.length) * 100) : 0;
+
+    const { resume: pendingResume, transcript: pendingTranscript } =
+        checklistStore.useTracked.pendingReview();
+    const pendingReviewCount =
+        (pendingResume?.credentials?.length ?? 0) + (pendingTranscript?.credentials?.length ?? 0);
+    const hasPendingReview = pendingReviewCount > 0;
 
     const handleCheckListButton = async () => {
         const { prompted } = await gate();
@@ -49,24 +59,20 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
 
     if (!flags?.enableOnboardingChecklist) return null;
 
-    const progressColors = {
-        25: 'bg-amber-500',
-        50: 'bg-violet-500',
-        75: 'bg-sky-500',
-        100: 'bg-emerald-600',
-    };
+    const progressBarFill = primaryColor ? `bg-${primaryColor}` : 'bg-emerald-600';
 
     if (mode === 'inline') {
         return (
             <div
                 role="button"
                 onClick={handleCheckListButton}
-                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                className={`w-full h-[150px] max-h-[150px] rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
             >
                 <div className="flex justify-center mb-3">
                     <div
                         className={`rounded-[14px] p-[8px] ${
-                            isParsing ? `bg-${primaryColor}` : 'bg-white'
+                            isParsing ? `bg-${primaryColor}` : featuredCardBgColor ? 'bg-transparent' : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
@@ -81,25 +87,27 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     </div>
                 </div>
 
-                <h5 className="text-[17px] leading-[130%] font-poppins font-[600] text-grayscale-900 text-center">
-                    Build My LearnCard
+                <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
+                    Build My {brandingConfig.name}
                 </h5>
 
                 {isParsing ? (
-                    <p className="mt-2 text-[13px] leading-[130%] text-grayscale-700 font-poppins text-center">
+                    <p className={`mt-2 text-[13px] leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
                         Processing documents...
+                    </p>
+                ) : hasPendingReview ? (
+                    <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
+                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
                     </p>
                 ) : (
                     <div className="mt-3">
-                        <div className="w-full h-[10px] rounded-full bg-grayscale-200 overflow-hidden">
+                        <div className={`w-full h-[10px] rounded-full overflow-hidden ${featuredCardTextColor ? 'bg-white/20' : 'bg-grayscale-200'}`}>
                             <div
-                                className={`h-full rounded-full ${
-                                    progressColors[optimizedPercent as keyof typeof progressColors]
-                                }`}
-                                style={{ width: `${optimizedPercent}%` }}
+                                className={`h-full rounded-full ${progressBarFill}`}
+                                style={{ width: `${Math.max(optimizedPercent, 2)}%` }}
                             />
                         </div>
-                        <p className="mt-2 text-xs leading-[130%] text-grayscale-700 font-poppins">
+                        <p className={`mt-2 text-xs leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-600'}`}>
                             {optimizedPercent}% optimized
                         </p>
                     </div>
@@ -112,12 +120,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         <div
             role="button"
             onClick={handleCheckListButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
         >
             <div className="flex items-center gap-[10px]">
                 <div
                     className={`rounded-[10px] p-[5px] ${
-                        isParsing ? `bg-${primaryColor}` : 'bg-white '
+                        isParsing ? `bg-${primaryColor}` : featuredCardBgColor ? 'bg-transparent' : 'bg-white'
                     }`}
                 >
                     {isParsing ? (
@@ -127,15 +136,19 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     )}
                 </div>
                 <div className="flex flex-col">
-                    <h5 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[130%]">
-                        Build My LearnCard
+                    <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
+                        Build My {brandingConfig.name}
                     </h5>
                     {isParsing ? (
-                        <p className="text-[14px] text-grayscale-900 font-poppins">
+                        <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                             Processing documents...
                         </p>
+                    ) : hasPendingReview ? (
+                        <p className="text-[14px] text-amber-600 font-poppins font-semibold">
+                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                        </p>
                     ) : (
-                        <p className="text-[14px] text-grayscale-900 font-poppins">
+                        <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                             <span className="font-semibold">{completedItems}</span> of{' '}
                             <span className="font-semibold">{checklistItems.length}</span> Steps
                             Completed

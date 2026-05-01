@@ -1,8 +1,8 @@
 import React from 'react';
 
 type CompetencyIconProps = {
-    icon: string;
-    size?: 'normal' | 'big' | 'super-big' | 'small';
+    icon: string | undefined;
+    size?: 'normal' | 'big' | 'super-big' | 'small' | 'x-small';
     withWhiteBackground?: boolean;
 };
 
@@ -14,6 +14,9 @@ const CompetencyIcon: React.FC<CompetencyIconProps> = ({
     let sizeClassName = 'text-[30px] h-[35px] w-[35px] leading-[35px]';
     if (size === 'small') {
         sizeClassName = 'text-[16px] h-[24px] w-[24px] leading-[24px] pl-[1px]';
+    }
+    if (size === 'x-small') {
+        sizeClassName = 'text-[14px] h-[20px] w-[20px] leading-[20px] pl-[1px]';
     }
     if (size === 'big') {
         sizeClassName = 'text-[40px] h-[45px] w-[45px] leading-[45px]';
@@ -28,7 +31,7 @@ const CompetencyIcon: React.FC<CompetencyIconProps> = ({
                 withWhiteBackground ? 'bg-white rounded-full' : ''
             } ${sizeClassName}`}
         >
-            {icon}
+            {icon || '🧩'}
         </span>
     );
 };

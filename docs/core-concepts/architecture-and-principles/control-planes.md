@@ -45,7 +45,7 @@ Each control plane serves a specific purpose:
 | ------------- | ------------------------------- | ----------------------------------------- |
 | ID            | Identity management             | `did`, `keypair`                          |
 | Read          | Resolving URIs to credentials   | `get`                                     |
-| Store         | Storing credentials             | `upload`, `uploadEncrypted`, `uploadMany` |
+| Store         | Storing credentials             | `upload`, `uploadEncrypted`, `uploadMany`, `delete` |
 | Index         | Managing credential references  | `get`, `add`, `update`, `remove`          |
 | Cache         | Caching for performance         | `getIndex`, `setIndex`, `getVc`, `setVc`  |
 | Context       | Managing contextual information | `resolveDocument`                         |
@@ -152,7 +152,7 @@ console.log(learnCard.store.providers);
 ```
 {% endhint %}
 
-The Store Plane implements three methods: `upload`, (optionally) `uploadEncrypted`, and (optionally) `uploadMany`
+The Store Plane implements four methods: `upload`, (optionally) `uploadEncrypted`, (optionally) `uploadMany`, and (optionally) `delete`
 
 ### store.upload
 
@@ -173,6 +173,39 @@ Note: This method is optional
 {% endhint %}
 
 The `uploadMany` method takes in an array of Verifiable Credentials, stores the credentials, and converts them into an array of resolvable [URIs](../credentials-and-data/uris.md).
+
+### store.delete
+
+{% hint style="info" %}
+Note: This method is optional
+{% endhint %}
+
+The `delete` method allows you to remove a stored credential by its URI. This enables credential cleanup, storage lifecycle management, and supports GDPR-style "right to be forgotten" workflows.
+
+**Parameters:**
+- `uri` (string): The URI of the credential to delete
+- `options` (PlaneOptions, optional): Optional configuration including cache behavior
+
+**Returns:** `Promise<boolean>` - Returns `true` if the deletion was successful, `false` otherwise.
+
+{% hint style="info" %}
+**Backwards Compatibility:** This method is optional, so not all storage plugins will implement it. Always check if the method is available before calling it, or handle the case where it returns `false`.
+{% endhint %}
+
+**Usage Example:**
+
+```typescript
+// Check if the storage provider supports delete
+if (learnCard.store.LearnCloud.delete) {
+    const success = await learnCard.store.LearnCloud.delete(uri);
+    if (success) {
+        console.log('Credential deleted successfully');
+    }
+}
+
+// Or with cache options
+const success = await learnCard.store.LearnCloud.delete(uri, { cache: 'skip-cache' });
+```
 
 ### Example plugins that implement the Store Plane
 

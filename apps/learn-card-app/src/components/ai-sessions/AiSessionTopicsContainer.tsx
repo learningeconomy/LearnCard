@@ -3,23 +3,13 @@ import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import useAiSession from '../../hooks/useAiSession';
-import sideMenuStore from 'learn-card-base/stores/sideMenuStore';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
-import { useGetCredentialList, useIsCollapsed } from 'learn-card-base';
+import { useGetCredentialList } from 'learn-card-base';
 
-import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
-import AiSessionsLayout from './layout/AiSessionsLayout';
-import AiSessionSuggestions from './AiSessionSuggestions/AiSessionSuggestions';
-import AiSessionTopics from './AiSessionTopics/AiSessionTopics';
-import AiSessionTopicsHeader from './AiSessionsHeader/AiSessionTopicsHeader';
+import AiSessionsPage from '../../pages/ai-sessions/AiSessionsPage';
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
-import { AiSessionsTabsEnum } from './aiSessions.helpers';
-import {
-    AiSessionsFilterOptionsEnum,
-    AiSessionsSortOptionsEnum,
-} from './AiSessionsSearch/aiSessions-search.helpers';
 
 import { NewAiSessionStepEnum } from '../new-ai-session/newAiSession.helpers';
 
@@ -41,7 +31,6 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const startNewSession: boolean = _startNewSession === 'true';
     const shortCircuitStep: NewAiSessionStepEnum = _shortCircuitStep as NewAiSessionStepEnum;
 
-    const isCollapsed = useIsCollapsed();
     const [isMobileModalOpen, setIsMobileModalOpen] = useState<boolean>(false);
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
@@ -55,7 +44,10 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const handleSetChatBotSelected = (chatBotType: NewAiSessionStepEnum) => {
         setChatBotSelected(chatBotType);
     };
-    const handleStartOver = () => setChatBotSelected(null);
+    const handleStartOver = () => {
+        chatBotStore.set.resetStore();
+        setChatBotSelected(null);
+    };
 
     const { openNewAiSessionModal } = useAiSession();
 
@@ -80,12 +72,6 @@ export const AiSessionTopicsContainer: React.FC = () => {
             handleSetChatBotSelected(shortCircuitStep);
         }
     }, [shortCircuitStep]);
-
-    useEffect(() => {
-        if (!isCollapsed) {
-            sideMenuStore.set.isCollapsed(true);
-        }
-    }, []);
 
     useEffect(() => {
         newCredsStore.set.clearNewCreds('AI Topic');
@@ -123,58 +109,9 @@ export const AiSessionTopicsContainer: React.FC = () => {
         }
     }, [isMobile, isMobileModalOpen, isDesktop, chatBotSelected]);
 
-    const [activeTab, setActiveTab] = useState<AiSessionsTabsEnum>(AiSessionsTabsEnum.all);
-
-    const [filterBy, setFilterBy] = useState<AiSessionsFilterOptionsEnum>(
-        AiSessionsFilterOptionsEnum.showAll
-    );
-    const [sortBy, setSortBy] = useState<AiSessionsSortOptionsEnum>(
-        AiSessionsSortOptionsEnum.newlyAdded
-    );
-    const [searchInput, setSearchInput] = useState<string>('');
-
-    const styles = isDesktop ? 'pt-[150px] ion-padding' : 'pt-[103px]';
-
-    const leftColumn = (
-        <div className="h-full w-full relative flex items-center justify-center">
-            <AiSessionTopicsHeader activeTab={activeTab} />
-
-            <div
-                className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide ${styles}`}
-            >
-                <GenericErrorBoundary>
-                    <AiSessionTopics
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                        searchInput={searchInput}
-                        setSearchInput={setSearchInput}
-                        filterBy={filterBy}
-                        setFilterBy={setFilterBy}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                    />
-                </GenericErrorBoundary>
-            </div>
-        </div>
-    );
-
-    let rightColumn = <AiSessionSuggestions handleSetChatBotSelected={handleSetChatBotSelected} />;
-
-    if (
-        chatBotSelected === NewAiSessionStepEnum.newTopic ||
-        chatBotSelected === NewAiSessionStepEnum.revisitTopic ||
-        chatBotSelected === NewAiSessionStepEnum.aiAppSelector
-    ) {
-        rightColumn = newAiSessionComponent;
-    }
-
     return (
         <AiFeatureGate>
-            <AiSessionsLayout
-                handleSetChatBotSelected={handleSetChatBotSelected}
-                leftColumn={leftColumn}
-                rightColumn={rightColumn}
-            />
+            <AiSessionsPage />
         </AiFeatureGate>
     );
 };

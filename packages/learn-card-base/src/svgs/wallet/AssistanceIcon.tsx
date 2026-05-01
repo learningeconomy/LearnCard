@@ -1,9 +1,20 @@
 import React from 'react';
 
-export const AssistanceIcon: React.FC<{ className?: string; version?: string }> = ({
+import type { IconPalette } from '../types';
+
+export const ASSISTANCE_DEFAULTS: Required<IconPalette> = {
+    primary: '#A78BFA',
+    primaryLight: '#C4B5FD',
+    accent: '#EC4899',
+    stroke: '#5B21B6',
+};
+
+export const AssistanceIcon: React.FC<{ className?: string; version?: string; palette?: Partial<IconPalette> }> = ({
     className = '',
     version,
+    palette: inputPalette,
 }) => {
+    const p = { ...ASSISTANCE_DEFAULTS, ...inputPalette };
     if (version === '2') {
         return (
             <svg
@@ -13,12 +24,12 @@ export const AssistanceIcon: React.FC<{ className?: string; version?: string }> 
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
-                <path d="M192.5 100L100.5 8L8.5 100L100.5 192L192.5 100Z" fill="#A78BFA" />
+                <path d="M192.5 100L100.5 8L8.5 100L100.5 192L192.5 100Z" fill={p.primary} />
                 <path
                     fillRule="evenodd"
                     clipRule="evenodd"
                     d="M100.5 172.833C139.988 172.833 172 140.821 172 101.333C172 61.8447 139.988 29.833 100.5 29.833C61.0115 29.833 29 61.8447 29 101.333C29 140.821 61.0115 172.833 100.5 172.833ZM100.5 128.238C115.359 128.238 127.404 116.192 127.404 101.333C127.404 86.4741 115.359 74.4283 100.5 74.4283C85.641 74.4283 73.5955 86.4741 73.5955 101.333C73.5955 116.192 85.641 128.238 100.5 128.238Z"
-                    fill="#EC4899"
+                    fill={p.accent}
                 />
                 <path
                     fillRule="evenodd"
@@ -28,33 +39,33 @@ export const AssistanceIcon: React.FC<{ className?: string; version?: string }> 
                 />
                 <path
                     d="M151.39 150.892C141.371 135.808 134.3 129.125 119.824 119.326"
-                    stroke="#5B21B6"
+                    stroke={p.stroke}
                     strokeWidth="3"
                 />
                 <path
                     d="M50.6089 50.1106C65.9407 60.2278 72.9974 67.0879 82.1738 81.6755"
-                    stroke="#5B21B6"
+                    stroke={p.stroke}
                     strokeWidth="3"
                 />
                 <path
                     d="M49.6094 150.892C60.1772 135.272 67.0994 128.07 81.1758 119.326"
-                    stroke="#5B21B6"
+                    stroke={p.stroke}
                     strokeWidth="3"
                 />
                 <path
                     d="M150.391 50.1106C135.086 58.6158 128.081 65.9212 118.826 81.6755"
-                    stroke="#5B21B6"
+                    stroke={p.stroke}
                     strokeWidth="3"
                 />
                 <path
                     d="M172 101.333C172 140.821 139.988 172.833 100.5 172.833C61.0115 172.833 29 140.821 29 101.333C29 61.8447 61.0115 29.833 100.5 29.833C139.988 29.833 172 61.8447 172 101.333Z"
-                    stroke="#5B21B6"
+                    stroke={p.stroke}
                     strokeWidth="3"
                     strokeLinejoin="round"
                 />
                 <path
                     d="M127.405 101.333C127.405 116.192 115.359 128.238 100.5 128.238C85.6412 128.238 73.5957 116.192 73.5957 101.333C73.5957 86.4741 85.6412 74.4283 100.5 74.4283C115.359 74.4283 127.405 86.4741 127.405 101.333Z"
-                    stroke="#5B21B6"
+                    stroke={p.stroke}
                     strokeWidth="3"
                     strokeLinejoin="round"
                 />
@@ -75,7 +86,7 @@ export const AssistanceIcon: React.FC<{ className?: string; version?: string }> 
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M39 75.4161C58.7442 75.4161 74.75 59.4102 74.75 39.6661C74.75 19.9218 58.7442 3.91602 39 3.91602C19.2558 3.91602 3.25 19.9218 3.25 39.6661C3.25 59.4102 19.2558 75.4161 39 75.4161ZM39 53.1183C46.4295 53.1183 52.4522 47.0954 52.4522 39.6661C52.4522 32.2366 46.4295 26.2137 39 26.2137C31.5705 26.2137 25.5478 32.2366 25.5478 39.6661C25.5478 47.0954 31.5705 53.1183 39 53.1183Z"
-                fill="#EC4899"
+                fill={p.accent}
             />
             <path
                 fillRule="evenodd"
@@ -85,33 +96,33 @@ export const AssistanceIcon: React.FC<{ className?: string; version?: string }> 
             />
             <path
                 d="M63.9452 63.9462C58.9357 56.4041 55.3999 53.0629 48.1621 48.1631"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M14.0544 14.0547C21.7203 19.1133 25.2487 22.5433 29.8369 29.8372"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M14.0547 63.9462C19.3386 56.1365 22.7997 52.5355 29.8379 48.1631"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M63.9456 14.0547C56.2931 18.3073 52.7904 21.96 48.1631 29.8372"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M74.75 39.6661C74.75 59.4102 58.7442 75.4161 39 75.4161C19.2558 75.4161 3.25 59.4102 3.25 39.6661C3.25 19.9218 19.2558 3.91602 39 3.91602C58.7442 3.91602 74.75 19.9218 74.75 39.6661Z"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
             <path
                 d="M52.4523 39.6672C52.4523 47.0966 46.4296 53.1195 39.0001 53.1195C31.5706 53.1195 25.5479 47.0966 25.5479 39.6672C25.5479 32.2377 31.5706 26.2148 39.0001 26.2148C46.4296 26.2148 52.4523 32.2377 52.4523 39.6672Z"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
@@ -119,7 +130,11 @@ export const AssistanceIcon: React.FC<{ className?: string; version?: string }> 
     );
 };
 
-export const AssistanceIconSolid: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const AssistanceIconSolid: React.FC<{ className?: string; palette?: Partial<IconPalette> }> = ({
+    className = '',
+    palette: inputPalette,
+}) => {
+    const p = { ...ASSISTANCE_DEFAULTS, ...inputPalette };
     return (
         <svg
             width="78"
@@ -133,7 +148,7 @@ export const AssistanceIconSolid: React.FC<{ className?: string }> = ({ classNam
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M39 75.4161C58.7442 75.4161 74.75 59.4102 74.75 39.6661C74.75 19.9218 58.7442 3.91602 39 3.91602C19.2558 3.91602 3.25 19.9218 3.25 39.6661C3.25 59.4102 19.2558 75.4161 39 75.4161ZM39 53.1183C46.4295 53.1183 52.4522 47.0954 52.4522 39.6661C52.4522 32.2366 46.4295 26.2137 39 26.2137C31.5705 26.2137 25.5478 32.2366 25.5478 39.6661C25.5478 47.0954 31.5705 53.1183 39 53.1183Z"
-                fill="#7C3AED"
+                fill={p.stroke}
             />
             <path
                 fillRule="evenodd"
@@ -143,33 +158,33 @@ export const AssistanceIconSolid: React.FC<{ className?: string }> = ({ classNam
             />
             <path
                 d="M63.9452 63.9462C58.9357 56.4041 55.3999 53.0629 48.1621 48.1631"
-                stroke="#7C3AED"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M14.0544 14.0547C21.7203 19.1133 25.2487 22.5433 29.8369 29.8372"
-                stroke="#7C3AED"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M14.0547 63.9462C19.3386 56.1365 22.7997 52.5355 29.8379 48.1631"
-                stroke="#7C3AED"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M63.9456 14.0547C56.2931 18.3073 52.7904 21.96 48.1631 29.8372"
-                stroke="#7C3AED"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M74.75 39.6661C74.75 59.4102 58.7442 75.4161 39 75.4161C19.2558 75.4161 3.25 59.4102 3.25 39.6661C3.25 19.9218 19.2558 3.91602 39 3.91602C58.7442 3.91602 74.75 19.9218 74.75 39.6661Z"
-                stroke="#7C3AED"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
             <path
                 d="M52.4523 39.6672C52.4523 47.0966 46.4296 53.1195 39.0001 53.1195C31.5706 53.1195 25.5479 47.0966 25.5479 39.6672C25.5479 32.2377 31.5706 26.2148 39.0001 26.2148C46.4296 26.2148 52.4523 32.2377 52.4523 39.6672Z"
-                stroke="#7C3AED"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
@@ -177,10 +192,12 @@ export const AssistanceIconSolid: React.FC<{ className?: string }> = ({ classNam
     );
 };
 
-export const AssistanceIconWithShape: React.FC<{ className?: string; shapeColor?: string }> = ({
+export const AssistanceIconWithShape: React.FC<{ className?: string; shapeColor?: string; palette?: Partial<IconPalette> }> = ({
     className = '',
-    shapeColor = '#A78BFA',
+    shapeColor,
+    palette: inputPalette,
 }) => {
+    const p = { ...ASSISTANCE_DEFAULTS, ...(shapeColor ? { primary: shapeColor } : {}), ...inputPalette };
     return (
         <svg
             width="101"
@@ -190,12 +207,12 @@ export const AssistanceIconWithShape: React.FC<{ className?: string; shapeColor?
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <path d="M96.75 50L50.75 4L4.75 50L50.75 96L96.75 50Z" fill={shapeColor} />
+            <path d="M96.75 50L50.75 4L4.75 50L50.75 96L96.75 50Z" fill={p.primary} />
             <path
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M50.75 86.4166C70.4942 86.4166 86.5 70.4106 86.5 50.6666C86.5 30.9223 70.4942 14.9165 50.75 14.9165C31.0058 14.9165 15 30.9223 15 50.6666C15 70.4106 31.0058 86.4166 50.75 86.4166ZM50.75 64.1188C58.1795 64.1188 64.2022 58.0959 64.2022 50.6666C64.2022 43.2371 58.1795 37.2142 50.75 37.2142C43.3205 37.2142 37.2978 43.2371 37.2978 50.6666C37.2978 58.0959 43.3205 64.1188 50.75 64.1188Z"
-                fill="#EC4899"
+                fill={p.accent}
             />
             <path
                 fillRule="evenodd"
@@ -205,37 +222,39 @@ export const AssistanceIconWithShape: React.FC<{ className?: string; shapeColor?
             />
             <path
                 d="M60.7529 57.9209C68.136 62.9191 71.8164 66.3959 76.9443 74.1162L74.4453 75.7764C69.5543 68.4127 66.1636 65.2067 59.0713 60.4053L60.7529 57.9209Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M26.6306 23.8032C34.4511 28.9639 38.1401 32.5415 42.8562 40.0386L40.3171 41.6362C35.857 34.546 32.4893 31.2636 24.9783 26.3071L26.6306 23.8032Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M42.3799 60.4375C35.5587 64.6751 32.2406 68.1107 27.0469 75.7871L24.5625 74.1055C29.9365 66.1626 33.5409 62.3958 40.7959 57.8887L42.3799 60.4375Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M76.4238 26.3667C72.6751 28.45 70.014 30.3467 67.7344 32.644C65.449 34.9472 63.4896 37.7098 61.2061 41.5972L58.6201 40.0776C60.9637 36.0882 63.0697 33.0862 65.6055 30.5308C68.147 27.9695 71.0633 25.9129 74.9668 23.7437L76.4238 26.3667Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M86.5 50.6666C86.5 70.4106 70.4942 86.4166 50.75 86.4166C31.0058 86.4166 15 70.4106 15 50.6666C15 30.9223 31.0058 14.9165 50.75 14.9165C70.4942 14.9165 86.5 30.9223 86.5 50.6666Z"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
             <path
                 d="M62.7021 50.6665C62.702 44.0655 57.351 38.7144 50.75 38.7144C44.1491 38.7144 38.798 44.0656 38.7979 50.6665C38.7979 57.2674 44.149 62.6186 50.75 62.6187C57.3511 62.6187 62.7021 57.2674 62.7021 50.6665ZM65.7021 50.6665C65.7021 58.9243 59.0079 65.6187 50.75 65.6187C42.4921 65.6186 35.7979 58.9242 35.7979 50.6665C35.798 42.4087 42.4922 35.7144 50.75 35.7144C59.0079 35.7144 65.702 42.4087 65.7021 50.6665Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
         </svg>
     );
 };
 
-export const AssistanceIconWithLightShape: React.FC<{ className?: string }> = ({
+export const AssistanceIconWithLightShape: React.FC<{ className?: string; palette?: Partial<IconPalette> }> = ({
     className = '',
+    palette: inputPalette,
 }) => {
+    const p = { ...ASSISTANCE_DEFAULTS, ...inputPalette };
     return (
         <svg
             width="201"
@@ -245,12 +264,12 @@ export const AssistanceIconWithLightShape: React.FC<{ className?: string }> = ({
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <path d="M192.5 100L100.5 8L8.5 100L100.5 192L192.5 100Z" fill="#C4B5FD" />
+            <path d="M192.5 100L100.5 8L8.5 100L100.5 192L192.5 100Z" fill={p.primaryLight} />
             <path
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M100.5 172.833C139.988 172.833 172 140.821 172 101.333C172 61.8447 139.988 29.833 100.5 29.833C61.0115 29.833 29 61.8447 29 101.333C29 140.821 61.0115 172.833 100.5 172.833ZM100.5 128.238C115.359 128.238 127.404 116.192 127.404 101.333C127.404 86.4741 115.359 74.4283 100.5 74.4283C85.641 74.4283 73.5955 86.4741 73.5955 101.333C73.5955 116.192 85.641 128.238 100.5 128.238Z"
-                fill="#EC4899"
+                fill={p.accent}
             />
             <path
                 fillRule="evenodd"
@@ -260,33 +279,33 @@ export const AssistanceIconWithLightShape: React.FC<{ className?: string }> = ({
             />
             <path
                 d="M151.39 150.892C141.371 135.808 134.3 129.126 119.824 119.326"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M50.609 50.1104C65.9408 60.2276 72.9975 67.0877 82.1739 81.6753"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M49.6094 150.892C60.1772 135.273 67.0994 128.071 81.1758 119.326"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M150.391 50.1104C135.086 58.6156 128.081 65.9209 118.826 81.6753"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
             />
             <path
                 d="M172 101.333C172 140.821 139.988 172.833 100.5 172.833C61.0115 172.833 29 140.821 29 101.333C29 61.8447 61.0115 29.833 100.5 29.833C139.988 29.833 172 61.8447 172 101.333Z"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
             <path
                 d="M127.405 101.334C127.405 116.192 115.359 128.238 100.5 128.238C85.6411 128.238 73.5956 116.192 73.5956 101.334C73.5956 86.4745 85.6411 74.4287 100.5 74.4287C115.359 74.4287 127.405 86.4745 127.405 101.334Z"
-                stroke="#5B21B6"
+                stroke={p.stroke}
                 strokeWidth="3"
                 strokeLinejoin="round"
             />
@@ -297,7 +316,13 @@ export const AssistanceIconWithLightShape: React.FC<{ className?: string }> = ({
 export const ThickAssistanceIconWithShape: React.FC<{
     className?: string;
     shapeColor?: string;
-}> = ({ className = '' }) => {
+    palette?: Partial<IconPalette>;
+}> = ({
+    className = '',
+    shapeColor,
+    palette: inputPalette,
+}) => {
+    const p = { ...ASSISTANCE_DEFAULTS, ...(shapeColor ? { primaryLight: shapeColor } : {}), ...inputPalette };
     return (
         <svg
             width="40"
@@ -307,12 +332,12 @@ export const ThickAssistanceIconWithShape: React.FC<{
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <path d="M39 20.4336L20 1.43359L1 20.4336L20 39.4336L39 20.4336Z" fill="#A78BFA" />
+            <path d="M39 20.4336L20 1.43359L1 20.4336L20 39.4336L39 20.4336Z" fill={p.primaryLight} />
             <path
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M20 34.4395C27.5939 34.4395 33.75 28.2834 33.75 20.6895C33.75 13.0955 27.5939 6.93945 20 6.93945C12.4061 6.93945 6.25 13.0955 6.25 20.6895C6.25 28.2834 12.4061 34.4395 20 34.4395ZM20 25.8634C22.8575 25.8634 25.1739 23.5469 25.1739 20.6895C25.1739 17.832 22.8575 15.5155 20 15.5155C17.1425 15.5155 14.8261 17.832 14.8261 20.6895C14.8261 23.5469 17.1425 25.8634 20 25.8634Z"
-                fill="#EC4899"
+                fill={p.accent}
             />
             <path
                 fillRule="evenodd"
@@ -322,27 +347,27 @@ export const ThickAssistanceIconWithShape: React.FC<{
             />
             <path
                 d="M24.0845 23.1289C26.9651 25.0791 28.4215 26.4549 30.4272 29.4746L28.7612 30.5811C26.9135 27.7992 25.6502 26.6041 22.9634 24.7852L24.0845 23.1289Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M10.9563 10.0039C14.0079 12.0176 15.4725 13.4359 17.3225 16.377L15.6291 17.4414C13.9499 14.7719 12.6998 13.5513 9.85474 11.6738L10.9563 10.0039Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M17.0044 24.8066C14.4421 26.3985 13.206 27.6731 11.2339 30.5879L9.57764 29.4668C11.67 26.3743 13.0971 24.8789 15.9487 23.1074L17.0044 24.8066Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M30.0798 11.7129C28.6598 12.502 27.6726 13.2093 26.8328 14.0557C25.9891 14.9059 25.2563 15.9352 24.3865 17.416L22.6619 16.4023C23.5717 14.8535 24.4023 13.6649 25.4128 12.6465C26.4272 11.6243 27.5852 10.8112 29.1082 9.96484L30.0798 11.7129Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M32.5 20.2676C32.5 13.364 26.9036 7.76758 20 7.76758C13.0964 7.76758 7.50001 13.364 7.5 20.2676C7.5 27.1711 13.0964 32.7676 20 32.7676C26.9036 32.7676 32.5 27.1711 32.5 20.2676ZM34.5 20.2676C34.5 28.2757 28.0082 34.7676 20 34.7676C11.9918 34.7676 5.5 28.2757 5.5 20.2676C5.50001 12.2594 11.9919 5.76758 20 5.76758C28.0081 5.76758 34.5 12.2594 34.5 20.2676Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
             <path
                 d="M24.1738 20.6895C24.1737 18.3843 22.3051 16.5156 20 16.5156C17.6949 16.5157 15.8263 18.3843 15.8262 20.6895C15.8262 22.9946 17.6948 24.8632 20 24.8633C22.3052 24.8633 24.1738 22.9946 24.1738 20.6895ZM26.1738 20.6895C26.1738 24.0992 23.4098 26.8633 20 26.8633C16.5903 26.8632 13.8262 24.0991 13.8262 20.6895C13.8263 17.2798 16.5903 14.5157 20 14.5156C23.4097 14.5156 26.1737 17.2798 26.1738 20.6895Z"
-                fill="#5B21B6"
+                fill={p.stroke}
             />
         </svg>
     );

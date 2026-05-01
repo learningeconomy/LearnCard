@@ -46,12 +46,14 @@ import {
     getDefaultDisplayType,
     sendBoostCredential,
     updateBoost,
+    updateBoostStatus,
 } from '../boostHelpers';
 import {
     getExistingAttachmentsOrEvidence,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
@@ -84,6 +86,7 @@ const UpdateBoostCMS: React.FC = () => {
     const query = usePathQuery();
 
     const { track } = useAnalytics();
+    const flags = useFlags();
 
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
@@ -126,6 +129,7 @@ const UpdateBoostCMS: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isPublishLoading, setIsPublishLoading] = useState<boolean>(false);
     const [isSaveLoading, setIsSaveLoading] = useState<boolean>(false);
+    const [skippedPublishStep, setSkippedPublishStep] = useState<boolean>(false);
     const [admin, setAdmin] = useState<BoostCMSAdmin[]>([]);
 
     useEffect(() => {
@@ -353,16 +357,28 @@ const UpdateBoostCMS: React.FC = () => {
         );
     };
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         dissmissModal();
         if (currentStep === BoostCMSStepsEnum.create) {
-            setCurrentStep(BoostCMSStepsEnum.publish);
-            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                timestamp: Date.now(),
-                action: 'publish',
-                boostType: state?.basicInfo?.achievementType,
-                category: state?.basicInfo?.type,
-            });
+            // When skipPublishStep flag is enabled, skip directly to issueTo without updating the boost yet
+            if (flags?.skipPublishStep) {
+                setSkippedPublishStep(true);
+                setCurrentStep(BoostCMSStepsEnum.issueTo);
+                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
+                    timestamp: Date.now(),
+                    action: 'issue_to',
+                    boostType: state?.basicInfo?.achievementType,
+                    category: state?.basicInfo?.type,
+                });
+            } else {
+                setCurrentStep(BoostCMSStepsEnum.publish);
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
+                    timestamp: Date.now(),
+                    action: 'publish',
+                    boostType: state?.basicInfo?.achievementType,
+                    category: state?.basicInfo?.type,
+                });
+            }
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
@@ -391,7 +407,12 @@ const UpdateBoostCMS: React.FC = () => {
                     `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
                 );
             }
-            handleConfirmationModal();
+            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
+            if (flags?.skipPublishStep) {
+                setCurrentStep(BoostCMSStepsEnum.create);
+            } else {
+                handleConfirmationModal();
+            }
         }
     };
 
@@ -528,6 +549,11 @@ const UpdateBoostCMS: React.FC = () => {
         try {
             setIsLoading(true);
             if (_boostUri && state?.issueTo.length > 0) {
+                // If we skipped the publish step, update the boost to LIVE before issuing
+                if (skippedPublishStep) {
+                    await updateBoostStatus(wallet, _boostUri, LCNBoostStatusEnum.live);
+                }
+
                 const uris = await Promise.all(
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
@@ -535,7 +561,8 @@ const UpdateBoostCMS: React.FC = () => {
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,
-                                _boostUri
+                                _boostUri,
+                                { mediaAttachments: issuee.mediaAttachments }
                             );
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
@@ -550,7 +577,8 @@ const UpdateBoostCMS: React.FC = () => {
                         const issuedVc = await addBoostSomeone(
                             wallet,
                             issuee?.profileId,
-                            _boostUri
+                            _boostUri,
+                            { mediaAttachments: issuee.mediaAttachments }
                         );
                         return issuedVc;
                     })
@@ -658,6 +686,7 @@ const UpdateBoostCMS: React.FC = () => {
                 currentStep={currentStep}
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
+                skippedPublishStep={skippedPublishStep}
             />,
             { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -804,7 +833,7 @@ const UpdateBoostCMS: React.FC = () => {
     } else if (isLoading) {
         loadingText = 'Issuing boost...';
     } else if (isPublishLoading) {
-        loadingText = 'Publishing boost...';
+        loadingText = skippedPublishStep ? 'Creating boost...' : 'Publishing boost...';
     } else if (isSaveLoading) {
         loadingText = 'Saving boost...';
     }

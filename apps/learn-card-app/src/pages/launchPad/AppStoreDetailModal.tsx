@@ -27,6 +27,7 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
 import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
@@ -514,9 +515,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const [showCopiedToast, setShowCopiedToast] = useState(false);
 
     const handleShareApp = async () => {
-        const appUrl = !IS_PRODUCTION
-            ? `${window.location.origin}/app/${listing.listing_id}`
-            : `https://learncard.app/app/${listing.listing_id}`;
+        const appUrl = `${getAppBaseUrl()}/app/${listing.listing_id}`;
 
         try {
             await navigator.clipboard.writeText(appUrl);
@@ -974,7 +973,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             >
                                 <IonSpinner name="dots" className="w-5 h-5" />
                             </button>
-                        ) : isInstalled ? (
+                        ) : isInstalled || launchConfig.skipInstallation ? (
                             <>
                                 {canLaunch && (
                                     <button
@@ -985,13 +984,15 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                     </button>
                                 )}
 
-                                <button
-                                    onClick={handleOpenOptionsMenu}
-                                    className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
-                                    aria-label="More options"
-                                >
-                                    <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
-                                </button>
+                                {isInstalled && (
+                                    <button
+                                        onClick={handleOpenOptionsMenu}
+                                        className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
+                                        aria-label="More options"
+                                    >
+                                        <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
+                                    </button>
+                                )}
                             </>
                         ) : (
                             <button

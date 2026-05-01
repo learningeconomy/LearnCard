@@ -1,25 +1,19 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-import PathwaysInsightsIcon from 'learn-card-base/svgs/PathwaysInsightsIcon';
+import { AiPathwaysIcon } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 
 const AiInsightsLearningPathwaysCard: React.FC = () => {
-    const history = useHistory();
-
-    const handleExploreClick = () => history.push('/ai/pathways');
-
     return (
-        <div
-            role="button"
-            onClick={handleExploreClick}
-            className="w-full flex items-center justify-center mb-2 mt-4 overflow-hidden rounded-full"
+        <Link
+            to="/ai/pathways"
+            className="flex-1 bg-teal-500 text-white flex items-center justify-start gap-[8px] rounded-full py-[7px] px-[15px] shadow-bottom-2-3 overflow-hidden"
         >
-            <div className="w-full bg-teal-500 rounded-full flex items-center h-[65px] max-h-[65px] justify-start relative shadow-bottom-2-4 overflow-hidden">
-                <div className="ml-[-5px] mt-[10px]">
-                    <PathwaysInsightsIcon position="horizontal" className="w-auto h-[80px]" />
-                </div>
-            </div>
-        </div>
+            <AiPathwaysIcon className="w-[30px] h-[20px] shrink-0" />
+            <span className="font-poppins font-semibold text-[14px] leading-[130%] text-left">
+                Explore Pathways
+            </span>
+        </Link>
     );
 };
 

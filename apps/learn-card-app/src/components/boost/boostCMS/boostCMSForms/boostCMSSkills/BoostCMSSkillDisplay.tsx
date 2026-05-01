@@ -46,14 +46,7 @@ const BoostCMSSkillDisplay: React.FC<BoostCMSSkillDisplayProps> = ({
             <CompetencyIcon icon={skill.icon} />
 
             <div className="flex-1 min-w-0 flex flex-col font-poppins text-[17px] text-grayscale-900">
-                <p className="line-clamp-2">
-                    <span className="inline-flex items-center gap-[2px] whitespace-nowrap align-middle">
-                        <span className="shrink-0 font-[600]">
-                            {middleTruncate(skill.targetCode ?? '')}
-                        </span>
-                    </span>{' '}
-                    {skill.targetName}
-                </p>
+                <p className="line-clamp-2">{skill.targetName}</p>
                 <span className="text-[12px] text-grayscale-700 font-poppins font-[600]">
                     {frameworkData?.framework?.name ?? '...'}
                 </span>

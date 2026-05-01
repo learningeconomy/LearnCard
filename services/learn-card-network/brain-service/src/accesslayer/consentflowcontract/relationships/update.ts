@@ -161,7 +161,7 @@ export const reconsentTerms = async (
                         domain
                     );
                     const vc = await issueCredentialWithSigningAuthority(
-                        issuer,
+                        { type: 'profile', profile: issuer },
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
@@ -197,7 +197,7 @@ export const reconsentTerms = async (
 
                     // Send the boost to the consenter
                     await sendBoost({
-                        from: relationship.contractOwner,
+                        from: { type: 'profile', profile: relationship.contractOwner },
                         to: relationship.consenter,
                         boost: boostRel.target,
                         credential: vc,
@@ -372,7 +372,7 @@ export const updateTerms = async (
                         domain
                     );
                     const vc = await issueCredentialWithSigningAuthority(
-                        issuer,
+                        { type: 'profile', profile: issuer },
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
@@ -408,7 +408,7 @@ export const updateTerms = async (
 
                     // Send the boost to the consenter
                     await sendBoost({
-                        from: relationship.contractOwner,
+                        from: { type: 'profile', profile: relationship.contractOwner },
                         to: relationship.consenter,
                         boost: boost.target,
                         credential: vc,
@@ -614,6 +614,19 @@ export const syncCredentialsToContract = async (
     });
 
     return result.summary.counters.containsUpdates();
+};
+
+export const updateRequestedForStatusIfExists = async (
+    id: string,
+    profileId: string,
+    status: 'pending' | 'accepted' | 'denied'
+): Promise<void> => {
+    const cypher = `
+        MATCH (contract:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->(profile:Profile {profileId: $profileId})
+        SET r.status = $status
+    `;
+
+    await neogma.queryRunner.run(cypher, { id, profileId, status });
 };
 
 export const upsertRequestedForRelationship = async (

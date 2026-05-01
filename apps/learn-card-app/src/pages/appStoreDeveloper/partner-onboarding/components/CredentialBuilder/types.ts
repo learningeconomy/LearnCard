@@ -22,7 +22,10 @@ export const staticField = (value: string): TemplateFieldValue => ({
 });
 
 // Helper to create a dynamic field
-export const dynamicField = (variableName: string, defaultValue: string = ''): TemplateFieldValue => ({
+export const dynamicField = (
+    variableName: string,
+    defaultValue: string = ''
+): TemplateFieldValue => ({
     value: defaultValue,
     isDynamic: true,
     variableName,
@@ -84,6 +87,7 @@ export interface AchievementTemplate {
     version?: TemplateFieldValue;
     otherIdentifier?: IdentifierEntryTemplate[];
     resultDescription?: ResultDescriptionTemplate[]; // Defines possible results
+    ctid?: TemplateFieldValue; // Credential Engine Registry ID (CTID)
 }
 
 // OBv3 Alignment structure
@@ -145,36 +149,65 @@ export interface CustomFieldTemplate {
 // Schema type for credential detection
 export type CredentialSchemaType = 'obv3' | 'clr2' | 'custom';
 
-// Full OBv3 Credential Template
+// CLR 2.0 Achievement Entry — wraps an Achievement with per-entry subject fields
+export interface AchievementEntryTemplate {
+    id: string; // Internal ID for React keys and association references
+    achievement: AchievementTemplate;
+    result?: ResultTemplate[];
+    creditsEarned?: TemplateFieldValue;
+    activityStartDate?: TemplateFieldValue;
+    activityEndDate?: TemplateFieldValue;
+}
+
+// CLR 2.0 Association — relationship between two achievements
+export interface AssociationTemplate {
+    id: string; // Internal ID for React keys
+    associationType: TemplateFieldValue;
+    sourceAchievementId: string; // References AchievementEntryTemplate.id
+    targetAchievementId: string; // References AchievementEntryTemplate.id
+}
+
+// CLR 2.0 Subject — multi-achievement record
+export interface ClrSubjectTemplate {
+    achievements: AchievementEntryTemplate[];
+    associations: AssociationTemplate[];
+    // Embedded signed VCs (the other half of CLR 2.0 — proof-bearing credentials)
+    verifiableCredential?: Record<string, unknown>[];
+}
+
+// Full OBv3 Credential Template (also supports CLR 2.0 via clrSubject)
 export interface OBv3CredentialTemplate {
     // Schema type detection (for hybrid mode)
     schemaType?: CredentialSchemaType;
-    
+
     // Raw JSON storage for non-OBv3 credentials (passthrough mode)
     rawJson?: Record<string, unknown>;
-    
+
     // Contexts (usually fixed)
     contexts: string[];
-    
+
     // Types
     types: string[];
-    
+
     // Core credential info
     id?: TemplateFieldValue;
     name: TemplateFieldValue;
     description?: TemplateFieldValue;
     image?: TemplateFieldValue;
-    
+
     // Issuer
     issuer: IssuerTemplate;
-    
-    // Subject
+
+    // Subject (OBv3 — single achievement)
     credentialSubject: CredentialSubjectTemplate;
-    
+
+    // Subject (CLR 2.0 — multiple achievements with associations)
+    clrSubject?: ClrSubjectTemplate;
+
     // Dates (VC v2 syntax)
     validFrom: TemplateFieldValue;
     validUntil?: TemplateFieldValue;
-    
+
     // Custom fields in extensions
     customFields: CustomFieldTemplate[];
 }
@@ -188,11 +221,14 @@ export interface CredentialBuilderState {
 }
 
 // Section identifiers
-export type SectionId = 
+export type SectionId =
     | 'credential'
     | 'issuer'
     | 'recipient'
     | 'achievement'
+    | 'achievements-list'
+    | 'associations'
+    | 'linked-credentials'
     | 'criteria'
     | 'alignment'
     | 'evidence'
@@ -241,7 +277,25 @@ export const DEFAULT_CONTEXTS = [
 ];
 
 // Default types
-export const DEFAULT_TYPES = [
-    'VerifiableCredential',
-    'OpenBadgeCredential',
+export const DEFAULT_TYPES = ['VerifiableCredential', 'OpenBadgeCredential'];
+
+// CLR 2.0 contexts (VC v2 + OBv3 + CLR)
+export const CLR2_CONTEXTS = [
+    'https://www.w3.org/ns/credentials/v2',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    'https://purl.imsglobal.org/spec/clr/v2p0/context.json',
 ];
+
+// CLR 2.0 types
+export const CLR2_TYPES = ['VerifiableCredential', 'ClrCredential'];
+
+// CLR 2.0 association types per spec
+export const CLR2_ASSOCIATION_TYPES = [
+    'isChildOf',
+    'isPartOf',
+    'isRelatedTo',
+    'isPeerOf',
+    'isEnabledBy',
+    'precedes',
+    'replacedBy',
+] as const;

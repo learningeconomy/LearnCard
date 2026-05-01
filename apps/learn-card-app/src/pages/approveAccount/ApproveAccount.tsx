@@ -6,10 +6,11 @@ import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 import { usePathQuery } from 'learn-card-base';
-import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
-import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 
 const ApproveAccount: React.FC = () => {
+    const { textLogo, brandMarkLight } = useTenantBrandingAssets();
     const isLocalHost = false;
     //if running dockerized then uncomment the below and replace the explicit false value for isLocalHost
     //  typeof window !== 'undefined' &&
@@ -57,6 +58,7 @@ const ApproveAccount: React.FC = () => {
                     ...getNetworkInitOverrides(),
                     didkit,
                     allowRemoteContexts: true,
+                    extraHeaders: getTenantHeaders(),
                 });
 
                 type LCNOpenInvoke = {
@@ -94,11 +96,11 @@ const ApproveAccount: React.FC = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center px-6 text-center text-white">
                     <div className="flex flex-col items-center justify-center w-full mb-6">
                         <img
-                            src={LearnCardBrandMark}
-                            alt="Learn Card brand mark"
+                            src={brandMarkLight}
+                            alt="Brand mark"
                             className="w-[64px] h-[64px] mb-3"
                         />
-                        <img src={LearnCardTextLogo} alt="Learn Card text logo" className="h-4" />
+                        <img src={textLogo} alt="Logo" className="h-4" />
                     </div>
                     {loading && (
                         <div className="flex flex-col items-center justify-center gap-3">

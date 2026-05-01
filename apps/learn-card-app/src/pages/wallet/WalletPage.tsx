@@ -4,6 +4,7 @@ import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
+import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 
 import {
     useModal,
@@ -31,6 +32,7 @@ import WalletPageItemWrapper from './WalletPageItemWrapper';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+import { chatBotStore } from '../../stores/chatBotStore';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -48,9 +50,12 @@ const WalletPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
 
-    const { theme } = useTheme();
+    const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
     const categories = theme.categories;
+
+    const passportBgColor = colors?.defaults?.passportBgColor;
+    const passportTextColor = colors?.defaults?.passportTextColor ?? 'text-grayscale-900';
 
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
     const [viewCredsIsOpen, setViewCredsIsOpen] = useState(false);
@@ -106,21 +111,7 @@ const WalletPage: React.FC = () => {
     const handleViewModal = () => setViewCredsIsOpen(true);
     const handleCloseViewModal = () => setViewCredsIsOpen(false);
 
-    const categoryToPath: Partial<Record<CredentialCategoryEnum, string>> = {
-        [CredentialCategoryEnum.aiTopic]: '/ai/topics',
-        [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
-        [CredentialCategoryEnum.aiInsight]: '/ai/insights', // placeholder
-        [CredentialCategoryEnum.skill]: '/skills',
-        [CredentialCategoryEnum.socialBadge]: '/socialBadges',
-        [CredentialCategoryEnum.achievement]: '/achievements',
-        [CredentialCategoryEnum.learningHistory]: '/learninghistory',
-        [CredentialCategoryEnum.accomplishment]: '/accomplishments',
-        [CredentialCategoryEnum.accommodation]: '/accommodations',
-        [CredentialCategoryEnum.workHistory]: '/workhistory',
-        [CredentialCategoryEnum.family]: '/families',
-        [CredentialCategoryEnum.id]: '/ids',
-        [CredentialCategoryEnum.membership]: '/memberships',
-    };
+    const categoryToPath = CATEGORY_TO_ROUTE;
 
     const AI_CATEGORIES = [
         CredentialCategoryEnum.aiTopic,
@@ -139,6 +130,10 @@ const WalletPage: React.FC = () => {
                     : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
             presentToast(msg, { type: ToastTypeEnum.Error });
             return;
+        }
+
+        if (path === '/ai/topics') {
+            chatBotStore.set.resetStore();
         }
 
         history.push(path);
@@ -177,16 +172,36 @@ const WalletPage: React.FC = () => {
     const isList = viewMode === PassportPageViewMode.list;
 
     return (
-        <IonPage className="bg-white">
-            <MainHeader customClassName="bg-white" />
+        <IonPage
+            className="bg-white"
+            style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
+        >
+            <MainHeader
+                customClassName={passportBgColor ? '' : 'bg-white'}
+                style={passportBgColor
+                    ? isMobile
+                        ? {
+                            background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                            backdropFilter: 'blur(5px)',
+                            WebkitBackdropFilter: 'blur(5px)',
+                            borderBottom: '1px solid white',
+                        }
+                        : { backgroundColor: passportBgColor }
+                    : undefined
+                }
+                notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
+            />
             <GenericErrorBoundary>
-                <IonContent fullscreen>
-                    <div className="px-[20px]">
+                <IonContent
+                    fullscreen
+                    style={passportBgColor ? { '--background': passportBgColor } as React.CSSProperties : undefined}
+                >
+                    <div className={`px-[20px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
                         <div className="flex flex-col max-w-[600px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full">
                                     <div className="flex items-center gap-[10px] w-full">
-                                        <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
+                                        <h2 className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}>
                                             Passport
                                         </h2>
 
@@ -195,7 +210,7 @@ const WalletPage: React.FC = () => {
                                         - add support for new items count based on categories
                                         */}
                                         {totalNewCredentialsCount > 0 && (
-                                            <p className="text-emerald-700 font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]">
+                                            <p className={`${passportBgColor ? 'text-white/80' : 'text-emerald-700'} font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]`}>
                                                 <DotIcon className="w-[10px] h-[10px]" />{' '}
                                                 {totalNewCredentialsCount} New
                                             </p>
@@ -219,12 +234,12 @@ const WalletPage: React.FC = () => {
                             </IonRow>
                             {isMobile ? (
                                 <>
-                                    <CheckListButton className="mb-[10px] mt-[10px]" />
-                                    <ResumeBuilderController className="mb-[10px]" />
+                                    <CheckListButton className="mb-[10px] mt-[16px]" />
+                                    <ResumeBuilderController className="mb-[16px]" />
                                 </>
                             ) : (
                                 <div
-                                    className={`w-full flex gap-[10px] pb-[10px] ${
+                                    className={`w-full flex gap-[10px] pt-[6px] pb-[16px] ${
                                         showInlineWalletActions ? 'flex-row' : 'flex-col'
                                     }`}
                                 >

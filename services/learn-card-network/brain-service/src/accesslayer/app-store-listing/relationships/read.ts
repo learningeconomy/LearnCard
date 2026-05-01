@@ -5,22 +5,39 @@ import { ProfileType } from 'types/profile';
 import { Boost, BoostInstance } from '@models';
 import { int } from 'neo4j-driver';
 import { getBoostUri } from '@helpers/boost.helpers';
+import { parseIntegration } from '@helpers/integrations.helpers';
 
 export const getIntegrationForListing = async (
-    listingId: string
+    listingIdOrSlug: string
 ): Promise<IntegrationType | null> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (i:Integration)-[:PUBLISHES_LISTING]->(listing:AppStoreListing {listing_id: $listingId})
+        `MATCH (i:Integration)-[:PUBLISHES_LISTING]->(listing:AppStoreListing)
+        WHERE listing.listing_id = $listingIdOrSlug OR listing.slug = $listingIdOrSlug
          RETURN i AS integration
          LIMIT 1`,
-        { listingId }
+        { listingIdOrSlug }
     );
 
     const integration = result.records[0]?.get('integration')?.properties;
 
     if (!integration) return null;
 
-    return inflateObject<IntegrationType>(integration as any);
+    return parseIntegration(inflateObject<IntegrationType>(integration as any));
+};
+
+export const getOwnerProfileForListing = async (listingId: string): Promise<ProfileType | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})<-[:PUBLISHES_LISTING]-(i:Integration)-[:CREATED_BY]->(p:Profile)
+         RETURN p AS profile
+         LIMIT 1`,
+        { listingId }
+    );
+
+    const profile = result.records[0]?.get('profile')?.properties;
+
+    if (!profile) return null;
+
+    return inflateObject<ProfileType>(profile as any);
 };
 
 export const getProfilesInstalledApp = async (
@@ -102,14 +119,16 @@ export const getBoostsForListing = async (
     domain: string
 ): Promise<Array<{ templateAlias: string; boostUri: string }>> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST]->(b:Boost)
-         RETURN b.id AS id, r.templateAlias AS templateAlias
-         ORDER BY r.createdAt DESC`,
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST|CREATED_BY]->(b:Boost)
+         RETURN b.id AS id,
+                CASE WHEN type(r) = 'HAS_BOOST' THEN r.templateAlias ELSE null END AS templateAlias,
+                coalesce(r.createdAt, r.date) AS createdAt
+         ORDER BY createdAt DESC`,
         { listingId }
     );
 
     return result.records.map(record => ({
-        templateAlias: record.get('templateAlias') as string,
+        templateAlias: (record.get('templateAlias') as string | null) ?? '',
         boostUri: getBoostUri(record.get('id') as string, domain),
     }));
 };
@@ -206,4 +225,37 @@ export const countCredentialsSentByListingToProfile = async (
     const count = result.records[0]?.get('count');
     // Neo4j returns Integer objects, ensure we return a JS number
     return count?.toNumber?.() ?? Number(count) ?? 0;
+};
+
+export type SubmitterInfo = {
+    profileId: string;
+    displayName: string;
+    email?: string;
+    submittedAt?: string;
+};
+
+export const getSubmitterForListing = async (listingId: string): Promise<SubmitterInfo | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile)-[rel:SUBMITTED_LISTING]->(listing:AppStoreListing {listing_id: $listingId})
+         OPTIONAL MATCH (p)-[:HAS_CONTACT_METHOD]->(cm:ContactMethod {type: 'email', isPrimary: true})
+         RETURN p.profileId AS profileId,
+                p.displayName AS displayName,
+                COALESCE(p.email, cm.value) AS email,
+                rel.submitted_at AS submittedAt
+         LIMIT 1`,
+        { listingId }
+    );
+
+    const record = result.records[0];
+    if (!record) return null;
+
+    const profileId = record.get('profileId');
+    if (!profileId) return null;
+
+    return {
+        profileId,
+        displayName: record.get('displayName') || profileId,
+        email: record.get('email') || undefined,
+        submittedAt: record.get('submittedAt') || undefined,
+    };
 };

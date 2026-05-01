@@ -4,52 +4,11 @@ import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import ResumeSelfAttestModal from '../ResumeSelfAttestModal';
-
-const EMPTY_SECTION_COPY: Partial<
-    Record<
-        CredentialCategoryEnum,
-        {
-            actionLabel: string;
-            description: string;
-            emphasis: string;
-        }
-    >
-> = {
-    [CredentialCategoryEnum.workHistory]: {
-        actionLabel: 'Add Experience',
-        description:
-            'Add Work Experiences to your LearnCard passport to automatically populate this section.',
-        emphasis: 'Add Work Experiences',
-    },
-    [CredentialCategoryEnum.learningHistory]: {
-        actionLabel: 'Add Study',
-        description:
-            'Add Studies to your LearnCard passport to automatically populate this section.',
-        emphasis: 'Add Studies',
-    },
-    [CredentialCategoryEnum.achievement]: {
-        actionLabel: 'Add Achievement',
-        description:
-            'Add Achievements to your LearnCard passport to automatically populate this section.',
-        emphasis: 'Add Achievements',
-    },
-    [CredentialCategoryEnum.accomplishment]: {
-        actionLabel: 'Add Accomplishment',
-        description:
-            'Add Accomplishments to your LearnCard passport to automatically populate this section.',
-        emphasis: 'Add Accomplishments',
-    },
-    [CredentialCategoryEnum.accommodation]: {
-        actionLabel: 'Add Assistance',
-        description:
-            'Add Assistances to your LearnCard passport to automatically populate this section.',
-        emphasis: 'Add Assistances',
-    },
-};
 
 export const ResumePreviewSectionPlaceholder: React.FC<{
     category: ResumeSectionKey;
@@ -57,7 +16,45 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
 }> = ({ category, className = '' }) => {
     const { getThemedCategory } = useTheme();
     const { newModal } = useModal();
+    const brandingConfig = useBrandingConfig();
+    const brandingName = brandingConfig?.name ?? 'LearnCard';
     const { colors, icons } = getThemedCategory(category);
+    const EMPTY_SECTION_COPY: Partial<
+        Record<
+            CredentialCategoryEnum,
+            {
+                actionLabel: string;
+                description: string;
+                emphasis: string;
+            }
+        >
+    > = {
+        [CredentialCategoryEnum.workHistory]: {
+            actionLabel: 'Add Experience',
+            description: `Add Work Experiences to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Work Experiences',
+        },
+        [CredentialCategoryEnum.learningHistory]: {
+            actionLabel: 'Add Study',
+            description: `Add Studies to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Studies',
+        },
+        [CredentialCategoryEnum.achievement]: {
+            actionLabel: 'Add Achievement',
+            description: `Add Achievements to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Achievements',
+        },
+        [CredentialCategoryEnum.accomplishment]: {
+            actionLabel: 'Add Accomplishment',
+            description: `Add Accomplishments to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Accomplishments',
+        },
+        [CredentialCategoryEnum.accommodation]: {
+            actionLabel: 'Add Assistance',
+            description: `Add Assistances to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Assistances',
+        },
+    };
 
     const section = RESUME_SECTIONS.find(section => section.key === category);
     const copy = EMPTY_SECTION_COPY[category];
