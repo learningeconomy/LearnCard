@@ -1,3 +1,5 @@
+import type { LearnCard } from '@learncard/core';
+
 import {
     OpenID4VCDependentLearnCard,
     OpenID4VCPlugin,
@@ -140,7 +142,12 @@ export const getOpenID4VCPlugin = (
                 })();
 
                 const stored = await storeAcceptedCredentials(
-                    learnCard as any,
+                    // storeAcceptedCredentials reaches into the
+                    // dynamic `store` / `index` planes so it's typed
+                    // against the generic LearnCard shape; the plugin-
+                    // facing `OpenID4VCDependentLearnCard` is a
+                    // structural subset of that, the widening is safe.
+                    learnCard as unknown as LearnCard<any, any, any>,
                     accepted,
                     splitStoreOptions(options)
                 );
@@ -558,7 +565,7 @@ const buildJarmOptions = (
  *     consistent across sub-objects of the response.
  */
 const maybeJarmSigner = async (
-    learnCard: any,
+    learnCard: OpenID4VCDependentLearnCard,
     request: AuthorizationRequest
 ): Promise<ProofJwtSigner | undefined> => {
     if (request.response_mode !== 'direct_post.jwt') return undefined;
@@ -575,8 +582,10 @@ const maybeJarmSigner = async (
  * used by the VCI proof-of-possession flow — the `typ` header is set
  * per-call by the sign layer, so the signer itself is format-agnostic.
  */
-const ensureVpJwtSigner = async (learnCard: any): Promise<ProofJwtSigner> => {
-    const keypair = learnCard.id.keypair('ed25519');
+const ensureVpJwtSigner = async (
+    learnCard: OpenID4VCDependentLearnCard
+): Promise<ProofJwtSigner> => {
+    const keypair = requireEd25519Keypair(learnCard, 'VP signing');
     const did = learnCard.id.did();
     const kid = await learnCard.invoke.didToVerificationMethod(did);
 
@@ -588,7 +597,9 @@ const ensureVpJwtSigner = async (learnCard: any): Promise<ProofJwtSigner> => {
  * contract expected by the VP sign layer. OID4VP replay-binding
  * (domain/challenge) is passed through verbatim.
  */
-const buildLdpVpSigner = (learnCard: any): LdpVpSigner => ({
+const buildLdpVpSigner = (
+    learnCard: OpenID4VCDependentLearnCard
+): LdpVpSigner => ({
     sign: async (unsignedVp, { domain, challenge }) =>
         learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
 });
@@ -599,16 +610,50 @@ const buildLdpVpSigner = (learnCard: any): LdpVpSigner => ({
  * secp256k1 / external key backends).
  */
 const ensureSigner = async (
-    learnCard: any,
+    learnCard: OpenID4VCDependentLearnCard,
     options: { signer?: AcceptCredentialOfferOptions['signer'] }
-) => {
+): Promise<ProofJwtSigner> => {
     if (options.signer) return options.signer;
 
-    const keypair = learnCard.id.keypair('ed25519');
+    const keypair = requireEd25519Keypair(learnCard, 'VCI proof-of-possession');
     const did = learnCard.id.did();
     const kid = await learnCard.invoke.didToVerificationMethod(did);
 
     return createJoseEd25519Signer({ keypair, kid });
+};
+
+/**
+ * Resolve the host LearnCard's primary Ed25519 keypair with a
+ * friendly diagnostic when the wallet doesn't hold one (e.g. a
+ * secp256k1-only profile). Callers should pass their own
+ * `options.signer` on those profiles — the error message points
+ * that out so the failure mode is actionable from the UI layer.
+ */
+const requireEd25519Keypair = (
+    learnCard: OpenID4VCDependentLearnCard,
+    purpose: string
+): ReturnType<OpenID4VCDependentLearnCard['id']['keypair']> => {
+    let keypair: ReturnType<OpenID4VCDependentLearnCard['id']['keypair']> | undefined;
+
+    try {
+        keypair = learnCard.id.keypair('ed25519');
+    } catch (e) {
+        throw new Error(
+            `OpenID4VC ${purpose} requires an Ed25519 keypair on the host LearnCard, but \`id.keypair('ed25519')\` threw: ${
+                e instanceof Error ? e.message : String(e)
+            }. Pass \`options.signer\` to bring your own signer (HSM / secp256k1 / external backend).`
+        );
+    }
+
+    if (!keypair || keypair.kty !== 'OKP' || keypair.crv !== 'Ed25519') {
+        throw new Error(
+            `OpenID4VC ${purpose} requires an Ed25519 keypair, but the host LearnCard returned ${
+                keypair ? `kty=${keypair.kty} crv=${keypair.crv ?? '<none>'}` : 'no keypair'
+            }. Pass \`options.signer\` to bring your own signer (HSM / secp256k1 / external backend).`
+        );
+    }
+
+    return keypair;
 };
 
 /**

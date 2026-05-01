@@ -1,5 +1,4 @@
 import safeRegex from 'safe-regex';
-import RE2 from 're2';
 import { Constraints, Field, InputDescriptor } from './types';
 
 /**
@@ -415,12 +414,16 @@ export const satisfiesFilter = (value: unknown, filter: Record<string, unknown>)
 
         // `safe-regex` rejects star-height >= 2 regexes (the usual
         // ReDoS shape). Combined with the length cap above it catches
-        // essentially every ReDoS pattern we've seen in the wild.
+        // essentially every ReDoS pattern we've seen in the wild, so
+        // we can rely on the platform's native `RegExp` here instead of
+        // a linear-time engine — which keeps the plugin browser-safe
+        // (native regex engines like RE2 require a Node native binding
+        // and don't bundle into wallet web builds).
         if (!safeRegex(pattern)) return false;
 
-        let re: RE2;
+        let re: RegExp;
         try {
-            re = new RE2(pattern);
+            re = new RegExp(pattern);
         } catch {
             return false;
         }
