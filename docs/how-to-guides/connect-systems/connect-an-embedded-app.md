@@ -4,10 +4,6 @@ description: 'How-To Guide: Issue Credentials from Embedded Apps in the LearnCar
 
 # Connect an Embedded App
 
-{% hint style="info" %}
-**Last verified against `@learncard/partner-connect` v0.2.16.** Schemas in this guide match the runtime types; the source of truth is `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types`.
-{% endhint %}
-
 Build apps that run inside LearnCard and issue credentials directly to users. This guide covers the App Store integration for embedded applications that want to award badges, certificates, or other verifiable credentials.
 
 ## Overview
