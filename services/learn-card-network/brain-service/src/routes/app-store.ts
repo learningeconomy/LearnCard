@@ -1,6 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
+import {
+    AppEventValidator,
+    LCNNotificationTypeEnumValidator,
+    SendNotificationEventValidator,
+} from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
@@ -2656,7 +2660,12 @@ export const appStoreRouter = t.router({
         .input(
             z.object({
                 listingId: z.string(),
-                event: z.record(z.string(), z.unknown()),
+                // Deep-validate the event payload via the discriminated union from
+                // @learncard/types. This rejects malformed events (e.g. wrong
+                // summaryData shape on send-ai-session-credential) at the route
+                // boundary with a clear zod error, instead of silently producing
+                // a broken credential downstream.
+                event: AppEventValidator,
             })
         )
         .output(z.record(z.string(), z.unknown()))
