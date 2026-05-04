@@ -35,17 +35,20 @@ class TestProfileUpdateProfileRequest(unittest.TestCase):
         model = ProfileUpdateProfileRequest()
         if include_optional:
             return ProfileUpdateProfileRequest(
-                profile_id = '012',
+                profile_id = '',
                 display_name = '',
                 short_bio = '',
                 bio = '',
                 is_private = True,
-                email = '',
+                profile_visibility = 'public',
+                show_email = True,
+                allow_connection_requests = 'anyone',
                 image = '',
                 hero_image = '',
                 website_link = '',
                 type = '',
-                notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',
+                email = '',
+                notifications_webhook = '',
                 display = openapi_client.models.profile_create_service_profile_request_display.profile_createServiceProfile_request_display(
                     background_color = '', 
                     background_image = '', 
@@ -58,12 +61,12 @@ class TestProfileUpdateProfileRequest(unittest.TestCase):
                     fade_id_background_image = True, 
                     id_background_color = '', 
                     repeat_id_background_image = True, ),
-                highlighted_credentials = [
-                    ''
-                    ],
                 role = '',
                 dob = '',
                 country = '',
+                highlighted_credentials = [
+                    ''
+                    ],
                 approved = True
             )
         else:

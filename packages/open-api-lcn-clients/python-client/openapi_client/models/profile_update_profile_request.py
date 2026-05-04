@@ -19,46 +19,60 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
 from openapi_client.models.profile_create_service_profile_request_display import ProfileCreateServiceProfileRequestDisplay
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileUpdateProfileRequest(BaseModel):
     """
     ProfileUpdateProfileRequest
     """ # noqa: E501
-    profile_id: Optional[Annotated[str, Field(min_length=3, strict=True, max_length=40)]] = Field(default=None, description="Unique, URL-safe identifier for the profile.", alias="profileId")
-    display_name: Optional[StrictStr] = Field(default='', description="Human-readable display name for the profile.", alias="displayName")
-    short_bio: Optional[StrictStr] = Field(default='', description="Short bio for the profile.", alias="shortBio")
-    bio: Optional[StrictStr] = Field(default='', description="Longer bio for the profile.")
-    is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
-    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
-    image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
-    hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
-    website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
-    type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
-    notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
+    profile_id: Optional[StrictStr] = Field(default=None, alias="profileId")
+    display_name: Optional[StrictStr] = Field(default=None, alias="displayName")
+    short_bio: Optional[StrictStr] = Field(default=None, alias="shortBio")
+    bio: Optional[StrictStr] = None
+    is_private: Optional[StrictBool] = Field(default=None, alias="isPrivate")
+    profile_visibility: Optional[StrictStr] = Field(default=None, alias="profileVisibility")
+    show_email: Optional[StrictBool] = Field(default=None, alias="showEmail")
+    allow_connection_requests: Optional[StrictStr] = Field(default=None, alias="allowConnectionRequests")
+    image: Optional[StrictStr] = None
+    hero_image: Optional[StrictStr] = Field(default=None, alias="heroImage")
+    website_link: Optional[StrictStr] = Field(default=None, alias="websiteLink")
+    type: Optional[StrictStr] = None
+    email: Optional[StrictStr] = None
+    notifications_webhook: Optional[StrictStr] = Field(default=None, alias="notificationsWebhook")
     display: Optional[ProfileCreateServiceProfileRequestDisplay] = None
-    highlighted_credentials: Optional[Annotated[List[StrictStr], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
-    role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
-    dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
-    country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
-    approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "email", "image", "heroImage", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved"]
+    role: Optional[StrictStr] = None
+    dob: Optional[StrictStr] = None
+    country: Optional[StrictStr] = None
+    highlighted_credentials: Optional[List[StrictStr]] = Field(default=None, alias="highlightedCredentials")
+    approved: Optional[StrictBool] = None
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "image", "heroImage", "websiteLink", "type", "email", "notificationsWebhook", "display", "role", "dob", "country", "highlightedCredentials", "approved"]
 
-    @field_validator('notifications_webhook')
-    def notifications_webhook_validate_regular_expression(cls, value):
-        """Validates the regular expression"""
+    @field_validator('profile_visibility')
+    def profile_visibility_validate_enum(cls, value):
+        """Validates the enum"""
         if value is None:
             return value
 
-        if not re.match(r"^http.*", value):
-            raise ValueError(r"must validate the regular expression /^http.*/")
+        if value not in set(['public', 'connections_only', 'private']):
+            raise ValueError("must be one of enum values ('public', 'connections_only', 'private')")
+        return value
+
+    @field_validator('allow_connection_requests')
+    def allow_connection_requests_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['anyone', 'invite_only']):
+            raise ValueError("must be one of enum values ('anyone', 'invite_only')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -70,8 +84,7 @@ class ProfileUpdateProfileRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -99,6 +112,71 @@ class ProfileUpdateProfileRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
+        # set to None if profile_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.profile_id is None and "profile_id" in self.model_fields_set:
+            _dict['profileId'] = None
+
+        # set to None if display_name (nullable) is None
+        # and model_fields_set contains the field
+        if self.display_name is None and "display_name" in self.model_fields_set:
+            _dict['displayName'] = None
+
+        # set to None if short_bio (nullable) is None
+        # and model_fields_set contains the field
+        if self.short_bio is None and "short_bio" in self.model_fields_set:
+            _dict['shortBio'] = None
+
+        # set to None if bio (nullable) is None
+        # and model_fields_set contains the field
+        if self.bio is None and "bio" in self.model_fields_set:
+            _dict['bio'] = None
+
+        # set to None if image (nullable) is None
+        # and model_fields_set contains the field
+        if self.image is None and "image" in self.model_fields_set:
+            _dict['image'] = None
+
+        # set to None if hero_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.hero_image is None and "hero_image" in self.model_fields_set:
+            _dict['heroImage'] = None
+
+        # set to None if website_link (nullable) is None
+        # and model_fields_set contains the field
+        if self.website_link is None and "website_link" in self.model_fields_set:
+            _dict['websiteLink'] = None
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
+        # set to None if email (nullable) is None
+        # and model_fields_set contains the field
+        if self.email is None and "email" in self.model_fields_set:
+            _dict['email'] = None
+
+        # set to None if notifications_webhook (nullable) is None
+        # and model_fields_set contains the field
+        if self.notifications_webhook is None and "notifications_webhook" in self.model_fields_set:
+            _dict['notificationsWebhook'] = None
+
+        # set to None if role (nullable) is None
+        # and model_fields_set contains the field
+        if self.role is None and "role" in self.model_fields_set:
+            _dict['role'] = None
+
+        # set to None if dob (nullable) is None
+        # and model_fields_set contains the field
+        if self.dob is None and "dob" in self.model_fields_set:
+            _dict['dob'] = None
+
+        # set to None if country (nullable) is None
+        # and model_fields_set contains the field
+        if self.country is None and "country" in self.model_fields_set:
+            _dict['country'] = None
+
         return _dict
 
     @classmethod
@@ -112,21 +190,24 @@ class ProfileUpdateProfileRequest(BaseModel):
 
         _obj = cls.model_validate({
             "profileId": obj.get("profileId"),
-            "displayName": obj.get("displayName") if obj.get("displayName") is not None else '',
-            "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
-            "bio": obj.get("bio") if obj.get("bio") is not None else '',
+            "displayName": obj.get("displayName"),
+            "shortBio": obj.get("shortBio"),
+            "bio": obj.get("bio"),
             "isPrivate": obj.get("isPrivate"),
-            "email": obj.get("email"),
+            "profileVisibility": obj.get("profileVisibility"),
+            "showEmail": obj.get("showEmail"),
+            "allowConnectionRequests": obj.get("allowConnectionRequests"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
             "websiteLink": obj.get("websiteLink"),
             "type": obj.get("type"),
+            "email": obj.get("email"),
             "notificationsWebhook": obj.get("notificationsWebhook"),
             "display": ProfileCreateServiceProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
-            "highlightedCredentials": obj.get("highlightedCredentials"),
-            "role": obj.get("role") if obj.get("role") is not None else '',
-            "dob": obj.get("dob") if obj.get("dob") is not None else '',
+            "role": obj.get("role"),
+            "dob": obj.get("dob"),
             "country": obj.get("country"),
+            "highlightedCredentials": obj.get("highlightedCredentials"),
             "approved": obj.get("approved")
         })
         return _obj

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -11,12 +9,14 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+
 import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictStr, field_validator
+from datetime import datetime
+from pydantic import Field, StrictBool, StrictStr, field_validator
 from typing import List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.activity_get_activity200_response import ActivityGetActivity200Response
@@ -599,6 +599,10 @@ class ActivityApi:
         self,
         boost_uris: Optional[List[StrictStr]] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        event_type: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -620,6 +624,14 @@ class ActivityApi:
         :type boost_uris: List[str]
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param event_type:
+        :type event_type: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -645,6 +657,10 @@ class ActivityApi:
         _param = self._activity_get_activity_stats_serialize(
             boost_uris=boost_uris,
             integration_id=integration_id,
+            listing_id=listing_id,
+            event_type=event_type,
+            start_date=start_date,
+            end_date=end_date,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -675,6 +691,10 @@ class ActivityApi:
         self,
         boost_uris: Optional[List[StrictStr]] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        event_type: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -696,6 +716,14 @@ class ActivityApi:
         :type boost_uris: List[str]
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param event_type:
+        :type event_type: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -721,6 +749,10 @@ class ActivityApi:
         _param = self._activity_get_activity_stats_serialize(
             boost_uris=boost_uris,
             integration_id=integration_id,
+            listing_id=listing_id,
+            event_type=event_type,
+            start_date=start_date,
+            end_date=end_date,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -751,6 +783,10 @@ class ActivityApi:
         self,
         boost_uris: Optional[List[StrictStr]] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        event_type: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -772,6 +808,14 @@ class ActivityApi:
         :type boost_uris: List[str]
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param event_type:
+        :type event_type: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -797,6 +841,10 @@ class ActivityApi:
         _param = self._activity_get_activity_stats_serialize(
             boost_uris=boost_uris,
             integration_id=integration_id,
+            listing_id=listing_id,
+            event_type=event_type,
+            start_date=start_date,
+            end_date=end_date,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -822,6 +870,10 @@ class ActivityApi:
         self,
         boost_uris,
         integration_id,
+        listing_id,
+        event_type,
+        start_date,
+        end_date,
         _request_auth,
         _content_type,
         _headers,
@@ -852,6 +904,40 @@ class ActivityApi:
         if integration_id is not None:
             
             _query_params.append(('integrationId', integration_id))
+            
+        if listing_id is not None:
+            
+            _query_params.append(('listingId', listing_id))
+            
+        if event_type is not None:
+            
+            _query_params.append(('eventType', event_type))
+            
+        if start_date is not None:
+            if isinstance(start_date, datetime):
+                _query_params.append(
+                    (
+                        'startDate',
+                        start_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('startDate', start_date))
+            
+        if end_date is not None:
+            if isinstance(end_date, datetime):
+                _query_params.append(
+                    (
+                        'endDate',
+                        end_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('endDate', end_date))
             
         # process the header parameters
         # process the form parameters
@@ -898,6 +984,10 @@ class ActivityApi:
         boost_uri: Optional[StrictStr] = None,
         event_type: Optional[StrictStr] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        group_by_latest_status: Optional[StrictBool] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -925,6 +1015,14 @@ class ActivityApi:
         :type event_type: str
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
+        :param group_by_latest_status:
+        :type group_by_latest_status: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -953,6 +1051,10 @@ class ActivityApi:
             boost_uri=boost_uri,
             event_type=event_type,
             integration_id=integration_id,
+            listing_id=listing_id,
+            start_date=start_date,
+            end_date=end_date,
+            group_by_latest_status=group_by_latest_status,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -986,6 +1088,10 @@ class ActivityApi:
         boost_uri: Optional[StrictStr] = None,
         event_type: Optional[StrictStr] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        group_by_latest_status: Optional[StrictBool] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1013,6 +1119,14 @@ class ActivityApi:
         :type event_type: str
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
+        :param group_by_latest_status:
+        :type group_by_latest_status: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1041,6 +1155,10 @@ class ActivityApi:
             boost_uri=boost_uri,
             event_type=event_type,
             integration_id=integration_id,
+            listing_id=listing_id,
+            start_date=start_date,
+            end_date=end_date,
+            group_by_latest_status=group_by_latest_status,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1074,6 +1192,10 @@ class ActivityApi:
         boost_uri: Optional[StrictStr] = None,
         event_type: Optional[StrictStr] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        group_by_latest_status: Optional[StrictBool] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1101,6 +1223,14 @@ class ActivityApi:
         :type event_type: str
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
+        :param group_by_latest_status:
+        :type group_by_latest_status: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1129,6 +1259,10 @@ class ActivityApi:
             boost_uri=boost_uri,
             event_type=event_type,
             integration_id=integration_id,
+            listing_id=listing_id,
+            start_date=start_date,
+            end_date=end_date,
+            group_by_latest_status=group_by_latest_status,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1157,6 +1291,10 @@ class ActivityApi:
         boost_uri,
         event_type,
         integration_id,
+        listing_id,
+        start_date,
+        end_date,
+        group_by_latest_status,
         _request_auth,
         _content_type,
         _headers,
@@ -1198,6 +1336,40 @@ class ActivityApi:
         if integration_id is not None:
             
             _query_params.append(('integrationId', integration_id))
+            
+        if listing_id is not None:
+            
+            _query_params.append(('listingId', listing_id))
+            
+        if start_date is not None:
+            if isinstance(start_date, datetime):
+                _query_params.append(
+                    (
+                        'startDate',
+                        start_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('startDate', start_date))
+            
+        if end_date is not None:
+            if isinstance(end_date, datetime):
+                _query_params.append(
+                    (
+                        'endDate',
+                        end_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('endDate', end_date))
+            
+        if group_by_latest_status is not None:
+            
+            _query_params.append(('groupByLatestStatus', group_by_latest_status))
             
         # process the header parameters
         # process the form parameters

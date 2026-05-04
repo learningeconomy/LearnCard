@@ -42,7 +42,8 @@ class TestBoostSend200Response(unittest.TestCase):
                 inbox = openapi_client.models.boost_send_200_response_inbox.boost_send_200_response_inbox(
                     issuance_id = '', 
                     status = 'PENDING', 
-                    claim_url = '', )
+                    claim_url = '', 
+                    guardian_status = 'AWAITING_GUARDIAN', )
             )
         else:
             return BoostSend200Response(

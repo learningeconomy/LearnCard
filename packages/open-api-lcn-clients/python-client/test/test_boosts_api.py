@@ -201,6 +201,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_boost_skills(self) -> None:
+        """Test case for boost_get_boost_skills
+
+        Get aligned skills for a boost
+        """
+        pass
+
     def test_boost_get_boosts(self) -> None:
         """Test case for boost_get_boosts
 
@@ -289,6 +296,13 @@ class TestBoostsApi(unittest.TestCase):
         """Test case for boost_remove_boost_parent
 
         Remove Boost Parent
+        """
+        pass
+
+    def test_boost_revoke_boost_recipient(self) -> None:
+        """Test case for boost_revoke_boost_recipient
+
+        Revoke a boost recipient
         """
         pass
 

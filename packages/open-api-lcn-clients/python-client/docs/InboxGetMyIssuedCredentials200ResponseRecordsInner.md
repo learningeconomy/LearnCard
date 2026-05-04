@@ -16,7 +16,12 @@ Name | Type | Description | Notes
 **webhook_url** | **str** |  | [optional] 
 **boost_uri** | **str** |  | [optional] 
 **activity_id** | **str** |  | [optional] 
+**integration_id** | **str** |  | [optional] 
 **signing_authority** | [**InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority**](InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.md) |  | [optional] 
+**guardian_email** | **str** |  | [optional] 
+**guardian_status** | **str** |  | [optional] 
+**guardian_approved_at** | **str** |  | [optional] 
+**guardian_approved_by_did** | **str** |  | [optional] 
 
 ## Example
 

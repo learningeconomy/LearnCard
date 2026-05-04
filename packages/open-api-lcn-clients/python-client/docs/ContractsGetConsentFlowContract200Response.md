@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **contract** | [**ContractsGetConsentFlowContract200ResponseContract**](ContractsGetConsentFlowContract200ResponseContract.md) |  | 
-**owner** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
+**owner** | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |  | 
 **name** | **str** |  | 
 **subtitle** | **str** |  | [optional] 
 **description** | **str** |  | [optional] 
@@ -20,7 +20,7 @@ Name | Type | Description | Notes
 **updated_at** | **str** |  | 
 **expires_at** | **str** |  | [optional] 
 **auto_boosts** | **List[str]** |  | [optional] 
-**writers** | [**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | [optional] 
+**writers** | [**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |  | [optional] 
 
 ## Example
 

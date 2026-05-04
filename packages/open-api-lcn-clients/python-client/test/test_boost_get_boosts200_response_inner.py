@@ -45,6 +45,7 @@ class TestBoostGetBoosts200ResponseInner(unittest.TestCase):
                     },
                 default_permissions = openapi_client.models.boost_get_boost_200_response_claim_permissions.boost_getBoost_200_response_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 

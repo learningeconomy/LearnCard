@@ -64,7 +64,6 @@ class TestActivityGetActivityChain200ResponseInner(unittest.TestCase):
                 activity_id = '',
                 event_type = 'CREATED',
                 timestamp = '',
-                actor_profile_id = '',
                 recipient_type = 'profile',
                 recipient_identifier = '',
                 source = 'send',
