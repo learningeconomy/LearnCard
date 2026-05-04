@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.8.7
+
+### Patch Changes
+
+-   [#1205](https://github.com/learningeconomy/LearnCard/pull/1205) [`1e35f73c3a81f1517703d673823616cfcbb5798d`](https://github.com/learningeconomy/LearnCard/commit/1e35f73c3a81f1517703d673823616cfcbb5798d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add W3C Bitstring Status List support to DIDKit credential verification. Credentials that use `BitstringStatusListEntry` can now be checked against `BitstringStatusListCredential` status credentials, including revoked and unrevoked VC 2.0 status entries.
+
+-   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    -   @learncard/types@5.14.0
+    -   @learncard/core@9.4.17
+
 ## 1.8.6
 
 ### Patch Changes
