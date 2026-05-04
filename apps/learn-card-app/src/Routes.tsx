@@ -29,7 +29,8 @@ const LearningHistoryPage = lazyWithRetry(
     () => import('./pages/learninghistory/LearningHistoryPage')
 );
 const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
-import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
+import DelayedFallback from './components/generic/DelayedFallback';
+import RouteTransitionLoader from './components/generic/RouteTransitionLoader';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
 const CredentialStorage = lazyWithRetry(
@@ -111,7 +112,13 @@ const DeveloperPortalProvider = lazyWithRetry(() =>
 
 // Wrapper to provide DeveloperPortalContext for admin dashboard
 const AppStoreAdminWithProvider: React.FC = () => (
-    <Suspense fallback={<LoadingPageDumb />}>
+    <Suspense
+        fallback={
+            <DelayedFallback delayMs={200}>
+                <RouteTransitionLoader />
+            </DelayedFallback>
+        }
+    >
         <DeveloperPortalProvider>
             <AppStoreAdminDashboard />
         </DeveloperPortalProvider>
@@ -190,7 +197,13 @@ export const Routes: React.FC = () => {
 
     return (
         <ChunkBoundary>
-            <Suspense fallback={<LoadingPageDumb />}>
+            <Suspense
+                fallback={
+                    <DelayedFallback delayMs={200}>
+                        <RouteTransitionLoader />
+                    </DelayedFallback>
+                }
+            >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
                         <SentryRoute exact path="/login" component={LoginPage} />
@@ -399,4 +412,80 @@ export const Routes: React.FC = () => {
             </Suspense>
         </ChunkBoundary>
     );
+};
+
+/** Paths gated behind the AI feature flag — only prefetch when enabled. */
+const AI_GATED_PATHS = new Set([
+    '/ai/insights',
+    '/ai/pathways',
+    '/ai/topics',
+    '/ai/sessions',
+]);
+
+/**
+ * Path-keyed preload map for routes reachable from the wallet, side menu, and
+ * mobile nav. Consumers (WalletPage's category handler, PreloadingLink, etc.)
+ * await the matching preload before calling history.push, which keeps the
+ * current page mounted (no Suspense fallback flash) until the destination
+ * chunk is in memory.
+ *
+ * Note: admin-tools is intentionally excluded — it's a debug-only surface,
+ * not worth eagerly downloading for end users.
+ */
+export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    // Wallet (Passport) — same chunk for all three aliases.
+    '/passport': () => WalletPage.preload(),
+    '/wallet': () => WalletPage.preload(),
+    '/home': () => WalletPage.preload(),
+    // Wallet category routes (also rendered as squares on /wallet).
+    '/skills': () => SkillsPage.preload(),
+    '/socialBadges': () => SocialBadgesPage.preload(),
+    '/achievements': () => AchievementsPage.preload(),
+    '/learninghistory': () => LearningHistoryPage.preload(),
+    '/accomplishments': () => AccomplishmentsPage.preload(),
+    '/accommodations': () => AccommodationsPage.preload(),
+    '/workhistory': () => WorkHistoryPage.preload(),
+    '/families': () => FamilyPage.preload(),
+    '/ids': () => IdsPage.preload(),
+    '/memberships': () => MembershipPage.preload(),
+    '/currencies': () => CurrenciesPage.preload(),
+    // AI routes — gated by the AI feature flag in prefetchRoutes.
+    '/ai/insights': () => AiInsights.preload(),
+    '/ai/pathways': () => AiPathways.preload(),
+    '/ai/topics': () => AiSessionTopicsContainer.preload(),
+    '/ai/sessions': () => AiSessionsContainer.preload(),
+    // Side menu root links.
+    '/launchpad': () => LaunchPad.preload(),
+    '/contacts': () => AddressBook.preload(),
+    '/notifications': () => NotificationsPage.preload(),
+    // Mobile navbar / wallet header.
+    '/boost': () => BoostCMS.preload(),
+    // Other commonly side-menu-linked routes.
+    '/privacy-and-data': () => PrivacySettingsPage.preload(),
+    '/resume-builder': () => ResumeBuilderPage.preload(),
+};
+
+interface PrefetchOptions {
+    /** When false, AI routes are skipped — the user can't access them anyway. */
+    aiEnabled?: boolean;
+}
+
+/**
+ * Idle-prefetch routes in ROUTE_PRELOAD so first-time navigation from anywhere
+ * (wallet squares, side menu, mobile nav, deep links) lands on a warm chunk
+ * cache and the Suspense fallback never fires. AI routes are skipped when the
+ * caller indicates the user doesn't have AI access.
+ */
+export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void => {
+    const ric: typeof window.requestIdleCallback | undefined =
+        (window as any).requestIdleCallback;
+    const schedule = (cb: () => void) =>
+        ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
+
+    schedule(() => {
+        Object.entries(ROUTE_PRELOAD).forEach(([path, fn]) => {
+            if (!aiEnabled && AI_GATED_PATHS.has(path)) return;
+            fn();
+        });
+    });
 };

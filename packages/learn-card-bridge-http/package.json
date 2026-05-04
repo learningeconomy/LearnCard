@@ -1,6 +1,6 @@
 {
     "name": "@learncard/create-http-bridge",
-    "version": "1.1.232",
+    "version": "1.1.233",
     "description": "Instantly create and deploy a Learn Card Bridge HTTP API via AWS Lambda!",
     "main": "dist/index.js",
     "bin": "dist/index.js",
@@ -29,7 +29,7 @@
         "inquirer": "^8.2.4",
         "lookpath": "^1.2.2",
         "react": "^18.2.0",
-        "rollup": "^2.71.1",
+        "rollup": "^2.80.0",
         "rollup-plugin-esbuild": "^4.9.1",
         "serverless-esbuild": "^1.25.0",
         "serverless-http": "^3.0.1",

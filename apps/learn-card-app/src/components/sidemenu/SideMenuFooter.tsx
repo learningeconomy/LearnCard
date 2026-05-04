@@ -49,7 +49,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
                             type="button"
                             onClick={openVersionInfo}
                             aria-label="View version details"
-                            className="text-grayscale-600 hover:text-grayscale-900 transition-colors underline-offset-2 hover:underline focus:outline-none focus-visible:underline"
+                            className="text-grayscale-900 underline transition-colors underline-offset-2 focus:outline-none focus-visible:underline"
                         >
                             V {version}
                         </button>

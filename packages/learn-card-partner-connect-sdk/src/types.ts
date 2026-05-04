@@ -15,44 +15,74 @@ export type {
  */
 export interface PartnerConnectOptions {
     /**
-     * The origin(s) of the LearnCard host
+     * The origin(s) of the LearnCard host.
      *
-     * This can be a single string or an array of strings to serve as a whitelist for
-     * the `lc_host_override` query parameter.
+     * Each entry may be either an **exact origin** (`https://learncard.app`) or a
+     * **wildcard pattern** where `*` stands in for a single DNS label portion in
+     * the host portion of the origin (e.g. `https://*.learncard.app`,
+     * `https://*.vetpass.app`). Wildcards are **only** allowed in the host and
+     * only as label(s); the protocol and port must always match exactly.
      *
-     * **Origin Configuration Hierarchy:**
-     * 1. **Hardcoded Default**: `https://learncard.app` (security anchor)
-     * 2. **Query Parameter Override**: `?lc_host_override=https://staging.learncard.app`
-     *    - Checked against whitelist if `hostOrigin` is provided
-     *    - Used for staging/testing environments
-     * 3. **Configured Origin**: First value in array or single string value
+     * Wildcard patterns match any non-empty chain of labels. So
+     * `https://*.learncard.app` matches both `https://staging.learncard.app` and
+     * `https://pr-123.preview.learncard.app`, but **not** `https://learncard.app`
+     * itself (include the bare origin explicitly if you need it) and **not**
+     * `https://evil.learncard.app.attacker.com` (the suffix must match).
      *
-     * **Security Model:**
-     * - The SDK enforces STRICT origin validation
-     * - Incoming messages must EXACTLY match the active host origin
-     * - Prevents origin spoofing: even if malicious query param is added,
-     *   messages from unauthorized origins are rejected
+     * **Origin Configuration Hierarchy at runtime:**
+     * 1. `window.location.ancestorOrigins[0]` (when available) — the real parent
+     *    origin as reported by the browser, validated against the effective
+     *    whitelist. This source cannot be spoofed by a malicious query param.
+     * 2. `?lc_host_override=<origin>` query parameter — validated against the
+     *    whitelist. Used by the LearnCard host to tell the SDK which origin it
+     *    is loading from.
+     * 3. `sessionStorage['lc_host_override']` — a previously-validated override
+     *    persisted across in-iframe navigation.
+     * 4. First value in the configured `hostOrigin` array / single string.
+     * 5. `PartnerConnect.DEFAULT_HOST_ORIGIN` (`https://learncard.app`).
+     *
+     * The partner app's configured whitelist is combined with a small built-in
+     * list of LearnCard tenant domains (see `disableDefaultTenants` to opt out).
+     * This lets a partner app work out-of-the-box inside any current or future
+     * `*.learncard.app`, `*.learncard.ai`, or `*.vetpass.app` tenant without a
+     * re-deploy.
      *
      * **Examples:**
      *
-     * Single origin (production):
+     * Single origin (production only):
      * ```typescript
      * hostOrigin: 'https://learncard.app'
-     * // Uses: https://learncard.app
-     * // Override: ?lc_host_override=https://staging.learncard.app (not validated)
      * ```
      *
-     * Multiple origins (whitelist for staging):
+     * Wildcard whitelist (covers staging + preview):
      * ```typescript
-     * hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
-     * // Default: https://learncard.app
-     * // Override: ?lc_host_override=https://staging.learncard.app (validated)
-     * // Invalid: ?lc_host_override=https://evil.com (rejected)
+     * hostOrigin: ['https://learncard.app', 'https://*.learncard.app']
+     * ```
+     *
+     * Custom tenant alongside the built-in LearnCard defaults:
+     * ```typescript
+     * hostOrigin: ['https://partner.example.com']
+     * // learncard.app / *.learncard.app / *.learncard.ai / vetpass.app / *.vetpass.app
+     * // are ALSO trusted because disableDefaultTenants is false.
      * ```
      *
      * @default 'https://learncard.app'
      */
     hostOrigin?: string | string[];
+
+    /**
+     * Opt out of the built-in LearnCard tenant whitelist.
+     *
+     * By default, the SDK merges `hostOrigin` with a curated list of LearnCard
+     * and tenant domains (see `PartnerConnect.DEFAULT_TRUSTED_TENANTS`) so that
+     * partner apps work on any LearnCard-managed tenant without reconfiguration.
+     *
+     * Set to `true` if you want the partner app to **only** trust the origins
+     * you pass in `hostOrigin`.
+     *
+     * @default false
+     */
+    disableDefaultTenants?: boolean;
 
     /**
      * Whether to allow native app origins (default: true)
@@ -364,11 +394,14 @@ export interface SummaryCredentialSkill {
 
 /**
  * Next step item in summary credential data
+ *
+ * `keywords` is optional. Omit it entirely (or pass `undefined`) when you do not
+ * have taxonomy data — you no longer need to pass a struct of `null` fields.
  */
 export interface SummaryCredentialNextStep {
     title: string;
     description: string;
-    keywords: SummaryCredentialKeyword;
+    keywords?: SummaryCredentialKeyword;
 }
 
 /**
@@ -494,11 +527,85 @@ export type ErrorCode =
     | string;
 
 /**
- * Error object returned when a request fails
+ * Error object returned when a request fails.
+ *
+ * Historically the SDK rejected with a plain `{ code, message }` object. As of
+ * v0.3.0 we reject with a {@link PartnerConnectError} instance instead, which
+ * still satisfies this interface (it has both `code` and `message` fields), so
+ * existing consumers that do `if (err.code === '...')` continue to work
+ * unchanged.
  */
 export interface LearnCardError {
     code: ErrorCode;
     message: string;
+}
+
+/**
+ * Typed error class for all Partner Connect SDK rejections.
+ *
+ * Use `instanceof PartnerConnectError` to narrow caught errors and unlock
+ * exhaustive `switch` checks on `code`. Both `code` and `message` are present
+ * (so the legacy `LearnCardError` object shape is preserved), and `name` is
+ * always `'PartnerConnectError'`.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await learnCard.requestLearnerContext();
+ * } catch (err) {
+ *   if (err instanceof PartnerConnectError) {
+ *     switch (err.code) {
+ *       case 'LC_UNAUTHENTICATED': showLogin(); break;
+ *       case 'USER_REJECTED':      showPrivacyNotice(); break;
+ *       case 'UNAUTHORIZED':       showPermissionsError(); break;
+ *       default:                   console.error(err);
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export class PartnerConnectError extends Error implements LearnCardError {
+    public readonly code: ErrorCode;
+
+    constructor(code: ErrorCode, message: string) {
+        super(message);
+        this.name = 'PartnerConnectError';
+        this.code = code;
+
+        // Restore prototype chain when transpiled to ES5 targets.
+        Object.setPrototypeOf(this, PartnerConnectError.prototype);
+    }
+
+    /**
+     * Wrap any incoming `LearnCardError`-shaped value into a `PartnerConnectError`.
+     * Returns the value unchanged if it is already an instance.
+     *
+     * Used internally at every reject site so callers always receive a typed
+     * `PartnerConnectError`, regardless of whether the failure originated from
+     * the host (over postMessage), an SDK timeout, or `destroy()`.
+     */
+    public static from(input: LearnCardError | unknown): PartnerConnectError {
+        if (input instanceof PartnerConnectError) return input;
+
+        if (
+            input &&
+            typeof input === 'object' &&
+            'code' in input &&
+            typeof (input as { code: unknown }).code === 'string'
+        ) {
+            const candidate = input as { code: string; message?: unknown };
+            const message =
+                typeof candidate.message === 'string'
+                    ? candidate.message
+                    : 'Partner Connect request failed';
+            return new PartnerConnectError(candidate.code as ErrorCode, message);
+        }
+
+        return new PartnerConnectError(
+            'UNKNOWN_ERROR',
+            input instanceof Error ? input.message : 'An unknown error occurred'
+        );
+    }
 }
 
 /**

@@ -18,6 +18,7 @@
  * ```
  */
 
+import { PartnerConnectError } from './types';
 import type {
     PartnerConnectOptions,
     IdentityResponse,
@@ -53,6 +54,8 @@ import type {
     PendingRequest,
 } from './types';
 
+// Re-export the class as a value plus all type exports.
+export { PartnerConnectError } from './types';
 export type * from './types';
 
 /**
@@ -61,6 +64,26 @@ export type * from './types';
 export class PartnerConnect {
     /** Default host origin (security anchor) */
     public static readonly DEFAULT_HOST_ORIGIN = 'https://learncard.app';
+
+    /**
+     * Built-in list of LearnCard-managed tenant origins.
+     *
+     * These are merged with the partner app's configured `hostOrigin` whitelist
+     * unless `disableDefaultTenants: true` is passed. This lets a partner app
+     * run inside any current or future LearnCard tenant (staging, preview,
+     * VetPass, etc.) without needing a re-deploy each time a new tenant is
+     * onboarded.
+     *
+     * Patterns follow the same rules as user-supplied `hostOrigin` entries:
+     * `*` is a wildcard for one or more DNS labels in the host portion.
+     */
+    public static readonly DEFAULT_TRUSTED_TENANTS: readonly string[] = [
+        'https://learncard.app',
+        'https://*.learncard.app',
+        'https://*.learncard.ai',
+        'https://vetpass.app',
+        'https://*.vetpass.app',
+    ];
 
     private hostOrigins: string[] = ['https://learncard.app'];
     private activeHostOrigin: string = 'https://learncard.app';
@@ -73,8 +96,17 @@ export class PartnerConnect {
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
-        const hostOrigin = options?.hostOrigin || PartnerConnect.DEFAULT_HOST_ORIGIN;
-        this.hostOrigins = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
+        const hostOrigin = options?.hostOrigin ?? PartnerConnect.DEFAULT_HOST_ORIGIN;
+        const configured = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
+
+        // Merge with the built-in tenant list unless the caller explicitly
+        // opted out. De-duplicate while preserving order so the caller's
+        // first entry remains the default active origin.
+        const disableDefaults = options?.disableDefaultTenants === true;
+        const merged = disableDefaults
+            ? [...configured]
+            : [...configured, ...PartnerConnect.DEFAULT_TRUSTED_TENANTS];
+        this.hostOrigins = Array.from(new Set(merged));
 
         this.protocol = options?.protocol || 'LEARNCARD_V1';
         this.requestTimeout = options?.requestTimeout || 30000;
@@ -86,18 +118,45 @@ export class PartnerConnect {
 
     /**
      * Configure the active host origin using the following hierarchy:
-     * 1. Check for `lc_host_override` query parameter (for staging/testing)
-     * 2. Check sessionStorage for a previously stored override (survives in-app navigation)
-     * 3. Fall back to first configured origin
-     * 4. Fall back to DEFAULT_HOST_ORIGIN
+     * 1. `window.location.ancestorOrigins[0]` (when supported) — the browser's
+     *    view of who our parent frame is. Cannot be forged by a malicious
+     *    `lc_host_override` query param and therefore takes precedence.
+     * 2. `?lc_host_override=<origin>` query param (for staging / cross-tenant).
+     * 3. `sessionStorage` value saved from a previously-validated override.
+     * 4. First configured origin.
+     * 5. `DEFAULT_HOST_ORIGIN`.
      *
-     * When a valid override is found in the query parameter, it is persisted to
-     * sessionStorage so that subsequent page navigations within the same tab
-     * automatically use the same override without requiring it in every URL.
-     *
-     * This origin will be used for all outgoing messages and incoming message validation.
+     * When a valid override is found in the query parameter, it is persisted
+     * to sessionStorage so subsequent in-iframe navigations in the same tab
+     * continue to use the same active origin.
      */
     private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
+    /**
+     * Read `window.location.ancestorOrigins[0]` without throwing if the
+     * property is unavailable (Firefox) or the list is empty (top-level
+     * context, e.g. running outside of an iframe).
+     */
+    private readAncestorOrigin(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const ancestors = window.location.ancestorOrigins;
+
+            if (ancestors && ancestors.length > 0) {
+                const parent = ancestors[0];
+
+                if (typeof parent === 'string' && parent.length > 0) {
+                    return parent;
+                }
+            }
+        } catch {
+            // `ancestorOrigins` is a WebKit/Blink extension; accessing it
+            // under unusual conditions can throw. Treat as unavailable.
+        }
+
+        return null;
+    }
 
     private configureActiveOrigin(): void {
         if (typeof window === 'undefined') {
@@ -106,57 +165,74 @@ export class PartnerConnect {
         }
 
         try {
-            // Check for lc_host_override query parameter
+            const ancestorOrigin = this.readAncestorOrigin();
             const urlParams = new URLSearchParams(window.location.search);
             const hostOverride = urlParams.get('lc_host_override');
 
-            if (hostOverride) {
-                // Validate override against whitelist (if provided)
-                if (this.hostOrigins.length > 0 && !this.isOriginInWhitelist(hostOverride)) {
+            // Priority 1: the real parent origin as reported by the browser.
+            // This is unspoofable by query-param manipulation, so if it is
+            // trusted we use it and ignore any override. If both are present
+            // and disagree, we log and prefer the ancestor.
+            if (ancestorOrigin && this.isOriginInWhitelist(ancestorOrigin)) {
+                if (hostOverride && hostOverride !== ancestorOrigin) {
                     console.warn(
-                        '[LearnCard SDK] lc_host_override value is not in the configured whitelist:',
-                        hostOverride,
-                        'Allowed:',
-                        this.hostOrigins
+                        '[LearnCard SDK] lc_host_override does not match the real parent origin; preferring parent.',
+                        { override: hostOverride, parent: ancestorOrigin }
                     );
-                    this.activeHostOrigin =
-                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                } else {
-                    this.activeHostOrigin = hostOverride;
-
-                    // Persist to sessionStorage so subsequent page navigations
-                    // within this tab automatically use the same override.
-                    try {
-                        sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, hostOverride);
-                    } catch {
-                        // sessionStorage may be unavailable (e.g. sandboxed iframes)
-                    }
-
-                    console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
-                }
-            } else {
-                // Fall back to a previously stored override from this session
-                let storedOverride: string | null = null;
-
-                try {
-                    storedOverride = sessionStorage.getItem(PartnerConnect.SESSION_STORAGE_KEY);
-                } catch {
-                    // sessionStorage may be unavailable
                 }
 
-                if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
-                    this.activeHostOrigin = storedOverride;
-                    console.log('[LearnCard SDK] Using stored lc_host_override:', storedOverride);
-                } else {
-                    // Use first configured origin or default
-                    this.activeHostOrigin =
-                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                    console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
-                }
+                this.activeHostOrigin = ancestorOrigin;
+                this.persistOverride(ancestorOrigin);
+                console.log('[LearnCard SDK] Using parent origin:', ancestorOrigin);
+                return;
             }
+
+            // Priority 2: lc_host_override query parameter.
+            if (hostOverride) {
+                if (this.isOriginInWhitelist(hostOverride)) {
+                    this.activeHostOrigin = hostOverride;
+                    this.persistOverride(hostOverride);
+                    console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
+                    return;
+                }
+
+                console.warn(
+                    '[LearnCard SDK] lc_host_override value is not in the configured whitelist:',
+                    hostOverride,
+                    'Allowed:',
+                    this.hostOrigins
+                );
+            }
+
+            // Priority 3: a previously-validated override from this tab session.
+            let storedOverride: string | null = null;
+
+            try {
+                storedOverride = sessionStorage.getItem(PartnerConnect.SESSION_STORAGE_KEY);
+            } catch {
+                // sessionStorage may be unavailable (e.g. sandboxed iframes)
+            }
+
+            if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
+                this.activeHostOrigin = storedOverride;
+                console.log('[LearnCard SDK] Using stored lc_host_override:', storedOverride);
+                return;
+            }
+
+            // Priority 4/5: fall back to the first configured origin or default.
+            this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+            console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
         } catch (error) {
             console.error('[LearnCard SDK] Error configuring active origin:', error);
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+        }
+    }
+
+    private persistOverride(origin: string): void {
+        try {
+            sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, origin);
+        } catch {
+            // sessionStorage may be unavailable (e.g. sandboxed iframes)
         }
     }
 
@@ -171,13 +247,104 @@ export class PartnerConnect {
     }
 
     /**
-     * Check if an origin is in the configured whitelist
+     * Internal placeholder substituted in for `*` so that `new URL(...)` can
+     * parse a wildcard pattern. Chosen to be a syntactically-valid DNS label
+     * that cannot collide with a real hostname.
+     */
+    private static readonly WILDCARD_PLACEHOLDER = '__lc_wildcard__';
+
+    /** `*` (any number of occurrences) for replacement in the pattern. */
+    private static readonly WILDCARD_REGEX = /\*/g;
+
+    /** The required leading-label form a wildcard pattern must take. */
+    private static readonly WILDCARD_LEADING_PREFIX = `${PartnerConnect.WILDCARD_PLACEHOLDER}.`;
+
+    /**
+     * Check whether a candidate origin matches a configured whitelist entry.
+     *
+     * Supports exact matches and wildcard patterns. A wildcard entry has the
+     * form `<protocol>://*.<domain>` and matches any origin with the same
+     * protocol, same port, and a host ending in `.<domain>` with at least
+     * one non-empty DNS label in place of the `*`.
+     *
+     * Examples with pattern `https://*.learncard.app`:
+     * - `https://staging.learncard.app`      → match
+     * - `https://pr-1.preview.learncard.app` → match
+     * - `https://learncard.app`              → no match (no subdomain)
+     * - `http://staging.learncard.app`       → no match (protocol mismatch)
+     * - `https://learncard.app.attacker.com` → no match (suffix mismatch)
+     *
+     * Exposed as a public static so it can be unit-tested directly without
+     * standing up a full SDK instance.
+     */
+    public static matchesOriginPattern(candidate: string, pattern: string): boolean {
+        if (candidate === pattern) return true;
+        if (!pattern.includes('*')) return false;
+
+        let patternUrl: URL;
+        let candidateUrl: URL;
+
+        try {
+            // Replace the wildcard labels with a syntactically-valid host so
+            // URL() can parse it; we validate the real shape ourselves below.
+            patternUrl = new URL(
+                pattern.replace(
+                    PartnerConnect.WILDCARD_REGEX,
+                    PartnerConnect.WILDCARD_PLACEHOLDER
+                )
+            );
+            candidateUrl = new URL(candidate);
+        } catch {
+            return false;
+        }
+
+        // Protocol, port, and (empty) path-origin must match exactly.
+        if (patternUrl.protocol !== candidateUrl.protocol) return false;
+        if (patternUrl.port !== candidateUrl.port) return false;
+
+        const patternHost = patternUrl.hostname;
+        const candidateHost = candidateUrl.hostname;
+
+        // Only allow wildcards as leading label(s): `*.foo.bar`, not `a*.b` or
+        // `foo.*.bar`. This keeps the matching rule predictable and safe.
+        if (!patternHost.startsWith(PartnerConnect.WILDCARD_LEADING_PREFIX)) return false;
+
+        const patternSuffix = patternHost.slice(PartnerConnect.WILDCARD_LEADING_PREFIX.length);
+
+        if (patternSuffix.length === 0) return false;
+        // No further wildcards anywhere else in the pattern.
+        if (patternSuffix.includes(PartnerConnect.WILDCARD_PLACEHOLDER)) return false;
+
+        // Candidate must end with `.<suffix>` and have at least one label
+        // before the suffix (the portion that the `*` stands in for).
+        const required = '.' + patternSuffix;
+
+        if (!candidateHost.endsWith(required)) return false;
+
+        const prefix = candidateHost.slice(0, candidateHost.length - required.length);
+
+        if (prefix.length === 0) return false;
+        // Labels in the prefix must themselves be non-empty (no `..`).
+        if (prefix.startsWith('.') || prefix.endsWith('.')) return false;
+        if (prefix.split('.').some(label => label.length === 0)) return false;
+
+        return true;
+    }
+
+    /**
+     * Check if an origin is in the effective whitelist (exact origins +
+     * wildcard patterns + optional native-app origins).
      */
     private isOriginInWhitelist(origin: string): boolean {
-        return (
-            this.hostOrigins.includes(origin) ||
-            (this.allowNativeAppOrigins && this.isOriginNativeApp(origin))
-        );
+        if (!origin) return false;
+
+        for (const entry of this.hostOrigins) {
+            if (PartnerConnect.matchesOriginPattern(origin, entry)) return true;
+        }
+
+        if (this.allowNativeAppOrigins && this.isOriginNativeApp(origin)) return true;
+
+        return false;
     }
 
     /**
@@ -231,7 +398,12 @@ export class PartnerConnect {
                 pending.resolve(data.data);
             } else if (data.type === 'ERROR') {
                 pending.reject(
-                    data.error || { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred' }
+                    PartnerConnectError.from(
+                        data.error || {
+                            code: 'UNKNOWN_ERROR',
+                            message: 'An unknown error occurred',
+                        }
+                    )
                 );
             }
         };
@@ -252,10 +424,9 @@ export class PartnerConnect {
      */
     private sendMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
         if (!this.isInitialized) {
-            return Promise.reject({
-                code: 'SDK_NOT_INITIALIZED',
-                message: 'SDK is not initialized',
-            } as LearnCardError);
+            return Promise.reject(
+                new PartnerConnectError('SDK_NOT_INITIALIZED', 'SDK is not initialized')
+            );
         }
 
         return new Promise<T>((resolve, reject) => {
@@ -265,10 +436,12 @@ export class PartnerConnect {
             const timeoutId = setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
                     this.pendingRequests.delete(requestId);
-                    reject({
-                        code: 'LC_TIMEOUT',
-                        message: `Request ${action} timed out after ${this.requestTimeout}ms`,
-                    } as LearnCardError);
+                    reject(
+                        new PartnerConnectError(
+                            'LC_TIMEOUT',
+                            `Request ${action} timed out after ${this.requestTimeout}ms`
+                        )
+                    );
                 }
             }, this.requestTimeout);
 
@@ -721,10 +894,12 @@ export class PartnerConnect {
         // Reject all pending requests
         for (const [requestId, pending] of this.pendingRequests.entries()) {
             clearTimeout(pending.timeoutId);
-            pending.reject({
-                code: 'SDK_DESTROYED',
-                message: 'SDK was destroyed before request completed',
-            });
+            pending.reject(
+                new PartnerConnectError(
+                    'SDK_DESTROYED',
+                    'SDK was destroyed before request completed'
+                )
+            );
         }
 
         this.pendingRequests.clear();
