@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { startTransition, useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -141,7 +141,13 @@ const WalletPage: React.FC = () => {
             chatBotStore.set.resetStore();
         }
 
-        history.push(path);
+        // Wrap navigation in a transition so React 18 keeps WalletPage visible
+        // while the lazy destination chunk loads — Suspense fallback only fires
+        // for transitions that aren't marked as such, so this eliminates the
+        // route-change flash entirely when the chunk takes a moment to fetch.
+        startTransition(() => {
+            history.push(path);
+        });
     };
 
     const renderWalletList = categories?.map(category => {
