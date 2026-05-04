@@ -39,7 +39,14 @@ import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/comp
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
 
-type CredentialType = 'MovieTicketCredential' | 'AlumniCredential' | 'PermanentResidentCard';
+type CredentialType =
+    | 'MovieTicketCredential'
+    | 'AlumniCredential'
+    | 'PermanentResidentCard'
+    // Vanilla VCDM examples types (see CREDENTIAL_TYPES.UNIVERSITY_DEGREE*).
+    // Kept here so they are valid keys in CATEGORY_MAP below.
+    | 'UniversityDegree'
+    | 'UniversityDegreeCredential';
 
 type KnownCredentialType = KnownAchievementType | CredentialType;
 
@@ -49,12 +56,67 @@ const CREDENTIAL_TYPES = {
     PERM_RESIDENT: 'PermanentResidentCard',
     CERTIFIED_BOOST: 'CertifiedBoostCredential',
     LEGACY_CRED: 'LegacyOpenBadgeCredential',
+    /**
+     * Type used by the W3C VCDM example schema (and the bundled
+     * walt.id sandbox). The formal example uses `UniversityDegreeCredential`
+     * but a number of issuers in the wild (including walt.id's defaults)
+     * mint the type as bare `UniversityDegree`. We accept both.
+     */
+    UNIVERSITY_DEGREE: 'UniversityDegreeCredential',
+    UNIVERSITY_DEGREE_SHORT: 'UniversityDegree',
 };
 
 const CREDENTIAL_CONTEXTS = {
     ALUMNI_OF: 'https://playground.chapi.io/examples/alumni/alumni-v1.json',
     PERM_RESIDENT: 'https://w3id.org/citizenship/v1',
     MOVIE_TICKET: 'https://playground.chapi.io/examples/movieTicket/ticket-v1.json',
+    /**
+     * Canonical W3C VCDM examples context. Anything issued in this
+     * shape (degree, alumniOf, etc. as plain credentialSubject fields)
+     * matches the structures defined in the spec's example library:
+     * https://www.w3.org/2018/credentials/examples/v1
+     */
+    W3C_VCDM_EXAMPLES_V1: 'https://www.w3.org/2018/credentials/examples/v1',
+};
+
+/**
+ * Humanize a Pascal/Camel-case credential type into a display title.
+ * `UniversityDegree` -> `University Degree`. Strips a trailing
+ * `Credential` / `Card` suffix so titles read naturally as nouns
+ * (`OpenBadgeCredential` -> `Open Badge`, not `Open Badge Credential`).
+ * Returns `undefined` for empty input so callers can fall through.
+ */
+export const humanizeCredentialType = (type: string | undefined): string | undefined => {
+    if (!type || typeof type !== 'string') return undefined;
+
+    const spaced = type
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+        .trim();
+
+    if (!spaced) return undefined;
+
+    const stripped = spaced.replace(/\s+(Credential|Card)$/i, '').trim();
+    return stripped.length > 0 ? stripped : spaced;
+};
+
+/**
+ * Pick the most-specific entry from a VCDM `type` array. By spec the
+ * array is `['VerifiableCredential', ...subtypes]` so the last non-VC
+ * entry is the one we want for display. Returns `undefined` if the
+ * array is missing or only contains the base `VerifiableCredential` type.
+ */
+const getMostSpecificCredentialType = (
+    credentialTypes: string[] | undefined
+): string | undefined => {
+    if (!Array.isArray(credentialTypes)) return undefined;
+    for (let i = credentialTypes.length - 1; i >= 0; i--) {
+        const t = credentialTypes[i];
+        if (typeof t === 'string' && t.length > 0 && t !== 'VerifiableCredential') {
+            return t;
+        }
+    }
+    return undefined;
 };
 
 const otherCredentialTypes = [
@@ -185,6 +247,13 @@ export const CATEGORY_MAP: Record<
     QualityAssuranceCredential: 'Learning History',
     ResearchDoctorate: 'Learning History',
     SecondarySchoolDiploma: 'Learning History',
+
+    // Vanilla VCDM examples (walt.id sandbox, W3C VCDM examples context).
+    // A degree is first and foremost an academic record, so it lives in
+    // 'Studies' (Learning History) rather than the generic 'Achievement'
+    // bucket where one-off awards and badges reside.
+    UniversityDegree: 'Learning History',
+    UniversityDegreeCredential: 'Learning History',
 
     // extending ( Social Badge ) category
     'ext:Opportunist': 'Social Badge',
@@ -502,6 +571,23 @@ export const getDefaultCategoryForCredential = (
         return 'Learning History';
     }
 
+    // Vanilla VCDM type-based routing.
+    // Before short-circuiting non-OBv3 credentials to 'Achievement', try
+    // to match any entry of the credential's `type[]` against CATEGORY_MAP.
+    // This lets well-known VCDM shapes (e.g. W3C examples `UniversityDegree`)
+    // land in the correct category rather than being lumped under
+    // 'Achievement' by default. Walks the array from most-specific to
+    // least-specific and skips the base `VerifiableCredential` entry.
+    const credentialTypes = _credential?.type;
+    if (Array.isArray(credentialTypes)) {
+        for (let i = credentialTypes.length - 1; i >= 0; i--) {
+            const t = credentialTypes[i];
+            if (typeof t !== 'string' || t === 'VerifiableCredential') continue;
+            const mapped = (CATEGORY_MAP as Record<string, CredentialCategory>)[t];
+            if (mapped) return mapped;
+        }
+    }
+
     // Not OBv3 credential, default category to achievement
     if (!verificationResult.success) return 'Achievement';
 
@@ -746,14 +832,23 @@ export const getCredentialName = (credential: VC): string => {
     const credentialTypes = getCredentialType(credential);
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
     const credentialSubjectAchievementName = getCredentialSubject(credential)?.achievement?.name;
-    // console.log(
-    //     'GET CREDENTIAL NAME',
-    //     credential,
-    //     credentialTypes,
-    //     name,
-    //     credentialSubjectAchievementName
-    // );
-    return credential?.name || name || credentialSubjectAchievementName;
+
+    // Generic VCDM-shape fallback: humanize the most-specific entry of
+    // the `type` array so a credential without an explicit `name` or
+    // `achievement.name` still gets a sensible title rather than being
+    // rendered nameless. Critical for vanilla VCDM credentials issued
+    // via OID4VCI by issuers that don't ship a learncard-flavored
+    // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
+    const humanizedType = humanizeCredentialType(
+        getMostSpecificCredentialType(credentialTypes)
+    );
+
+    return (
+        credential?.name ||
+        name ||
+        credentialSubjectAchievementName ||
+        humanizedType
+    );
 };
 
 export const getCredentialType = (credential: VC) => {
@@ -774,6 +869,20 @@ export const getPotentialNameFieldsFromType = (credentialTypes: string[], creden
     }
     if (credentialTypes?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
         name = credential?.legacyAssertion?.badge?.name || 'Open Badge';
+    }
+    // W3C VCDM examples shape: claims live under credentialSubject.degree
+    // (e.g. {type: 'BachelorDegree', name: 'Bachelor of Science and Arts'}).
+    // Prefer the explicit degree name; if absent, leave undefined so the
+    // generic type-name fallback in `getCredentialName` picks up
+    // `UniversityDegree` -> `University Degree`.
+    if (
+        credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE) ||
+        credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE_SHORT)
+    ) {
+        const degreeName = credentialSubject?.degree?.name;
+        if (typeof degreeName === 'string' && degreeName.length > 0) {
+            name = degreeName;
+        }
     }
     return name;
 };
@@ -854,6 +963,26 @@ export const getDetailsFromCredential = (credential: VC) => {
             `${credentialSubject?.alumniOf?.name}`
         );
         detailFieldsData = [description, issuanceDate, alumniOf, defaultIssuer];
+    }
+
+    // UNIVERSITY DEGREE (W3C VCDM examples)
+    // Surfaces the `degree.name` and a humanized `degree.type` so the
+    // details modal reads as `Degree | Bachelor of Science and Arts`,
+    // `Degree Type | Bachelor Degree` rather than falling back to the
+    // generic Description/Criteria triplet (which would all be empty for
+    // this shape).
+    const isUniversityDegreeShape =
+        credentialContexts?.includes(CREDENTIAL_CONTEXTS.W3C_VCDM_EXAMPLES_V1) &&
+        (_credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE) ||
+            _credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE_SHORT));
+    if (isUniversityDegreeShape) {
+        const degreeName = generateFieldDisplayObj('Degree', credentialSubject?.degree?.name);
+        const degreeType = generateFieldDisplayObj(
+            'Degree Type',
+            humanizeCredentialType(credentialSubject?.degree?.type)
+        );
+        const issuanceDate = generateFieldDisplayObj('Issue Date', credential?.issuanceDate);
+        detailFieldsData = [degreeName, degreeType, issuanceDate, defaultIssuer];
     }
 
     return detailFieldsData;

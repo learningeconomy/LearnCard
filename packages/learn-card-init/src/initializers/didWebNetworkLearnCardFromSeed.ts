@@ -15,6 +15,8 @@ import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
+import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getStatusListPlugin } from '@learncard/status-list-plugin';
 
 import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -41,6 +43,8 @@ export const didWebNetworkLearnCardFromSeed = async ({
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
+    openid4vc,
+    statusList,
     debug,
 }: DidWebNetworkLearnCardFromSeed['args']): Promise<
     DidWebNetworkLearnCardFromSeed['returnValue']
@@ -101,7 +105,11 @@ export const didWebNetworkLearnCardFromSeed = async ({
 
     const didWebLc = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
 
-    return didWebLc.addPlugin(
+    const networkLc = await didWebLc.addPlugin(
         await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter, extraHeaders })
     );
+
+    const oidcLc = await networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
+
+    return oidcLc.addPlugin(getStatusListPlugin(oidcLc, statusList));
 };

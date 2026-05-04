@@ -1,0 +1,66 @@
+name: OpenID4VC Interop Tests
+
+# Runs the cross-vendor OID4VC interop suite (walt.id, Sphereon, EUDI)
+# against the openid4vc plugin. These tests cold-start Docker stacks
+# (30–120s) and are expensive, so we gate them on paths that can
+# plausibly change plugin/interop behaviour, plus manual dispatch.
+#
+# The in-process suite (tests/openid4vc-e2e/) continues to run on
+# every PR via the normal `Test Runner` (nx affected) workflow — this
+# file is purely for the heavyweight, real-vendor tier.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'packages/plugins/openid4vc/**'
+      - 'packages/plugins/status-list/**'
+      - 'tests/openid4vc-interop-e2e/**'
+      - 'tests/openid4vc-e2e/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/openid4vc-interop.yml'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: true
+        default: 'main'
+
+jobs:
+  interop:
+    name: Interop (walt.id + Sphereon + EUDI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Use Composite Setup Action
+        uses: ./.github/actions/setup
+
+      - name: Build openid4vc + status-list plugins
+        run: |
+          pnpm exec nx build openid4vc-plugin
+          pnpm exec nx build status-list-plugin
+
+      - name: Run in-process OID4VC e2e suite
+        run: pnpm --filter @workspace/openid4vc-e2e-tests test
+
+      - name: Run cross-vendor interop suite (docker compose)
+        run: pnpm --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
+        env:
+          # Surface real-vendor failures rather than silently skipping.
+          CI: 'true'
+
+      - name: Dump docker compose logs on failure
+        if: failure()
+        working-directory: tests/openid4vc-interop-e2e
+        run: docker compose logs --no-color --tail=500 || true
+
+      - name: Tear down docker compose
+        if: always()
+        working-directory: tests/openid4vc-interop-e2e
+        run: docker compose down -v --remove-orphans || true

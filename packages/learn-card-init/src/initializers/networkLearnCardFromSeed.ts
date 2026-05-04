@@ -14,6 +14,8 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getStatusListPlugin } from '@learncard/status-list-plugin';
 
 import { NetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -39,6 +41,8 @@ export const networkLearnCardFromSeed = async ({
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
+    openid4vc,
+    statusList,
     debug,
 }: NetworkLearnCardFromSeed['args']): Promise<NetworkLearnCardFromSeed['returnValue']> => {
     const network = typeof _network === 'boolean' ? 'https://network.learncard.com/trpc' : _network;
@@ -95,7 +99,11 @@ export const networkLearnCardFromSeed = async ({
 
     const lcLc = await boostVerificationLc.addPlugin(getLearnCardPlugin(boostVerificationLc));
 
-    return lcLc.addPlugin(
+    const networkLc = await lcLc.addPlugin(
         await getLearnCardNetworkPlugin(lcLc, network, { guardianApprovalGetter, extraHeaders })
     );
+
+    const oidcLc = await networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
+
+    return oidcLc.addPlugin(getStatusListPlugin(oidcLc, statusList));
 };

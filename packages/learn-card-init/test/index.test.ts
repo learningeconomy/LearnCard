@@ -623,4 +623,44 @@ describe('LearnCard SDK', () => {
             expect(boostCredential.type).toEqual(expect.arrayContaining(['BoostCredential']));
         });
     });
+
+    describe('OpenID4VC Plugin', () => {
+        it('exposes the holder methods on every seed-based init function', async () => {
+            const learnCard = await getLearnCard();
+
+            // High-level holder helpers \u2014 these are the surface a
+            // wallet UI calls into directly. If init wiring regresses,
+            // these go missing.
+            expect(typeof learnCard.invoke.parseCredentialOffer).toBe('function');
+            expect(typeof learnCard.invoke.acceptCredentialOffer).toBe('function');
+            expect(typeof learnCard.invoke.acceptAndStoreCredentialOffer).toBe('function');
+            expect(typeof learnCard.invoke.parseAuthorizationRequest).toBe('function');
+            expect(typeof learnCard.invoke.presentCredentials).toBe('function');
+            expect(typeof learnCard.invoke.checkCredentialStatus).toBe('function');
+        });
+
+        it('parses a credential offer URI without touching the network', async () => {
+            const learnCard = await getLearnCard();
+
+            const offerJson = JSON.stringify({
+                credential_issuer: 'https://issuer.example',
+                credential_configuration_ids: ['UniversityDegree'],
+            });
+            const uri = `openid-credential-offer://?credential_offer=${encodeURIComponent(offerJson)}`;
+
+            const parsed = await learnCard.invoke.parseCredentialOffer(uri);
+
+            // by-value offers carry the inline `offer` object;
+            // by-reference variants resolve to a `uri` string.
+            if (parsed.kind !== 'by_value') {
+                throw new Error(`expected inline offer, got ${parsed.kind}`);
+            }
+            expect(parsed.offer.credential_issuer).toBe(
+                'https://issuer.example'
+            );
+            expect(parsed.offer.credential_configuration_ids).toEqual([
+                'UniversityDegree',
+            ]);
+        });
+    });
 });

@@ -1,0 +1,42 @@
+{
+    "name": "@learncard/status-list-plugin",
+    "version": "0.0.1",
+    "description": "W3C VC Bitstring Status List checking (revocation + suspension) for LearnCard",
+    "main": "./dist/index.js",
+    "module": "./dist/status-list-plugin.esm.js",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "test": "jest --passWithNoTests",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
+    },
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/plugins/status-list/README.md",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "devDependencies": {
+        "@learncard/types": "workspace:*",
+        "@types/jest": "^29.2.2",
+        "@types/node": "^17.0.31",
+        "esbuild": "^0.27.1",
+        "esbuild-jest": "^0.5.0",
+        "jest": "^29.3.0",
+        "shx": "^0.3.4",
+        "ts-jest": "^29.0.3"
+    },
+    "types": "./dist/index.d.ts",
+    "dependencies": {
+        "@learncard/core": "workspace:*",
+        "fflate": "^0.8.2"
+    },
+    "sideEffects": false
+}

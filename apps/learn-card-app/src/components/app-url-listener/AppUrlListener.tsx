@@ -42,7 +42,21 @@ export const AppUrlListener: React.FC = () => {
                     }
                 }
 
-                if (deepLinkDomains.customSchemes.includes(eventUrl.protocol.replace(':', ''))) {
+                const scheme = eventUrl.protocol.replace(':', '');
+
+                // OpenID4VC/VP deep links route to dedicated pages so we can render
+                // OIDC-specific consent UI, instead of being funneled through /request.
+                if (scheme === 'openid-credential-offer') {
+                    history.push(`/oid4vci?offer=${encodeURIComponent(event.url)}`);
+                    return;
+                }
+
+                if (scheme === 'openid4vp') {
+                    history.push(`/oid4vp?request=${encodeURIComponent(event.url)}`);
+                    return;
+                }
+
+                if (deepLinkDomains.customSchemes.includes(scheme)) {
                     const fullPath = eventUrl.pathname + eventUrl.search + eventUrl.hash;
 
                     // Route to the request page
