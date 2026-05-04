@@ -33,7 +33,7 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
-import { prefetchWalletRoutes, WALLET_ROUTE_PRELOAD } from '../../Routes';
+import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -82,7 +82,7 @@ const WalletPage: React.FC = () => {
     ];
 
     useEffect(() => {
-        prefetchWalletRoutes();
+        prefetchRoutes();
     }, []);
 
     useEffect(() => {
@@ -145,7 +145,7 @@ const WalletPage: React.FC = () => {
         // mounted (no Suspense fallback flash). Idle-prefetch on mount means
         // this resolves instantly in the common case; on slow networks, cap
         // the wait so a stalled fetch doesn't block navigation forever.
-        const preload = WALLET_ROUTE_PRELOAD[path];
+        const preload = ROUTE_PRELOAD[path];
         if (preload) {
             await Promise.race([
                 preload(),

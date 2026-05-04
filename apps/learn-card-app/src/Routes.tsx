@@ -415,11 +415,14 @@ export const Routes: React.FC = () => {
 };
 
 /**
- * Path-keyed preload map for wallet sub-routes. WalletPage awaits the matching
- * preload before calling history.push, which keeps WalletPage mounted (no
- * Suspense fallback) until the destination chunk is in memory.
+ * Path-keyed preload map for routes reachable from the wallet, side menu, and
+ * mobile nav. Consumers (WalletPage's category handler, PreloadingLink, etc.)
+ * await the matching preload before calling history.push, which keeps the
+ * current page mounted (no Suspense fallback flash) until the destination
+ * chunk is in memory.
  */
-export const WALLET_ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    // Wallet category routes (also rendered as squares on /wallet).
     '/skills': () => SkillsPage.preload(),
     '/socialBadges': () => SocialBadgesPage.preload(),
     '/achievements': () => AchievementsPage.preload(),
@@ -434,20 +437,31 @@ export const WALLET_ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/ai/insights': () => AiInsights.preload(),
     '/ai/pathways': () => AiPathways.preload(),
     '/ai/topics': () => AiSessionTopicsContainer.preload(),
+    // Side menu root links.
+    '/launchpad': () => LaunchPad.preload(),
+    '/contacts': () => AddressBook.preload(),
+    '/notifications': () => NotificationsPage.preload(),
+    '/admin-tools': () => AdminToolsPage.preload(),
+    // Mobile navbar / wallet header.
+    '/boost': () => BoostCMS.preload(),
+    // Other commonly side-menu-linked routes.
+    '/privacy-and-data': () => PrivacySettingsPage.preload(),
+    '/resume-builder': () => ResumeBuilderPage.preload(),
 };
 
 /**
- * Idle-prefetch wallet sub-route chunks so first-time navigation never flashes
- * the Suspense fallback. Called from WalletPage on mount via requestIdleCallback.
+ * Idle-prefetch every route in ROUTE_PRELOAD so first-time navigation from
+ * anywhere (wallet squares, side menu, mobile nav, deep links) lands on a
+ * warm chunk cache and the Suspense fallback never fires.
  */
-export const prefetchWalletRoutes = (): void => {
+export const prefetchRoutes = (): void => {
     const ric: typeof window.requestIdleCallback | undefined =
         (window as any).requestIdleCallback;
     const schedule = (cb: () => void) =>
         ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
 
     schedule(() => {
-        Object.values(WALLET_ROUTE_PRELOAD).forEach(fn => {
+        Object.values(ROUTE_PRELOAD).forEach(fn => {
             fn();
         });
     });
