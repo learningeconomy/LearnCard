@@ -37,7 +37,8 @@ class TestBoostSend200ResponseInbox(unittest.TestCase):
             return BoostSend200ResponseInbox(
                 issuance_id = '',
                 status = 'PENDING',
-                claim_url = ''
+                claim_url = '',
+                guardian_status = 'AWAITING_GUARDIAN'
             )
         else:
             return BoostSend200ResponseInbox(

@@ -40,6 +40,7 @@ class TestBoostGetSkillsAvailableForBoost200ResponseInnerFramework(unittest.Test
                 description = '',
                 image = '',
                 source_uri = '',
+                is_public = True,
                 status = 'active',
                 created_at = '',
                 updated_at = ''
@@ -48,6 +49,7 @@ class TestBoostGetSkillsAvailableForBoost200ResponseInnerFramework(unittest.Test
             return BoostGetSkillsAvailableForBoost200ResponseInnerFramework(
                 id = '',
                 name = '',
+                is_public = True,
                 status = 'active',
         )
         """

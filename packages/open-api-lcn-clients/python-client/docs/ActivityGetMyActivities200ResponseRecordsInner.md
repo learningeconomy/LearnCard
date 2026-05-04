@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **activity_id** | **str** |  | 
 **event_type** | **str** |  | 
 **timestamp** | **str** |  | 
-**actor_profile_id** | **str** |  | 
+**actor_profile_id** | **str** |  | [optional] 
 **recipient_type** | **str** |  | 
 **recipient_identifier** | **str** |  | 
 **boost_uri** | **str** |  | [optional] 

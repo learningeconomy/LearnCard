@@ -17,11 +17,12 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreUpdateListingRequestUpdates(BaseModel):
     """
@@ -42,7 +43,10 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
     highlights: Optional[Annotated[List[Annotated[str, Field(strict=True, max_length=200)]], Field(max_length=10)]] = None
     screenshots: Optional[Annotated[List[StrictStr], Field(max_length=10)]] = None
     hero_background_color: Optional[Annotated[str, Field(strict=True)]] = None
-    __properties: ClassVar[List[str]] = ["display_name", "tagline", "full_description", "icon_url", "launch_type", "launch_config_json", "category", "promo_video_url", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "highlights", "screenshots", "hero_background_color"]
+    min_age: Optional[Union[StrictFloat, StrictInt]] = None
+    age_rating: Optional[StrictStr] = None
+    contact_email: Optional[Annotated[str, Field(strict=True)]] = None
+    __properties: ClassVar[List[str]] = ["display_name", "tagline", "full_description", "icon_url", "launch_type", "launch_config_json", "category", "promo_video_url", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "highlights", "screenshots", "hero_background_color", "min_age", "age_rating", "contact_email"]
 
     @field_validator('launch_type')
     def launch_type_validate_enum(cls, value):
@@ -60,12 +64,39 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
         if value is None:
             return value
 
+        if not isinstance(value, str):
+            value = str(value)
+
         if not re.match(r"^#[0-9A-Fa-f]{6}$", value):
             raise ValueError(r"must validate the regular expression /^#[0-9A-Fa-f]{6}$/")
         return value
 
+    @field_validator('age_rating')
+    def age_rating_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['4+', '9+', '12+', '17+']):
+            raise ValueError("must be one of enum values ('4+', '9+', '12+', '17+')")
+        return value
+
+    @field_validator('contact_email')
+    def contact_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not isinstance(value, str):
+            value = str(value)
+
+        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -77,8 +108,7 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -113,6 +143,11 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
         if self.launch_config_json is None and "launch_config_json" in self.model_fields_set:
             _dict['launch_config_json'] = None
 
+        # set to None if min_age (nullable) is None
+        # and model_fields_set contains the field
+        if self.min_age is None and "min_age" in self.model_fields_set:
+            _dict['min_age'] = None
+
         return _dict
 
     @classmethod
@@ -139,7 +174,10 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
             "terms_url": obj.get("terms_url"),
             "highlights": obj.get("highlights"),
             "screenshots": obj.get("screenshots"),
-            "hero_background_color": obj.get("hero_background_color")
+            "hero_background_color": obj.get("hero_background_color"),
+            "min_age": obj.get("min_age"),
+            "age_rating": obj.get("age_rating"),
+            "contact_email": obj.get("contact_email")
         })
         return _obj
 

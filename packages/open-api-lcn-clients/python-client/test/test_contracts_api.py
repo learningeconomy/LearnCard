@@ -145,6 +145,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_get_shared_insights_requests_for_profile(self) -> None:
+        """Test case for contracts_get_shared_insights_requests_for_profile
+
+        Get profiles a user has shared insights with
+        """
+        pass
+
     def test_contracts_get_terms_transaction_history(self) -> None:
         """Test case for contracts_get_terms_transaction_history
 

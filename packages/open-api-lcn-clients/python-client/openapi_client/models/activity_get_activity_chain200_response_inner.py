@@ -23,6 +23,7 @@ from openapi_client.models.activity_get_activity200_response_boost import Activi
 from openapi_client.models.activity_get_activity200_response_recipient_profile import ActivityGetActivity200ResponseRecipientProfile
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetActivityChain200ResponseInner(BaseModel):
     """
@@ -32,7 +33,7 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
     activity_id: StrictStr = Field(alias="activityId")
     event_type: StrictStr = Field(alias="eventType")
     timestamp: StrictStr
-    actor_profile_id: StrictStr = Field(alias="actorProfileId")
+    actor_profile_id: Optional[StrictStr] = Field(default=None, alias="actorProfileId")
     recipient_type: StrictStr = Field(alias="recipientType")
     recipient_identifier: StrictStr = Field(alias="recipientIdentifier")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
@@ -62,12 +63,13 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
     @field_validator('source')
     def source_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential']):
-            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential')")
+        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent']):
+            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -79,8 +81,7 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:

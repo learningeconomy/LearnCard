@@ -177,7 +177,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **activity_get_activity_stats**
-> ActivityGetActivityStats200Response activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id)
+> ActivityGetActivityStats200Response activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id, listing_id=listing_id, event_type=event_type, start_date=start_date, end_date=end_date)
 
 Get Credential Activity Stats
 
@@ -215,10 +215,14 @@ with openapi_client.ApiClient(configuration) as api_client:
     api_instance = openapi_client.ActivityApi(api_client)
     boost_uris = ['boost_uris_example'] # List[str] |  (optional)
     integration_id = 'integration_id_example' # str |  (optional)
+    listing_id = 'listing_id_example' # str |  (optional)
+    event_type = 'event_type_example' # str |  (optional)
+    start_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
+    end_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
 
     try:
         # Get Credential Activity Stats
-        api_response = api_instance.activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id)
+        api_response = api_instance.activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id, listing_id=listing_id, event_type=event_type, start_date=start_date, end_date=end_date)
         print("The response of ActivityApi->activity_get_activity_stats:\n")
         pprint(api_response)
     except Exception as e:
@@ -234,6 +238,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **boost_uris** | [**List[str]**](str.md)|  | [optional] 
  **integration_id** | **str**|  | [optional] 
+ **listing_id** | **str**|  | [optional] 
+ **event_type** | **str**|  | [optional] 
+ **start_date** | **datetime**|  | [optional] 
+ **end_date** | **datetime**|  | [optional] 
 
 ### Return type
 
@@ -262,7 +270,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **activity_get_my_activities**
-> ActivityGetMyActivities200Response activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id)
+> ActivityGetMyActivities200Response activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id, listing_id=listing_id, start_date=start_date, end_date=end_date, group_by_latest_status=group_by_latest_status)
 
 Get Credential Activities
 
@@ -303,10 +311,14 @@ with openapi_client.ApiClient(configuration) as api_client:
     boost_uri = 'boost_uri_example' # str |  (optional)
     event_type = 'event_type_example' # str |  (optional)
     integration_id = 'integration_id_example' # str |  (optional)
+    listing_id = 'listing_id_example' # str |  (optional)
+    start_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
+    end_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
+    group_by_latest_status = True # bool |  (optional)
 
     try:
         # Get Credential Activities
-        api_response = api_instance.activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id)
+        api_response = api_instance.activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id, listing_id=listing_id, start_date=start_date, end_date=end_date, group_by_latest_status=group_by_latest_status)
         print("The response of ActivityApi->activity_get_my_activities:\n")
         pprint(api_response)
     except Exception as e:
@@ -325,6 +337,10 @@ Name | Type | Description  | Notes
  **boost_uri** | **str**|  | [optional] 
  **event_type** | **str**|  | [optional] 
  **integration_id** | **str**|  | [optional] 
+ **listing_id** | **str**|  | [optional] 
+ **start_date** | **datetime**|  | [optional] 
+ **end_date** | **datetime**|  | [optional] 
+ **group_by_latest_status** | **bool**|  | [optional] 
 
 ### Return type
 

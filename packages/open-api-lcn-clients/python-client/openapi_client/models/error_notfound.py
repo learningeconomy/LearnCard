@@ -22,19 +22,21 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ErrorNOTFOUND(BaseModel):
     """
     The error information
     """ # noqa: E501
-    message: StrictStr = Field(description="The error message")
-    code: StrictStr = Field(description="The error code")
-    issues: Optional[List[ContactMethodsSendChallenge200Response]] = Field(default=None, description="An array of issues that were responsible for the error")
+    message: StrictStr = Field(description="The error message", json_schema_extra={"examples": ["Not found"]})
+    code: StrictStr = Field(description="The error code", json_schema_extra={"examples": ["NOT_FOUND"]})
+    issues: Optional[List[ContactMethodsSendChallenge200Response]] = Field(default=None, description="An array of issues that were responsible for the error", json_schema_extra={"examples": [[]]})
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "code", "issues"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class ErrorNOTFOUND(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:

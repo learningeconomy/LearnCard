@@ -19,9 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.boost_send_request_template_skills_inner import BoostSendRequestTemplateSkillsInner
 from openapi_client.models.boost_update_boost_request_updates import BoostUpdateBoostRequestUpdates
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostUpdateBoostRequest(BaseModel):
     """
@@ -29,10 +31,12 @@ class BoostUpdateBoostRequest(BaseModel):
     """ # noqa: E501
     uri: Optional[StrictStr]
     updates: BoostUpdateBoostRequestUpdates
-    __properties: ClassVar[List[str]] = ["uri", "updates"]
+    skills: Optional[List[BoostSendRequestTemplateSkillsInner]] = None
+    __properties: ClassVar[List[str]] = ["uri", "updates", "skills"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +48,7 @@ class BoostUpdateBoostRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -73,6 +76,13 @@ class BoostUpdateBoostRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of updates
         if self.updates:
             _dict['updates'] = self.updates.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in skills (list)
+        _items = []
+        if self.skills:
+            for _item_skills in self.skills:
+                if _item_skills:
+                    _items.append(_item_skills.to_dict())
+            _dict['skills'] = _items
         # set to None if uri (nullable) is None
         # and model_fields_set contains the field
         if self.uri is None and "uri" in self.model_fields_set:
@@ -91,7 +101,8 @@ class BoostUpdateBoostRequest(BaseModel):
 
         _obj = cls.model_validate({
             "uri": obj.get("uri"),
-            "updates": BoostUpdateBoostRequestUpdates.from_dict(obj["updates"]) if obj.get("updates") is not None else None
+            "updates": BoostUpdateBoostRequestUpdates.from_dict(obj["updates"]) if obj.get("updates") is not None else None,
+            "skills": [BoostSendRequestTemplateSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
         })
         return _obj
 
