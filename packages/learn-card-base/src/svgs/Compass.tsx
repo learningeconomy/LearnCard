@@ -1,6 +1,14 @@
 import React from 'react';
 
-export const Compass: React.FC<{ className?: string }> = ({ className }) => {
+/**
+ * `shadeColor` is accepted (but currently unused) so this component is
+ * assignable to the side-menu icon slot, whose other icons take
+ * `{ className?: string; shadeColor?: string }`. Used for the
+ * `pathways` ("Journeys") side-menu entry.
+ */
+export const Compass: React.FC<{ className?: string; shadeColor?: string }> = ({
+    className,
+}) => {
     return (
         <svg
             width="32"

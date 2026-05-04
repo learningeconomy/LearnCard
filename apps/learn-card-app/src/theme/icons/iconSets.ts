@@ -111,6 +111,7 @@ import {
     GreenAlerts,
     DeepPurpleWand,
     SkyBlueGlobeStand,
+    Compass,
 } from 'learn-card-base';
 
 import { NavBarIcons } from 'learn-card-base';
@@ -260,6 +261,10 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.workHistory]: ExperiencesTwoTonedIcon,
             [CredentialCategoryEnum.family]: FamiliesTwoTonedIcon,
             [CredentialCategoryEnum.id]: IDsTwoTonedIcon,
+            // Pathways v2 ("Journeys"). Keyed off the non-category
+            // `pathways` enum member. Compass reads as wayfinding
+            // without colliding with the AI Pathways paper-airplane.
+            pathways: Compass,
         },
 
         navbar: {
@@ -314,6 +319,10 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.workHistory]: ExperiencesFormalIcon,
             [CredentialCategoryEnum.family]: FamiliesFormalIcon,
             [CredentialCategoryEnum.id]: IDsFormalIcon,
+            // Pathways v2 ("Journeys") — same Compass in the formal
+            // set for now. Design can supply a formal-style variant
+            // when the feature graduates out of flag-only rollout.
+            pathways: Compass,
         },
 
         navbar: {

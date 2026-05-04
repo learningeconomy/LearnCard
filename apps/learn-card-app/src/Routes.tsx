@@ -8,8 +8,9 @@ import {
     lcRoutes as tabRoutes,
     lazyWithRetry,
     ChunkBoundary,
-    useFeatureConfig,
 } from 'learn-card-base';
+
+import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -185,8 +186,10 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
-    const features = useFeatureConfig();
-    const pathwaysEnabled = features.pathways === true;
+    // Pathways v2 visibility — see `usePathwaysEnabled` for the
+    // tenant + LaunchDarkly layering. Same hook is used by the side
+    // menu so the route and the nav link can't drift.
+    const pathwaysEnabled = usePathwaysEnabled();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -269,8 +272,9 @@ export const Routes: React.FC = () => {
                         />
                         {/*
                          * Pathways v2 — greenfield alongside the existing
-                         * /ai/pathways feature. Gated by the tenant feature
-                         * flag `features.pathways` (default off). See
+                         * /ai/pathways feature. Gated by `usePathwaysEnabled`
+                         * (tenant `features.pathways` AND LaunchDarkly
+                         * `enableJourneys`, both default off). See
                          * docs/pathways-architecture.md.
                          */}
                         {pathwaysEnabled && (

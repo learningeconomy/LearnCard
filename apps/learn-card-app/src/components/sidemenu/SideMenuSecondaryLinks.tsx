@@ -20,6 +20,7 @@ import { chatBotStore } from '../../stores/chatBotStore';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
 import { ColorSetEnum } from '../../theme/colors/index';
+import { usePathwaysEnabled } from '../../pages/pathways/hooks/usePathwaysEnabled';
 
 const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
@@ -43,6 +44,11 @@ const SideMenuSecondaryLinks: React.FC<{
     const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
     const showAiInsights = flags?.showAiInsights;
     const hideAiPathways = flags?.hideAiPathways;
+    // Pathways v2 ("Journey") visibility \u2014 see `usePathwaysEnabled`
+    // for the tenant + LaunchDarkly layering. Identical gate to the
+    // route mount in `Routes.tsx`, so we can never ship a nav entry
+    // that points at an unmounted route.
+    const pathwaysEnabled = usePathwaysEnabled();
 
     const activeTextStyles = colors.linkActiveColor; // text colors
     const inactiveTextStyles = colors.linkInactiveColor;
@@ -109,7 +115,23 @@ const SideMenuSecondaryLinks: React.FC<{
             return <React.Fragment key={link.path}></React.Fragment>;
         }
 
+        if (link?.path === '/pathways' && !pathwaysEnabled) {
+            return <React.Fragment key={link.path}></React.Fragment>;
+        }
+
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
+        // Some flagged links (e.g. `/pathways`) intentionally don't
+        // ship with a dedicated icon yet \u2014 design picks one before
+        // the feature widens. Until then, render the link without an
+        // icon rather than crashing the side menu.
+        const renderIcon = (extraProps: Record<string, unknown> = {}) =>
+            IconComponent ? (
+                <IconComponent
+                    className={`${iconStyles}`}
+                    shadeColor={shadeColor}
+                    {...extraProps}
+                />
+            ) : null;
 
         const linkPath = link.path;
         const isWalletPath = linkPath === '/passport';
@@ -133,14 +155,14 @@ const SideMenuSecondaryLinks: React.FC<{
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
             >
-                <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} /> {link.label}
+                {renderIcon()} {link.label}
             </button>
         ) : (
             <Link
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
-                <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} /> {link.label}
+                {renderIcon()} {link.label}
             </Link>
         );
 
@@ -161,12 +183,7 @@ const SideMenuSecondaryLinks: React.FC<{
                             )}
                         </div>
                     )}
-                    <IconComponent
-                        className={`${iconStyles}`}
-                        shadeColor={shadeColor}
-                        isCompleted={isCompleted}
-                        isSyncing={isSyncing}
-                    />{' '}
+                    {renderIcon({ isCompleted, isSyncing })}{' '}
                     {walletText}
                 </Link>
             );

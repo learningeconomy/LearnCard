@@ -44,6 +44,17 @@ const sideMenuFixedKeys = [
     'wallet',
 ] as const;
 
+/**
+ * Extra side-menu icon keys that aren't backed by a
+ * `CredentialCategoryEnum` value. These correspond to feature-flagged
+ * routes (see the non-category members of `SideMenuLinksEnum` in
+ * `learn-card-base/components/sidemenu/sidemenuHelpers`). Keep in sync
+ * when a new non-category side-menu entry is added; otherwise theme
+ * validation fails and the registry ends up empty, which surfaces as
+ * `"No themes registered"` at app boot.
+ */
+const sideMenuExtraKeys = ['pathways'] as const;
+
 export const SideMenuIconsSchema = z
     .object({
         launchPad: componentLike.describe('SideMenu LaunchPad Icon'),
@@ -56,9 +67,11 @@ export const SideMenuIconsSchema = z
     .catchall(componentLike)
     .superRefine((obj, ctx) => {
         const fixed = new Set(sideMenuFixedKeys as readonly string[]);
+        const extras = new Set(sideMenuExtraKeys as readonly string[]);
         const validCats = new Set(Object.values(CredentialCategoryEnum) as string[]);
         for (const key of Object.keys(obj)) {
             if (fixed.has(key)) continue;
+            if (extras.has(key)) continue;
             if (!validCats.has(key)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
