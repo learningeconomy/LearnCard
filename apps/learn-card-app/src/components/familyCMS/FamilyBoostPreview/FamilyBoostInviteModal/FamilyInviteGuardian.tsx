@@ -69,6 +69,31 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         const wallet = await initWallet(); // re-init wallet after clearing wallet store
 
         try {
+            // Create ADD_ADMIN claim hook so guardians are automatically added as admins when they claim
+            // First check if the hook already exists to avoid duplicate creation errors
+            try {
+                const existingHooksResponse = await wallet?.invoke?.getClaimHooksForBoost({
+                    uri: boostUri,
+                });
+                const existingHooks = existingHooksResponse?.records || [];
+                const hasAdminHook = existingHooks?.some(
+                    (hook: { type: string }) => hook.type === 'ADD_ADMIN'
+                );
+
+                if (!hasAdminHook) {
+                    await wallet?.invoke?.createClaimHook({
+                        type: 'ADD_ADMIN',
+                        data: {
+                            claimUri: boostUri,
+                            targetUri: boostUri,
+                        },
+                    });
+                }
+            } catch (hookError) {
+                // Hook may already exist or user may not have permission, continue with link generation
+                console.log('Claim hook check/creation skipped:', hookError);
+            }
+
             const rsas = await wallet?.invoke?.getRegisteredSigningAuthorities();
 
             if (rsas?.length > 0) {
@@ -96,7 +121,9 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                     );
 
                     setBoostClaimLink(
-                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            _boostClaimLink?.boostUri
+                        }&challenge=${_boostClaimLink?.challenge}`
                     );
                     setIsLinkLoading(false);
                 }
@@ -105,7 +132,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
 
                 // find existing signing authority
                 let sa = signingAuthorities.find(
-                    signingAuthority => signingAuthority?.name === 'lca-sa'
+                    (signingAuthority: { name?: string }) => signingAuthority?.name === 'lca-sa'
                 );
 
                 if (!sa) {
@@ -142,7 +169,9 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                         );
 
                         setBoostClaimLink(
-                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                                _boostClaimLink?.boostUri
+                            }&challenge=${_boostClaimLink?.challenge}`
                         );
                         setIsLinkLoading(false);
                     }
