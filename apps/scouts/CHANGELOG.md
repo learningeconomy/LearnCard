@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.90.8
+
+### Patch Changes
+
+-   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+
+-   [#1203](https://github.com/learningeconomy/LearnCard/pull/1203) [`a5382de5e8dec3d3c3128e00c93be3b162babe45`](https://github.com/learningeconomy/LearnCard/commit/a5382de5e8dec3d3c3128e00c93be3b162babe45) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1803] - Add IOS(26) native support
+
+-   Updated dependencies [[`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0)]:
+    -   @learncard/react@2.9.24
+    -   @learncard/helpers@1.2.17
+    -   @learncard/lca-api-plugin@1.2.7
+    -   @learncard/sss-key-manager@0.1.7
+
 ## 1.90.7
 
 ### Patch Changes

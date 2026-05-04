@@ -1,5 +1,22 @@
 # learn-card-base
 
+## 0.1.31
+
+### Patch Changes
+
+-   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+
+-   [#1203](https://github.com/learningeconomy/LearnCard/pull/1203) [`a5382de5e8dec3d3c3128e00c93be3b162babe45`](https://github.com/learningeconomy/LearnCard/commit/a5382de5e8dec3d3c3128e00c93be3b162babe45) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1803] - Add IOS(26) native support
+
+-   [#1204](https://github.com/learningeconomy/LearnCard/pull/1204) [`e786bdeb80717d79ab19462744ee76da4204e9c4`](https://github.com/learningeconomy/LearnCard/commit/e786bdeb80717d79ab19462744ee76da4204e9c4) Thanks [@goblincore](https://github.com/goblincore)! - LC-1790: Eliminate first-load route flash on wallet sub-routes
+
+-   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    -   @learncard/types@5.14.0
+    -   @learncard/helpers@1.2.17
+    -   @learncard/lca-api-plugin@1.2.7
+    -   @learncard/ler-rs-plugin@0.1.8
+    -   @learncard/sss-key-manager@0.1.7
+
 ## 0.1.30
 
 ### Patch Changes
