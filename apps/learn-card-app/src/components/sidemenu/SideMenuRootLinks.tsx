@@ -1,6 +1,6 @@
 import React from 'react';
 import numeral from 'numeral';
-import { Link } from 'react-router-dom';
+import PreloadingLink from '../generic/PreloadingLink';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { currentUserStore, useGetUnreadUserNotifications } from 'learn-card-base';
@@ -100,13 +100,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         const linkBackgroundStyles = getLinkBackgroundStyles(linkPath);
 
         let linkEl = (
-            <Link
+            <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
                 {link.label}
-            </Link>
+            </PreloadingLink>
         );
 
         if (link.label === 'Personalize') {
@@ -124,7 +124,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
         if (linkPath === '/notifications') {
             linkEl = (
-                <Link
+                <PreloadingLink
                     to={linkPath}
                     className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
@@ -143,7 +143,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     </div>
 
                     {link.label}
-                </Link>
+                </PreloadingLink>
             );
         }
 
