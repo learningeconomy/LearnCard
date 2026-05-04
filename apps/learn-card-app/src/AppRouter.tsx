@@ -238,6 +238,15 @@ const AppRouter: React.FC = () => {
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
 
+    // Idle-prefetch wallet route chunks once logged in so navigation from any
+    // page (side menu, mobile nav, deep link) lands on a warm cache and never
+    // hits the Suspense fallback.
+    useEffect(() => {
+        if (!enablePrefetch) return;
+        // Lazy-import to avoid a circular import on the Routes module graph.
+        import('./Routes').then(m => m.prefetchWalletRoutes()).catch(() => undefined);
+    }, [enablePrefetch]);
+
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
