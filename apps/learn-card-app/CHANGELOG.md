@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.95.11
+
+### Patch Changes
+
+-   [#1207](https://github.com/learningeconomy/LearnCard/pull/1207) [`3312e78f640f536660c91c643fc57cf02196b4dc`](https://github.com/learningeconomy/LearnCard/commit/3312e78f640f536660c91c643fc57cf02196b4dc) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1788] Bug fest
+
 ## 1.95.10
 
 ### Patch Changes
