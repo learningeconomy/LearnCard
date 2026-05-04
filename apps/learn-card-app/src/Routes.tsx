@@ -433,6 +433,10 @@ const AI_GATED_PATHS = new Set([
  * not worth eagerly downloading for end users.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    // Wallet (Passport) — same chunk for all three aliases.
+    '/passport': () => WalletPage.preload(),
+    '/wallet': () => WalletPage.preload(),
+    '/home': () => WalletPage.preload(),
     // Wallet category routes (also rendered as squares on /wallet).
     '/skills': () => SkillsPage.preload(),
     '/socialBadges': () => SocialBadgesPage.preload(),
