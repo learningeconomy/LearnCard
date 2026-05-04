@@ -5,15 +5,23 @@ import { useTheme } from '../../theme/hooks/useTheme';
 
 const RouteTransitionLoader: React.FC = () => {
     const { theme } = useTheme();
-    const color = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
+    const spinnerColor = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
+    const bgColor = theme.colors.defaults.passportBgColor;
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <IonPage style={bgColor ? { backgroundColor: bgColor } : undefined}>
+            <IonContent
+                fullscreen
+                style={
+                    bgColor
+                        ? ({ '--background': bgColor } as React.CSSProperties)
+                        : undefined
+                }
+            >
                 <div className="h-full w-full flex items-center justify-center">
                     <IonSpinner
                         name="crescent"
-                        style={{ color, width: 36, height: 36 }}
+                        style={{ color: spinnerColor, width: 36, height: 36 }}
                     />
                 </div>
             </IonContent>
