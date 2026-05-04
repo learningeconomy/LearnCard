@@ -18,6 +18,7 @@ dependencies {
     implementation project(':capacitor-browser')
     implementation project(':capacitor-camera')
     implementation project(':capacitor-clipboard')
+    implementation project(':capacitor-device')
     implementation project(':capacitor-file-transfer')
     implementation project(':capacitor-file-viewer')
     implementation project(':capacitor-filesystem')
