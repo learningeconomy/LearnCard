@@ -240,12 +240,15 @@ const AppRouter: React.FC = () => {
 
     // Idle-prefetch route chunks once logged in so navigation from any page
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
-    // and never hits the Suspense fallback.
+    // and never hits the Suspense fallback. AI routes are skipped when the
+    // user doesn't have AI access — no point downloading what they can't use.
     useEffect(() => {
         if (!enablePrefetch) return;
         // Lazy-import to avoid a circular import on the Routes module graph.
-        import('./Routes').then(m => m.prefetchRoutes()).catch(() => undefined);
-    }, [enablePrefetch]);
+        import('./Routes')
+            .then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }))
+            .catch(() => undefined);
+    }, [enablePrefetch, isAiEnabled]);
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });

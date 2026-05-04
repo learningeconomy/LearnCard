@@ -414,12 +414,23 @@ export const Routes: React.FC = () => {
     );
 };
 
+/** Paths gated behind the AI feature flag — only prefetch when enabled. */
+const AI_GATED_PATHS = new Set([
+    '/ai/insights',
+    '/ai/pathways',
+    '/ai/topics',
+    '/ai/sessions',
+]);
+
 /**
  * Path-keyed preload map for routes reachable from the wallet, side menu, and
  * mobile nav. Consumers (WalletPage's category handler, PreloadingLink, etc.)
  * await the matching preload before calling history.push, which keeps the
  * current page mounted (no Suspense fallback flash) until the destination
  * chunk is in memory.
+ *
+ * Note: admin-tools is intentionally excluded — it's a debug-only surface,
+ * not worth eagerly downloading for end users.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     // Wallet category routes (also rendered as squares on /wallet).
@@ -434,14 +445,15 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/ids': () => IdsPage.preload(),
     '/memberships': () => MembershipPage.preload(),
     '/currencies': () => CurrenciesPage.preload(),
+    // AI routes — gated by the AI feature flag in prefetchRoutes.
     '/ai/insights': () => AiInsights.preload(),
     '/ai/pathways': () => AiPathways.preload(),
     '/ai/topics': () => AiSessionTopicsContainer.preload(),
+    '/ai/sessions': () => AiSessionsContainer.preload(),
     // Side menu root links.
     '/launchpad': () => LaunchPad.preload(),
     '/contacts': () => AddressBook.preload(),
     '/notifications': () => NotificationsPage.preload(),
-    '/admin-tools': () => AdminToolsPage.preload(),
     // Mobile navbar / wallet header.
     '/boost': () => BoostCMS.preload(),
     // Other commonly side-menu-linked routes.
@@ -449,19 +461,26 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/resume-builder': () => ResumeBuilderPage.preload(),
 };
 
+interface PrefetchOptions {
+    /** When false, AI routes are skipped — the user can't access them anyway. */
+    aiEnabled?: boolean;
+}
+
 /**
- * Idle-prefetch every route in ROUTE_PRELOAD so first-time navigation from
- * anywhere (wallet squares, side menu, mobile nav, deep links) lands on a
- * warm chunk cache and the Suspense fallback never fires.
+ * Idle-prefetch routes in ROUTE_PRELOAD so first-time navigation from anywhere
+ * (wallet squares, side menu, mobile nav, deep links) lands on a warm chunk
+ * cache and the Suspense fallback never fires. AI routes are skipped when the
+ * caller indicates the user doesn't have AI access.
  */
-export const prefetchRoutes = (): void => {
+export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void => {
     const ric: typeof window.requestIdleCallback | undefined =
         (window as any).requestIdleCallback;
     const schedule = (cb: () => void) =>
         ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
 
     schedule(() => {
-        Object.values(ROUTE_PRELOAD).forEach(fn => {
+        Object.entries(ROUTE_PRELOAD).forEach(([path, fn]) => {
+            if (!aiEnabled && AI_GATED_PATHS.has(path)) return;
             fn();
         });
     });

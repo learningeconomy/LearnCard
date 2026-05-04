@@ -82,8 +82,8 @@ const WalletPage: React.FC = () => {
     ];
 
     useEffect(() => {
-        prefetchRoutes();
-    }, []);
+        prefetchRoutes({ aiEnabled: isAiEnabled });
+    }, [isAiEnabled]);
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
