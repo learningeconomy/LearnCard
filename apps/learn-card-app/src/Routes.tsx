@@ -415,6 +415,28 @@ export const Routes: React.FC = () => {
 };
 
 /**
+ * Path-keyed preload map for wallet sub-routes. WalletPage awaits the matching
+ * preload before calling history.push, which keeps WalletPage mounted (no
+ * Suspense fallback) until the destination chunk is in memory.
+ */
+export const WALLET_ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    '/skills': () => SkillsPage.preload(),
+    '/socialBadges': () => SocialBadgesPage.preload(),
+    '/achievements': () => AchievementsPage.preload(),
+    '/learninghistory': () => LearningHistoryPage.preload(),
+    '/accomplishments': () => AccomplishmentsPage.preload(),
+    '/accommodations': () => AccommodationsPage.preload(),
+    '/workhistory': () => WorkHistoryPage.preload(),
+    '/families': () => FamilyPage.preload(),
+    '/ids': () => IdsPage.preload(),
+    '/memberships': () => MembershipPage.preload(),
+    '/currencies': () => CurrenciesPage.preload(),
+    '/ai/insights': () => AiInsights.preload(),
+    '/ai/pathways': () => AiPathways.preload(),
+    '/ai/topics': () => AiSessionTopicsContainer.preload(),
+};
+
+/**
  * Idle-prefetch wallet sub-route chunks so first-time navigation never flashes
  * the Suspense fallback. Called from WalletPage on mount via requestIdleCallback.
  */
@@ -425,21 +447,8 @@ export const prefetchWalletRoutes = (): void => {
         ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
 
     schedule(() => {
-        // Order: most-likely-tapped wallet category routes first.
-        AchievementsPage.preload();
-        SkillsPage.preload();
-        IdsPage.preload();
-        LearningHistoryPage.preload();
-        SocialBadgesPage.preload();
-        AccomplishmentsPage.preload();
-        AccommodationsPage.preload();
-        WorkHistoryPage.preload();
-        MembershipPage.preload();
-        CurrenciesPage.preload();
-        FamilyPage.preload();
-        // AI category routes (gated by flags but cheap to warm).
-        AiInsights.preload();
-        AiPathways.preload();
-        AiSessionTopicsContainer.preload();
+        Object.values(WALLET_ROUTE_PRELOAD).forEach(fn => {
+            fn();
+        });
     });
 };
