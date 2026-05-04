@@ -41,6 +41,7 @@ import { Capacitor } from '@capacitor/core';
 import { App, type AppInfo } from '@capacitor/app';
 import { Clipboard } from '@capacitor/clipboard';
 import { Network } from '@capacitor/network';
+import { Device, type DeviceInfo } from '@capacitor/device';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -60,6 +61,26 @@ type Platform = 'ios' | 'android' | 'web';
 interface NetworkSummary {
     connected: boolean;
     label: string;
+}
+
+/**
+ * Shape returned by our `summarizeDevice()` helper — a thinned-down,
+ * display-ready projection of `@capacitor/device`'s `DeviceInfo`. We
+ * deliberately drop noisy or privacy-adjacent fields (`name`, `memUsed`,
+ * `realDiskFree`, `realDiskTotal`) since they're rarely actionable for
+ * support and add churn to screenshots.
+ */
+interface DeviceSummary {
+    /** Internal model identifier (e.g. `iPhone14,5`, `SM-S928U`). */
+    model?: string;
+    /** `Apple`, `samsung`, `Google`, etc. Raw vendor string from the OS. */
+    manufacturer?: string;
+    /** Pre-formatted OS string, e.g. `iOS 17.5.1` or `Android 14 (SDK 34)`. */
+    osLabel?: string;
+    /** WebKit (iOS) / Android System WebView version. Useful for rendering bugs. */
+    webViewVersion?: string;
+    /** True when running in a simulator / emulator. Only rendered when true. */
+    isVirtual?: boolean;
 }
 
 interface VersionInfo {
@@ -91,6 +112,8 @@ interface VersionInfo {
     lastUpdateApplied?: string;
     /** Connectivity summary (works on web + native). */
     network?: NetworkSummary;
+    /** Hardware / OS summary (`@capacitor/device`). Native only. */
+    device?: DeviceSummary;
 }
 
 const PLATFORM_LABELS: Record<Platform, string> = {
@@ -165,6 +188,59 @@ const formatNetwork = (
     }
 };
 
+/**
+ * Friendly capitalisation for the lowercase `operatingSystem` string returned
+ * by `@capacitor/device`. Falls back to the raw value if we see something
+ * unexpected — better to show support a slightly off-brand "windows" than to
+ * drop the row entirely.
+ */
+const OS_LABELS: Record<string, string> = {
+    ios: 'iOS',
+    android: 'Android',
+    mac: 'macOS',
+    windows: 'Windows',
+    unknown: 'Unknown',
+};
+
+/**
+ * Distil `DeviceInfo` into the subset of fields we actually surface. Returns
+ * `undefined` when no useful field is present (e.g. a web build where
+ * `@capacitor/device` degrades to a no-op shim).
+ */
+const summarizeDevice = (info: DeviceInfo | null): DeviceSummary | undefined => {
+    if (!info) return undefined;
+
+    const osName = OS_LABELS[info.operatingSystem] ?? info.operatingSystem;
+    const osVersion = info.osVersion?.trim();
+
+    // Android reports osVersion as a friendly "14" and also exposes the SDK
+    // level separately — both are useful so we surface them together.
+    let osLabel: string | undefined;
+
+    if (osName && osVersion) {
+        osLabel =
+            info.operatingSystem === 'android' && info.androidSDKVersion
+                ? `${osName} ${osVersion} (SDK ${info.androidSDKVersion})`
+                : `${osName} ${osVersion}`;
+    } else if (osName && osName !== 'Unknown') {
+        osLabel = osName;
+    }
+
+    const webViewVersion = info.webViewVersion?.trim() || undefined;
+
+    const summary: DeviceSummary = {
+        model: info.model?.trim() || undefined,
+        manufacturer: info.manufacturer?.trim() || undefined,
+        osLabel,
+        webViewVersion,
+        isVirtual: info.isVirtual || undefined,
+    };
+
+    const hasAnyField = Object.values(summary).some(v => v !== undefined);
+
+    return hasAnyField ? summary : undefined;
+};
+
 const formatBuildDate = (iso: string | undefined): string | undefined => {
     if (!iso) return undefined;
 
@@ -206,6 +282,7 @@ const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo>
     const deviceIdResult = await CapacitorUpdater.getDeviceId().catch(() => null);
     const pluginVersionResult = await CapacitorUpdater.getPluginVersion().catch(() => null);
     const builtinResult = await CapacitorUpdater.getBuiltinVersion().catch(() => null);
+    const deviceInfo = await Device.getInfo().catch((): DeviceInfo | null => null);
 
     const bundleVersion = bundle?.bundle?.version;
     const displayVersion =
@@ -246,6 +323,7 @@ const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo>
         builtinVersion: (builtinResult as { version?: string } | null)?.version,
         lastUpdateApplied,
         network,
+        device: summarizeDevice(deviceInfo),
     };
 };
 
@@ -271,6 +349,14 @@ const buildCopyPayload = (info: VersionInfo, ctx: CopyPayloadContext): string =>
     if (info.network) lines.push(`Network: ${info.network.label}`);
     if (ctx.profileId) lines.push(`Account: ${ctx.profileId}`);
     if (ctx.tenantId) lines.push(`Tenant: ${ctx.tenantId}`);
+    if (info.device?.manufacturer || info.device?.model) {
+        lines.push(
+            `Device: ${[info.device?.manufacturer, info.device?.model].filter(Boolean).join(' ')}`,
+        );
+    }
+    if (info.device?.osLabel) lines.push(`OS: ${info.device.osLabel}`);
+    if (info.device?.webViewVersion) lines.push(`WebView: ${info.device.webViewVersion}`);
+    if (info.device?.isVirtual) lines.push(`Simulator: yes`);
     if (info.bundleId) lines.push(`Bundle id: ${info.bundleId}`);
     if (info.deviceId) lines.push(`Device id: ${info.deviceId}`);
     if (ctx.buildSha) lines.push(`Build commit: ${ctx.buildSha}`);
@@ -678,6 +764,32 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                     value={tenantId}
                                     onCopy={copyString}
                                 />
+                            ) : null}
+                            {info.device?.model || info.device?.manufacturer ? (
+                                <VersionInfoRow
+                                    label="Device"
+                                    value={[info.device?.manufacturer, info.device?.model]
+                                        .filter(Boolean)
+                                        .join(' ')}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
+                            {info.device?.osLabel ? (
+                                <VersionInfoRow
+                                    label="OS"
+                                    value={info.device.osLabel}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
+                            {info.device?.webViewVersion ? (
+                                <VersionInfoRow
+                                    label="WebView"
+                                    value={info.device.webViewVersion}
+                                    onCopy={copyString}
+                                />
+                            ) : null}
+                            {info.device?.isVirtual ? (
+                                <VersionInfoRow label="Simulator" value="Yes" />
                             ) : null}
                             {info.bundleId ? (
                                 <VersionInfoRow
