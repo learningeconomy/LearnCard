@@ -35,22 +35,51 @@ credential binder (`agents/credentialBinder.ts`) proposes bindings when wallet
 VCs match a signal's predicate and clear its trust tier; the learner still
 confirms. See architecture doc § 3.7 / § 3.8.
 
-## What's blocking production
+## Merge readiness
 
-1. **`persist.enabled` is `false`** on `pathwayStore` and `proposalStore`
-   (`stores/pathways/pathwayStore.ts`, `proposalStore.ts`). A page refresh
-   loses every pathway the learner authored. Three-character fix, gated on a
-   schema-migration story.
-2. **No brain-service routes.** The spec calls for 11 tRPC procedures
-   (§ 9 in the architecture doc); `services/learn-card-network/brain-service/src/routes/pathways.ts`
-   does not exist.
-3. **Mock agent dispatch** is still the default (`agents/proxy.ts`).
-   Swapping to real is a single `setAgentDispatch(brainServiceDispatch)` call.
-4. **No Playwright E2E coverage** for the two flows the spec requires
-   (cold-start → Today < 10 s, accept-proposal → next-action-changes).
+Pathways v2 is **safe to merge behind the feature flag** today. The route
+is conditionally mounted (`Routes.tsx:293`) and gated by both
+`features.pathways` (tenant config) and the `enableJourneys` LaunchDarkly
+flag — both default off (see `hooks/usePathwaysEnabled.ts`). With the
+flag down, blast radius to existing wallet / credentials flows is
+effectively zero.
 
-See `docs/pathways-architecture.md` § 17 for the retrospective status column
-and recommended sequencing.
+What still needs to land **before flipping `enableJourneys` for real
+users**:
+
+1. **No Playwright E2E coverage** for the two flows the architecture spec
+   requires (`docs/pathways-architecture.md` § 16): cold-start → Today
+   < 10 s, and accept-proposal → next-action-changes. The unit suite is
+   deep (see Testing below) but the user-visible paths have no end-to-end
+   regression net.
+2. **`agents/proxy.ts` is untested.** It's the swap-ready dispatch seam
+   between mock and real brain-service dispatch — the day Phase 3b lands,
+   untested behaviour matters. Needs unit tests for `setAgentDispatch`,
+   budget gating, telemetry emission, and proposal-store integration.
+3. **`offlineQueueStore.queue` is unbounded** (`stores/pathways/offlineQueueStore.ts:73`).
+   Extended offline + high mutation rate is a memory hazard. Add a
+   max-queue cap (drop-oldest with telemetry).
+4. **Fire-and-forget signals are persisted.** `recentCompletion`,
+   `recentCelebration`, and `recentRouteSwap` on `pathwayStore` will
+   re-fire if the app crashes between emit and clear. Add a
+   `partialize` to the persist config to exclude them.
+
+Out of scope for this branch — but the headline items the spec is still
+waiting on:
+
+- **No brain-service routes.** The spec calls for 11 tRPC procedures
+  (§ 9 in the architecture doc); `services/learn-card-network/brain-service/src/routes/pathways.ts`
+  does not exist yet. Phase 3b is gated on this.
+- **Mock agent dispatch** is still the default (`agents/proxy.ts`).
+  Swapping to real is a single `setAgentDispatch(brainServiceDispatch)`
+  call once the server half ships.
+
+Persistence (`persist.enabled = true`) is **on** for all four stores
+today (`pathwayStore`, `proposalStore`, `offlineQueueStore`,
+`mcpRegistryStore`) — the previously-listed blocker around losing
+state on refresh has been resolved. See
+`docs/pathways-architecture.md` § 17 for the full retrospective status
+column and recommended sequencing.
 
 ## Mount point
 
@@ -58,8 +87,11 @@ and recommended sequencing.
   exists, else `/pathways/onboard`).
 - Sub-routes: `/today`, `/map`, `/what-if`, `/build`, `/proposals`,
   `/onboard`, `/node/:pathwayId/:nodeId`.
-- Gating: tenant-level feature flag (not yet wired to tenant config — route
-  is registered unconditionally today).
+- Gating: two-layer flag — `features.pathways` (tenant config, default
+  `false`) AND the `enableJourneys` LaunchDarkly flag (default `false`).
+  Both must be on. Centralized in `hooks/usePathwaysEnabled.ts`; consumed
+  by `Routes.tsx` (route mount) and `SideMenuSecondaryLinks.tsx` (nav
+  link) so the route and the entry point can never drift.
 
 ## Folder layout
 
@@ -179,7 +211,8 @@ Cross-cutting state: [`src/stores/pathways/`](../../stores/pathways/) —
 ## Testing
 
 ```bash
-# All pathways Vitest suites (703 tests across 41 files as of this writing)
+# All pathways Vitest suites (949 tests across 55 files as of this writing,
+# 4 intentionally skipped — live network contract tests gated on LIVE=true)
 pnpm exec vitest run src/pages/pathways
 
 # A single suite

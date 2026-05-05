@@ -39,8 +39,12 @@ A quick snapshot — full detail in § 17:
   brain-service LLM proxy (the seam exists; the server side does not).
   Neo4j-backed tRPC routes from § 9 are **not yet implemented**. MCP server
   integration is a store stub. VC issuance, endorsement fulfilment, pathway
-  sunset, Playwright E2E coverage, and `persist.enabled = true` on the two
-  primary Zustand stores are all outstanding.
+  sunset, and Playwright E2E coverage are all outstanding.
+  `persist.enabled = true` is now **on** for all four Zustand stores
+  (`pathwayStore`, `proposalStore`, `offlineQueueStore`,
+  `mcpRegistryStore`); fire-and-forget signals on `pathwayStore` still
+  need a `partialize` exclusion and `offlineQueueStore.queue` still
+  needs a max-size cap before user enablement.
 
 The app-side README at `apps/learn-card-app/src/pages/pathways/README.md`
 mirrors this section with folder-level detail and is kept in lockstep.
@@ -783,7 +787,7 @@ The architecture supports multiple learner audiences, but v1 should be aimed at 
 - Pathways types + Zod validators (in‑app first; promoted to `packages/pathways-types` at end of Phase 1 — see Section 15)
 - Route registration, `PathwaysShell`, four empty mode screens with consistent header
 - Zustand stores with mock data
-- Feature flag in tenant config (default off) — *route is registered unconditionally today; tenant gate not yet wired*
+- Feature flag in tenant config (default off) — *done: `features.pathways` (tenant config, default off) AND `enableJourneys` LaunchDarkly flag (default off) gate route mount and side-menu link via the centralised `usePathwaysEnabled` hook*
 - Analytics event stubs for the core taxonomy — *full taxonomy emitting, not just stubs*
 
 **Phase 1 — Cold start + Today (2 sprints)** — **Status: complete client-side; VC signing + Playwright outstanding.**
