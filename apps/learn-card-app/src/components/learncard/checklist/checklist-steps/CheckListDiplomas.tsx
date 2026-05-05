@@ -101,7 +101,8 @@ export const CheckListDiplomas: React.FC = () => {
     };
 
     const handleDeleteDiploma = (id: string) => {
-        const previous = diplomas;
+        const deleted = diplomas.find(diploma => diploma?.id === id);
+        if (!deleted) return;
 
         // Optimistic synchronous UI update
         setDiplomas(prev => prev.filter(diploma => diploma?.id !== id));
@@ -114,7 +115,8 @@ export const CheckListDiplomas: React.FC = () => {
                 refetchCheckListStatus();
             } catch (error) {
                 console.error('handleDeleteDiploma::error', error);
-                setDiplomas(previous);
+                // Re-insert only the failed item so concurrent deletions aren't clobbered
+                setDiplomas(prev => (prev.some(d => d?.id === id) ? prev : [...prev, deleted]));
                 presentToast('Failed to delete. Please try again.', {
                     title: 'Delete failed',
                     hasDismissButton: true,

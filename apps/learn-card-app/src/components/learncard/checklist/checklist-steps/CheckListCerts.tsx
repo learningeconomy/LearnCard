@@ -101,7 +101,8 @@ export const CheckListCerts: React.FC = () => {
     };
 
     const handleDeleteCert = (id: string) => {
-        const previous = certs;
+        const deleted = certs.find(cert => cert?.id === id);
+        if (!deleted) return;
 
         // Optimistic synchronous UI update
         setCert(prev => prev.filter(cert => cert?.id !== id));
@@ -114,7 +115,8 @@ export const CheckListCerts: React.FC = () => {
                 refetchCheckListStatus();
             } catch (error) {
                 console.error('Failed to delete certificate', error);
-                setCert(previous);
+                // Re-insert only the failed item so concurrent deletions aren't clobbered
+                setCert(prev => (prev.some(c => c?.id === id) ? prev : [...prev, deleted]));
                 presentToast('Failed to delete. Please try again.', {
                     title: 'Delete failed',
                     hasDismissButton: true,

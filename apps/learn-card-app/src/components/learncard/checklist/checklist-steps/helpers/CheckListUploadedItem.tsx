@@ -44,7 +44,7 @@ export const CheckListUploadRawVC: React.FC<{
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
 
-    const handleDeleteTranscript = (id: string, uri: string) => {
+    const handleDeleteRawVC = (id: string, uri: string) => {
         onOptimisticDelete(id);
         deleteChecklistCredentialMutation(
             { id, uri },
@@ -78,7 +78,7 @@ export const CheckListUploadRawVC: React.FC<{
                     'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
             })
         ) {
-            handleDeleteTranscript(id, uri);
+            handleDeleteRawVC(id, uri);
         }
     };
 

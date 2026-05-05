@@ -142,7 +142,8 @@ export const CheckListTranscripts: React.FC = () => {
     };
 
     const handleDeleteTranscript = (id: string) => {
-        const previous = transcripts;
+        const deleted = transcripts.find(transcript => transcript?.id === id);
+        if (!deleted) return;
 
         // Optimistic synchronous UI update
         setTranscripts(prev => prev.filter(transcript => transcript?.id !== id));
@@ -155,7 +156,8 @@ export const CheckListTranscripts: React.FC = () => {
                 refetchCheckListStatus();
             } catch (error) {
                 console.error('handleDeleteTranscript::error', error);
-                setTranscripts(previous);
+                // Re-insert only the failed item so concurrent deletions aren't clobbered
+                setTranscripts(prev => (prev.some(t => t?.id === id) ? prev : [...prev, deleted]));
                 presentToast('Failed to delete. Please try again.', {
                     title: 'Delete failed',
                     hasDismissButton: true,
