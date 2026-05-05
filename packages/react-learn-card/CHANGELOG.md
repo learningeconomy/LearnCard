@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.9.24
+
+### Patch Changes
+
+-   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.15
+
 ## 2.9.23
 
 ### Patch Changes
