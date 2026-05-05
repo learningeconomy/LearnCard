@@ -463,7 +463,8 @@ export const getVerifierState = (credential: VC | UnsignedVC) => {
 };
 
 export const getDefaultCategoryForCredential = (
-    credential: VC | UnsignedVC
+    credential: VC | UnsignedVC,
+    options?: { skipValidation?: boolean }
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
     // course meta VC is a metaversity specific case for now
@@ -503,7 +504,18 @@ export const getDefaultCategoryForCredential = (
     }
 
     // Not OBv3 credential, default category to achievement
-    if (!verificationResult.success) return 'Achievement';
+    if (!verificationResult.success) {
+        // For LER embedded credentials without full @context, extract achievementType as fallback
+        if (options?.skipValidation) {
+            const lerAchievementType = Array.isArray(_credential?.credentialSubject)
+                ? _credential.credentialSubject[0]?.achievement?.achievementType
+                : _credential?.credentialSubject?.achievement?.achievementType;
+            if (lerAchievementType && CATEGORY_MAP[lerAchievementType]) {
+                return CATEGORY_MAP[lerAchievementType];
+            }
+        }
+        return 'Achievement';
+    }
 
     const vc = verificationResult.data;
     const achievementType = Array.isArray(vc?.credentialSubject)
