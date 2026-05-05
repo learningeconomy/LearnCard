@@ -98,11 +98,100 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
         });
     },
 
+    /**
+     * Remove a subscribed pathway, **cascading to orphaned
+     * sub-pathways**.
+     *
+     * "Sub-pathway" here means a pathway transitively reachable from
+     * `pathwayId` via composite-policy node refs. When the learner
+     * removes a parent journey, leaving its sub-pathways behind would
+     * litter the switcher with dangling fragments the learner never
+     * subscribed to directly (they only exist because the parent
+     * embedded them).
+     *
+     * **Orphan-only cascade**: a sub-pathway that's *also* embedded
+     * by a sibling parent the learner still subscribes to is **kept**.
+     * The cascade only deletes pathways that have no remaining root
+     * outside the removal subtree — anything else would silently rip
+     * data out from under another active journey.
+     *
+     * No `rollupCompositeProgress` call: removing pathways can't
+     * flip a composite node from `not-completed` → `completed`
+     * (the rollup is monotonic upward), and any parent referencing
+     * a now-deleted child correctly stays un-rolled-up. If we later
+     * want to surface "this composite node points at a missing
+     * pathway" UI, that's a render-time concern, not a store one.
+     */
     removePathway: (pathwayId: string) => {
         set.state(draft => {
-            delete draft.pathways[pathwayId];
+            // Walk the composite-ref graph from `pathwayId` outward
+            // to gather the candidate-removal subtree. BFS keeps
+            // each pathway's expansion shallow and the visited set
+            // guards against accidental cycles in stale data
+            // (author-time validation rejects cycles, but we don't
+            // want a corrupt import to lock the store up).
+            const subtree = new Set<string>([pathwayId]);
+            const queue: string[] = [pathwayId];
 
-            if (draft.activePathwayId === pathwayId) {
+            while (queue.length > 0) {
+                const id = queue.shift() as string;
+                const p = draft.pathways[id];
+
+                if (!p) continue;
+
+                for (const node of p.nodes) {
+                    if (node.stage.policy.kind !== 'composite') continue;
+
+                    const childId = node.stage.policy.pathwayRef;
+
+                    if (subtree.has(childId)) continue;
+
+                    subtree.add(childId);
+                    queue.push(childId);
+                }
+            }
+
+            // Filter the subtree down to actually-orphaned pathways.
+            // The root itself is always removed (the learner asked
+            // for it). Each descendant is removed only if no
+            // pathway *outside* the subtree still references it.
+            const toDelete = new Set<string>([pathwayId]);
+
+            for (const descId of subtree) {
+                if (descId === pathwayId) continue;
+
+                let externallyReferenced = false;
+
+                for (const [otherId, other] of Object.entries(draft.pathways)) {
+                    if (subtree.has(otherId)) continue;
+
+                    for (const node of other.nodes) {
+                        if (
+                            node.stage.policy.kind === 'composite'
+                            && node.stage.policy.pathwayRef === descId
+                        ) {
+                            externallyReferenced = true;
+                            break;
+                        }
+                    }
+
+                    if (externallyReferenced) break;
+                }
+
+                if (!externallyReferenced) toDelete.add(descId);
+            }
+
+            for (const id of toDelete) {
+                delete draft.pathways[id];
+            }
+
+            // Clear the active pointer if it pointed at anything we
+            // just removed (root or cascaded child) — otherwise the
+            // shell would keep trying to render a now-gone pathway.
+            if (
+                draft.activePathwayId !== null
+                && toDelete.has(draft.activePathwayId)
+            ) {
                 draft.activePathwayId = null;
             }
         });

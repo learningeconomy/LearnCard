@@ -401,12 +401,22 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
     };
 
     const handleRemove = (pathwayId: string, title: string) => {
+        // Surface the cascade behavior in the confirm copy so the
+        // learner isn't surprised when "remove Senior Year" silently
+        // takes the three sub-pathways embedded in it. Only mention
+        // sub-pathways when this pathway actually has children that
+        // would be cascaded — otherwise the warning is noise.
+        const childrenCount = (childrenByParentId.get(pathwayId) ?? []).length;
+
+        const message =
+            childrenCount > 0
+                ? `Remove "${title}" and its ${childrenCount} sub-pathway${
+                      childrenCount === 1 ? '' : 's'
+                  }? You can re-add it later.`
+                : `Remove "${title}" from your pathways? You can re-add it later.`;
+
         const ok =
-            typeof window !== 'undefined'
-                ? window.confirm(
-                      `Remove "${title}" from your pathways? You can re-add it later.`,
-                  )
-                : true;
+            typeof window !== 'undefined' ? window.confirm(message) : true;
 
         if (!ok) return;
 
@@ -436,9 +446,9 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
     const isTitle = variant === 'title';
 
     const triggerClass = isTitle
-        ? `shrink min-w-0 inline-flex items-center gap-1.5 -ml-1 py-1 px-1
+        ? `shrink min-w-0 inline-flex items-center gap-1 -ml-1 py-1 px-1
            rounded-lg
-           text-lg sm:text-xl font-semibold text-grayscale-900
+           text-base sm:text-lg font-semibold text-grayscale-900
            hover:bg-grayscale-10 transition-colors
            max-w-full`
         : `shrink-0 inline-flex items-center gap-1.5 py-2 px-3
@@ -488,6 +498,34 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
         );
     }
 
+    /*
+     * Smart-truncated label for the trigger.
+     *
+     * Pathway titles often follow a "Theme: long subtitle" shape —
+     * e.g. "Senior Year: AI / Finance College Track". On narrow
+     * mobile viewports the verbose tail loses to ellipsis anyway
+     * ("…College Tra…") so we drop everything after the colon and
+     * keep the memorable prefix. On `sm:` and up there's room for
+     * the full title, so we render it unmodified — the desktop
+     * header has plenty of horizontal real estate and showing only
+     * "Senior Year" loses the destination context.
+     *
+     * The prefix-only variant is rendered alongside the full
+     * variant via responsive visibility classes so both fit in
+     * one truncating slot. Chip variant is unchanged — its
+     * `max-w-[240px]` budget can't accommodate full titles either
+     * way.
+     */
+    const fullTitle = activePathway?.title ?? 'Pathways';
+
+    const colonIdx = fullTitle.indexOf(':');
+
+    const hasMeaningfulPrefix = colonIdx > 0 && colonIdx < fullTitle.length - 1;
+
+    const mobilePrefix = hasMeaningfulPrefix
+        ? fullTitle.slice(0, colonIdx)
+        : fullTitle;
+
     return (
         <div className={isTitle ? 'relative min-w-0' : 'relative'} ref={containerRef}>
             <button
@@ -495,11 +533,17 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
                 onClick={() => setOpen(v => !v)}
                 aria-expanded={open}
                 aria-haspopup="listbox"
+                title={fullTitle}
                 className={triggerClass}
             >
-                <span className="truncate">
-                    {activePathway?.title ?? 'Pathways'}
-                </span>
+                {isTitle && hasMeaningfulPrefix ? (
+                    <>
+                        <span className="truncate sm:hidden">{mobilePrefix}</span>
+                        <span className="truncate hidden sm:inline">{fullTitle}</span>
+                    </>
+                ) : (
+                    <span className="truncate">{fullTitle}</span>
+                )}
 
                 <IonIcon
                     icon={chevronDownOutline}

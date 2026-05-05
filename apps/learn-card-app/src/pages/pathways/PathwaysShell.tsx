@@ -116,8 +116,25 @@ const PathwaysShell: React.FC = () => {
                         <Suspense fallback={<ModeFallback />}>
                             <Switch>
                                 <Route exact path="/pathways">
+                                    {/*
+                                        Land returning learners on
+                                        Map, not Today. Map is the
+                                        spatial home — it shows the
+                                        whole journey at a glance,
+                                        which is the orienting view
+                                        a learner re-entering from
+                                        the side menu actually
+                                        wants. Today is a great
+                                        focus surface but doesn't
+                                        answer "where am I in the
+                                        bigger picture" on first
+                                        sight. Mirrors the
+                                        post-import landing target
+                                        (`history.replace('/pathways/map')`)
+                                        used by `DiscoverStart`.
+                                    */}
                                     {activePathway ? (
-                                        <Redirect to="/pathways/today" />
+                                        <Redirect to="/pathways/map" />
                                     ) : (
                                         <Redirect to="/pathways/onboard" />
                                     )}
