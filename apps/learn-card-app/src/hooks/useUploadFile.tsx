@@ -644,9 +644,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (!did) throw new Error('Could not get wallet DID');
 
             const aggregateRecordsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
+            const filenamesWithCreds: string[] = [];
+            const filenamesWithoutCreds: string[] = [];
 
             // Process files sequentially to avoid race conditions
             for (const rawVC of rawArtifactCredentials) {
+                const fname = rawVC?.rawArtifact?.fileName;
                 try {
                     const vcs = await uploadFile({
                         did,
@@ -657,6 +660,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     await saveFile(rawVC, fileType);
 
                     if (vcs?.vcs?.length > 0) {
+                        if (fname) filenamesWithCreds.push(fname);
                         const issuedVCs = await Promise.all(
                             vcs.vcs.map(async ({ vc }) => {
                                 const issuedVc = await wallet.invoke.issueCredential(vc);
@@ -686,6 +690,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             const existing = aggregateRecordsByCategory[cat as CredentialCategory] ?? [];
                             aggregateRecordsByCategory[cat as CredentialCategory] = [...existing, ...uris];
                         }
+                    } else if (fname) {
+                        filenamesWithoutCreds.push(fname);
                     }
 
                     onFileSettled();
@@ -715,6 +721,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const fileCount = filenames.filter(Boolean).length;
             const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
             const fileList = formatFileNameList(filenames);
+            const fileListWithCreds = formatFileNameList(filenamesWithCreds);
+            const fileListWithoutCreds = formatFileNameList(filenamesWithoutCreds);
             const categoryList = formatCategoryList(categories);
 
             setTimeout(() => {
@@ -727,10 +735,14 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         }
                     );
                 } else {
+                    const tail =
+                        filenamesWithoutCreds.length > 0
+                            ? ` No credentials were parsed from ${fileListWithoutCreds}.`
+                            : '';
                     presentToast(
-                        `Successfully added to ${categoryList}.`,
+                        `Successfully added to ${categoryList}.${tail}`,
                         {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
+                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileListWithCreds}`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
