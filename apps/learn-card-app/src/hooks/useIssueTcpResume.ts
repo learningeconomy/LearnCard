@@ -603,13 +603,6 @@ export const useIssueTcpResume = () => {
             });
 
             currentStep = 'createLerRecord';
-            console.log('[useIssueTcpResume] Full LER payload:', JSON.stringify(lerPayload, null, 2));
-            console.log('[useIssueTcpResume] Work history credentials:', lerPayload.workHistory?.map((item: any) => ({
-                id: item.verifiableCredential?.id,
-                type: item.verifiableCredential?.type,
-                hasContext: !!item.verifiableCredential?.['@context'],
-                contextLength: Array.isArray(item.verifiableCredential?.['@context']) ? item.verifiableCredential['@context'].length : 0,
-            })));
             const lerVc = await createLerRecordInvoker({
                 learnCard: wallet,
                 ...lerPayload,
