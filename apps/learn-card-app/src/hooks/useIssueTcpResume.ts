@@ -101,12 +101,51 @@ const buildNarrative = (narrative?: string, metadata?: string[]): string | undef
     return text || (metadataText ? metadataText : undefined);
 };
 
+const cleanContextArray = (context: unknown): unknown => {
+    if (!Array.isArray(context)) return context;
+    return context
+        .filter((item): item is string => typeof item === 'string')
+        .map(item =>
+            item === 'https://www.w3.org/2018/credentials/v1'
+                ? 'https://www.w3.org/ns/credentials/v2'
+                : item
+        );
+};
+
+const stripNestedContexts = (obj: any, depth: number = 0): any => {
+    if (obj === null || typeof obj !== 'object') return obj;
+
+    if (Array.isArray(obj)) {
+        return obj.map(item => stripNestedContexts(item, depth));
+    }
+
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === '@context') {
+            if (depth === 0) {
+                result[key] = cleanContextArray(value);
+            }
+            continue;
+        }
+        if (typeof value === 'object' && value !== null) {
+            result[key] = stripNestedContexts(value, depth + 1);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result;
+};
+
+const stripProblematicContext = (vc: VC): VC => {
+    return stripNestedContexts(vc, 0) as VC;
+};
+
 const buildVerificationReference = (
     input: LerRecordInput
 ): EmbeddedVerificationCredential | undefined => {
     if (!input.vc) return undefined;
 
-    return { ...input.vc };
+    return stripProblematicContext(input.vc);
 };
 
 /**
@@ -564,6 +603,13 @@ export const useIssueTcpResume = () => {
             });
 
             currentStep = 'createLerRecord';
+            console.log('[useIssueTcpResume] Full LER payload:', JSON.stringify(lerPayload, null, 2));
+            console.log('[useIssueTcpResume] Work history credentials:', lerPayload.workHistory?.map((item: any) => ({
+                id: item.verifiableCredential?.id,
+                type: item.verifiableCredential?.type,
+                hasContext: !!item.verifiableCredential?.['@context'],
+                contextLength: Array.isArray(item.verifiableCredential?.['@context']) ? item.verifiableCredential['@context'].length : 0,
+            })));
             const lerVc = await createLerRecordInvoker({
                 learnCard: wallet,
                 ...lerPayload,
