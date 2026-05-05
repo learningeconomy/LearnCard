@@ -280,6 +280,8 @@ export const WHAT_IF_PREVIEW: ShowcasePreview = {
         'Fan-in destination',
         'Mixed policy kinds',
     ],
+    icon: 'analyticsOutline',
+    estimatedDuration: '~2-3 weeks',
 };
 
 export const WHAT_IF_SHOWCASE: ShowcaseDefinition = {

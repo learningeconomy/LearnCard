@@ -64,13 +64,14 @@ interface DiscoverStartProps {
 }
 
 /**
- * Mirrors the placeholder in `GoalCapture` so the textarea reads the
- * same regardless of which onboarding entry point a learner sees.
- * Spans all four altitude buckets (aspiration, question, action,
- * exploration) — see `GoalCapture` for the rationale.
+ * Single-example placeholder. Was originally a four-example string
+ * spanning all altitude buckets, but users rarely read past the first
+ * example in a textarea — the wall of text read as instruction copy,
+ * not a hint. One strong, aspirational example does the hinting job
+ * better. The full altitude set still lives on `GoalCapture` for the
+ * dedicated goal-capture step.
  */
-const PLACEHOLDER =
-    'e.g. become a product manager · why do interest rates matter? · draft my essay today · look around climate tech';
+const PLACEHOLDER = 'e.g. become a product manager';
 
 const DiscoverStart: React.FC<DiscoverStartProps> = ({
     initialGoal = '',
@@ -131,18 +132,15 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
     };
 
     return (
-        <div className="max-w-2xl mx-auto px-4 py-8 sm:py-10 font-poppins space-y-7">
-            <header className="text-center max-w-md mx-auto space-y-2">
-                <h1 className="text-2xl font-semibold text-grayscale-900">
-                    Welcome to Journeys
-                </h1>
-
-                <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Try a curated journey to see how Journeys work, or
-                    describe what's on your mind and we'll help you find
-                    a starting point.
-                </p>
-            </header>
+        <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8 font-poppins space-y-7">
+            {/*
+                In-page welcome <header> intentionally omitted: the
+                shell-level `JourneysSubHeader` now anchors the page
+                with the brand mark + "Journeys · beta" title +
+                helper text, so a second "Welcome to Journeys" copy
+                here was redundant and competed with the chrome for
+                the page's primary title slot.
+            */}
 
             {/*
                 Showcases — the marquee affordance. Lives above the

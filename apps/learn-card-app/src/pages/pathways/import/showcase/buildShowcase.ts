@@ -511,6 +511,8 @@ export const SHOWCASE_PREVIEW = {
         'Shared-prereq collection',
         'Credential Engine refs',
     ] as const,
+    icon: 'schoolOutline',
+    estimatedDuration: '~1 school year',
 } as const;
 
 /**

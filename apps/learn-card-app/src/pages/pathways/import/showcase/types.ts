@@ -33,11 +33,31 @@ export interface ShowcasePreview {
     /** Number of supporting (sub-) pathways the bundle ships. */
     subPathwayCount: number;
     /**
-     * Short feature tags shown as pills at the bottom of the card —
-     * e.g. "Composite pathways", "Nested sub-pathway". Kept
-     * UI-friendly (Title Case, < 4 words each).
+     * Short feature tags — e.g. "Composite pathways", "Nested
+     * sub-pathway". Historically shown as pills on the card; kept on
+     * the shape so the Build > Import catalog can still surface them
+     * to authors, but the front-door ShowcaseCard no longer renders
+     * them (learner-facing jargon cleanup). UI-friendly
+     * (Title Case, < 4 words each).
      */
     featureTags: readonly string[];
+    /**
+     * Ionicons name (e.g. `schoolOutline`, `briefcaseOutline`) used as
+     * the card's left-hand icon. Lets each showcase feel distinct
+     * at a glance rather than three identical layered-stack tiles.
+     * Optional so older showcases still render with a sensible
+     * default (layers icon) if not upgraded yet.
+     */
+    icon?: string;
+    /**
+     * Rough time estimate for the whole journey — e.g. "~6 weeks",
+     * "≈ 4 hours". Shown alongside the step count so learners get a
+     * commitment signal, not just a structural one. Intentionally a
+     * free-text string (not a strict enum / minutes int) so authors
+     * can phrase the estimate in whatever way reads honestly —
+     * "4-6 weeks of evenings" vs "1 afternoon".
+     */
+    estimatedDuration?: string;
 }
 
 export interface ShowcaseBundle {

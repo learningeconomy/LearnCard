@@ -559,6 +559,8 @@ export const SMART_START_PREVIEW = {
         'Partner endorsement',
         'Module collection',
     ] as const,
+    icon: 'briefcaseOutline',
+    estimatedDuration: '~6-8 weeks',
 } as const;
 
 export const SMART_START_SHOWCASE: ShowcaseDefinition = {

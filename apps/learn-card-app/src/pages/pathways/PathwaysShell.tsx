@@ -9,10 +9,13 @@
 import React, { Suspense } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
-import { Redirect, Route, Switch } from 'react-router-dom';
+import { Redirect, Route, Switch, useRouteMatch } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { lazyWithRetry } from 'learn-card-base';
 
+import { MainHeader } from '../../components/main-header/MainHeader';
+
+import JourneysSubHeader from './onboard/JourneysSubHeader';
 import PathwaysHeader from './PathwaysHeader';
 import { pathwayStore } from '../../stores/pathways';
 import { useCostSnapshot } from './hooks/useCostSnapshot';
@@ -51,6 +54,10 @@ const ModeFallback: React.FC = () => (
 const PathwaysShell: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
 
+    // Whether we're on the cold-start discovery surface. Used to
+    // suppress the shell header — see the JSX block below for why.
+    const isOnOnboard = !!useRouteMatch('/pathways/onboard');
+
     // Emit the daily cost snapshot once per UTC day.
     useCostSnapshot();
 
@@ -58,11 +65,53 @@ const PathwaysShell: React.FC = () => {
         <IonPage>
             <ErrorBoundary fallback={<PathwaysErrorFallback />}>
                 <IonContent fullscreen>
+                    {/*
+                        Tenant chrome — LearnCard wordmark + profile /
+                        notifications / QR-scanner buttons + back arrow.
+                        Mounted via `MainHeader` (the same Ionic
+                        `IonHeader`-backed component used by AI
+                        Pathways and other top-level routes), which
+                        also handles iOS safe-area top inset so the
+                        page no longer butts against the status bar.
+                        Always rendered: the wordmark is the
+                        learner's escape hatch back to /wallet on
+                        every Journeys surface, including the
+                        cold-start onboard route.
+                    */}
+                    <MainHeader showBackButton hidePlusBtn />
+
+                    {/*
+                        Brand subheader — mirrors the
+                        AI-Pathways/AI-Insights/AI-Sessions
+                        treatment so Journeys reads as a peer
+                        feature on its cold-start screen. Only
+                        rendered on /pathways/onboard; deeper
+                        surfaces use `PathwaysHeader`'s
+                        contextual chrome (pathway switcher +
+                        mode tabs) instead, to avoid stacking
+                        three rows of header.
+                    */}
+                    {isOnOnboard && <JourneysSubHeader />}
+
                     <div className="min-h-full bg-white">
-                        <PathwaysHeader
-                            title={activePathway?.title ?? 'Pathways'}
-                            subtitle={activePathway?.goal}
-                        />
+                        {/*
+                            Suppress the in-shell mode header on the
+                            cold-start route: without an active pathway,
+                            the header's title ("No pathways yet") and
+                            the Today/Map/What-if/Build tab row are
+                            either meaningless or actively broken
+                            (those three modes redirect back here, so
+                            the tabs look like a no-op). The onboard
+                            page provides its own "Welcome to Journeys"
+                            heading; the shell stays quiet until the
+                            learner has something to be oriented in.
+                        */}
+                        {!isOnOnboard && (
+                            <PathwaysHeader
+                                title={activePathway?.title ?? 'Pathways'}
+                                subtitle={activePathway?.goal}
+                            />
+                        )}
 
                         <Suspense fallback={<ModeFallback />}>
                             <Switch>
