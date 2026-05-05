@@ -463,7 +463,8 @@ export const getVerifierState = (credential: VC | UnsignedVC) => {
 };
 
 export const getDefaultCategoryForCredential = (
-    credential: VC | UnsignedVC
+    credential: VC | UnsignedVC,
+    options?: { skipValidation?: boolean }
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
     // course meta VC is a metaversity specific case for now
@@ -503,28 +504,39 @@ export const getDefaultCategoryForCredential = (
     }
 
     // Not OBv3 credential, default category to achievement
-    if (!verificationResult.success) return 'Achievement';
+    if (!verificationResult.success) {
+        // For LER embedded credentials without full @context, extract achievementType as fallback
+        if (options?.skipValidation) {
+            const achievementType = Array.isArray(_credential?.credentialSubject)
+                ? _credential.credentialSubject[0]?.achievement?.achievementType
+                : _credential?.credentialSubject?.achievement?.achievementType;
+            if (achievementType && CATEGORY_MAP[achievementType]) {
+                return CATEGORY_MAP[achievementType];
+            }
+        }
+        return 'Achievement';
+    }
 
     const vc = verificationResult.data;
-    const achievementType = Array.isArray(vc?.credentialSubject)
+    const vcAchievementType = Array.isArray(vc?.credentialSubject)
         ? vc.credentialSubject[0]?.achievement?.achievementType
         : vc?.credentialSubject?.achievement?.achievementType;
 
     // if there is no achievementType, default to Achievement
-    if (!achievementType) return 'Achievement';
+    if (!vcAchievementType) return 'Achievement';
 
     if (otherCredentialTypes.includes(vc?.type[1])) {
         return CATEGORY_MAP[vc?.type[1]];
     }
 
     // handles custom boost types
-    if (isCustomBoostType(achievementType)) {
-        const customBoostCategory = getCategoryTypeFromCustomType?.(achievementType);
+    if (isCustomBoostType(vcAchievementType)) {
+        const customBoostCategory = getCategoryTypeFromCustomType?.(vcAchievementType);
         return customBoostCategory;
     }
 
     // handle mapping an achievementType to a category
-    const mappedAchievementType = CATEGORY_MAP[achievementType];
+    const mappedAchievementType = CATEGORY_MAP[vcAchievementType];
     // if the achievementType was mapped correctly , return its category
     if (mappedAchievementType) return mappedAchievementType;
     // if there is no valid achievementType mapping, default to Achievement
