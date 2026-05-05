@@ -502,9 +502,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials were added from ${fileList}.`,
+                        `No credentials could be extracted from ${fileCount > 1 ? 'these files' : 'this file'}.`,
                         {
-                            title: `${typeLabel} saved`,
+                            title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
@@ -590,9 +590,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileList}.`,
+                        `No credentials could be extracted from this file.`,
                         {
-                            title: `${typeLabel} saved`,
+                            title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
@@ -720,9 +720,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileList}.`,
+                        `No credentials could be extracted from ${fileCount > 1 ? 'these files' : 'this file'}.`,
                         {
-                            title: `${typeLabel} saved`,
+                            title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
