@@ -11,6 +11,8 @@ import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     checklistStore,
     useGetCheckListStatus,
     UploadTypesEnum,
@@ -34,12 +36,12 @@ export const CheckListCerts: React.FC = () => {
         useUploadFile(UploadTypesEnum.Certificate);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const [certs, setCert] = useState<CertType[]>([]);
 
@@ -98,19 +100,30 @@ export const CheckListCerts: React.FC = () => {
         }
     };
 
-    const handleDeleteCert = async (id: string) => {
-        try {
-            setIsDeleting(true);
-            const wallet = await initWallet();
+    const handleDeleteCert = (id: string) => {
+        const previous = certs;
 
-            await wallet.index.LearnCloud.remove(id);
-            await refetchCheckListStatus();
-            setCert(prevCerts => prevCerts.filter(cert => cert?.id !== id));
-            setIsDeleting(false);
-        } catch (error) {
-            setIsDeleting(false);
-            console.error('Failed to delete certificate', error);
-        }
+        // Optimistic synchronous UI update
+        setCert(prev => prev.filter(cert => cert?.id !== id));
+
+        // Fire-and-forget background work
+        void (async () => {
+            try {
+                const wallet = await initWallet();
+                await wallet.index.LearnCloud.remove(id);
+                refetchCheckListStatus();
+            } catch (error) {
+                console.error('Failed to delete certificate', error);
+                setCert(previous);
+                presentToast('Failed to delete. Please try again.', {
+                    title: 'Delete failed',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }
+        })();
     };
 
     const confirmDelete = async (id: string) => {
@@ -123,7 +136,7 @@ export const CheckListCerts: React.FC = () => {
                     'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
             })
         ) {
-            await handleDeleteCert(id);
+            handleDeleteCert(id);
         }
     };
 
@@ -168,10 +181,9 @@ export const CheckListCerts: React.FC = () => {
                     </button>
                 </div>
 
-                {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                {isLoading && <CheckListItemSkeleton />}
 
                 {!isLoading &&
-                    !isDeleting &&
                     certs?.length > 0 &&
                     certs?.map?.((cert: CertType) => {
                         return (

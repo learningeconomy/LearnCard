@@ -44,7 +44,6 @@ export const CheckListTranscripts: React.FC = () => {
     const primaryColor = colors?.defaults?.primaryColor;
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
     const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
@@ -142,21 +141,30 @@ export const CheckListTranscripts: React.FC = () => {
         }
     };
 
-    const handleDeleteTranscript = async (id: string) => {
-        try {
-            setIsDeleting(true);
-            const wallet = await initWallet();
+    const handleDeleteTranscript = (id: string) => {
+        const previous = transcripts;
 
-            await wallet.index.LearnCloud.remove(id);
-            await refetchCheckListStatus();
-            setTranscripts(prevTranscripts =>
-                prevTranscripts.filter(transcript => transcript?.id !== id)
-            );
-            setIsDeleting(false);
-        } catch (error) {
-            setIsDeleting(false);
-            console.error('handleDeleteTranscript::error', error);
-        }
+        // Optimistic synchronous UI update
+        setTranscripts(prev => prev.filter(transcript => transcript?.id !== id));
+
+        // Fire-and-forget background work
+        void (async () => {
+            try {
+                const wallet = await initWallet();
+                await wallet.index.LearnCloud.remove(id);
+                refetchCheckListStatus();
+            } catch (error) {
+                console.error('handleDeleteTranscript::error', error);
+                setTranscripts(previous);
+                presentToast('Failed to delete. Please try again.', {
+                    title: 'Delete failed',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }
+        })();
     };
 
     const confirmDelete = async (id: string) => {
@@ -169,7 +177,7 @@ export const CheckListTranscripts: React.FC = () => {
                     'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
             })
         ) {
-            await handleDeleteTranscript(id);
+            handleDeleteTranscript(id);
         }
     };
 
@@ -311,10 +319,9 @@ export const CheckListTranscripts: React.FC = () => {
                             </button>
                         </div>
 
-                        {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                        {isLoading && <CheckListItemSkeleton />}
 
                         {!isLoading &&
-                            !isDeleting &&
                             transcripts?.length > 0 &&
                             transcripts?.map?.((transcript: TranscriptType) => {
                                 return (
