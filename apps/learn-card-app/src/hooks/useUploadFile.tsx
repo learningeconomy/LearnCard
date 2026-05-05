@@ -139,11 +139,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const [isSaving, setIsSaving] = useState(false);
     const [parsedCredentials, setParsedCredentials] = useState<Array<{ vc: any; metadata?: { name?: string; category?: string } }>>([]);
 
-    const fetchNewContractCredentials = () => {
+    const fetchNewContractCredentials = () =>
         queryClient.refetchQueries({
             queryKey: ['useSyncConsentFlow', switchedDid ?? ''],
         });
-    };
 
     const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
         try {
