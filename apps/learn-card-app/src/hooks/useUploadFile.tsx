@@ -462,7 +462,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const issuedVCs = await Promise.all(
                     selectedVcs.map(async vc => {
                         const issuedVc = await wallet.invoke.issueCredential(vc);
-                        return (await storeAndAddVCToWallet(issuedVc)).result;
+                        const { credentialUri: uri, category } =
+                            await storeAndAddVCToWallet(issuedVc);
+                        return { uri, category };
                     })
                 );
 
@@ -553,7 +555,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const issuedVCs = await Promise.all(
                     vcs.vcs.map(async ({ vc }) => {
                         const issuedVc = await wallet.invoke.issueCredential(vc);
-                        return (await storeAndAddVCToWallet(issuedVc)).result;
+                        const { credentialUri: uri, category } =
+                            await storeAndAddVCToWallet(issuedVc);
+                        return { uri, category };
                     })
                 );
 
@@ -671,7 +675,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         const issuedVCs = await Promise.all(
                             vcs.vcs.map(async ({ vc }) => {
                                 const issuedVc = await wallet.invoke.issueCredential(vc);
-                                return (await storeAndAddVCToWallet(issuedVc)).result;
+                                const { credentialUri: uri, category } =
+                                    await storeAndAddVCToWallet(issuedVc);
+                                return { uri, category };
                             })
                         );
 
