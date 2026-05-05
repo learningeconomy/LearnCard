@@ -43,12 +43,34 @@ interface EndorsementPanelProps {
     nodeId: string;
     endorsements: readonly EndorsementRef[];
     onRequested: (pending: EndorsementRef) => void;
+    /**
+     * Demo-only callback fired after `DEMO_AUTO_FULFILL_MS` to upgrade
+     * a pending endorsement into an arrived one. Until real signing /
+     * delivery is wired (Phase 5), pending vouches would otherwise
+     * block any node whose termination is `endorsement` (the
+     * `termination.ts` matcher excludes `pending-*` ids by design).
+     * This prop is the seam where production code will eventually
+     * receive a real signed endorsement instead of synthesizing one.
+     */
+    onFulfilled?: (endorsementId: string) => void;
 }
+
+/**
+ * Demo auto-fulfill delay — long enough for the learner to register
+ * "the request was sent and we're waiting" (the amber pending dot +
+ * "Waiting…" copy), short enough that the demo flow doesn't stall.
+ *
+ * In a real deployment this whole timer goes away and the upgrade
+ * happens whenever a real signed endorsement arrives via the
+ * delivery channel (email / DM / shareable link).
+ */
+const DEMO_AUTO_FULFILL_MS = 2200;
 
 const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
     nodeId,
     endorsements,
     onRequested,
+    onFulfilled,
 }) => {
     const analytics = useAnalytics();
 
@@ -76,6 +98,17 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
         });
 
         onRequested(pending);
+
+        // Demo auto-fulfill — see the prop / constant doc above.
+        // The timeout is fire-and-forget on purpose: even if the
+        // overlay closes before it fires, the upgrade is a store
+        // mutation that should still take effect so the learner
+        // returns to a satisfied node, not a stuck one.
+        if (onFulfilled) {
+            window.setTimeout(() => {
+                onFulfilled(pending.endorsementId);
+            }, DEMO_AUTO_FULFILL_MS);
+        }
 
         setContact('');
         setOpen(false);

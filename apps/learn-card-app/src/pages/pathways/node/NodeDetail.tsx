@@ -25,6 +25,7 @@ import { IonIcon } from '@ionic/react';
 import { closeOutline, mapOutline, openOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { v4 as uuid } from 'uuid';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
@@ -435,6 +436,66 @@ const NodeDetail: React.FC = () => {
     const handleEndorsementRequested = (pending: EndorsementRef) => {
         pathwayStore.set.editNode(pathway.id, node.id, {
             endorsements: [...node.endorsements, pending],
+        });
+    };
+
+    /**
+     * Demo auto-vouch handler.
+     *
+     * Fired by `EndorsementPanel` after its `DEMO_AUTO_FULFILL_MS`
+     * timer elapses post-request. Finds the matching pending
+     * endorsement in the current node and replaces it with an
+     * arrived one — fresh non-`pending-` id, demo endorser DID,
+     * `receivedAt` set to now. The replace-in-place keeps the row's
+     * relationship label and trustTier so the list reads "Mentor /
+     * just now" instead of "Mentor / Waiting…".
+     *
+     * Why this exists: `termination.ts` excludes `pending-*` ids
+     * from the endorsement count, so without an upgrade path the
+     * learner is permanently stuck on "Waiting on 1 vouch."
+     * Production replaces this synthesizer with a real signed
+     * endorsement arriving via the delivery channel; the seam is
+     * the `onFulfilled` prop on `EndorsementPanel`.
+     *
+     * Idempotent on the endorsement id — if the panel fires twice
+     * (StrictMode double-invocation, fast retry, etc.), the second
+     * pass is a no-op because the matching pending entry is gone.
+     * We re-read `endorsements` off the freshly-mutated draft inside
+     * the same store update so two near-simultaneous fulfillments
+     * for different pending ids both land safely.
+     */
+    const fulfillEndorsement = (pendingEndorsementId: string) => {
+        const current = pathwayStore
+            .get.pathways()[pathway.id]
+            ?.nodes.find(n => n.id === node.id)
+            ?.endorsements;
+
+        if (!current) return;
+
+        const idx = current.findIndex(
+            e => e.endorsementId === pendingEndorsementId,
+        );
+
+        if (idx === -1) return;
+
+        const pending = current[idx];
+
+        const arrived: EndorsementRef = {
+            endorsementId: uuid(),
+            // Demo endorser DID — uses a stable shape ("did:demo:...")
+            // so observers can spot synthetic vouches in logs / state
+            // dumps without misreading them as real network DIDs.
+            endorserDid: `did:demo:${pending.endorserRelationship}`,
+            endorserRelationship: pending.endorserRelationship,
+            trustTier: pending.trustTier,
+            receivedAt: new Date().toISOString(),
+        };
+
+        const next = [...current];
+        next[idx] = arrived;
+
+        pathwayStore.set.editNode(pathway.id, node.id, {
+            endorsements: next,
         });
     };
 
@@ -903,6 +964,7 @@ const NodeDetail: React.FC = () => {
                         nodeId={node.id}
                         endorsements={node.endorsements}
                         onRequested={handleEndorsementRequested}
+                        onFulfilled={fulfillEndorsement}
                     />
                 </motion.div>
             </div>
