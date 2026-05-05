@@ -18,7 +18,6 @@ import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-pl
 import { DidWebPlugin } from '@learncard/did-web-plugin';
 import { EncryptionPluginType } from '@learncard/encryption-plugin';
 import { OpenID4VCPlugin, OpenID4VCPluginConfig } from '@learncard/openid4vc-plugin';
-import { StatusListPlugin, StatusListPluginConfig } from '@learncard/status-list-plugin';
 
 import { InitFunction, GenericInitFunction } from './helpers';
 
@@ -44,14 +43,6 @@ export type LearnCardConfig = {
      * Omitting this works for the common case.
      */
     openid4vc?: OpenID4VCPluginConfig;
-    /**
-     * Optional configuration for the W3C Bitstring Status List
-     * checking plugin. Like `openid4vc` above, the plugin is wired
-     * in automatically; the most common reason to override is to
-     * supply a host-provided `fetch` so status-list HTTP fetches
-     * go through the same trust layer as every other plugin call.
-     */
-    statusList?: StatusListPluginConfig;
     debug?: typeof console.log;
 };
 
@@ -91,8 +82,7 @@ export type LearnCardFromSeed = InitFunction<
             VpqrPlugin,
             CHAPIPlugin,
             LearnCardPlugin,
-            OpenID4VCPlugin,
-            StatusListPlugin
+            OpenID4VCPlugin
         ]
     >
 >;
@@ -124,8 +114,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
             VerifyBoostPlugin,
             LearnCardPlugin,
             LearnCardNetworkPlugin,
-            OpenID4VCPlugin,
-            StatusListPlugin
+            OpenID4VCPlugin
         ]
     >
 >;
@@ -177,8 +166,7 @@ export type DidWebLearnCardFromSeed = InitFunction<
             CHAPIPlugin,
             LearnCardPlugin,
             DidWebPlugin,
-            OpenID4VCPlugin,
-            StatusListPlugin
+            OpenID4VCPlugin
         ]
     >
 >;
@@ -212,8 +200,7 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             LearnCardPlugin,
             DidWebPlugin,
             LearnCardNetworkPlugin,
-            OpenID4VCPlugin,
-            StatusListPlugin
+            OpenID4VCPlugin
         ]
     >
 >;

@@ -636,7 +636,6 @@ describe('LearnCard SDK', () => {
             expect(typeof learnCard.invoke.acceptAndStoreCredentialOffer).toBe('function');
             expect(typeof learnCard.invoke.parseAuthorizationRequest).toBe('function');
             expect(typeof learnCard.invoke.presentCredentials).toBe('function');
-            expect(typeof learnCard.invoke.checkCredentialStatus).toBe('function');
         });
 
         it('parses a credential offer URI without touching the network', async () => {
