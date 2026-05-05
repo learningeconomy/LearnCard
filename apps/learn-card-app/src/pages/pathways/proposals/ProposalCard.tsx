@@ -66,6 +66,11 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Classify up-front so handlers can branch on it without
+    // relying on lexical hoisting at click time.
+    const kind = proposalKind(proposal.diff);
+    const framing = PROPOSAL_KIND_FRAMING[kind];
+
     const handleAccept = () => {
         if (busy) return;
         setBusy(true);
@@ -77,9 +82,14 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                 track: analytics.track,
             });
 
-            // Land the learner somewhere useful. Cross-pathway acceptance
-            // set a new active pathway → Today. In-pathway → Today too.
-            history.push('/pathways/today');
+            // Land the learner somewhere useful. Route swaps' visible
+            // payoff IS the new route, so Map is the natural landing —
+            // the learner immediately sees the alternate walk laid
+            // out. Pathway edits and new-pathway proposals are
+            // structural and benefit more from Today's rollup view.
+            const isRouteSwap = kind === 'route-swap';
+
+            history.push(isRouteSwap ? '/pathways/map' : '/pathways/today');
         } catch (err) {
             setBusy(false);
             setError(
@@ -120,9 +130,6 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
             );
         }
     };
-
-    const kind = proposalKind(proposal.diff);
-    const framing = PROPOSAL_KIND_FRAMING[kind];
 
     // Route-impact summary for pathway-edit / mixed proposals — the
     // "what does this do to my walk?" read. Route-swap proposals

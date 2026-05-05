@@ -44,6 +44,7 @@ import CollectionMapNode, {
 import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
 import NestedPathwayContext from './NestedPathwayContext';
+import RouteSwapBanner from './RouteSwapBanner';
 import {
     buildCollectionIndex,
     computeCollectionProgress,
@@ -1707,6 +1708,15 @@ const MapModeInner: React.FC = () => {
                     onOpen={openNode}
                 />
             )}
+
+            {/*
+                Bottom-floating undo affordance for direct route
+                swaps committed from What-If. Mounts unconditionally
+                — the component itself reads the store and renders
+                only when there's a swap to undo against the active
+                pathway. See RouteSwapBanner for the rationale.
+            */}
+            <RouteSwapBanner />
 
         </div>
     );

@@ -61,17 +61,15 @@ import {
 } from 'ionicons/icons';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
-import { pathwayStore, proposalStore } from '../../../stores/pathways';
+import { pathwayStore } from '../../../stores/pathways';
 import { seedChosenRoute } from '../core/chosenRoute';
-import { useLearnerDid } from '../hooks/useLearnerDid';
 import { formatEta } from '../map/route';
 import RouteDiffSummary from '../proposals/RouteDiffSummary';
-import type { Pathway, Proposal, Tradeoff } from '../types';
+import type { Pathway, Tradeoff } from '../types';
 
 import { generateScenarios } from './generators';
 import { simulateAll, simulateBaseline } from './simulator';
 import {
-    buildProposalFromScenario,
     classifyScenarioForProposal,
     computeTargetRoute,
     type ToProposalReason,
@@ -130,29 +128,60 @@ const DIRECTION_ICON: Record<Tradeoff['direction'], string> = {
     neutral: removeOutline,
 };
 
-const TradeoffRow: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
+/**
+ * Compact one-line chip: dimension icon + dimension label +
+ * direction arrow. Trades full prose for scannability — the long
+ * `deltaDescription` is parked behind a "Why these tradeoffs?"
+ * expansion on the parent card. With 3+ tradeoffs per scenario,
+ * full-text rows produced a wall of micro-cards; chips let the
+ * learner read the *shape* of a scenario at a glance and dive
+ * in only when they want to.
+ */
+const TradeoffChip: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
     const tone = DIRECTION_CLASSES[tradeoff.direction];
 
     return (
-        <li
-            className={`flex items-start gap-3 rounded-2xl border px-3 py-2.5 ${tone.chip}`}
+        <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${tone.chip}`}
         >
+            <IonIcon
+                icon={DIMENSION_ICON[tradeoff.dimension]}
+                className={`text-xs ${tone.icon}`}
+            />
+
+            <span className={`text-[11px] font-medium ${tone.label}`}>
+                {DIMENSION_LABEL[tradeoff.dimension]}
+            </span>
+
+            <IonIcon
+                icon={DIRECTION_ICON[tradeoff.direction]}
+                className={`text-[10px] ${tone.icon}`}
+            />
+        </span>
+    );
+};
+
+/**
+ * Expanded-detail row used inside the "Why these tradeoffs?"
+ * disclosure. Same content as the old TradeoffRow but only
+ * rendered after the learner asks for it. Keeps the default
+ * scan dense while still surfacing the prose for anyone who
+ * wants to dig in.
+ */
+const TradeoffDetailRow: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
+    const tone = DIRECTION_CLASSES[tradeoff.direction];
+
+    return (
+        <li className="flex items-start gap-2.5">
             <IonIcon
                 icon={DIMENSION_ICON[tradeoff.dimension]}
                 className={`text-base mt-0.5 shrink-0 ${tone.icon}`}
             />
 
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-medium uppercase tracking-wide text-grayscale-500">
-                        {DIMENSION_LABEL[tradeoff.dimension]}
-                    </p>
-
-                    <IonIcon
-                        icon={DIRECTION_ICON[tradeoff.direction]}
-                        className={`text-[10px] ${tone.icon}`}
-                    />
-                </div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
+                    {DIMENSION_LABEL[tradeoff.dimension]}
+                </p>
 
                 <p className={`text-sm leading-snug ${tone.label}`}>
                     {tradeoff.deltaDescription}
@@ -256,8 +285,8 @@ const BaselineCard: React.FC<{
         </div>
 
         <p className="text-xs text-grayscale-500 leading-relaxed">
-            Everything below is compared against this baseline. Scenarios never
-            change your real pathway — this is a look, not a commitment.
+            Everything below is compared against this baseline. Pick one to
+            commit — your previous walk stays one tap away.
         </p>
     </section>
 );
@@ -285,6 +314,12 @@ interface ScenarioCardProps {
      * level effect.
      */
     targetRoute: readonly string[] | null;
+    /**
+     * Optional standout label shown above the title — e.g. "Best
+     * for less time". Drawn from `pickStandoutLabels` in the
+     * parent; `null` for unlabeled scenarios.
+     */
+    standoutLabel: string | null;
     /** Invoked when the learner asks to turn the scenario into a proposal. */
     onAccept?: () => void;
     /** Disables the accept button while a sibling card is being processed. */
@@ -304,12 +339,20 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
     convertibility,
     pathway,
     targetRoute,
+    standoutLabel,
     onAccept,
     busy = false,
     comparisonSelected = false,
     onToggleComparison,
 }) => {
     const { scenario, simulation, deltas, tradeoffs } = result;
+
+    // Local "Why these tradeoffs?" disclosure. Default closed —
+    // most learners only need the chip-strip to decide. The
+    // expansion holds the full prose for anyone who wants to
+    // dig in. Per-card state (not lifted) because each card's
+    // disclosure is independent.
+    const [detailsOpen, setDetailsOpen] = useState(false);
 
     const etaChip =
         deltas.etaMinutes !== null && deltas.etaMinutes !== 0 ? (
@@ -341,14 +384,22 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
 
     return (
         <article
-            className={`relative p-5 rounded-[20px] bg-white shadow-sm space-y-4 border transition-colors ${
+            className={`relative p-4 sm:p-5 rounded-[20px] bg-white shadow-sm space-y-3 border transition-colors ${
                 comparisonSelected
                     ? 'border-indigo-300 ring-2 ring-indigo-100'
-                    : 'border-grayscale-200'
+                    : standoutLabel
+                        ? 'border-emerald-200'
+                        : 'border-grayscale-200'
             }`}
         >
             <header className="flex items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0 flex-1">
+                    {standoutLabel && (
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+                            ✨ {standoutLabel}
+                        </p>
+                    )}
+
                     <h3 className="text-base font-semibold text-grayscale-900 leading-snug">
                         {scenario.title}
                     </h3>
@@ -398,30 +449,66 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                 )}
             </header>
 
-            {(etaChip || stepsChip || simulation.etaMinutes !== null) && (
-                <div className="flex flex-wrap gap-2">
+            {/*
+                Single chip strip — eta total + numeric deltas +
+                tradeoff chips on one wrapping row. Replaces the
+                previous three-stacked layout (deltas row + total
+                row + tradeoff list) which made every card a wall.
+            */}
+            {(etaChip ||
+                stepsChip ||
+                simulation.etaMinutes !== null ||
+                tradeoffs.length > 0) && (
+                <div className="flex flex-wrap items-center gap-1.5">
                     {simulation.etaMinutes !== null && (
-                        <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-grayscale-200 bg-grayscale-10 px-2 py-0.5">
                             <IonIcon
                                 icon={timeOutline}
-                                className="text-sm text-grayscale-500"
+                                className="text-xs text-grayscale-500"
                             />
-                            <span className="text-xs font-medium text-grayscale-700">
-                                {formatEta(simulation.etaMinutes)} total
+                            <span className="text-[11px] font-medium text-grayscale-700">
+                                {formatEta(simulation.etaMinutes)}
                             </span>
-                        </div>
+                        </span>
                     )}
                     {etaChip}
                     {stepsChip}
+                    {tradeoffs.map((t, i) => (
+                        <TradeoffChip key={`${t.dimension}-${i}`} tradeoff={t} />
+                    ))}
                 </div>
             )}
 
+            {/*
+                Why these tradeoffs? — disclosure with the full
+                prose. Default closed; opening it reveals the
+                authored `deltaDescription` for every tradeoff so
+                the learner can read the *reason* a chip is amber
+                or emerald without us baking 3 paragraphs into the
+                default scan.
+            */}
             {tradeoffs.length > 0 && (
-                <ul className="space-y-2">
-                    {tradeoffs.map((t, i) => (
-                        <TradeoffRow key={`${t.dimension}-${i}`} tradeoff={t} />
-                    ))}
-                </ul>
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => setDetailsOpen(o => !o)}
+                        aria-expanded={detailsOpen}
+                        className="text-xs text-grayscale-500 hover:text-grayscale-700 underline underline-offset-2"
+                    >
+                        {detailsOpen ? 'Hide details' : 'Why these tradeoffs?'}
+                    </button>
+
+                    {detailsOpen && (
+                        <ul className="mt-2 space-y-2">
+                            {tradeoffs.map((t, i) => (
+                                <TradeoffDetailRow
+                                    key={`${t.dimension}-${i}`}
+                                    tradeoff={t}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                </div>
             )}
 
             {/*
@@ -445,37 +532,26 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
             )}
 
             {/*
-                Commit seam — the Accept button routes through
-                `buildProposalFromScenario` and lands in the existing
-                proposals queue. We deliberately keep the action on
-                the card (not a top-level "pick a scenario" wizard)
-                because the tradeoff context the learner just read is
-                the reason they're committing; hiding the commit
-                affordance behind another click would separate
-                decision from action.
-
-                When the scenario isn't convertible today (effort-
-                multiplier-only, no-effect against the live pathway),
-                we surface a one-line reason instead of the button.
-                That's the honest degradation — no placeholder
-                button, no "coming soon" toast.
+                Direct-commit CTA. Lands the learner on Map with the
+                new walk live and an undo banner — no proposals-queue
+                round trip. The tradeoff context the learner just
+                read is the reason they're committing; the previous
+                "send to queue, then accept from queue" double-confirm
+                added friction without adding meaning for self-
+                generated alternatives. Agent proposals still go
+                through the queue, where the review step matters.
             */}
             {canAccept && onAccept && (
-                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <div className="pt-1">
                     <button
                         type="button"
                         onClick={onAccept}
                         disabled={busy}
                         className="inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        Try this path
+                        Take this path
                         <IonIcon icon={arrowForwardOutline} className="text-base" />
                     </button>
-
-                    <p className="text-xs text-grayscale-500 leading-relaxed sm:self-center">
-                        Sends a proposal to your queue — you choose whether to commit
-                        from there.
-                    </p>
                 </div>
             )}
 
@@ -489,78 +565,82 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
 };
 
 // -----------------------------------------------------------------
-// Revert-to-original-walk card
+// Standout-label heuristic
 // -----------------------------------------------------------------
 
 /**
- * Special-cased "return to the original walk" card. Sits above the
- * scenario list when the pathway's committed route has drifted from
- * the entry→destination seed that `seedChosenRoute` produces from
- * the graph. Tapping "Restore original" emits a route-swap proposal
- * with the seeded ids.
+ * Pick a single "Best for X" label per scenario set. Reduces
+ * decision fatigue: the learner gets one obvious-fit option
+ * highlighted instead of having to read every card to compare.
  *
- * Not a real `ScenarioResult` because it isn't a *scenario* — it's a
- * reset, not an alternative. Rendering it inline keeps the "return"
- * affordance near the scenario list without polluting the scenarios
- * array with synthetic entries.
+ * Heuristic, ordered by priority:
+ *
+ *   1. **Best for less time** — the scenario with the most
+ *      negative ETA delta (saves the most time), if the
+ *      saving is meaningful (≥ 10 minutes). Most common
+ *      "obvious choice" for a learner skimming alternatives.
+ *   2. **Best for fewer external modules** — the scenario that
+ *      drops the most external nodes, if there's a non-trivial
+ *      drop. Captures `external-light` scenarios that don't
+ *      necessarily save time but reduce dependency exposure.
+ *   3. **Best for deeper practice** — the scenario with the
+ *      most positive `effort` direction:'worse' tradeoff
+ *      (more reps), if any.
+ *
+ * Each label is awarded to at most one scenario (the most
+ * extreme on its dimension); ties are broken by scenario order
+ * so the result is deterministic. Returns a Map for O(1)
+ * per-card lookup at render time.
  */
-const RevertWalkCard: React.FC<{
-    pathway: Pathway;
-    originalWalk: readonly string[];
-    busy: boolean;
-    onAccept: () => void;
-}> = ({ pathway, originalWalk, busy, onAccept }) => (
-    <section className="p-5 rounded-[20px] bg-white border border-indigo-200 shadow-sm space-y-4">
-        <header className="flex items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-1.5">
-                    <span
-                        className="w-1.5 h-1.5 rounded-full bg-indigo-500"
-                        aria-hidden
-                    />
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-700">
-                        Return to original walk
-                    </p>
-                </div>
+const pickStandoutLabels = (
+    results: readonly ScenarioResult[],
+): Map<string, string> => {
+    const labels = new Map<string, string>();
 
-                <h3 className="text-base font-semibold text-grayscale-900 leading-snug">
-                    Swap back to the pathway’s seeded route
-                </h3>
+    // Best for less time — only meaningful saves count.
+    const fastest = [...results]
+        .filter(
+            r => r.deltas.etaMinutes !== null && r.deltas.etaMinutes <= -10,
+        )
+        .sort((a, b) => (a.deltas.etaMinutes ?? 0) - (b.deltas.etaMinutes ?? 0))[0];
 
-                <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Your committed walk drifted from the default. Go
-                    back to the entry→destination path that matches
-                    how the pathway was authored.
-                </p>
-            </div>
-        </header>
+    if (fastest) labels.set(fastest.scenario.id, 'Best for less time');
 
-        <div className="p-3 rounded-2xl bg-grayscale-10 border border-grayscale-100">
-            <RouteDiffSummary
-                current={pathway.chosenRoute}
-                proposed={originalWalk}
-                pathway={pathway}
-            />
-        </div>
+    // Best for fewer external modules — scenarios that drop
+    // ≥1 step relative to baseline, attributed to the
+    // external-light shape. We can't introspect the selector
+    // from the result, so we look at the `external-dependency`
+    // tradeoff with `direction:'better'` — that's the authored
+    // signal for "this reshapes external dependencies."
+    const externalDrop = results.find(
+        r =>
+            !labels.has(r.scenario.id) &&
+            r.tradeoffs.some(
+                t =>
+                    t.dimension === 'external-dependency' &&
+                    t.direction === 'better',
+            ),
+    );
 
-        <div className="flex flex-col sm:flex-row gap-2 pt-1">
-            <button
-                type="button"
-                onClick={onAccept}
-                disabled={busy}
-                className="inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-indigo-600 text-white font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-                Restore original
-                <IonIcon icon={arrowForwardOutline} className="text-base" />
-            </button>
+    if (externalDrop)
+        labels.set(externalDrop.scenario.id, 'Best for fewer dependencies');
 
-            <p className="text-xs text-grayscale-500 leading-relaxed sm:self-center">
-                Sends a proposal to your queue — commit from there to
-                lock the swap in.
-            </p>
-        </div>
-    </section>
-);
+    // Best for deeper practice — `effort:'worse'` is the
+    // authored signal for "more reps / heavier lift" in
+    // deep-practice scenarios.
+    const deeperPractice = results.find(
+        r =>
+            !labels.has(r.scenario.id) &&
+            r.tradeoffs.some(
+                t => t.dimension === 'effort' && t.direction === 'worse',
+            ),
+    );
+
+    if (deeperPractice)
+        labels.set(deeperPractice.scenario.id, 'Best for deeper practice');
+
+    return labels;
+};
 
 // -----------------------------------------------------------------
 // Comparison overlay — two routes side by side
@@ -771,7 +851,6 @@ const WhatIfMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
     const history = useHistory();
     const analytics = useAnalytics();
-    const learnerDid = useLearnerDid();
 
     // Set while a scenario is being turned into a proposal. Single-
     // flight so two rapid clicks don't produce two proposals with
@@ -897,40 +976,52 @@ const WhatIfMode: React.FC = () => {
     };
 
     /**
-     * Shared proposal-emit path. Both scenario acceptance and the
-     * revert-to-original card route through here so the telemetry,
-     * navigation, and error-handling story is identical. Accepts a
-     * pre-built `Proposal` and a unique `busyKey` that drives the
-     * per-card spinner (`result.scenario.id` for scenarios, a
-     * fixed key for the revert card).
+     * Direct-commit a scenario. By the time the learner taps
+     * "Take this path" they've read the tradeoffs, seen the route
+     * diff, and decided — routing through the proposals queue
+     * would just add a confirmation step they've already given.
+     * `pathwayStore.set.applyRouteSwap` snapshots the previous
+     * route so the Map's RouteSwapBanner can offer one-tap undo.
+     *
+     * No-op if the scenario isn't convertible to a route swap;
+     * the card hides its CTA in that case so this guard is
+     * defensive only.
      */
-    const emitProposal = (
-        pathway: Pathway,
-        proposal: Proposal | null,
-        busyKey: string,
-    ) => {
+    const handleAccept = (pathway: Pathway, result: ScenarioResult) => {
         if (acceptingId) return;
 
-        setAcceptingId(busyKey);
+        const target = targetRouteByScenarioId.get(result.scenario.id) ?? null;
+
+        if (!target || target.length < 2) {
+            setAcceptError(
+                'This path can\u2019t be committed as a route swap right now.',
+            );
+
+            return;
+        }
+
+        setAcceptingId(result.scenario.id);
         setAcceptError(null);
 
         try {
-            if (!proposal) {
-                throw new Error(
-                    'This action can\u2019t be committed as a proposal right now.',
-                );
-            }
+            pathwayStore.set.applyRouteSwap(
+                pathway.id,
+                target,
+                result.scenario.title,
+            );
 
-            proposalStore.set.addProposal(proposal);
-
+            // Telemetry: still attribute the swap to the `router`
+            // agent (route-swap proposals — even direct-commit ones
+            // — are routing decisions). Latency/cost zeroed because
+            // What-If is synchronous client-side simulation.
             analytics.track(AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED, {
-                agent: proposal.agent,
-                pathwayId: proposal.pathwayId,
+                agent: 'router',
+                pathwayId: pathway.id,
                 latencyMs: 0,
                 costCents: 0,
             });
 
-            history.push('/pathways/proposals');
+            history.push('/pathways/map');
         } catch (err) {
             setAcceptError(
                 err instanceof Error
@@ -942,83 +1033,33 @@ const WhatIfMode: React.FC = () => {
     };
 
     /**
-     * Revert-to-original-walk acceptance. Builds a route-swap
-     * proposal whose `setChosenRoute` equals the seeded walk, then
-     * routes through the shared `emitProposal`. No authored
-     * tradeoffs — reverting is a neutral swap; the live time delta
-     * (if any) will show up via the normal route-math in the
-     * proposals queue.
+     * Restore the pathway's seeded entry→destination walk. Same
+     * direct-commit + Map-landing pattern as `handleAccept`, with
+     * a fixed scenario title so the undo banner reads
+     * "Switched to Original walk — Undo".
      */
     const handleRevertToOriginal = (pathway: Pathway) => {
-        const id =
-            typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                ? crypto.randomUUID()
-                : `revert-${Date.now()}`;
-
-        const proposal: Proposal = {
-            id,
-            agent: 'router',
-            capability: 'routing',
-            pathwayId: pathway.id,
-            ownerDid: learnerDid,
-            reason: 'Return to the original entry\u2192destination walk.',
-            diff: {
-                addNodes: [],
-                updateNodes: [],
-                removeNodeIds: [],
-                addEdges: [],
-                removeEdgeIds: [],
-                setChosenRoute: [...originalWalk],
-            },
-            tradeoffs: [],
-            status: 'open',
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000,
-            ).toISOString(),
-        };
-
-        emitProposal(pathway, proposal, 'revert-to-original');
-    };
-
-    const handleAccept = (pathway: Pathway, result: ScenarioResult) => {
         if (acceptingId) return;
+        if (originalWalk.length < 2) return;
 
-        setAcceptingId(result.scenario.id);
+        setAcceptingId('revert-to-original');
         setAcceptError(null);
 
         try {
-            // Pipe the simulator-computed tradeoffs through so the
-            // proposal shows the live time delta, not just the
-            // scenario's authored defaults.
-            const proposal = buildProposalFromScenario(
-                pathway,
-                result.scenario,
-                result.tradeoffs,
-                { ownerDid: learnerDid },
+            pathwayStore.set.applyRouteSwap(
+                pathway.id,
+                originalWalk,
+                'Original walk',
             );
 
-            if (!proposal) {
-                throw new Error(
-                    'This scenario can\u2019t be committed as a proposal right now.',
-                );
-            }
-
-            proposalStore.set.addProposal(proposal);
-
-            // `PATHWAYS_PROPOSAL_CREATED` is shared with the agent
-            // pipeline, which surfaces invocation latency + cost.
-            // What-If proposals are client-side and synchronous, so
-            // we record 0s honestly — the event still attributes the
-            // proposal to the `router` agent for telemetry roll-ups.
             analytics.track(AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED, {
-                agent: proposal.agent,
-                pathwayId: proposal.pathwayId,
+                agent: 'router',
+                pathwayId: pathway.id,
                 latencyMs: 0,
                 costCents: 0,
             });
 
-            history.push('/pathways/proposals');
+            history.push('/pathways/map');
         } catch (err) {
             setAcceptError(
                 err instanceof Error
@@ -1044,6 +1085,28 @@ const WhatIfMode: React.FC = () => {
 
     const routable = baseline !== null && baseline.etaMinutes !== null;
 
+    // Standout-label map — runs once per (pathway, results) change.
+    // Cheap (linear in results.length, max ~5), and pulling it out of
+    // render keeps each ScenarioCard pure on its props.
+    const standoutLabels = useMemo(
+        () => pickStandoutLabels(results),
+        [results],
+    );
+
+    // Compare entry-point gating: only show when at least two
+    // scenarios are convertible (otherwise there's nothing meaningful
+    // to compare against). Counted from `convertibilityByScenarioId`
+    // so the rule reflects the *live* pathway, not the static set.
+    const convertibleCount = useMemo(() => {
+        let n = 0;
+        for (const r of results) {
+            if (convertibilityByScenarioId.get(r.scenario.id)?.kind === 'ok') {
+                n += 1;
+            }
+        }
+        return n;
+    }, [results, convertibilityByScenarioId]);
+
     return (
         <div
             className="relative min-h-full"
@@ -1053,17 +1116,18 @@ const WhatIfMode: React.FC = () => {
             }}
         >
             <div className="max-w-2xl mx-auto px-4 py-8 font-poppins space-y-5">
-                <header className="space-y-1">
-                    <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
-                        What-if
-                    </p>
-                    <h1 className="text-xl font-semibold text-grayscale-900">
-                        See other ways this could go
+                {/*
+                    Single-line invitational header. The previous
+                    layout had an eyebrow + headline + subtitle that
+                    all said the same thing three times. A question
+                    sets the frame more concisely than any prose
+                    description and lets the page get to the actual
+                    content faster.
+                */}
+                <header>
+                    <h1 className="text-xl font-semibold text-grayscale-900 leading-snug">
+                        What if you took a different path?
                     </h1>
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        Honest alternatives to your path today — with the costs
-                        spelled out.
-                    </p>
                 </header>
 
                 {baseline && (
@@ -1071,19 +1135,27 @@ const WhatIfMode: React.FC = () => {
                 )}
 
                 {/*
-                    "Return to original walk" card — only shown when
-                    the committed route has drifted from the default
-                    entry→destination seed. Non-structural swap back
-                    to the seeded walk; see `showRevertCard` above for
-                    the gating logic.
+                    "Return to original walk" affordance — only shown
+                    when the committed route has drifted from the
+                    default entry→destination seed. Demoted from a
+                    full card to a single inline link so the visual
+                    rhythm of the page isn't broken by an indigo
+                    detour. The link itself is one tap; the swap
+                    commits directly and lands the learner on Map
+                    with an undo banner just like a scenario commit.
                 */}
                 {showRevertCard && (
-                    <RevertWalkCard
-                        pathway={activePathway}
-                        originalWalk={originalWalk}
-                        busy={acceptingId !== null}
-                        onAccept={() => handleRevertToOriginal(activePathway)}
-                    />
+                    <button
+                        type="button"
+                        onClick={() => handleRevertToOriginal(activePathway)}
+                        disabled={acceptingId !== null}
+                        className="group flex items-center gap-2 text-xs text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40 px-1"
+                    >
+                        <span>Drifted from the original walk?</span>
+                        <span className="font-semibold underline underline-offset-2 group-hover:text-emerald-700">
+                            Restore it
+                        </span>
+                    </button>
                 )}
 
                 {!routable ? (
@@ -1100,36 +1172,9 @@ const WhatIfMode: React.FC = () => {
                     />
                 ) : (
                     <section className="space-y-3">
-                        <div className="flex items-center justify-between gap-3 px-1">
-                            <h2 className="text-sm font-semibold text-grayscale-700">
-                                Other paths
-                            </h2>
-
-                            {/*
-                                Compare toggle — entering comparison
-                                mode renders a checkbox on each
-                                convertible card. Tapping two
-                                checkboxes opens the side-by-side
-                                overlay. This is lightweight Phase C
-                                compare: two routes stacked with
-                                their diffs against the current walk.
-                            */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setComparisonMode(m => !m);
-                                    if (comparisonMode) setComparisonIds([]);
-                                }}
-                                className={`text-xs font-medium py-1.5 px-3 rounded-full border transition-colors ${
-                                    comparisonMode
-                                        ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
-                                        : 'bg-white border-grayscale-300 text-grayscale-700 hover:border-indigo-400 hover:text-indigo-700'
-                                }`}
-                                aria-pressed={comparisonMode}
-                            >
-                                {comparisonMode ? 'Done comparing' : 'Compare'}
-                            </button>
-                        </div>
+                        <h2 className="text-sm font-semibold text-grayscale-700 px-1">
+                            Other paths
+                        </h2>
 
                         {acceptError && (
                             <div className="p-3 rounded-2xl bg-red-50 border border-red-100 text-xs text-red-700 leading-relaxed">
@@ -1149,6 +1194,9 @@ const WhatIfMode: React.FC = () => {
                                     targetRoute={
                                         targetRouteByScenarioId.get(r.scenario.id) ?? null
                                     }
+                                    standoutLabel={
+                                        standoutLabels.get(r.scenario.id) ?? null
+                                    }
                                     busy={acceptingId !== null}
                                     onAccept={() => handleAccept(activePathway, r)}
                                     comparisonSelected={comparisonIds.includes(r.scenario.id)}
@@ -1160,6 +1208,34 @@ const WhatIfMode: React.FC = () => {
                                 />
                             ))}
                         </div>
+
+                        {/*
+                            Compare entry — demoted from a prominent
+                            top-right pill button to a subtle text
+                            link beneath the scenario list. Hidden
+                            entirely when fewer than two scenarios
+                            are convertible (nothing meaningful to
+                            compare). Toggles into "Done comparing"
+                            once active so the learner can exit
+                            without hunting for the same control.
+                        */}
+                        {convertibleCount >= 2 && (
+                            <div className="pt-1 px-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setComparisonMode(m => !m);
+                                        if (comparisonMode) setComparisonIds([]);
+                                    }}
+                                    aria-pressed={comparisonMode}
+                                    className="text-xs text-grayscale-500 hover:text-grayscale-900 underline underline-offset-2 transition-colors"
+                                >
+                                    {comparisonMode
+                                        ? 'Done comparing'
+                                        : 'Compare two paths →'}
+                                </button>
+                            </div>
+                        )}
                     </section>
                 )}
 
@@ -1168,9 +1244,7 @@ const WhatIfMode: React.FC = () => {
                     has selected two scenarios while in comparison
                     mode. Two route-diff strips stacked with a
                     shared baseline reminder at top and each strip's
-                    ETA delta at a glance. A future revision could
-                    render both proposed routes on top of the Map's
-                    Explore layout in contrasting indigo/purple.
+                    ETA delta at a glance.
                 */}
                 {comparisonMode && comparisonIds.length === 2 && (
                     <ComparisonOverlay
@@ -1190,11 +1264,6 @@ const WhatIfMode: React.FC = () => {
                         onClose={() => setComparisonIds([])}
                     />
                 )}
-
-                <p className="text-xs text-grayscale-400 leading-relaxed text-center pt-2">
-                    Scenarios are generated from the shape of your pathway — nothing
-                    here is committed or shared.
-                </p>
             </div>
         </div>
     );

@@ -60,6 +60,30 @@ export type PathwayCelebration =
           completedAt: string;
       };
 
+/**
+ * Fire-and-forget signal for "the learner just swapped routes."
+ *
+ * Emitted by `applyRouteSwap` when the What-If surface (or any
+ * future direct-commit affordance) accepts an alternate walk
+ * without going through the proposals queue. The Map page reads
+ * this to render a brief undo banner — "Switched to Fast track.
+ * Undo" — so the learner has a one-tap return path even though
+ * the swap is now committed.
+ *
+ * `previousRoute` captures the chosenRoute that was active at
+ * commit time so `undoRouteSwap` can restore it verbatim.
+ * `null` means no banner; cleared by dismiss, undo, or by the
+ * Map page after a short auto-dismiss timeout.
+ */
+interface RecentRouteSwap {
+    pathwayId: string;
+    /** Route that was active *before* the swap. Drives undo. */
+    previousRoute: readonly string[] | undefined;
+    /** Human-readable label for the banner ("Fast track", "Original walk"). */
+    scenarioTitle: string;
+    swappedAt: string;
+}
+
 interface PathwayStoreState {
     pathways: Record<string, Pathway>;
     activePathwayId: string | null;
@@ -79,6 +103,12 @@ interface PathwayStoreState {
      * which clears `pathway.celebratedAt` and re-emits.
      */
     recentCelebration: PathwayCelebration | null;
+    /**
+     * Fire-and-forget signal for "the learner just swapped routes."
+     * Map mounts a small undo banner off this. See `RecentRouteSwap`
+     * above for the full rationale.
+     */
+    recentRouteSwap: RecentRouteSwap | null;
 }
 
 const initialState: PathwayStoreState = {
@@ -86,6 +116,7 @@ const initialState: PathwayStoreState = {
     activePathwayId: null,
     recentCompletion: null,
     recentCelebration: null,
+    recentRouteSwap: null,
 };
 
 /**
@@ -463,6 +494,98 @@ export const pathwayStore = createStore('pathwayStore')<PathwayStoreState>(
      */
     dismissCelebration: () => {
         set.recentCelebration(null);
+    },
+
+    /**
+     * Direct-commit a route swap on a pathway, bypassing the
+     * proposals queue.
+     *
+     * Used by What-If's "Take this path" affordance: by the time
+     * the learner taps it, they've already read the tradeoffs,
+     * seen the route diff, and decided — routing through the
+     * proposals queue would just add a confirmation step they've
+     * already given. We commit immediately and back the action
+     * with a short undo banner on the Map (see `recentRouteSwap`).
+     *
+     * No-op if the pathway isn't loaded. Snapshots the current
+     * `chosenRoute` into `recentRouteSwap.previousRoute` so
+     * `undoRouteSwap` can restore it verbatim — no recomputation,
+     * no surprise about which walk you're going back to.
+     */
+    applyRouteSwap: (
+        pathwayId: string,
+        nextRoute: readonly string[],
+        scenarioTitle: string,
+    ) => {
+        set.state(draft => {
+            const pathway = draft.pathways[pathwayId];
+
+            if (!pathway) return;
+
+            const previousRoute = pathway.chosenRoute;
+            const now = new Date().toISOString();
+
+            pathway.chosenRoute = [...nextRoute];
+            pathway.updatedAt = now;
+            pathway.revision = (pathway.revision ?? 0) + 1;
+
+            draft.recentRouteSwap = {
+                pathwayId,
+                previousRoute,
+                scenarioTitle,
+                swappedAt: now,
+            };
+        });
+    },
+
+    /**
+     * Restore the route that was active before the most recent
+     * `applyRouteSwap`. One-shot — clears `recentRouteSwap` after
+     * applying so the banner doesn't reappear on the next render.
+     *
+     * No-op if there's no swap to undo, or if the pathway is no
+     * longer loaded (rare cross-session edge case).
+     */
+    undoRouteSwap: () => {
+        set.state(draft => {
+            const swap = draft.recentRouteSwap;
+
+            if (!swap) return;
+
+            const pathway = draft.pathways[swap.pathwayId];
+
+            if (!pathway) {
+                draft.recentRouteSwap = null;
+
+                return;
+            }
+
+            const now = new Date().toISOString();
+
+            // Re-stamp the route to the captured previous value.
+            // `undefined` means "the pathway had no committed route
+            // before the swap" — restore that exact shape, don't
+            // synthesize an empty array.
+            if (swap.previousRoute === undefined) {
+                pathway.chosenRoute = undefined;
+            } else {
+                pathway.chosenRoute = [...swap.previousRoute];
+            }
+
+            pathway.updatedAt = now;
+            pathway.revision = (pathway.revision ?? 0) + 1;
+
+            draft.recentRouteSwap = null;
+        });
+    },
+
+    /**
+     * Dismiss the route-swap banner without undoing the swap.
+     * Mirrors `dismissCelebration` — the swap stays committed,
+     * the banner just goes away.
+     */
+    dismissRouteSwap: () => {
+        set.recentRouteSwap(null);
     },
 
     /**
