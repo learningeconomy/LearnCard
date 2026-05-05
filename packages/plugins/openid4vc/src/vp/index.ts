@@ -111,9 +111,8 @@ export type {
     ResponseObjectPayload,
 } from './encrypt';
 
-// `checkCredentialStatus` and the bitstring status-list types live
-// in `@learncard/status-list-plugin`. They were originally exported
-// from this module while VP and status checking lived in the same
-// package; that has since been split.
-//
-// `import { checkCredentialStatus } from '@learncard/status-list-plugin';`
+// Bitstring Status List checking is performed inside
+// `@learncard/didkit-plugin` as part of `verifyCredential`. This
+// module was historically the home of a JS-side status checker;
+// that responsibility has moved into the WASM-backed verifier so
+// the OID4VP path doesn't ship a parallel implementation.

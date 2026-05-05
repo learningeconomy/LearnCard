@@ -49,7 +49,7 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 | SIOPv2 ID token (`signIdToken`) standalone + auto-bundled when `response_type` includes `id_token` | ✅ Slice 8 |
 | Browser-safe runtime (no `node:crypto` / `node:zlib`) — bundles cleanly into `apps/learn-card-app` | ✅ Slice 7.6 |
 | Auto-wired into every seed-based `@learncard/init` function | ✅ Slice 7.6 |
-| Bitstring Status List checking | Extracted into [`@learncard/status-list-plugin`](../status-list/README.md). Auto-wired into the same seed-based init functions; call `lc.invoke.checkCredentialStatus(...)` to use it. |
+| Bitstring Status List checking | Handled by `@learncard/didkit-plugin`. `lc.invoke.verifyCredential(vc)` automatically checks `BitstringStatusListEntry` / `StatusList2021Entry` / `RevocationList2020` when the credential carries a `credentialStatus` field. |
 | Deep-link / QR entry points in `learn-card-app` | ⏳ Slice 9 |
 | UI adapter for consent + selection in `learn-card-app` / `learn-card-base` | ⏳ Slice 10 |
 | Self-hosted issuer + verifier in CI | ⏳ Slice 11 |
@@ -73,7 +73,7 @@ Required peer plugins: `@learncard/vc-plugin`, `@learncard/didkit-plugin`.
 
 ### Related plugins
 
-The wallet's bitstring revocation/suspension checking lives in [`@learncard/status-list-plugin`](../status-list/README.md), which is auto-wired into the same seed-based init functions. Use `lc.invoke.checkCredentialStatus(credential)` after init to consult the W3C Bitstring Status List for any held credential.
+Bitstring Status List revocation/suspension checking is performed inside `@learncard/didkit-plugin` as part of `lc.invoke.verifyCredential(...)`. The plugin recognises `BitstringStatusListEntry` (W3C VC 2.0), `StatusList2021Entry` (legacy alias), and `RevocationList2020`.
 
 ### Bundled by default with `@learncard/init`
 

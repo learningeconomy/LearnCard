@@ -14,7 +14,6 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'packages/plugins/openid4vc/**'
-      - 'packages/plugins/status-list/**'
       - 'tests/openid4vc-interop-e2e/**'
       - 'tests/openid4vc-e2e/**'
       - 'pnpm-lock.yaml'

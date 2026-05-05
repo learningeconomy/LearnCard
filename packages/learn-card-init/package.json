@@ -64,7 +64,6 @@
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/network-plugin": "workspace:^",
         "@learncard/openid4vc-plugin": "workspace:*",
-        "@learncard/status-list-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-api-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
