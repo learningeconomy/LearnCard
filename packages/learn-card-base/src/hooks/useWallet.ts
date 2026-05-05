@@ -266,7 +266,7 @@ export const useWallet = () => {
         metadata: Partial<{ title: string; imgUrl: string }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
-    ): Promise<{ result: boolean; credentialUri: string }> => {
+    ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
         const { title, imgUrl } = metadata;
         const _id = vc.id || uuidv4();
         let returnUri: string | undefined;
@@ -365,6 +365,7 @@ export const useWallet = () => {
             return {
                 result: result ?? false,
                 credentialUri: returnUri ?? '',
+                category,
             };
         } catch (e) {
             console.error(vc, e);
