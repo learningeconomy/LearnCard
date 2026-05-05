@@ -6,8 +6,8 @@ import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
 import { cloneDeep } from 'lodash';
 import { UnsignedVC, VC } from '@learncard/types';
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
+import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 
 // ** CONNECTION MUTATIONS **
 
@@ -144,6 +144,20 @@ export const useAcceptCredentialMutation = () => {
 export const useDeleteCredentialRecord = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const { mutateAsync: syncAllCredentialsToContracts } =
+        useSyncAllCredentialsToContractsMutation();
+
+    const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
+        try {
+            if (data) {
+                console.log(`[DeleteCredentialRecord] ${message}`, data);
+            } else {
+                console.log(`[DeleteCredentialRecord] ${message}`);
+            }
+        } catch {
+            // logging should never break deletion flows
+        }
+    };
 
     type DeleteCredentialResult = {
         uri: string;
@@ -310,7 +324,7 @@ export const useDeleteCredentialRecord = () => {
             }
         },
         onSuccess: result => {
-            const { category, contractUri } = result;
+            const { category } = result;
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (category) {
@@ -326,18 +340,42 @@ export const useDeleteCredentialRecord = () => {
                 });
             }
 
-            if (contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
-                initWallet()
-                    .then(wallet =>
-                        queueAiInsightCredentialRefresh({
-                            wallet,
-                            queryClient,
-                        })
-                    )
-                    .catch(error => {
-                        console.error('Failed to queue AI Insight refresh after delete:', error);
+            logDeleteCredentialRefresh('Scheduling post-delete resync task', {
+                uri: result.uri,
+                category,
+                contractUri: result.contractUri ?? null,
+            });
+
+            setTimeout(() => {
+                void (async () => {
+                    logDeleteCredentialRefresh('Running full credential resync after delete', {
+                        uri: result.uri,
+                        category,
+                        contractUri: result.contractUri ?? null,
                     });
-            }
+
+                    await syncAllCredentialsToContracts();
+
+                    logDeleteCredentialRefresh('Full credential resync completed after delete', {
+                        uri: result.uri,
+                        category,
+                        contractUri: result.contractUri ?? null,
+                    });
+
+                    const wallet = await initWallet();
+                    logDeleteCredentialRefresh('Queueing AI Insight refresh after resync', {
+                        uri: result.uri,
+                        category,
+                        contractUri: result.contractUri ?? null,
+                    });
+                    await queueAiInsightCredentialRefresh({
+                        wallet,
+                        queryClient,
+                    });
+                })().catch(error => {
+                    console.error('Failed to run post-delete cleanup:', error);
+                });
+            }, 0);
 
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
         },

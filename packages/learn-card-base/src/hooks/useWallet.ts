@@ -104,6 +104,26 @@ export const useWallet = () => {
         }
     };
 
+    const queueAiInsightRefreshAfterWalletRemoval = async (
+        reason: string,
+        data?: Record<string, unknown>
+    ) => {
+        try {
+            logWalletSync(`Queueing AI Passport refresh after ${reason}`, data);
+
+            const wallet = await getWallet();
+
+            await queueAiInsightCredentialRefresh({
+                wallet,
+                queryClient,
+            });
+
+            logWalletSync(`Queued AI Passport refresh after ${reason}`, data);
+        } catch (error) {
+            logWalletSyncError(`Failed to queue AI Passport refresh after ${reason}`, error, data);
+        }
+    };
+
     const getWallet = async (
         _privateKey?: string,
         didOverride?: string | true // true for parent user's did
@@ -676,6 +696,11 @@ export const useWallet = () => {
         const wallet = await getWallet();
 
         await wallet.index[location].remove(id);
+
+        await queueAiInsightRefreshAfterWalletRemoval('credential removal', {
+            credentialId: id,
+            location,
+        });
     };
 
     // Remove all credentials
@@ -687,6 +712,10 @@ export const useWallet = () => {
                 wallet.index.SQLite?.removeAll?.(),
                 wallet.index.LearnCloud.removeAll?.(),
             ]);
+
+            await queueAiInsightRefreshAfterWalletRemoval('bulk credential removal', {
+                location: 'all',
+            });
 
             return true;
         } catch (e) {
