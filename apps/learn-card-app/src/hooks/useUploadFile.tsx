@@ -498,12 +498,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
             const fileList = formatFileNameList(filenames);
             const categoryList = formatCategoryList(categories);
-            const filesNoun = fileCount > 1 ? 'files are' : 'file is';
 
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials added. Your ${filesNoun} stored in your wallet.`,
+                        `No credentials were added from ${fileList}.`,
                         {
                             title: `${typeLabel} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
@@ -591,7 +590,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileList}. Your file is stored in your wallet.`,
+                        `No credentials could be extracted from ${fileList}.`,
                         {
                             title: `${typeLabel} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
@@ -717,12 +716,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
             const fileList = formatFileNameList(filenames);
             const categoryList = formatCategoryList(categories);
-            const filesNoun = fileCount > 1 ? 'files are' : 'file is';
 
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileList}. Your ${filesNoun} stored in your wallet.`,
+                        `No credentials could be extracted from ${fileList}.`,
                         {
                             title: `${typeLabel} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
