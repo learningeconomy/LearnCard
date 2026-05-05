@@ -15,6 +15,7 @@ import { lazyWithRetry } from 'learn-card-base';
 
 import { MainHeader } from '../../components/main-header/MainHeader';
 
+import CompletionRoot from './completion/CompletionRoot';
 import JourneysSubHeader from './onboard/JourneysSubHeader';
 import PathwaysHeader from './PathwaysHeader';
 import { pathwayStore } from '../../stores/pathways';
@@ -197,6 +198,21 @@ const PathwaysShell: React.FC = () => {
                             </Switch>
                         </Suspense>
                     </div>
+
+                    {/*
+                        Completion ceremonies — mounted at shell
+                        level so the overlay survives mode
+                        switches and route changes (the learner
+                        finishes a node via NodeDetail and gets
+                        redirected to Today/Map; the celebration
+                        renders on top of whichever mode landed
+                        underneath). Reads
+                        `pathwayStore.recentCelebration` and
+                        renders nothing when there's nothing to
+                        celebrate, so the cost is a single store
+                        subscription on every shell render.
+                    */}
+                    <CompletionRoot />
                 </IonContent>
             </ErrorBoundary>
         </IonPage>

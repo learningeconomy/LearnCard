@@ -107,6 +107,7 @@ beforeEach(() => {
         draft.pathways = {};
         draft.activePathwayId = null;
         draft.recentCompletion = null;
+        draft.recentCelebration = null;
     });
 
     proposalStore.set.state(draft => {
@@ -119,6 +120,7 @@ afterEach(() => {
         draft.pathways = {};
         draft.activePathwayId = null;
         draft.recentCompletion = null;
+        draft.recentCelebration = null;
     });
 
     proposalStore.set.state(draft => {

@@ -558,6 +558,7 @@ const resetPathwaysAndProposals = (): void => {
         draft.pathways = {};
         draft.activePathwayId = null;
         draft.recentCompletion = null;
+        draft.recentCelebration = null;
     });
     proposalStore.set.state(draft => {
         draft.proposals = {};
@@ -610,6 +611,15 @@ export interface PathwaysDevGlobals {
     /** Clear the reactor's dispatch history. */
     clearDispatches: () => void;
     /**
+     * Force-trigger the completion ceremony for a pathway. Useful
+     * for demo screenshots / screencasts: rather than completing
+     * every node by hand, point this at a pathway id (defaults to
+     * the active pathway) and the Tier 1 / Tier 2 ceremony fires
+     * immediately. Internally calls `replayCelebration`, which
+     * tolerates a not-yet-completed pathway by no-op.
+     */
+    triggerCelebration: (pathwayId?: string) => void;
+    /**
      * Nuclear reset — wipes every pathway, proposal, and reactor
      * dispatch-history entry so the next seed call starts clean.
      */
@@ -640,12 +650,30 @@ export const installPathwaysDevGlobals = (): void => {
         inspectPathway: inspectActivePathway,
         listDispatches: () => pathwayProgressReactor.recentDispatches(),
         clearDispatches: () => pathwayProgressReactor.resetDispatchHistory(),
+        triggerCelebration: (pathwayId?: string) => {
+            const id = pathwayId ?? pathwayStore.get.activePathwayId();
+
+            if (!id) {
+                console.warn(
+                    '[pathwaysDev] triggerCelebration: no pathwayId given and no active pathway.',
+                );
+
+                return;
+            }
+
+            // `forceCelebration` (vs `replayCelebration`) intentionally
+            // bypasses the `destinationCompleted` gate so the Debug
+            // Widget can fire the ceremony against any pathway —
+            // including ones that haven't been ground through yet —
+            // for demo screenshots and screencasts.
+            pathwayStore.set.forceCelebration(id);
+        },
         resetAll: resetPathwaysAndProposals,
     };
 
     console.info(
         '[pathwaysDev] Installed. Available: seedAws(did) / seedDemo(did) / ' +
             'dropVc() / simulateCredentialClaim({...}) / simulateAiSessionFinish({topicUri}) / ' +
-            'inspectPathway() / listDispatches() / clearDispatches() / resetAll().',
+            'inspectPathway() / listDispatches() / clearDispatches() / triggerCelebration(pathwayId?) / resetAll().',
     );
 };

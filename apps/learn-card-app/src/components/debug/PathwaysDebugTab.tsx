@@ -41,6 +41,7 @@ import {
     Package,
     Play,
     RefreshCw,
+    Sparkles,
     Target,
     Zap,
 } from 'lucide-react';
@@ -521,6 +522,66 @@ export const PathwaysDebugTab: React.FC = () => {
         });
     }, []);
 
+    /**
+     * Force-fire the completion ceremony for the active pathway.
+     *
+     * Routes through `triggerCelebration` (which now bypasses the
+     * `destinationCompleted` gate via `forceCelebration`), so the
+     * Tier 1 / Tier 2 ceremony renders even on pathways that
+     * haven't been ground through yet — the load-bearing demo
+     * use case for screenshots and screencasts.
+     *
+     * The store action infers Tier 1 vs Tier 2 from the pathway's
+     * parent topology: a sub-pathway (one with a parent in the
+     * map) renders Tier 1, a root pathway renders Tier 2. So a
+     * single button covers both ceremonies — fire it from a
+     * sub-pathway context for Tier 1, from a root for Tier 2.
+     */
+    const handleTriggerCelebration = useCallback(() => {
+        const d = getDev();
+        const activeId = pathwayStore.get.activePathwayId();
+
+        if (!d) {
+            emitPathwayDebugEvent(
+                'pathway:simulator-fired',
+                'Trigger celebration: dev globals not available',
+                { level: 'warning' },
+            );
+
+            return;
+        }
+
+        if (!activeId) {
+            emitPathwayDebugEvent(
+                'pathway:simulator-fired',
+                'Trigger celebration: no active pathway',
+                { level: 'warning' },
+            );
+
+            return;
+        }
+
+        const active = pathwayStore.get.pathways()[activeId];
+        const tier =
+            active && Object.values(pathwayStore.get.pathways()).some(p =>
+                p.nodes.some(
+                    n =>
+                        n.stage.policy.kind === 'composite'
+                        && n.stage.policy.pathwayRef === activeId,
+                ),
+            )
+                ? 'sub-pathway (Tier 1)'
+                : 'pathway (Tier 2)';
+
+        emitPathwayDebugEvent(
+            'pathway:simulator-fired',
+            `Triggered ${tier} ceremony for "${active?.title ?? activeId}"`,
+            { level: 'success', data: { pathwayId: activeId, tier } },
+        );
+
+        d.triggerCelebration();
+    }, []);
+
     const handleCustomFire = useCallback((form: CustomClaimForm) => {
         const d = getDev();
 
@@ -732,6 +793,24 @@ export const PathwaysDebugTab: React.FC = () => {
                         >
                             <Package className="w-3 h-3" />
                             Non-matching credential (control)
+                        </button>
+
+                        {/*
+                            Force-fire the completion ceremony.
+                            Bypasses the destinationCompleted gate
+                            so it works on freshly-seeded pathways —
+                            ideal for screenshots and screencasts.
+                            Tier 1 vs Tier 2 is auto-detected from
+                            the active pathway's parent topology.
+                        */}
+                        <button
+                            type="button"
+                            onClick={handleTriggerCelebration}
+                            disabled={!dev}
+                            className="flex items-center gap-1.5 text-[11px] bg-amber-700 hover:bg-amber-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded transition-colors"
+                        >
+                            <Sparkles className="w-3 h-3" />
+                            Trigger completion ceremony
                         </button>
                     </div>
 

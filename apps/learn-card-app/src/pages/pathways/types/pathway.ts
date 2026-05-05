@@ -644,6 +644,31 @@ export const PathwaySchema = z.object({
     sourceUri: z.string().optional(),
     sourceCtid: z.string().optional(),
 
+    // -------------------------------------------------------------
+    // Completion ceremony bookkeeping (optional, additive — no
+    // schemaVersion bump). These fields back the
+    // pathway-completion / sub-pathway-completion ceremonies
+    // (`completion/CompletionRoot`).
+    //
+    //   - `celebratedAt` is the timestamp of the *first* time the
+    //     pathway hit `destinationCompleted`. Set by the rollup
+    //     detection in `pathwayStore.rollupInDraft`. Acts as the
+    //     idempotency guard so re-renders, hot-reloads, and
+    //     re-imports never re-fire the ceremony. The
+    //     `replayCelebration` action *clears* this so the learner
+    //     can rewatch on demand without having to re-complete
+    //     the pathway.
+    //
+    //   - `completionReflection` is the optional one-liner the
+    //     learner types into the Tier 2 reflection field
+    //     ("In a sentence — what did this become for you?").
+    //     Stored on the pathway so the completed-pathway state on
+    //     Map / Switcher can quote it back as the learner's own
+    //     bookmark. Empty / absent means "no reflection captured."
+    // -------------------------------------------------------------
+    celebratedAt: z.string().datetime().optional(),
+    completionReflection: z.string().optional(),
+
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
 });

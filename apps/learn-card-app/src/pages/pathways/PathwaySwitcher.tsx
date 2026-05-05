@@ -49,6 +49,7 @@ import {
     addOutline,
     chevronDownOutline,
     checkmarkOutline,
+    sparklesOutline,
     trashOutline,
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
@@ -118,6 +119,7 @@ interface PathwayRowProps {
     isActive: boolean;
     onSwitch: (pathwayId: string) => void;
     onRemove: (pathwayId: string, title: string) => void;
+    onReplayCelebration: (pathwayId: string) => void;
 }
 
 const PathwayRow: React.FC<PathwayRowProps> = ({
@@ -127,9 +129,11 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
     isActive,
     onSwitch,
     onRemove,
+    onReplayCelebration,
 }) => {
     const progress = computePathwayProgress(pathway);
     const isChild = depth === 1;
+    const isCompleted = progress.destinationCompleted;
 
     return (
         <li className="group flex items-stretch">
@@ -197,11 +201,33 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                         {pathway.title}
                     </span>
 
-                    <span className="block mt-0.5 flex items-center gap-1.5">
-                        <ProgressBadge
-                            completed={progress.completed}
-                            total={progress.total}
-                        />
+                    <span className="block mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        {/*
+                            Completed pathways collapse the
+                            progress fraction into a single tag —
+                            "X / Y" on a finished pathway is a
+                            tautology, "Completed" carries the
+                            news. The sparkle glyph mirrors the
+                            ceremony so the row reads as the same
+                            beat in compressed form.
+                        */}
+                        {isCompleted ? (
+                            <span className="inline-flex items-center gap-1
+                                             text-[11px] font-semibold uppercase
+                                             tracking-wide text-emerald-700">
+                                <IonIcon
+                                    icon={sparklesOutline}
+                                    className="text-[11px]"
+                                    aria-hidden
+                                />
+                                Completed
+                            </span>
+                        ) : (
+                            <ProgressBadge
+                                completed={progress.completed}
+                                total={progress.total}
+                            />
+                        )}
 
                         {isChild && (
                             <>
@@ -218,8 +244,47 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                             </>
                         )}
                     </span>
+
+                    {/*
+                        Reflection quote on completed pathways.
+                        Renders the learner's own one-liner
+                        beneath the row as a soft italic — their
+                        bookmark on this journey. Stays inside
+                        the row's switch button so tapping the
+                        quote also opens the pathway.
+                    */}
+                    {isCompleted && pathway.completionReflection && (
+                        <span className="block mt-1 text-[11px] italic
+                                         text-grayscale-500 leading-snug
+                                         line-clamp-2">
+                            &ldquo;{pathway.completionReflection}&rdquo;
+                        </span>
+                    )}
                 </span>
             </button>
+
+            {/*
+                Right-side action cluster. The replay-ceremony
+                button only renders for completed pathways and
+                is the *first* action so it's reached before the
+                destructive trash button on tab order.
+            */}
+            {isCompleted && (
+                <button
+                    type="button"
+                    aria-label={`View ceremony for ${pathway.title}`}
+                    onClick={e => {
+                        e.stopPropagation();
+                        onReplayCelebration(pathway.id);
+                    }}
+                    className="shrink-0 px-3 text-grayscale-400
+                               hover:text-emerald-700 hover:bg-emerald-50
+                               transition-colors
+                               opacity-0 group-hover:opacity-100 focus:opacity-100"
+                >
+                    <IonIcon icon={sparklesOutline} className="text-sm" />
+                </button>
+            )}
 
             <button
                 type="button"
@@ -433,6 +498,20 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
         history.push('/pathways/onboard');
     };
 
+    /**
+     * Re-emit the completion ceremony for a pathway the learner
+     * has already finished. Backed by `replayCelebration` on the
+     * store, which clears `pathway.celebratedAt` so the rollup
+     * doesn't suppress the re-emission, then synthesizes a fresh
+     * `recentCelebration` entry for `CompletionRoot` to read.
+     *
+     * Closes the popover so the ceremony has the screen to itself.
+     */
+    const handleReplay = (pathwayId: string) => {
+        setOpen(false);
+        pathwayStore.set.replayCelebration(pathwayId);
+    };
+
     // Variant-dependent class tokens.
     // ────────────────────────────────────────────────────────────────
     // `chip` — the legacy grey pill (xs font, px-3 py-2, bg-grayscale-100).
@@ -586,6 +665,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
                                             isActive={root.id === activeId}
                                             onSwitch={handleSwitch}
                                             onRemove={handleRemove}
+                                            onReplayCelebration={handleReplay}
                                         />
 
                                         {children.map((child, idx) => (
@@ -599,6 +679,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
                                                 isActive={child.id === activeId}
                                                 onSwitch={handleSwitch}
                                                 onRemove={handleRemove}
+                                                onReplayCelebration={handleReplay}
                                             />
                                         ))}
                                     </React.Fragment>
