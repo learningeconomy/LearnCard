@@ -347,11 +347,14 @@ export interface AnalyticsEventPayloads {
         hasDestination: boolean;
         /**
          * Where the import originated — the curated catalog card the
-         * learner clicked, or a direct CTID / URL they pasted. Lets us
-         * measure whether the browse UX is actually getting used vs.
-         * power users bypassing it.
+         * learner clicked, a direct CTID / URL they pasted, or the
+         * cold-start `DiscoverStart` showcase picker on
+         * `/pathways/onboard`. Lets us measure whether the browse UX
+         * is actually getting used vs. power users bypassing it, and
+         * how often new learners pick a showcase to demo with versus
+         * describing their own goal.
          */
-        importSource: 'catalog' | 'direct';
+        importSource: 'catalog' | 'direct' | 'onboard';
     };
 
     [AnalyticsEvents.PATHWAYS_CATALOG_BROWSED]: {

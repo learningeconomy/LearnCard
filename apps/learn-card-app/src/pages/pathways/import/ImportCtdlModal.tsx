@@ -60,7 +60,8 @@ import {
 import { fromCtdlPathway } from './fromCtdlPathway';
 import { makeCorsProxiedFetch } from './makeCorsProxiedFetch';
 import { SHOWCASES } from './showcase';
-import type { ShowcaseDefinition, ShowcasePreview } from './showcase';
+import type { ShowcaseDefinition } from './showcase';
+import { ShowcaseCard } from './showcase/ShowcaseCard';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -422,7 +423,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                                     <ShowcaseCard
                                         key={showcase.id}
                                         preview={showcase.preview}
-                                        onImport={() => handleShowcaseImport(showcase)}
+                                        onPick={() => handleShowcaseImport(showcase)}
                                     />
                                 ))}
                             </div>
@@ -670,80 +671,11 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     );
 };
 
-// ---------------------------------------------------------------------------
-// ShowcaseCard — hand-authored demo bundle entry, shown at the top of
-// the browse view. Purposefully distinct from the CE catalog cards:
-// emerald gradient + "Demo" pill + feature tags (rather than CE tags)
-// so nobody mistakes it for a real registry record.
-// ---------------------------------------------------------------------------
-
-const ShowcaseCard: React.FC<{
-    preview: ShowcasePreview;
-    onImport: () => void;
-}> = ({ preview, onImport }) => (
-    <button
-        type="button"
-        onClick={onImport}
-        className="w-full text-left p-4 rounded-2xl
-                   bg-gradient-to-br from-emerald-50 via-white to-emerald-50
-                   border border-emerald-200 hover:border-emerald-400
-                   hover:shadow-md transition-all duration-150
-                   flex gap-3 items-start group"
-    >
-        <div
-            aria-hidden
-            className="shrink-0 w-14 h-14 rounded-xl
-                       bg-gradient-to-br from-emerald-500 to-emerald-700
-                       text-white flex items-center justify-center
-                       shadow-sm shadow-emerald-700/20
-                       group-hover:shadow-md group-hover:shadow-emerald-700/30
-                       transition-shadow"
-        >
-            <IonIcon icon={layersOutline} className="text-2xl" />
-        </div>
-
-        <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
-                    Demo · Try everything
-                </span>
-
-                {preview.audience && (
-                    <span className="text-[10px] font-medium text-emerald-900/70">
-                        · {preview.audience}
-                    </span>
-                )}
-            </div>
-
-            <div className="text-sm font-semibold text-grayscale-900 leading-tight">
-                {preview.title}
-            </div>
-
-            <div className="text-xs text-grayscale-500">
-                <span className="inline-flex items-center gap-0.5">
-                    <IonIcon icon={layersOutline} className="text-[11px]" />
-                    {preview.totalStepCount} steps · {preview.subPathwayCount} sub-pathways
-                </span>
-            </div>
-
-            <div className="text-xs text-grayscale-600 leading-relaxed">
-                {preview.description}
-            </div>
-
-            <div className="flex flex-wrap gap-1 pt-0.5">
-                {preview.featureTags.map(tag => (
-                    <span
-                        key={tag}
-                        className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800
-                                   text-[10px] font-medium"
-                    >
-                        {tag}
-                    </span>
-                ))}
-            </div>
-        </div>
-    </button>
-);
+// ShowcaseCard lives in `./showcase/ShowcaseCard.tsx` so the
+// cold-start `DiscoverStart` surface can render the same card shape
+// without forcing the onboarding flow to depend on the entire import
+// modal. See that module for the visual rationale (emerald gradient,
+// "Demo · Try everything" eyebrow, etc.).
 
 // ---------------------------------------------------------------------------
 // CatalogCard — one row in the browse grid

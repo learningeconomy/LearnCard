@@ -112,7 +112,12 @@ src/pages/pathways/
 │   └── termination.ts          # progress computation
 │
 ├── onboard/                    # Cold-start
-│   ├── OnboardRoute.tsx, GoalCapture, CredentialScan, SuggestionGrid
+│   ├── OnboardRoute.tsx, DiscoverStart, CredentialScan, SuggestionGrid
+│   │                           # DiscoverStart is the front door:
+│   │                           # showcase picker + inline goal capture.
+│   │                           # GoalCapture.tsx is kept as an
+│   │                           # alternative entry component but is
+│   │                           # not currently mounted by OnboardRoute.
 │   ├── classifyAltitude.ts     # heuristic; no LLM
 │   ├── suggestPathways.ts      # vector lookup over templates
 │   ├── templates.ts            # hand-authored templates

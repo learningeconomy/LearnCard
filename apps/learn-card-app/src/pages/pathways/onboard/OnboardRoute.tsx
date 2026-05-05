@@ -1,10 +1,18 @@
 /**
  * OnboardRoute — cold-start / first-mile flow (docs § 6).
  *
- * Three-step stepper: GoalCapture → CredentialScan → SuggestionGrid.
- * Picking a suggestion instantiates the template, sets it as the active
- * pathway, and redirects to Today. The whole flow works with an empty
- * wallet and without network — the "cold-start always renders" invariant.
+ * Stepper: DiscoverStart → CredentialScan → SuggestionGrid.
+ *
+ * `DiscoverStart` is the new front door: a peer-level chooser between
+ * picking a curated showcase journey (instant-load, short-circuits the
+ * stepper and lands the learner on `/pathways/today`) and describing
+ * their own goal (forwards into the existing scan/suggestions flow,
+ * which is unchanged).
+ *
+ * Picking a suggestion still instantiates the template, sets it as the
+ * active pathway, and redirects to Today. The whole flow continues to
+ * work with an empty wallet and without network — the "cold-start
+ * always renders" invariant is preserved.
  */
 
 import React, { useMemo, useState } from 'react';
@@ -17,7 +25,7 @@ import { useLearnerDid } from '../hooks/useLearnerDid';
 
 import { classifyAltitude } from './classifyAltitude';
 import CredentialScan from './CredentialScan';
-import GoalCapture from './GoalCapture';
+import DiscoverStart from './DiscoverStart';
 import SuggestionGrid from './SuggestionGrid';
 import { instantiateTemplate } from './templates';
 import {
@@ -26,14 +34,18 @@ import {
     type WalletSignal,
 } from './suggestPathways';
 
-type Step = 'goal' | 'scan' | 'suggestions';
+// `discover` replaces the legacy `goal`-only entry: a peer-level
+// chooser between curated showcases and the free-text goal
+// capture. The downstream `scan` and `suggestions` steps are
+// unchanged so anyone deep-linking into them continues to work.
+type Step = 'discover' | 'scan' | 'suggestions';
 
 const OnboardRoute: React.FC = () => {
     const history = useHistory();
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
 
-    const [step, setStep] = useState<Step>('goal');
+    const [step, setStep] = useState<Step>('discover');
     const [goalText, setGoalText] = useState('');
     const [wallet, setWallet] = useState<WalletSignal>({ tags: [] });
     const [renderStartedAt, setRenderStartedAt] = useState<number | null>(null);
@@ -115,11 +127,11 @@ const OnboardRoute: React.FC = () => {
     };
 
     switch (step) {
-        case 'goal':
+        case 'discover':
             return (
-                <GoalCapture
-                    initial={goalText}
-                    onContinue={goToScan}
+                <DiscoverStart
+                    initialGoal={goalText}
+                    onContinueWithGoal={goToScan}
                     onSkip={() => goToScan('')}
                 />
             );
@@ -128,7 +140,7 @@ const OnboardRoute: React.FC = () => {
             return (
                 <CredentialScan
                     onContinue={goToSuggestions}
-                    onBack={() => setStep('goal')}
+                    onBack={() => setStep('discover')}
                 />
             );
 

@@ -74,9 +74,44 @@ const PathwaysShell: React.FC = () => {
                                     )}
                                 </Route>
 
-                                <Route exact path="/pathways/today" component={TodayMode} />
-                                <Route exact path="/pathways/map" component={MapMode} />
-                                <Route exact path="/pathways/what-if" component={WhatIfMode} />
+                                {/*
+                                    Today / Map / What-if have nothing
+                                    useful to show without an active
+                                    pathway — their empty states were
+                                    three different "pick a pathway
+                                    first" cards, which is worse than
+                                    just routing the learner into the
+                                    discovery flow. Build stays mounted
+                                    because its empty state *is* the
+                                    import entry point. Redirects are
+                                    inline (not a wrapper component) so
+                                    the activePathway subscription in
+                                    the shell re-evaluates on store
+                                    change and the learner lands back
+                                    on their intended tab automatically
+                                    once a pathway is loaded.
+                                */}
+                                <Route exact path="/pathways/today">
+                                    {activePathway ? (
+                                        <TodayMode />
+                                    ) : (
+                                        <Redirect to="/pathways/onboard" />
+                                    )}
+                                </Route>
+                                <Route exact path="/pathways/map">
+                                    {activePathway ? (
+                                        <MapMode />
+                                    ) : (
+                                        <Redirect to="/pathways/onboard" />
+                                    )}
+                                </Route>
+                                <Route exact path="/pathways/what-if">
+                                    {activePathway ? (
+                                        <WhatIfMode />
+                                    ) : (
+                                        <Redirect to="/pathways/onboard" />
+                                    )}
+                                </Route>
                                 <Route exact path="/pathways/build" component={BuildMode} />
                                 <Route exact path="/pathways/onboard" component={OnboardRoute} />
                                 <Route
