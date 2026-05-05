@@ -494,24 +494,18 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const filenames = [rawArtifactVc, ...(additionalRawArtifacts ?? [])].map(
                 (r: any) => r?.rawArtifact?.fileName
             );
-            const typeLabel = formatTypeLabel(fileType);
+            const fileCount = filenames.filter(Boolean).length;
+            const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
             const fileList = formatFileNameList(filenames);
             const categoryList = formatCategoryList(categories);
+            const filesNoun = fileCount > 1 ? 'files are' : 'file is';
 
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials selected. Your file is stored in your wallet.`,
+                        `No credentials added. Your ${filesNoun} stored in your wallet.`,
                         {
                             title: `${typeLabel} saved`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
-                } else if (totalCredentials === 1) {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${typeLabel} ${fileList} Successfully Added`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
@@ -519,7 +513,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     presentToast(
                         `Successfully added to ${categoryList}.`,
                         {
-                            title: `${totalCredentials} credentials saved from ${fileList}`,
+                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
@@ -603,19 +597,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
-                } else if (totalCredentials === 1) {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${typeLabel} ${fileList} Successfully Added`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
                 } else {
                     presentToast(
                         `Successfully added to ${categoryList}.`,
                         {
-                            title: `${totalCredentials} credentials parsed from ${fileList}`,
+                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
@@ -727,25 +713,18 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             aiInsightMutation.mutate();
             closeModal();
 
-            const typeLabel = formatTypeLabel(fileType);
-            const typeLabelPlural = formatTypeLabel(fileType, { plural: true });
+            const fileCount = filenames.filter(Boolean).length;
+            const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
             const fileList = formatFileNameList(filenames);
             const categoryList = formatCategoryList(categories);
+            const filesNoun = fileCount > 1 ? 'files are' : 'file is';
 
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileList}. Your file is stored in your wallet.`,
+                        `No credentials could be extracted from ${fileList}. Your ${filesNoun} stored in your wallet.`,
                         {
-                            title: `${typeLabelPlural} saved`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
-                } else if (totalCredentials === 1) {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${typeLabel} ${fileList} Successfully Added`,
+                            title: `${typeLabel} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
@@ -753,7 +732,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     presentToast(
                         `Successfully added to ${categoryList}.`,
                         {
-                            title: `${totalCredentials} credentials parsed from ${fileList}`,
+                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
