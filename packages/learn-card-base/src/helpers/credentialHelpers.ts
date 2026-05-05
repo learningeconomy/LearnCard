@@ -507,36 +507,36 @@ export const getDefaultCategoryForCredential = (
     if (!verificationResult.success) {
         // For LER embedded credentials without full @context, extract achievementType as fallback
         if (options?.skipValidation) {
-            const achievementType = Array.isArray(_credential?.credentialSubject)
+            const lerAchievementType = Array.isArray(_credential?.credentialSubject)
                 ? _credential.credentialSubject[0]?.achievement?.achievementType
                 : _credential?.credentialSubject?.achievement?.achievementType;
-            if (achievementType && CATEGORY_MAP[achievementType]) {
-                return CATEGORY_MAP[achievementType];
+            if (lerAchievementType && CATEGORY_MAP[lerAchievementType]) {
+                return CATEGORY_MAP[lerAchievementType];
             }
         }
         return 'Achievement';
     }
 
     const vc = verificationResult.data;
-    const vcAchievementType = Array.isArray(vc?.credentialSubject)
+    const achievementType = Array.isArray(vc?.credentialSubject)
         ? vc.credentialSubject[0]?.achievement?.achievementType
         : vc?.credentialSubject?.achievement?.achievementType;
 
     // if there is no achievementType, default to Achievement
-    if (!vcAchievementType) return 'Achievement';
+    if (!achievementType) return 'Achievement';
 
     if (otherCredentialTypes.includes(vc?.type[1])) {
         return CATEGORY_MAP[vc?.type[1]];
     }
 
     // handles custom boost types
-    if (isCustomBoostType(vcAchievementType)) {
-        const customBoostCategory = getCategoryTypeFromCustomType?.(vcAchievementType);
+    if (isCustomBoostType(achievementType)) {
+        const customBoostCategory = getCategoryTypeFromCustomType?.(achievementType);
         return customBoostCategory;
     }
 
     // handle mapping an achievementType to a category
-    const mappedAchievementType = CATEGORY_MAP[vcAchievementType];
+    const mappedAchievementType = CATEGORY_MAP[achievementType];
     // if the achievementType was mapped correctly , return its category
     if (mappedAchievementType) return mappedAchievementType;
     // if there is no valid achievementType mapping, default to Achievement

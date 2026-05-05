@@ -101,6 +101,15 @@ const buildNarrative = (narrative?: string, metadata?: string[]): string | undef
     return text || (metadataText ? metadataText : undefined);
 };
 
+/**
+ * Cleans @context arrays by removing inline definition objects and normalizing context versions.
+ *
+ * Why: Old credentials contained inline context objects with custom term mappings (e.g., lcn:, xsd:)
+ * that conflicted with JSON-LD spec when embedded in LER-RS. Also normalizes v1 → v2 specs.
+ *
+ * Example: ["https://www.w3.org/2018/credentials/v1", {...inline object...}]
+ *          → ["https://www.w3.org/ns/credentials/v2"]
+ */
 const cleanContextArray = (context: unknown): unknown => {
     if (!Array.isArray(context)) return context;
     return context
@@ -112,6 +121,17 @@ const cleanContextArray = (context: unknown): unknown => {
         );
 };
 
+/**
+ * Recursively strips nested @context properties from credentials while preserving top-level @context.
+ *
+ * Why: When credentials are embedded in LER-RS, nested contexts (boostCredential, proof, etc.)
+ * aren't needed and can cause "Protected term redefinition" errors when different credentials
+ * have conflicting context definitions. The LER-RS provides authoritative context at top level.
+ *
+ * How it works:
+ * - depth 0 (top-level): Cleans @context (removes inline objects, normalizes versions)
+ * - depth > 0 (nested): Completely strips @context
+ */
 const stripNestedContexts = (obj: any, depth: number = 0): any => {
     if (obj === null || typeof obj !== 'object') return obj;
 
@@ -136,6 +156,10 @@ const stripNestedContexts = (obj: any, depth: number = 0): any => {
     return result;
 };
 
+/**
+ * Prepares a credential for embedding in LER-RS by normalizing its context.
+ * Called by buildVerificationReference for work history, education, and certification items.
+ */
 const stripProblematicContext = (vc: VC): VC => {
     return stripNestedContexts(vc, 0) as VC;
 };
