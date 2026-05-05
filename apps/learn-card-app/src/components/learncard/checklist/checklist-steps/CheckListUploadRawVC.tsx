@@ -53,6 +53,14 @@ export const CheckListUploadRawVC: React.FC = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    const removeRawVcOptimistic = (id: string) => {
+        setRawVCs(prev => prev.filter(v => v?.id !== id));
+    };
+    const restoreRawVcs = () => {
+        // Re-load from wallet to recover the true list
+        loadRawVCs();
+    };
+
     const loadRawVCs = async () => {
         try {
             setIsLoading(true);
@@ -356,6 +364,8 @@ export const CheckListUploadRawVC: React.FC = () => {
                                     <CheckListUploadedItem
                                         key={rawVC?.id}
                                         rawVC={rawVC}
+                                        onOptimisticDelete={removeRawVcOptimistic}
+                                        onDeleteFailed={restoreRawVcs}
                                         onSuccess={() => loadRawVCs()}
                                     />
                                 );
