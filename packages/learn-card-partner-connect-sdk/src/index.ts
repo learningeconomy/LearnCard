@@ -18,6 +18,7 @@
  * ```
  */
 
+import { PartnerConnectError } from './types';
 import type {
     PartnerConnectOptions,
     IdentityResponse,
@@ -53,6 +54,8 @@ import type {
     PendingRequest,
 } from './types';
 
+// Re-export the class as a value plus all type exports.
+export { PartnerConnectError } from './types';
 export type * from './types';
 
 /**
@@ -395,7 +398,12 @@ export class PartnerConnect {
                 pending.resolve(data.data);
             } else if (data.type === 'ERROR') {
                 pending.reject(
-                    data.error || { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred' }
+                    PartnerConnectError.from(
+                        data.error || {
+                            code: 'UNKNOWN_ERROR',
+                            message: 'An unknown error occurred',
+                        }
+                    )
                 );
             }
         };
@@ -416,10 +424,9 @@ export class PartnerConnect {
      */
     private sendMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
         if (!this.isInitialized) {
-            return Promise.reject({
-                code: 'SDK_NOT_INITIALIZED',
-                message: 'SDK is not initialized',
-            } as LearnCardError);
+            return Promise.reject(
+                new PartnerConnectError('SDK_NOT_INITIALIZED', 'SDK is not initialized')
+            );
         }
 
         return new Promise<T>((resolve, reject) => {
@@ -429,10 +436,12 @@ export class PartnerConnect {
             const timeoutId = setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
                     this.pendingRequests.delete(requestId);
-                    reject({
-                        code: 'LC_TIMEOUT',
-                        message: `Request ${action} timed out after ${this.requestTimeout}ms`,
-                    } as LearnCardError);
+                    reject(
+                        new PartnerConnectError(
+                            'LC_TIMEOUT',
+                            `Request ${action} timed out after ${this.requestTimeout}ms`
+                        )
+                    );
                 }
             }, this.requestTimeout);
 
@@ -885,10 +894,12 @@ export class PartnerConnect {
         // Reject all pending requests
         for (const [requestId, pending] of this.pendingRequests.entries()) {
             clearTimeout(pending.timeoutId);
-            pending.reject({
-                code: 'SDK_DESTROYED',
-                message: 'SDK was destroyed before request completed',
-            });
+            pending.reject(
+                new PartnerConnectError(
+                    'SDK_DESTROYED',
+                    'SDK was destroyed before request completed'
+                )
+            );
         }
 
         this.pendingRequests.clear();

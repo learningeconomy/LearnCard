@@ -1982,7 +1982,9 @@ export const SummaryCredentialDataValidator = z.object({
                 description: z
                     .string()
                     .describe('Description explaining why this next step is recommended'),
-                keywords: SummaryCredentialKeywordValidator,
+                keywords: SummaryCredentialKeywordValidator.optional().describe(
+                    'Optional taxonomy keywords for occupations/careers/jobs/skills/fieldOfStudy. Omit if not relevant.'
+                ),
             })
         )
         .describe('Recommended follow-up activities or learning modules'),

@@ -607,17 +607,21 @@ async function recordLearningSession(sessionData) {
         const session = await learnCard.sendAiSessionCredential({
             sessionTitle: sessionData.title,
             summaryData: {
-                keyTakeaways: sessionData.takeaways,
-                skillsDemonstrated: sessionData.skills,
-                learningOutcomes: sessionData.outcomes,
+                title: sessionData.title,
+                summary: sessionData.summary,
+                learned: sessionData.takeaways,
+                skills: sessionData.skills.map(s => ({
+                    title: s.name,
+                    description: s.description,
+                })),
                 nextSteps: sessionData.recommendations.map(r => ({
                     title: r.title,
                     description: r.description,
-                    type: r.type, // 'course' | 'practice' | 'assessment' | 'resource'
+                    // keywords is optional — omit unless you have taxonomy data
                 })),
                 reflections: sessionData.reflections.map(r => ({
-                    prompt: r.question,
-                    response: r.answer,
+                    title: r.question,
+                    description: r.answer,
                 })),
             },
             metadata: {
@@ -629,6 +633,11 @@ async function recordLearningSession(sessionData) {
 
         console.log('Session recorded:', session.sessionCredentialUri);
         console.log('Topic:', session.topicUri);
+
+        // 🎉 Celebrate the user's first AI session ever from this app
+        if (session.isNewTopic) {
+            showCelebration('First AI session recorded!');
+        }
     } catch (error) {
         console.error('Failed to record session:', error);
     }
@@ -682,9 +691,13 @@ class AITutor {
         const session = await learnCard.sendAiSessionCredential({
             sessionTitle: data.title,
             summaryData: {
-                keyTakeaways: data.takeaways,
-                skillsDemonstrated: data.demonstratedSkills,
-                learningOutcomes: data.outcomes,
+                title: data.title,
+                summary: data.summary,
+                learned: data.takeaways,
+                skills: data.demonstratedSkills.map(s => ({
+                    title: s.name,
+                    description: s.description,
+                })),
                 nextSteps: data.recommendations,
                 reflections: data.userReflections,
             },
@@ -702,35 +715,263 @@ await tutor.conductSession('How do I learn advanced TypeScript?');
 
 ### Session Data Best Practices
 
-**Key Takeaways:**
+**`title`:**
 
-- Focus on 3-5 main concepts learned
+- Short, scannable headline for the session
+- Reuse across `sessionTitle` if you have nothing fancier
+
+**`summary`:**
+
+- One paragraph capturing what happened in the session
+- Written so the user (and the AI) can re-orient at a glance
+
+**`learned` (string array):**
+
+- 3–5 main concepts gained, one per bullet
 - Use clear, concise language
 - Connect to practical applications
 
-**Skills Demonstrated:**
+**`skills` (array of `{ title, description }`):**
 
-- List specific competencies shown
+- Group related competencies under a category title
+- Description explains what the user can now do
 - Use standard skill taxonomy when possible
-- Include proficiency level if known
 
-**Learning Outcomes:**
-
-- State what the learner can now do
-- Use action verbs (explain, demonstrate, apply)
-- Make outcomes measurable when possible
-
-**Next Steps:**
+**`nextSteps` (array of `{ title, description, keywords? }`):**
 
 - Recommend specific follow-up activities
-- Include resource links when available
 - Vary types (courses, practice, assessments)
+- `keywords` is **optional** — only include it if you actually have taxonomy data; otherwise omit the field entirely
 
-**Reflections:**
+**`reflections` (array of `{ title, description }`):**
 
-- Capture learner insights
-- Document "aha moments"
+- Capture learner insights and "aha moments"
 - Record self-assessments
+
+### 🎉 Use `isNewTopic` for first-run UX
+
+`sendAiSessionCredential` returns an `isNewTopic: boolean`. The first call from your app creates the AI Topic; subsequent calls reuse it. Use this flag to celebrate first-run, onboard the user, or show a different UI:
+
+```typescript
+const session = await learnCard.sendAiSessionCredential(/* ... */);
+
+if (session.isNewTopic) {
+    // First time the user has used this app's AI Tutor.
+    // Celebrate, show a one-time tour, or send a welcome notification.
+    showFirstSessionCelebration();
+} else {
+    showQuickConfirmation();
+}
+```
+
+### End-to-End AI Tutor Tutorial
+
+For a complete, runnable AI Tutor walkthrough that wires `requestConsent → requestLearnerContext → sendAiSessionCredential → sendNotification` together, see the working example app at [`examples/app-store-apps/4-request-learner-context-app`](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/4-request-learner-context-app). It demonstrates:
+
+- Resolving the consent contract automatically from your App Store listing
+- Caching `requestLearnerContext` (it takes 2–5s in production — cache, render, revalidate)
+- Mapping AI tutor outputs to the real `summaryData` schema
+- Bridging notifications back into the wallet via the `actionPath` + `launchFeature` pattern
+
+## Tracking App State with Counters
+
+Many embedded apps need to remember small bits of per-user state across sessions — _"how many lessons has this user completed?"_, _"what's their current streak?"_, _"have they hit the threshold to unlock a credential yet?"_. The Partner Connect SDK provides a lightweight counter API for exactly this, scoped to **(user, app)** pairs and stored in the user's LearnCard account.
+
+### When to use counters
+
+- **Progress tracking** — lessons completed, quizzes passed, sessions recorded
+- **Streaks** — daily-use streaks, consecutive-correct streaks
+- **Threshold-gated credential issuance** — "issue the badge after 10 sessions"
+- **Lightweight feature flags** — "has this user seen the onboarding tour?" (use `0` / `1`)
+
+### When **not** to use counters
+
+- **Anything not an integer** — values must be whole numbers. Pre-aggregate fractional state.
+- **High-cardinality keys** — there's a hard cap of **50 distinct keys per (user, app)**. If you'd need a counter per lesson ID, consolidate instead (e.g. one `lessons_completed` counter, plus a separate credential or `sendAiSessionCredential` call to record specifics).
+- **High-frequency writes** — there's a **100 writes/minute per (user, app)** rate limit. Don't increment a counter on every keystroke; debounce or batch on the client and increment once per meaningful event.
+- **Cross-user state** — counters are scoped per-user. There is no shared/global counter.
+- **Sensitive or large data** — counters store integers only.
+
+### Limits (load-bearing — design around these)
+
+| Limit                       | Value                                            |
+| --------------------------- | ------------------------------------------------ |
+| Distinct keys per user-app  | **50**                                           |
+| Writes per minute per user-app | **100**                                       |
+| Value type                  | Signed integer only                              |
+| Key character set           | `^[a-zA-Z0-9_-]+$` (alphanumeric, `_`, `-`)      |
+| Key length                  | 1–64 characters                                  |
+| Batch read (`getCounters`)  | Up to 50 keys per call                           |
+
+### API
+
+The SDK exposes three methods. All take **positional arguments** (not options objects).
+
+```typescript
+// Increment (or decrement with a negative amount)
+incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse>;
+
+// Read a single counter
+getCounter(key: string): Promise<GetCounterResponse>;
+
+// Read multiple counters in one round-trip; omit `keys` to read all
+getCounters(keys?: string[]): Promise<GetCountersResponse>;
+```
+
+**Response shapes:**
+
+```typescript
+interface IncrementCounterResponse {
+    key: string;
+    previousValue: number;
+    newValue: number;
+}
+
+interface GetCounterResponse {
+    key: string;
+    value: number;
+    updatedAt: string | null; // ISO 8601, or null if the counter has never been set
+}
+
+interface GetCountersResponse {
+    counters: GetCounterResponse[];
+}
+```
+
+A counter that has never been incremented reads as `value: 0, updatedAt: null` from `getCounter`. You don't need to "create" a counter — the first `incrementCounter` call brings it into existence atomically.
+
+{% hint style="warning" %}
+**Asymmetry to be aware of:** `getCounter('foo')` returns `{ key: 'foo', value: 0, updatedAt: null }` for keys that have never been set. `getCounters(['foo', 'bar'])` only returns entries for keys that **do** exist — missing keys are simply absent from the `counters` array. Use `??` defaults when reading via `getCounters`, as shown in the dashboard example below.
+{% endhint %}
+
+### Example: simple progress tracking
+
+```typescript
+import { createPartnerConnect } from '@learncard/partner-connect';
+
+const learnCard = createPartnerConnect();
+
+async function onLessonComplete(lessonId: string) {
+    // Atomic increment — no read-modify-write race condition
+    const { newValue } = await learnCard.incrementCounter('lessons_completed', 1);
+    showProgress(`You've completed ${newValue} lessons!`);
+}
+
+async function loadDashboard() {
+    const { counters } = await learnCard.getCounters([
+        'lessons_completed',
+        'quizzes_passed',
+        'streak_days',
+    ]);
+
+    const lookup = Object.fromEntries(counters.map(c => [c.key, c.value]));
+    renderDashboard({
+        lessons: lookup.lessons_completed ?? 0,
+        quizzes: lookup.quizzes_passed ?? 0,
+        streak: lookup.streak_days ?? 0,
+    });
+}
+```
+
+### Example: threshold-gated credential issuance
+
+A common pattern is "issue a badge once the user crosses a threshold". Because `incrementCounter` returns the **new value** atomically, you can gate issuance on the response without a separate read:
+
+```typescript
+async function recordSessionAndMaybeAwardBadge() {
+    // Record the session credential first
+    await learnCard.sendAiSessionCredential({ /* ... */ });
+
+    // Then bump the counter and check the threshold in one call
+    const { previousValue, newValue } = await learnCard.incrementCounter(
+        'sessions_completed',
+        1
+    );
+
+    // Use the *previous* value to make this idempotent: only issue when
+    // we just crossed the threshold, not every call after it.
+    if (previousValue < 10 && newValue >= 10) {
+        await learnCard.sendCredential({
+            templateAlias: 'ten-session-badge',
+        });
+        await learnCard.sendNotification({
+            title: '🎉 10 sessions complete!',
+            body: 'You earned the Persistent Learner badge.',
+            actionPath: '/badges',
+            priority: 'high',
+        });
+    }
+}
+```
+
+{% hint style="info" %}
+**Why use `previousValue < threshold && newValue >= threshold`?** This guarantees the badge is issued exactly once even if the user hits the threshold, you call again, and the counter has already moved past it. It's the idempotent way to react to "the moment of crossing".
+{% endhint %}
+
+### Example: daily streaks
+
+```typescript
+async function recordDailyVisit() {
+    const { value: lastVisitDay } = await learnCard.getCounter('last_visit_day');
+    const today = Math.floor(Date.now() / 86_400_000); // days since epoch
+
+    if (lastVisitDay === today) return; // already counted today
+
+    await learnCard.incrementCounter('last_visit_day', today - lastVisitDay);
+
+    if (lastVisitDay === today - 1) {
+        // Visited yesterday — extend the streak
+        await learnCard.incrementCounter('streak_days', 1);
+    } else if (lastVisitDay !== 0) {
+        // Missed at least one day — reset
+        const { value } = await learnCard.getCounter('streak_days');
+        await learnCard.incrementCounter('streak_days', -value + 1);
+    } else {
+        // First-ever visit
+        await learnCard.incrementCounter('streak_days', 1);
+    }
+}
+```
+
+This is intentionally illustrative — for serious streak logic you'd record the date as part of an AI Session credential, not as a counter. Counters shine for simple monotonic counts.
+
+### Error handling
+
+```typescript
+try {
+    await learnCard.incrementCounter('sessions_completed', 1);
+} catch (err) {
+    if (err instanceof PartnerConnectError) {
+        switch (err.code) {
+            case 'LC_UNAUTHENTICATED':
+                // User signed out mid-session
+                showLoginPrompt();
+                break;
+            case 'BAD_REQUEST':
+                // Most common causes:
+                //   - invalid key (failed the regex or length check)
+                //   - > 50 distinct keys for this user-app
+                //   - rate limit exceeded (> 100 writes/min)
+                console.error('Counter rejected:', err.message);
+                break;
+            case 'UNAUTHORIZED':
+                // App is missing the counters permission in its listing
+                console.error('App not allowed to use counters');
+                break;
+            default:
+                console.error(err);
+        }
+    }
+}
+```
+
+### Best practices
+
+- **Pick stable, well-named keys.** Treat counter keys like database column names — once your app is in production, renaming a key effectively zeroes out everyone's history.
+- **Consolidate aggressively.** Prefer one `lessons_completed` counter over `lesson_1_complete`, `lesson_2_complete`, … (the 50-key cap is unforgiving).
+- **Pair counters with credentials, don't replace them.** Counters are for cheap aggregate state. The actual record of what the user did should still be a credential (`sendCredential`, `sendAiSessionCredential`).
+- **Debounce writes on the client.** If a user can tap a button 30 times in 5 seconds, increment once with `amount: 30` instead of calling 30 times.
+- **Use `incrementCounter`'s return value** rather than read-then-write — it's atomic, so you avoid race conditions and save a round-trip.
 
 ## Complete Example
 

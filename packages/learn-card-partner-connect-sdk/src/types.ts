@@ -394,11 +394,14 @@ export interface SummaryCredentialSkill {
 
 /**
  * Next step item in summary credential data
+ *
+ * `keywords` is optional. Omit it entirely (or pass `undefined`) when you do not
+ * have taxonomy data — you no longer need to pass a struct of `null` fields.
  */
 export interface SummaryCredentialNextStep {
     title: string;
     description: string;
-    keywords: SummaryCredentialKeyword;
+    keywords?: SummaryCredentialKeyword;
 }
 
 /**
@@ -524,11 +527,85 @@ export type ErrorCode =
     | string;
 
 /**
- * Error object returned when a request fails
+ * Error object returned when a request fails.
+ *
+ * Historically the SDK rejected with a plain `{ code, message }` object. As of
+ * v0.3.0 we reject with a {@link PartnerConnectError} instance instead, which
+ * still satisfies this interface (it has both `code` and `message` fields), so
+ * existing consumers that do `if (err.code === '...')` continue to work
+ * unchanged.
  */
 export interface LearnCardError {
     code: ErrorCode;
     message: string;
+}
+
+/**
+ * Typed error class for all Partner Connect SDK rejections.
+ *
+ * Use `instanceof PartnerConnectError` to narrow caught errors and unlock
+ * exhaustive `switch` checks on `code`. Both `code` and `message` are present
+ * (so the legacy `LearnCardError` object shape is preserved), and `name` is
+ * always `'PartnerConnectError'`.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await learnCard.requestLearnerContext();
+ * } catch (err) {
+ *   if (err instanceof PartnerConnectError) {
+ *     switch (err.code) {
+ *       case 'LC_UNAUTHENTICATED': showLogin(); break;
+ *       case 'USER_REJECTED':      showPrivacyNotice(); break;
+ *       case 'UNAUTHORIZED':       showPermissionsError(); break;
+ *       default:                   console.error(err);
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export class PartnerConnectError extends Error implements LearnCardError {
+    public readonly code: ErrorCode;
+
+    constructor(code: ErrorCode, message: string) {
+        super(message);
+        this.name = 'PartnerConnectError';
+        this.code = code;
+
+        // Restore prototype chain when transpiled to ES5 targets.
+        Object.setPrototypeOf(this, PartnerConnectError.prototype);
+    }
+
+    /**
+     * Wrap any incoming `LearnCardError`-shaped value into a `PartnerConnectError`.
+     * Returns the value unchanged if it is already an instance.
+     *
+     * Used internally at every reject site so callers always receive a typed
+     * `PartnerConnectError`, regardless of whether the failure originated from
+     * the host (over postMessage), an SDK timeout, or `destroy()`.
+     */
+    public static from(input: LearnCardError | unknown): PartnerConnectError {
+        if (input instanceof PartnerConnectError) return input;
+
+        if (
+            input &&
+            typeof input === 'object' &&
+            'code' in input &&
+            typeof (input as { code: unknown }).code === 'string'
+        ) {
+            const candidate = input as { code: string; message?: unknown };
+            const message =
+                typeof candidate.message === 'string'
+                    ? candidate.message
+                    : 'Partner Connect request failed';
+            return new PartnerConnectError(candidate.code as ErrorCode, message);
+        }
+
+        return new PartnerConnectError(
+            'UNKNOWN_ERROR',
+            input instanceof Error ? input.message : 'An unknown error occurred'
+        );
+    }
 }
 
 /**

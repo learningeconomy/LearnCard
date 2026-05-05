@@ -2,6 +2,10 @@
 
 > Promise-based JavaScript SDK for secure cross-origin communication between partner apps and LearnCard
 
+{% hint style="info" %}
+**Last verified against `@learncard/partner-connect` v0.2.16.** When in doubt, the runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.
+{% endhint %}
+
 The Partner Connect SDK transforms complex `postMessage` communication into clean, modern Promise-based functions. It handles the entire cross-origin message lifecycle, including request queuing, origin validation, and timeout management.
 
 ## Features
@@ -217,14 +221,20 @@ For App Store embedded apps, template-based issuance is strongly recommended. Se
 
 #### `launchFeature(featurePath, initialPrompt?)`
 
-Launch a feature in the LearnCard host application.
+Navigate the **LearnCard host wallet** to one of its built-in features. Use this when you want to send the user from your embedded app into a wallet route (e.g. AI Topics, Wallet Share, Profile).
+
+{% hint style="warning" %}
+**Don't confuse this with `sendNotification({ actionPath })`.** `launchFeature` paths resolve **inside the LearnCard wallet**. `actionPath` paths resolve **inside your embedded app's iframe**. See the [comparison table below](#launchfeature-vs-sendnotification-actionpath).
+{% endhint %}
 
 **Parameters:**
 
-- `featurePath` (`string`): Path to the feature (e.g., '/ai/topics')
-- `initialPrompt` (`string`, optional): Initial prompt or data
+- `featurePath` (`string`): Wallet route to navigate to (e.g., `/ai/topics`, `/wallet/share`, `/profile`)
+- `initialPrompt` (`string`, optional): Initial prompt or data to pass to the feature
 
 **Returns:** `Promise<void>`
+
+**Errors:** `LC_TIMEOUT`, `UNAUTHORIZED` (if your app lacks the `launch_feature` permission)
 
 **Example:**
 
@@ -238,6 +248,34 @@ await learnCard.launchFeature(
 // Navigate to credential sharing
 await learnCard.launchFeature('/wallet/share');
 ```
+
+#### `launchFeature` vs `sendNotification` `actionPath`
+
+These two APIs both take a `/path` string and look interchangeable, but they navigate to **different origins**:
+
+| API | Scope | Use when |
+| --- | --- | --- |
+| `launchFeature(path)` | **LearnCard wallet** | You want to send the user into a wallet feature (`/ai/topics`, `/wallet/share`, `/profile`). Path is interpreted by the LearnCard host. |
+| `sendNotification({ actionPath })` | **Your embedded app** | You want a notification's tap action to deep-link the user to a route **inside your own app's iframe**. Path is appended to your app's URL. |
+
+**Bridge pattern — deep-linking from a notification to a wallet feature:**
+
+If you want a notification to take the user to a wallet route (e.g. `/ai/topics`), you must route them through one of your own pages that calls `launchFeature()`:
+
+```typescript
+// 1. Send a notification with an actionPath that points to YOUR app:
+await learnCard.sendNotification({
+    title: 'New AI Topic ready',
+    body: 'Tap to review your latest tutoring session',
+    actionPath: '/ai-topics-bridge', // a real route in YOUR app
+});
+
+// 2. In your app, src/pages/ai-topics-bridge.{astro|tsx|html}:
+//    On mount, immediately ask the wallet to navigate.
+await learnCard.launchFeature('/ai/topics');
+```
+
+The wallet's iframe host enforces this: any `actionPath` is appended to your app's iframe URL and the host explicitly rejects values that would escape your origin.
 
 #### `askCredentialSearch(verifiablePresentationRequest)`
 
@@ -522,29 +560,58 @@ Send an AI Session credential to record a learning interaction. AI Sessions are 
 
 **Summary Data Structure:**
 
+{% hint style="warning" %}
+**Schema verified against SDK v0.2.16.** The fields are `title`, `summary`, `learned`, `skills`, `nextSteps`, `reflections` — **not** `keyTakeaways`/`skillsDemonstrated`/`learningOutcomes`. Earlier versions of these docs showed an incorrect schema; if you're upgrading, double-check your call sites.
+{% endhint %}
+
 ```typescript
 interface SummaryCredentialData {
-    /** Key takeaways from the session */
-    keyTakeaways: string[];
-    /** Skills demonstrated during the session */
-    skillsDemonstrated: string[];
-    /** Learning outcomes achieved */
-    learningOutcomes: string[];
-    /** Recommended follow-up activities */
+    /** Short, concise title for the learning session or credential */
+    title: string;
+    /** Comprehensive summary of what happened during the session */
+    summary: string;
+    /** Bullet points of key knowledge gained */
+    learned: string[];
+    /** Categorized skills learned during the session */
+    skills: SummaryCredentialSkill[];
+    /** Recommended follow-up activities or learning modules */
     nextSteps: SummaryCredentialNextStep[];
     /** Reflections on the learning experience */
     reflections: SummaryCredentialReflection[];
 }
 
-interface SummaryCredentialNextStep {
+interface SummaryCredentialSkill {
+    /** Name of the skill category */
     title: string;
-    description?: string;
-    type?: 'course' | 'practice' | 'assessment' | 'resource';
+    /** Detailed description of what this skill category involves */
+    description: string;
+}
+
+interface SummaryCredentialNextStep {
+    /** Title of the suggested next step */
+    title: string;
+    /** Description explaining why this next step is recommended */
+    description: string;
+    /**
+     * Optional taxonomy keywords (occupations, careers, jobs, skills, fieldOfStudy).
+     * Omit entirely if you don't have taxonomy data.
+     */
+    keywords?: SummaryCredentialKeyword;
+}
+
+interface SummaryCredentialKeyword {
+    occupations: string[] | null;
+    careers: string[] | null;
+    jobs: string[] | null;
+    skills: string[] | null;
+    fieldOfStudy: string | null;
 }
 
 interface SummaryCredentialReflection {
-    prompt: string;
-    response: string;
+    /** Title of the reflection */
+    title: string;
+    /** Detailed description of what this reflection involves */
+    description: string;
 }
 ```
 
@@ -566,37 +633,42 @@ interface SendAiSessionCredentialResponse {
 const session = await learnCard.sendAiSessionCredential({
     sessionTitle: 'Introduction to Machine Learning',
     summaryData: {
-        keyTakeaways: [
+        title: 'Intro to Machine Learning',
+        summary:
+            'Walked through ML fundamentals: supervised vs unsupervised learning, ' +
+            'training data, and an intuitive overview of neural networks.',
+        learned: [
             'Machine learning is a subset of AI focused on pattern recognition',
             'Supervised learning uses labeled training data',
             'Neural networks are inspired by biological neurons',
         ],
-        skillsDemonstrated: [
-            'Understanding ML fundamentals',
-            'Distinguishing supervised vs unsupervised learning',
-            'Basic neural network concepts',
-        ],
-        learningOutcomes: [
-            'Can explain what machine learning is',
-            'Understands the role of training data',
-            'Recognizes common ML applications',
+        skills: [
+            {
+                title: 'ML Fundamentals',
+                description:
+                    'Can articulate what machine learning is and how it differs from rule-based programming.',
+            },
+            {
+                title: 'Supervised vs Unsupervised',
+                description:
+                    'Distinguishes the two paradigms and gives examples of each.',
+            },
         ],
         nextSteps: [
             {
                 title: 'Deep Learning Fundamentals',
                 description: 'Learn about neural network architectures',
-                type: 'course',
+                // keywords is optional — omit it if you have no taxonomy data
             },
             {
                 title: 'Build a Simple Classifier',
                 description: 'Hands-on practice with scikit-learn',
-                type: 'practice',
             },
         ],
         reflections: [
             {
-                prompt: 'What was the most surprising concept?',
-                response:
+                title: 'Most surprising concept',
+                description:
                     'How simple the basic idea of training data is, yet how powerful it becomes at scale.',
             },
         ],
@@ -610,7 +682,12 @@ const session = await learnCard.sendAiSessionCredential({
 
 console.log('Topic URI:', session.topicUri);
 console.log('Session Credential:', session.sessionCredentialUri);
-console.log('New topic created?', session.isNewTopic);
+
+// 🎉 isNewTopic is a great UX hook: the first session ever from your app
+// returns true and creates the AI Topic. Use it to celebrate first-run.
+if (session.isNewTopic) {
+    showCelebration('First AI session recorded!');
+}
 ```
 
 **How It Works:**
@@ -640,7 +717,7 @@ AI Topic (App-level)
 The AI Topic is automatically created on the first session and reused for all subsequent sessions from your app.
 {% endhint %}
 
-**Error Handling:**
+**Errors:** `LC_UNAUTHENTICATED`, `UNAUTHORIZED`, `USER_REJECTED`, `LC_TIMEOUT`, `BAD_REQUEST` (when `summaryData` fails server-side validation — see the [Source-of-Truth note](#schema-source-of-truth) below).
 
 ```typescript
 try {
@@ -661,11 +738,106 @@ try {
         case 'USER_REJECTED':
             showMessage('User declined to store the session');
             break;
+        case 'BAD_REQUEST':
+            console.error('Schema validation failed:', error.message);
+            break;
         default:
             console.error('Failed to send session:', error.message);
     }
 }
 ```
+
+#### Schema Source of Truth
+
+The `summaryData` shape is defined by `SummaryCredentialDataValidator` in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`). The brain service deep-validates every `sendAiSessionCredential` call against this discriminated union, so a malformed `summaryData` will fail fast with a clear zod error rather than producing a broken credential.
+
+#### `sendNotification(input)`
+
+Send a notification to the current user from this app. The notification appears in the user's LearnCard notification inbox.
+
+**Parameters:** `AppNotificationInput`
+
+| Property     | Type                    | Required | Description                                                                                                          |
+| ------------ | ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `title`      | `string`                | No       | Notification title.                                                                                                  |
+| `body`       | `string`                | No       | Notification body text.                                                                                              |
+| `actionPath` | `string`                | No       | **App-local** path. When the user taps the notification, this path is appended to your app's iframe URL. See below. |
+| `category`   | `string`                | No       | Optional category tag for grouping notifications.                                                                    |
+| `priority`   | `'normal' \| 'high'`    | No       | Visual priority. `'high'` notifications are styled more prominently in the inbox.                                    |
+
+**Returns:** `Promise<AppNotificationResponse>`
+
+**Errors:** `LC_UNAUTHENTICATED`, `UNAUTHORIZED`, `LC_TIMEOUT`
+
+{% hint style="warning" %}
+**`actionPath` is APP-LOCAL.** It is appended to your embedded app's iframe URL — **not** routed inside the LearnCard wallet. If you want to deep-link into a wallet route (e.g. `/ai/topics`), use the [bridge pattern shown above](#launchfeature-vs-sendnotification-actionpath).
+{% endhint %}
+
+**Example — notify within your own app:**
+
+```typescript
+await learnCard.sendNotification({
+    title: 'Lesson 3 unlocked',
+    body: 'Continue where you left off',
+    actionPath: '/lessons/3', // a route in YOUR app
+    priority: 'normal',
+});
+```
+
+**Example — bridge to a wallet feature:**
+
+```typescript
+// In your app, expose a route that just calls launchFeature on mount:
+// src/pages/ai-bridge.tsx
+useEffect(() => {
+    learnCard.launchFeature('/ai/topics');
+}, []);
+
+// Then send a notification that points to your bridge route:
+await learnCard.sendNotification({
+    title: 'Your AI Topic is ready',
+    actionPath: '/ai-bridge',
+});
+```
+
+#### Counters: `incrementCounter`, `getCounter`, `getCounters`
+
+Lightweight per-user-app counters for tracking app-defined integer state (e.g. "sessions completed", "streak days"). Counters are scoped to **(user, listing)** — every user has an independent set of counters per app.
+
+**Limits (load-bearing — design around these):**
+
+- **Maximum 50 distinct keys** per `(user, app)` pair
+- **Maximum 100 writes per minute** per `(user, app)` pair
+- **Integer values only** (use `Math.floor` or pre-aggregate if you need fractional state)
+- **Key format:** `^[a-zA-Z0-9_-]+$`, 1–64 characters
+
+If you need to track more than 50 things, consolidate (e.g. one `lessons_completed` counter rather than one counter per lesson).
+
+**Signatures:**
+
+```typescript
+incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse>;
+getCounter(key: string): Promise<GetCounterResponse>;
+getCounters(keys?: string[]): Promise<GetCountersResponse>; // omit `keys` to fetch all
+```
+
+**Examples:**
+
+```typescript
+// Increment by 1 (or any signed integer — pass a negative to decrement)
+const { newValue } = await learnCard.incrementCounter('sessions_completed', 1);
+
+// Read one
+const { value, updatedAt } = await learnCard.getCounter('sessions_completed');
+
+// Read several (omit the array to fetch every counter for this user-app)
+const { counters } = await learnCard.getCounters([
+    'sessions_completed',
+    'streak_days',
+]);
+```
+
+**Errors:** `LC_UNAUTHENTICATED`, `UNAUTHORIZED`, `BAD_REQUEST` (invalid key format, > 50 keys, or rate-limit exceeded), `LC_TIMEOUT`
 
 #### `destroy()`
 
@@ -726,7 +898,34 @@ const learnCard = createPartnerConnect({
 
 ## Error Handling
 
-All SDK methods reject with structured `LearnCardError` objects:
+All SDK methods reject with a `PartnerConnectError` (a real `Error` subclass) carrying both `code` and `message`. The legacy `LearnCardError` shape is preserved — `error.code` keeps working — so existing call sites continue to function unchanged:
+
+```typescript
+import { PartnerConnectError } from '@learncard/partner-connect';
+
+try {
+    await learnCard.requestLearnerContext();
+} catch (err) {
+    if (err instanceof PartnerConnectError) {
+        // Type-narrowed: TypeScript knows err.code: ErrorCode
+        switch (err.code) {
+            case 'LC_UNAUTHENTICATED':
+                showLogin();
+                break;
+            case 'USER_REJECTED':
+                showPrivacyNotice();
+                break;
+            case 'UNAUTHORIZED':
+                showPermissionsError();
+                break;
+            default:
+                console.error(err);
+        }
+    }
+}
+```
+
+The `LearnCardError` interface remains exported for backwards compatibility:
 
 ```typescript
 interface LearnCardError {
@@ -1053,8 +1252,14 @@ import type {
     SendAiSessionCredentialInput,
     SendAiSessionCredentialResponse,
     SummaryCredentialData,
+    SummaryCredentialSkill,
     SummaryCredentialNextStep,
+    SummaryCredentialKeyword,
     SummaryCredentialReflection,
+
+    // Notifications
+    AppNotificationInput,
+    AppNotificationResponse,
 } from '@learncard/partner-connect';
 ```
 
@@ -1112,22 +1317,36 @@ interface SendAiSessionCredentialInput {
 }
 
 interface SummaryCredentialData {
-    keyTakeaways: string[];
-    skillsDemonstrated: string[];
-    learningOutcomes: string[];
+    title: string;
+    summary: string;
+    learned: string[];
+    skills: SummaryCredentialSkill[];
     nextSteps: SummaryCredentialNextStep[];
     reflections: SummaryCredentialReflection[];
 }
 
+interface SummaryCredentialSkill {
+    title: string;
+    description: string;
+}
+
 interface SummaryCredentialNextStep {
     title: string;
-    description?: string;
-    type?: 'course' | 'practice' | 'assessment' | 'resource';
+    description: string;
+    keywords?: SummaryCredentialKeyword;
+}
+
+interface SummaryCredentialKeyword {
+    occupations: string[] | null;
+    careers: string[] | null;
+    jobs: string[] | null;
+    skills: string[] | null;
+    fieldOfStudy: string | null;
 }
 
 interface SummaryCredentialReflection {
-    prompt: string;
-    response: string;
+    title: string;
+    description: string;
 }
 
 interface SendAiSessionCredentialResponse {
