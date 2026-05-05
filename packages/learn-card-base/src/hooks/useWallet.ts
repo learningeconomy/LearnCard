@@ -23,6 +23,8 @@ import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
+import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
 
@@ -81,6 +83,26 @@ Storage.prototype.getObject = function (key: string) {
 export const useWallet = () => {
     const isLoggedIn = useIsLoggedIn();
     const queryClient = useQueryClient();
+
+    const logWalletSync = (message: string, data?: Record<string, unknown>) => {
+        try {
+            if (data) {
+                console.log(`[WalletSync] ${message}`, data);
+            } else {
+                console.log(`[WalletSync] ${message}`);
+            }
+        } catch {
+            // logging should never break wallet sync
+        }
+    };
+
+    const logWalletSyncError = (message: string, err: unknown, data?: Record<string, unknown>) => {
+        try {
+            console.error(`[WalletSync] ${message}`, data ?? {}, err);
+        } catch {
+            // logging should never break wallet sync
+        }
+    };
 
     const getWallet = async (
         _privateKey?: string,
@@ -155,12 +177,28 @@ export const useWallet = () => {
         const learnCard = await getWallet();
         // Fetch and cache all consented contracts for the user
         const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
+        logWalletSync('Starting credential sync to contracts', {
+            recordUri: record.uri,
+            category,
+            contractCount: allContracts.length,
+        });
         // Batch sync credentials to contracts, respecting share settings
         await Promise.allSettled(
             allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
                 if (status !== 'live') return;
 
                 const categoryInfo = terms.read.credentials.categories[category];
+
+                logWalletSync('Evaluating contract', {
+                    ownerDid: contract.owner.did,
+                    contractUri: contract.uri,
+                    termsUri,
+                    category,
+                    shareAll: categoryInfo?.shareAll,
+                    sharing: categoryInfo?.sharing,
+                    shareUntil: categoryInfo?.shareUntil,
+                    status,
+                });
 
                 if (
                     categoryInfo &&
@@ -177,16 +215,63 @@ export const useWallet = () => {
                     );
 
                     if (sharedUri) {
+                        logWalletSync('Syncing credential to contract', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            category,
+                            sharedUri,
+                        });
                         await learnCard.invoke.syncCredentialsToContract(termsUri, {
                             [category]: [sharedUri],
                         });
+                        logWalletSync('syncCredentialsToContract completed', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            category,
+                        });
+
+                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                            logWalletSync('Queueing AI Passport refresh', {
+                                ownerDid: contract.owner.did,
+                                contractUri: contract.uri,
+                                termsUri,
+                                category,
+                            });
+                            await queueAiInsightCredentialRefresh({
+                                wallet: learnCard,
+                                queryClient,
+                            });
+                        }
+
                         queryClient.invalidateQueries({
                             queryKey: ['useTermsTransactions', termsUri],
                         });
+                    } else {
+                        logWalletSync('No shared URI available for contract', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            category,
+                            recordUri: record.uri,
+                        });
                     }
+                } else {
+                    logWalletSync('Contract not eligible for sync', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                        category,
+                        recordUri: record.uri,
+                    });
                 }
             })
         );
+        logWalletSync('Finished credential sync to contracts', {
+            recordUri: record.uri,
+            category,
+        });
         return true;
     };
 
@@ -394,6 +479,13 @@ export const useWallet = () => {
 
             const category = await getCategoryForCredential(vc as VC, wallet);
 
+            logWalletSync('Adding credential to wallet', {
+                uri,
+                contractUri,
+                category,
+                skipSync: Boolean(skipSync),
+            });
+
             const record = {
                 id: _id,
                 uri,
@@ -457,12 +549,27 @@ export const useWallet = () => {
                 });
 
                 if (!skipSync) {
+                    logWalletSync('Triggering automatic credential sync after add', {
+                        uri,
+                        contractUri,
+                        category,
+                    });
                     await syncCredentialToContracts({ record, category });
+                } else {
+                    logWalletSync('Skipping automatic credential sync after add', {
+                        uri,
+                        contractUri,
+                        category,
+                    });
                 }
             }
             return result;
         } catch (e) {
-            console.error(input, e);
+            logWalletSyncError('ERROR', e, {
+                uri,
+                contractUri,
+                skipSync: Boolean(skipSync),
+            });
             const msg = 'There was an error adding to the wallet';
             throw e instanceof Error
                 ? new Error(`${msg}: ${e.message}`)

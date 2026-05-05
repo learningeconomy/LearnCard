@@ -16,6 +16,18 @@ export const aiInsightRefreshStore = createStore('aiInsightRefreshStore')<AiInsi
     lastError: null,
 });
 
+const logAiInsightRefreshStore = (message: string, data?: Record<string, unknown>) => {
+    try {
+        if (data) {
+            console.log(`[AiInsightRefresh] ${message}`, data);
+        } else {
+            console.log(`[AiInsightRefresh] ${message}`);
+        }
+    } catch {
+        // logging should never break refresh state transitions
+    }
+};
+
 export const setAiInsightRefreshPending = ({
     requestedAt,
     baselineCredentialId,
@@ -23,6 +35,7 @@ export const setAiInsightRefreshPending = ({
     requestedAt: number;
     baselineCredentialId: string | null;
 }) => {
+    logAiInsightRefreshStore('Set pending', { requestedAt, baselineCredentialId });
     aiInsightRefreshStore.set.status('pending');
     aiInsightRefreshStore.set.requestedAt(requestedAt);
     aiInsightRefreshStore.set.baselineCredentialId(baselineCredentialId);
@@ -30,6 +43,7 @@ export const setAiInsightRefreshPending = ({
 };
 
 export const clearAiInsightRefreshState = () => {
+    logAiInsightRefreshStore('Cleared refresh state');
     aiInsightRefreshStore.set.status('idle');
     aiInsightRefreshStore.set.requestedAt(null);
     aiInsightRefreshStore.set.baselineCredentialId(null);
@@ -37,6 +51,7 @@ export const clearAiInsightRefreshState = () => {
 };
 
 export const setAiInsightRefreshError = (message: string) => {
+    logAiInsightRefreshStore('Set error', { message });
     aiInsightRefreshStore.set.status('error');
     aiInsightRefreshStore.set.lastError(message);
 };

@@ -35,37 +35,113 @@ const queryKey = ['useAiInsightCredential'];
 const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
 const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 
+const logAiInsightCredential = (message: string, data?: Record<string, unknown>) => {
+    try {
+        if (data) {
+            console.log(`[AiInsightCredential] ${message}`, data);
+        } else {
+            console.log(`[AiInsightCredential] ${message}`);
+        }
+    } catch {
+        // logging should never break credential creation
+    }
+};
+
+const logAiInsightCredentialError = (
+    message: string,
+    err: unknown,
+    data?: Record<string, unknown>
+) => {
+    try {
+        console.error(`[AiInsightCredential] ${message}`, data ?? {}, err);
+    } catch {
+        // logging should never break credential creation
+    }
+};
+
 export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
     const did = wallet.id.did();
-    const aiInsightCredential = await fetch(
+
+    logAiInsightCredential('Requesting AI insight credential', {
+        did,
+        aiServiceUrl: networkStore.get.aiServiceUrl(),
+    });
+
+    const response = await fetch(
         `${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=${did}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
         }
-    ).then(res =>
-        res.json().then(data => {
-            return data.credential;
-        })
     );
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+        logAiInsightCredentialError(
+            'AI insight credential request failed',
+            new Error(responseText),
+            {
+                did,
+                status: response.status,
+                statusText: response.statusText,
+                responseText,
+            }
+        );
+        throw new Error(
+            `Failed to create AI Insight credential (${response.status} ${response.statusText})`
+        );
+    }
+
+    let aiInsightCredential: unknown;
+    try {
+        aiInsightCredential = JSON.parse(responseText)?.credential;
+    } catch (err) {
+        logAiInsightCredentialError('Failed to parse AI insight credential response', err, {
+            did,
+            responseText,
+        });
+        throw new Error('Failed to create AI Insight credential.');
+    }
 
     if (!aiInsightCredential) throw new Error('Failed to create AI Insight credential.');
 
     const parsedCredential = await VCValidator.parseAsync(aiInsightCredential);
 
+    logAiInsightCredential('Received AI insight credential', {
+        did,
+        credentialId: parsedCredential.id,
+        issuanceDate: parsedCredential.issuanceDate,
+    });
+
     const uri = await wallet.store.LearnCloud.upload(parsedCredential);
 
     if (!uri) throw new Error('Failed to store AI Insight credential.');
+
+    logAiInsightCredential('Stored AI insight credential', {
+        did,
+        credentialId: parsedCredential.id,
+        uri,
+    });
 
     const existingRecord = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
 
     if (existingRecord?.length > 0) {
         await wallet.index.LearnCloud.update(existingRecord[0].id, { uri });
+        logAiInsightCredential('Updated AI insight index record', {
+            did,
+            recordId: existingRecord[0].id,
+            uri,
+        });
     } else {
         await wallet.index.LearnCloud.add<LCR>({
             uri,
             id: '__ai_insight__',
             category: 'AI Insight',
+        });
+        logAiInsightCredential('Created AI insight index record', {
+            did,
+            uri,
         });
     }
 
@@ -107,9 +183,54 @@ export const useAiInsightCredential = () => {
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
     const baselineCredentialId = aiInsightRefreshStore.use.baselineCredentialId();
 
+    logAiInsightCredential('Hook state', {
+        refreshStatus,
+        requestedAt,
+        baselineCredentialId,
+    });
+
     const query = useQuery({
         queryKey: ['useAiInsightCredential'],
-        queryFn: async () => getOrCreateAiInsightCredential(await initWallet(), queryClient, true),
+        queryFn: async () => {
+            const wallet = await initWallet();
+
+            logAiInsightCredential('Query fetch start', {
+                walletDid: wallet.id.did(),
+                refreshStatus,
+                requestedAt,
+                baselineCredentialId,
+            });
+
+            if (refreshStatus === 'pending') {
+                logAiInsightCredential(
+                    'Pending refresh detected; requesting fresh credential from backend',
+                    {
+                        walletDid: wallet.id.did(),
+                        requestedAt,
+                        baselineCredentialId,
+                    }
+                );
+
+                const credential = await createAiInsightCredential(wallet);
+
+                logAiInsightCredential('Query fetch complete via refresh path', {
+                    credentialId: credential.id,
+                    issuanceDate: credential.issuanceDate,
+                    requestedAt,
+                });
+
+                return credential;
+            }
+
+            const credential = await getOrCreateAiInsightCredential(wallet, queryClient, true);
+
+            logAiInsightCredential('Query fetch complete', {
+                credentialId: credential.id,
+                issuanceDate: credential.issuanceDate,
+            });
+
+            return credential;
+        },
         staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
         refetchInterval: refreshStatus === 'pending' ? AI_INSIGHT_REFRESH_POLL_INTERVAL_MS : false,
     });
@@ -117,11 +238,25 @@ export const useAiInsightCredential = () => {
     useEffect(() => {
         if (refreshStatus !== 'pending' || !requestedAt) return;
 
+        logAiInsightCredential('Refresh timeout scheduled', {
+            requestedAt,
+            timeoutMs: AI_INSIGHT_REFRESH_MAX_WAIT_MS,
+        });
+
         const timeoutId = setTimeout(() => {
             const currentStatus = aiInsightRefreshStore.get.status();
             const currentRequestedAt = aiInsightRefreshStore.get.requestedAt();
 
+            logAiInsightCredential('Refresh timeout fired', {
+                requestedAt,
+                currentStatus,
+                currentRequestedAt,
+            });
+
             if (currentStatus === 'pending' && currentRequestedAt === requestedAt) {
+                logAiInsightCredential('Refresh timed out; clearing stale pending state', {
+                    requestedAt,
+                });
                 clearAiInsightRefreshState();
             }
         }, AI_INSIGHT_REFRESH_MAX_WAIT_MS);
@@ -139,10 +274,31 @@ export const useAiInsightCredential = () => {
             (Number.isFinite(issuanceDateMs) && issuanceDateMs >= requestedAt) ||
             (baselineCredentialId ? query.data.id !== baselineCredentialId : false);
 
+        logAiInsightCredential('Refresh evaluation', {
+            requestedAt,
+            baselineCredentialId,
+            credentialId: query.data.id,
+            issuanceDate: query.data.issuanceDate,
+            issuanceDateMs,
+            hasNewCredential,
+            refreshStatus,
+        });
+
         if (hasNewCredential) {
+            logAiInsightCredential('New AI insight credential detected; clearing refresh state', {
+                credentialId: query.data.id,
+                issuanceDate: query.data.issuanceDate,
+            });
             clearAiInsightRefreshState();
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
             queryClient.invalidateQueries({ queryKey: ['training-programs'] });
+        } else {
+            logAiInsightCredential('AI insight credential not yet updated', {
+                credentialId: query.data.id,
+                issuanceDate: query.data.issuanceDate,
+                requestedAt,
+                baselineCredentialId,
+            });
         }
     }, [
         baselineCredentialId,
