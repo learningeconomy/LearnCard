@@ -8,22 +8,25 @@
 
 Baseline performance numbers from `handleSendCredentialEvent` running on staging with the bench panel + telemetry deployed but **without** the LC-1644 backend perf optimizations (Tasks 1-6). Used as the "before" half of the staging A/B comparison against `feat/lc-1644-appevent-perf` (which has the same bench panel + Tasks 1-6 applied).
 
-7 runs × 10 iterations = 70 measured calls. 6 of 7 runs used `warmup=0` to capture cold-start cost; 1 run used `warmup=2` for clean warm-path-only data.
+13 runs (7 × 10 iter + 6 × 20 iter) = **190 measured calls**. 12 of 13 runs used `warmup=0` to capture cold-start cost; 1 run used `warmup=2` for clean warm-path-only data.
 
 ## Headline numbers
 
-| Metric | Value | Range across 7 runs |
+| Metric | Value | Range across 13 runs |
 |---|---:|---|
-| **Warm-steady total p50** (iter 2+) | **~560ms** | 510-590ms |
-| **Cold iter 0 total** | ~1100ms | 736-1239ms |
-| **Cold sa_http** | ~280ms | 239-390ms |
-| **Warm sa_http p50** | ~50ms | 42-79ms |
-| **Lukewarm iter 1 frequency** | 5/7 runs (~70%) | 555-748ms when present |
-| **Mid-run anomaly frequency** | ~1 in 30 iterations | up to 1500ms above warm |
+| **Warm-steady total p50** (iter 2+) | **~570ms** | 510-630ms |
+| **Cold iter 0 total** | ~1100ms | 736-1603ms |
+| **Cold sa_http (iter 0)** | ~280ms | 239-390ms |
+| **Mid-run cold sa_http (max)** | 832ms | run 10 iter 12 — Lambda recycle |
+| **Warm sa_http p50** | ~50ms | 38-81ms |
+| **Lukewarm iter 1 frequency** | 8/13 runs (~62%) | 555-913ms when present |
+| **Partial cold sub-instance** | ~1 per 20-iter run | sa_http 150-280ms |
+| **Non-SA spike** | ~1 per 30 iterations | up to 1500ms above warm |
+| **True mid-run Lambda recycle** | 1 in 190 iterations observed | sa_http 832ms then 2-3 iter recovery |
 
 ## Key observations
 
-1. **Warm-path p50 is rock-solid at ~560ms** across 7 independent runs.
+1. **Warm-path p50 is rock-solid at ~570ms** across 13 independent runs (n=190 iterations).
 
 2. **The April-era multi-second cold-start tail is gone.** Then, sa_http p95 was 4223ms. Now it's ~280ms even on the cold path. Staging Lambda is much warmer — likely AWS reduced cold-start cost and/or the SA endpoint receives enough background traffic to stay warm.
 
@@ -34,6 +37,13 @@ Baseline performance numbers from `handleSendCredentialEvent` running on staging
 5. **Run 6 iter 5's 1564ms spike with warm SA call** shows that non-SA tail anomalies exist independently of Lambda cold starts. Possible causes: Neo4j slow query, brain GC pause, sendBoost cert reissue path. Worth diagnosing on the optimized branch where per-phase instrumentation will show which phase blew up.
 
 6. **Inter-run state matters.** Run 5 (which ran shortly after a prior bench) showed iters 2-9 ~30-50ms faster than other runs. The brain-service process keeps Bolt connection pools / DID-Web caches warm via inter-run state.
+
+7. **Mid-run Lambda recycles happen.** Run 10 iter 12 jumped to 1392ms with `sa_http=832ms` — the SA Lambda recycled mid-run, taking 2-3 iterations to fully recover. Implication: p99 in any single run can be lifted by these events even after iter 0's cold-start is past.
+
+8. **Three distinct anomaly types** emerged from 190 iterations:
+   - **Partial cold sub-instance** (~1 per 20-iter run): elevated sa_http (~180-280ms) + sa_didauthvp (~50-70ms). Lambda routing scatter to a less-warm container.
+   - **Non-SA spike** (~1 per 30 iterations): elevated total_ms with warm SA call. Time is in Neo4j / sendBoost / logActivity / GC. **The optimized branch's per-phase instrumentation will diagnose which.**
+   - **True mid-run Lambda recycle** (1 in 190 observed): sudden sa_http jump from ~50ms to 832ms+ followed by 2-3 iter recovery.
 
 ## What to expect on the optimized branch
 
