@@ -8,21 +8,26 @@
 
 Baseline performance numbers from `handleSendCredentialEvent` running on staging with the bench panel + telemetry deployed but **without** the LC-1644 backend perf optimizations (Tasks 1-6). Used as the "before" half of the staging A/B comparison against `feat/lc-1644-appevent-perf` (which has the same bench panel + Tasks 1-6 applied).
 
-13 runs (7 × 10 iter + 6 × 20 iter) = **190 measured calls**. 12 of 13 runs used `warmup=0` to capture cold-start cost; 1 run used `warmup=2` for clean warm-path-only data.
+17 runs (7 × 10 iter + 10 × 20 iter) = **270 measured calls**. 16 of 17 runs used `warmup=0` to capture cold-start cost; 1 run used `warmup=2` for clean warm-path-only data.
+
+Runs 14-17 captured the redeploy transition state: runs 14-15 hit the staging brain shortly after the first redeploy attempt (POSTHOG_API_KEY secret added but not yet plumbed through deploy.yml). Run 16 was the last pre-fix run. Run 17 captures the first run after the second redeploy with the env-var workflow fix in place — and is the first run with backend bench events actually arriving in PostHog.
 
 ## Headline numbers
 
-| Metric | Value | Range across 13 runs |
+| Metric | Value | Range across 17 runs |
 |---|---:|---|
 | **Warm-steady total p50** (iter 2+) | **~570ms** | 510-630ms |
-| **Cold iter 0 total** | ~1100ms | 736-1603ms |
-| **Cold sa_http (iter 0)** | ~280ms | 239-390ms |
-| **Mid-run cold sa_http (max)** | 832ms | run 10 iter 12 — Lambda recycle |
+| **Cold iter 0 total (typical)** | ~1150ms | 736-1603ms |
+| **Cold iter 0 extreme** | **4899ms** | run 14 (1st post-redeploy iter 0) |
+| **Cold sa_http (typical)** | ~280ms | 239-390ms |
+| **Cold sa_http (max observed)** | **4011ms** | run 14 iter 0 |
 | **Warm sa_http p50** | ~50ms | 38-81ms |
-| **Lukewarm iter 1 frequency** | 8/13 runs (~62%) | 555-913ms when present |
+| **Cold sa_didauthvp (max)** | **264ms** | run 17 iter 0 (extra-fresh brain) |
+| **Lukewarm iter 1 frequency** | 11/17 runs (~65%) | 555-913ms when present |
 | **Partial cold sub-instance** | ~1 per 20-iter run | sa_http 150-280ms |
 | **Non-SA spike** | ~1 per 30 iterations | up to 1500ms above warm |
-| **True mid-run Lambda recycle** | 1 in 190 iterations observed | sa_http 832ms then 2-3 iter recovery |
+| **True mid-run Lambda recycle** | 3 in 270 iterations | sa_http 832-3346ms, 2-3 iter recovery |
+| **Decoupled didauthvp stall** | ~3 in 270 iterations | warm sa_http but didauthvp 20-67ms |
 
 ## Key observations
 
@@ -40,10 +45,13 @@ Baseline performance numbers from `handleSendCredentialEvent` running on staging
 
 7. **Mid-run Lambda recycles happen.** Run 10 iter 12 jumped to 1392ms with `sa_http=832ms` — the SA Lambda recycled mid-run, taking 2-3 iterations to fully recover. Implication: p99 in any single run can be lifted by these events even after iter 0's cold-start is past.
 
-8. **Three distinct anomaly types** emerged from 190 iterations:
+8. **Four distinct anomaly types** emerged from 270 iterations:
    - **Partial cold sub-instance** (~1 per 20-iter run): elevated sa_http (~180-280ms) + sa_didauthvp (~50-70ms). Lambda routing scatter to a less-warm container.
    - **Non-SA spike** (~1 per 30 iterations): elevated total_ms with warm SA call. Time is in Neo4j / sendBoost / logActivity / GC. **The optimized branch's per-phase instrumentation will diagnose which.**
-   - **True mid-run Lambda recycle** (1 in 190 observed): sudden sa_http jump from ~50ms to 832ms+ followed by 2-3 iter recovery.
+   - **True mid-run Lambda recycle** (3 in 270 observed): sudden sa_http jump from ~50ms to 800ms-4000ms followed by 2-3 iter recovery. Most extreme case was run 14 iter 10 immediately post-redeploy.
+   - **Decoupled didauthvp stall** (~3 in 270): warm sa_http but elevated sa_didauthvp (20-67ms). Brain-side DID-Web cache miss / jose key re-derivation. Independent of Lambda state. Not addressed by Tasks 3-6.
+
+9. **Post-redeploy can dramatically amplify the cold-start tail.** Run 14 (first iter after first redeploy) hit 4899ms total / 4011ms sa_http — restoring the April-era multi-second tail temporarily. Subsequent runs returned to the ~1100ms typical cold pattern. **The `undici.Agent` keepAlive on the optimized branch (Task 3) should mitigate exactly this scenario.**
 
 ## What to expect on the optimized branch
 
@@ -69,5 +77,20 @@ For the post-optimization run, repeat with `feat/lc-1644-appevent-perf` deployed
 
 ## Caveats
 
-- **PostHog backend events were not yet captured** for these specific runs — `POSTHOG_API_KEY` wasn't set in the staging brain-service env when these ran. Frontend `bench_appevent_run_triggered` events did arrive. Subsequent runs after env var is set will populate PostHog.
+- **PostHog backend events: only run 17 has them.** Runs 1-13 ran before `POSTHOG_API_KEY` was added to GitHub. Runs 14-16 ran after the secret was added but before `deploy.yml` was updated to inject it into the Lambda env. Run 17 (post-second-redeploy with the workflow fix) is the first run with `bench.appevent.iteration` and `bench.appevent.run` events arriving in PostHog. All earlier runs are JSON-only (frontend `bench_appevent_run_triggered` did arrive throughout).
 - **`perIteration` data here only includes meaningful fields** (`total_ms`, `sa_http_ms`, `sa_didauthvp_ms`). Other phase fields are 0 by design on this branch — Task 4's per-phase PerfTracker marks aren't applied to `handleSendCredentialEvent` here.
+
+## Final state of the baseline
+
+This is the canonical pre-optimization baseline for the LC-1644 staging A/B comparison. The optimized branch (`feat/lc-1644-appevent-perf`) will be deployed next; its bench data should be captured in a parallel `2026-04-XX-lc-1644-appevent-perf-staging-runs.json` with the same shape and run conventions as this file.
+
+**For the post-optimization comparison, watch for these specific deltas:**
+
+| Metric | Bench-only (this) | Optimized-branch target |
+|---|---:|---|
+| Warm-steady total p50 | ~570ms | **~350-450ms** (Tasks 4 + 5 attack the ~520ms unaccounted warm time) |
+| Lukewarm iter 1 | 555-913ms | **converges with warm steady** (Task 5 LRU populates on iter 0) |
+| Cold iter 0 typical | ~1150ms | **modest improvement** (Lambda cold-start is staging-side) |
+| Cold sa_http extreme (post-redeploy) | up to 4011ms | **dramatically better** (Task 3 undici keepAlive avoids fresh TLS) |
+| True mid-run Lambda recycle | 832-3346ms tail | **partially mitigated** (keepAlive keeps brain→SA connection warm even when SA recycles) |
+| Per-phase visibility | only sa_http / sa_didauthvp | **full breakdown** — `parallel_reads_ms`, `owner_and_sa_reads_ms`, `sa_issue_ms`, `log_activity_and_send_boost_ms` populate |
