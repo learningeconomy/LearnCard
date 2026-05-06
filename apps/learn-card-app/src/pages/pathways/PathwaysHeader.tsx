@@ -42,7 +42,7 @@
 import React from 'react';
 
 import { IonIcon } from '@ionic/react';
-import { constructOutline } from 'ionicons/icons';
+import { constructOutline, sparklesOutline } from 'ionicons/icons';
 import { NavLink, useRouteMatch } from 'react-router-dom';
 
 import { proposalStore } from '../../stores/pathways';
@@ -108,13 +108,18 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
         >
             {/*
                 Single-row layout: title on the left, mode controls
-                on the right. Wraps to two rows on viewports too
-                narrow for both (the mode segmented control needs
-                ~220 px to read comfortably).
+                on the right. `flex-nowrap` is the deliberate choice —
+                the switcher has `shrink min-w-0 max-w-full` and
+                smart-truncates the title at the colon, so it absorbs
+                whatever horizontal pressure the right-side controls
+                apply rather than letting the row wrap to two lines
+                (which felt heavy on a 375 px iPhone). The mode
+                controls stay `shrink-0` so they keep their natural
+                tap-target size.
             */}
             <div
-                className="max-w-4xl mx-auto flex items-center
-                           justify-between flex-wrap gap-x-3 gap-y-1.5"
+                className="max-w-4xl mx-auto flex flex-nowrap items-center
+                           justify-between gap-x-2 sm:gap-x-3"
             >
                 {/*
                     Title-as-switcher. `title` variant renders the
@@ -125,15 +130,16 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                 */}
                 <PathwaySwitcher variant="title" />
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     {/*
                         Consumption modes — segmented control. One
                         rounded container, internal active-state
                         chip with a soft white shadow. Reads as
                         a single "pick one of three" instead of
-                        three detached buttons. Padding is tighter
-                        than the old detached pills so the row
-                        sits at ~36 px instead of ~48 px.
+                        three detached buttons. Mobile padding is
+                        tightened to `px-2.5` so the row fits the
+                        switcher + Build + Proposals without
+                        wrapping on a 375 px iPhone.
                     */}
                     <nav
                         aria-label="Mode"
@@ -143,7 +149,7 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                             <NavLink
                                 key={mode.to}
                                 to={mode.to}
-                                className="py-1.5 px-3 rounded-full
+                                className="py-1.5 px-2.5 sm:px-3 rounded-full
                                            text-xs sm:text-sm font-medium
                                            text-grayscale-700
                                            transition-colors"
@@ -180,23 +186,41 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                     {/*
                         Alerts slot — Proposals. Only occupies
                         horizontal space when there's a reason to.
-                        Compact pill matched to the segmented
-                        control's height so the row reads evenly.
+                        On mobile collapses to an icon + badge pill
+                        the same width as the Build icon so the row
+                        fits in 375 px. On `sm:` and up the full
+                        "Proposals" label returns alongside the
+                        badge.
                     */}
                     {showProposals && (
                         <NavLink
                             to="/pathways/proposals"
-                            className={`shrink-0 inline-flex items-center
-                                        py-1.5 px-3 rounded-full text-xs sm:text-sm font-medium
+                            aria-label={
+                                openProposalCount > 0
+                                    ? `${openProposalCount} proposal${
+                                          openProposalCount === 1 ? '' : 's'
+                                      }`
+                                    : 'Proposals'
+                            }
+                            title="Proposals"
+                            className={`shrink-0 inline-flex items-center justify-center
+                                        h-8 w-8 sm:w-auto sm:h-auto
+                                        sm:py-1.5 sm:px-3
+                                        rounded-full text-xs sm:text-sm font-medium
                                         transition-colors ${
                                             isOnProposals
                                                 ? 'bg-grayscale-900 text-white'
                                                 : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
                                         }`}
                         >
-                            Proposals
+                            <IonIcon
+                                icon={sparklesOutline}
+                                className="text-base sm:hidden"
+                                aria-hidden
+                            />
+                            <span className="hidden sm:inline">Proposals</span>
                             {openProposalCount > 0 && (
-                                <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-600 text-white text-[10px]">
+                                <span className="ml-0.5 sm:ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-600 text-white text-[10px]">
                                     {openProposalCount}
                                 </span>
                             )}
