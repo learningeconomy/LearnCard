@@ -606,57 +606,96 @@ const NodeDetail: React.FC = () => {
                 <motion.header
                     {...SECTION_MOTION}
                     transition={{ ...SECTION_MOTION.transition, delay: 0.05 }}
-                    className="flex items-start gap-4 pr-10"
+                    className="space-y-3 pr-10"
                 >
-                    {image && (
-                        // Badge artwork lives on the left of the
-                        // header, sized to line up visually with the
-                        // `TerminationProgress` ring on the right so
-                        // the row reads as "thing you earn · progress
-                        // toward earning it." `object-contain` keeps
-                        // non-square badges from being cropped by the
-                        // rounded frame.
-                        <img
-                            src={image}
-                            alt=""
-                            className="shrink-0 w-16 h-16 rounded-2xl
-                                       bg-grayscale-10 border border-grayscale-200
-                                       object-contain p-1"
-                            loading="lazy"
-                            onError={e => {
-                                // If the CDN is down / link rotted we
-                                // silently drop the image rather than
-                                // render a broken-image icon.
-                                e.currentTarget.style.display = 'none';
-                            }}
-                        />
-                    )}
-
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                        <h2 className="text-[22px] font-semibold text-grayscale-900 leading-[1.2]">
-                            {node.title}
-                        </h2>
-
-                        {node.description && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed">
-                                {node.description}
-                            </p>
+                    {/*
+                        Row 1: image · title + requirement · progress.
+                        The description and inline prompt are
+                        deliberately *not* in the title's middle
+                        column — on a 375 px iPhone, the squeeze
+                        between a 64 px image and the 56 px progress
+                        ring leaves only ~135 px for prose, turning
+                        any non-trivial description into a tall
+                        narrow ribbon of broken-line text. Description
+                        gets its own full-width row below; the
+                        "thing you earn · progress toward earning it"
+                        symmetry between the badge and the ring stays
+                        readable here.
+                    */}
+                    <div className="flex items-center gap-4">
+                        {/*
+                            `items-center` (not `items-start`) so the
+                            title block centers vertically in the row
+                            when it's shorter than the 64 px image —
+                            otherwise nodes without `requirementText`
+                            leave a ~36 px gap of empty space between
+                            the title and the description below. The
+                            image and progress ring are both fixed-
+                            size and visually balance whether they
+                            top-align or centre-align, so centring is
+                            free of regressions.
+                        */}
+                        {image && (
+                            // Badge artwork lives on the left of the
+                            // header, sized to line up visually with the
+                            // `TerminationProgress` ring on the right so
+                            // the row reads as "thing you earn · progress
+                            // toward earning it." `object-contain` keeps
+                            // non-square badges from being cropped by the
+                            // rounded frame.
+                            <img
+                                src={image}
+                                alt=""
+                                className="shrink-0 w-16 h-16 rounded-2xl
+                                           bg-grayscale-10 border border-grayscale-200
+                                           object-contain p-1"
+                                loading="lazy"
+                                onError={e => {
+                                    // If the CDN is down / link rotted we
+                                    // silently drop the image rather than
+                                    // render a broken-image icon.
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
                         )}
 
-                        {inlinePrompt && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed italic">
-                                {inlinePrompt}
-                            </p>
-                        )}
+                        <div className="flex-1 min-w-0 space-y-1">
+                            <h2 className="text-[22px] font-semibold text-grayscale-900 leading-[1.2]">
+                                {node.title}
+                            </h2>
 
-                        {requirementText && (
-                            <p className="text-[11px] font-medium text-grayscale-500 uppercase tracking-[0.08em] pt-1">
-                                Needs {requirementText}
-                            </p>
-                        )}
+                            {requirementText && (
+                                <p className="text-[11px] font-medium text-grayscale-500 uppercase tracking-[0.08em] pt-0.5">
+                                    Needs {requirementText}
+                                </p>
+                            )}
+                        </div>
+
+                        <TerminationProgress view={view} />
                     </div>
 
-                    <TerminationProgress view={view} />
+                    {/*
+                        Row 2: description / inline prompt at full
+                        card width. Only renders when there is
+                        copy to show, so nodes with no description
+                        keep the same compact single-row chrome
+                        they had before.
+                    */}
+                    {(node.description || inlinePrompt) && (
+                        <div className="space-y-1.5">
+                            {node.description && (
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    {node.description}
+                                </p>
+                            )}
+
+                            {inlinePrompt && (
+                                <p className="text-sm text-grayscale-600 leading-relaxed italic">
+                                    {inlinePrompt}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </motion.header>
 
                 {/* -------------------------------------------------- */}
