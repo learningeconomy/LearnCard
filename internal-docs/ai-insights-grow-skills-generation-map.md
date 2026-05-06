@@ -211,8 +211,8 @@ That credential is then:
 
 These are the LearnCard events that seem most important:
 
-- credential added
-- credential deleted
+- credential added (done)
+- credential deleted (done)
 - goals changed
 - professional title changed
 - self-assigned skills changed
@@ -221,26 +221,6 @@ Credential add/delete events already trigger refresh today in the targeted conse
 
 If AI Passport can recompute from the DID alone, LearnCard can simply trigger refreshes.
 If it cannot, LearnCard will probably need to send a richer payload or a snapshot of the relevant user state.
-
-## Open questions for the AI Passport project
-
-These are the main things that still need confirmation from the other repo:
-
-1. Does AI Passport already read user state from LearnCard / network graph data? Yes from contract data, but heavily cached
-2. Are goals and skills included in the generation inputs today? No
-3. Is there a cache or persistence layer for generated insights?
-4. Is insight generation event-driven, scheduled, or manual? Manual + event driven
-5. What would be the safest API contract for forcing regeneration after a LearnCard change?
-6. When will the backend switch from the current OpenAI contract path to the LearnCard AI contract?
-
-## Suggested next step
-
-If you are implementing this end-to-end, the best next move is usually:
-
-1. inspect the AI Passport repo for the `/credentials/ai-insight` handler
-2. confirm its input sources
-3. add a LearnCard-side refresh hook after the relevant wallet/profile/skill mutations
-4. make the AI Insight query invalidation happen immediately after regeneration
 
 ## Notes on confidence
 
