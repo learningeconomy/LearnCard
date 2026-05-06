@@ -31,6 +31,7 @@ import { motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { buildIdentityBanner } from '../today/presentation';
 
 import { buildCompletionReceipt } from './buildCompletionReceipt';
@@ -81,6 +82,8 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
     completedAt,
 }) => {
     const history = useHistory();
+
+    useLockBodyScroll();
 
     // Identity banner — re-uses Today's altitude-aware kicker so
     // the becoming line on the ceremony reads in the same voice
@@ -134,6 +137,12 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="subpathway-ceremony-title"
+            style={{
+                paddingTop:
+                    'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))',
+                paddingBottom:
+                    'max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
+            }}
         >
             <motion.div
                 initial={{ y: 24, opacity: 0, scale: 0.98 }}
@@ -141,10 +150,12 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                 exit={{ y: 16, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 26, mass: 0.8 }}
                 className="relative w-full max-w-[480px]
+                           max-h-full
                            bg-white rounded-[28px]
                            shadow-2xl shadow-grayscale-900/10
                            border border-grayscale-200
-                           overflow-hidden"
+                           overflow-hidden
+                           flex flex-col"
             >
                 {/* Top emerald hairline glow — quiet "this was a win" cue. */}
                 <div
@@ -166,7 +177,10 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                     <IonIcon icon={closeOutline} className="text-xl" />
                 </button>
 
-                <div className="p-6 pt-7 space-y-5">
+                <div
+                    className="p-6 pt-7 space-y-5 overflow-y-auto"
+                    style={{ overscrollBehavior: 'contain' }}
+                >
                     {/* Eyebrow */}
                     <p className="text-[11px] font-semibold tracking-[0.12em]
                                   uppercase text-emerald-700">

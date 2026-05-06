@@ -43,6 +43,7 @@ import { motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { canProject } from '../projection/toAchievementCredential';
 import { buildIdentityBanner } from '../today/presentation';
 
@@ -85,6 +86,8 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({
     completedAt,
 }) => {
     const history = useHistory();
+
+    useLockBodyScroll();
 
     const [reflectionDraft, setReflectionDraft] = useState(
         pathway.completionReflection ?? '',
@@ -177,18 +180,27 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({
                 type="button"
                 aria-label="Dismiss ceremony"
                 onClick={() => pathwayStore.set.dismissCelebration()}
-                className="absolute top-4 right-4 z-10
+                className="absolute right-4 z-10
                            w-10 h-10 rounded-full
                            flex items-center justify-center
                            text-grayscale-500 hover:text-grayscale-900
                            hover:bg-white/60 backdrop-blur-sm
                            transition-colors"
+                style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
             >
                 <IonIcon icon={closeOutline} className="text-2xl" />
             </button>
 
-            <div className="relative max-w-2xl mx-auto px-6 sm:px-8
-                            pt-16 sm:pt-24 pb-12 space-y-12">
+            <div
+                className="relative max-w-2xl mx-auto px-6 sm:px-8
+                           pb-12 space-y-12"
+                style={{
+                    paddingTop:
+                        'max(4rem, calc(env(safe-area-inset-top) + 3rem))',
+                    paddingBottom:
+                        'max(3rem, calc(env(safe-area-inset-bottom) + 1.5rem))',
+                }}
+            >
                 {/* HERO ============================================= */}
                 <motion.section
                     initial={{ opacity: 0, y: 16 }}

@@ -94,7 +94,10 @@ const PathwaysShell: React.FC = () => {
                     */}
                     {isOnOnboard && <JourneysSubHeader />}
 
-                    <div className="min-h-full bg-white">
+                    <div
+                        className="relative min-h-full bg-white"
+                        style={{ overscrollBehavior: 'contain' }}
+                    >
                         {/*
                             Suppress the in-shell mode header on the
                             cold-start route: without an active pathway,

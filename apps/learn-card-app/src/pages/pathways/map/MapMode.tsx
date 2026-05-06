@@ -1338,13 +1338,20 @@ const MapModeInner: React.FC = () => {
                 on desktop because we were still reserving space
                 for a tab bar that wasn't there.
 
+            `100dvh` (dynamic viewport height) — not `100vh` — so iOS
+            doesn't overshoot when the dynamic island / URL chrome
+            is present. With `100vh` the canvas was rendering ~50–
+            80 px taller than the actual visible viewport, which
+            forced IonContent to page-scroll and dragged the sticky
+            `PathwaysHeader` out of view as the learner panned.
+
             `min-h-[420px]` stays so hyper-short desktop windows
             (landscape iPad split-view, tiny browser chrome) still
             render a usable canvas.
         */
         <div
             className="relative w-full overflow-hidden
-                       h-[calc(100vh-220px)] sm:h-[calc(100vh-140px)]
+                       h-[calc(100dvh-220px)] sm:h-[calc(100dvh-140px)]
                        min-h-[420px]"
             style={{
                 // Subtle top-to-bottom wash: pale emerald at the top

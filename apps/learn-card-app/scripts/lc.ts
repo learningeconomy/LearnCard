@@ -900,6 +900,53 @@ const unpatchCapConfigSource = (): void => {
 };
 
 /**
+ * Re-patch the platform `capacitor.config.json` files after
+ * `prepare-native-config.ts` has run.
+ *
+ * Why this exists: `prepare-native-config.ts` Step 5b (`cpSync` of
+ * `environments/<tenant>/assets/config/capacitor.config.json` over the
+ * cap-synced platform JSONs) wholesale replaces both
+ * `ios/App/App/capacitor.config.json` and the Android equivalent. That
+ * drops the `server` block we patched into the source TS in Step 1
+ * (so live-reload would silently fall back to the local bundle) AND
+ * restores `CapacitorUpdater.autoUpdate: true` (so Capgo polls for OTA
+ * bundles mid-dev session and can force-reload off the LAN URL).
+ *
+ * The platform JSONs are gitignored and regenerated on the next
+ * `prepare-native-config.ts` run, so no manual cleanup is needed —
+ * the next normal `pnpm lc` invocation lands us back on the canonical
+ * tenant config.
+ */
+const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
+    const platformPaths = [
+        resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'),
+        resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json'),
+    ];
+
+    for (const jsonPath of platformPaths) {
+        if (!existsSync(jsonPath)) continue;
+
+        try {
+            const raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+
+            raw.server = { url: serverUrl, cleartext: true };
+
+            if (raw.plugins?.CapacitorUpdater) {
+                raw.plugins.CapacitorUpdater.autoUpdate = false;
+            }
+
+            writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+
+            const relPath = jsonPath.replace(`${APP_ROOT}/`, '');
+
+            console.log(`   ${green('✓')} Patched ${relPath} → server.url + autoUpdate=false`);
+        } catch (err) {
+            console.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
+        }
+    }
+};
+
+/**
  * Set Vite env vars that differ between production and non-production native builds.
  * In dev mode (`pnpm lc dev`), `import.meta.env.DEV` is true so the debug widget
  * shows automatically. But `vite build` always produces a production bundle where
@@ -1089,24 +1136,33 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
 
     // Step 1: Patch capacitor.config.ts source with server.url for live-reload
     console.log('');
-    console.log(green('▶ Step 1/5 — Patching capacitor.config.ts with live-reload URL'));
+    console.log(green('▶ Step 1/6 — Patching capacitor.config.ts with live-reload URL'));
     patchCapConfigSource(serverUrl);
 
     // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
-    execBlocking('npx cap sync', 'Step 2/5 — Capacitor sync (with live-reload URL)');
+    execBlocking('npx cap sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
 
     // Step 3: Restore the original capacitor.config.ts so git stays clean
     console.log('');
-    console.log(green('▶ Step 3/5 — Restoring capacitor.config.ts (git stays clean)'));
+    console.log(green('▶ Step 3/6 — Restoring capacitor.config.ts (git stays clean)'));
     unpatchCapConfigSource();
 
-    // Step 4: Patch native projects with tenant config (after cap sync, so patches aren't clobbered)
+    // Step 4: Patch native projects with tenant config. This step COPIES the
+    // tenant base `capacitor.config.json` over the cap-synced platform JSONs,
+    // which drops the live-reload `server` block and restores Capgo
+    // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
-        'Step 4/5 — Patching native projects with tenant config',
+        'Step 4/6 — Patching native projects with tenant config',
     );
 
-    // Step 5: Launch Vite + open the IDE
+    // Step 5: Re-apply live-reload patches directly to the platform JSONs
+    // (the only thing that survives Step 4's tenant config copy).
+    console.log('');
+    console.log(green('▶ Step 5/6 — Re-applying live-reload patches to platform JSONs'));
+    patchPlatformJsonsForLiveReload(serverUrl);
+
+    // Step 6: Launch Vite + open the IDE
     console.log('');
     console.log(green('🚀 Starting Vite dev server + opening native IDE'));
     console.log('');

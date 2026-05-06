@@ -30,6 +30,7 @@ import { v4 as uuid } from 'uuid';
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
 import { buildInAppHref, resolveNodeAction, type ResolvedAction } from '../core/action';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
 import { canProject } from '../projection/toAchievementCredential';
@@ -243,6 +244,7 @@ const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }>
         className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
                    flex items-start sm:items-center justify-center
                    p-0 sm:p-6 overflow-y-auto font-poppins"
+        style={{ overscrollBehavior: 'contain' }}
         onClick={onClose}
     >
         <motion.div
@@ -255,16 +257,18 @@ const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }>
                        bg-white/95 backdrop-blur-xl
                        sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
                        border border-white/60"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
             <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="absolute top-3 right-3 w-10 h-10 rounded-full
+                className="absolute right-3 w-10 h-10 rounded-full
                            bg-white/80 hover:bg-white hover:shadow-md
                            border border-grayscale-200
                            flex items-center justify-center
                            transition-all duration-200 z-10"
+                style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
             >
                 <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
             </button>
@@ -288,6 +292,8 @@ const NodeDetail: React.FC = () => {
     const history = useHistory();
     const location = useLocation<NodeDetailLocationState | undefined>();
     const analytics = useAnalytics();
+
+    useLockBodyScroll();
 
     const pathway = pathwayStore.use.pathways()[params.pathwayId] ?? null;
     const isOnline = offlineQueueStore.use.isOnline();

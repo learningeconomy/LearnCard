@@ -24,7 +24,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
     return (
         <div className="px-2 bg-transparent h-18 flex-none order-1 self-stretch flex-grow-0 text-white text-xs font-normal font-poppins mt-6 leading-snug m-4 mb-8">
             <p className="text-grayscale-600 text-xs font-notoSans">
-                Powered by <span className="font-semibold">Consent Flow</span>
+                Powered by <span className="font-semibold">Banana Flow</span>
                 <br />
                 You own your own data.
                 <br />
