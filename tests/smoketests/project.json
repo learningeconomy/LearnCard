@@ -1,0 +1,36 @@
+{
+  "name": "smoketests",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tests/smoketests",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm test",
+        "cwd": "tests/smoketests"
+      }
+    },
+    "smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm smoke",
+        "cwd": "tests/smoketests"
+      }
+    },
+    "smoke:api": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm smoke:api",
+        "cwd": "tests/smoketests"
+      }
+    },
+    "smoke:browser": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm smoke:browser",
+        "cwd": "tests/smoketests"
+      }
+    }
+  }
+}

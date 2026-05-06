@@ -6,7 +6,7 @@ let initialized = false;
 let generating = false; // Mutex flag to allow first init call to acquire a lock
 
 export const init = async (
-    arg: InitInput | Promise<InitInput> = 'https://cdn.filestackcontent.com/HReKwBTm2Wha4Wlo4uwe'
+    arg: InitInput | Promise<InitInput> = 'https://cdn.filestackcontent.com/Z4wMCHTiKaOUGdUC6NQ3'
 ) => {
     // Do not return until we are done generating!
     while (generating) await new Promise(res => setTimeout(res, 250));

@@ -42,7 +42,6 @@ export const CheckListUploadResume: React.FC = () => {
     const { presentToast } = useToast();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
     const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
@@ -130,27 +129,32 @@ export const CheckListUploadResume: React.FC = () => {
         }
     };
 
-    const handleDeleteResume = async () => {
-        try {
-            setIsDeleting(true);
-            const wallet = await initWallet();
-            const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+    const handleDeleteResume = () => {
+        const previous = resume;
+        if (!previous) return;
 
-            const recordUri = record?.[0]?.uri as string;
+        setResume(null);
 
-            if (!recordUri) {
-                setResume(null);
-                return;
+        void (async () => {
+            try {
+                const wallet = await initWallet();
+                const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+                const recordUri = record?.[0]?.uri as string;
+                if (!recordUri) return;
+                await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
+                refetchCheckListStatus();
+            } catch (error) {
+                console.error('handleDeleteResume::error', error);
+                setResume(previous);
+                presentToast('Failed to delete. Please try again.', {
+                    title: 'Delete failed',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
             }
-
-            await wallet.index.LearnCloud.remove(resume?.id || (record?.[0]?.id as string));
-            await refetchCheckListStatus();
-            setResume(null);
-            setIsDeleting(false);
-        } catch (error) {
-            setIsDeleting(false);
-            console.error('handleDeleteResume::error', error);
-        }
+        })();
     };
 
     const confirmDelete = async () => {
@@ -311,9 +315,9 @@ export const CheckListUploadResume: React.FC = () => {
                             </button>
                         </div>
 
-                        {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                        {isLoading && <CheckListItemSkeleton />}
 
-                        {resume && !isLoading && !isDeleting && (
+                        {resume && !isLoading && (
                             <div className="flex items-center justify-between w-full mt-4 relative pb-4">
                                 <div className="flex items-center justify-start overflow-hidden">
                                     <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />

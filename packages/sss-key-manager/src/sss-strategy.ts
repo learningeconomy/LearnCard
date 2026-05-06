@@ -66,6 +66,13 @@ export interface SSSStrategyConfig {
      * Defaults to false. Controlled by VITE_ENABLE_EMAIL_BACKUP_SHARE env var.
      */
     enableEmailBackupShare?: boolean;
+
+    /**
+     * Tenant identifier forwarded as `X-Tenant-Id` on every server request.
+     * The lca-api uses this to brand recovery / OTP emails for the active
+     * tenant. Defaults to the server's fallback tenant (learncard) when unset.
+     */
+    tenantId?: string;
 }
 
 const defaultStorage: SSSStorageFunctions = {
@@ -81,20 +88,26 @@ const defaultStorage: SSSStorageFunctions = {
 // Server helpers (internal)
 // ---------------------------------------------------------------------------
 
-const buildHeaders = (token: string, didAuthVp?: string) => ({
+const buildHeaders = (
+    token: string,
+    didAuthVp?: string,
+    tenantId?: string
+): Record<string, string> => ({
     'Content-Type': 'application/json',
     ...(didAuthVp ? { Authorization: `Bearer ${didAuthVp}` } : {}),
+    ...(tenantId ? { 'X-Tenant-Id': tenantId } : {}),
 });
 
 const fetchAuthShareRaw = async (
     serverUrl: string,
     token: string,
     providerType: AuthProviderType,
-    shareVersion?: number
+    shareVersion?: number,
+    tenantId?: string
 ) => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'POST',
-        headers: buildHeaders(token),
+        headers: buildHeaders(token, undefined, tenantId),
         body: JSON.stringify({
             authToken: token,
             providerType,
@@ -117,11 +130,12 @@ const putAuthShare = async (
     providerType: AuthProviderType,
     authShare: string,
     primaryDid: string,
-    didAuthVp?: string
+    didAuthVp?: string,
+    tenantId?: string
 ): Promise<{ shareVersion: number }> => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'PUT',
-        headers: buildHeaders(token, didAuthVp),
+        headers: buildHeaders(token, didAuthVp, tenantId),
         body: JSON.stringify({
             authToken: token,
             providerType,
@@ -150,7 +164,8 @@ const fetchRecoveryShare = async (
     token: string,
     providerType: AuthProviderType,
     type: string,
-    credentialId?: string
+    credentialId?: string,
+    tenantId?: string
 ): Promise<RecoveryShareResponse> => {
     const params = new URLSearchParams({ type, providerType, authToken: token });
 
@@ -160,7 +175,7 @@ const fetchRecoveryShare = async (
 
     const response = await fetch(`${serverUrl}/keys/recovery?${params}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(token, undefined, tenantId),
     });
 
     if (!response.ok) {
@@ -175,11 +190,12 @@ const postRecoveryMethod = async (
     token: string,
     providerType: AuthProviderType,
     body: Record<string, unknown>,
-    didAuthVp?: string
+    didAuthVp?: string,
+    tenantId?: string
 ) => {
     const response = await fetch(`${serverUrl}/keys/recovery`, {
         method: 'POST',
-        headers: buildHeaders(token, didAuthVp),
+        headers: buildHeaders(token, didAuthVp, tenantId),
         body: JSON.stringify({ authToken: token, providerType, ...body }),
     });
 
@@ -227,7 +243,8 @@ const sendEmailBackupShare = async (
     providerType: AuthProviderType,
     emailShare: string,
     email: string,
-    shareVersion?: number
+    shareVersion?: number,
+    tenantId?: string
 ): Promise<void> => {
     try {
         // Prepend the share version so the recovery flow can request the matching auth share
@@ -237,7 +254,7 @@ const sendEmailBackupShare = async (
 
         const response = await fetch(`${serverUrl}/keys/email-backup`, {
             method: 'POST',
-            headers: buildHeaders(token),
+            headers: buildHeaders(token, undefined, tenantId),
             body: JSON.stringify({ authToken: token, providerType, emailShare: payload, email }),
         });
 
@@ -258,7 +275,8 @@ const sendEmailShareToRecoveryEmail = async (
     token: string,
     providerType: AuthProviderType,
     emailShare: string,
-    shareVersion?: number
+    shareVersion?: number,
+    tenantId?: string
 ): Promise<void> => {
     const payload = shareVersion != null
         ? formatVersionedEmailShare(emailShare, shareVersion)
@@ -266,7 +284,7 @@ const sendEmailShareToRecoveryEmail = async (
 
     const response = await fetch(`${serverUrl}/keys/email-backup`, {
         method: 'POST',
-        headers: buildHeaders(token),
+        headers: buildHeaders(token, undefined, tenantId),
         body: JSON.stringify({
             authToken: token,
             providerType,
@@ -337,7 +355,7 @@ const rotateShares = async (
  * ```
  */
 export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationStrategy {
-    const { serverUrl, enableEmailBackupShare = false } = config;
+    const { serverUrl, enableEmailBackupShare = false, tenantId } = config;
     const storage = config.storage || defaultStorage;
 
     /**
@@ -472,7 +490,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             const data = await fetchAuthShareRaw(
                 serverUrl, token, providerType,
-                localVersion ?? undefined
+                localVersion ?? undefined,
+                tenantId
             );
 
             if (!data) {
@@ -531,7 +550,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             primaryDid: string,
             didAuthVp?: string
         ): Promise<void> {
-            const { shareVersion } = await putAuthShare(serverUrl, token, providerType, authShare, primaryDid, didAuthVp);
+            const { shareVersion } = await putAuthShare(serverUrl, token, providerType, authShare, primaryDid, didAuthVp, tenantId);
 
             // Persist the version alongside the device share so we can request
             // the matching auth share on next login.
@@ -544,7 +563,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         async markMigrated(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void> {
             const response = await fetch(`${serverUrl}/keys/migrate`, {
                 method: 'POST',
-                headers: buildHeaders(token, didAuthVp),
+                headers: buildHeaders(token, didAuthVp, tenantId),
                 body: JSON.stringify({ authToken: token, providerType }),
             });
 
@@ -570,7 +589,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             switch (input.method) {
                 case 'passkey': {
                     const result = await fetchRecoveryShare(
-                        serverUrl, token, providerType, 'passkey', input.credentialId
+                        serverUrl, token, providerType, 'passkey', input.credentialId, tenantId
                     );
 
                     if (!result?.encryptedShare) {
@@ -600,7 +619,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     // the correct historical auth share.
                     try {
                         const phraseRecord = await fetchRecoveryShare(
-                            serverUrl, token, providerType, 'phrase'
+                            serverUrl, token, providerType, 'phrase', undefined, tenantId
                         );
 
                         recoveryShareVersion = phraseRecord?.shareVersion;
@@ -645,7 +664,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // auth share version from the server (it may be in previousAuthShares).
             const serverData = await fetchAuthShareRaw(
                 serverUrl, token, providerType,
-                recoveryShareVersion
+                recoveryShareVersion,
+                tenantId
             );
 
             if (!serverData?.authShare) {
@@ -730,10 +750,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // Store new device + auth shares
             await storage.storeDeviceShare(shares.deviceShare, activeStorageId);
 
-            const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
+            const serverData = await fetchAuthShareRaw(serverUrl, token, providerType, undefined, tenantId);
             const primaryDid = serverData?.primaryDid || '';
 
-            const { shareVersion } = await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, vpJwt);
+            const { shareVersion } = await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, vpJwt, tenantId);
 
             // Persist the new version alongside the device share
             await storage.storeShareVersion(shareVersion, activeStorageId);
@@ -743,9 +763,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // handles its own send to the recovery email exclusively.
             if (enableEmailBackupShare && input.method !== 'email' && lastEmailShare) {
                 const resend = hasRecoveryEmail
-                    ? sendEmailShareToRecoveryEmail(serverUrl, token, providerType, lastEmailShare, shareVersion)
+                    ? sendEmailShareToRecoveryEmail(serverUrl, token, providerType, lastEmailShare, shareVersion, tenantId)
                     : authUser?.email
-                        ? sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email, shareVersion)
+                        ? sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email, shareVersion, tenantId)
                         : Promise.resolve();
 
                 resend.catch(e => console.warn('Email backup share re-send failed (non-fatal):', e));
@@ -772,7 +792,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         },
                         credentialId: credential.credentialId,
                         shareVersion,
-                    }, vpJwt);
+                    }, vpJwt, tenantId);
 
                     return { method: 'passkey', credentialId: credential.credentialId };
                 }
@@ -786,7 +806,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     await postRecoveryMethod(serverUrl, token, providerType, {
                         type: 'phrase',
                         shareVersion,
-                    }, vpJwt);
+                    }, vpJwt, tenantId);
 
                     return { method: 'phrase', phrase };
                 }
@@ -812,7 +832,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     await postRecoveryMethod(serverUrl, token, providerType, {
                         type: 'backup',
                         shareVersion,
-                    }, vpJwt);
+                    }, vpJwt, tenantId);
 
                     return { method: 'backup', backupFile };
                 }
@@ -823,7 +843,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     // useRecoveryEmail: true so the server reads it from UserKey.
                     await sendEmailShareToRecoveryEmail(
                         serverUrl, token, providerType,
-                        shares.emailShare, shareVersion
+                        shares.emailShare, shareVersion, tenantId
                     );
 
                     // Register email recovery on the server so
@@ -831,7 +851,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     await postRecoveryMethod(serverUrl, token, providerType, {
                         type: 'email',
                         shareVersion,
-                    }, vpJwt);
+                    }, vpJwt, tenantId);
 
                     // Future sendEmailBackupShare calls should route to
                     // the recovery email, not the primary.
@@ -847,7 +867,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             providerType: AuthProviderType
         ): Promise<RecoveryMethodInfo[]> {
             try {
-                const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
+                const serverData = await fetchAuthShareRaw(serverUrl, token, providerType, undefined, tenantId);
                 const methods = serverData?.recoveryMethods || [];
 
                 // When email backup share is enabled (primary email), inject
@@ -876,7 +896,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         ): Promise<{ customToken?: string }> {
             const res = await fetch(`${serverUrl}/keys/upgrade-contact-method`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: buildHeaders(token, undefined, tenantId),
                 body: JSON.stringify({
                     authToken: token,
                     providerType,
@@ -917,7 +937,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // email — eliminates the primary-email single point of failure.
             if (hasRecoveryEmail) {
                 await sendEmailShareToRecoveryEmail(
-                    serverUrl, token, providerType, lastEmailShare, lastShareVersion
+                    serverUrl, token, providerType, lastEmailShare, lastShareVersion, tenantId
                 );
             } else {
                 if (!email) {
@@ -925,7 +945,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     return;
                 }
 
-                await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email, lastShareVersion);
+                await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email, lastShareVersion, tenantId);
             }
 
             // Clear after use — one-shot to avoid stale data

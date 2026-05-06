@@ -39,7 +39,9 @@ export const createCredentialActivity = async (
     // (Parallel execution with Promise.all can cause deadlocks when multiple
     // transactions try to acquire locks on the same Profile/Boost nodes)
 
-    await createPerformedByRelationship(params.actorProfileId, id);
+    if (params.actorProfileId) {
+        await createPerformedByRelationship(params.actorProfileId, id);
+    }
 
     if (params.listingId) {
         await createPerformedByListingRelationship(params.listingId, id);
@@ -102,10 +104,7 @@ const createPerformedByListingRelationship = async (
         .run();
 };
 
-const createForBoostRelationship = async (
-    activityId: string,
-    boostId: string
-): Promise<void> => {
+const createForBoostRelationship = async (activityId: string, boostId: string): Promise<void> => {
     await new QueryBuilder()
         .match({
             model: CredentialActivity,

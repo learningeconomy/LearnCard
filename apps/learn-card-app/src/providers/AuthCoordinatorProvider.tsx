@@ -99,6 +99,8 @@ import {
     getFirebaseRedirectDomain,
     getFirebaseDynamicLinkDomain,
     getNativeBundleId,
+    getTenantHeaders,
+    getResolvedTenantConfig,
 } from '../config/bootstrapTenantConfig';
 
 import {
@@ -229,6 +231,18 @@ const DeviceLinkOverlay: React.FC<{
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
 
+    // Resolve the active tenant so recovery / OTP emails sent by the
+    // lca-api are branded for the tenant the user signed up under.
+    // The factory runs after bootstrapTenantConfig() resolves, but we
+    // guard defensively for test / edge-case paths.
+    let tenantId: string | undefined;
+
+    try {
+        tenantId = getResolvedTenantConfig().tenantId;
+    } catch {
+        tenantId = undefined;
+    }
+
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
@@ -237,6 +251,7 @@ registerKeyDerivationFactory('sss', () => {
         // user has enabled "public computer" mode.
         storage: Capacitor.isNativePlatform() ? createNativeSSSStorage() : createAdaptiveStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
+        tenantId,
     });
 });
 
@@ -1198,7 +1213,7 @@ const AuthSessionManager: React.FC<{
 
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', ...getTenantHeaders() },
                             body: JSON.stringify({ email }),
                         });
 
@@ -1460,6 +1475,7 @@ const AuthSessionManager: React.FC<{
                         return {
                             'Content-Type': 'application/json',
                             ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                            ...getTenantHeaders(),
                         };
                     };
 

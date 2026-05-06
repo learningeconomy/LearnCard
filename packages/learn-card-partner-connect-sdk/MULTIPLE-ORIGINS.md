@@ -2,9 +2,46 @@
 
 ## Overview
 
-The Partner Connect SDK supports configuring multiple allowed origins via the `hostOrigin` option. These origins serve as a **whitelist for the `lc_host_override` query parameter**, enabling partner apps to work across multiple deployment environments (production, staging, preview) without code changes.
+The Partner Connect SDK supports configuring multiple allowed origins via the `hostOrigin` option. These origins serve as a **whitelist for the `lc_host_override` query parameter** and for the browser-reported parent origin (`window.location.ancestorOrigins[0]`), enabling partner apps to work across multiple deployment environments (production, staging, preview) without code changes.
 
 **Important:** At runtime, only a **single active origin** is used for both sending and receiving messages. The multiple origins array does **not** enable accepting messages from multiple origins simultaneously.
+
+### Built-in LearnCard tenant whitelist
+
+The SDK ships with a curated default whitelist of LearnCard-managed tenant origins (`PartnerConnect.DEFAULT_TRUSTED_TENANTS`):
+
+```
+https://learncard.app
+https://*.learncard.app
+https://*.learncard.ai
+https://vetpass.app
+https://*.vetpass.app
+```
+
+These are **merged automatically** with whatever you pass in `hostOrigin`, so a partner app works out of the box inside any current or future LearnCard tenant (staging, preview, VetPass, …) without a re-deploy. Pass `disableDefaultTenants: true` to opt out if you want to lock the SDK down to only your own configured origins.
+
+### Wildcard patterns
+
+Entries in `hostOrigin` may be either an **exact origin** or a **wildcard pattern** where `*` stands in for one or more DNS labels at the start of the host:
+
+```typescript
+hostOrigin: [
+    'https://learncard.app',        // exact
+    'https://*.learncard.app',      // wildcard — any subdomain(s)
+]
+```
+
+Matching rules:
+
+| Pattern                       | Candidate                                   | Result |
+| ----------------------------- | ------------------------------------------- | ------ |
+| `https://*.learncard.app`     | `https://staging.learncard.app`             | ✅     |
+| `https://*.learncard.app`     | `https://pr-1.preview.learncard.app`        | ✅     |
+| `https://*.learncard.app`     | `https://learncard.app` (no subdomain)      | ❌     |
+| `https://*.learncard.app`     | `http://staging.learncard.app` (protocol)   | ❌     |
+| `https://*.learncard.app`     | `https://learncard.app.attacker.com`        | ❌     |
+
+Wildcards are only allowed as **leading** label(s) in the host portion. Protocol and port must match exactly.
 
 ## Usage
 
@@ -34,9 +71,13 @@ const learnCard = createPartnerConnect({
 
 At initialization, the SDK determines a **single `activeHostOrigin`** using this hierarchy:
 
-1. **`lc_host_override` query parameter** — if present and the value is in the configured `hostOrigin` array (or is a native app origin when `allowNativeAppOrigins` is `true`)
-2. **First configured `hostOrigin`** — fallback
-3. **Default** — `https://learncard.app`
+1. **`window.location.ancestorOrigins[0]`** — when the browser supports it (Chromium/WebKit) and the real parent origin is in the effective whitelist (configured + built-in tenants). This is unspoofable by a malicious query param and therefore takes precedence.
+2. **`lc_host_override` query parameter** — if present and the value is in the effective whitelist (or is a native app origin when `allowNativeAppOrigins` is `true`).
+3. **`sessionStorage['lc_host_override']`** — a previously-validated override, so subsequent in-iframe navigations in the same tab use the same origin.
+4. **First configured `hostOrigin`** — fallback.
+5. **Default** — `https://learncard.app`.
+
+If the parent origin and the query-param override disagree, the SDK prefers the browser-reported parent and logs a warning.
 
 ### Incoming Messages (Validation)
 
@@ -266,7 +307,7 @@ private sendMessage<T>(action: string, payload?: unknown): Promise<T> {
 ## FAQ
 
 **Q: Can I use wildcards like `*.example.com`?**  
-A: No, only exact origin matching is supported for security.
+A: Yes, in `hostOrigin` entries of the form `<protocol>://*.<domain>` (e.g. `https://*.learncard.app`). Wildcards must be the leading label(s); protocol and port must match exactly.
 
 **Q: Does the SDK accept messages from ALL configured origins?**  
 A: No. Only the single `activeHostOrigin` (determined at initialization) is used for message validation. The origins array is a whitelist for `lc_host_override` only.

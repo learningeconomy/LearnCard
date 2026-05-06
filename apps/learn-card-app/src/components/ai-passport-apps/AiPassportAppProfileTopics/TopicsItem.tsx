@@ -28,7 +28,9 @@ export const TopicsItem: React.FC<{
             onClick={() => {
                 if (isDesktop) {
                     closeAllModals();
-                    history.push(`/ai/sessions?topicBoostUri=${topicBoost?.uri}`);
+                    history.push(
+                        `/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`
+                    );
                 } else {
                     newModal(
                         <AiSessionsContainer

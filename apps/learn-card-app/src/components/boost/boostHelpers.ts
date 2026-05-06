@@ -1,6 +1,10 @@
 import moment from 'moment';
 import { VerificationItem, BoostRecipientInfo, LCNBoostStatusEnum, VC } from '@learncard/types';
-import { BoostCMSAppearanceDisplayTypeEnum } from './boost';
+import {
+    BoostCMSAppearanceDisplayTypeEnum,
+    BoostCMSIssueTo,
+    BoostCMSMediaAttachment,
+} from './boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
 import {
@@ -19,6 +23,114 @@ import {
 } from 'learn-card-base';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from './boost-options/boostOptions';
 import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
+
+type SendBoostCredentialOptions = {
+    skipNotification?: boolean;
+    mediaAttachments?: BoostCMSMediaAttachment[];
+};
+
+/**
+ * Builds the `templateData` payload that `sendBoost` / `addBoostSomeone`
+ * forward to the network when a recipient has per-recipient media attachments
+ * (photo, document, link, video) attached from the issuer UI.
+ *
+ * The returned object is designed to spread directly into the `sendBoost`
+ * options, e.g.:
+ *     wallet.invoke.sendBoost(profileId, boostUri, {
+ *         ...getRecipientMediaAttachmentTemplateData(options?.mediaAttachments),
+ *     });
+ * which is why the empty case returns `{}` — spreading it is a no-op.
+ *
+ * Data flow:
+ *   1. `convertAttachmentsToEvidence` maps each `BoostCMSMediaAttachment`
+ *      (the issuer-UI shape) to an OBv3-compatible evidence entry.
+ *   2. Each entry is tagged with a `last` boolean so Mustache templates can
+ *      render comma separators correctly inside
+ *      `{{#evidence}}...{{^last}},{{/last}}{{/evidence}}` sections. The
+ *      `last` flag is a rendering hint ONLY — the server strips it back off
+ *      in `appendTemplateEvidenceToCredential` before the credential is
+ *      signed, so it never reaches the recipient's wallet.
+ *   3. If the boost template does NOT reference `{{evidence}}` itself, the
+ *      server-side `appendTemplateEvidenceToCredential` auto-appends these
+ *      entries onto `credential.evidence` as a fallback.
+ *
+ * @param mediaAttachments - Per-recipient attachments from the issuer UI
+ * @returns `{ templateData: { evidence: [...] } }` when there's at least one
+ *          attachment, or `{}` when there are none
+ */
+const getRecipientMediaAttachmentTemplateData = (
+    mediaAttachments: BoostCMSMediaAttachment[] = []
+) => {
+    const evidence = convertAttachmentsToEvidence(mediaAttachments);
+
+    // No attachments → return an empty object so callers can spread it
+    // unconditionally without polluting the sendBoost options.
+    if (evidence.length === 0) return {};
+
+    return {
+        templateData: {
+            // `last` is a per-iteration hint for Mustache `{{#last}}` / `{{^last}}`
+            // sections (useful for emitting separators between entries). The
+            // server strips this field before the evidence lands on the
+            // signed credential.
+            evidence: evidence.map((item, index) => ({
+                ...item,
+                last: index === evidence.length - 1,
+            })),
+        },
+    };
+};
+
+/**
+ * Builds an anonymized analytics payload describing per-recipient media
+ * attachments for a send-boost event. No DIDs, profileIds, or contact info
+ * are included — just counts and attachment types — so the event is safe to
+ * send to product analytics.
+ *
+ * Returned shape:
+ *   - recipientCount: total recipients in the send
+ *   - recipientsWithAttachments: how many of those had at least one attachment
+ *   - totalAttachments: sum of attachments across all recipients
+ *   - attachmentTypeCounts: aggregate count by media type (photo/document/video/link/...)
+ *   - perRecipient: ordered breakdown { attachmentCount, types[] } per recipient
+ */
+export const summarizeRecipientAttachments = (
+    issueTo: BoostCMSIssueTo[] = []
+): {
+    recipientCount: number;
+    recipientsWithAttachments: number;
+    totalAttachments: number;
+    attachmentTypeCounts: Record<string, number>;
+    perRecipient: Array<{ attachmentCount: number; types: string[] }>;
+} => {
+    const attachmentTypeCounts: Record<string, number> = {};
+    let totalAttachments = 0;
+    let recipientsWithAttachments = 0;
+
+    const perRecipient = issueTo.map(recipient => {
+        const attachments = recipient.mediaAttachments ?? [];
+        const types: string[] = [];
+
+        attachments.forEach(att => {
+            const type = (att.type as string) || 'unknown';
+            attachmentTypeCounts[type] = (attachmentTypeCounts[type] ?? 0) + 1;
+            types.push(type);
+        });
+
+        if (attachments.length > 0) recipientsWithAttachments += 1;
+        totalAttachments += attachments.length;
+
+        return { attachmentCount: attachments.length, types };
+    });
+
+    return {
+        recipientCount: issueTo.length,
+        recipientsWithAttachments,
+        totalAttachments,
+        attachmentTypeCounts,
+        perRecipient,
+    };
+};
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
     const fallbackName = isCustomBoostType(state.basicInfo.achievementType ?? '')
@@ -303,7 +415,7 @@ export const sendBoostCredential = async (
     wallet: BespokeLearnCard,
     profileId: string,
     boostUri: string,
-    options: { skipNotification: boolean } = {
+    options: SendBoostCredentialOptions = {
         skipNotification: false,
     }
 ) => {
@@ -311,8 +423,9 @@ export const sendBoostCredential = async (
     if (!boostUri) throw new Error('Send Boost Error, boostUri is required, but none provided');
     // send boost to profileId
     const sentBoostUri = await wallet?.invoke?.sendBoost(profileId, boostUri, {
-        skipNotification: options?.skipNotification,
+        skipNotification: options?.skipNotification ?? false,
         encrypt: true,
+        ...getRecipientMediaAttachmentTemplateData(options?.mediaAttachments),
     });
     // anytime you use sendboost the crednetial sent to other person is wrapped
 
@@ -345,13 +458,14 @@ export const addBoostSomeone = async (
     wallet: BespokeLearnCard,
     profileId: string,
     boostUri: string,
-    options: { skipNotification: boolean } = {
+    options: SendBoostCredentialOptions = {
         skipNotification: false,
     }
 ) => {
     const sentBoost = await wallet?.invoke?.sendBoost(profileId, boostUri, {
-        skipNotification: options?.skipNotification,
+        skipNotification: options?.skipNotification ?? false,
         encrypt: true,
+        ...getRecipientMediaAttachmentTemplateData(options?.mediaAttachments),
     });
     return sentBoost;
 };

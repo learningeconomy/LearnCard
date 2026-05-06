@@ -4,7 +4,6 @@ import ExistingAiSessionChatBotContainer from './NewAiSessionChatBot/ExistingAiS
 import NewAiAppSessionChatBotContainer from './NewAiSessionChatBot/NewAiAppSessionChatBotContainer';
 import NewAiSessionChatBotContainer from './NewAiSessionChatBot/NewAiSessionChatBotContainer';
 import AiSessionTypeSelector from './AiSessionTypeSelector/AiSessionTypeSelector';
-import NewAiSessionFooter from './NewAiSessionFooter/NewAiSessionFooter';
 
 import { useDeviceTypeByWidth, LaunchPadAppListItem } from 'learn-card-base';
 
@@ -30,7 +29,7 @@ export const NewAiSessionContainer: React.FC<{
     selectedApp,
     disableEdit,
 }) => {
-    const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const { isDesktop } = useDeviceTypeByWidth();
 
     const activeStep = chatBotStore.useTracked.activeStep();
     const setActiveStep = chatBotStore.set.setActiveStep;
@@ -114,7 +113,6 @@ export const NewAiSessionContainer: React.FC<{
             className={`h-full bg-transparent relative flex items-center flex-col justify-end ${containerStyles}`}
         >
             {step}
-            {isMobile && !startInternalAiChatBot && <NewAiSessionFooter />}
         </div>
     );
 };

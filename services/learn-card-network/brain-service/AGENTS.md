@@ -804,3 +804,46 @@ RETURN other.profileId, r.sources
 MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile {profileId: 'some-id'})
 RETURN c.id, r.status, r.revokedAt
 ```
+
+## Email Delivery & Tenant Branding
+
+Transactional emails (inbox-claim, endorsement-request, guardian-approval, account-approved, contact-method-verification, credential-awaiting-guardian, guardian-credential-approval, guardian-approved-claim, guardian-rejected-credential, guardian-email-otp) are rendered locally via [`@learncard/email-templates`](../../../packages/email-templates/README.md) and sent as raw HTML through Postmark.
+
+### Architecture
+
+```
+route handler → deliveryService.send({ templateAlias, templateModel, branding, ... })
+                    │
+                    ▼
+           PostmarkAdapter.send()
+                    │
+                    ├─ LOCAL_TEMPLATE_MAP[alias] → local TemplateId?
+                    │     │ yes
+                    │     ▼
+                    │  renderEmail(id, branding, data) → { html, text, subject }
+                    │     │
+                    │     ▼
+                    │  Postmark.sendEmail (raw HTML)
+                    │
+                    └─ no → Postmark.sendEmailWithTemplate (legacy fallback)
+```
+
+### Tenant Resolution
+
+Tenant is resolved once per request in `createContext` via `resolveTenantFromRequest(headers)` from `@learncard/email-templates` and attached as `ctx.tenant`. Priority: `X-Tenant-Id` header → `Origin` / `Referer` → `DEFAULT_TENANT_ID` env → `'learncard'`.
+
+### Rules for Route Authors
+
+- **Always pass `branding: ctx.tenant?.emailBranding`** to `deliveryService.send()`. Emails sent without it render with LearnCard defaults regardless of the caller's tenant.
+- **Use `getFrom({ mailbox, branding })`** for the from-address so the domain matches the tenant (e.g. `recovery@vetpass.app` for VetPass).
+- **Use the local template ID as the `templateAlias`** (e.g. `'inbox-claim'`, `'guardian-approval'`). These are pre-registered as sentinels in `LOCAL_TEMPLATE_MAP` — env-var overrides are optional, never required.
+- **Do not write plain-text fallbacks.** If local rendering fails for a sentinel alias, the adapter re-throws so the error surfaces — don't silently send unbranded text.
+
+### Adding a New Template
+
+1. Add the template to `@learncard/email-templates` (see that package's `AGENTS.md`).
+2. Register the alias in `LOCAL_TEMPLATE_MAP` in `src/services/delivery/adapters/postmark.adapter.ts`.
+3. If the service's `templateModel` shape differs from the package's `TemplateDataMap` shape, extend `mapTemplateModel()` in the adapter.
+4. Call `deliveryService.send()` from the route, passing `branding: ctx.tenant?.emailBranding`.
+
+See [Tenant-Branded Emails (architecture)](../../../docs/core-concepts/tenant-branded-emails.md) for the end-to-end flow and [Configure Tenant-Branded Emails](../../../docs/how-to-guides/configure-tenant-branded-emails.md) for operator-facing setup.

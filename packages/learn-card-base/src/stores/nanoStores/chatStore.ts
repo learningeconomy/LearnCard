@@ -11,6 +11,7 @@ import { networkStore } from '../NetworkStore';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
+export const streamingMessage = atom<ChatMessage | null>(null);
 export const threads = atom<Thread[]>([]);
 export const currentThreadId = atom<string | null>(null);
 export const isTyping = atom(false);
@@ -55,13 +56,38 @@ export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
 export const BACKEND_URL = 'https://api.learncloud.ai';
 
+const EMPTY_PLAN_METADATA = {
+    sections: {
+        title: '',
+        objectives: 0,
+        skills: 0,
+        roadmap: 0,
+    },
+};
+
+const EMPTY_PLAN_SECTIONS = {
+    welcome: '',
+    summary: '',
+    objectives: [] as string[],
+    skills: [] as string[],
+    roadmap: [] as any[],
+};
+
 /**
- * Reset all chat-related stores to their initial values.
- * Useful when starting a new session or logging out.
+ * Clear everything that represents a single AI session's in-flight state.
+ * Preserves the `threads` sidebar list, `chatInputText`, and auth.
+ * Call at the top of every start* entry point so the previous session's
+ * plan/messages/streaming state don't bleed into the new one.
  */
-export function resetChatStores() {
+export function resetChatSessionStores() {
     messages.set([]);
-    threads.set([]);
+    streamingMessage.set(null);
+    if (streamRaf != null) {
+        cancelAnimationFrame(streamRaf);
+        streamRaf = null;
+    }
+    streamBuffer = '';
+    streamingId = null;
     currentThreadId.set(null);
     isTyping.set(false);
     isLoading.set(false);
@@ -74,23 +100,19 @@ export function resetChatStores() {
     planReady.set(false);
     planReadyThread.set(null);
     planStreamActive.set(false);
-    planMetadata.set({
-        sections: {
-            title: '',
-            objectives: 0,
-            skills: 0,
-            roadmap: 0,
-        },
-    });
-    planSections.set({
-        welcome: '',
-        summary: '',
-        objectives: [],
-        skills: [],
-        roadmap: [],
-    });
-    chatInputText.set('');
+    planMetadata.set(EMPTY_PLAN_METADATA);
+    planSections.set(EMPTY_PLAN_SECTIONS);
     resetArtifactsStore();
+}
+
+/**
+ * Reset all chat-related stores to their initial values.
+ * Useful when starting a new session or logging out.
+ */
+export function resetChatStores() {
+    resetChatSessionStores();
+    threads.set([]);
+    chatInputText.set('');
 }
 
 interface TopicCredential {
@@ -112,6 +134,30 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 let messageListeners: ((message: any) => void)[] = [];
 let readyListeners: (() => void)[] = [];
 let shouldReconnect = true;
+
+// RAF-coalesced streaming state
+let streamBuffer = '';
+let streamRaf: number | null = null;
+let streamingId: string | null = null;
+
+const flushStream = () => {
+    streamRaf = null;
+    if (!streamBuffer) return;
+    const prev = streamingMessage.get();
+    const id = streamingId ?? uuid();
+    streamingId = id;
+    streamingMessage.set({
+        id,
+        role: 'assistant',
+        content: (prev?.content ?? '') + streamBuffer,
+    });
+    streamBuffer = '';
+};
+
+const scheduleFlush = () => {
+    if (streamRaf != null) return;
+    streamRaf = requestAnimationFrame(flushStream);
+};
 
 // Load user's threads
 export async function loadThreads() {
@@ -503,6 +549,18 @@ export function connectWebSocket() {
             }
 
             if (data.done) {
+                // Flush any pending streaming tokens before committing
+                if (streamRaf != null) {
+                    cancelAnimationFrame(streamRaf);
+                    flushStream();
+                }
+                const pending = streamingMessage.get();
+                if (pending) {
+                    messages.set([...messages.get(), pending]);
+                    streamingMessage.set(null);
+                }
+                streamingId = null;
+
                 isTyping.set(false);
 
                 // Handle thread creation and title updates
@@ -539,22 +597,12 @@ export function connectWebSocket() {
             }
 
             /* -------------------------------------------------- */
-            /* LEGACY STREAM (STRING)                            */
+            /* LEGACY STREAM (STRING) — RAF-coalesced             */
             /* -------------------------------------------------- */
 
             if (typeof data === 'string') {
-                const current = messages.get();
-                const last = current[current.length - 1];
-
-                if (last?.role === 'assistant') {
-                    messages.set([
-                        ...current.slice(0, -1),
-                        { ...last, content: last.content + data },
-                    ]);
-                } else {
-                    messages.set([...current, { role: 'assistant', content: data }]);
-                }
-
+                streamBuffer += data;
+                scheduleFlush();
                 isLoading.set(false);
                 isTyping.set(true);
             }
@@ -591,6 +639,18 @@ export function connectWebSocket() {
 
     ws.onclose = () => {
         if (ws !== socket) return;
+
+        // Flush any partial streaming message so interrupted streams aren't lost
+        if (streamRaf != null) {
+            cancelAnimationFrame(streamRaf);
+            flushStream();
+        }
+        const pending = streamingMessage.get();
+        if (pending) {
+            messages.set([...messages.get(), pending]);
+            streamingMessage.set(null);
+        }
+        streamingId = null;
 
         isTyping.set(false);
         isLoading.set(false);
@@ -645,7 +705,7 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
 
     const socket = connectWebSocket();
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        setTimeout(() => sendMessageWithQuestion(content, selectedQuestion), 100);
+        onReady(() => sendMessageWithQuestion(content, selectedQuestion));
         return;
     }
 
@@ -668,12 +728,14 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
         }
         // Fallback if we can't find the tool call (shouldn't happen)
         newMessage = {
+            id: uuid(),
             role: 'user',
             content,
         };
     } else {
         // Regular user message
         newMessage = {
+            id: uuid(),
             role: 'user',
             content,
         };
@@ -733,13 +795,9 @@ export function sendMessage(content: string) {
 
 // Function to start a new topic using a topic URI
 export async function startTopicWithUri(topicUri: string) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-    planReady.set(false);
-    planReadyThread.set(null);
-    messages.set([]);
-    activeQuestions.set([]);
-    sessionEnded.set(false);
 
     const { did } = auth.get();
     if (!did) {
@@ -782,26 +840,14 @@ export async function startTopicWithUri(topicUri: string) {
         did,
     };
 
-    // Ensure WebSocket is ready before sending - retry if needed
-    const sendMessage = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageToSend));
-        } else {
-            setTimeout(sendMessage, 100);
-        }
-    };
-    sendMessage();
+    sendWhenReady(messageToSend);
 }
 
 // Function to start a new learning pathway with topic and pathway URIs
 export async function startLearningPathway(topicUri: string, pathwayUri: string) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-    planReady.set(false);
-    planReadyThread.set(null);
-    messages.set([]);
-    activeQuestions.set([]);
-    sessionEnded.set(false);
 
     const { did } = auth.get();
     if (!did) {
@@ -845,26 +891,14 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         did,
     };
 
-    // Ensure WebSocket is ready before sending - retry if needed
-    const sendMessage = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageToSend));
-        } else {
-            setTimeout(sendMessage, 100);
-        }
-    };
-    sendMessage();
+    sendWhenReady(messageToSend);
 }
 
 // Function to initiate a new session plan for a topic
 export async function startTopic(topic: string, mode: AiSessionMode = AiSessionMode.tutor) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-    planReady.set(false);
-    planReadyThread.set(null);
-    messages.set([]);
-    activeQuestions.set([]);
-    sessionEnded.set(false); // New topic implies a new, active session initially
 
     const { did } = auth.get();
 
@@ -981,23 +1015,13 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         mode,
     };
 
-    // Ensure WebSocket is ready before sending - retry if needed
-    const sendMessage = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageToSend));
-        } else {
-            setTimeout(sendMessage, 100);
-        }
-    };
-    sendMessage();
+    sendWhenReady(messageToSend);
 }
 
 export async function startInsightsSession(topic: string, initialText?: string) {
+    resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
-
-    planReady.set(false);
-    planReadyThread.set(null);
 
     messages.set([
         {
@@ -1005,9 +1029,6 @@ export async function startInsightsSession(topic: string, initialText?: string) 
             content: '', // placeholder for streaming
         },
     ]);
-
-    activeQuestions.set([]);
-    sessionEnded.set(false);
 
     const { did } = auth.get();
     if (!did) {
@@ -1043,7 +1064,7 @@ export async function startInsightsSession(topic: string, initialText?: string) 
         JSON.stringify({
             mode: AiSessionMode.insights,
             topic,
-            message: { role: 'user', content: firstMessage },
+            message: { id: uuid(), role: 'user', content: firstMessage },
         })
     );
 }
@@ -1077,8 +1098,8 @@ export async function finishSession(onSuccess?: () => void) {
         showEndingSessionLoader.set(true);
         messages.set([
             ...messages.get(),
-            { role: 'user', content: 'Finish Session' },
-            { role: 'assistant', content: '' },
+            { id: uuid(), role: 'user', content: 'Finish Session' },
+            { id: uuid(), role: 'assistant', content: '' },
         ]);
         sessionEnded.set(true);
 
@@ -1154,6 +1175,20 @@ export function disconnectWebSocket() {
         }
         ws = null;
     }
+}
+
+// Send a payload as soon as the socket is open. Avoids polling setTimeout loops
+// for the "send right after connect" race that can otherwise add up to 100ms of
+// idle wait per first message.
+function sendWhenReady(payload: unknown) {
+    const json = JSON.stringify(payload);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(json);
+        return;
+    }
+    onReady(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(json);
+    });
 }
 
 // Function to register a callback for when WebSocket is ready

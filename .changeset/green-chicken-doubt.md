@@ -3,4 +3,4 @@
 "learn-card-base": patch
 ---
 
-chore: [LC-1762] Plus Button Updates
+chore: [LC-1788] Bug fest

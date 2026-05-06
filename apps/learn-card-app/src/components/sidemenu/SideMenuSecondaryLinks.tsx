@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import PreloadingLink from '../generic/PreloadingLink';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import CustomSpinner from '../svgs/CustomSpinner';
@@ -136,17 +136,17 @@ const SideMenuSecondaryLinks: React.FC<{
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} /> {link.label}
             </button>
         ) : (
-            <Link
+            <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} /> {link.label}
-            </Link>
+            </PreloadingLink>
         );
 
         if (isWalletPath) {
             linkEl = (
-                <Link
+                <PreloadingLink
                     to={link.path}
                     className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
                 >
@@ -168,7 +168,7 @@ const SideMenuSecondaryLinks: React.FC<{
                         isSyncing={isSyncing}
                     />{' '}
                     {walletText}
-                </Link>
+                </PreloadingLink>
             );
         }
 

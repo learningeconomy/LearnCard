@@ -143,7 +143,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
                 sortBy={sortBy}
                 setSortBy={setSortBy}
             />
-            {isMobile && <NewAiSessionButton type={NewAiSessionButtonEnum.mobile} />}
+            {isMobile && <NewAiSessionButton type={NewAiSessionButtonEnum.icon} />}
         </div>
     );
 };

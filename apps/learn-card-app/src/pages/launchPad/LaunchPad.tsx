@@ -442,12 +442,8 @@ const LaunchPad: React.FC = () => {
                 <IonContent fullscreen scrollY={true} color="grayscale-100">
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
-                            <div className="flex flex-col gap-3 w-full max-w-[600px] px-3">
-                                {/* Section Header */}
-                                <h2 className="text-grayscale-900 font-bold text-xl relative z-10 mt-[-30px] sm:mt-[-50px]">
-                                    App Store
-                                </h2>
-
+                            <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
+                                <LaunchPadAppTabs tab={tab} setTab={setTab} />
                                 {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
                                 {featuredCarouselApps && featuredCarouselApps.length > 0 && (
                                     <FeaturedCarousel
@@ -457,7 +453,6 @@ const LaunchPad: React.FC = () => {
                                         hideScrollDots={true}
                                     />
                                 )}
-                                <LaunchPadAppTabs tab={tab} setTab={setTab} />
                                 <LaunchPadSearch
                                     searchInput={searchInput}
                                     setSearchInput={setSearchInput}

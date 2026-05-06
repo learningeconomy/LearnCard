@@ -906,7 +906,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,
-                                finalBoostUri
+                                finalBoostUri,
+                                { mediaAttachments: issuee.mediaAttachments }
                             );
                             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                                 sentBoost
@@ -920,7 +921,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         const issuedVc = await addBoostSomeone(
                             wallet,
                             issuee?.profileId,
-                            finalBoostUri
+                            finalBoostUri,
+                            { mediaAttachments: issuee.mediaAttachments }
                         );
                         return issuedVc;
                     })

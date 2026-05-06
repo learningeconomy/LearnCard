@@ -1,0 +1,200 @@
+name: Capgo Channel Guard
+
+# When a PR makes backwards-incompatible native runtime changes (new / removed
+# Capacitor or Capgo plugin, native source edits) but does NOT bump
+# `defaultChannel` in apps/learn-card-app/capacitor.config.ts, fail the check
+# and leave a sticky comment explaining how to fix it.
+#
+# See PR #1063 for the original incident this guards against.
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+        paths:
+            - 'apps/learn-card-app/package.json'
+            - 'apps/learn-card-app/capacitor.config.ts'
+            - 'apps/learn-card-app/ios/**'
+            - 'apps/learn-card-app/android/**'
+            - 'tools/capgo/check-channel-bump.js'
+            - '.github/workflows/capgo-channel-guard.yml'
+
+permissions:
+    contents: read
+    pull-requests: write
+
+jobs:
+    guard:
+        name: Verify Capgo channel bump
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout (full history)
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Detect native compat changes
+              id: detect
+              run: |
+                  node tools/capgo/check-channel-bump.js \
+                      --base "${{ github.event.pull_request.base.sha }}" \
+                      --head "${{ github.event.pull_request.head.sha }}" \
+                      --out  "${{ github.workspace }}/capgo-guard.json" \
+                      > /dev/null
+
+                  echo '--- capgo-guard.json ---'
+                  cat "${{ github.workspace }}/capgo-guard.json"
+                  echo '------------------------'
+
+                  GUARD_FAILED=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf-8")).guardFailed)' "${{ github.workspace }}/capgo-guard.json")
+                  echo "guard_failed=$GUARD_FAILED" >> "$GITHUB_OUTPUT"
+
+            - name: Check for escape-hatch label or marker
+              id: escape
+              if: steps.detect.outputs.guard_failed == 'true'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const { data: pr } = await github.rest.pulls.get({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          pull_number: context.payload.pull_request.number,
+                      });
+
+                      const labels = (pr.labels ?? []).map(l => l.name);
+                      const hasLabel = labels.includes('compat:backwards-compatible');
+                      const hasMarker = (pr.body ?? '').includes('[skip-channel-bump]');
+                      const skip = hasLabel || hasMarker;
+
+                      core.setOutput('skip', String(skip));
+                      core.setOutput('reason', hasLabel ? 'label' : (hasMarker ? 'marker' : ''));
+
+            - name: Post / update PR comment (guard failed)
+              if: steps.detect.outputs.guard_failed == 'true' && steps.escape.outputs.skip != 'true'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const result = JSON.parse(
+                          fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/capgo-guard.json`, 'utf-8')
+                      );
+
+                      const fileLines = result.nativeFileChanges.map(f => `- \`${f}\``);
+
+                      const depLines = [
+                          ...result.depDiff.added.map(d => `- \u2795 added \`${d.name}\` @ \`${d.to}\``),
+                          ...result.depDiff.removed.map(d => `- \u2796 removed \`${d.name}\` (was \`${d.from}\`)`),
+                          ...result.depDiff.changed.map(d => `- \ud83d\udd04 \`${d.name}\`: \`${d.from}\` \u2192 \`${d.to}\``),
+                      ];
+
+                      const sections = [];
+                      sections.push(`### \ud83d\udea6 Capgo channel bump appears to be required`);
+                      sections.push('');
+                      sections.push(`This PR changes the **native runtime surface**, but \`defaultChannel\` in \`apps/learn-card-app/capacitor.config.ts\` is still **\`${result.baseChannel ?? 'unknown'}\`**.`);
+                      sections.push('');
+                      sections.push(`If your change is **backwards-incompatible** with the currently-shipped native binary (e.g. it adds, removes, or upgrades a Capacitor / Capgo plugin in a way that changes the native API surface, or edits native source), you need to bump the Capgo OTA channel. Otherwise, CI will keep uploading OTA bundles to channel \`${result.baseChannel ?? 'unknown'}\` while installed binaries also listen there \u2014 and they\u2019ll load JS that calls into native code they don\u2019t have, which crashes or silently misbehaves.`);
+
+                      if (fileLines.length) {
+                          sections.push('');
+                          sections.push('**Native files changed:**');
+                          sections.push(fileLines.join('\n'));
+                      }
+
+                      if (depLines.length) {
+                          sections.push('');
+                          sections.push('**Native runtime deps changed:**');
+                          sections.push(depLines.join('\n'));
+                      }
+
+                      sections.push('');
+                      sections.push('---');
+                      sections.push('');
+                      sections.push('### \ud83d\udee0 How to fix');
+                      sections.push('');
+                      sections.push('Run the bumper from the repo root:');
+                      sections.push('');
+                      sections.push('```bash');
+                      sections.push('pnpm --filter learn-card-app lc bump-default-capgo-channel');
+                      sections.push('```');
+                      sections.push('');
+                      sections.push('Or pass an explicit channel:');
+                      sections.push('');
+                      sections.push('```bash');
+                      sections.push('pnpm --filter learn-card-app lc bump-default-capgo-channel 1.0.7');
+                      sections.push('```');
+                      sections.push('');
+                      sections.push('Then commit and push the updated `capacitor.config.ts`. The next push to this PR will re-run this check.');
+                      sections.push('');
+                      sections.push('---');
+                      sections.push('');
+                      sections.push('### \ud83e\udeaa Exemptions');
+                      sections.push('');
+                      sections.push('If your change is genuinely **backwards-compatible** with the current native binary (e.g. a Capgo CLI bump, a plugin patch release with no native API change, a comment-only edit picked up by the path filter), do **one** of:');
+                      sections.push('');
+                      sections.push('- add the label **`compat:backwards-compatible`** to this PR, **or**');
+                      sections.push('- include the marker **`[skip-channel-bump]`** somewhere in the PR description (with a one-line rationale, please).');
+                      sections.push('');
+                      sections.push('Either will dismiss this check.');
+
+                      const marker = '<!-- capgo-channel-guard -->';
+                      const body = `${marker}\n${sections.join('\n')}`;
+
+                      const { data: comments } = await github.rest.issues.listComments({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.payload.pull_request.number,
+                      });
+
+                      const existing = comments.find(c => (c.body ?? '').includes(marker));
+
+                      if (existing) {
+                          await github.rest.issues.updateComment({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              comment_id: existing.id,
+                              body,
+                          });
+                      } else {
+                          await github.rest.issues.createComment({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: context.payload.pull_request.number,
+                              body,
+                          });
+                      }
+
+            - name: Resolve sticky comment (guard passed or exempted)
+              if: steps.detect.outputs.guard_failed != 'true' || steps.escape.outputs.skip == 'true'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const marker = '<!-- capgo-channel-guard -->';
+
+                      const { data: comments } = await github.rest.issues.listComments({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.payload.pull_request.number,
+                      });
+
+                      const existing = comments.find(c => (c.body ?? '').includes(marker));
+
+                      if (!existing) return;
+
+                      const reason = '${{ steps.escape.outputs.reason }}';
+                      const exemptedNote = reason
+                          ? `\n_Exempted via ${reason === 'label' ? 'the `compat:backwards-compatible` label' : 'the `[skip-channel-bump]` marker in the PR body'}._`
+                          : '';
+
+                      const body = `${marker}\n### \u2705 Capgo channel guard resolved\n\nNo backwards-incompatible native change requires a channel bump on this PR\u2019s current state.${exemptedNote}`;
+
+                      await github.rest.issues.updateComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          comment_id: existing.id,
+                          body,
+                      });
+
+            - name: Fail the check if guard tripped
+              if: steps.detect.outputs.guard_failed == 'true' && steps.escape.outputs.skip != 'true'
+              run: |
+                  echo "::error::Capgo channel guard failed \u2014 bump defaultChannel via 'pnpm lc bump-default-capgo-channel' or use an exemption (see PR comment)."
+                  exit 1

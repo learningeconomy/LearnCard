@@ -1,9 +1,15 @@
 import dotenv from 'dotenv';
 import { Agent, setGlobalDispatcher } from 'undici';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
-import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
-import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
+import { VCValidator, JWEValidator } from '@learncard/types';
+import type { UnsignedVC, VC, JWE } from '@learncard/types';
+import type { SigningAuthorityForUserType } from 'types/profile';
+import {
+    getIssuerOwnerProfile,
+    getIssuerProfileId,
+} from '../types/issuer';
+import type { CredentialIssuer } from '../types/issuer';
 import { trace, traceCrypto, traceHttp } from '@tracing';
 import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
@@ -116,16 +122,17 @@ const _mockIssueCredentialWithSigningAuthority = async (credential: UnsignedVC):
 };
 
 export async function issueCredentialWithSigningAuthority(
-    owner: ProfileType,
+    issuer: CredentialIssuer,
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
     domain: string,
-    encrypt: boolean = true,
+    encrypt = true,
     ownerDidOverride?: string
 ): Promise<VC | JWE> {
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
+    const ownerProfile = getIssuerOwnerProfile(issuer);
     // LC-1644 bench: allow SA_OWNER_DID_OVERRIDE env var to force a specific ownerDid
     // without threading the param through every caller. Takes precedence over the
     // caller-supplied override so benches against remote SAs can redirect all calls
@@ -138,10 +145,10 @@ export async function issueCredentialWithSigningAuthority(
     const ownerDid =
         (envOverride && envOverride.length > 0 ? envOverride : undefined)
         ?? ownerDidOverride
-        ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
+        ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
 
     const logContext = {
-        owner: owner.profileId,
+        issuer: getIssuerProfileId(issuer),
         ownerDid,
         saName,
         saDid,
@@ -245,6 +252,7 @@ export async function issueCredentialWithSigningAuthority(
                         cause: err,
                     });
                 }
+
                 clearTimeout(timeoutId);
 
                 console.log(
@@ -366,5 +374,8 @@ export async function issueCredentialWithSigningAuthority(
             });
             throw error;
         }
-    }, { owner: owner.profileId, saEndpoint: signingAuthorityForUser.signingAuthority.endpoint });
+    }, {
+        issuer: getIssuerProfileId(issuer),
+        saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
+    });
 }

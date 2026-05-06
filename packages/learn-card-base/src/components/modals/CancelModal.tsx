@@ -16,7 +16,7 @@ export const CancelModal: ModalContainer = ({ component, options, open }) => {
     const { closeModal } = useModal();
     const safeArea = useSafeArea();
     const optionalClass = options?.className || 'd-c-modal';
-    const hideButton = options?.hideButton;
+    const hideButton = typeof options?.hideButton === 'boolean' ? options.hideButton : false;
     const customSectionClass = options?.sectionClassName || '';
     const topSectionClass = options?.topSectionClassName || '';
     const buttonText = options?.cancelButtonTextOverride ?? 'Close';

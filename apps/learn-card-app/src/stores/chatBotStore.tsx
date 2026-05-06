@@ -25,6 +25,7 @@ import {
     planReady,
     planReadyThread,
     disconnectWebSocket,
+    resetChatStores,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 export const chatBotStore = createStore('chatBotStore')<{
@@ -100,19 +101,8 @@ export const chatBotStore = createStore('chatBotStore')<{
         set.typingIndex(null);
         set.mode(AiSessionMode.tutor);
 
-        // Reset chat store state
-        messages.set([]);
-        currentThreadId.set(null);
-        isTyping.set(false);
-        isLoading.set(false);
-        isEndingSession.set(false);
-        showEndingSessionLoader.set(false);
-        activeQuestions.set([]);
-        suggestedTopics.set([]);
-        topicCredentials.set([]);
-        sessionEnded.set(false);
-        planReady.set(false);
-        planReadyThread.set(null);
+        // Reset all chat-store state (including plan stream/sections)
+        resetChatStores();
 
         // Disconnect WebSocket
         disconnectWebSocket();
