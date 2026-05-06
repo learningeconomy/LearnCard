@@ -145,8 +145,11 @@ export const useDeleteCredentialRecord = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
+    const ENABLE_DELETE_CREDENTIAL_LOGS = false;
 
     const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
+        if (!ENABLE_DELETE_CREDENTIAL_LOGS) return;
+
         try {
             if (data) {
                 console.log(`[DeleteCredentialRecord] ${message}`, data);
@@ -423,16 +426,20 @@ export const useDeleteCredentialRecord = () => {
                                 queryClient,
                             });
                         })().catch(fallbackError => {
-                            console.error(
-                                'Failed to run full sync fallback after prune failure:',
-                                fallbackError
-                            );
+                            if (ENABLE_DELETE_CREDENTIAL_LOGS) {
+                                console.error(
+                                    'Failed to run full sync fallback after prune failure:',
+                                    fallbackError
+                                );
+                            }
                         });
 
                         return;
                     }
 
-                    console.error('Failed to run post-delete cleanup:', error);
+                    if (ENABLE_DELETE_CREDENTIAL_LOGS) {
+                        console.error('Failed to run post-delete cleanup:', error);
+                    }
                 });
             }, 0);
 

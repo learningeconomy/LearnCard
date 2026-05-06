@@ -34,8 +34,11 @@ interface PathwayItem {
 const queryKey = ['useAiInsightCredential'];
 const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
 const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
+const ENABLE_AI_INSIGHT_CREDENTIAL_LOGS = false;
 
 const logAiInsightCredential = (message: string, data?: Record<string, unknown>) => {
+    if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
+
     try {
         if (data) {
             console.log(`[AiInsightCredential] ${message}`, data);
@@ -52,6 +55,8 @@ const logAiInsightCredentialError = (
     err: unknown,
     data?: Record<string, unknown>
 ) => {
+    if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
+
     try {
         console.error(`[AiInsightCredential] ${message}`, data ?? {}, err);
     } catch {

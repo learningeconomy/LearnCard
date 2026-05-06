@@ -16,7 +16,11 @@ export const aiInsightRefreshStore = createStore('aiInsightRefreshStore')<AiInsi
     lastError: null,
 });
 
+const ENABLE_AI_INSIGHT_REFRESH_STORE_LOGS = false;
+
 const logAiInsightRefreshStore = (message: string, data?: Record<string, unknown>) => {
+    if (!ENABLE_AI_INSIGHT_REFRESH_STORE_LOGS) return;
+
     try {
         if (data) {
             console.log(`[AiInsightRefresh] ${message}`, data);

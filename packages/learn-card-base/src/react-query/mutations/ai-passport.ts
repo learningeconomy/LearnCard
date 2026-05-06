@@ -12,8 +12,11 @@ import {
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
 const AI_INSIGHT_REFRESH_DEBOUNCE_MS = 1000;
 let aiPassportRefreshPromise: Promise<void> | null = null;
+const ENABLE_AI_INSIGHT_REFRESH_LOGS = false;
 
 const logAiInsightRefresh = (message: string, data?: Record<string, unknown>) => {
+    if (!ENABLE_AI_INSIGHT_REFRESH_LOGS) return;
+
     try {
         if (data) {
             console.log(`[AiInsightRefresh] ${message}`, data);
@@ -30,6 +33,8 @@ const logAiInsightRefreshError = (
     err: unknown,
     data?: Record<string, unknown>
 ) => {
+    if (!ENABLE_AI_INSIGHT_REFRESH_LOGS) return;
+
     try {
         console.error(`[AiInsightRefresh] ${message}`, data ?? {}, err);
     } catch {

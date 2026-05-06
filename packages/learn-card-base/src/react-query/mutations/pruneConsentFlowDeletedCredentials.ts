@@ -51,7 +51,11 @@ export const pruneDeletedUrisFromConsentFlow = async ({
         return { contractsUpdated: 0, removedSharedUris: 0 };
     }
 
+    const ENABLE_CONSENT_PRUNE_LOGS = false;
+
     const logConsentPrune = (message: string, data?: Record<string, unknown>) => {
+        if (!ENABLE_CONSENT_PRUNE_LOGS) return;
+
         try {
             if (data) {
                 console.log(`[ConsentFlowPrune] ${message}`, data);

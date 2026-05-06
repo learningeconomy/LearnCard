@@ -80,8 +80,11 @@ const pruneStaleSharedUris = (terms: ConsentFlowTerms, validSharedUris: Set<stri
 export const useSyncConsentContractsMutation = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const ENABLE_CONSENT_SYNC_LOGS = false;
 
     const logConsentSync = (message: string, data?: Record<string, unknown>) => {
+        if (!ENABLE_CONSENT_SYNC_LOGS) return;
+
         try {
             if (data) {
                 console.log(`[ConsentSync] ${message}`, data);
@@ -94,6 +97,8 @@ export const useSyncConsentContractsMutation = () => {
     };
 
     const logConsentSyncError = (message: string, err: unknown, data?: Record<string, unknown>) => {
+        if (!ENABLE_CONSENT_SYNC_LOGS) return;
+
         try {
             console.error(`[ConsentSync] ${message}`, data ?? {}, err);
         } catch {
