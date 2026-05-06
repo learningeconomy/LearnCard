@@ -47,6 +47,7 @@ import {
 } from 'ionicons/icons';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import type { Pathway } from '../types';
 
 import { CATALOG } from './catalog/catalog';
@@ -140,6 +141,7 @@ const OverlayFrame: React.FC<{
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
                    overflow-y-auto font-poppins"
+        style={{ overscrollBehavior: 'contain' }}
         onClick={onClose}
     >
         <div
@@ -156,16 +158,18 @@ const OverlayFrame: React.FC<{
                            bg-white/95 backdrop-blur-xl
                            sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
                            border border-white/60"
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
             >
                 <button
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="sticky top-3 float-right mr-3 w-10 h-10 rounded-full
+                    className="sticky float-right mr-3 w-10 h-10 rounded-full
                                bg-white/80 hover:bg-white hover:shadow-md
                                border border-grayscale-200
                                flex items-center justify-center
                                transition-all duration-200 z-10"
+                    style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
                 >
                     <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
                 </button>
@@ -185,6 +189,8 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     onImport,
     onClose,
 }) => {
+    useLockBodyScroll();
+
     // Destructure the stable `track` callback rather than depending
     // on the whole `useAnalytics()` return value. The hook returns a
     // fresh object literal every render (each inner callback is

@@ -34,6 +34,7 @@ import {
 } from 'ionicons/icons';
 
 import { wouldCreateCycle, type PathwayMap } from '../../core/composition';
+import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import type { Pathway } from '../../types';
 
 interface PathwayPickerModalProps {
@@ -64,6 +65,8 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
     onCreateNew,
     onClose,
 }) => {
+    useLockBodyScroll();
+
     const [query, setQuery] = useState('');
 
     // Escape-to-close. Captured at the document level so the input
@@ -124,6 +127,11 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 bg-grayscale-900/40 backdrop-blur-sm flex items-center justify-center p-4 font-poppins"
+                style={{
+                    overscrollBehavior: 'contain',
+                    paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))',
+                    paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
+                }}
                 onClick={onClose}
             >
                 <motion.div
@@ -136,7 +144,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                     role="dialog"
                     aria-modal="true"
                     aria-label="Pick a nested pathway"
-                    className="w-full max-w-lg max-h-[80vh] flex flex-col bg-white rounded-[20px] shadow-2xl overflow-hidden"
+                    className="w-full max-w-lg max-h-full flex flex-col bg-white rounded-[20px] shadow-2xl overflow-hidden"
                 >
                     {/* Header — sticky glass (matches the Section primitive). */}
                     <header className="px-5 py-4 border-b border-grayscale-200/60 backdrop-blur-md bg-white/80 flex items-center gap-3">

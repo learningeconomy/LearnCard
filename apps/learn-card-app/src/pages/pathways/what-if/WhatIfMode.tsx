@@ -63,6 +63,7 @@ import {
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
 import { seedChosenRoute } from '../core/chosenRoute';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { formatEta } from '../map/route';
 import RouteDiffSummary from '../proposals/RouteDiffSummary';
 import type { Pathway, Tradeoff } from '../types';
@@ -666,6 +667,8 @@ const ComparisonOverlay: React.FC<{
     routeB: readonly string[] | null;
     onClose: () => void;
 }> = ({ pathway, scenarioA, scenarioB, routeA, routeB, onClose }) => {
+    useLockBodyScroll();
+
     // Defensive: if either scenario lookup failed (stale selection
     // after the pathway changed), close silently so the overlay
     // doesn't render an empty frame.
@@ -674,13 +677,21 @@ const ComparisonOverlay: React.FC<{
     return (
         <div
             className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-sm font-poppins"
+            style={{
+                overscrollBehavior: 'contain',
+                paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))',
+                paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
+            }}
             role="dialog"
             aria-label="Compare two scenarios"
             onClick={e => {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-[24px] shadow-2xl p-6 space-y-5">
+            <div
+                className="relative w-full max-w-2xl max-h-full overflow-y-auto bg-white rounded-[24px] shadow-2xl p-6 space-y-5"
+                style={{ overscrollBehavior: 'contain' }}
+            >
                 <header className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-700">
