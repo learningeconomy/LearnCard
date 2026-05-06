@@ -22,9 +22,10 @@ Instead, it:
 The important consequence is:
 
 - if the stored AI Insight credential is stale, the UI will also feel stale
-- changing goals, skills, or credentials in LearnCard does **not** currently guarantee that the AI Insight credential is regenerated
-- LearnCard now has a targeted refresh path for the LearnCard AI contract that asks AI Passport to regenerate the credential after consent syncs or deletions
-- the client briefly polls for a newer credential after that targeted refresh starts, then stops once it detects the update or hits a timeout window
+- changing goals or skills in LearnCard still does **not** directly guarantee a refresh
+- credential changes in LearnCard now **do** trigger regeneration automatically when they affect the AI Insight seed data
+- the app now requests a refresh after targeted consent syncs and after credential deletions, including the full-sync fallback when the targeted prune route is unavailable
+- the client briefly polls for a newer credential while the AI Insight refresh store is pending, then stops once it detects the update or hits a timeout window
 
 ## Key LearnCard files involved
 
@@ -34,6 +35,7 @@ The important consequence is:
   - fetches the AI insight credential from AI Passport
   - stores it in LearnCloud under the special id `__ai_insight__`
   - exposes the React Query hook used across the app
+  - watches `aiInsightRefreshStore` so it can poll while a regeneration request is pending
   - exposes `useAiPathways()` for pathway credential resolution
   - exposes `useAiInsightCredentialMutation()` for forcing regeneration
 
@@ -65,9 +67,10 @@ The important consequence is:
 ### Consent sync / delete paths that now trigger targeted AI refresh
 
 - `packages/learn-card-base/src/react-query/mutations/syncConsentFlow.ts`
-  - after syncing credentials to the LearnCard AI contract, it calls AI Passport `POST /credentials`
+  - after syncing credentials to the current AI Passport contract, it calls the AI Passport refresh endpoint
 - `packages/learn-card-base/src/react-query/mutations/mutations.ts`
-  - after deleting a credential tied to the LearnCard AI contract, it calls the same AI Passport refresh path
+  - after deleting a credential, it calls the same AI Passport refresh path
+  - if the targeted prune route is unavailable, it falls back to full sync and then requests AI Passport refresh
 - `packages/learn-card-base/src/hooks/useAiInsightCredential.ts`
   - polls only while the refresh store is pending
   - stops when a newer credential is detected
@@ -144,7 +147,9 @@ So Grow Skills is a downstream consumer of the stored AI insight credential, not
 
 That means the UI can remain on an old AI Insight credential for a long time unless something explicitly refreshes it.
 
-In the current implementation, that “something” is either the manual regenerate action or the targeted consent-sync/delete refresh flow for the LearnCard AI contract.
+In the current implementation, that “something” is either the manual regenerate action or the automated credential-change refresh flow that runs after syncs and deletions.
+
+When refresh is requested, the app also flips the shared refresh store to `pending`, which is what keeps the AI Insights loading line active while the newer credential is being produced.
 
 ## What does not currently trigger regeneration
 
@@ -177,6 +182,8 @@ In other words:
 
 - LearnCard knows how to request and display the credential
 - AI Passport owns the actual insight generation logic
+- the current backend-side AI Passport implementation still uses the OpenAI contract
+- the LearnCard AI contract is wired in the client and appears to be the future target, but it is not the active backend contract yet
 
 ## Known request / response shape from this repo
 
@@ -200,15 +207,6 @@ That credential is then:
 2. uploaded to LearnCloud
 3. indexed locally under `__ai_insight__`
 
-## Practical implications
-
-If the goal is to make recommendations more responsive, the current architecture suggests these likely changes:
-
-- trigger AI insight regeneration when relevant LearnCard data changes
-- consider passing richer inputs to AI Passport if it does not already read the latest LearnCard state
-- reduce dependency on a long-lived cached credential for live views
-- invalidate dependent queries when the insight credential changes
-
 ## Likely refresh triggers to add
 
 These are the LearnCard events that seem most important:
@@ -219,6 +217,8 @@ These are the LearnCard events that seem most important:
 - professional title changed
 - self-assigned skills changed
 
+Credential add/delete events already trigger refresh today in the targeted consent-sync and delete flows.
+
 If AI Passport can recompute from the DID alone, LearnCard can simply trigger refreshes.
 If it cannot, LearnCard will probably need to send a richer payload or a snapshot of the relevant user state.
 
@@ -226,11 +226,12 @@ If it cannot, LearnCard will probably need to send a richer payload or a snapsho
 
 These are the main things that still need confirmation from the other repo:
 
-1. Does AI Passport already read user state from LearnCard / network graph data?
-2. Are goals and skills included in the generation inputs today?
+1. Does AI Passport already read user state from LearnCard / network graph data? Yes from contract data, but heavily cached
+2. Are goals and skills included in the generation inputs today? No
 3. Is there a cache or persistence layer for generated insights?
-4. Is insight generation event-driven, scheduled, or manual?
+4. Is insight generation event-driven, scheduled, or manual? Manual + event driven
 5. What would be the safest API contract for forcing regeneration after a LearnCard change?
+6. When will the backend switch from the current OpenAI contract path to the LearnCard AI contract?
 
 ## Suggested next step
 
