@@ -20,6 +20,7 @@ export const AnalyticsEvents = {
     // Boost Sending
     SELF_BOOST: 'self_boost',
     SEND_BOOST: 'send_boost',
+    SEND_BOOST_WITH_ATTACHMENTS: 'send_boost_with_attachments',
     
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
@@ -108,6 +109,17 @@ export interface AnalyticsEventPayloads {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+    };
+
+    [AnalyticsEvents.SEND_BOOST_WITH_ATTACHMENTS]: {
+        category?: string;
+        boostType?: string;
+        method: 'Managed Boost' | string;
+        recipientCount: number;
+        recipientsWithAttachments: number;
+        totalAttachments: number;
+        attachmentTypeCounts: Record<string, number>;
+        perRecipient: Array<{ attachmentCount: number; types: string[] }>;
     };
 
     [AnalyticsEvents.SCREEN_VIEW]: {

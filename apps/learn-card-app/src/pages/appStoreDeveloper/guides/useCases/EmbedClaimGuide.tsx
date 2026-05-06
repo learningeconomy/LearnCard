@@ -19,7 +19,6 @@ import {
 import type { LCNIntegration } from '@learncard/types';
 
 import { useWallet, useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
-import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
@@ -29,7 +28,7 @@ import { TemplateListManager } from '../../components/TemplateListManager';
 import { EmbedPreview } from '../../components/EmbedPreview';
 import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import type { GuideProps } from '../GuidePage';
-import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig, getLCNApiUrl } from '../../../../config/bootstrapTenantConfig';
 
 const STEPS = [
     { id: 'publishable-key', title: 'Get Publishable Key' },
@@ -1043,8 +1042,9 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';
 
-    // Resolve API base URL for embed preview (local dev uses LCN_API_URL env var)
-    const apiBaseUrl = LCN_API_URL || LEARNCARD_NETWORK_API_URL;
+    // Resolve API base URL for embed preview from the active tenant's config
+    // (falls back to the default LearnCard network URL if the tenant hasn't set one).
+    const apiBaseUrl = getLCNApiUrl();
 
     const { currentLCNUser } = useGetCurrentLCNUser();
 

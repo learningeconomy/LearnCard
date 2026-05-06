@@ -36,6 +36,10 @@
 		"classpath": "com.capacitorjs.plugins.clipboard.ClipboardPlugin"
 	},
 	{
+		"pkg": "@capacitor/device",
+		"classpath": "com.capacitorjs.plugins.device.DevicePlugin"
+	},
+	{
 		"pkg": "@capacitor/file-transfer",
 		"classpath": "com.capacitorjs.plugins.filetransfer.FileTransferPlugin"
 	},

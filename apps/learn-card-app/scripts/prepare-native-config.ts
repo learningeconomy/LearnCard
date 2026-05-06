@@ -496,10 +496,6 @@ if (nativeConfig) {
 
             if (raw.plugins?.CapacitorUpdater) {
                 raw.plugins.CapacitorUpdater.appId = nativeConfig.bundleId;
-
-                if (nativeConfig.capgoChannel) {
-                    raw.plugins.CapacitorUpdater.defaultChannel = nativeConfig.capgoChannel;
-                }
             }
 
             writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');

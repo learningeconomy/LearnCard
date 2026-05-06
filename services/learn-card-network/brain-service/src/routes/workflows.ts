@@ -2,7 +2,14 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import base64url from 'base64url';
 
-import { VC, UnsignedVC, VP, VPValidator, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator } from '@learncard/types';
+import {
+    VC,
+    UnsignedVC,
+    VP,
+    VPValidator,
+    LCNNotificationTypeEnumValidator,
+    LCNInboxStatusEnumValidator,
+} from '@learncard/types';
 
 import { t, openRoute, Context } from '@routes';
 
@@ -20,19 +27,18 @@ import {
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 
-import {
-    validateInboxClaimToken,
-} from '@helpers/contact-method.helpers';
+import { validateInboxClaimToken } from '@helpers/contact-method.helpers';
 import { getPendingOrIssuedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
-import { markInboxCredentialAsIsAccepted, markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
-import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import {
-    getContactMethodById,
-    getProfileByContactMethod,
-} from '@accesslayer/contact-method/read';
+    markInboxCredentialAsIsAccepted,
+    markInboxCredentialAsIssued,
+} from '@accesslayer/inbox-credential/update';
+import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
+import { getContactMethodById, getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 
 import { getBoostUri, isBoostViewableByClaimLink, isDraftBoost } from '@helpers/boost.helpers';
+import { getBoostOwnerProfile } from 'types/boost';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -40,7 +46,12 @@ import { createProfileContactMethodRelationship } from '@accesslayer/contact-met
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
-import { EXHAUSTED, exhaustExchangeChallengeForToken, getExchangeChallengeStateForToken, setValidExchangeChallengeForToken } from '@cache/exchanges';
+import {
+    EXHAUSTED,
+    exhaustExchangeChallengeForToken,
+    getExchangeChallengeStateForToken,
+    setValidExchangeChallengeForToken,
+} from '@cache/exchanges';
 import { randomUUID } from 'crypto';
 
 // Zod schema for the participate in exchange input
@@ -48,18 +59,24 @@ const participateInExchangeInput = z.object({
     localWorkflowId: z.string(),
     localExchangeId: z.string(),
     // Type 1: A body containing the VP for the challenge-response step
-    verifiablePresentation: VPValidator.optional()
+    verifiablePresentation: VPValidator.optional(),
 });
 
 // Response schema for the initiation step (VPR)
 const VerifiablePresentationRequestValidator = z.object({
-    query: z.array(z.object({
-        type: z.string(),
-        credentialQuery: z.array(z.object({
-            required: z.boolean().optional(),
-            reason: z.string().optional(),
-        })).optional(),
-    })),
+    query: z.array(
+        z.object({
+            type: z.string(),
+            credentialQuery: z
+                .array(
+                    z.object({
+                        required: z.boolean().optional(),
+                        reason: z.string().optional(),
+                    })
+                )
+                .optional(),
+        })
+    ),
     challenge: z.string(),
     domain: z.string(),
 });
@@ -86,7 +103,8 @@ export const workflowsRouter = t.router({
                 path: '/workflows/{localWorkflowId}/exchanges/{localExchangeId}',
                 tags: ['Workflows', 'VC-API'],
                 summary: 'Participate in an Exchange',
-                description: 'VC-API endpoint for participating in credential exchanges. Supports both exchange initiation and credential claiming.',
+                description:
+                    'VC-API endpoint for participating in credential exchanges. Supports both exchange initiation and credential claiming.',
             },
         })
         .input(participateInExchangeInput)
@@ -96,20 +114,24 @@ export const workflowsRouter = t.router({
             const { domain } = ctx;
 
             // Demonstration of VC-API workflow with redirect
-            if (localWorkflowId == "redirect") {
+            if (localWorkflowId == 'redirect') {
                 return {
-                    redirectUrl: "https://www.learncard.com"
-                }
-            } 
+                    redirectUrl: 'https://www.learncard.com',
+                };
+            }
 
             // Handle inbox claim workflow
-            if (localWorkflowId === "inbox-claim") {
+            if (localWorkflowId === 'inbox-claim') {
                 const isInitiation = !verifiablePresentation;
-                
+
                 if (isInitiation) {
                     return handleInboxClaimInitiation(localExchangeId, domain);
                 } else {
-                    return handleInboxClaimPresentation(localExchangeId, verifiablePresentation, ctx);
+                    return handleInboxClaimPresentation(
+                        localExchangeId,
+                        verifiablePresentation,
+                        ctx
+                    );
                 }
             }
 
@@ -117,32 +139,35 @@ export const workflowsRouter = t.router({
             const isInitiation = !verifiablePresentation;
             // Decode the boost URI from the base64url encoded localExchangeId because boostUris have URL-unsafe characters
             const exchangeInfo = parseExchangeInfo(localExchangeId);
-            if(!exchangeInfo) { 
+            if (!exchangeInfo) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Invalid exchange ID',
                 });
-
             }
 
             // Demonstration of VC-API verify workflow with redirect
-            if (localWorkflowId == "verify") {
+            if (localWorkflowId == 'verify') {
                 if (verifiablePresentation) {
-                    return { redirectUrl: "https://www.learncard.com" }
+                    return { redirectUrl: 'https://www.learncard.com' };
                 }
                 return {
                     verifiablePresentationRequest: {
-                        query: [{
-                            type: 'QueryByExample',
-                            credentialQuery: [{
-                                required: true,
-                                reason: "Please present a credential to verify your identity",
-                            }],
-                        }],
+                        query: [
+                            {
+                                type: 'QueryByExample',
+                                credentialQuery: [
+                                    {
+                                        required: true,
+                                        reason: 'Please present a credential to verify your identity',
+                                    },
+                                ],
+                            },
+                        ],
                         challenge: exchangeInfo.challenge,
                         domain,
                     },
-                }
+                };
             }
 
             // If the user submitted an empty {} post request, this is an initiation of an exchange.
@@ -152,11 +177,7 @@ export const workflowsRouter = t.router({
             } else {
                 // If the user submitted a VP post request, this is a presentation for claim.
                 // Scenario 2: Presentation for Claim
-                return handlePresentationForClaim(
-                    exchangeInfo,
-                    verifiablePresentation,
-                    domain
-                );
+                return handlePresentationForClaim(exchangeInfo, verifiablePresentation, domain);
             }
         }),
 });
@@ -173,7 +194,7 @@ function parseExchangeInfo(localExchangeId: string): ExchangeInfoType | undefine
     }
 }
 
-async function issueResponsePresentationWithVcs(vcs: VC[]) : Promise<VP> {
+async function issueResponsePresentationWithVcs(vcs: VC[]): Promise<VP> {
     const learnCard = await getLearnCard();
     return learnCard.invoke.issuePresentation({
         '@context': [
@@ -186,10 +207,7 @@ async function issueResponsePresentationWithVcs(vcs: VC[]) : Promise<VP> {
     });
 }
 
-async function handleExchangeInitiation(
-    exchangeInfo: ExchangeInfoType,
-    domain: string
-) {
+async function handleExchangeInitiation(exchangeInfo: ExchangeInfoType, domain: string) {
     // Validate that the boost URI is valid and available
     const boost = await getBoostByUri(exchangeInfo.boostUri);
 
@@ -215,7 +233,7 @@ async function handleExchangeInitiation(
     }
 
     // Check if challenge is already in use (shouldn't happen with UUID but be safe)
-    if (!await isClaimLinkAlreadySetForBoost(exchangeInfo.boostUri, exchangeInfo.challenge)) {
+    if (!(await isClaimLinkAlreadySetForBoost(exchangeInfo.boostUri, exchangeInfo.challenge))) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Challenge is not valid for this boost',
@@ -232,14 +250,15 @@ async function handleExchangeInitiation(
         });
     }
 
-
     // Return VerifiablePresentationRequest
     return {
         verifiablePresentationRequest: {
-            query: [{
-                type: 'DIDAuthentication',
-                acceptedMethods: [{method: "key"}, {method: "web"}]
-            }],
+            query: [
+                {
+                    type: 'DIDAuthentication',
+                    acceptedMethods: [{ method: 'key' }, { method: 'web' }],
+                },
+            ],
             challenge: exchangeInfo.challenge,
             domain,
         },
@@ -251,7 +270,6 @@ async function handlePresentationForClaim(
     verifiablePresentation: VP,
     domain: string
 ) {
-
     // Extract challenge from the VP (handle both single proof and proof array)
     const challenge = Array.isArray(verifiablePresentation.proof)
         ? verifiablePresentation.proof[0]?.challenge
@@ -306,8 +324,10 @@ async function handlePresentationForClaim(
         ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
         : boostOwner;
 
+    const saOwnerProfile = 'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
+
     const signingAuthorityForUser = await getSigningAuthorityForUserByName(
-        saOwner,
+        saOwnerProfile,
         claimLinkSA.endpoint,
         claimLinkSA.name
     );
@@ -350,7 +370,6 @@ async function handlePresentationForClaim(
         }
     */
 
-
     try {
         // For VC-API workflow, we'll create the credential directly and use sendBoost
         // This avoids the complexity of signing authorities for the VC-API exchange
@@ -383,13 +402,13 @@ async function handlePresentationForClaim(
         // Inject OBv3 skill alignments based on boost's framework/skills
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
-        const vc = await issueCredentialWithSigningAuthority(
-            saOwner,
+        const vc = (await issueCredentialWithSigningAuthority(
+            { type: 'profile', profile: saOwnerProfile },
             boostCredential,
             signingAuthorityForUser,
             domain,
             false
-        ) as VC;
+        )) as VC;
 
         // Mark the challenge as used
         await useClaimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
@@ -397,9 +416,8 @@ async function handlePresentationForClaim(
         const vp = await issueResponsePresentationWithVcs([vc]);
 
         return {
-            verifiablePresentation: vp
+            verifiablePresentation: vp,
         };
-
     } catch (error) {
         console.error('Failed to issue credential via VC-API exchange:', error);
         throw new TRPCError({
@@ -409,11 +427,7 @@ async function handlePresentationForClaim(
     }
 }
 
-async function handleInboxClaimInitiation(
-    claimToken: string,
-    domain: string
-) {
-
+async function handleInboxClaimInitiation(claimToken: string, domain: string) {
     // Validate the claim token
     const claimTokenData = await validateInboxClaimToken(claimToken);
     if (!claimTokenData) {
@@ -440,10 +454,12 @@ async function handleInboxClaimInitiation(
     // Return VerifiablePresentationRequest
     return {
         verifiablePresentationRequest: {
-            query: [{
-                type: 'DIDAuthentication',
-                acceptedMethods: [{method: "key"}, {method: "web"}]
-            }],
+            query: [
+                {
+                    type: 'DIDAuthentication',
+                    acceptedMethods: [{ method: 'key' }, { method: 'web' }],
+                },
+            ],
             challenge: `${claimTokenData.token}:${exchangeDidAuthChallenge}`,
             domain,
         },
@@ -473,8 +489,10 @@ async function handleInboxClaimPresentation(
         });
     }
 
-    const challenge = Array.isArray(verifiablePresentation.proof) 
-        ? (verifiablePresentation.proof?.length > 0 ? verifiablePresentation.proof[0]?.challenge : undefined)
+    const challenge = Array.isArray(verifiablePresentation.proof)
+        ? verifiablePresentation.proof?.length > 0
+            ? verifiablePresentation.proof[0]?.challenge
+            : undefined
         : verifiablePresentation.proof?.challenge;
     if (!challenge) {
         throw new TRPCError({
@@ -506,7 +524,10 @@ async function handleInboxClaimPresentation(
     }
 
     // VERIFY the token exists. Return {} if just exhausted. Throw error if DNE. Later, exhaust the token after using it!
-    const exchangeChallengeState = await getExchangeChallengeStateForToken(token, exchangeChallenge);
+    const exchangeChallengeState = await getExchangeChallengeStateForToken(
+        token,
+        exchangeChallenge
+    );
     if (!exchangeChallengeState || exchangeChallengeState === EXHAUSTED) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -546,9 +567,12 @@ async function handleInboxClaimPresentation(
             // If a profile exists, link the contact method to it
             holderProfile = existingProfile;
             if (claimTokenData.autoVerifyContactMethod) {
-                await createProfileContactMethodRelationship(holderProfile.profileId, contactMethod.id);
+                await createProfileContactMethodRelationship(
+                    holderProfile.profileId,
+                    contactMethod.id
+                );
             }
-        } 
+        }
     }
 
     // Mark the contact method as verified
@@ -581,10 +605,15 @@ async function handleInboxClaimPresentation(
             } else {
                 // Need to sign the credential using signing authority
                 const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
-                const inboxCredentialSigningAuthorityEndpoint = (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
-                const inboxCredentialSigningAuthorityName = (inboxCredential.signingAuthority?.name as string) ?? undefined;
+                const inboxCredentialSigningAuthorityEndpoint =
+                    (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
+                const inboxCredentialSigningAuthorityName =
+                    (inboxCredential.signingAuthority?.name as string) ?? undefined;
 
-                if (!inboxCredentialSigningAuthorityEndpoint || !inboxCredentialSigningAuthorityName) {
+                if (
+                    !inboxCredentialSigningAuthorityEndpoint ||
+                    !inboxCredentialSigningAuthorityName
+                ) {
                     console.error(
                         `Inbox credential ${inboxCredential.id} missing signing authority info`
                     );
@@ -628,7 +657,7 @@ async function handleInboxClaimPresentation(
 
                 // Sign the credential
                 finalCredential = (await issueCredentialWithSigningAuthority(
-                    issuerProfile,
+                    { type: 'profile', profile: issuerProfile },
                     unsignedCredential,
                     signingAuthorityForUser,
                     ctx.domain,
@@ -653,13 +682,21 @@ async function handleInboxClaimPresentation(
                     await createBoostInstanceOfRelationship(credentialInstance, boost);
 
                     // Create the sent/received credential relationship
-                    await createSentCredentialRelationship(issuerProfile, holderProfile, credentialInstance);
+                    await createSentCredentialRelationship(
+                        { type: 'profile', profile: issuerProfile },
+                        holderProfile,
+                        credentialInstance
+                    );
                 }
             }
 
             // Create claimed relationship if holder has a profile
             if (holderProfile) {
-                await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
+                await createClaimedRelationship(
+                    holderProfile.profileId,
+                    inboxCredential.id,
+                    claimToken
+                );
             }
 
             // Log CLAIMED activity - chain to original activityId/integrationId if available
@@ -697,7 +734,10 @@ async function handleInboxClaimPresentation(
                             issuanceId: inboxCredential.id,
                             status: LCNInboxStatusEnumValidator.enum.ISSUED,
                             recipient: {
-                                contactMethod: { type: contactMethod.type, value: contactMethod.value },
+                                contactMethod: {
+                                    type: contactMethod.type,
+                                    value: contactMethod.value,
+                                },
                                 learnCardId: holderProfile?.did || holderDid,
                             },
                             timestamp: new Date().toISOString(),
@@ -709,7 +749,7 @@ async function handleInboxClaimPresentation(
             return finalCredential;
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
-            
+
             // Log FAILED activity - chain to original activityId/integrationId if available
             const failedActivityId = inboxCredential.activityId;
             const failedIntegrationId = inboxCredential.integrationId;
@@ -746,14 +786,20 @@ async function handleInboxClaimPresentation(
                         to: { did: inboxCredential.issuerDid },
                         message: {
                             title: 'Credential Issuance Error from Inbox',
-                            body: error instanceof Error ? error.message : `${contactMethod.value} failed to claim a credential from their inbox.`,
+                            body:
+                                error instanceof Error
+                                    ? error.message
+                                    : `${contactMethod.value} failed to claim a credential from their inbox.`,
                         },
                         data: {
                             inbox: {
                                 issuanceId: inboxCredential.id,
                                 status: LCNInboxStatusEnumValidator.enum.PENDING,
                                 recipient: {
-                                    contactMethod: { type: contactMethod.type, value: contactMethod.value },
+                                    contactMethod: {
+                                        type: contactMethod.type,
+                                        value: contactMethod.value,
+                                    },
                                     learnCardId: holderProfile?.did || holderDid,
                                 },
                                 timestamp: new Date().toISOString(),
@@ -762,7 +808,10 @@ async function handleInboxClaimPresentation(
                     });
                 }
             } catch (webhookError) {
-                console.error(`Failed to trigger webhook for inbox credential error ${inboxCredential.id}:`, webhookError);
+                console.error(
+                    `Failed to trigger webhook for inbox credential error ${inboxCredential.id}:`,
+                    webhookError
+                );
             }
             return null; // Continue processing other credentials
         }
@@ -770,7 +819,6 @@ async function handleInboxClaimPresentation(
 
     const settledCredentials = await Promise.all(credentialProcessingPromises);
     claimedCredentials.push(...settledCredentials.filter((c): c is VC => c !== null));
-
 
     // Create response VP with all claimed credentials
     const responseVP = await issueResponsePresentationWithVcs(claimedCredentials);
@@ -783,7 +831,7 @@ async function handleInboxClaimPresentation(
     }
 
     return {
-        verifiablePresentation: responseVP
+        verifiablePresentation: responseVP,
     };
 }
 

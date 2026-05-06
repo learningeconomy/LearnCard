@@ -66,6 +66,7 @@ function buildIframeHtml(
 
   const logoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
   const issuerName = escapeHtml(opts.issuerName || '');
+  const walletName = escapeHtml(opts.branding?.walletName || 'LearnCard');
   const cfg = {
     partnerLabel,
     partnerName: opts.partnerName || '',
@@ -75,6 +76,7 @@ function buildIframeHtml(
     nonce,
     parentOrigin,
     logoUrl,
+    walletName,
     ...(loggedInEmail ? { loggedInEmail } : {}),
   } as const;
 
@@ -297,10 +299,7 @@ function openModal(opts: InitOptions): { close: () => void } {
       // 2) Perform authenticated claim request
       const claimRes = await fetch(`${apiBase}/inbox/claim`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionJwt}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionJwt}` },
         body: JSON.stringify({
           credential: (opts.credential as any).credential ?? (opts.credential as any).obv3Template ?? opts.credential,
           configuration: { publishableKey: opts.publishableKey },
@@ -377,10 +376,7 @@ function openModal(opts: InitOptions): { close: () => void } {
         try {
           const claimRes = await fetch(`${apiBase}/inbox/claim`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionJwt}`,
-            },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionJwt}` },
             body: JSON.stringify({
               credential: (opts.credential as any).credential ?? (opts.credential as any).obv3Template ?? opts.credential,
               configuration: { publishableKey: opts.publishableKey },

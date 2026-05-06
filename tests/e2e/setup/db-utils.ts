@@ -8,20 +8,23 @@ const redis1 = new Redis();
 const redis2 = new Redis({ port: 6380 });
 const mongoClient = new MongoClient('mongodb://localhost:27017');
 const neo4jDriver = neo4j.driver('bolt://localhost:7687');
-const pgClient = new Client({
-    host: 'localhost',
-    port: 5432,
-    user: 'lrsql_user',
-    password: 'lrsql_password',
-    database: 'lrsql_db',
-});
+const createPgClient = () =>
+    new Client({
+        host: 'localhost',
+        port: 5432,
+        user: 'lrsql_user',
+        password: 'lrsql_password',
+        database: 'lrsql_db',
+    });
 
 export async function clearDatabases() {
+    const pgClient = createPgClient();
+
     try {
         // Connect to Postgres
         try {
             await pgClient.connect();
-        } catch (error) { }
+        } catch (error) {}
 
         // Run all clear operations concurrently
         await Promise.all([
@@ -79,15 +82,20 @@ export async function clearDatabases() {
                 // Truncate all tables in a single transaction
                 await pgClient.query('BEGIN');
                 try {
-                    for (const row of result.rows) {
-                        if (
-                            !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
-                                row.tablename
-                            )
-                        ) {
-                            await pgClient.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
-                        }
+                    const tables = result.rows
+                        .map(row => row.tablename)
+                        .filter(
+                            tablename =>
+                                !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
+                                    tablename
+                                )
+                        )
+                        .map(tablename => `"${tablename}"`);
+
+                    if (tables.length > 0) {
+                        await pgClient.query(`TRUNCATE TABLE ${tables.join(', ')} CASCADE`);
                     }
+
                     await pgClient.query('COMMIT');
                 } catch (error) {
                     await pgClient.query('ROLLBACK');
@@ -97,5 +105,7 @@ export async function clearDatabases() {
         ]);
     } catch (error) {
         console.log(error);
+    } finally {
+        await pgClient.end().catch(() => undefined);
     }
 }

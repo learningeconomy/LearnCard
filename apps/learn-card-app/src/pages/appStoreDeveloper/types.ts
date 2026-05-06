@@ -110,6 +110,7 @@ export interface LaunchConfig {
     webhookUrl?: string;
     apiKey?: string;
     aiTutorUrl?: string;
+    skipInstallation?: boolean;
 }
 
 export const LAUNCH_TYPE_INFO: Record<
@@ -156,6 +157,7 @@ export const CATEGORY_OPTIONS = [
     { value: 'tools', label: 'Tools' },
     { value: 'employment', label: 'Employment' },
     { value: 'credentials', label: 'Credentials' },
+    { value: 'plugin', label: 'Plugin' },
     { value: 'other', label: 'Other' },
 ];
 

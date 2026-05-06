@@ -30,7 +30,11 @@ import {
     SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
-import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    renderBoostTemplate,
+    parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
+} from '@helpers/template.helpers';
 import {
     logCredentialSent,
     logCredentialClaimed,
@@ -91,6 +95,7 @@ import {
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
+    appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
 import {
     BoostValidator,
@@ -98,7 +103,9 @@ import {
     BoostStatus,
     BoostType,
     BoostWithClaimPermissionsValidator,
+    getBoostOwnerProfile,
 } from 'types/boost';
+import { ProfileType } from 'types/profile';
 import { SkillFrameworkValidator } from 'types/skill-framework';
 import { SkillValidator } from 'types/skill';
 import { deleteBoost } from '@accesslayer/boost/delete';
@@ -655,7 +662,7 @@ export const boostsRouter = t.router({
             });
 
             const credentialUri = await sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: targetProfile,
                 boost,
                 credential,
@@ -740,7 +747,8 @@ export const boostsRouter = t.router({
                     } else if (input.signedCredential) {
                         // Auto-create boost from the signed credential
                         const credential = input.signedCredential as Record<string, unknown>;
-                        const name = typeof credential.name === 'string' ? credential.name : undefined;
+                        const name =
+                            typeof credential.name === 'string' ? credential.name : undefined;
 
                         boost = await traceDb('createBoost:fromSignedCredential', () =>
                             createBoost(
@@ -961,7 +969,7 @@ export const boostsRouter = t.router({
                                 'issueCredentialWithSigningAuthority:remoteInbox',
                                 () =>
                                     issueCredentialWithSigningAuthority(
-                                        profile,
+                                        { type: 'profile', profile },
                                         unsignedVc,
                                         signingAuthority,
                                         domain,
@@ -1161,7 +1169,7 @@ export const boostsRouter = t.router({
 
                         signedVc = await traceInternal('issueCredentialWithSigningAuthority', () =>
                             issueCredentialWithSigningAuthority(
-                                profile,
+                                { type: 'profile', profile },
                                 unsignedVc,
                                 signingAuthority,
                                 domain,
@@ -1188,7 +1196,7 @@ export const boostsRouter = t.router({
 
                     try {
                         const credentialUri = await sendBoost({
-                            from: profile,
+                            from: { type: 'profile', profile },
                             to: targetProfile,
                             boost,
                             credential: signedVc,
@@ -1845,9 +1853,8 @@ export const boostsRouter = t.router({
             }
 
             // Get the credential instance for this boost + recipient
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
+            const { getCredentialInstanceForBoostAndProfile } =
+                await import('@accesslayer/credential/read');
             const credential = await getCredentialInstanceForBoostAndProfile(
                 boost.id,
                 resolvedRecipientProfileId
@@ -1861,9 +1868,8 @@ export const boostsRouter = t.router({
             }
 
             // Revoke the credential
-            const { revokeCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { revokeCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const revoked = await revokeCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -3100,11 +3106,24 @@ export const boostsRouter = t.router({
 
             // Use the generator's profile for SA lookup if available, fall back to boost owner
             const saOwner = generatorProfileId
-                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+                ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
                 : boostOwner;
 
+            const saOwnerProfile: ProfileType =
+                'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
+            const saOwnerIssuer =
+                'profileId' in saOwner
+                    ? { type: 'profile' as const, profile: saOwner }
+                    : saOwner.type === 'profile'
+                      ? { type: 'profile' as const, profile: saOwner.profile }
+                      : {
+                            type: 'appStoreListing' as const,
+                            listing: saOwner.listing,
+                            ownerProfile: saOwner.ownerProfile,
+                        };
+
             const signingAuthority = await getSigningAuthorityForUserByName(
-                saOwner,
+                saOwnerProfile,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
@@ -3118,7 +3137,7 @@ export const boostsRouter = t.router({
 
             // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
             const activityId = await logCredentialSent({
-                actorProfileId: saOwner.profileId,
+                actorProfileId: saOwnerProfile.profileId,
                 recipientType: 'profile',
                 recipientIdentifier: profile.profileId,
                 recipientProfileId: profile.profileId,
@@ -3130,7 +3149,7 @@ export const boostsRouter = t.router({
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,
-                    saOwner,
+                    saOwnerIssuer,
                     profile,
                     signingAuthority
                 );
@@ -3138,7 +3157,7 @@ export const boostsRouter = t.router({
                 // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
                 await logCredentialClaimed({
                     activityId,
-                    actorProfileId: saOwner.profileId,
+                    actorProfileId: saOwnerProfile.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
@@ -3161,7 +3180,7 @@ export const boostsRouter = t.router({
                 try {
                     await logCredentialFailed({
                         activityId,
-                        actorProfileId: saOwner.profileId,
+                        actorProfileId: saOwnerProfile.profileId,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,
@@ -3367,6 +3386,7 @@ export const boostsRouter = t.router({
 
             try {
                 let boostJsonString = boost.dataValues.boost;
+                const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
                 if (input.templateData && Object.keys(input.templateData).length > 0) {
                     boostJsonString = renderBoostTemplate(
@@ -3376,6 +3396,11 @@ export const boostsRouter = t.router({
                 }
 
                 unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+                appendTemplateEvidenceToCredential(
+                    unsignedVc,
+                    input.templateData as Record<string, unknown> | undefined,
+                    allowAutoAppendEvidence
+                );
 
                 if (isVC2Format(unsignedVc)) {
                     unsignedVc.validFrom = new Date().toISOString();
@@ -3421,7 +3446,7 @@ export const boostsRouter = t.router({
             let credential: VC | JWE;
             try {
                 credential = await issueCredentialWithSigningAuthority(
-                    profile,
+                    { type: 'profile', profile },
                     unsignedVc,
                     sa,
                     ctx.domain
@@ -3438,7 +3463,7 @@ export const boostsRouter = t.router({
             if (options?.skipNotification) skipNotification = options?.skipNotification;
 
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: targetProfile,
                 boost,
                 credential,

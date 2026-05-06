@@ -10,6 +10,7 @@ import {
     HelpCircle,
     Server,
 } from 'lucide-react';
+import { IonToggle } from '@ionic/react';
 
 import { IntegrationGuidePanel } from './IntegrationGuidePanel';
 
@@ -75,8 +76,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.url || ''}
                                 onChange={e => updateConfig({ url: e.target.value })}
                                 placeholder="https://yourapp.com/embed"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.url ? 'border-red-300' : 'border-gray-200'
-                                    }`}
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    errors.url ? 'border-red-300' : 'border-gray-200'
+                                }`}
                             />
 
                             {errors.url && (
@@ -110,9 +112,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                                 const newPermissions = e.target.checked
                                                     ? [...current, permission.value]
                                                     : current.filter(
-                                                        (p: AppPermission) =>
-                                                            p !== permission.value
-                                                    );
+                                                          (p: AppPermission) =>
+                                                              p !== permission.value
+                                                      );
                                                 updateConfig({ permissions: newPermissions });
                                             }}
                                             className="w-4 h-4 text-cyan-600 rounded mt-0.5"
@@ -169,7 +171,6 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 );
 
             case 'SECOND_SCREEN':
-            case 'DIRECT_LINK':
                 return (
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -181,17 +182,67 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             value={config.url || ''}
                             onChange={e => updateConfig({ url: e.target.value })}
                             placeholder="https://yourapp.com"
-                            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.url ? 'border-red-300' : 'border-gray-200'
-                                }`}
+                            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                errors.url ? 'border-red-300' : 'border-gray-200'
+                            }`}
                         />
 
                         {errors.url && <p className="text-sm text-red-500 mt-1">{errors.url}</p>}
 
                         <p className="text-sm text-gray-400 mt-2">
-                            {data.launch_type === 'SECOND_SCREEN'
-                                ? 'This URL will open in a new window when users launch your app.'
-                                : 'Users will be redirected to this URL.'}
+                            This URL will open in a new window when users launch your app.
                         </p>
+                    </div>
+                );
+
+            case 'DIRECT_LINK':
+                return (
+                    <div className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Application URL
+                            </label>
+
+                            <input
+                                type="url"
+                                value={config.url || ''}
+                                onChange={e => updateConfig({ url: e.target.value })}
+                                placeholder="https://yourapp.com"
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    errors.url ? 'border-red-300' : 'border-gray-200'
+                                }`}
+                            />
+
+                            {errors.url && (
+                                <p className="text-sm text-red-500 mt-1">{errors.url}</p>
+                            )}
+
+                            <p className="text-sm text-gray-400 mt-2">
+                                Users will be redirected to this URL.
+                            </p>
+                        </div>
+
+                        {/* Skip Installation Toggle - only shown for Plugin category */}
+                        {data.category === 'plugin' && (
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1 pr-4">
+                                    <p className="text-sm font-medium text-gray-700">
+                                        Skip Installation
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        When enabled, users can open the link directly without
+                                        installing.
+                                    </p>
+                                </div>
+                                <IonToggle
+                                    checked={config.skipInstallation || false}
+                                    onIonChange={e =>
+                                        updateConfig({ skipInstallation: e.detail.checked })
+                                    }
+                                    aria-label="Skip Installation"
+                                />
+                            </div>
+                        )}
                     </div>
                 );
 
@@ -222,8 +273,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.redirectUri || ''}
                                 onChange={e => updateConfig({ redirectUri: e.target.value })}
                                 placeholder="https://yourapp.com/callback"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.redirectUri ? 'border-red-300' : 'border-gray-200'
-                                    }`}
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    errors.redirectUri ? 'border-red-300' : 'border-gray-200'
+                                }`}
                             />
 
                             {errors.redirectUri && (
@@ -377,8 +429,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.aiTutorUrl || ''}
                                 onChange={e => updateConfig({ aiTutorUrl: e.target.value })}
                                 placeholder="https://yourtutor.com"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.aiTutorUrl ? 'border-red-300' : 'border-gray-200'
-                                    }`}
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    errors.aiTutorUrl ? 'border-red-300' : 'border-gray-200'
+                                }`}
                             />
 
                             {errors.aiTutorUrl && (

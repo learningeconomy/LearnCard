@@ -24,11 +24,13 @@ export const getClient = (options?: {
 }) => {
     const { did, isChallengeValid, authorizedDid } = options ?? {};
     const domain = 'localhost%3A3000';
+    const tenant = { id: 'learncard', emailBranding: {}, resolvedVia: 'default' as const };
 
-    if (!did) return appRouter.createCaller({ domain });
+    if (!did) return appRouter.createCaller({ domain, tenant });
 
     return appRouter.createCaller({
         domain,
+        tenant,
         user: {
             did,
             isChallengeValid: Boolean(isChallengeValid),

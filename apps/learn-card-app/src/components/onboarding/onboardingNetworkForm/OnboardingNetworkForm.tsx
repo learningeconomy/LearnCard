@@ -108,6 +108,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     pendingInstall,
 }) => {
     const brandingConfig = useBrandingConfig();
+    const { appIcon } = useTenantBrandingAssets();
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
@@ -518,7 +519,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
                             <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
                                 <img
-                                    src={useTenantBrandingAssets().appIcon}
+                                    src={appIcon}
                                     alt="App logo"
                                     className="w-full h-full object-cover"
                                 />

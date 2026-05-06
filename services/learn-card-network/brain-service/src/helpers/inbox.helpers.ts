@@ -1,16 +1,29 @@
 import { TRPCError } from '@trpc/server';
-import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxCredentialType, IssueInboxSigningAuthority } from '@learncard/types';
+import {
+    VC,
+    UnsignedVC,
+    LCNNotificationTypeEnumValidator,
+    LCNInboxStatusEnumValidator,
+    VP,
+    ContactMethodQueryType,
+    InboxCredentialType,
+    IssueInboxCredentialType,
+    IssueInboxSigningAuthority,
+} from '@learncard/types';
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
-import { Context } from '@routes'
+import { Context } from '@routes';
 import { getAppDidWeb } from '@helpers/did.helpers';
-import { 
+import {
     createDeliveredRelationship,
     createEmailSentRelationship,
 } from '@accesslayer/inbox-credential/relationships/create';
-import { getContactMethodByValue, getContactMethodsForProfile } from '@accesslayer/contact-method/read';
+import {
+    getContactMethodByValue,
+    getContactMethodsForProfile,
+} from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
@@ -44,14 +57,17 @@ export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promi
         return false;
     }
     return true;
-}
+};
 
-export const claimIntoInbox = async(
+export const claimIntoInbox = async (
     issuerProfile: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP,
-    configuration: IssueInboxCredentialType['configuration'] & { integrationId?: string; activityId?: string } = {},
+    configuration: IssueInboxCredentialType['configuration'] & {
+        integrationId?: string;
+        activityId?: string;
+    } = {},
     ctx: Context,
     listingSlug?: string
 ): Promise<{
@@ -60,7 +76,7 @@ export const claimIntoInbox = async(
     recipientDid?: string;
 }> => {
     const { webhookUrl, expiresInDays, integrationId, activityId } = configuration;
-    
+
     const isSigned = !!credential?.proof;
 
     if (!isSigned && !signingAuthorityForUser) {
@@ -71,7 +87,10 @@ export const claimIntoInbox = async(
     }
 
     // Check if recipient already exists with verified email
-    const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
+    const existingProfile = await getProfileByVerifiedContactMethod(
+        recipient.type,
+        recipient.value
+    );
 
     if (existingProfile) {
         // Auto-deliver to existing user
@@ -85,14 +104,14 @@ export const claimIntoInbox = async(
                 ? getAppDidWeb(ctx.domain, listingSlug)
                 : undefined;
 
-            finalCredential = await issueCredentialWithSigningAuthority(
-                issuerProfile,
+            finalCredential = (await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
                 credential as UnsignedVC,
                 signingAuthorityForUser,
                 ctx.domain,
                 false, // don't encrypt
                 ownerDidOverride
-            ) as VC;
+            )) as VC;
         }
 
         // Create inbox record for tracking
@@ -137,14 +156,18 @@ export const claimIntoInbox = async(
             inboxCredential: inboxCredential,
         };
     }
-}
-
+};
 
 export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP,
-    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string; activityId?: string; integrationId?: string; guardianEmail?: string } = {},
+    configuration: IssueInboxCredentialType['configuration'] & {
+        boostUri?: string;
+        activityId?: string;
+        integrationId?: string;
+        guardianEmail?: string;
+    } = {},
     ctx: Context
 ): Promise<{
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
@@ -153,8 +176,16 @@ export const issueToInbox = async (
     recipientDid?: string;
     guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
 }> => {
-    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri, activityId, integrationId, guardianEmail } = configuration;
-    
+    const {
+        signingAuthority: _signingAuthority,
+        webhookUrl,
+        expiresInDays,
+        delivery,
+        boostUri,
+        activityId,
+        integrationId,
+        guardianEmail,
+    } = configuration;
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
 
@@ -163,40 +194,38 @@ export const issueToInbox = async (
         if (!isTrusted) {
             throw new TRPCError({
                 code: 'FORBIDDEN',
-                message: 'Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry. Email delivery is available for all issuers. To verify your issuer, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
+                message:
+                    'Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry. Email delivery is available for all issuers. To verify your issuer, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
             });
         }
     }
 
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
-
         /**  If credential is unsigned & no signing authority provided in configuration
-         * Then, try to retrieve the primary signing authority for user. 
+         * Then, try to retrieve the primary signing authority for user.
          * This is the 'default' path so users can send credentials quickly with our API
          **/
-        const primary = await getPrimarySigningAuthorityForUser(
-            issuerProfile
-        );
+        const primary = await getPrimarySigningAuthorityForUser(issuerProfile);
 
-        if(primary) {
+        if (primary) {
             signingAuthority = {
                 endpoint: primary.signingAuthority.endpoint,
                 name: primary.relationship.name,
             };
 
             /**  If the user is relying on a primary signing authority, we should verify that the credential they submitted can be issued.
-             * This check doesn't happen if the user submits a custom signing authority through configuration. We assume, in that case, 
-             * the user has verified that the credential can be issued. Our API cannot replicate the logic of their unknown, external service. 
+             * This check doesn't happen if the user submits a custom signing authority through configuration. We assume, in that case,
+             * the user has verified that the credential can be issued. Our API cannot replicate the logic of their unknown, external service.
              * By providing this parameter, the developer explicitly takes responsibility for the signing process. We trust them and proceed.
              **/
-            if(!(await verifyCredentialCanBeSigned(credential as UnsignedVC))) {
+            if (!(await verifyCredentialCanBeSigned(credential as UnsignedVC))) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: 'Credential failed to pass a pre-flight issuance test. Please verify that the credential is well-formed and can be issued.',
+                    message:
+                        'Credential failed to pass a pre-flight issuance test. Please verify that the credential is well-formed and can be issued.',
                 });
             }
-
         } else {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
@@ -206,7 +235,10 @@ export const issueToInbox = async (
     }
 
     // Check if recipient already exists with verified email
-    const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
+    const existingProfile = await getProfileByVerifiedContactMethod(
+        recipient.type,
+        recipient.value
+    );
 
     // Check if the recipient is a managed child (has a guardian via MANAGES relationship).
     // Managed children need guardian approval for all inbox credentials, even without explicit guardianEmail.
@@ -236,13 +268,13 @@ export const issueToInbox = async (
                 });
             }
 
-            finalCredential = await issueCredentialWithSigningAuthority(
-                issuerProfile,
+            finalCredential = (await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
                 credential as UnsignedVC,
                 signingAuthorityForUser,
                 ctx.domain,
                 false // don't encrypt
-            ) as VC;
+            )) as VC;
         }
 
         // Create inbox record for tracking
@@ -264,7 +296,7 @@ export const issueToInbox = async (
             const boost = await getBoostByUri(boostUri);
             if (boost) {
                 await sendBoost({
-                    from: issuerProfile,
+                    from: { type: 'profile', profile: issuerProfile },
                     to: existingProfile,
                     boost,
                     credential: finalCredential,
@@ -275,10 +307,26 @@ export const issueToInbox = async (
                 });
             } else {
                 // Fallback to sendCredential if boost not found
-                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
+                await sendCredential(
+                    issuerProfile,
+                    existingProfile,
+                    finalCredential,
+                    ctx.domain,
+                    undefined,
+                    activityId,
+                    integrationId
+                );
             }
         } else {
-            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
+            await sendCredential(
+                issuerProfile,
+                existingProfile,
+                finalCredential,
+                ctx.domain,
+                undefined,
+                activityId,
+                integrationId
+            );
         }
 
         // Mark as issued and create relationship
@@ -318,7 +366,7 @@ export const issueToInbox = async (
                     title: 'Credential Delivered to Inbox',
                     body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
                 },
-                data: { 
+                data: {
                     inbox: {
                         issuanceId: inboxCredential.id,
                         status: LCNInboxStatusEnumValidator.enum.ISSUED,
@@ -353,15 +401,12 @@ export const issueToInbox = async (
             signingAuthority,
             expiresInDays,
             ...(guardianEmail ? { guardianEmail } : {}),
-            ...(needsGuardianGate
-                ? { guardianStatus: 'AWAITING_GUARDIAN' as const }
-                : {}),
+            ...(needsGuardianGate ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         });
 
         // Generate claim token
         let recipientContactMethod = await getContactMethodByValue(recipient.type, recipient.value);
         if (!recipientContactMethod) {
-
             recipientContactMethod = await createContactMethod({
                 type: recipient.type,
                 value: recipient.value,
@@ -390,6 +435,7 @@ export const issueToInbox = async (
                         ...(recipient.type === 'email' ? { email: recipient.value } : {}),
                     },
                 },
+                branding: ctx.tenant?.emailBranding,
                 messageStream: 'universal-inbox',
             });
 
@@ -398,9 +444,15 @@ export const issueToInbox = async (
                 inboxCredential.id,
                 guardianEmail
             );
-            const approvalUrl = generateGuardianCredentialApprovalUrl(approvalToken);
+            const approvalUrl = generateGuardianCredentialApprovalUrl(
+                approvalToken,
+                ctx.tenant?.emailBranding?.appUrl
+            );
 
-            const guardianDeliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
+            const guardianDeliveryService = getDeliveryService({
+                type: 'email',
+                value: guardianEmail,
+            });
             await guardianDeliveryService.send({
                 contactMethod: { type: 'email', value: guardianEmail },
                 templateId: 'guardian-credential-approval',
@@ -420,6 +472,7 @@ export const issueToInbox = async (
                         ...(recipient.type === 'email' ? { email: recipient.value } : {}),
                     },
                 },
+                branding: ctx.tenant?.emailBranding,
                 messageStream: 'universal-inbox',
             });
 
@@ -428,7 +481,9 @@ export const issueToInbox = async (
             try {
                 const guardianContactMethod = await getContactMethodByValue('email', guardianEmail);
                 if (guardianContactMethod) {
-                    const guardianProfile = await getProfileByContactMethod(guardianContactMethod.id);
+                    const guardianProfile = await getProfileByContactMethod(
+                        guardianContactMethod.id
+                    );
                     if (guardianProfile) {
                         const childProfile = await getProfileForInboxCredential(inboxCredential.id);
                         if (childProfile) {
@@ -440,12 +495,14 @@ export const issueToInbox = async (
                                 // Parse credential name for the notification
                                 let credentialName: string | undefined;
                                 try {
-                                    credentialName = (credential as any)?.name
-                                        ?? (credential as any)?.credentialSubject?.achievement?.name;
+                                    credentialName =
+                                        (credential as any)?.name ??
+                                        (credential as any)?.credentialSubject?.achievement?.name;
                                 } catch {}
 
                                 await addNotificationToQueue({
-                                    type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVAL_PENDING,
+                                    type: LCNNotificationTypeEnumValidator.enum
+                                        .GUARDIAN_APPROVAL_PENDING,
                                     to: guardianProfile,
                                     from: issuerProfile,
                                     message: {
@@ -475,13 +532,16 @@ export const issueToInbox = async (
 
                 let credentialName: string | undefined;
                 try {
-                    credentialName = (credential as any)?.name
-                        ?? (credential as any)?.credentialSubject?.achievement?.name;
+                    credentialName =
+                        (credential as any)?.name ??
+                        (credential as any)?.credentialSubject?.achievement?.name;
                 } catch {}
 
                 for (const guardianProfile of recipientManagers) {
                     // Look up guardian's verified email to send approval email
-                    const guardianContactMethods = await getContactMethodsForProfile(guardianProfile.did);
+                    const guardianContactMethods = await getContactMethodsForProfile(
+                        guardianProfile.did
+                    );
                     const guardianVerifiedEmail = guardianContactMethods.find(
                         cm => cm.type === 'email' && cm.isVerified
                     );
@@ -492,7 +552,10 @@ export const issueToInbox = async (
                             inboxCredential.id,
                             guardianVerifiedEmail.value
                         );
-                        const approvalUrl = generateGuardianCredentialApprovalUrl(approvalToken);
+                        const approvalUrl = generateGuardianCredentialApprovalUrl(
+                            approvalToken,
+                            ctx.tenant?.emailBranding?.appUrl
+                        );
 
                         const guardianDeliveryService = getDeliveryService({
                             type: 'email',
@@ -514,9 +577,12 @@ export const issueToInbox = async (
                                 },
                                 recipient: {
                                     ...(delivery?.template?.model?.recipient ?? {}),
-                                    ...(recipient.type === 'email' ? { email: recipient.value } : {}),
+                                    ...(recipient.type === 'email'
+                                        ? { email: recipient.value }
+                                        : {}),
                                 },
                             },
+                            branding: ctx.tenant?.emailBranding,
                             messageStream: 'universal-inbox',
                         });
                     }
@@ -540,12 +606,19 @@ export const issueToInbox = async (
                     });
                 }
             } catch (err) {
-                console.error('[issueToInbox] Failed to send guardian notifications for managed child:', err);
+                console.error(
+                    '[issueToInbox] Failed to send guardian notifications for managed child:',
+                    err
+                );
             }
 
             // Still send the normal claim email to the child so they know a credential arrived
             if (!delivery?.suppress) {
-                const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);
+                const emailClaimToken = await generateInboxClaimToken(
+                    recipientContactMethod.id,
+                    expiresInDays ? 24 * expiresInDays : 24,
+                    true
+                );
                 const emailClaimUrl = generateClaimUrl(emailClaimToken);
                 await createEmailSentRelationship(
                     issuerProfile.did,
@@ -558,23 +631,29 @@ export const issueToInbox = async (
                 const injectedTemplateFields = {
                     recipient: {
                         ...(delivery?.template?.model?.recipient ?? {}),
-                        ...(recipientContactMethod ? {
-                            ...(recipientContactMethod.type === 'email' ? {
-                                email: recipientContactMethod.value,
-                            } : {}),
-                            ...(recipientContactMethod.type === 'phone' ? {
-                                phone: recipientContactMethod.value,
-                            } : {}),
-                        } : {}),
+                        ...(recipientContactMethod
+                            ? {
+                                  ...(recipientContactMethod.type === 'email'
+                                      ? {
+                                            email: recipientContactMethod.value,
+                                        }
+                                      : {}),
+                                  ...(recipientContactMethod.type === 'phone'
+                                      ? {
+                                            phone: recipientContactMethod.value,
+                                        }
+                                      : {}),
+                              }
+                            : {}),
                     },
                     issuer: {
                         name: issuerProfile.displayName,
-                        ...(delivery?.template?.model?.issuer ?? {})
+                        ...(delivery?.template?.model?.issuer ?? {}),
                     },
                     credential: {
                         name: (credential as any)?.name,
-                        ...(delivery?.template?.model?.credential ?? {})
-                    }
+                        ...(delivery?.template?.model?.credential ?? {}),
+                    },
                 };
 
                 await deliveryService.send({
@@ -585,11 +664,16 @@ export const issueToInbox = async (
                         claimToken: emailClaimToken,
                         ...injectedTemplateFields,
                     },
+                    branding: ctx.tenant?.emailBranding,
                     messageStream: 'universal-inbox',
                 });
             }
         } else if (!delivery?.suppress) {
-            const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);
+            const emailClaimToken = await generateInboxClaimToken(
+                recipientContactMethod.id,
+                expiresInDays ? 24 * expiresInDays : 24,
+                true
+            );
             const emailClaimUrl = generateClaimUrl(emailClaimToken);
             // Record email being sent
             await createEmailSentRelationship(
@@ -605,24 +689,30 @@ export const issueToInbox = async (
             const injectedTemplateFields = {
                 recipient: {
                     ...(delivery?.template?.model?.recipient ?? {}),
-                    ...(recipientContactMethod ? {
-                        ...(recipientContactMethod.type === 'email' ? {
-                            email: recipientContactMethod.value,
-                        } : {}),
-                        ...(recipientContactMethod.type === 'phone' ? {
-                            phone: recipientContactMethod.value,
-                        } : {}),
-                    } : {}),
+                    ...(recipientContactMethod
+                        ? {
+                              ...(recipientContactMethod.type === 'email'
+                                  ? {
+                                        email: recipientContactMethod.value,
+                                    }
+                                  : {}),
+                              ...(recipientContactMethod.type === 'phone'
+                                  ? {
+                                        phone: recipientContactMethod.value,
+                                    }
+                                  : {}),
+                          }
+                        : {}),
                 },
                 issuer: {
                     name: issuerProfile.displayName,
-                    ...(delivery?.template?.model?.issuer ?? {})
+                    ...(delivery?.template?.model?.issuer ?? {}),
                 },
                 credential: {
                     name: (credential as any)?.name,
-                    ...(delivery?.template?.model?.credential ?? {})
-                }
-            }
+                    ...(delivery?.template?.model?.credential ?? {}),
+                },
+            };
 
             await deliveryService.send({
                 contactMethod: recipient,
@@ -631,7 +721,8 @@ export const issueToInbox = async (
                     claimUrl: emailClaimUrl,
                     ...injectedTemplateFields,
                 },
-                messageStream: 'universal-inbox'
+                branding: ctx.tenant?.emailBranding,
+                messageStream: 'universal-inbox',
             });
         }
 
@@ -660,7 +751,11 @@ export const issueToInbox = async (
             });
         }
 
-        const claimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, false);
+        const claimToken = await generateInboxClaimToken(
+            recipientContactMethod.id,
+            expiresInDays ? 24 * expiresInDays : 24,
+            false
+        );
         const claimUrl = generateClaimUrl(claimToken);
 
         return {

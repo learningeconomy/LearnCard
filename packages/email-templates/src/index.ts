@@ -1,0 +1,50 @@
+/**
+ * @learncard/email-templates
+ *
+ * Git-managed, tenant-branded email and SMS templates for LearnCard services.
+ *
+ * Usage:
+ *   import { renderEmail, renderSms, resolveBranding } from '@learncard/email-templates';
+ *
+ *   const { html, text, subject } = await renderEmail('inbox-claim', branding, {
+ *       claimUrl: 'https://...',
+ *       credential: { name: 'Badge' },
+ *       issuer: { name: 'Acme' },
+ *   });
+ */
+
+// Branding
+export { resolveBranding, DEFAULT_BRANDING } from './branding';
+export type { TenantBranding } from './branding';
+
+// Email rendering
+export { renderEmail } from './render';
+export type { RenderedEmail, TemplateId, TemplateDataMap } from './render';
+export type {
+    VerificationCodeData,
+    EmailVerificationData,
+    InboxClaimData,
+    GuardianApprovalData,
+    AccountApprovedData,
+    RecoveryKeyData,
+    EndorsementRequestData,
+    CredentialAwaitingGuardianData,
+    GuardianApprovedClaimData,
+    GuardianCredentialApprovalData,
+    GuardianEmailOtpData,
+    GuardianRejectedCredentialData,
+} from './render';
+
+// SMS rendering
+export { renderSms } from './sms';
+export type { SmsTemplateId, SmsTemplateDataMap, SmsInboxClaimData, SmsVerificationData } from './sms';
+
+// Server-side tenant resolution
+export { resolveTenantFromRequest, registerOriginMapping, registerTenantBranding } from './tenant-registry';
+export type { ResolvedTenant, RequestHeaders } from './tenant-registry';
+
+// Template components are intentionally NOT re-exported from the barrel.
+// They contain JSX (.tsx) and would force every transitive consumer to
+// configure `jsx` in their tsconfig. Use renderEmail() / renderSms() instead.
+// For direct component access (testing / preview), import from
+// '@learncard/email-templates/src/templates' explicitly.

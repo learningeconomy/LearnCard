@@ -18,9 +18,9 @@ export const parseIntegration = (integration: IntegrationType): IntegrationType 
 /**
  * Extract contractUri from a listing's launch_config_json
  */
-export const getContractUriFromLaunchConfig = (
-    listing?: { launch_config_json?: string }
-): string | undefined => {
+export const getContractUriFromLaunchConfig = (listing?: {
+    launch_config_json?: string;
+}): string | undefined => {
     if (!listing?.launch_config_json) return undefined;
 
     try {

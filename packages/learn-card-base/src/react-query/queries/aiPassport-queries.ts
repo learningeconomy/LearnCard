@@ -152,7 +152,7 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
             topicRecord?: LCR;
             topicBoost?: Boost;
             topicVc?: VC;
-            sessions?: Boost[];
+            sessions?: AiSession[];
             hasUnfinishedSessions?: boolean;
             hasFinishedSessions?: boolean;
             unfinishedSessionsCount?: number;
@@ -177,7 +177,7 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                         | Boost
                         | undefined;
 
-                    const sessions = (
+                    const sessionBoosts = (
                         await wallet.invoke.getBoostChildren(boostUri, {
                             query: {
                                 category:
@@ -188,8 +188,8 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                         })
                     )?.records;
 
-                    const sessionStatuses = await Promise.all(
-                        (sessions ?? []).map(async sessionBoost => {
+                    const sessions = await Promise.all(
+                        (sessionBoosts ?? []).map(async sessionBoost => {
                             const sessionRecord = await getOrFetchCredentialRecordForBoost(
                                 sessionBoost.uri,
                                 initWallet,
@@ -218,13 +218,19 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                                 (assessmentChildren?.length ?? 0) > 0 ||
                                 Boolean(sessionVc?.completed);
 
-                            return { hasAssessment, completed: Boolean(sessionVc?.completed) };
+                            return {
+                                boost: await wallet.invoke.getBoost(sessionBoost.uri),
+                                vc: sessionVc,
+                                record: sessionRecord,
+                                hasAssessment,
+                                completed: hasAssessment || Boolean(sessionVc?.completed),
+                            };
                         })
                     );
 
-                    const hasFinishedSessions = sessionStatuses.some(s => s.hasAssessment);
-                    const hasUnfinishedSessions = sessionStatuses.some(s => !s.hasAssessment);
-                    const unfinishedSessionsCount = sessionStatuses.filter(
+                    const hasFinishedSessions = sessions.some(s => s.hasAssessment);
+                    const hasUnfinishedSessions = sessions.some(s => !s.hasAssessment);
+                    const unfinishedSessionsCount = sessions.filter(
                         s => !s.hasAssessment
                     ).length;
 
@@ -232,7 +238,16 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                         topicRecord: record,
                         topicBoost,
                         topicVc,
-                        sessions,
+                        sessions: sessions.map(
+                            ({ boost, vc, record, hasAssessment, completed }) =>
+                                ({
+                                    boost,
+                                    vc,
+                                    record,
+                                    hasAssessment,
+                                    completed,
+                                } as AiSession)
+                        ),
                         hasUnfinishedSessions,
                         hasFinishedSessions,
                         unfinishedSessionsCount,
@@ -258,12 +273,15 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
 
             const wallet = await initWallet();
 
-            const topicBoost = await wallet.invoke.getBoost(topicUri);
-            const topicRecord = await getOrFetchCredentialRecordForBoost(
-                topicUri,
-                initWallet,
-                queryClient
-            );
+            // Topic boost and topic record are independent — fetch in
+            // parallel. Topic VC must wait for the record (depends on
+            // record.uri) and getBoostChildren must wait for the VC
+            // (uses topicVc.boostId).
+            const [topicBoost, topicRecord] = await Promise.all([
+                wallet.invoke.getBoost(topicUri),
+                getOrFetchCredentialRecordForBoost(topicUri, initWallet, queryClient),
+            ]);
+
             const topicVc = await getOrFetchResolvedCredential(
                 topicRecord?.uri ?? '',
                 initWallet,
@@ -281,13 +299,19 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
                 })
             )?.records;
 
+            // Per-session: credential record fetch and full-boost fetch
+            // are independent — parallelize. VC resolve still waits for
+            // the record (needs record.uri).
             const sessions = await Promise.all(
                 summaryBoosts?.map(async boost => {
-                    const record = await getOrFetchCredentialRecordForBoost(
-                        boost.uri,
-                        initWallet,
-                        queryClient
-                    );
+                    const [record, fullBoost] = await Promise.all([
+                        getOrFetchCredentialRecordForBoost(
+                            boost.uri,
+                            initWallet,
+                            queryClient
+                        ),
+                        wallet.invoke.getBoost(boost.uri),
+                    ]);
                     const vc = (await getOrFetchResolvedCredential(
                         record?.uri ?? '',
                         initWallet,
@@ -295,11 +319,11 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
                     ))!;
 
                     return {
-                        boost: await wallet.invoke.getBoost(boost.uri),
+                        boost: fullBoost,
                         vc,
                         record,
                     } as AiSession;
-                })
+                }) ?? []
             );
 
             return {
@@ -310,6 +334,11 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
             };
         },
         enabled: enabled && Boolean(topicUri),
+        // Sessions don't change on their own — they only update when a chat
+        // session is finished, and we explicitly invalidateQueries on those
+        // paths. A moderate staleTime keeps quick navigation (back/forward)
+        // from refetching the whole waterfall.
+        staleTime: 1000 * 60,
     });
 };
 

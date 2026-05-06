@@ -32,7 +32,7 @@ export const CredentialActivityValidator = z.object({
     activityId: z.string(),
     eventType: CredentialActivityEventTypeValidator,
     timestamp: z.string(),
-    actorProfileId: z.string(),
+    actorProfileId: z.string().optional(),
     recipientType: CredentialActivityRecipientTypeValidator,
     recipientIdentifier: z.string(),
     boostUri: z.string().optional(),
@@ -81,7 +81,7 @@ export const CredentialActivityStatsValidator = z.object({
 export type CredentialActivityStats = z.infer<typeof CredentialActivityStatsValidator>;
 
 export type LogCredentialActivityParams = {
-    actorProfileId: string;
+    actorProfileId?: string;
     eventType: CredentialActivityEventType;
     recipientType: CredentialActivityRecipientType;
     recipientIdentifier: string;

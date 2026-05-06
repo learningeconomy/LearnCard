@@ -180,11 +180,16 @@ describe('App Store Credential Issuance E2E Tests', () => {
         });
 
         it('should reject unknown event types', async () => {
+            // AppEventValidator is a discriminated union on `event.type`, so
+            // unknown types are rejected at the route boundary with a zod
+            // BAD_REQUEST *before* reaching the handler. (Prior to that wire-up
+            // the handler's switch threw 'Unknown event type' as a fallback;
+            // that path is now unreachable by design.)
             await expect(
                 appUser.invoke.sendAppEvent(listingId, {
                     type: 'unknown-event-type',
                 })
-            ).rejects.toThrow('Unknown event type');
+            ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
         });
 
         it('should apply template data to credential', async () => {

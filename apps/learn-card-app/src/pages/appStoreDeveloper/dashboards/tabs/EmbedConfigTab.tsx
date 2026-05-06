@@ -3,13 +3,11 @@ import { Globe, X, Plus, Palette, Settings, Upload, Loader2, Award } from 'lucid
 import type { LCNIntegration } from '@learncard/types';
 
 import { useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
-import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { EmbedPreview } from '../../components/EmbedPreview';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { useGuideState } from '../../guides/shared/useGuideState';
+import { getLCNApiUrl } from '../../../../config/bootstrapTenantConfig';
 import type { CredentialTemplate } from '../types';
-
-declare const LCN_API_URL: string | undefined;
 
 interface EmbedClaimConfig {
     partnerName?: string;
@@ -102,7 +100,8 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     );
 
     const publishableKey = integration.publishableKey || '';
-    const apiBaseUrl = LCN_API_URL || LEARNCARD_NETWORK_API_URL;
+    // Resolve API base URL from the active tenant's config (brainServiceApi).
+    const apiBaseUrl = getLCNApiUrl();
 
     return (
         <div className="space-y-6">

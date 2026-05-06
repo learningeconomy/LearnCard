@@ -25,6 +25,21 @@ export const getIntegrationForListing = async (
     return parseIntegration(inflateObject<IntegrationType>(integration as any));
 };
 
+export const getOwnerProfileForListing = async (listingId: string): Promise<ProfileType | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})<-[:PUBLISHES_LISTING]-(i:Integration)-[:CREATED_BY]->(p:Profile)
+         RETURN p AS profile
+         LIMIT 1`,
+        { listingId }
+    );
+
+    const profile = result.records[0]?.get('profile')?.properties;
+
+    if (!profile) return null;
+
+    return inflateObject<ProfileType>(profile as any);
+};
+
 export const getProfilesInstalledApp = async (
     listingId: string,
     { limit, cursor }: { limit: number; cursor?: string }
@@ -104,14 +119,16 @@ export const getBoostsForListing = async (
     domain: string
 ): Promise<Array<{ templateAlias: string; boostUri: string }>> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST]->(b:Boost)
-         RETURN b.id AS id, r.templateAlias AS templateAlias
-         ORDER BY r.createdAt DESC`,
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST|CREATED_BY]->(b:Boost)
+         RETURN b.id AS id,
+                CASE WHEN type(r) = 'HAS_BOOST' THEN r.templateAlias ELSE null END AS templateAlias,
+                coalesce(r.createdAt, r.date) AS createdAt
+         ORDER BY createdAt DESC`,
         { listingId }
     );
 
     return result.records.map(record => ({
-        templateAlias: record.get('templateAlias') as string,
+        templateAlias: (record.get('templateAlias') as string | null) ?? '',
         boostUri: getBoostUri(record.get('id') as string, domain),
     }));
 };

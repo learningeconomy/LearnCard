@@ -11,7 +11,8 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 export const getClient = async (
     url: string,
     didAuthFunction: (challenge?: string) => Promise<string>,
-    guardianApprovalGetter?: GuardianApprovalGetter
+    guardianApprovalGetter?: GuardianApprovalGetter,
+    extraHeaders?: Record<string, string>
 ): Promise<LCNClient> => {
     let challenges: string[] = [];
 
@@ -21,7 +22,7 @@ export const getClient = async (
                 methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
-                headers: { Authorization: `Bearer ${await didAuthFunction()}` },
+                headers: { Authorization: `Bearer ${await didAuthFunction()}`, ...extraHeaders },
                 transformer: {
                     input: RegExpTransformer,
                     output: { serialize: o => o, deserialize: o => o },
@@ -57,6 +58,7 @@ export const getClient = async (
                     return {
                         Authorization: `Bearer ${await didAuthFunction(challenges.pop())}`,
                         ...(guardianApproval ? { 'x-guardian-approval': guardianApproval } : {}),
+                        ...extraHeaders,
                     };
                 },
                 transformer: {
@@ -74,7 +76,8 @@ export const getClient = async (
 export const getApiTokenClient = async (
     url: string,
     apiToken: string,
-    guardianApprovalGetter?: GuardianApprovalGetter
+    guardianApprovalGetter?: GuardianApprovalGetter,
+    extraHeaders?: Record<string, string>
 ): Promise<LCNClient> => {
     const trpc = createTRPCClient<AppRouter>({
         links: [
@@ -90,6 +93,7 @@ export const getApiTokenClient = async (
                     return {
                         Authorization: `Bearer ${apiToken}`,
                         ...(guardianApproval ? { 'x-guardian-approval': guardianApproval } : {}),
+                        ...extraHeaders,
                     };
                 },
                 transformer: {

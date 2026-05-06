@@ -126,7 +126,6 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'lcw.app'
         ],
         customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
-        capgoChannel: '1.0.4',
     },
 };
 

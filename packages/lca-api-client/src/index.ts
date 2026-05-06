@@ -7,13 +7,14 @@ export type Client = TRPCClient<AppRouter>;
 
 export const getClient = async (
     url: string,
-    didAuthFunction: (challenge?: string) => Promise<string>
+    didAuthFunction: (challenge?: string) => Promise<string>,
+    extraHeaders?: Record<string, string>
 ): Promise<Client> => {
     let challenges: string[] = [];
 
     const challengeRequester = createTRPCClient<AppRouter>({
         links: [
-            httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
+            httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}`, ...extraHeaders } }),
         ],
     }) as Client;
 
@@ -35,7 +36,7 @@ export const getClient = async (
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
 
-                    return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
+                    return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}`, ...extraHeaders };
                 },
             }),
         ],

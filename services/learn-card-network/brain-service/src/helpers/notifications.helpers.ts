@@ -35,11 +35,10 @@ export async function addNotificationToQueue(notification: LCNNotification) {
 
     // In local development (offline or missing SQS URL), deliver directly via webhook
     if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
-        if (!IS_TEST_ENVIRONMENT) {
-            console.log(
-                'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
-            );
-        }
+        console.log(
+            'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
+        );
+
         return sendNotification(notification);
     }
 
@@ -54,20 +53,23 @@ export async function addNotificationToQueue(notification: LCNNotification) {
 export async function sendNotification(notification: LCNNotification) {
     try {
         let notificationsWebhook = process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
-        if (
-            typeof notification.to !== 'string' &&
-            typeof notification.to.notificationsWebhook === 'string'
-        ) {
-            notificationsWebhook = notification.to.notificationsWebhook;
+        if (typeof notification.to !== 'string') {
+            if (typeof notification.to.notificationsWebhook === 'string') {
+                notificationsWebhook = notification.to.notificationsWebhook;
+            }
             notification.to.did = getDidWeb(
                 process.env.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.to.profileId ?? ''
             );
         }
-        if (typeof notification.from !== 'string') {
+        if (
+            typeof notification.from !== 'string' &&
+            'profileId' in notification.from &&
+            notification.from.profileId
+        ) {
             notification.from.did = getDidWeb(
                 process.env.DOMAIN_NAME ?? 'network.learncard.com',
-                notification.from.profileId ?? ''
+                notification.from.profileId
             );
         }
         if (!notification.sent) {

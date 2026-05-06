@@ -1,6 +1,15 @@
 import React, { Suspense } from 'react';
 
-const LazyMarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
+const importMarkdownRenderer = () => import('./MarkdownRenderer');
+
+const LazyMarkdownRenderer = React.lazy(importMarkdownRenderer);
+
+// Eagerly fetch the chunk so the first streamed assistant token doesn't flash
+// the Suspense fallback. Safe to call multiple times — the dynamic import is
+// memoized by the bundler.
+export const preloadMarkdownRenderer = () => {
+    void importMarkdownRenderer();
+};
 
 interface MarkdownRendererProps {
     children?: string | null;

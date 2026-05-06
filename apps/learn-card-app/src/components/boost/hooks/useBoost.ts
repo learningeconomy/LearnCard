@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
-import { LCNProfile } from '@learncard/types';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 
@@ -12,14 +11,18 @@ import {
     updateBoostStatus,
 } from '../boostHelpers';
 
-import { LCNBoostStatusEnum } from '../boost';
+import { BoostCMSIssueTo, LCNBoostStatusEnum } from '../boost';
 
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
 
-    const boostSomeoneElse = async (issueTo: LCNProfile[], wallet: any, boostUri: string) => {
+    const boostSomeoneElse = async (
+        issueTo: BoostCMSIssueTo[],
+        wallet: any,
+        boostUri: string
+    ) => {
         try {
             setIsLoading(true);
 
@@ -27,7 +30,9 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 const uris = await Promise.all(
                     issueTo.map(async issuee => {
                         const otherProfileId = issuee?.profileId;
-                        const issuedVc = await addBoostSomeone(wallet, otherProfileId, boostUri);
+                        const issuedVc = await addBoostSomeone(wallet, otherProfileId, boostUri, {
+                            mediaAttachments: issuee.mediaAttachments,
+                        });
 
                         return issuedVc;
                     })
@@ -50,7 +55,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
     };
 
     const handleSubmitExistingBoostOther = async (
-        issueTo: LCNProfile[],
+        issueTo: BoostCMSIssueTo[],
         boostUri: string,
         boostStatus: LCNBoostStatusEnum
     ) => {

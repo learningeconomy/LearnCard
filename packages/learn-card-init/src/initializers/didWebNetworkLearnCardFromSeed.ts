@@ -30,6 +30,7 @@ export const didWebNetworkLearnCardFromSeed = async ({
     network: _network,
     trustedBoostRegistry = 'https://raw.githubusercontent.com/learningeconomy/registries/main/learncard/trusted-app-registry.json',
     guardianApprovalGetter,
+    extraHeaders,
 
     cloud: {
         url = 'https://cloud.learncard.com/trpc',
@@ -101,6 +102,6 @@ export const didWebNetworkLearnCardFromSeed = async ({
     const didWebLc = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
 
     return didWebLc.addPlugin(
-        await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter })
+        await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter, extraHeaders })
     );
 };

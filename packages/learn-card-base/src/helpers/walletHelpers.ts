@@ -55,17 +55,21 @@ export const getBespokeLearnCard = async (
 
     const apiEndpoint = networkStore.get.apiEndpoint();
 
+    const tenantId = networkStore.get.tenantId();
+    const extraHeaders = tenantId ? { 'X-Tenant-Id': tenantId } : undefined;
+
     const networkLearnCard = await initLearnCard({
         seed,
         network: network,
         cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
         allowRemoteContexts: true,
         guardianApprovalGetter: getGuardianApprovalVP,
+        extraHeaders,
         ...(didWeb && { didWeb }),
     });
 
     const lcaLearnCard = await networkLearnCard.addPlugin(
-        await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb))
+        await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb), extraHeaders)
     );
 
     const linkedClaimsLca = await lcaLearnCard.addPlugin(await getLinkedClaimsPlugin(lcaLearnCard));

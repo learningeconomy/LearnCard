@@ -84,66 +84,68 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                     }`}
                 />
             </button>
-            {!isMobile && <IonPopover
-                onDidDismiss={() => setShowSortPopover(false)}
-                reference="trigger"
-                trigger="trigger-button"
-                className={` ${
-                    theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'
-                }`}
-            >
-                <IonList>
-                    {LAUNCHPAD_SORT_OPTIONS.map(option => {
-                        if (
-                            !enableLaunchPadUpdates &&
-                            (option.type === LaunchPadSortOptionsEnum.mostUsed ||
-                                option.type === LaunchPadSortOptionsEnum.recentlyAdded)
-                        ) {
-                            return <></>;
-                        }
+            {!isMobile && (
+                <IonPopover
+                    onDidDismiss={() => setShowSortPopover(false)}
+                    reference="trigger"
+                    trigger="trigger-button"
+                    className={` ${
+                        theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'
+                    }`}
+                >
+                    <IonList>
+                        {LAUNCHPAD_SORT_OPTIONS.map(option => {
+                            if (
+                                !enableLaunchPadUpdates &&
+                                (option.type === LaunchPadSortOptionsEnum.mostUsed ||
+                                    option.type === LaunchPadSortOptionsEnum.recentlyAdded)
+                            ) {
+                                return null;
+                            }
 
-                        return (
-                            <IonItem
-                                className="font-notoSans text-sm flex items-center justify-start text-left"
-                                key={option.id}
-                                lines="none"
-                                button={true}
-                                detail={false}
-                                onClick={() => setSortBy(option.type)}
-                            >
-                                {option.type === sortBy ? (
-                                    <Checkmark className="text-grayscale-800 w-[24px] h-[24px] mr-1" />
-                                ) : (
-                                    <div className="w-[24px] h-[24px] mr-1" />
-                                )}
-                                Sort by {option.title}
-                            </IonItem>
-                        );
-                    })}
-                    <div className="w-full flex items-center justify-center">
-                        <div className="w-[90%] h-[1px] bg-grayscale-100 mt-2 mb-2" />
-                    </div>
-                    {LAUNCHPAD_FILTER_OPTIONS.map(option => {
-                        return (
-                            <IonItem
-                                className="font-notoSans text-sm flex items-center justify-start text-left"
-                                key={option.id}
-                                lines="none"
-                                button={true}
-                                detail={false}
-                                onClick={() => setFilterBy(option.type)}
-                            >
-                                {option.type === filterBy ? (
-                                    <Checkmark className="text-grayscale-800 w-[24px] h-[24px] mr-1" />
-                                ) : (
-                                    <div className="w-[24px] h-[24px] mr-1" />
-                                )}
-                                {option.title}
-                            </IonItem>
-                        );
-                    })}
-                </IonList>
-            </IonPopover>}
+                            return (
+                                <IonItem
+                                    className="font-notoSans text-sm flex items-center justify-start text-left"
+                                    key={option.id}
+                                    lines="none"
+                                    button={true}
+                                    detail={false}
+                                    onClick={() => setSortBy(option.type)}
+                                >
+                                    {option.type === sortBy ? (
+                                        <Checkmark className="text-grayscale-800 w-[24px] h-[24px] mr-1" />
+                                    ) : (
+                                        <div className="w-[24px] h-[24px] mr-1" />
+                                    )}
+                                    Sort by {option.title}
+                                </IonItem>
+                            );
+                        })}
+                        <div className="w-full flex items-center justify-center">
+                            <div className="w-[90%] h-[1px] bg-grayscale-100 mt-2 mb-2" />
+                        </div>
+                        {LAUNCHPAD_FILTER_OPTIONS.map(option => {
+                            return (
+                                <IonItem
+                                    className="font-notoSans text-sm flex items-center justify-start text-left"
+                                    key={option.id}
+                                    lines="none"
+                                    button={true}
+                                    detail={false}
+                                    onClick={() => setFilterBy(option.type)}
+                                >
+                                    {option.type === filterBy ? (
+                                        <Checkmark className="text-grayscale-800 w-[24px] h-[24px] mr-1" />
+                                    ) : (
+                                        <div className="w-[24px] h-[24px] mr-1" />
+                                    )}
+                                    {option.title}
+                                </IonItem>
+                            );
+                        })}
+                    </IonList>
+                </IonPopover>
+            )}
         </>
     );
 };

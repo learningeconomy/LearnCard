@@ -113,7 +113,11 @@ export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<bo
     }
 };
 
-export const generateGuardianApprovalUrl = (token: string): string => {
+export const generateGuardianApprovalUrl = (token: string, appUrl?: string): string => {
+    // Prefer the resolved tenant's appUrl so the link lands on the correct tenant domain.
+    // Falls back to CLIENT_APP_DOMAIN_NAME env (or localhost when offline) if no tenant appUrl.
+    if (appUrl) return `${appUrl.replace(/\/+$/, '')}/interactions/guardian-approval/${token}`;
+
     const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
     const domain =
         !domainName || process.env.IS_OFFLINE
@@ -155,7 +159,13 @@ export const generateGuardianCredentialApprovalToken = async (
 };
 
 // NEW: URL for credential-specific guardian approval (different path than profile approval)
-export const generateGuardianCredentialApprovalUrl = (token: string): string => {
+export const generateGuardianCredentialApprovalUrl = (token: string, appUrl?: string): string => {
+    // Prefer the resolved tenant's appUrl so the link lands on the correct tenant domain.
+    // Falls back to CLIENT_APP_DOMAIN_NAME env (or localhost when offline) if no tenant appUrl.
+    if (appUrl) {
+        return `${appUrl.replace(/\/+$/, '')}/interactions/guardian-credential-approval/${token}`;
+    }
+
     const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
     const domain =
         !domainName || process.env.IS_OFFLINE

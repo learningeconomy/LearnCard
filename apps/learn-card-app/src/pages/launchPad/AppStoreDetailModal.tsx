@@ -973,7 +973,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             >
                                 <IonSpinner name="dots" className="w-5 h-5" />
                             </button>
-                        ) : isInstalled ? (
+                        ) : isInstalled || launchConfig.skipInstallation ? (
                             <>
                                 {canLaunch && (
                                     <button
@@ -984,13 +984,15 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                     </button>
                                 )}
 
-                                <button
-                                    onClick={handleOpenOptionsMenu}
-                                    className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
-                                    aria-label="More options"
-                                >
-                                    <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
-                                </button>
+                                {isInstalled && (
+                                    <button
+                                        onClick={handleOpenOptionsMenu}
+                                        className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
+                                        aria-label="More options"
+                                    >
+                                        <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
+                                    </button>
+                                )}
                             </>
                         ) : (
                             <button

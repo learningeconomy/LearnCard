@@ -4,6 +4,8 @@ import { Loader2 } from 'lucide-react';
 import { init as initEmbed } from '@learncard/embed-sdk';
 import { clearFinalizeCache } from '../../../hooks/useFinalizeInboxCredentials';
 import { autoVerifyStore } from '../../../stores/autoVerifyStore';
+import { getResolvedTenantConfig } from '../../../config/bootstrapTenantConfig';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 export interface EmbedPreviewProps {
     publishableKey: string;
@@ -33,6 +35,19 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
     const credentialKey = JSON.stringify(credential);
     const brandingKey = JSON.stringify(branding);
 
+    const { brandMark } = useTenantBrandingAssets();
+
+    // Match the preview modal copy + "Secured by" footer to the active tenant.
+    // Tenant resolution for the brain-service (OTP / claim email branding)
+    // is handled separately via publishable-key-derived lookup in a follow-up PR.
+    const walletName = (() => {
+        try {
+            return getResolvedTenantConfig().branding?.name;
+        } catch {
+            return undefined;
+        }
+    })();
+
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
@@ -52,7 +67,16 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
                 issuerName,
                 issuerLogoUrl,
                 credential,
-                branding: { ...branding, walletUrl: '' },
+                branding: {
+                    ...branding,
+                    // Suppress the SDK's auto-open wallet behavior; the preview
+                    // opens the local wallet via onSuccess instead.
+                    walletUrl: '',
+                    // Brand the modal copy ("...added to your {walletName} wallet",
+                    // "View My {walletName}") and footer image for the active tenant.
+                    ...(walletName ? { walletName } : {}),
+                    ...(brandMark ? { logoUrl: brandMark } : {}),
+                },
                 requestBackgroundIssuance,
                 ...(apiBaseUrl ? { apiBaseUrl } : {}),
                 onSuccess: () => {
@@ -71,7 +95,7 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
         return () => {
             if (el) el.innerHTML = '';
         };
-    }, [publishableKey, partnerName, issuerName, issuerLogoUrl, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl]);
+    }, [publishableKey, partnerName, issuerName, issuerLogoUrl, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl, walletName, brandMark]);
 
     return (
         <div className="border rounded-lg bg-gray-50 p-6">

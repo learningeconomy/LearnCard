@@ -61,7 +61,7 @@ export const AiSessionsPopOverButton: React.FC<{
                 onClick={handleSortMenu}
                 type="button"
                 ref={isMobile ? null : buttonRef}
-                className={`bg-white flex items-center justify-center p-2 rounded-[15px] mr-4 shadow-sm border-solid border-[1px] ${showSortPopover ? 'border-indigo-500' : 'border-grayscale-200'
+                className={`bg-white flex items-center justify-center p-2 rounded-[15px] shadow-sm border-solid border-[1px] ${showSortPopover ? 'border-indigo-500' : 'border-grayscale-200'
                     }`}
             >
                 <SortIcon

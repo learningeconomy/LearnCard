@@ -284,9 +284,11 @@ Allowed: ['https://learncard.app', 'https://staging.learncard.app']
 
 ### ❌ DON'T
 
-1. **Don't use wildcards (not supported):**
+1. **Use wildcards only for label(s) at the start of the host:**
    ```typescript
-   hostOrigin: ['https://*.learncard.app']  // Won't work
+   hostOrigin: ['https://*.learncard.app']  // ✅ Supported — matches any subdomain(s)
+   hostOrigin: ['https://learncard.*']      // ❌ Not supported — TLD wildcards
+   hostOrigin: ['https://api-*.example.com']// ❌ Not supported — partial labels
    ```
 
 2. **Don't hardcode staging URLs in production:**
@@ -400,10 +402,10 @@ hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
 ## FAQ
 
 **Q: Can I use wildcards in the whitelist?**  
-A: No, only exact origin matching is supported for security.
+A: Yes — `hostOrigin` entries of the form `<protocol>://*.<domain>` (e.g. `https://*.learncard.app`) match any non-empty chain of leading DNS labels. Protocol and port must still match exactly.
 
 **Q: What if I don't provide a whitelist?**  
-A: Any `lc_host_override` value will be accepted (less secure).
+A: The SDK still enforces the built-in LearnCard tenant whitelist (`PartnerConnect.DEFAULT_TRUSTED_TENANTS`: `learncard.app`, `*.learncard.app`, `*.learncard.ai`, `vetpass.app`, `*.vetpass.app`), plus native-app origins when `allowNativeAppOrigins` is true. Origins outside those patterns are still rejected. Pass `disableDefaultTenants: true` to disable the built-in list.
 
 **Q: Can attackers use this to hijack communication?**  
 A: No. Even with a malicious override, browser security prevents origin spoofing.

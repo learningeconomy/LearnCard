@@ -1,4 +1,5 @@
 import path from 'path';
+import { execSync } from 'child_process';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
@@ -8,6 +9,37 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
+
+/**
+ * Resolve a short build commit SHA at config-eval time.
+ *
+ * Source preference:
+ *   1. CI-provided env vars (GitHub Actions / Heroku / Vercel etc.)
+ *   2. Local `git rev-parse --short HEAD`
+ *   3. The string 'dev' if neither is available (e.g. in a stripped Docker
+ *      build with no .git directory).
+ *
+ * Surfaced to the runtime via the `__BUILD_SHA__` global, used in the
+ * VersionInfoModal so support / engineering can identify the exact commit
+ * a binary or OTA bundle was built from.
+ */
+const resolveBuildSha = (): string => {
+    const fromEnv =
+        process.env.GITHUB_SHA ??
+        process.env.HEROKU_SLUG_COMMIT ??
+        process.env.VERCEL_GIT_COMMIT_SHA ??
+        process.env.BUILD_SHA;
+
+    if (fromEnv) return fromEnv.slice(0, 7);
+
+    try {
+        return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+            .toString()
+            .trim();
+    } catch {
+        return 'dev';
+    }
+};
 
 // Workspace packages that should not be pre-bundled for HMR support
 const workspacePackages = [
@@ -74,6 +106,8 @@ export default defineConfig(({ mode }) => {
         },
         define: {
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
+            __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
             // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
             // Kept as fallbacks for backward compat; will be removed in a future PR.

@@ -33,6 +33,7 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
+import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -81,6 +82,10 @@ const WalletPage: React.FC = () => {
     ];
 
     useEffect(() => {
+        prefetchRoutes({ aiEnabled: isAiEnabled });
+    }, [isAiEnabled]);
+
+    useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
             try {
                 if (res?.bundle?.version && res?.bundle) {
@@ -119,7 +124,7 @@ const WalletPage: React.FC = () => {
         CredentialCategoryEnum.aiInsight,
     ];
 
-    const handleClickSquare = (categoryType: CredentialCategoryEnum) => {
+    const handleClickSquare = async (categoryType: CredentialCategoryEnum) => {
         const path = categoryToPath[categoryType];
         if (!path) return;
 
@@ -134,6 +139,18 @@ const WalletPage: React.FC = () => {
 
         if (path === '/ai/topics') {
             chatBotStore.set.resetStore();
+        }
+
+        // Await the destination chunk before navigating so WalletPage stays
+        // mounted (no Suspense fallback flash). Idle-prefetch on mount means
+        // this resolves instantly in the common case; on slow networks, cap
+        // the wait so a stalled fetch doesn't block navigation forever.
+        const preload = ROUTE_PRELOAD[path];
+        if (preload) {
+            await Promise.race([
+                preload(),
+                new Promise<void>(resolve => setTimeout(resolve, 4000)),
+            ]).catch(() => undefined);
         }
 
         history.push(path);

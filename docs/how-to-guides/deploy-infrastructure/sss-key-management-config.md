@@ -29,18 +29,27 @@ This guide covers the environment variables and infrastructure needed to deploy 
 
 ### Email Delivery (Production)
 
+Emails are rendered locally via [`@learncard/email-templates`](../../core-concepts/tenant-branded-emails.md) and delivered through Postmark as raw HTML. Tenant branding (brand name, logo, colors, from-domain) is applied automatically based on the `X-Tenant-Id` / `Origin` header on each request. See [Configure Tenant-Branded Emails](../configure-tenant-branded-emails.md) for how to register new tenants.
+
 | Variable | Description | Example |
 |---|---|---|
 | `POSTMARK_SERVER_TOKEN` | Postmark API key. If unset, email delivery falls back to console logging. | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
-| `POSTMARK_FROM_EMAIL` | Default "From" email address for all outbound emails. | `noreply@example.com` |
-| `POSTMARK_BRAND_NAME` | Brand name used in email templates. | `LearnCard` |
-| `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` | Postmark template alias for login verification OTP emails. | `login-code` |
-| `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS` | Postmark template alias for endorsement request emails. | `endorsement-request` |
-| `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` | *(Optional)* Postmark template alias for recovery email verification codes. Falls back to plain-text if unset. Template model: `verificationCode`, `verificationEmail`. | `recovery-email-code` |
-| `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` | *(Optional)* Postmark template alias for recovery key backup emails. Falls back to plain-text if unset. Template model: `brandName`, `recoveryKey`. | `recovery-key` |
+| `POSTMARK_FROM_EMAIL` | Default "From" email address. Overridden per-email by `getFrom()` when tenant `fromDomain` is set. | `noreply@example.com` |
+| `POSTMARK_BRAND_NAME` | Legacy brand name. Used only when the active tenant has no `brandName` override. | `LearnCard` |
+| `DEFAULT_TENANT_ID` | *(Optional)* Fallback tenant ID used when neither `X-Tenant-Id` nor `Origin` resolves to a known tenant. Useful for per-tenant deploys and cron jobs. Defaults to `learncard`. | `vetpass` |
+| `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` | *(Optional override)* Real Postmark template alias for login OTP emails. When set, the adapter still renders locally first; this value is only used if local rendering fails. | `login-code` |
+| `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS` | *(Optional override)* Same as above, for endorsement request emails. | `endorsement-request` |
+| `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` | *(Optional override)* Same as above, for recovery email verification codes. | `recovery-email-code` |
+| `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` | *(Optional override)* Same as above, for recovery key backup emails. | `recovery-key` |
+
+{% hint style="info" %}
+**Migration from plain-text fallbacks (pre-LC-1749)**
+
+Earlier deployments required `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` and `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` to avoid falling back to unstyled plain-text emails. These env vars are now pure overrides — the server always renders the React Email template from `@learncard/email-templates` with full tenant branding. You may remove them from your deployment configuration.
+{% endhint %}
 
 {% hint style="warning" %}
-The template variables changed from numeric IDs to string aliases in this release:
+The template variables changed from numeric IDs to string aliases in an earlier release:
 - `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS`
 - `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
 

@@ -1,6 +1,9 @@
 import React from 'react';
 
-export const DoubleTrapezoid: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const DoubleTrapezoid: React.FC<{ className?: string; fill?: string }> = ({
+    className = '',
+    fill = '#20C397',
+}) => {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -10,8 +13,8 @@ export const DoubleTrapezoid: React.FC<{ className?: string }> = ({ className = 
             fill="none"
             className={className}
         >
-            <path d="M651.724 350L3.08505e-05 700L6.60158e-05 0L651.724 350Z" fill="#20C397" />
-            <path d="M0 350L651.724 1.32579e-05V350L651.724 700L0 350Z" fill="#20C397" />
+            <path d="M651.724 350L3.08505e-05 700L6.60158e-05 0L651.724 350Z" fill={fill} />
+            <path d="M0 350L651.724 1.32579e-05V350L651.724 700L0 350Z" fill={fill} />
         </svg>
     );
 };

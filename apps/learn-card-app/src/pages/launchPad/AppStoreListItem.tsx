@@ -313,7 +313,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             <button className={buttonClass} disabled>
                                 <IonSpinner name="dots" className="w-4 h-4" />
                             </button>
-                        ) : isInstalled || installedAt ? (
+                        ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
                                     Open

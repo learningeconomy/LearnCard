@@ -8,8 +8,10 @@ import {
     Boost,
     Credential,
     ConsentFlowContract,
+    AppStoreListing,
 } from '@models';
 import { ProfileType } from 'types/profile';
+import { AppStoreListingType } from 'types/app-store-listing';
 import { BindParam, QueryBuilder } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { CredentialType } from 'types/credential';
@@ -21,26 +23,49 @@ export const getCredentialSentToProfile = async (
     to: ProfileType
 ): Promise<
     | {
-          source: ProfileType;
+          source: ProfileType | AppStoreListingType;
           relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
           target: CredentialInstance;
       }
     | undefined
 > => {
-    const data = (
+    // First check for Profile credentialSent relationships
+    const profileData = (
         await Profile.findRelationships({
             alias: 'credentialSent',
             where: { relationship: { to: to.profileId }, target: { id } },
         })
     )[0];
 
-    if (!data) return undefined;
+    if (profileData) {
+        return {
+            ...profileData,
+            source: inflateObject(profileData.source.dataValues as any),
+            relationship: inflateObject(
+                (profileData.relationship as any)?.dataValues ?? profileData.relationship
+            ),
+        };
+    }
 
-    return {
-        ...data,
-        source: inflateObject(data.source.dataValues as any),
-        relationship: inflateObject((data.relationship as any)?.dataValues ?? data.relationship),
-    };
+    // If not found, check for AppStoreListing credentialSent relationships
+    const listingData = (
+        await AppStoreListing.findRelationships({
+            alias: 'credentialSent',
+            where: { relationship: { to: to.profileId }, target: { id } },
+        })
+    )[0];
+
+    if (listingData) {
+        return {
+            ...listingData,
+            source: inflateObject(listingData.source.dataValues as any),
+            relationship: inflateObject(
+                (listingData.relationship as any)?.dataValues ?? listingData.relationship
+            ),
+        };
+    }
+
+    return undefined;
 };
 
 export const getCredentialOwner = async (

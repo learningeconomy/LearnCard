@@ -16,6 +16,7 @@ export type InsightArtifact = {
 };
 
 export type ChatMessage = {
+    id?: string;
     role: Role;
     content: string | null;
     tool_call_id?: string;

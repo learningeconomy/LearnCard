@@ -59,6 +59,7 @@ COPY packages/plugins/simple-signing-plugin/package.json packages/plugins/simple
 COPY packages/learn-card-embed-sdk/package.json packages/learn-card-embed-sdk/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
+COPY packages/email-templates/package.json packages/email-templates/
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install
@@ -104,6 +105,7 @@ COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plug
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 COPY apps/learn-card-app apps/learn-card-app
 COPY packages/sss-key-manager packages/sss-key-manager
+COPY packages/email-templates packages/email-templates
 
 RUN --mount=type=cache,id=nx-cache,target=/app/.nx \
     pnpm exec nx run-many --target=build:docker --projects=learn-card-app,network-brain-service,learn-cloud-service,lca-api-service

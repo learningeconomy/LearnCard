@@ -1,5 +1,69 @@
 # @welibraryos/lca-api-service
 
+## 1.2.7
+
+### Patch Changes
+
+-   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+
+-   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`0327b6c9870b0c2ca359f54629df019547eb118a`](https://github.com/learningeconomy/LearnCard/commit/0327b6c9870b0c2ca359f54629df019547eb118a), [`1e35f73c3a81f1517703d673823616cfcbb5798d`](https://github.com/learningeconomy/LearnCard/commit/1e35f73c3a81f1517703d673823616cfcbb5798d), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    -   @learncard/types@5.14.0
+    -   @learncard/didkit-plugin-node@0.2.13
+    -   @learncard/didkit-plugin@1.8.7
+    -   @learncard/core@9.4.17
+    -   @learncard/init@2.3.15
+    -   @learncard/did-web-plugin@1.1.17
+
+## 1.2.6
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   [`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1749] React-Email + Tenant Branding
+
+    Introduces git-managed, tenant-branded email and SMS templates via the new `@learncard/email-templates` package, and wires tenant-aware email delivery through `lca-api` and `brain-service`.
+
+    ### What's new
+
+    -   **`@learncard/email-templates` (new package)** — React Email templates for every transactional email the platform sends (login OTP, recovery email code, recovery key, inbox claim, endorsement request, guardian approval, account approved, guardian credential approval, etc.). Includes an SMS renderer, a tenant registry with per-tenant branding overrides, and a local preview server (`pnpm --filter @learncard/email-templates dev`).
+    -   **`lca-api` + `brain-service`** — PostmarkAdapter now renders templates locally with tenant branding and delivers the result as raw HTML via Postmark's `sendEmail` API. Tenant is resolved from the request in `createContext` via `resolveTenantFromRequest()` and attached as `ctx.tenant` for every route.
+    -   **`@learncard/sss-key-manager`** — `createSSSStrategy({ tenantId })` now forwards an `X-Tenant-Id` header on every call to `lca-api` so recovery / OTP emails are branded for the tenant the user is signed into.
+    -   **`learn-card-app`** — Resolves the active tenant at SSS factory time and passes it into `createSSSStrategy`, so VetPass (and any future tenant) gets branded recovery emails out of the box.
+
+    ### Behavior changes
+
+    -   **Recovery / OTP emails are always branded.** Previously, emails fell back to unstyled plain-text when the corresponding `POSTMARK_*_TEMPLATE_ALIAS` env var was unset. The server now renders the React Email template with tenant branding on every send; unset env vars are fine.
+    -   **New observable request header.** The SSS client sends `X-Tenant-Id: <tenant>` on all requests to `lca-api`. Proxies, WAFs, and log pipelines may surface this.
+
+    ### Deployment notes (self-hosters)
+
+    -   The `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` and `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` env vars are no longer required — they're pure overrides now. You can remove them from your deployment config.
+    -   `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` and `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS` are likewise optional overrides; the adapter renders locally by default.
+    -   An optional `DEFAULT_TENANT_ID` env var is now honored as the fallback when neither `X-Tenant-Id` nor `Origin` resolves to a known tenant.
+    -   Existing Postmark template customizations are not used unless the corresponding env var is set. To move your branding into version control, add an entry to `TENANT_EMAIL_BRANDING` in `packages/email-templates/src/tenant-registry.ts`.
+
+    See [Configure Tenant-Branded Emails](../docs/how-to-guides/configure-tenant-branded-emails.md) and [Tenant-Branded Emails (architecture)](../docs/core-concepts/tenant-branded-emails.md) for details.
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+    -   @learncard/email-templates@1.0.1
+    -   @learncard/core@9.4.16
+    -   @learncard/init@2.3.14
+    -   @learncard/did-web-plugin@1.1.16
+    -   @learncard/didkit-plugin@1.8.6
+    -   @learncard/didkit-plugin-node@0.2.12
+
 ## 1.2.5
 
 ### Patch Changes

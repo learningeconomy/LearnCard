@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
 
 import { IonToolbar, IonHeader } from '@ionic/react';
+import X from '../../../../svgs/X';
 import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 
 import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
@@ -13,6 +15,9 @@ type BoostCMSMediaOptionsProps = {
     title?: String | React.ReactNode;
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
     showCloseButton?: boolean;
+    hideCloseButton?: boolean;
+    keepModalOpenOnSave?: boolean;
+    onSaveComplete?: () => void;
 };
 
 const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
@@ -21,13 +26,18 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
     title,
     displayType,
     showCloseButton,
+    hideCloseButton,
+    keepModalOpenOnSave = false,
+    onSaveComplete,
 }) => {
-    const { closeModal } = useModal();
+    const { closeModal, closeAllModals } = useModal();
     const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
-        showCloseButton || true
+        !hideCloseButton && (showCloseButton ?? true)
     );
-    const sectionPortal = document.getElementById('section-cancel-portal');
-
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
     return (
         <>
             <section
@@ -35,7 +45,30 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                 className="max-w-[500px] flex flex-col items-center justify-center"
             >
                 <IonHeader className="ion-no-border bg-white pt-5">
-                    {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
+                    <div className="relative">
+                        {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
+                        {/*
+                         * // ! Hotfix: inline X close button rendered directly in the header.
+                         *
+                         * When BoostCMSMediaOptions is used inside RecipientMediaAttachmentsModal
+                         * (the BoostCMS recipient flow), the parent CancelModal is opened with
+                         * `hideButton: true` and `hideCloseButton` is passed to this component,
+                         * suppressing the portal-based Close button. Without this button there
+                         * would be no way for the user to dismiss the modal.
+                         *
+                         * The portal-based Close button (below) continues to handle all other
+                         * flows (e.g. ShortBoostSomeoneScreen) where the parent modal does
+                         * render its own action buttons via the section-cancel-portal.
+                         */}
+                        {hideCloseButton && (
+                            <button
+                                onClick={() => closeModal()}
+                                className="absolute right-4 top-0 p-1 text-grayscale-600 hover:text-grayscale-900 transition-colors z-9999"
+                            >
+                                <X className="w-6 h-6 text-grayscale-900" />
+                            </button>
+                        )}
+                    </div>
                 </IonHeader>
 
                 <CreateMediaAttachmentForm
@@ -45,6 +78,8 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                     displayType={displayType}
                     showCloseButtonState={showCloseButtonState}
                     setShowCloseButtonState={setShowCloseButtonState}
+                    keepModalOpenOnSave={keepModalOpenOnSave}
+                    onSaveComplete={onSaveComplete}
                 />
             </section>
             {sectionPortal &&
