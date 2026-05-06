@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "branch": "feat/lc-1644-bench-panel-only",
+    "purpose": "Pre-optimization baseline. Bench panel only, no Tasks 1-6 perf optimizations applied. Used as the 'before' half of the LC-1644 staging A/B comparison.",
+    "captured_at": "2026-04-28",
+    "captured_by": "AppEvent Perf Bench panel (Admin Tools tile)",
+    "deploy_target": "staging",
+    "frontend": "https://staging.learncard.ai",
+    "brain_service": "https://staging.network.learncard.com",
+    "trigger": "wallet.invoke.benchAppEvent({...}) from the admin panel; results pasted from the panel's Copy Results JSON button",
+    "instrumentation_notes": "On this branch handleSendCredentialEvent has no per-phase PerfTracker marks (Tasks 4/5 introduce them). Only sa_http_ms and sa_didauthvp_ms are populated from issueCredentialWithSigningAuthority's PerfTracker. Other phases (parallel_reads, owner_and_sa_reads, sa_issue, log_activity_and_send_boost) read 0 by design — their cost rolls up into total_ms.",
+    "posthog_status": "Backend POSTHOG_API_KEY was not yet set on staging deploy when these runs were captured. Per-iteration / per-run events therefore did not arrive in PostHog for these specific runs. Frontend bench_appevent_run_triggered events did arrive (frontend uses posthog-js with its own config). Subsequent runs after env var is set will populate PostHog."
+  },
+
+  "summary_aggregate": {
+    "total_iterations_captured": 70,
+    "total_runs": 7,
+    "warm_steady_p50_ms": 560,
+    "warm_steady_p50_range_ms": [510, 590],
+    "cold_iter0_total_ms": 1100,
+    "cold_iter0_total_range_ms": [736, 1239],
+    "cold_sa_http_ms": 280,
+    "cold_sa_http_range_ms": [239, 390],
+    "warm_sa_http_p50_ms": 50,
+    "warm_sa_http_range_ms": [42, 79],
+    "lukewarm_iter1_frequency": "5/7 runs (~70%)",
+    "lukewarm_iter1_total_ms_range": [555, 748],
+    "mid_run_anomaly_frequency": "~1 in 30 iterations",
+    "mid_run_anomaly_examples": [
+      "run 3 iter 6: 683ms (sa_http=92, sa_didauthvp=43) — partial cold path",
+      "run 6 iter 5: 1564ms (sa_http=51, sa_didauthvp=2) — non-SA spike, source unknown"
+    ],
+    "observations": [
+      "Warm-path p50 is rock-solid at ~560ms across 7 independent runs.",
+      "SA call is consistently fast (~50ms warm). The April-era multi-second cold-start tail for sa_http is gone — staging Lambda is much warmer now.",
+      "~510ms of warm total_ms is in non-instrumented phases (Neo4j reads + sendBoost + logActivity + certification). Tasks 4-6 target this directly.",
+      "sa_didauthvp on cold paths is highly variable (43-217ms) — that's the brain-side crypto/DID resolution cache initializing.",
+      "Run 6 iter 5's 1564ms spike with warm SA call shows that non-SA tail anomalies exist independently of Lambda cold starts — possibly Neo4j slow query, GC pause, or sendBoost cert reissue."
+    ]
+  },
+
+  "runs": [
+    {
+      "run_id": "60e7ab90-2616-4e8b-b9c0-4aa39ff942e3",
+      "label": "run-1",
+      "warmup": 2,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 586, "p95": 736, "p99": 736 },
+        "sa_http": { "p50": 56, "p95": 79, "p99": 79 },
+        "sa_didauthvp": { "p50": 1, "p95": 2, "p99": 2 }
+      },
+      "notes": "warmup=2 absorbed cold start; this is warm-path-only data. p95 is warm-path noise, not a cold tail.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 736, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 1, "total_ms": 629, "sa_http_ms": 56, "sa_didauthvp_ms": 2 },
+        { "iteration": 2, "total_ms": 599, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 586, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 554, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 564, "sa_http_ms": 57, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 577, "sa_http_ms": 79, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 580, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 601, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 661, "sa_http_ms": 54, "sa_didauthvp_ms": 2 }
+      ]
+    },
+    {
+      "run_id": "f250c112-f1e1-4051-b71e-751614e00fcb",
+      "label": "run-2",
+      "warmup": 0,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 570, "p95": 1097, "p99": 1097 },
+        "sa_http": { "p50": 51, "p95": 242, "p99": 242 },
+        "sa_didauthvp": { "p50": 1, "p95": 102, "p99": 102 }
+      },
+      "notes": "Cold start at iter 0 (1097ms total, 242ms sa_http, 102ms sa_didauthvp). Iter 1 lukewarm (555ms).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1097, "sa_http_ms": 242, "sa_didauthvp_ms": 102 },
+        { "iteration": 1, "total_ms": 555, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 557, "sa_http_ms": 47, "sa_didauthvp_ms": 2 },
+        { "iteration": 3, "total_ms": 589, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 588, "sa_http_ms": 42, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 570, "sa_http_ms": 53, "sa_didauthvp_ms": 2 },
+        { "iteration": 6, "total_ms": 589, "sa_http_ms": 51, "sa_didauthvp_ms": 4 },
+        { "iteration": 7, "total_ms": 570, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 551, "sa_http_ms": 44, "sa_didauthvp_ms": 2 },
+        { "iteration": 9, "total_ms": 564, "sa_http_ms": 57, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "94e0b46d-0202-4c75-8bff-e770619aa4eb",
+      "label": "run-3",
+      "warmup": 0,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 568, "p95": 1239, "p99": 1239 },
+        "sa_http": { "p50": 58, "p95": 269, "p99": 269 },
+        "sa_didauthvp": { "p50": 1, "p95": 217, "p99": 217 }
+      },
+      "notes": "Heaviest cold start observed (1239ms total, 269ms sa_http, 217ms sa_didauthvp). Iter 1 lukewarm (704ms). Iter 6 mid-run anomaly: 683ms with sa_http=92, sa_didauthvp=43 (partial cold path — possibly Lambda routing scatter).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1239, "sa_http_ms": 269, "sa_didauthvp_ms": 217 },
+        { "iteration": 1, "total_ms": 704, "sa_http_ms": 56, "sa_didauthvp_ms": 2 },
+        { "iteration": 2, "total_ms": 576, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 562, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 539, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 562, "sa_http_ms": 76, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 683, "sa_http_ms": 92, "sa_didauthvp_ms": 43 },
+        { "iteration": 7, "total_ms": 560, "sa_http_ms": 60, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 622, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 568, "sa_http_ms": 58, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "d1af9c72-7880-4dff-a721-ee31f6ebc7cc",
+      "label": "run-4",
+      "warmup": 0,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 558, "p95": 1100, "p99": 1100 },
+        "sa_http": { "p50": 54, "p95": 311, "p99": 311 },
+        "sa_didauthvp": { "p50": 1, "p95": 89, "p99": 89 }
+      },
+      "notes": "Cold iter 0 (1100ms / 311ms / 89ms). Iter 1 lukewarm (742ms).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1100, "sa_http_ms": 311, "sa_didauthvp_ms": 89 },
+        { "iteration": 1, "total_ms": 742, "sa_http_ms": 65, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 614, "sa_http_ms": 47, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 558, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 558, "sa_http_ms": 55, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 557, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 590, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 545, "sa_http_ms": 56, "sa_didauthvp_ms": 2 },
+        { "iteration": 8, "total_ms": 540, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 565, "sa_http_ms": 61, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "b5420bc2-c7a2-4843-835f-97a41ebc7735",
+      "label": "run-5",
+      "warmup": 0,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 523, "p95": 912, "p99": 912 },
+        "sa_http": { "p50": 45, "p95": 239, "p99": 239 },
+        "sa_didauthvp": { "p50": 1, "p95": 76, "p99": 76 }
+      },
+      "notes": "Lightest cold start (912ms). Iter 1 NOT lukewarm (579ms — fully warm). Iters 2-9 are 30-50ms faster than other runs (~520ms vs ~570ms baseline). Hypothesis: ran shortly after a previous bench, so brain process kept Bolt connection pool / DID-Web caches warm via inter-run state.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 912, "sa_http_ms": 239, "sa_didauthvp_ms": 76 },
+        { "iteration": 1, "total_ms": 579, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 523, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 513, "sa_http_ms": 47, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 516, "sa_http_ms": 55, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 538, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 530, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 515, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 533, "sa_http_ms": 63, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 511, "sa_http_ms": 44, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "2753b619-4014-44b3-9b0e-9085484e305d",
+      "label": "run-6",
+      "warmup": 0,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 562, "p95": 1564, "p99": 1564 },
+        "sa_http": { "p50": 46, "p95": 274, "p99": 274 },
+        "sa_didauthvp": { "p50": 1, "p95": 69, "p99": 69 }
+      },
+      "notes": "Cold iter 0 (1106ms). MID-RUN ANOMALY at iter 5: total=1564ms with sa_http=51 (warm) and sa_didauthvp=2 (warm) — ~1500ms went somewhere NOT in the SA call. Suspects: Neo4j slow query, brain GC pause, or sendBoost cert reissue (issueCertifiedBoost would call SA again, second call's time wouldn't show in our sa_http metric). The optimized branch's per-phase instrumentation should diagnose this.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1106, "sa_http_ms": 274, "sa_didauthvp_ms": 69 },
+        { "iteration": 1, "total_ms": 708, "sa_http_ms": 47, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 589, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 562, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 681, "sa_http_ms": 96, "sa_didauthvp_ms": 3 },
+        { "iteration": 5, "total_ms": 1564, "sa_http_ms": 51, "sa_didauthvp_ms": 2 },
+        { "iteration": 6, "total_ms": 530, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 531, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 528, "sa_http_ms": 42, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 535, "sa_http_ms": 53, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "e1beaf25-e279-42ea-8f30-7ad2069fa40e",
+      "label": "run-7",
+      "warmup": 0,
+      "iterations": 10,
+      "summary": {
+        "total": { "p50": 566, "p95": 1228, "p99": 1228 },
+        "sa_http": { "p50": 55, "p95": 390, "p99": 390 },
+        "sa_didauthvp": { "p50": 1, "p95": 80, "p99": 80 }
+      },
+      "notes": "Cold iter 0 = 1228ms with sa_http=390ms (highest cold sa_http observed across 7 runs). Iters 6 and 7 show mildly elevated sa_http (97ms, 82ms vs warm ~50ms) — possibly Lambda routing scatter today.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1228, "sa_http_ms": 390, "sa_didauthvp_ms": 80 },
+        { "iteration": 1, "total_ms": 748, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 624, "sa_http_ms": 48, "sa_didauthvp_ms": 2 },
+        { "iteration": 3, "total_ms": 555, "sa_http_ms": 57, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 554, "sa_http_ms": 55, "sa_didauthvp_ms": 2 },
+        { "iteration": 5, "total_ms": 566, "sa_http_ms": 51, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 610, "sa_http_ms": 97, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 571, "sa_http_ms": 82, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 526, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 549, "sa_http_ms": 59, "sa_didauthvp_ms": 1 }
+      ]
+    }
+  ],
+
+  "comparison_targets": {
+    "warm_steady_p50_target_optimized": "Drop from ~560ms to ~350-450ms via Tasks 4 (parallel reads + parallel log/sendBoost) and 5 (LRU cache). Most of the ~510ms unaccounted warm time should compress.",
+    "lukewarm_iter1_target": "Should converge with warm steady on the optimized branch — Task 5 LRU populates on iter 0, eliminates the cache-warm-up penalty visible on iter 1 here.",
+    "cold_iter0_target": "Modest improvement only — Lambda cold-start is staging-side. Task 3 (undici keepAlive + HTTP/2) may shave the TLS handshake portion. Don't expect a dramatic win on iter 0.",
+    "tail_anomaly_target": "Run 6 iter 5's 1500ms spike should be diagnosable on the optimized branch (which phase blew up?) and partially mitigated by Task 5's LRU cache (preventing repeat-read amplification)."
+  }
+}
