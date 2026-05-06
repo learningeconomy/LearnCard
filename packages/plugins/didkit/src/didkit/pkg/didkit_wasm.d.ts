@@ -1,40 +1,40 @@
 /* tslint:disable */
 /* eslint-disable */
-export function decryptDagJwe(jwe: string, jwks: string[]): Promise<any>;
-export function didResolver(did: string, input_metadata: string): Promise<any>;
+export function verifyDelegation(delegation: string): Promise<any>;
+export function DIDAuth(holder: string, linked_data_proof_options: string, key: string, context_map: string): Promise<any>;
 export function issueCredential(credential: string, proof_options: string, key: string, context_map: string): Promise<any>;
-export function prepareIssuePresentation(presentation: string, linked_data_proof_options: string, public_key: string): Promise<any>;
-export function completeIssueCredential(credential: string, preparation: string, signature: string): Promise<any>;
+export function completeDelegateCapability(capability: string, preparation: string, signature: string): Promise<any>;
+export function verifyPresentation(vp: string, proof_options: string, context_map: string): Promise<any>;
+export function completeInvokeCapability(invocation: string, preparation: string, signature: string): Promise<any>;
+export function prepareDelegateCapability(capability: string, linked_data_proof_options: string, parents: string, public_key: string): Promise<any>;
+export function contextLoader(url: string): Promise<any>;
+export function generateSecp256k1Key(): string;
+export function verifyInvocationSignature(invocation: string): Promise<any>;
+export function completeIssuePresentation(presentation: string, preparation: string, signature: string): Promise<any>;
+export function generateEd25519KeyFromBytes(bytes: Uint8Array): string;
 export function verifyInvocation(invocation: string, delegation: string): Promise<any>;
-export function issuePresentation(presentation: string, proof_options: string, key: string, context_map: string): Promise<any>;
-export function decryptJwe(jwe: string, jwks: string[]): Promise<any>;
-export function generateSecp256k1KeyFromBytes(bytes: Uint8Array): string;
+export function createJwe(cleartext: string, recipients: string[]): Promise<any>;
+export function didResolver(did: string, input_metadata: string): Promise<any>;
+export function generateEd25519Key(): string;
+export function keyToVerificationMethod(method_pattern: string, jwk: string): Promise<any>;
+export function didToVerificationMethod(did: string): Promise<any>;
+export function decryptDagJwe(jwe: string, jwks: string[]): Promise<any>;
+export function delegateCapability(capability: string, linked_data_proof_options: string, parents: string, key: string): Promise<any>;
+export function keyToDID(method_pattern: string, jwk: string): string;
+export function createDagJwe(cleartext: any, recipients: string[]): Promise<any>;
 export function invokeCapability(invocation: string, target_id: string, linked_data_proof_options: string, key: string): Promise<any>;
 export function prepareIssueCredential(credential: string, linked_data_proof_options: string, public_key: string): Promise<any>;
-export function DIDAuth(holder: string, linked_data_proof_options: string, key: string, context_map: string): Promise<any>;
-export function verifyPresentation(vp: string, proof_options: string, context_map: string): Promise<any>;
-export function verifyCredential(vc: string, proof_options: string, context_map: string): Promise<any>;
-export function verifyInvocationSignature(invocation: string): Promise<any>;
-export function createDagJwe(cleartext: any, recipients: string[]): Promise<any>;
-export function keyToVerificationMethod(method_pattern: string, jwk: string): Promise<any>;
-export function completeIssuePresentation(presentation: string, preparation: string, signature: string): Promise<any>;
-export function delegateCapability(capability: string, linked_data_proof_options: string, parents: string, key: string): Promise<any>;
-export function prepareDelegateCapability(capability: string, linked_data_proof_options: string, parents: string, public_key: string): Promise<any>;
 export function JWKFromTezos(tz: string): Promise<any>;
-export function generateSecp256k1Key(): string;
-export function prepareInvokeCapability(invocation: string, target_id: string, linked_data_proof_options: string, public_key: string): Promise<any>;
-export function generateEd25519Key(): string;
-export function completeDelegateCapability(capability: string, preparation: string, signature: string): Promise<any>;
-export function contextLoader(url: string): Promise<any>;
-export function resolveDID(did: string, input_metadata: string): Promise<any>;
-export function clearCache(): Promise<any>;
-export function createJwe(cleartext: string, recipients: string[]): Promise<any>;
-export function verifyDelegation(delegation: string): Promise<any>;
-export function completeInvokeCapability(invocation: string, preparation: string, signature: string): Promise<any>;
-export function didToVerificationMethod(did: string): Promise<any>;
+export function generateSecp256k1KeyFromBytes(bytes: Uint8Array): string;
+export function issuePresentation(presentation: string, proof_options: string, key: string, context_map: string): Promise<any>;
+export function prepareIssuePresentation(presentation: string, linked_data_proof_options: string, public_key: string): Promise<any>;
+export function completeIssueCredential(credential: string, preparation: string, signature: string): Promise<any>;
 export function getVersion(): string;
-export function keyToDID(method_pattern: string, jwk: string): string;
-export function generateEd25519KeyFromBytes(bytes: Uint8Array): string;
+export function resolveDID(did: string, input_metadata: string): Promise<any>;
+export function prepareInvokeCapability(invocation: string, target_id: string, linked_data_proof_options: string, public_key: string): Promise<any>;
+export function decryptJwe(jwe: string, jwks: string[]): Promise<any>;
+export function verifyCredential(vc: string, proof_options: string, context_map: string): Promise<any>;
+export function clearCache(): Promise<any>;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -85,8 +85,8 @@ export interface InitOutput {
   readonly __wbindgen_export_5: WebAssembly.Table;
   readonly __externref_table_dealloc: (a: number) => void;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
-  readonly closure4151_externref_shim: (a: number, b: number, c: any) => void;
-  readonly closure4547_externref_shim: (a: number, b: number, c: any, d: any) => void;
+  readonly closure4007_externref_shim: (a: number, b: number, c: any) => void;
+  readonly closure4398_externref_shim: (a: number, b: number, c: any, d: any) => void;
   readonly __wbindgen_start: () => void;
 }
 
