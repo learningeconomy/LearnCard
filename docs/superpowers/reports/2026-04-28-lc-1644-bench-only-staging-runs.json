@@ -13,25 +13,40 @@
   },
 
   "summary_aggregate": {
-    "total_iterations_captured": 70,
-    "total_runs": 7,
-    "warm_steady_p50_ms": 560,
-    "warm_steady_p50_range_ms": [510, 590],
+    "total_iterations_captured": 190,
+    "total_runs": 13,
+    "run_breakdown": "7 × 10-iter runs + 6 × 20-iter runs",
+    "warm_steady_p50_ms": 570,
+    "warm_steady_p50_range_ms": [510, 630],
     "cold_iter0_total_ms": 1100,
-    "cold_iter0_total_range_ms": [736, 1239],
+    "cold_iter0_total_range_ms": [736, 1603],
     "cold_sa_http_ms": 280,
     "cold_sa_http_range_ms": [239, 390],
+    "cold_sa_http_p99_observed_ms": 832,
     "warm_sa_http_p50_ms": 50,
-    "warm_sa_http_range_ms": [42, 79],
-    "lukewarm_iter1_frequency": "5/7 runs (~70%)",
-    "lukewarm_iter1_total_ms_range": [555, 748],
-    "mid_run_anomaly_frequency": "~1 in 30 iterations",
-    "mid_run_anomaly_examples": [
-      "run 3 iter 6: 683ms (sa_http=92, sa_didauthvp=43) — partial cold path",
-      "run 6 iter 5: 1564ms (sa_http=51, sa_didauthvp=2) — non-SA spike, source unknown"
-    ],
+    "warm_sa_http_range_ms": [38, 81],
+    "lukewarm_iter1_frequency": "8/13 runs (~62%)",
+    "lukewarm_iter1_total_ms_range": [555, 913],
+    "lukewarm_can_extend_past_iter1": "Sometimes — run 8 iters 1+2 both lukewarm. But more often iter 1 is the only lukewarm or none at all when brain process state is warm from a prior run.",
+    "mid_run_anomaly_categories": {
+      "partial_cold_sub_instance": {
+        "frequency": "~1 per 20-iter run",
+        "signature": "elevated sa_http (~150-280ms) + elevated sa_didauthvp (~50-70ms) — same shape as iter 0 cold but smaller. Lambda routing scatter to less-warm container.",
+        "examples": ["run 3 iter 6", "run 7 iters 6,7", "run 8 iter 15", "run 9 iter 18", "run 10 iter 12 (extreme: sa_http=832ms — true mid-run Lambda recycle)", "run 11 iter 17", "run 12 iter 17", "run 13 iter 17"]
+      },
+      "non_sa_spike": {
+        "frequency": "~1 per 30 iterations",
+        "signature": "elevated total_ms with warm SA call (sa_http <60ms) — extra time is in Neo4j / sendBoost / logActivity / GC / unknown",
+        "examples": ["run 6 iter 5: 1564ms total / 51ms sa_http", "run 12 iter 10: 843ms / 44ms sa_http", "run 13 iters 4,5,15: 772/877/686ms with warm SA"]
+      },
+      "true_mid_run_lambda_recycle": {
+        "frequency": "1 in 200 iterations observed (run 10 iter 12)",
+        "signature": "sudden sa_http jump from ~50ms baseline to 832ms+ followed by 2-3 iterations of partial-cold recovery",
+        "implication": "Lambda recycles can happen anywhere mid-run, not only at the start. p99 in any single run can be lifted by these."
+      }
+    },
     "observations": [
-      "Warm-path p50 is rock-solid at ~560ms across 7 independent runs.",
+      "Warm-path p50 is rock-solid at ~570ms across 13 independent runs (n=190 iterations).",
       "SA call is consistently fast (~50ms warm). The April-era multi-second cold-start tail for sa_http is gone — staging Lambda is much warmer now.",
       "~510ms of warm total_ms is in non-instrumented phases (Neo4j reads + sendBoost + logActivity + certification). Tasks 4-6 target this directly.",
       "sa_didauthvp on cold paths is highly variable (43-217ms) — that's the brain-side crypto/DID resolution cache initializing.",
@@ -206,6 +221,210 @@
         { "iteration": 7, "total_ms": 571, "sa_http_ms": 82, "sa_didauthvp_ms": 1 },
         { "iteration": 8, "total_ms": 526, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
         { "iteration": 9, "total_ms": 549, "sa_http_ms": 59, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "3ae9e877-c09c-4417-96a3-886be91097dd",
+      "label": "run-13",
+      "warmup": 0,
+      "iterations": 20,
+      "summary": {
+        "total": { "p50": 559, "p95": 877, "p99": 1002 },
+        "sa_http": { "p50": 50, "p95": 180, "p99": 249 },
+        "sa_didauthvp": { "p50": 1, "p95": 53, "p99": 65 }
+      },
+      "notes": "Last run before backend redeploy with PostHog API key. Cold iter 0 (1002/249/65). Iter 1 fully warm (527ms). Three non-SA bumps in this run (iters 4, 5, 15: 772ms / 877ms / 686ms with warm SA calls — 200-330ms unaccounted each). Iter 16 small sa_http elevation (139ms). Iter 17 partial cold sub-instance (sa_http=180, sa_didauthvp=53).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1002, "sa_http_ms": 249, "sa_didauthvp_ms": 65 },
+        { "iteration": 1, "total_ms": 527, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 556, "sa_http_ms": 41, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 558, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 772, "sa_http_ms": 50, "sa_didauthvp_ms": 2 },
+        { "iteration": 5, "total_ms": 877, "sa_http_ms": 53, "sa_didauthvp_ms": 2 },
+        { "iteration": 6, "total_ms": 552, "sa_http_ms": 50, "sa_didauthvp_ms": 2 },
+        { "iteration": 7, "total_ms": 536, "sa_http_ms": 44, "sa_didauthvp_ms": 2 },
+        { "iteration": 8, "total_ms": 569, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 562, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 576, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 11, "total_ms": 545, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 551, "sa_http_ms": 53, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 539, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 584, "sa_http_ms": 59, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 686, "sa_http_ms": 45, "sa_didauthvp_ms": 2 },
+        { "iteration": 16, "total_ms": 627, "sa_http_ms": 139, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 723, "sa_http_ms": 180, "sa_didauthvp_ms": 53 },
+        { "iteration": 18, "total_ms": 559, "sa_http_ms": 55, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 504, "sa_http_ms": 41, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "aa00f0ae-2748-4e9b-af0b-1d54261430a1",
+      "label": "run-12",
+      "warmup": 0,
+      "iterations": 20,
+      "summary": {
+        "total": { "p50": 593, "p95": 843, "p99": 914 },
+        "sa_http": { "p50": 48, "p95": 230, "p99": 275 },
+        "sa_didauthvp": { "p50": 1, "p95": 63, "p99": 71 }
+      },
+      "notes": "Clean cold iter 0 (914/275/71). Iter 1 fully warm (530ms). Iter 10 non-SA spike: total=843ms with sa_http=44 warm — 300ms unaccounted (same shape as run 6 iter 5's 1500ms spike, smaller magnitude). Iter 17 partial cold sub-instance (sa_http=230, sa_didauthvp=63).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 914, "sa_http_ms": 275, "sa_didauthvp_ms": 71 },
+        { "iteration": 1, "total_ms": 530, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 593, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 619, "sa_http_ms": 47, "sa_didauthvp_ms": 2 },
+        { "iteration": 4, "total_ms": 583, "sa_http_ms": 47, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 576, "sa_http_ms": 41, "sa_didauthvp_ms": 2 },
+        { "iteration": 6, "total_ms": 545, "sa_http_ms": 61, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 533, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 624, "sa_http_ms": 70, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 605, "sa_http_ms": 45, "sa_didauthvp_ms": 4 },
+        { "iteration": 10, "total_ms": 843, "sa_http_ms": 44, "sa_didauthvp_ms": 3 },
+        { "iteration": 11, "total_ms": 651, "sa_http_ms": 53, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 614, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 560, "sa_http_ms": 38, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 607, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 571, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 16, "total_ms": 566, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 789, "sa_http_ms": 230, "sa_didauthvp_ms": 63 },
+        { "iteration": 18, "total_ms": 603, "sa_http_ms": 70, "sa_didauthvp_ms": 2 },
+        { "iteration": 19, "total_ms": 586, "sa_http_ms": 48, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "529936dd-1fef-488c-a38a-708217670b6e",
+      "label": "run-11",
+      "warmup": 0,
+      "iterations": 20,
+      "summary": {
+        "total": { "p50": 594, "p95": 748, "p99": 1020 },
+        "sa_http": { "p50": 51, "p95": 187, "p99": 260 },
+        "sa_didauthvp": { "p50": 1, "p95": 57, "p99": 85 }
+      },
+      "notes": "Clean cold iter 0 (1020/260/85). Iter 1 fully warm (612ms — no lukewarm period). Iter 17 partial cold sub-instance (sa_http=187, sa_didauthvp=57) — same Lambda routing scatter pattern. Iter 13 small bump (748ms with warm SA) — non-SA mini anomaly. Otherwise consistent warm baseline across the run.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1020, "sa_http_ms": 260, "sa_didauthvp_ms": 85 },
+        { "iteration": 1, "total_ms": 612, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 626, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 564, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 544, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 559, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 621, "sa_http_ms": 60, "sa_didauthvp_ms": 2 },
+        { "iteration": 7, "total_ms": 594, "sa_http_ms": 44, "sa_didauthvp_ms": 2 },
+        { "iteration": 8, "total_ms": 543, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 600, "sa_http_ms": 51, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 672, "sa_http_ms": 56, "sa_didauthvp_ms": 7 },
+        { "iteration": 11, "total_ms": 524, "sa_http_ms": 40, "sa_didauthvp_ms": 2 },
+        { "iteration": 12, "total_ms": 598, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 748, "sa_http_ms": 54, "sa_didauthvp_ms": 2 },
+        { "iteration": 14, "total_ms": 547, "sa_http_ms": 55, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 534, "sa_http_ms": 54, "sa_didauthvp_ms": 2 },
+        { "iteration": 16, "total_ms": 560, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 735, "sa_http_ms": 187, "sa_didauthvp_ms": 57 },
+        { "iteration": 18, "total_ms": 586, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 599, "sa_http_ms": 53, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "bc879532-bec0-4278-b850-bb9b10b218ad",
+      "label": "run-10",
+      "warmup": 0,
+      "iterations": 20,
+      "summary": {
+        "total": { "p50": 630, "p95": 1004, "p99": 1392 },
+        "sa_http": { "p50": 53, "p95": 251, "p99": 832 },
+        "sa_didauthvp": { "p50": 1, "p95": 61, "p99": 72 }
+      },
+      "notes": "Noisiest run captured so far. Cold iter 0 (1004ms) + lukewarm iter 1-3 (761/612/674ms with elevated sa_http on iter 1 and 3). MID-RUN LAMBDA RECYCLE at iter 12: total=1392ms, sa_http=832ms — SA went from warm 50ms baseline to 832ms in a single iteration. Iters 13-14 show 2-iteration recovery (sa_http 194→251 with sa_didauthvp=61 on iter 14). Then iter 15 returns to warm baseline (572ms). This is a key observation: staging Lambda can recycle mid-run, causing fresh cold-start hits anywhere in a sequence — not only at iter 0.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1004, "sa_http_ms": 251, "sa_didauthvp_ms": 72 },
+        { "iteration": 1, "total_ms": 761, "sa_http_ms": 195, "sa_didauthvp_ms": 3 },
+        { "iteration": 2, "total_ms": 612, "sa_http_ms": 48, "sa_didauthvp_ms": 3 },
+        { "iteration": 3, "total_ms": 674, "sa_http_ms": 122, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 554, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 580, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 543, "sa_http_ms": 53, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 606, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 741, "sa_http_ms": 66, "sa_didauthvp_ms": 2 },
+        { "iteration": 9, "total_ms": 652, "sa_http_ms": 46, "sa_didauthvp_ms": 4 },
+        { "iteration": 10, "total_ms": 698, "sa_http_ms": 54, "sa_didauthvp_ms": 2 },
+        { "iteration": 11, "total_ms": 664, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 1392, "sa_http_ms": 832, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 739, "sa_http_ms": 194, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 833, "sa_http_ms": 251, "sa_didauthvp_ms": 61 },
+        { "iteration": 15, "total_ms": 572, "sa_http_ms": 42, "sa_didauthvp_ms": 1 },
+        { "iteration": 16, "total_ms": 537, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 580, "sa_http_ms": 40, "sa_didauthvp_ms": 1 },
+        { "iteration": 18, "total_ms": 630, "sa_http_ms": 70, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 570, "sa_http_ms": 45, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "04c50947-e0ac-411e-9746-7ccfa2246765",
+      "label": "run-9",
+      "warmup": 0,
+      "iterations": 20,
+      "summary": {
+        "total": { "p50": 552, "p95": 715, "p99": 1122 },
+        "sa_http": { "p50": 51, "p95": 181, "p99": 291 },
+        "sa_didauthvp": { "p50": 1, "p95": 56, "p99": 159 }
+      },
+      "notes": "Cold iter 0 (1122/291/159). NO lukewarm at iter 1 (585ms — fully warm) — brain process state warm from prior run. Iter 18 partial cold sub-instance (sa_http=181, sa_didauthvp=56) — Lambda routing scatter mid-run, same pattern as run 8 iter 15. Cleanest percentile separation yet: p50=552, p95=715 (lifted by iter 18 partial cold), p99=1122 (iter 0).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1122, "sa_http_ms": 291, "sa_didauthvp_ms": 159 },
+        { "iteration": 1, "total_ms": 585, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 525, "sa_http_ms": 47, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 533, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 543, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 627, "sa_http_ms": 54, "sa_didauthvp_ms": 11 },
+        { "iteration": 6, "total_ms": 609, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 561, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 572, "sa_http_ms": 53, "sa_didauthvp_ms": 2 },
+        { "iteration": 9, "total_ms": 624, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 570, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 11, "total_ms": 530, "sa_http_ms": 56, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 545, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 536, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 573, "sa_http_ms": 70, "sa_didauthvp_ms": 4 },
+        { "iteration": 15, "total_ms": 540, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 16, "total_ms": 550, "sa_http_ms": 63, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 552, "sa_http_ms": 51, "sa_didauthvp_ms": 3 },
+        { "iteration": 18, "total_ms": 715, "sa_http_ms": 181, "sa_didauthvp_ms": 56 },
+        { "iteration": 19, "total_ms": 512, "sa_http_ms": 45, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "31030b1f-dc00-4584-8afd-72f8b263df25",
+      "label": "run-8",
+      "warmup": 0,
+      "iterations": 20,
+      "summary": {
+        "total": { "p50": 578, "p95": 913, "p99": 1603 },
+        "sa_http": { "p50": 52, "p95": 193, "p99": 322 },
+        "sa_didauthvp": { "p50": 1, "p95": 67, "p99": 180 }
+      },
+      "notes": "First 20-iter run — gives meaningful p95/p99 separation. Heaviest cold start observed (1603ms / 322ms / 180ms). Lukewarm period extends to BOTH iter 1 (913ms) and iter 2 (880ms): both had warm SA calls but elevated totals — brain-side warmup not fully resolved by iter 2 here. Iter 15 shows clear partial cold sub-instance (sa_http=193, sa_didauthvp=67) — Lambda routing scatter mid-run.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1603, "sa_http_ms": 322, "sa_didauthvp_ms": 180 },
+        { "iteration": 1, "total_ms": 913, "sa_http_ms": 56, "sa_didauthvp_ms": 2 },
+        { "iteration": 2, "total_ms": 880, "sa_http_ms": 42, "sa_didauthvp_ms": 2 },
+        { "iteration": 3, "total_ms": 673, "sa_http_ms": 51, "sa_didauthvp_ms": 2 },
+        { "iteration": 4, "total_ms": 674, "sa_http_ms": 81, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 570, "sa_http_ms": 67, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 570, "sa_http_ms": 44, "sa_didauthvp_ms": 4 },
+        { "iteration": 7, "total_ms": 578, "sa_http_ms": 40, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 733, "sa_http_ms": 57, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 551, "sa_http_ms": 44, "sa_didauthvp_ms": 2 },
+        { "iteration": 10, "total_ms": 549, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 11, "total_ms": 637, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 617, "sa_http_ms": 56, "sa_didauthvp_ms": 2 },
+        { "iteration": 13, "total_ms": 577, "sa_http_ms": 59, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 595, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 782, "sa_http_ms": 193, "sa_didauthvp_ms": 67 },
+        { "iteration": 16, "total_ms": 576, "sa_http_ms": 46, "sa_didauthvp_ms": 2 },
+        { "iteration": 17, "total_ms": 526, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 18, "total_ms": 535, "sa_http_ms": 53, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 567, "sa_http_ms": 53, "sa_didauthvp_ms": 1 }
       ]
     }
   ],
