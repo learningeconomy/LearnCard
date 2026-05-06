@@ -65,6 +65,7 @@ import { pathwayStore } from '../../../stores/pathways';
 import { seedChosenRoute } from '../core/chosenRoute';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { formatEta } from '../map/route';
+import PathwayPortal from '../PathwayPortal';
 import RouteDiffSummary from '../proposals/RouteDiffSummary';
 import type { Pathway, Tradeoff } from '../types';
 
@@ -675,6 +676,7 @@ const ComparisonOverlay: React.FC<{
     if (!scenarioA || !scenarioB) return null;
 
     return (
+        <PathwayPortal>
         <div
             className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-sm font-poppins"
             style={{
@@ -751,6 +753,7 @@ const ComparisonOverlay: React.FC<{
                 />
             </div>
         </div>
+        </PathwayPortal>
     );
 };
 

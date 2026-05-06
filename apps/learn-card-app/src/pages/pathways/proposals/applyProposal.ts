@@ -14,6 +14,8 @@
  * `Pathway` instead of patching an existing one.
  */
 
+import { v4 as uuid } from 'uuid';
+
 import { pruneChosenRoute } from '../core/chosenRoute';
 import { wouldCreateCycle, type PathwayMap } from '../core/composition';
 import type {
@@ -508,7 +510,14 @@ export const materializeNewPathway = (
         );
     }
 
-    const pathwayId = makeId ? makeId() : crypto.randomUUID();
+    // Fall through `crypto.randomUUID` first (modern browsers + secure
+    // contexts), then `uuid` v4 — covers older iOS WebView where the
+    // native API is missing.
+    const pathwayId = makeId
+        ? makeId()
+        : typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : uuid();
 
     const nodes = proposal.diff.addNodes.map(n => ({ ...n, pathwayId }));
     const edges = proposal.diff.addEdges;

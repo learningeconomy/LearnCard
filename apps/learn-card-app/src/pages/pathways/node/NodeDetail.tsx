@@ -31,6 +31,7 @@ import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
 import { buildInAppHref, resolveNodeAction, type ResolvedAction } from '../core/action';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import PathwayPortal from '../PathwayPortal';
 import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
 
 import { canProject } from '../projection/toAchievementCredential';
@@ -236,6 +237,7 @@ const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }>
     children,
     onClose,
 }) => (
+    <PathwayPortal>
     <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -276,6 +278,7 @@ const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }>
             {children}
         </motion.div>
     </motion.div>
+    </PathwayPortal>
 );
 
 // Motion preset shared by every section inside the card so the

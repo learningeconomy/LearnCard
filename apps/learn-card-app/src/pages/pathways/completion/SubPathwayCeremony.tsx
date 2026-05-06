@@ -32,6 +32,7 @@ import { useHistory } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import PathwayPortal from '../PathwayPortal';
 import { buildIdentityBanner } from '../today/presentation';
 
 import { buildCompletionReceipt } from './buildCompletionReceipt';
@@ -121,6 +122,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
     };
 
     return (
+        <PathwayPortal>
         <motion.div
             // Fixed overlay covering the shell. backdrop dims the
             // page underneath; the card slides up from the bottom
@@ -290,6 +292,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                 </div>
             </motion.div>
         </motion.div>
+        </PathwayPortal>
     );
 };
 

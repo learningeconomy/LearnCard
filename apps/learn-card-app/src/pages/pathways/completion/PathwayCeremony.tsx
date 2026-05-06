@@ -44,6 +44,7 @@ import { useHistory } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import PathwayPortal from '../PathwayPortal';
 import { canProject } from '../projection/toAchievementCredential';
 import { buildIdentityBanner } from '../today/presentation';
 
@@ -131,6 +132,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({
     };
 
     return (
+        <PathwayPortal>
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -488,6 +490,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({
                 </motion.section>
             </div>
         </motion.div>
+        </PathwayPortal>
     );
 };
 

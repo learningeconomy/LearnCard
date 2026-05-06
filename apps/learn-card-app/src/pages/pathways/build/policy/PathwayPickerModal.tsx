@@ -35,6 +35,7 @@ import {
 
 import { wouldCreateCycle, type PathwayMap } from '../../core/composition';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
+import PathwayPortal from '../../PathwayPortal';
 import type { Pathway } from '../../types';
 
 interface PathwayPickerModalProps {
@@ -120,6 +121,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
     };
 
     return (
+        <PathwayPortal>
         <AnimatePresence>
             <motion.div
                 key="backdrop"
@@ -251,6 +253,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                 </motion.div>
             </motion.div>
         </AnimatePresence>
+        </PathwayPortal>
     );
 };
 

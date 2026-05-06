@@ -258,9 +258,13 @@ const defaultGenerateId = (): string => {
         return crypto.randomUUID();
     }
 
-    throw new Error(
-        'fromCtdlPathway: crypto.randomUUID is unavailable; pass options.generateId explicitly.',
-    );
+    // Fallback for older iOS WebView (and any other environment that
+    // doesn't ship `crypto.randomUUID`). Loaded lazily via require so
+    // the synchronous bundle doesn't pull `uuid` in for the happy
+    // path on modern browsers.
+    const { v4 } = require('uuid') as typeof import('uuid');
+
+    return v4();
 };
 
 /**

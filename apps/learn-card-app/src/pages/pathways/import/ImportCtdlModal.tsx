@@ -48,6 +48,7 @@ import {
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import PathwayPortal from '../PathwayPortal';
 import type { Pathway } from '../types';
 
 import { CATALOG } from './catalog/catalog';
@@ -134,6 +135,7 @@ const OverlayFrame: React.FC<{
     // was both the flex container AND the scroll container, so
     // `items-center` pushed the top of a tall modal off-screen where
     // overflow scroll couldn't reach it. Classic Tailwind modal bug.
+    <PathwayPortal>
     <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -178,6 +180,7 @@ const OverlayFrame: React.FC<{
             </motion.div>
         </div>
     </motion.div>
+    </PathwayPortal>
 );
 
 // ---------------------------------------------------------------------------
