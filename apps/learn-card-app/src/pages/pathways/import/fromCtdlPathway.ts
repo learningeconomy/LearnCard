@@ -35,6 +35,8 @@
  *   - CTDL Pathway Builder guide (see `ctdlTypes.ts`)
  */
 
+import { v4 as uuid } from 'uuid';
+
 import type {
     Cadence,
     Edge,
@@ -259,12 +261,11 @@ const defaultGenerateId = (): string => {
     }
 
     // Fallback for older iOS WebView (and any other environment that
-    // doesn't ship `crypto.randomUUID`). Loaded lazily via require so
-    // the synchronous bundle doesn't pull `uuid` in for the happy
-    // path on modern browsers.
-    const { v4 } = require('uuid') as typeof import('uuid');
-
-    return v4();
+    // doesn't ship `crypto.randomUUID`). Static import — `require` is
+    // not available at runtime in Vite's ESM bundle, and `uuid` is
+    // already pulled into the bundle by other pathways modules
+    // (applyProposal, NodeDetail), so there is no extra cost.
+    return uuid();
 };
 
 /**
