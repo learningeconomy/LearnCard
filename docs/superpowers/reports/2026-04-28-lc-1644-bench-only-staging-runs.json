@@ -13,21 +13,30 @@
   },
 
   "summary_aggregate": {
-    "total_iterations_captured": 190,
-    "total_runs": 13,
-    "run_breakdown": "7 × 10-iter runs + 6 × 20-iter runs",
+    "total_iterations_captured": 270,
+    "total_runs": 17,
+    "run_breakdown": "7 × 10-iter runs + 10 × 20-iter runs",
+    "deploy_phases_captured": {
+      "pre_redeploy_no_posthog": "runs 1-13 (n=190) — POSTHOG_API_KEY not yet set on staging brain",
+      "post_first_redeploy_posthog_secret_only": "runs 14-15 (n=40) — secret in GitHub but not yet in deploy.yml workflow",
+      "pre_second_redeploy_workflow_fix": "run 16 (n=20)",
+      "post_second_redeploy_full_posthog": "run 17 (n=20) — env var actually injected, bench events arriving in PostHog"
+    },
     "warm_steady_p50_ms": 570,
     "warm_steady_p50_range_ms": [510, 630],
-    "cold_iter0_total_ms": 1100,
-    "cold_iter0_total_range_ms": [736, 1603],
-    "cold_sa_http_ms": 280,
-    "cold_sa_http_range_ms": [239, 390],
-    "cold_sa_http_p99_observed_ms": 832,
+    "cold_iter0_total_ms": 1150,
+    "cold_iter0_total_range_ms": [736, 4899],
+    "cold_iter0_extreme_observed": "run 14 iter 0: 4899ms total / 4011ms sa_http / 125ms sa_didauthvp — first run after first redeploy. Brain Node.js init + Lambda cold + fresh connections all at once.",
+    "cold_sa_http_typical_ms": 280,
+    "cold_sa_http_range_ms": [239, 4011],
+    "cold_sa_http_p99_observed_ms": 4011,
     "warm_sa_http_p50_ms": 50,
     "warm_sa_http_range_ms": [38, 81],
-    "lukewarm_iter1_frequency": "8/13 runs (~62%)",
+    "cold_sa_didauthvp_max_ms": 264,
+    "cold_sa_didauthvp_max_context": "run 17 iter 0 — brain extra-fresh post-redeploy",
+    "lukewarm_iter1_frequency": "11/17 runs (~65%)",
     "lukewarm_iter1_total_ms_range": [555, 913],
-    "lukewarm_can_extend_past_iter1": "Sometimes — run 8 iters 1+2 both lukewarm. But more often iter 1 is the only lukewarm or none at all when brain process state is warm from a prior run.",
+    "lukewarm_can_extend_past_iter1": "Sometimes — runs 8 and 16 had iter 1+2 both lukewarm. More often iter 1 is the only lukewarm or none at all when brain process state is warm from a prior run.",
     "mid_run_anomaly_categories": {
       "partial_cold_sub_instance": {
         "frequency": "~1 per 20-iter run",
@@ -40,9 +49,19 @@
         "examples": ["run 6 iter 5: 1564ms total / 51ms sa_http", "run 12 iter 10: 843ms / 44ms sa_http", "run 13 iters 4,5,15: 772/877/686ms with warm SA"]
       },
       "true_mid_run_lambda_recycle": {
-        "frequency": "1 in 200 iterations observed (run 10 iter 12)",
-        "signature": "sudden sa_http jump from ~50ms baseline to 832ms+ followed by 2-3 iterations of partial-cold recovery",
-        "implication": "Lambda recycles can happen anywhere mid-run, not only at the start. p99 in any single run can be lifted by these."
+        "frequency": "3 in 270 iterations observed",
+        "examples": [
+          "run 10 iter 12: sa_http=832ms (1.4% of run)",
+          "run 14 iter 10: sa_http=3346ms (post-redeploy, extreme)",
+          "run 17 iter 7: sa_http=1017ms (post-second-redeploy)"
+        ],
+        "signature": "sudden sa_http jump from ~50ms baseline to 800ms-4000ms followed by 2-3 iterations of partial-cold recovery",
+        "implication": "Lambda recycles can happen anywhere mid-run, not only at the start. p99 in any single run can be lifted by these. Most likely to occur shortly after a brain redeploy when the SA Lambda also gets fresh traffic patterns."
+      },
+      "decoupled_didauthvp_stall": {
+        "frequency": "~3 per 270 iterations (run 15 iters 15+17, run 17 iter 14)",
+        "signature": "warm sa_http (<60ms) but elevated sa_didauthvp (20-67ms vs ~1ms warm). DID-Web cache miss / jose key re-derivation independent of Lambda state.",
+        "implication": "Brain-side crypto path has its own brief stalls. Not addressed by Tasks 3-6 directly; would benefit from DID Auth VP caching (deferred design item from earlier sessions)."
       }
     },
     "observations": [
@@ -221,6 +240,146 @@
         { "iteration": 7, "total_ms": 571, "sa_http_ms": 82, "sa_didauthvp_ms": 1 },
         { "iteration": 8, "total_ms": 526, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
         { "iteration": 9, "total_ms": 549, "sa_http_ms": 59, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "fa36b501-cfce-4ada-98eb-238c8e35d4f7",
+      "label": "run-17-post-second-redeploy",
+      "warmup": 0,
+      "iterations": 20,
+      "deployment_context": "First run after the SECOND staging redeploy — this one with POSTHOG_API_KEY actually injected via the deploy.yml/serverless.yml fix. Backend bench events now arriving in PostHog. Brain-service Node process is fresh again.",
+      "summary": {
+        "total": { "p50": 607, "p95": 1403, "p99": 1786 },
+        "sa_http": { "p50": 50, "p95": 337, "p99": 1017 },
+        "sa_didauthvp": { "p50": 1, "p95": 62, "p99": 264 }
+      },
+      "notes": "Cold iter 0 (1403/337/264) — sa_didauthvp=264ms is the highest cold value across all 17 runs (brain is extra-fresh post-redeploy with cold crypto modules). Iter 7 mid-run Lambda recycle (1786ms total / 1017ms sa_http / 1ms sa_didauthvp). Iter 14 sa_didauthvp=62ms — DID-Web crypto stall, decoupled from SA. Iter 1 lukewarm (682ms). Less severe than run 14's 4-second spikes — Lambda variance not deploy-fix-related (the deploy fix was for env var injection; SA latency is staging-side AWS behavior).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1403, "sa_http_ms": 337, "sa_didauthvp_ms": 264 },
+        { "iteration": 1, "total_ms": 682, "sa_http_ms": 52, "sa_didauthvp_ms": 2 },
+        { "iteration": 2, "total_ms": 591, "sa_http_ms": 41, "sa_didauthvp_ms": 2 },
+        { "iteration": 3, "total_ms": 607, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 673, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 633, "sa_http_ms": 53, "sa_didauthvp_ms": 2 },
+        { "iteration": 6, "total_ms": 601, "sa_http_ms": 57, "sa_didauthvp_ms": 2 },
+        { "iteration": 7, "total_ms": 1786, "sa_http_ms": 1017, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 713, "sa_http_ms": 46, "sa_didauthvp_ms": 2 },
+        { "iteration": 9, "total_ms": 612, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 597, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 11, "total_ms": 602, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 599, "sa_http_ms": 79, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 614, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 688, "sa_http_ms": 44, "sa_didauthvp_ms": 62 },
+        { "iteration": 15, "total_ms": 547, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 16, "total_ms": 544, "sa_http_ms": 42, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 572, "sa_http_ms": 53, "sa_didauthvp_ms": 1 },
+        { "iteration": 18, "total_ms": 655, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 516, "sa_http_ms": 46, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "39e351c9-be04-43f7-9769-63f12e73b369",
+      "label": "run-16",
+      "warmup": 0,
+      "iterations": 20,
+      "deployment_context": "Last run before second staging redeploy (with POSTHOG_API_KEY env-var fix in deploy.yml/serverless.yml).",
+      "summary": {
+        "total": { "p50": 540, "p95": 835, "p99": 1132 },
+        "sa_http": { "p50": 49, "p95": 234, "p99": 269 },
+        "sa_didauthvp": { "p50": 1, "p95": 56, "p99": 75 }
+      },
+      "notes": "Cold iter 0 (1132/269/75). Lukewarm extends to iter 2 (810→693ms with warm SA both times) — brain-side warmup taking 2 iterations, same pattern as run 8. Iter 17 partial cold sub-instance (sa_http=234, sa_didauthvp=56). Iter 16 mild sa_http elevation (110ms). p50=540 (low end of warm range).",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1132, "sa_http_ms": 269, "sa_didauthvp_ms": 75 },
+        { "iteration": 1, "total_ms": 810, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 693, "sa_http_ms": 48, "sa_didauthvp_ms": 2 },
+        { "iteration": 3, "total_ms": 521, "sa_http_ms": 43, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 538, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 607, "sa_http_ms": 58, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 548, "sa_http_ms": 45, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 540, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 537, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 535, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 528, "sa_http_ms": 53, "sa_didauthvp_ms": 1 },
+        { "iteration": 11, "total_ms": 544, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 561, "sa_http_ms": 47, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 507, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 528, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 581, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 16, "total_ms": 630, "sa_http_ms": 110, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 835, "sa_http_ms": 234, "sa_didauthvp_ms": 56 },
+        { "iteration": 18, "total_ms": 522, "sa_http_ms": 41, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 525, "sa_http_ms": 51, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "e50995d6-48c0-4d73-8558-a6ad7f003398",
+      "label": "run-15",
+      "warmup": 0,
+      "iterations": 20,
+      "deployment_context": "Brain process warm from run 14 (which was first-after-redeploy).",
+      "summary": {
+        "total": { "p50": 534, "p95": 703, "p99": 1328 },
+        "sa_http": { "p50": 48, "p95": 164, "p99": 384 },
+        "sa_didauthvp": { "p50": 1, "p95": 67, "p99": 131 }
+      },
+      "notes": "Clean warm-process run. Cold iter 0 (1328/384/131). Iter 1 fully warm. p50=534 — low end of warm range, consistent with warm-process state. Iter 18 partial cold sub-instance (sa_http=164). Two interesting micro-anomalies on the crypto path: iter 15 (sa_didauthvp=20ms with warm sa_http) and iter 17 (sa_didauthvp=67ms with warm sa_http=43). Decoupled DID-Web cache misses — independent of Lambda state.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 1328, "sa_http_ms": 384, "sa_didauthvp_ms": 131 },
+        { "iteration": 1, "total_ms": 577, "sa_http_ms": 44, "sa_didauthvp_ms": 2 },
+        { "iteration": 2, "total_ms": 574, "sa_http_ms": 54, "sa_didauthvp_ms": 1 },
+        { "iteration": 3, "total_ms": 557, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 4, "total_ms": 546, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 5, "total_ms": 558, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 517, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 531, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 8, "total_ms": 520, "sa_http_ms": 42, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 532, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 680, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 11, "total_ms": 521, "sa_http_ms": 48, "sa_didauthvp_ms": 1 },
+        { "iteration": 12, "total_ms": 528, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 533, "sa_http_ms": 51, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 504, "sa_http_ms": 52, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 703, "sa_http_ms": 48, "sa_didauthvp_ms": 20 },
+        { "iteration": 16, "total_ms": 534, "sa_http_ms": 44, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 570, "sa_http_ms": 43, "sa_didauthvp_ms": 67 },
+        { "iteration": 18, "total_ms": 640, "sa_http_ms": 164, "sa_didauthvp_ms": 1 },
+        { "iteration": 19, "total_ms": 529, "sa_http_ms": 53, "sa_didauthvp_ms": 1 }
+      ]
+    },
+    {
+      "run_id": "ff4f0a17-172f-4359-b9eb-881590a35ce2",
+      "label": "run-14-post-redeploy",
+      "warmup": 0,
+      "iterations": 20,
+      "deployment_context": "FIRST RUN AFTER STAGING BRAIN-SERVICE REDEPLOY (POSTHOG_API_KEY env var added). Brain-service Node.js process is fresh — no warm undici sockets, no DID-Web cache, no Bolt connection pool. POSTHOG_API_KEY now set, so PostHog should receive bench.appevent.iteration / bench.appevent.run events from this run forward.",
+      "summary": {
+        "total": { "p50": 588, "p95": 4073, "p99": 4899 },
+        "sa_http": { "p50": 52, "p95": 3346, "p99": 4011 },
+        "sa_didauthvp": { "p50": 1, "p95": 120, "p99": 125 }
+      },
+      "notes": "MASSIVE COLD STARTS observed — the April-era multi-second SA tail returned. Iter 0: 4899ms total / 4011ms sa_http / 125ms sa_didauthvp. Iter 10: 4073ms / 3346ms / 120ms — a second multi-second cold start mid-run, much more severe than any previous mid-run anomaly (largest prior was run 10 iter 12 at 832ms sa_http). p50 remains stable at 588ms (warm path unchanged), but p95 and p99 are now 4073/4899 — orders of magnitude worse than pre-redeploy runs. KEY INSIGHT: my earlier hypothesis from runs 1-13 ('staging Lambda is now consistently warm, April-era tail is gone') was WRONG — earlier runs were lucky to land on already-warm Lambda containers. Staging SA Lambda CAN go cold for multi-second windows, and brain-service restart amplifies the first hit. THIS CHANGES THE TASK 3 IMPACT PROJECTION: Task 3's undici keepAlive Agent will dramatically mitigate these spikes by avoiding fresh TCP+TLS handshakes against cold-starting Lambdas — exactly the April-era win returning to the comparison story.",
+      "perIteration": [
+        { "iteration": 0, "total_ms": 4899, "sa_http_ms": 4011, "sa_didauthvp_ms": 125 },
+        { "iteration": 1, "total_ms": 874, "sa_http_ms": 62, "sa_didauthvp_ms": 1 },
+        { "iteration": 2, "total_ms": 673, "sa_http_ms": 55, "sa_didauthvp_ms": 2 },
+        { "iteration": 3, "total_ms": 589, "sa_http_ms": 51, "sa_didauthvp_ms": 3 },
+        { "iteration": 4, "total_ms": 629, "sa_http_ms": 52, "sa_didauthvp_ms": 5 },
+        { "iteration": 5, "total_ms": 577, "sa_http_ms": 61, "sa_didauthvp_ms": 1 },
+        { "iteration": 6, "total_ms": 718, "sa_http_ms": 51, "sa_didauthvp_ms": 1 },
+        { "iteration": 7, "total_ms": 630, "sa_http_ms": 59, "sa_didauthvp_ms": 2 },
+        { "iteration": 8, "total_ms": 588, "sa_http_ms": 49, "sa_didauthvp_ms": 1 },
+        { "iteration": 9, "total_ms": 572, "sa_http_ms": 46, "sa_didauthvp_ms": 1 },
+        { "iteration": 10, "total_ms": 4073, "sa_http_ms": 3346, "sa_didauthvp_ms": 120 },
+        { "iteration": 11, "total_ms": 878, "sa_http_ms": 71, "sa_didauthvp_ms": 2 },
+        { "iteration": 12, "total_ms": 628, "sa_http_ms": 69, "sa_didauthvp_ms": 1 },
+        { "iteration": 13, "total_ms": 557, "sa_http_ms": 50, "sa_didauthvp_ms": 1 },
+        { "iteration": 14, "total_ms": 556, "sa_http_ms": 41, "sa_didauthvp_ms": 1 },
+        { "iteration": 15, "total_ms": 578, "sa_http_ms": 56, "sa_didauthvp_ms": 2 },
+        { "iteration": 16, "total_ms": 570, "sa_http_ms": 51, "sa_didauthvp_ms": 1 },
+        { "iteration": 17, "total_ms": 546, "sa_http_ms": 61, "sa_didauthvp_ms": 1 },
+        { "iteration": 18, "total_ms": 547, "sa_http_ms": 50, "sa_didauthvp_ms": 2 },
+        { "iteration": 19, "total_ms": 543, "sa_http_ms": 42, "sa_didauthvp_ms": 1 }
       ]
     },
     {
