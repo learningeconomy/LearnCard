@@ -84,6 +84,7 @@ const {
     PortfolioTwoTonedIcon,
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
+    CompassTwoTonedIcon,
 } = ColorfulSideNavIcons;
 
 const {
@@ -111,7 +112,6 @@ import {
     GreenAlerts,
     DeepPurpleWand,
     SkyBlueGlobeStand,
-    Compass,
 } from 'learn-card-base';
 
 import { NavBarIcons } from 'learn-card-base';
@@ -261,10 +261,12 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.workHistory]: ExperiencesTwoTonedIcon,
             [CredentialCategoryEnum.family]: FamiliesTwoTonedIcon,
             [CredentialCategoryEnum.id]: IDsTwoTonedIcon,
-            // Pathways v2 ("Journeys"). Keyed off the non-category
-            // `pathways` enum member. Compass reads as wayfinding
-            // without colliding with the AI Pathways paper-airplane.
-            pathways: Compass,
+            // Pathways v2 ("Journeys"). Two-toned compass — keeps
+            // the wayfinding read while matching the rest of the
+            // side-menu's neutral icon family. The colourful
+            // `Compass` is still used as a hero mark on the onboard
+            // sub-header and AI session plan.
+            pathways: CompassTwoTonedIcon,
         },
 
         navbar: {
@@ -319,10 +321,11 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.workHistory]: ExperiencesFormalIcon,
             [CredentialCategoryEnum.family]: FamiliesFormalIcon,
             [CredentialCategoryEnum.id]: IDsFormalIcon,
-            // Pathways v2 ("Journeys") — same Compass in the formal
-            // set for now. Design can supply a formal-style variant
-            // when the feature graduates out of flag-only rollout.
-            pathways: Compass,
+            // Pathways v2 ("Journeys") — same two-toned compass
+            // in the formal set. Design can supply a formal-style
+            // variant when the feature graduates out of flag-only
+            // rollout.
+            pathways: CompassTwoTonedIcon,
         },
 
         navbar: {

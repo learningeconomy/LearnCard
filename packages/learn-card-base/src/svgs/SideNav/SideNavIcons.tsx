@@ -17,6 +17,7 @@ import ExperiencesTwoTonedIcon from './ExperiencesTwoTonedIcon';
 import PortfolioTwoTonedIcon from './PortfolioTwoTonedIcon';
 import AssistanceTwoTonedIcon from './AssistanceTwoTonedIcon';
 import FamiliesTwoTonedIcon from './FamiliesTwoTonedIcon';
+import CompassTwoTonedIcon from './CompassTwoTonedIcon';
 
 export const SideNavIcons = {
     // primary links
@@ -40,4 +41,5 @@ export const SideNavIcons = {
     PortfolioTwoTonedIcon,
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
+    CompassTwoTonedIcon,
 };
