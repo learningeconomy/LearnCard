@@ -227,7 +227,7 @@ const TodayMode: React.FC = () => {
 
     return (
         <div
-            className="relative min-h-[calc(100vh-220px)] overflow-hidden"
+            className="relative min-h-full overflow-hidden"
             style={{
                 // Ambient backdrop — barely perceptible emerald wash from
                 // the top that fades into neutral. Matches the Map's

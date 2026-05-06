@@ -1320,38 +1320,27 @@ const MapModeInner: React.FC = () => {
 
     return (
         /*
-            Viewport height math.
-            ──────────────────────────────────────────────────────────
-            The Map canvas claims the entire space between the shell's
-            header and the page bottom edge. The subtraction is
-            breakpoint-conditional because the mobile shell has
-            chrome the desktop shell doesn't:
+            The canvas fills its flex parent. The shell
+            (`PathwaysShell`) provides a flex-column layout where
+            `MainHeader` and `PathwaysHeader` are `shrink-0` siblings
+            and the mode body is `flex-1 min-h-0`, so `h-full` here
+            resolves to "exactly the space between the headers and
+            the bottom of `IonContent` (which Ionic itself sizes to
+            page-minus-tab-bar-minus-safe-areas)".
 
-              - Mobile (< sm): subtract ~220 px for the two-row
-                `PathwaysHeader` (title + mode tabs = ~110 px), the
-                `IonTabBar` at the bottom (~56 px), and the
-                `FocusActionBar` clearance (~54 px).
-              - Desktop (sm+): subtract only ~140 px. There is no
-                `IonTabBar` on desktop breakpoints — Ionic hides it
-                above sm. Keeping the mobile `-220px` here produced
-                a ~80 px strip of dead whitespace below the canvas
-                on desktop because we were still reserving space
-                for a tab bar that wasn't there.
-
-            `100dvh` (dynamic viewport height) — not `100vh` — so iOS
-            doesn't overshoot when the dynamic island / URL chrome
-            is present. With `100vh` the canvas was rendering ~50–
-            80 px taller than the actual visible viewport, which
-            forced IonContent to page-scroll and dragged the sticky
-            `PathwaysHeader` out of view as the learner panned.
+            This replaces the previous `calc(100dvh - 220px)` magic
+            number, which couldn't reliably account for variable
+            iOS chrome (dynamic island, home indicator, IonTabBar +
+            its safe-area-bottom) and dragged the sticky
+            `PathwaysHeader` out of view when its overshoot pushed
+            `IonContent` into a page-level scroll.
 
             `min-h-[420px]` stays so hyper-short desktop windows
             (landscape iPad split-view, tiny browser chrome) still
             render a usable canvas.
         */
         <div
-            className="relative w-full overflow-hidden
-                       h-[calc(100dvh-220px)] sm:h-[calc(100dvh-140px)]
+            className="relative w-full h-full overflow-hidden
                        min-h-[420px]"
             style={{
                 // Subtle top-to-bottom wash: pale emerald at the top

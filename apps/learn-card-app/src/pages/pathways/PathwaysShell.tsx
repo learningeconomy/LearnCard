@@ -65,39 +65,48 @@ const PathwaysShell: React.FC = () => {
     return (
         <IonPage>
             <ErrorBoundary fallback={<PathwaysErrorFallback />}>
+                {/*
+                    Tenant chrome — LearnCard wordmark + profile /
+                    notifications / QR-scanner buttons + back arrow.
+                    Rendered as a sibling of `IonContent` (the proper
+                    Ionic placement for an `IonHeader`-based component)
+                    so `IonContent`'s height resolves to "page minus
+                    header minus tab bar" automatically. Previously
+                    this was nested inside `IonContent`, which meant
+                    `min-h-full` on the inner wrapper grew past the
+                    visible viewport on iOS and forced a page-level
+                    scroll that dragged the sticky `PathwaysHeader`
+                    out of view and clipped the bottom of the Map
+                    canvas behind the tab bar.
+                */}
+                <MainHeader showBackButton hidePlusBtn />
+
                 <IonContent fullscreen>
                     {/*
-                        Tenant chrome — LearnCard wordmark + profile /
-                        notifications / QR-scanner buttons + back arrow.
-                        Mounted via `MainHeader` (the same Ionic
-                        `IonHeader`-backed component used by AI
-                        Pathways and other top-level routes), which
-                        also handles iOS safe-area top inset so the
-                        page no longer butts against the status bar.
-                        Always rendered: the wordmark is the
-                        learner's escape hatch back to /wallet on
-                        every Journeys surface, including the
-                        cold-start onboard route.
+                        Flex column inside `IonContent` — the body
+                        gets the exact remaining space below the
+                        sub-header / mode header without any magic-
+                        number `calc(100dvh - X)` math. Modes inside
+                        the body container scroll within their flex
+                        item, never the page.
                     */}
-                    <MainHeader showBackButton hidePlusBtn />
-
-                    {/*
-                        Brand subheader — mirrors the
-                        AI-Pathways/AI-Insights/AI-Sessions
-                        treatment so Journeys reads as a peer
-                        feature on its cold-start screen. Only
-                        rendered on /pathways/onboard; deeper
-                        surfaces use `PathwaysHeader`'s
-                        contextual chrome (pathway switcher +
-                        mode tabs) instead, to avoid stacking
-                        three rows of header.
-                    */}
-                    {isOnOnboard && <JourneysSubHeader />}
-
                     <div
-                        className="relative min-h-full bg-white"
+                        className="flex flex-col h-full bg-white"
                         style={{ overscrollBehavior: 'contain' }}
                     >
+                        {/*
+                            Brand subheader — mirrors the
+                            AI-Pathways/AI-Insights/AI-Sessions
+                            treatment so Journeys reads as a peer
+                            feature on its cold-start screen. Only
+                            rendered on /pathways/onboard; deeper
+                            surfaces use `PathwaysHeader`'s
+                            contextual chrome (pathway switcher +
+                            mode tabs) instead, to avoid stacking
+                            three rows of header.
+                        */}
+                        {isOnOnboard && <JourneysSubHeader />}
+
                         {/*
                             Suppress the in-shell mode header on the
                             cold-start route: without an active pathway,
@@ -117,89 +126,91 @@ const PathwaysShell: React.FC = () => {
                             />
                         )}
 
-                        <Suspense fallback={<ModeFallback />}>
-                            <Switch>
-                                <Route exact path="/pathways">
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                            <Suspense fallback={<ModeFallback />}>
+                                <Switch>
+                                    <Route exact path="/pathways">
+                                        {/*
+                                            Land returning learners on
+                                            Map, not Today. Map is the
+                                            spatial home — it shows the
+                                            whole journey at a glance,
+                                            which is the orienting view
+                                            a learner re-entering from
+                                            the side menu actually
+                                            wants. Today is a great
+                                            focus surface but doesn't
+                                            answer "where am I in the
+                                            bigger picture" on first
+                                            sight. Mirrors the
+                                            post-import landing target
+                                            (`history.replace('/pathways/map')`)
+                                            used by `DiscoverStart`.
+                                        */}
+                                        {activePathway ? (
+                                            <Redirect to="/pathways/map" />
+                                        ) : (
+                                            <Redirect to="/pathways/onboard" />
+                                        )}
+                                    </Route>
+
                                     {/*
-                                        Land returning learners on
-                                        Map, not Today. Map is the
-                                        spatial home — it shows the
-                                        whole journey at a glance,
-                                        which is the orienting view
-                                        a learner re-entering from
-                                        the side menu actually
-                                        wants. Today is a great
-                                        focus surface but doesn't
-                                        answer "where am I in the
-                                        bigger picture" on first
-                                        sight. Mirrors the
-                                        post-import landing target
-                                        (`history.replace('/pathways/map')`)
-                                        used by `DiscoverStart`.
+                                        Today / Map / What-if have nothing
+                                        useful to show without an active
+                                        pathway — their empty states were
+                                        three different "pick a pathway
+                                        first" cards, which is worse than
+                                        just routing the learner into the
+                                        discovery flow. Build stays mounted
+                                        because its empty state *is* the
+                                        import entry point. Redirects are
+                                        inline (not a wrapper component) so
+                                        the activePathway subscription in
+                                        the shell re-evaluates on store
+                                        change and the learner lands back
+                                        on their intended tab automatically
+                                        once a pathway is loaded.
                                     */}
-                                    {activePathway ? (
-                                        <Redirect to="/pathways/map" />
-                                    ) : (
-                                        <Redirect to="/pathways/onboard" />
-                                    )}
-                                </Route>
+                                    <Route exact path="/pathways/today">
+                                        {activePathway ? (
+                                            <TodayMode />
+                                        ) : (
+                                            <Redirect to="/pathways/onboard" />
+                                        )}
+                                    </Route>
+                                    <Route exact path="/pathways/map">
+                                        {activePathway ? (
+                                            <MapMode />
+                                        ) : (
+                                            <Redirect to="/pathways/onboard" />
+                                        )}
+                                    </Route>
+                                    <Route exact path="/pathways/what-if">
+                                        {activePathway ? (
+                                            <WhatIfMode />
+                                        ) : (
+                                            <Redirect to="/pathways/onboard" />
+                                        )}
+                                    </Route>
+                                    <Route exact path="/pathways/build" component={BuildMode} />
+                                    <Route exact path="/pathways/onboard" component={OnboardRoute} />
+                                    <Route
+                                        exact
+                                        path="/pathways/proposals"
+                                        component={ProposalsRoute}
+                                    />
+                                    <Route
+                                        exact
+                                        path="/pathways/node/:pathwayId/:nodeId"
+                                        component={NodeDetail}
+                                    />
 
-                                {/*
-                                    Today / Map / What-if have nothing
-                                    useful to show without an active
-                                    pathway — their empty states were
-                                    three different "pick a pathway
-                                    first" cards, which is worse than
-                                    just routing the learner into the
-                                    discovery flow. Build stays mounted
-                                    because its empty state *is* the
-                                    import entry point. Redirects are
-                                    inline (not a wrapper component) so
-                                    the activePathway subscription in
-                                    the shell re-evaluates on store
-                                    change and the learner lands back
-                                    on their intended tab automatically
-                                    once a pathway is loaded.
-                                */}
-                                <Route exact path="/pathways/today">
-                                    {activePathway ? (
-                                        <TodayMode />
-                                    ) : (
-                                        <Redirect to="/pathways/onboard" />
-                                    )}
-                                </Route>
-                                <Route exact path="/pathways/map">
-                                    {activePathway ? (
-                                        <MapMode />
-                                    ) : (
-                                        <Redirect to="/pathways/onboard" />
-                                    )}
-                                </Route>
-                                <Route exact path="/pathways/what-if">
-                                    {activePathway ? (
-                                        <WhatIfMode />
-                                    ) : (
-                                        <Redirect to="/pathways/onboard" />
-                                    )}
-                                </Route>
-                                <Route exact path="/pathways/build" component={BuildMode} />
-                                <Route exact path="/pathways/onboard" component={OnboardRoute} />
-                                <Route
-                                    exact
-                                    path="/pathways/proposals"
-                                    component={ProposalsRoute}
-                                />
-                                <Route
-                                    exact
-                                    path="/pathways/node/:pathwayId/:nodeId"
-                                    component={NodeDetail}
-                                />
-
-                                <Route>
-                                    <Redirect to="/pathways" />
-                                </Route>
-                            </Switch>
-                        </Suspense>
+                                    <Route>
+                                        <Redirect to="/pathways" />
+                                    </Route>
+                                </Switch>
+                            </Suspense>
+                        </div>
                     </div>
 
                     {/*
