@@ -126,7 +126,9 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }) => Promise<string>;
+    createProfile: (
+        profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }
+    ) => Promise<string>;
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -506,6 +508,11 @@ export type LearnCardNetworkPluginMethods = {
         categories: Record<string, string[]>
     ) => Promise<boolean>;
 
+    pruneDeletedUrisFromConsentFlow: (deletedUris: string[]) => Promise<{
+        contractsUpdated: number;
+        removedSharedUris: number;
+    }>;
+
     sendAiInsightsContractRequest: (
         contractUri: string,
         targetProfileId: string,
@@ -618,7 +625,10 @@ export type LearnCardNetworkPluginMethods = {
         canApproveInApp: boolean;
     }>;
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
-    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
+    approveGuardianCredential: (
+        token: string,
+        otpCode: string
+    ) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
     approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
     rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;

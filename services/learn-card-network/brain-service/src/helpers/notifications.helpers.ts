@@ -10,6 +10,8 @@ import { randomUUID } from 'crypto';
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
 
+const IS_TEST_ENVIRONMENT = String(process.env.NODE_ENV) === 'test';
+
 const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
 
 const sqs = new SQSClient({
@@ -27,13 +29,13 @@ export async function addNotificationToQueue(notification: LCNNotification) {
     }
 
     // If running unit tests, do not attempt to deliver (keep legacy behavior for tests)
-    if (process.env.NODE_ENV === 'test') {
+    if (IS_TEST_ENVIRONMENT) {
         return;
     }
 
     // In local development (offline or missing SQS URL), deliver directly via webhook
     if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (!IS_TEST_ENVIRONMENT) {
             console.log(
                 'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
             );
@@ -77,7 +79,6 @@ export async function sendNotification(notification: LCNNotification) {
         }
 
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
-
             const learnCard = await getDidWebLearnCard();
 
             const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
@@ -131,7 +132,7 @@ export async function sendNotification(notification: LCNNotification) {
             return validationResult.data;
         }
     } catch (error) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (!IS_TEST_ENVIRONMENT) {
             console.error('Notifications Helpers - Error While Sending:', error);
         }
     }

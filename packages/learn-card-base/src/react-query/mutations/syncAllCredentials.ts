@@ -5,7 +5,6 @@ import { CredentialCategory } from 'learn-card-base/types/credentials';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useSyncConsentContractsMutation } from './syncConsentFlow';
-import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { syncProgressStore, resetSyncProgress } from 'learn-card-base';
 
 /**
@@ -18,14 +17,8 @@ export const useSyncAllCredentialsToContractsMutation = () => {
     const queryClient = useQueryClient();
     const syncContracts = useSyncConsentContractsMutation();
 
-    type SyncAllCredentialsVariables = {
-        refreshAiInsightAfterSync?: boolean;
-    };
-
-    return useMutation<void, Error, SyncAllCredentialsVariables | void>({
-        mutationFn: async variables => {
-            const refreshAiInsightAfterSync = Boolean(variables?.refreshAiInsightAfterSync);
-
+    return useMutation<void, Error, void>({
+        mutationFn: async () => {
             resetSyncProgress();
             syncProgressStore.set.isActive(true);
             syncProgressStore.set.phase('scanning');
@@ -123,19 +116,6 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                         oneTime: c.oneTime,
                     })),
                 });
-
-                if (refreshAiInsightAfterSync) {
-                    console.log(
-                        '[SyncAllCredentials] Queueing AI Insight refresh after full resync'
-                    );
-                    await queueAiInsightCredentialRefresh({
-                        wallet,
-                        queryClient,
-                    });
-                    console.log(
-                        '[SyncAllCredentials] AI Insight refresh completed after full resync'
-                    );
-                }
 
                 syncProgressStore.set.phase('done');
                 syncProgressStore.set.finishedAt(Date.now());

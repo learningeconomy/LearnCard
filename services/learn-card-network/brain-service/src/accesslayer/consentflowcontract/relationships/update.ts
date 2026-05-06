@@ -616,6 +616,77 @@ export const syncCredentialsToContract = async (
     return result.summary.counters.containsUpdates();
 };
 
+export const pruneDeletedUrisFromConsentTerms = async (
+    terms: DbTermsType,
+    deletedUris: string[]
+): Promise<number> => {
+    const deletedUriSet = new Set(deletedUris.filter((uri): uri is string => Boolean(uri)));
+    if (!deletedUriSet.size) return 0;
+
+    const updatedTerms = JSON.parse(JSON.stringify(terms.terms)) as ConsentFlowTermsType;
+
+    if (!updatedTerms.read) updatedTerms.read = {} as any;
+    if (!updatedTerms.read.credentials) updatedTerms.read.credentials = {} as any;
+    if (!updatedTerms.read.credentials.categories) updatedTerms.read.credentials.categories = {};
+
+    let removedSharedUris = 0;
+
+    for (const categoryInfo of Object.values(updatedTerms.read.credentials.categories)) {
+        const previousShared = categoryInfo.shared ?? [];
+        const nextShared = previousShared.filter(uri => !deletedUriSet.has(uri));
+
+        removedSharedUris += previousShared.length - nextShared.length;
+        categoryInfo.shared = nextShared;
+    }
+
+    if (!removedSharedUris) return 0;
+
+    const existingFlat = flattenObject({ terms: terms.terms });
+    const newFlatInner = flattenObject({ terms: updatedTerms });
+
+    const keysToRemove = Object.keys(existingFlat).filter(key => !(key in newFlatInner));
+
+    const transaction = {
+        id: uuid(),
+        action: 'sync',
+        date: new Date().toISOString(),
+        terms: updatedTerms,
+    } as const satisfies ConsentFlowTransactionType;
+
+    const paramsForSet = {
+        ...newFlatInner,
+        updatedAt: new Date().toISOString(),
+        ...(typeof terms.expiresAt === 'string' ? { expiresAt: terms.expiresAt } : {}),
+        ...(typeof terms.oneTime === 'boolean' ? { oneTime: terms.oneTime } : {}),
+        ...Object.fromEntries(keysToRemove.map(k => [k, null as any])),
+    };
+
+    const result = await new QueryBuilder(
+        new BindParam({
+            params: paramsForSet,
+            transactionParams: (flattenObject as any)(transaction),
+        })
+    )
+        .match({
+            model: ConsentFlowTerms,
+            where: { id: terms.id },
+            identifier: 'terms',
+        })
+        .set('terms += $params')
+        .with('terms')
+        .create({
+            related: [
+                { identifier: 'transaction', model: ConsentFlowTransaction },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { identifier: 'terms' },
+            ],
+        })
+        .set('transaction += $transactionParams')
+        .run();
+
+    return result.summary.counters.containsUpdates() ? removedSharedUris : 0;
+};
+
 export const updateRequestedForStatusIfExists = async (
     id: string,
     profileId: string,

@@ -1,12 +1,12 @@
 import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CredentialCategory } from 'learn-card-base';
-import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useWallet } from 'learn-card-base';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
 import { cloneDeep } from 'lodash';
 import { UnsignedVC, VC } from '@learncard/types';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
+import { pruneDeletedUrisFromConsentFlow } from './pruneConsentFlowDeletedCredentials';
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 
 // ** CONNECTION MUTATIONS **
@@ -144,8 +144,7 @@ export const useAcceptCredentialMutation = () => {
 export const useDeleteCredentialRecord = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const { mutateAsync: syncAllCredentialsToContracts } =
-        useSyncAllCredentialsToContractsMutation();
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
 
     const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
         try {
@@ -171,6 +170,17 @@ export const useDeleteCredentialRecord = () => {
         oldListStaleTime?: unknown;
         category?: string;
         uri: string;
+    };
+
+    const isMissingConsentPruneProcedureError = (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+
+        return (
+            message.includes('contracts.pruneDeletedUrisFromConsentFlow') ||
+            message.includes(
+                'No procedure found on path "contracts.pruneDeletedUrisFromConsentFlow"'
+            )
+        );
     };
 
     return useMutation<DeleteCredentialResult, Error, LCR, DeleteCredentialContext>({
@@ -340,39 +350,88 @@ export const useDeleteCredentialRecord = () => {
                 });
             }
 
-            logDeleteCredentialRefresh('Scheduling post-delete resync task', {
+            logDeleteCredentialRefresh('Scheduling targeted consent prune task', {
                 uri: result.uri,
                 category,
                 contractUri: result.contractUri ?? null,
             });
 
             setTimeout(() => {
+                const walletPromise = initWallet();
+
                 void (async () => {
-                    logDeleteCredentialRefresh('Running full credential resync after delete', {
+                    logDeleteCredentialRefresh('Running targeted consent prune after delete', {
                         uri: result.uri,
                         category,
                         contractUri: result.contractUri ?? null,
                     });
 
-                    await syncAllCredentialsToContracts();
+                    const wallet = await walletPromise;
 
-                    logDeleteCredentialRefresh('Full credential resync completed after delete', {
-                        uri: result.uri,
-                        category,
-                        contractUri: result.contractUri ?? null,
+                    const pruneResult = await pruneDeletedUrisFromConsentFlow({
+                        wallet,
+                        queryClient,
+                        deletedUris: [result.uri],
                     });
 
-                    const wallet = await initWallet();
-                    logDeleteCredentialRefresh('Queueing AI Insight refresh after resync', {
+                    logDeleteCredentialRefresh('Targeted consent prune completed after delete', {
                         uri: result.uri,
                         category,
                         contractUri: result.contractUri ?? null,
+                        contractsUpdated: pruneResult.contractsUpdated,
+                        removedSharedUris: pruneResult.removedSharedUris,
+                    });
+
+                    logDeleteCredentialRefresh('Queueing AI Insight refresh after targeted prune', {
+                        uri: result.uri,
+                        category,
+                        contractUri: result.contractUri ?? null,
+                        contractsUpdated: pruneResult.contractsUpdated,
+                        removedSharedUris: pruneResult.removedSharedUris,
                     });
                     await queueAiInsightCredentialRefresh({
                         wallet,
                         queryClient,
                     });
                 })().catch(error => {
+                    if (isMissingConsentPruneProcedureError(error)) {
+                        logDeleteCredentialRefresh(
+                            'Consent prune procedure missing; running full sync fallback',
+                            {
+                                uri: result.uri,
+                                category,
+                                contractUri: result.contractUri ?? null,
+                            }
+                        );
+
+                        void (async () => {
+                            const wallet = await walletPromise;
+
+                            await syncAllCredentialsToContracts.mutateAsync();
+
+                            logDeleteCredentialRefresh(
+                                'Queueing AI Insight refresh after full sync fallback',
+                                {
+                                    uri: result.uri,
+                                    category,
+                                    contractUri: result.contractUri ?? null,
+                                }
+                            );
+
+                            await queueAiInsightCredentialRefresh({
+                                wallet,
+                                queryClient,
+                            });
+                        })().catch(fallbackError => {
+                            console.error(
+                                'Failed to run full sync fallback after prune failure:',
+                                fallbackError
+                            );
+                        });
+
+                        return;
+                    }
+
                     console.error('Failed to run post-delete cleanup:', error);
                 });
             }, 0);
