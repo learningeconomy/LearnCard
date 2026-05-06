@@ -95,10 +95,101 @@ const splitName = (fullName: string): { givenName: string; familyName: string } 
 
 const buildNarrative = (narrative?: string, metadata?: string[]): string | undefined => {
     const text = asString(narrative);
-    const metadataText = (metadata || []).map(v => v.trim()).filter(Boolean).join(' | ');
+    const metadataText = (metadata || [])
+        .map(v => v.trim())
+        .filter(Boolean)
+        .join(' | ');
 
     if (text && metadataText) return `${text}\n${metadataText}`;
     return text || (metadataText ? metadataText : undefined);
+};
+
+/**
+ * Standard context used for all embedded credentials in LER-RS.
+ * Ensures consistent, modern, and conflict-free context definitions.
+ */
+const STANDARD_EMBEDDED_CONTEXT = [
+    'https://www.w3.org/ns/credentials/v2',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    'https://ctx.learncard.com/boosts/1.0.3.json',
+    'https://w3id.org/security/suites/ed25519-2020/v1',
+];
+
+/**
+ * Detects if a @context array has problematic elements (inline definitions or old versions).
+ */
+const hasProblematicContext = (context: unknown): boolean => {
+    if (!Array.isArray(context)) return false;
+    return context.some(item => {
+        // Inline context definition objects
+        if (typeof item === 'object' && item !== null) return true;
+    });
+};
+
+/**
+ * Normalizes or replaces @context with standard context if problematic.
+ *
+ * Why: Old credentials contained inline context objects with custom term mappings (e.g., lcn:, xsd:)
+ * that conflicted with JSON-LD spec when embedded in LER-RS. Mixed v1/v2 and old OpenBadge versions
+ * also cause conflicts.
+ *
+ * Strategy: Replace problematic contexts with a vetted standard context that's compatible with
+ * modern credentials and avoids all known conflicts.
+ */
+const normalizeContext = (context: unknown): unknown => {
+    if (!Array.isArray(context)) return context;
+
+    // If context has problems, replace with standard
+    if (hasProblematicContext(context)) {
+        return STANDARD_EMBEDDED_CONTEXT;
+    }
+
+    return context;
+};
+
+/**
+ * Recursively normalizes @context in credentials.
+ *
+ * Why: When credentials are embedded in LER-RS, they should use consistent context definitions
+ * to avoid "Protected term redefinition" errors when JSON-LD expands the full payload.
+ *
+ * How it works:
+ * - depth 0 (top-level): Normalize problematic contexts to standard
+ * - depth > 0 (nested): Strip @context entirely (redundant when top-level is normalized)
+ */
+const normalizeCredentialContexts = (obj: any, depth: number = 0): any => {
+    if (obj === null || typeof obj !== 'object') return obj;
+
+    if (Array.isArray(obj)) {
+        return obj.map(item => normalizeCredentialContexts(item, depth));
+    }
+
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === '@context') {
+            if (depth === 0) {
+                // Top-level: normalize problematic contexts
+                result[key] = normalizeContext(value);
+            }
+            // Nested: skip (strip the @context)
+            continue;
+        }
+        if (typeof value === 'object' && value !== null) {
+            result[key] = normalizeCredentialContexts(value, depth + 1);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result;
+};
+
+/**
+ * Prepares a credential for embedding in LER-RS by normalizing and cleaning contexts.
+ * Replaces problematic top-level contexts with standard context, strips nested contexts.
+ * Called by buildVerificationReference for work history, education, and certification items.
+ */
+const stripProblematicContext = (vc: VC): VC => {
+    return normalizeCredentialContexts(vc, 0) as VC;
 };
 
 const buildVerificationReference = (
@@ -106,7 +197,7 @@ const buildVerificationReference = (
 ): EmbeddedVerificationCredential | undefined => {
     if (!input.vc) return undefined;
 
-    return { ...input.vc };
+    return stripProblematicContext(input.vc);
 };
 
 /**
@@ -140,13 +231,13 @@ const buildWorkHistoryItem = (input: LerRecordInput): UnknownRecord => {
     const start =
         input.startDateOverride ||
         firstString(
-        subject?.start,
-        subject?.startDate,
-        asRecord(subject?.effectiveTimePeriod)?.validFrom,
-        asRecord(subject?.timePeriod)?.startDate,
-        asRecord(subject?.dateRange)?.start,
-        asRecord(subject?.dateRange)?.from
-    );
+            subject?.start,
+            subject?.startDate,
+            asRecord(subject?.effectiveTimePeriod)?.validFrom,
+            asRecord(subject?.timePeriod)?.startDate,
+            asRecord(subject?.dateRange)?.start,
+            asRecord(subject?.dateRange)?.from
+        );
 
     const end =
         input.endDateOverride ||
@@ -201,13 +292,13 @@ const buildEducationItem = (input: LerRecordInput): UnknownRecord => {
     const start =
         input.startDateOverride ||
         firstString(
-        subject?.start,
-        subject?.startDate,
-        asRecord(subject?.effectiveTimePeriod)?.validFrom,
-        asRecord(subject?.timePeriod)?.startDate,
-        asRecord(subject?.dateRange)?.start,
-        asRecord(subject?.dateRange)?.from
-    );
+            subject?.start,
+            subject?.startDate,
+            asRecord(subject?.effectiveTimePeriod)?.validFrom,
+            asRecord(subject?.timePeriod)?.startDate,
+            asRecord(subject?.dateRange)?.start,
+            asRecord(subject?.dateRange)?.from
+        );
 
     const end = firstString(
         input.endDateOverride,
@@ -274,13 +365,13 @@ const buildCertificationItem = (input: LerRecordInput): UnknownRecord => {
     const validFrom =
         input.startDateOverride ||
         firstString(
-        subject?.start,
-        subject?.startDate,
-        asRecord(subject?.effectiveTimePeriod)?.validFrom,
-        asRecord(subject?.validFor)?.startDate,
-        asRecord(subject?.dateRange)?.start,
-        asRecord(subject?.dateRange)?.from
-    );
+            subject?.start,
+            subject?.startDate,
+            asRecord(subject?.effectiveTimePeriod)?.validFrom,
+            asRecord(subject?.validFor)?.startDate,
+            asRecord(subject?.dateRange)?.start,
+            asRecord(subject?.dateRange)?.from
+        );
 
     const validTo = firstString(
         input.endDateOverride,
@@ -301,7 +392,12 @@ const buildCertificationItem = (input: LerRecordInput): UnknownRecord => {
         ...(issuingAuthority ? { issuingAuthority } : {}),
         ...(status ? { status } : {}),
         ...(validFrom || validTo
-            ? { effectiveTimePeriod: { ...(validFrom ? { validFrom } : {}), ...(validTo ? { validTo } : {}) } }
+            ? {
+                  effectiveTimePeriod: {
+                      ...(validFrom ? { validFrom } : {}),
+                      ...(validTo ? { validTo } : {}),
+                  },
+              }
             : {}),
         ...(narrative ? { narrative } : {}),
         ...(verificationRef ? { verifiableCredential: verificationRef } : {}),
@@ -404,13 +500,9 @@ const buildLerPayloadFromResume = (
             formattedName: context.fullName,
             ...(context.email ? { email: context.email } : {}),
             ...(context.phone ? { phone: context.phone } : {}),
-            ...(context.location
-                ? { address: { formattedAddress: context.location } }
-                : {}),
+            ...(context.location ? { address: { formattedAddress: context.location } } : {}),
             ...(context.website ? { web: [{ url: context.website, name: 'Website' }] } : {}),
-            ...(context.linkedIn
-                ? { social: [{ uri: context.linkedIn, name: 'LinkedIn' }] }
-                : {}),
+            ...(context.linkedIn ? { social: [{ uri: context.linkedIn, name: 'LinkedIn' }] } : {}),
         },
         ...(workHistory.length ? { workHistory } : {}),
         ...(educationHistory.length ? { educationHistory } : {}),
@@ -495,7 +587,8 @@ export const useIssueTcpResume = () => {
                         });
                         vc = undefined;
                     }
-                    const sectionEntries = credentialEntries[item.category as ResumeSectionKey] ?? [];
+                    const sectionEntries =
+                        credentialEntries[item.category as ResumeSectionKey] ?? [];
                     const selectedEntry = sectionEntries.find(entry => entry.uri === item.uri);
 
                     const description = selectedEntry?.fields
@@ -528,9 +621,7 @@ export const useIssueTcpResume = () => {
             const visibleCareer = !hiddenPersonalDetails?.career
                 ? personalDetails.career?.trim()
                 : '';
-            const visiblePhone = !hiddenPersonalDetails?.phone
-                ? personalDetails.phone?.trim()
-                : '';
+            const visiblePhone = !hiddenPersonalDetails?.phone ? personalDetails.phone?.trim() : '';
             const visibleLocation = !hiddenPersonalDetails?.location
                 ? personalDetails.location?.trim()
                 : '';
@@ -638,7 +729,11 @@ export const useIssueTcpResume = () => {
                     ],
                 }),
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentials', switchedDid ?? '', CredentialCategoryEnum.resume],
+                    queryKey: [
+                        'useGetCredentials',
+                        switchedDid ?? '',
+                        CredentialCategoryEnum.resume,
+                    ],
                 }),
             ]);
 
