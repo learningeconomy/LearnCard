@@ -147,7 +147,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         if (!vc || isEditing) return;
 
         const categoryType =
-            (getDefaultCategoryForCredential(unwrapBoostCredential(vc)) || section) as any;
+            (getDefaultCategoryForCredential(unwrapBoostCredential(vc), { skipValidation: true }) || section) as any;
         const previewProps = {
             credential: vc,
             categoryType,
