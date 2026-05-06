@@ -850,7 +850,7 @@ const patchCapConfigSource = (serverUrl: string): void => {
     const serverBlock = `    server: {\n        url: '${serverUrl}',\n        cleartext: true,\n    },\n`;
 
     // Insert before the final `};` that closes the config object
-    const patched = content.replace(
+    let patched = content.replace(
         /(\n};\s*\nexport default config;)/,
         `\n${serverBlock}};\n\nexport default config;`,
     );
@@ -860,8 +860,27 @@ const patchCapConfigSource = (serverUrl: string): void => {
         return;
     }
 
+    // Also disable Capgo auto-update for the session — an OTA bundle landing
+    // mid-dev can force-reload off the LAN URL or pop the CapGoUpdateModal.
+    // The .bak restore in Step 3 puts `autoUpdate: true` back automatically.
+    const beforeCapgoPatch = patched;
+
+    patched = patched.replace(/autoUpdate:\s*true,/, 'autoUpdate: false,');
+
+    const capgoDisabled = patched !== beforeCapgoPatch;
+
     writeFileSync(CAP_CONFIG_TS, patched, 'utf-8');
     console.log(`   ${green('✓')} Patched capacitor.config.ts → server.url = ${serverUrl}`);
+
+    if (capgoDisabled) {
+        console.log(
+            `   ${green('✓')} Patched capacitor.config.ts → CapacitorUpdater.autoUpdate = false`,
+        );
+    } else {
+        console.warn(
+            `   ⚠️  Could not find \`autoUpdate: true\` in CapacitorUpdater — Capgo may still poll during the session`,
+        );
+    }
 };
 
 const unpatchCapConfigSource = (): void => {
