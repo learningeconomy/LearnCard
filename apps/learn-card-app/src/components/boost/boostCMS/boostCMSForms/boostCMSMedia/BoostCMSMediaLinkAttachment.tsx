@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { Updater } from 'use-immer';
 import { createPortal } from 'react-dom';
 import { Keyboard } from '@capacitor/keyboard';
@@ -9,6 +9,7 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 
 type BoostCMSMediaLinkAttachmentProps = {
     state: BoostCMSMediaState;
@@ -22,6 +23,7 @@ type BoostCMSMediaLinkAttachmentProps = {
     hideBackButton?: boolean;
     handleCloseModal?: () => void;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    hideCloseButton?: boolean;
 };
 
 const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = ({
@@ -35,8 +37,12 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
     hideBackButton,
     handleCloseModal,
     setShowCloseButtonState,
+    hideCloseButton,
 }) => {
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
 
     const { title, color, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 
@@ -137,7 +143,9 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 onClick={() => {
                                     if (createMode) {
                                         setActiveMediaType(null);
-                                        setShowCloseButtonState?.(true);
+                                        if (!hideCloseButton) {
+                                            setShowCloseButtonState?.(true);
+                                        }
                                     } else {
                                         handleCloseModal?.();
                                     }

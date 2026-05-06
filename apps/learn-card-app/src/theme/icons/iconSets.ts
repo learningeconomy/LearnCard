@@ -15,6 +15,7 @@ import {
 } from 'learn-card-base';
 
 const {
+    AiSessionsIcon,
     AiSessionsIconWithShape,
     AiPathwaysIconWithShape,
     AiInsightsIconWithShape,
@@ -118,7 +119,11 @@ import { NavBarFormalIcons } from 'learn-card-base';
 import ColorFulPlus from '../../assets/images/colorful-plus.png';
 import FormalPlus from '../../assets/images/formal-plus.png';
 
-const { wallet: NavBarPassportIcon, launchPad: NavBarLaunchPadIcon, notification: NavBarBellIcon } = NavBarIcons;
+const {
+    wallet: NavBarPassportIcon,
+    launchPad: NavBarLaunchPadIcon,
+    notification: NavBarBellIcon,
+} = NavBarIcons;
 const { passport: NavBarPassportIconFormal, launchPad: NavBarLaunchPadIconFormal } =
     NavBarFormalIcons;
 
@@ -172,6 +177,7 @@ import type {
 export const ICON_SETS: Record<string, ThemeIconTable> = {
     colorful: {
         [CredentialCategoryEnum.aiTopic]: {
+            Icon: AiSessionsIcon,
             IconWithShape: AiSessionsIconWithShape,
         },
         [CredentialCategoryEnum.aiPathway]: {
@@ -347,9 +353,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
  * Overrides allow partial section objects (navbar, sideMenu, etc.)
  * since `mergeIconTables` spread-merges them on top of the parent.
  */
-type PartialIconSetOverrides = Partial<
-    Record<CredentialCategoryEnum, CategoryIcons>
-> & {
+type PartialIconSetOverrides = Partial<Record<CredentialCategoryEnum, CategoryIcons>> & {
     launchPad?: Partial<LaunchPadIcons>;
     sideMenu?: Partial<SideMenuIcons>;
     navbar?: Partial<NavbarIcons>;
@@ -426,10 +430,7 @@ export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
  *    parent and deep-merge the overrides on top.
  * 3. Falls back to `'colorful'` if the name is unknown.
  */
-export const resolveIconSet = (
-    name: string,
-    _seen: Set<string> = new Set(),
-): ThemeIconTable => {
+export const resolveIconSet = (name: string, _seen: Set<string> = new Set()): ThemeIconTable => {
     // Direct full set
     if (ICON_SETS[name]) return ICON_SETS[name];
 
@@ -459,12 +460,17 @@ export const resolveIconSet = (
  */
 const mergeIconTables = (
     base: ThemeIconTable,
-    overrides: PartialIconSetOverrides,
+    overrides: PartialIconSetOverrides
 ): ThemeIconTable => {
     const result: Record<string, unknown> = { ...base };
 
     for (const [key, value] of Object.entries(overrides)) {
-        if (key === 'launchPad' || key === 'sideMenu' || key === 'navbar' || key === 'placeholders') {
+        if (
+            key === 'launchPad' ||
+            key === 'sideMenu' ||
+            key === 'navbar' ||
+            key === 'placeholders'
+        ) {
             // Section-level merge
             result[key] = {
                 ...(base[key as keyof ThemeIconTable] as Record<string, unknown>),

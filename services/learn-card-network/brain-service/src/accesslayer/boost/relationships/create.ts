@@ -1,5 +1,5 @@
 import { getAdminRole, getEmptyRole } from '@accesslayer/role/read';
-import { CredentialInstance, BoostInstance } from '@models';
+import { CredentialInstance, BoostInstance, AppStoreListingInstance } from '@models';
 import { neogma } from '@instance';
 import { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from './update';
@@ -124,5 +124,16 @@ export const createAutoConnectRecipientRelationship = async (
     await boost.relateTo({
         alias: 'autoConnectRecipient',
         where: { profileId: recipient.profileId },
+    });
+};
+
+export const setListingAsBoostOwner = async (
+    listing: AppStoreListingInstance,
+    boost: BoostInstance
+): Promise<void> => {
+    await listing.relateTo({
+        alias: 'createdBoost',
+        where: { id: boost.id },
+        properties: { date: new Date().toISOString() },
     });
 };

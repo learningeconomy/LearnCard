@@ -7,6 +7,7 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 
 import { usePathQuery } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 
 const ApproveAccount: React.FC = () => {
     const { textLogo, brandMarkLight } = useTenantBrandingAssets();
@@ -57,6 +58,7 @@ const ApproveAccount: React.FC = () => {
                     ...getNetworkInitOverrides(),
                     didkit,
                     allowRemoteContexts: true,
+                    extraHeaders: getTenantHeaders(),
                 });
 
                 type LCNOpenInvoke = {

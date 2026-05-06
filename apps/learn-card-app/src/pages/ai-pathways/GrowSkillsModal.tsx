@@ -21,6 +21,7 @@ import {
 import GrowSkillsAiSessionItem from './GrowSkillsAiSessionItem';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
+import GrowSkillsYouTubeMediaItem from './GrowSkillsYouTubeMediaItem';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 
@@ -83,6 +84,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
         if (card.type === 'ai-session') return card.pathway?.title ?? '';
         if (card.type === 'course') return card.program?.ProgramName ?? '';
         if (card.type === 'media') return card.occupation?.OnetTitle ?? '';
+        if (card.type === 'youtube-media') return card.video?.title ?? '';
 
         return '';
     };
@@ -91,7 +93,12 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
         return cards.filter(card => {
             if (resolvedActiveTab === 'AI Sessions' && card.type !== 'ai-session') return false;
             if (resolvedActiveTab === 'Courses' && card.type !== 'course') return false;
-            if (resolvedActiveTab === 'Media' && card.type !== 'media') return false;
+            if (
+                resolvedActiveTab === 'Media' &&
+                card.type !== 'media' &&
+                card.type !== 'youtube-media'
+            )
+                return false;
 
             if (!filterText) return true;
 
@@ -214,6 +221,15 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                                             card.occupation.OnetCode || card.occupation.OnetTitle
                                         }-${index}`}
                                         occupation={card.occupation}
+                                    />
+                                );
+                            }
+
+                            if (card.type === 'youtube-media') {
+                                return (
+                                    <GrowSkillsYouTubeMediaItem
+                                        key={`${card.video.videoId}-${index}`}
+                                        video={card.video}
                                     />
                                 );
                             }

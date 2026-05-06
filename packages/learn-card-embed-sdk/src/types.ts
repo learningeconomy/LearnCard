@@ -18,9 +18,16 @@ export type OtpVerifyResult = { ok: true } | { ok: false; error: string };
 export type BrandingTokens = {
   primaryColor?: string; // replaces theme.primaryColor
   accentColor?: string;
-  logoUrl?: string; // LearnCard brand logo URL (optional)
+  logoUrl?: string; // Wallet brand logo URL rendered in the "Secured by" footer. Defaults to LearnCard.
   partnerLogoUrl?: string; // Partner brand logo URL (optional)
   walletUrl?: string; // override wallet URL to open on success
+  /**
+   * Display name for the destination wallet, shown in the claim modal copy
+   * (e.g. "added to your {walletName} wallet", "View My {walletName}").
+   * Defaults to "LearnCard". Set this to your tenant's name for a tenant-
+   * branded claim experience.
+   */
+  walletName?: string;
 };
 
 export type InitOptions = {

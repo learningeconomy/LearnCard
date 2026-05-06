@@ -160,7 +160,8 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                         </div>
                     )}
 
-                    {showListViewToggle && setViewMode && !isSearchActive && showEarnedManaged && (
+                    {/* Reuse hideSearch to hide toggle when there is nothing to display in the current tab */}
+                    {showListViewToggle && setViewMode && !isSearchActive && !hideSearch && (
                         <div
                             className={`fix-ripple p-1 rounded-[5px] flex w-fit items-center ${
                                 !showEarnedManaged ? 'mx-auto min-w-[82px]' : ''

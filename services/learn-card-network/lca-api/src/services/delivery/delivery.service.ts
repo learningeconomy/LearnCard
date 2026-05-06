@@ -5,6 +5,8 @@
  * Adapters implement this interface for specific providers (Postmark, SendGrid, etc.).
  */
 
+import type { TenantBranding } from '@learncard/email-templates';
+
 export interface EmailNotification {
     to: string;
     subject: string;
@@ -20,6 +22,8 @@ export interface TemplateNotification {
     templateModel: Record<string, unknown>;
     from?: string;
     messageStream?: string;
+    /** Optional tenant branding. When present, emails are rendered locally via @learncard/email-templates. */
+    branding?: Partial<TenantBranding>;
 }
 
 export type Notification = EmailNotification | TemplateNotification;

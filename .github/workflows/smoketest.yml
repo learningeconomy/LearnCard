@@ -1,0 +1,47 @@
+name: Smoketest
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+          - scouts
+
+jobs:
+  smoketest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Composite action handles Node 24.12 + pnpm (pinned to the repo's
+      # packageManager version) + pnpm-store cache + workspace install.
+      - name: Use Composite Setup Action
+        uses: ./.github/actions/setup
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: tests/smoketests
+
+      - name: Run smoketests
+        run: pnpm exec playwright test
+        working-directory: tests/smoketests
+        env:
+          SMOKETEST_ENV: ${{ inputs.environment }}
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoketest-report-${{ inputs.environment }}
+          path: tests/smoketests/playwright-report/
+          retention-days: 14

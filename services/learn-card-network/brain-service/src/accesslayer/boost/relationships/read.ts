@@ -26,7 +26,7 @@ import { FlatSkillType } from 'types/skill';
 import { neogma } from '@instance';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { FlatProfileType, ProfileType } from 'types/profile';
-import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
+import { BoostType, BoostWithClaimPermissionsType, BoostOwner } from 'types/boost';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID } from 'src/constants/roles';
 import {
     CHILD_TO_NON_CHILD_PERMISSION,
@@ -40,12 +40,13 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { giveProfileEmptyPermissions } from './create';
 import { getBoostUri } from '@helpers/boost.helpers';
 
-export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType | undefined> => {
+export const getBoostOwner = async (boost: BoostInstance): Promise<BoostOwner | undefined> => {
     const profile = (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
+    if (profile) {
+        return { type: 'profile', profile: inflateObject<ProfileType>(profile.dataValues as any) };
+    }
 
-    if (!profile) return undefined;
-
-    return inflateObject<ProfileType>(profile.dataValues as any);
+    return undefined;
 };
 
 /**

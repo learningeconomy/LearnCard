@@ -1,0 +1,15 @@
+{
+  "name": "@learncard/smoketests",
+  "version": "0.0.2",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Skipping smoketests in unit-test runs. Use 'pnpm smoke' locally, or trigger the smoketest.yml workflow in CI.\"",
+    "smoke": "playwright test",
+    "smoke:api": "playwright test --project=api",
+    "smoke:browser": "playwright test --project=browser",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.0"
+  }
+}

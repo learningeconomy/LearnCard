@@ -8,6 +8,7 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -37,6 +38,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     const { getThemedCategoryIcons } = useTheme();
     const { Icon } = getThemedCategoryIcons(boostCategoryMetadata[selectedVCType].credentialType);
     const { title } = boostCategoryMetadata[selectedVCType];
+    const flags = useFlags();
     let headerTitle: React.ReactNode | string = '';
 
     if (currentStep === BoostCMSStepsEnum.create) {
@@ -91,7 +93,9 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                 <IonRow className="flex items-center justify-center w-full py-[10px]">
                     <div className="w-full max-w-[600px] flex items-center justify-between">
                         <IonCol className="w-full flex justify-start items-center">
-                            {currentStep === BoostCMSStepsEnum.publish && (
+                            {(currentStep === BoostCMSStepsEnum.publish ||
+                                (currentStep === BoostCMSStepsEnum.issueTo &&
+                                    flags?.skipPublishStep)) && (
                                 <button
                                     className="text-white p-0 mr-[1px] z-50"
                                     onClick={handleGoBack}

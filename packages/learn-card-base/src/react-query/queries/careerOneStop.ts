@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import _ from 'lodash';
 
 import type { CareerOneStopOccupation, OccupationDetailsResponse } from '../../types/careerOneStop';
@@ -6,7 +6,7 @@ import { useWallet } from 'learn-card-base';
 
 import { networkStore } from '../../stores/NetworkStore';
 
-const fetchOccupationDetailsForKeyword = async ({
+export const fetchOccupationDetailsForKeyword = async ({
     keyword,
     limit,
     topNDetails,
@@ -252,3 +252,88 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
         refetchOnMount: false,
     });
 };
+
+export interface YouTubeVideo {
+    videoId: string;
+    title: string;
+    description: string;
+    channelTitle: string;
+    publishedAt: string;
+    thumbnailUrl: string;
+    url: string;
+}
+
+export const searchYouTubeVideos = async (keyword: string): Promise<YouTubeVideo[]> => {
+    const url = new URL('/api/youtube/search', networkStore.get.aiServiceUrl());
+    url.searchParams.set('keyword', keyword);
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || `Failed to search videos: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+        throw new Error('Invalid response: expected an array of videos');
+    }
+
+    const validatedVideos = data.filter((item: any): item is YouTubeVideo => {
+        return (
+            typeof item === 'object' &&
+            item !== null &&
+            typeof item.videoId === 'string' &&
+            typeof item.title === 'string' &&
+            typeof item.description === 'string' &&
+            typeof item.channelTitle === 'string' &&
+            typeof item.publishedAt === 'string' &&
+            typeof item.thumbnailUrl === 'string' &&
+            typeof item.url === 'string'
+        );
+    });
+
+    if (validatedVideos.length === 0 && data.length > 0) {
+        throw new Error('Invalid response: no valid video objects found');
+    }
+
+    return validatedVideos;
+};
+
+interface UseYouTubeSearchOptions {
+    enabled?: boolean;
+    staleTime?: number;
+}
+
+export function useYouTubeSearch(keyword: string, options: UseYouTubeSearchOptions = {}) {
+    const { enabled = true, staleTime = 5 * 60 * 1000 } = options;
+
+    return useQuery<YouTubeVideo[], Error>({
+        queryKey: ['youtube-search', keyword],
+        queryFn: () => searchYouTubeVideos(keyword),
+        enabled: enabled && keyword.trim().length > 0,
+        staleTime,
+        gcTime: 30 * 60 * 1000,
+        retry: (failureCount, error) => {
+            if (error.message.includes('required') || error.message.includes('not configured')) {
+                return false;
+            }
+            return failureCount < 2;
+        },
+    });
+}
+
+export function useRefreshYouTubeSearch() {
+    const queryClient = useQueryClient();
+
+    return (keyword: string) => {
+        queryClient.invalidateQueries({
+            queryKey: ['youtube-search', keyword],
+        });
+    };
+}

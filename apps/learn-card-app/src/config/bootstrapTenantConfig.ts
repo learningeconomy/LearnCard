@@ -69,12 +69,9 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
         { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } }
     );
 
-    // 3. Populate network store with tenant API endpoints
-    initNetworkStoreFromTenant(config.apis);
-    emitConfigDebugEvent(
-        'bootstrap:network_store_init',
-        'Network store populated with tenant API endpoints'
-    );
+    // 3. Populate network store with tenant API endpoints + tenant ID
+    initNetworkStoreFromTenant(config.apis, config.tenantId);
+    emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
 
     // 4. Initialize Sentry from tenant observability config
     initSentryFromTenant();
@@ -120,6 +117,18 @@ export const getResolvedTenantConfig = (): TenantConfig => {
     _resolvedConfig = config;
 
     return config;
+};
+
+/**
+ * Get headers that identify the current tenant to backend services.
+ * Merges with any existing headers object so callers can spread or pass directly.
+ */
+export const getTenantHeaders = (): Record<string, string> => {
+    const tenantId = _resolvedConfig?.tenantId;
+
+    if (!tenantId) return {};
+
+    return { 'X-Tenant-Id': tenantId };
 };
 
 /**

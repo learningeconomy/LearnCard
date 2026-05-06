@@ -253,7 +253,7 @@ export const consentToContract = async (
                     );
 
                     const vc = await issueCredentialWithSigningAuthority(
-                        issuer,
+                        { type: 'profile', profile: issuer },
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
@@ -290,7 +290,7 @@ export const consentToContract = async (
                         .properties as FlatDbTermsType;
 
                     await sendBoost({
-                        from: contractOwner,
+                        from: { type: 'profile', profile: contractOwner },
                         to: consenter,
                         boost: boost.target,
                         credential: vc,

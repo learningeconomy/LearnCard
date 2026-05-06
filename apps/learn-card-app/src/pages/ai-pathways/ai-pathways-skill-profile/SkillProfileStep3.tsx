@@ -18,15 +18,20 @@ const SALARY_TYPE_OPTIONS = [
     { value: 'per_hour', label: 'Per Hour' },
 ];
 
+const sanitizeSalaryInput = (value: string | null | undefined): string =>
+    (value ?? '').replace(/-/g, '');
+
 const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handleBack }) => {
     const [salary, setSalary] = useState('');
     const [salaryType, setSalaryType] = useState<string>('per_year');
 
-    const { data, isLoading, saveIfChanged, isSaving } =
-        useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY, {
+    const { data, isLoading, saveIfChanged, isSaving } = useVerifiableData<SkillProfileSalaryData>(
+        SKILL_PROFILE_SALARY_KEY,
+        {
             name: 'Salary Information',
             description: 'Current salary and compensation type',
-        });
+        }
+    );
 
     // Pre-populate form from existing verifiable data
     useEffect(() => {
@@ -62,7 +67,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                 </span>
                 <TextInput
                     value={salary}
-                    onChange={value => setSalary(value ?? '')}
+                    onChange={value => setSalary(sanitizeSalaryInput(value))}
                     placeholder="USD"
                     type="number"
                     startIcon={<span className="text-grayscale-600 text-[14px] pb-[1px]">$</span>}

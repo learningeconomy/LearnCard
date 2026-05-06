@@ -7,6 +7,8 @@ import { ModalTypes, useModal } from 'learn-card-base';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
+import GrowSkillsYouTubeMediaItem from './GrowSkillsYouTubeMediaItem';
+import { type GrowSkillsCard } from './useGrowSkillsContent';
 import GrowSkillsModal, { type GrowSkillsTab } from './GrowSkillsModal';
 import GrowSkillsAiSessionItem from './GrowSkillsAiSessionItem';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
@@ -16,8 +18,13 @@ type GrowSkillsPathwaysHomeProps = {};
 const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
     const { newModal } = useModal();
 
-    const { emptyPathways, learningPathwaysData, occupations, schoolPrograms } =
+    const { emptyPathways, learningPathwaysData, defaultCards, schoolPrograms } =
         useGrowSkillsContent();
+
+    const mediaCards = defaultCards.filter(
+        (card): card is Extract<GrowSkillsCard, { type: 'media' | 'youtube-media' }> =>
+            card.type === 'media' || card.type === 'youtube-media'
+    );
 
     const openGrowSkillsModal = (initialActiveTab: GrowSkillsTab = 'All') => {
         newModal(<GrowSkillsModal initialActiveTab={initialActiveTab} />, undefined, {
@@ -58,12 +65,20 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
 
                 <GrowSkillsCarouselSection
                     title="Media"
-                    items={occupations || []}
+                    items={mediaCards}
                     onViewAll={() => openGrowSkillsModal('Media')}
-                    renderItem={occupation => (
-                        <GrowSkillsMediaItem occupation={occupation} className="h-full" />
-                    )}
-                    getItemKey={occupation => occupation.OnetCode || occupation.OnetTitle || ''}
+                    renderItem={card =>
+                        card.type === 'youtube-media' ? (
+                            <GrowSkillsYouTubeMediaItem video={card.video} className="h-full" />
+                        ) : (
+                            <GrowSkillsMediaItem occupation={card.occupation} className="h-full" />
+                        )
+                    }
+                    getItemKey={card =>
+                        card.type === 'youtube-media'
+                            ? card.video.videoId
+                            : card.occupation.OnetCode || card.occupation.OnetTitle || ''
+                    }
                 />
 
                 <button

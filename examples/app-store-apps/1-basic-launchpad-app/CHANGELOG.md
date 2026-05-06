@@ -1,5 +1,31 @@
 # @learncard/app-store-demo-basic-launchpad
 
+## 0.0.21
+
+### Patch Changes
+
+-   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0), [`60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7`](https://github.com/learningeconomy/LearnCard/commit/60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7`](https://github.com/learningeconomy/LearnCard/commit/60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7)]:
+    -   @learncard/partner-connect@0.3.0
+    -   @learncard/init@2.3.15
+
+## 0.0.20
+
+### Patch Changes
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f)]:
+    -   @learncard/partner-connect@0.2.16
+    -   @learncard/init@2.3.14
+
+## 0.0.19
+
+### Patch Changes
+
+-   [#1116](https://github.com/learningeconomy/LearnCard/pull/1116) [`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1742] feat: App-Scoped Counters + In-App Notifications
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/partner-connect@0.2.15
+    -   @learncard/init@2.3.13
+
 ## 0.0.18
 
 ### Patch Changes

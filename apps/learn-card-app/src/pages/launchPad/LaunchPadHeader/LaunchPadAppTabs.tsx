@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
@@ -13,6 +14,7 @@ export enum LaunchPadTabEnum {
     employment = 'Employment',
     credentials = 'Credentials',
     other = 'Other',
+    plugins = 'Plugins',
 }
 
 type LaunchPadAppTabsProps = {
@@ -21,6 +23,7 @@ type LaunchPadAppTabsProps = {
 };
 
 const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
+    const flags = useFlags();
     const { getColorSet, getStyleSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
     const styleSet = getStyleSet(StyleSetEnum.defaults);
@@ -29,9 +32,20 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
     const primaryColorShade = colorSet.primaryColorShade;
     const borderRadius = styleSet.tabs.borderRadius;
 
+    // Filter tabs based on pluginVisibility flag
+    const visibleTabs = useMemo(() => {
+        return Object.values(LaunchPadTabEnum).filter(tabOption => {
+            // Hide Plugins tab if pluginVisibility flag is not enabled
+            if (tabOption === LaunchPadTabEnum.plugins && !flags?.pluginVisibility) {
+                return false;
+            }
+            return true;
+        });
+    }, [flags?.pluginVisibility]);
+
     return (
         <div className="flex text-grayscale-900 w-full overflow-x-auto scrollbar-hide">
-            {Object.values(LaunchPadTabEnum).map((option, index) => {
+            {visibleTabs.map((option, index) => {
                 const isActive = option === tab;
 
                 return (

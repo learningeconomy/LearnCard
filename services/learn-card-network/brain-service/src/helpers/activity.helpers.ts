@@ -20,7 +20,7 @@ export const logCredentialActivity = async (
 };
 
 export const logCredentialSent = async (params: {
-    actorProfileId: string;
+    actorProfileId?: string;
     recipientType: CredentialActivityRecipientType;
     recipientIdentifier: string;
     recipientProfileId?: string;

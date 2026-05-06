@@ -126,33 +126,31 @@ export const AiSessionsHeader: React.FC<{
     }
 
     return (
-        <div className="flex items-center justify-center ion-padding absolute bg-white/70 backdrop-blur-[5px] w-full top-0 left-0 z-20">
-            <div className="w-full flex max-w-[600px]">
-                <button
-                    onClick={() => {
-                        if (handleGoBack) return handleGoBack();
+        <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex items-center gap-[10px] z-20 relative shadow-bottom-1-5 rounded-b-[20px] w-full">
+            <button
+                onClick={() => {
+                    if (handleGoBack) return handleGoBack();
 
-                        history.push('/ai/topics');
-                    }}
-                    className="text-grayscale-50 p-0 mr-[10px]"
-                >
-                    <SlimCaretLeft className="text-grayscale-600 shrink-0" />
-                </button>
-                <div className="h-[75px] w-[75px] min-h-[75px] min-w-[75px] mr-2">
-                    <img
-                        className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid"
-                        alt={`${app?.name} logo`}
-                        src={app?.img}
-                    />
-                </div>
-                <div className="flex flex-col items-start justify-center ml-1">
-                    <h2 className="text-[25px] mobile:text-[18px] font-semibold text-grayscale-900 font-poppins line-clamp-1">
-                        {topicTitle}
-                    </h2>
-                    <p className="text-[17px] mobile:text-[14px] font-poppins text-grayscale-900 font-semibold">
-                        {app?.name}
-                    </p>
-                </div>
+                    history.push('/ai/topics');
+                }}
+                className="text-grayscale-50 p-0 shrink-0"
+            >
+                <SlimCaretLeft className="text-grayscale-600 shrink-0" />
+            </button>
+            <div className="h-[55px] w-[55px] min-h-[55px] min-w-[55px]">
+                <img
+                    className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                    alt={`${app?.name} logo`}
+                    src={app?.img}
+                />
+            </div>
+            <div className="flex flex-col items-start justify-center min-w-0">
+                <h2 className="text-[21px] font-semibold text-grayscale-900 font-poppins line-clamp-1 leading-[24px]">
+                    {topicTitle}
+                </h2>
+                <p className="text-[14px] font-poppins text-grayscale-600 font-semibold line-clamp-1">
+                    {app?.name}
+                </p>
             </div>
         </div>
     );

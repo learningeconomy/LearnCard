@@ -210,7 +210,7 @@ const AppsLandingPage: React.FC = () => {
 
                     {/* Create New Project */}
                     <div className="mt-6 pt-6 border-t border-gray-200">
-                        <div className="flex gap-2">
+                        <div className={`${isMobile ? 'flex-col gap-0' : ''} flex gap-2`}>
                             <input
                                 type="text"
                                 value={newProjectName}
@@ -224,7 +224,9 @@ const AppsLandingPage: React.FC = () => {
                             <button
                                 onClick={handleCreateFirstProject}
                                 disabled={!newProjectName.trim() || isCreatingIntegration}
-                                className="px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className={`${
+                                    isMobile ? 'mt-2' : ''
+                                } px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
                             >
                                 {isCreatingIntegration ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />

@@ -5,8 +5,10 @@ import {
     useAiPathways,
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
+    useYouTubeSearch,
     type OccupationDetailsResponse,
     type TrainingProgram,
+    type YouTubeVideo,
 } from 'learn-card-base';
 
 import {
@@ -54,6 +56,10 @@ export type GrowSkillsCard =
     | {
           type: 'media';
           occupation: OccupationDetailsResponse;
+      }
+    | {
+          type: 'youtube-media';
+          video: YouTubeVideo;
       };
 
 type GrowSkillsContentParams = {
@@ -70,24 +76,51 @@ export type GrowSkillsContentResult = {
     schoolPrograms: GrowSkillsCourseProgram[];
     courses: any[];
     occupations: OccupationDetailsResponse[] | undefined;
+    youtubeVideos: YouTubeVideo[];
     defaultCards: GrowSkillsCard[];
     searchSchoolPrograms: GrowSkillsCourseProgram[];
     searchOccupations: OccupationDetailsResponse[] | undefined;
+    searchYouTubeVideos: YouTubeVideo[];
     searchCards: GrowSkillsCard[];
     cards: GrowSkillsCard[];
+};
+
+const mergeMediaItems = (
+    media: OccupationDetailsResponse[],
+    youtubeVideos: YouTubeVideo[]
+): GrowSkillsCard[] => {
+    const merged: GrowSkillsCard[] = [];
+    const maxLength = Math.max(media.length, youtubeVideos.length);
+
+    for (let index = 0; index < maxLength; index += 1) {
+        const mediaItem = media[index];
+        if (mediaItem) {
+            merged.push({ type: 'media', occupation: mediaItem });
+        }
+
+        const youtubeVideo = youtubeVideos[index];
+        if (youtubeVideo) {
+            merged.push({ type: 'youtube-media', video: youtubeVideo });
+        }
+    }
+
+    return merged;
 };
 
 const interleaveGrowSkillsCards = ({
     aiSessions,
     courses,
     media,
+    youtubeVideos,
 }: {
     aiSessions: GrowSkillsPathway[];
     courses: GrowSkillsCourseProgram[];
     media: OccupationDetailsResponse[];
+    youtubeVideos: YouTubeVideo[];
 }): GrowSkillsCard[] => {
     const mixedCards: GrowSkillsCard[] = [];
-    const maxLength = Math.max(aiSessions.length, courses.length, media.length);
+    const mergedMedia = mergeMediaItems(media, youtubeVideos);
+    const maxLength = Math.max(aiSessions.length, courses.length, mergedMedia.length);
 
     for (let index = 0; index < maxLength; index += 1) {
         const aiSession = aiSessions[index];
@@ -106,12 +139,9 @@ const interleaveGrowSkillsCards = ({
             });
         }
 
-        const mediaItem = media[index];
+        const mediaItem = mergedMedia[index];
         if (mediaItem) {
-            mixedCards.push({
-                type: 'media',
-                occupation: mediaItem,
-            });
+            mixedCards.push(mediaItem);
         }
     }
 
@@ -230,14 +260,19 @@ export const useGrowSkillsContent = ({
     const { data: occupations, isLoading: fetchOccupationsLoading } =
         useOccupationDetailsForKeyword(careerKeywords?.[0] || '');
 
+    const { data: youtubeVideos = [], isLoading: fetchYouTubeLoading } = useYouTubeSearch(
+        careerKeywords?.[0] || ''
+    );
+
     const defaultCards = useMemo<GrowSkillsCard[]>(
         () =>
             interleaveGrowSkillsCards({
                 aiSessions: learningPathwaysData || [],
                 courses: schoolPrograms || [],
                 media: occupations || [],
+                youtubeVideos,
             }),
-        [occupations, learningPathwaysData, schoolPrograms]
+        [occupations, learningPathwaysData, schoolPrograms, youtubeVideos]
     );
 
     const searchKeywords = trimmedSearchQuery ? [trimmedSearchQuery] : null;
@@ -255,14 +290,18 @@ export const useGrowSkillsContent = ({
     const { data: searchOccupations, isLoading: fetchSearchOccupationsLoading } =
         useOccupationDetailsForKeyword(trimmedSearchQuery);
 
+    const { data: searchYouTubeVideos = [], isLoading: fetchSearchYouTubeLoading } =
+        useYouTubeSearch(trimmedSearchQuery);
+
     const searchCards = useMemo<GrowSkillsCard[]>(
         () =>
             interleaveGrowSkillsCards({
                 aiSessions: learningPathwaysData || [],
                 courses: searchSchoolPrograms || [],
                 media: searchOccupations || [],
+                youtubeVideos: searchYouTubeVideos,
             }),
-        [learningPathwaysData, searchOccupations, searchSchoolPrograms]
+        [learningPathwaysData, searchOccupations, searchSchoolPrograms, searchYouTubeVideos]
     );
 
     const cards = trimmedSearchQuery ? searchCards : defaultCards;
@@ -272,8 +311,10 @@ export const useGrowSkillsContent = ({
         fetchPathwaysLoading ||
         fetchTrainingProgramsLoading ||
         fetchOccupationsLoading ||
+        fetchYouTubeLoading ||
         fetchSearchTrainingProgramsLoading ||
-        fetchSearchOccupationsLoading;
+        fetchSearchOccupationsLoading ||
+        fetchSearchYouTubeLoading;
 
     const emptyPathways =
         !isLoading &&
@@ -292,9 +333,11 @@ export const useGrowSkillsContent = ({
         schoolPrograms,
         courses,
         occupations,
+        youtubeVideos,
         defaultCards,
         searchSchoolPrograms,
         searchOccupations,
+        searchYouTubeVideos,
         searchCards,
         cards,
     };

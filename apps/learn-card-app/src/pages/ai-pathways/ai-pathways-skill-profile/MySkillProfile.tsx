@@ -10,9 +10,11 @@ import SkillProfileStep3 from './SkillProfileStep3';
 import SkillProfileStep4 from './SkillProfileStep4';
 import SkillProfileStep5 from './SkillProfileStep5';
 
-type MySkillProfileProps = {};
+type MySkillProfileProps = {
+    className?: string;
+};
 
-const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
+const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
     const { percentage, lastEditedDate } = useSkillProfileCompletion();
     const [isExpanded, setIsExpanded] = useState(percentage === 0);
     const [currentStep, setCurrentStep] = useState(1);
@@ -47,8 +49,10 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
     };
 
     return (
-        <div className="w-full max-w-[600px] flex items-center justify-center px-4">
-            <div className="w-full max-w-[600px] bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
+        <div
+            className={`w-full max-w-[600px] flex items-center justify-center text-left ${className}`}
+        >
+            <div className="w-full max-w-[600px] bg-white items-center justify-center flex flex-col shadow-bottom-4-4 px-[15px] py-[18px] rounded-[15px]">
                 <div className="flex flex-col w-full gap-[10px]">
                     <div className="flex gap-[10px] items-center justify-start w-full">
                         <ProfilePicture
@@ -56,10 +60,10 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
                                 !isExpanded ? 'w-[48px] h-[48px]' : 'w-[30px] h-[30px]'
                             }
                         />
-                        <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px]">
+                        <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px] text-left">
                             My Skill Profile
                             {!isExpanded && (
-                                <span className="text-[14px] font-poppins text-grayscale-700 leading-[130%] font-normal">
+                                <span className="text-[14px] font-poppins text-grayscale-700 leading-[130%] font-normal text-left">
                                     Personalize your pathways.
                                 </span>
                             )}

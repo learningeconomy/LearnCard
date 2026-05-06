@@ -9,6 +9,7 @@ type TextInputProps = {
     disabled?: boolean;
     debounce?: number;
     maxLength?: number;
+    autoFocus?: boolean;
     startIcon?: React.ReactNode;
     endIcon?: React.ReactNode;
     startButton?: React.ReactNode;
@@ -29,6 +30,7 @@ const TextInput: React.FC<TextInputProps> = ({
     disabled = false,
     debounce,
     maxLength,
+    autoFocus,
     startIcon,
     endIcon,
     startButton,
@@ -63,6 +65,7 @@ const TextInput: React.FC<TextInputProps> = ({
                 disabled={disabled}
                 debounce={debounce}
                 maxlength={maxLength}
+                autoFocus={autoFocus}
                 autocapitalize={autocapitalize}
                 onIonInput={e => onChange(e.detail.value ?? '')}
                 onIonFocus={onFocus}

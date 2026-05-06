@@ -9,11 +9,7 @@ import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysI
 
 import PathwaySearchInput from './PathwaySearchInput';
 import ExplorePathwaysModal from '../ExplorePathwaysModal';
-
-export enum AiPathwaysWhatWouldYouLikeToDoCardOptions {
-    GrowSkills = 'grow-skills',
-    FindRoles = 'find-roles',
-}
+import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './AiPathwaysWhatWouldYouLikeToDoCard.types';
 
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
     const { newModal } = useModal();
@@ -51,7 +47,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
 
     return (
         <div className="flex items-center justify-center w-full rounded-[15px] px-4 max-w-[600px]">
-            <div className="w-full bg-white rounded-lg p-4 shadow-sm flex flex-col gap-4">
+            <div className="w-full bg-white rounded-lg p-4 shadow-bottom-4-4 flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
                     <IonLabel className="text-grayscale-900 font-poppins text-xl">
                         What would you like to do?

@@ -20,6 +20,7 @@ type BoostAddressBookContactListProps = {
     // IE: issueTo
     // IE: admins
     collectionPropName?: string;
+    showRecipientAttachments?: boolean;
 };
 
 export const BoostAddressBookContactList: React.FC<BoostAddressBookContactListProps> = ({
@@ -31,6 +32,7 @@ export const BoostAddressBookContactList: React.FC<BoostAddressBookContactListPr
     _issueTo,
     _setIssueTo,
     collectionPropName = 'issueTo',
+    showRecipientAttachments = false,
 }) => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
 
@@ -48,6 +50,7 @@ export const BoostAddressBookContactList: React.FC<BoostAddressBookContactListPr
                 _issueTo={_issueTo}
                 _setIssueTo={_setIssueTo}
                 collectionPropName={collectionPropName}
+                showRecipientAttachments={showRecipientAttachments}
             />
         );
     });

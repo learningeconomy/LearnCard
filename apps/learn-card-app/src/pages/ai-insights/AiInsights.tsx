@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
+import MySkillProfile from '../ai-pathways/ai-pathways-skill-profile/MySkillProfile';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
@@ -37,6 +38,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
+import AiInsightsWidgets from './AiInsightsWidgets';
 
 type Flags = {
     hideAiPathways?: boolean;
@@ -80,43 +82,57 @@ const AiInsights: React.FC = () => {
         currentLCNUser?.profileId ?? ''
     );
 
-    const pendingRequests =
-        contractRequests?.filter(request => request?.status === 'pending') || [];
+    const pendingRequests = useMemo(() => {
+        return contractRequests?.filter(request => request?.status === 'pending') || [];
+    }, [contractRequests]);
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
     useLoadingLine(credentialsBackgroundFetching || createAiInsightCredentialLoading);
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+    const skillsMap = useMemo(() => {
+        return mapBoostsToSkills(allResolvedCreds);
+    }, [allResolvedCreds]);
 
-    const categorizedSkills: [
-        string,
-        RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
-    ][] = Object.entries(skillsMap);
+    const categorizedSkills = useMemo(
+        () =>
+            Object.entries(skillsMap) as [
+                string,
+                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+            ][],
+        [skillsMap]
+    );
 
-    const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
+    const aggregatedSkills = useMemo(() => {
+        return aggregateCategorizedEntries(categorizedSkills);
+    }, [categorizedSkills]);
 
-    const topSkills = getTopSkills(aggregatedSkills, 3);
+    const topSkills = useMemo(() => {
+        return getTopSkills(aggregatedSkills, 3);
+    }, [aggregatedSkills]);
 
-    let contractRequest = null;
-    if (pendingRequests?.length > 0) {
-        contractRequest = pendingRequests?.map((request, index) => (
+    const contractRequest = useMemo(() => {
+        if (pendingRequests.length === 0) {
+            return null;
+        }
+
+        return pendingRequests.map((request, index) => (
             <AiInsightsUserRequestsToast
                 key={`request-${index}`}
                 contractUri={request?.contract?.uri}
                 options={{
-                    className: 'bg-indigo-100 p-4 rounded-[16px] mb-4',
+                    className: 'bg-indigo-100 p-4 rounded-[16px] shadow-bottom-4-4',
                     isInline: true,
                     useDarkText: true,
                     hideCloseButton: true,
                 }}
             />
         ));
-    }
+    }, [pendingRequests]);
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full my-4">
+            <div className="flex items-center justify-center w-full">
                 {flags?.showGenerateAiInsightsButton && (
                     <button
                         className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
@@ -133,14 +149,17 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
+
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+
+            <MySkillProfile />
+
+            <AiInsightsWidgets />
+
             <AiInsightsPromptBoxContainer />
             {!flags?.hideAiPathways && (
-                <AiFeatureLinks
-                    features={['ai-sessions', 'skills-hub', 'pathways']}
-                    className="mt-4"
-                />
+                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
             )}
         </>
     );
@@ -173,7 +192,7 @@ const AiInsights: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex relative justify-center items-center w-full">
-                            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
+                            <div className="w-full max-w-[600px] flex flex-col items-stretch gap-[20px] text-center ion-padding mt-[30px] pb-[100px]">
                                 <AiInsightsTabs
                                     selectedTab={selectedTab}
                                     setSelectedTab={setSelectedTab}

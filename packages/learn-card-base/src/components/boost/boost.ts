@@ -361,6 +361,40 @@ export const getMediaAttachments = (mediaAttachments: BoostCMSMediaAttachment[])
     return mediaAttachments.filter(attachment => attachment.type === BoostMediaOptionsEnum.photo);
 };
 
+/**
+ * Per-recipient dynamic evidence (the `EvidenceFile` shape produced by
+ * `convertAttachmentsToEvidence`) only signs cleanly when the boost's
+ * credential `@context` resolves the LearnCard-specific evidence subterms
+ * (`fileName`, `fileType`, `fileSize`). Those terms first appeared in
+ * `https://ctx.learncard.com/boosts/1.0.3.json` — earlier versions
+ * (1.0.0–1.0.2) omit them, so attaching media to those boosts produces a
+ * JSON-LD safe-mode key-expansion failure at sign time.
+ *
+ * Use this helper to gate the recipient-attachments UI for a given boost. If
+ * it returns `false`, hide the attachments button — the boost would need to
+ * be republished against the newer context before it can carry per-recipient
+ * evidence.
+ */
+export const boostSupportsDynamicEvidence = (
+    credential: { '@context'?: unknown } | null | undefined
+): boolean => {
+    const ctx = credential?.['@context'];
+    const entries = Array.isArray(ctx) ? ctx : ctx ? [ctx] : [];
+
+    return entries.some(entry => {
+        if (typeof entry === 'string') {
+            // Match 1.0.3 and any future 1.0.x (x >= 3) or 1.y.z with y >= 1.
+            return /\/ctx\.learncard\.com\/boosts\/1\.(?:(?:0\.(?:[3-9]|\d{2,}))|(?:[1-9]\d*\.\d+))/.test(
+                entry
+            );
+        }
+        if (entry && typeof entry === 'object') {
+            return 'EvidenceFile' in (entry as Record<string, unknown>);
+        }
+        return false;
+    });
+};
+
 export const convertAttachmentsToEvidence = (
     attachments: BoostCMSMediaAttachment[] = []
 ): BoostEvidenceSpec[] => {

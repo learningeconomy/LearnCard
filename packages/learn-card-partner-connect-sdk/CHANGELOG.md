@@ -1,5 +1,73 @@
 # @learncard/partner-connect
 
+## 0.3.0
+
+### Minor Changes
+
+-   [#1199](https://github.com/learningeconomy/LearnCard/pull/1199) [`60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7`](https://github.com/learningeconomy/LearnCard/commit/60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7) Thanks [@Custard7](https://github.com/Custard7)! - Partner apps now work on any LearnCard-managed tenant out of the box.
+
+    -   `hostOrigin` entries now support wildcard patterns for the host portion, e.g. `https://*.learncard.app`. Protocol and port must still match exactly; wildcards are only allowed as leading DNS label(s).
+    -   Added a built-in whitelist `PartnerConnect.DEFAULT_TRUSTED_TENANTS` (`learncard.app`, `*.learncard.app`, `*.learncard.ai`, `vetpass.app`, `*.vetpass.app`) that is merged into `hostOrigin` automatically. New tenants under these domains work without a partner-app re-deploy. Opt out with `disableDefaultTenants: true`.
+    -   Origin resolution now prefers `window.location.ancestorOrigins[0]` (the browser-reported parent origin) over the `lc_host_override` query param when available and trusted. This is unspoofable by query-param manipulation; a mismatched override is logged and ignored.
+
+-   [#1202](https://github.com/learningeconomy/LearnCard/pull/1202) [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02) Thanks [@Custard7](https://github.com/Custard7)! - Partner Connect SDK + brain service: schema validation hardening, ergonomics, typed errors.
+
+    **SDK (`@learncard/partner-connect`)**
+
+    -   Added `PartnerConnectError` class (extends `Error`, implements `LearnCardError`). All SDK rejections now use it, unlocking `if (err instanceof PartnerConnectError)` and exhaustive `switch` on `err.code`. The legacy `{ code, message }` shape is preserved so existing call sites keep working.
+    -   `SummaryCredentialNextStep.keywords` is now optional. Apps that have no taxonomy data can omit the field entirely instead of passing a struct of `null` fields.
+
+    **Types (`@learncard/types`)**
+
+    -   `SummaryCredentialDataValidator.nextSteps[].keywords` is now optional, matching the SDK type and removing pointless boilerplate from 90% of `sendAiSessionCredential` call sites.
+
+    **Brain service (`@learncard/network-brain-service`)**
+
+    -   The `/app-store/event` route now deep-validates the `event` payload against `AppEventValidator` (the existing discriminated union from `@learncard/types`). Previously, the route accepted `z.record(z.string(), z.unknown())` and trusted handlers to parse fields manually, which meant malformed events (e.g. wrong `summaryData` shape on `send-ai-session-credential`) silently produced broken credentials. Malformed events now fail fast with a clear zod error at the route boundary.
+
+### Patch Changes
+
+-   [#1202](https://github.com/learningeconomy/LearnCard/pull/1202) [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02) Thanks [@Custard7](https://github.com/Custard7)! - fix: @learncard/partner-connect doc fixes
+
+-   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+
+-   [#1199](https://github.com/learningeconomy/LearnCard/pull/1199) [`60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7`](https://github.com/learningeconomy/LearnCard/commit/60ab5bd6cf6fa508bf742bcd44c186c7ee3cd9c7) Thanks [@Custard7](https://github.com/Custard7)! - feat: LC-1827 Add multiple origins to partner connect with default tenants
+
+-   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    -   @learncard/types@5.14.0
+
+## 0.2.16
+
+### Patch Changes
+
+-   [#1161](https://github.com/learningeconomy/LearnCard/pull/1161) [`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `sendAiSessionCredential` to Partner Connect SDK for recording AI tutoring sessions.
+
+    This enables App Store embedded apps to send AI Session credentials that are automatically organized under AI Topics. The feature includes:
+
+    -   **Partner Connect SDK**: New `sendAiSessionCredential()` method with structured summary data support
+    -   **Backend Support**: App event handler for `send-ai-session-credential` with listing-owned boost creation
+    -   **AI Topic Hierarchy**: Sessions are automatically organized under a parent AI Topic per app
+    -   **Client-Side Storage**: Credentials are immediately stored in the user's LearnCloud wallet
+    -   **Example App**: Updated with working AI Session creation flow
+
+    Apps can now record structured learning sessions with key takeaways, skills demonstrated, learning outcomes, and recommended next steps that appear in the user's AI Topics page.
+
+-   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    -   @learncard/types@5.13.6
+
+## 0.2.15
+
+### Patch Changes
+
+-   [#1116](https://github.com/learningeconomy/LearnCard/pull/1116) [`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1742] feat: App-Scoped Counters + In-App Notifications
+
+-   [#1149](https://github.com/learningeconomy/LearnCard/pull/1149) [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `requestLearnerContext` support across Partner Connect, the LearnCard host, and the network stack so embedded App Store apps can request learner context for AI flows.
+
+    This also allows `requestConsent()` to resolve the configured contract from the app listing's integration when a contract URI is not passed explicitly, and adds a request-learner-context demo app to exercise the full flow.
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    -   @learncard/types@5.13.5
+
 ## 0.2.14
 
 ### Patch Changes

@@ -14,12 +14,15 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import GrowSkillsPathwaysHome from './GrowSkillsPathwaysHome';
-
 import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
+import { useGrowSkillsContent } from './useGrowSkillsContent';
+import AiPathwayCareerItem from './ai-pathway-careers/AiPathwayCareerItem';
+import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { percentage } = useSkillProfileCompletion();
+    const { careerKeywords, occupations, isLoading } = useGrowSkillsContent();
     const [isInitialPercentageAboveZero] = useState(() => percentage > 0);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
@@ -39,13 +42,21 @@ const AiPathways: React.FC = () => {
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
                             {isInitialPercentageAboveZero && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
-                            <MySkillProfile />
+                            <MySkillProfile className="px-4" />
 
                             {!isInitialPercentageAboveZero && (
                                 <AiPathwaysWhatWouldYouLikeToDoCard />
                             )}
 
                             <GrowSkillsPathwaysHome />
+
+                            {(isLoading || (careerKeywords && occupations)) && (
+                                <AiPathwayCareers
+                                    careerKeywords={careerKeywords || []}
+                                    occupations={occupations || []}
+                                    isLoading={isLoading}
+                                />
+                            )}
 
                             <AiFeatureLinks
                                 features={['ai-sessions', 'skills-hub', 'ai-insights']}

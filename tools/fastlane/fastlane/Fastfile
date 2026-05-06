@@ -10,9 +10,6 @@
 #     https://docs.fastlane.tools/plugins/available-plugins
 #
 
-# Uncomment the line if you want fastlane to automatically update itself
-update_fastlane
-
 default_platform(:android)
 
 # Helper to increment version based on bump type (major, minor, patch)
@@ -85,7 +82,6 @@ platform :ios do
 
   lane :release do
     setup_ci if ENV['CI']
-    # xcodes(version: "15.3") if ENV['CI']
 
     app_store_connect_api_key(
       key_id: ENV['APP_STORE_CONNECT_KEY_ID'],
