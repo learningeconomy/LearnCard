@@ -1,0 +1,217 @@
+name: Update DidKit WASM
+
+on:
+  repository_dispatch:
+    types:
+      - didkit-main-updated
+      - ssi-main-updated
+  workflow_dispatch:
+    inputs:
+      didkit_ref:
+        description: 'DIDKit ref to build'
+        required: false
+        default: main
+      ssi_ref:
+        description: 'SSI ref to build'
+        required: false
+        default: main
+  schedule:
+    - cron: '17 8 * * *'
+
+concurrency:
+  group: update-didkit-wasm
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: write
+
+env:
+  AWS_REGION: ${{ vars.DIDKIT_WASM_AWS_REGION || 'us-east-1' }}
+  DIDKIT_REF: ${{ inputs.didkit_ref || 'main' }}
+  DIDKIT_WASM_BUCKET: ${{ vars.DIDKIT_WASM_S3_BUCKET }}
+  DIDKIT_WASM_PUBLIC_BASE_URL: ${{ vars.DIDKIT_WASM_PUBLIC_BASE_URL }}
+  SSI_REF: ${{ inputs.ssi_ref || 'main' }}
+
+jobs:
+  update:
+    name: Build and publish DidKit WASM
+    runs-on: ubuntu-latest
+    environment: didkit-wasm-publish
+    steps:
+      - name: Validate configuration
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DIDKIT_WASM_BUCKET}" ]; then
+              echo "::error::Set DIDKIT_WASM_S3_BUCKET as a repository or environment variable."
+              exit 1
+          fi
+
+          if [ -z "${DIDKIT_WASM_PUBLIC_BASE_URL}" ]; then
+              echo "::error::Set DIDKIT_WASM_PUBLIC_BASE_URL as a repository or environment variable."
+              exit 1
+          fi
+
+      - name: Checkout LearnCard
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+
+      - name: Configure Git credentials
+        env:
+          CHECKOUT_TOKEN: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+        run: |
+          git config --global url."https://x-access-token:${CHECKOUT_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Update didkit and ssi submodules
+        id: submodules
+        run: |
+          set -euo pipefail
+
+          git -C lib/ssi fetch origin "${SSI_REF}"
+          git -C lib/ssi checkout --detach FETCH_HEAD
+          git -C lib/ssi submodule update --init --recursive
+
+          git -C lib/didkit fetch origin "${DIDKIT_REF}"
+          git -C lib/didkit checkout --detach FETCH_HEAD
+          git -C lib/didkit submodule update --init --recursive
+
+          SSI_SHA="$(git -C lib/ssi rev-parse HEAD)"
+          DIDKIT_SHA="$(git -C lib/didkit rev-parse HEAD)"
+
+          echo "ssi_sha=${SSI_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "ssi_short_sha=${SSI_SHA::12}" >> "${GITHUB_OUTPUT}"
+          echo "didkit_sha=${DIDKIT_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "didkit_short_sha=${DIDKIT_SHA::12}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            lib/didkit/target/
+          key: ${{ runner.os }}-didkit-wasm-cargo-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-didkit-wasm-cargo-
+
+      - name: Install WASM build tools
+        run: |
+          set -euo pipefail
+
+          if ! command -v wasm-pack >/dev/null 2>&1; then
+              cargo install wasm-pack --locked
+          fi
+
+          sudo apt-get update
+          sudo apt-get install -y binaryen
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Build DIDKit WASM
+        run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
+
+      - name: Prepare WASM upload metadata
+        id: wasm
+        run: |
+          set -euo pipefail
+
+          WASM_PATH="packages/plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm"
+          SHA256="$(sha256sum "${WASM_PATH}" | awk '{print $1}')"
+          S3_KEY="didkit/sha256-${SHA256}/didkit_wasm_bg.wasm"
+          BASE_URL="${DIDKIT_WASM_PUBLIC_BASE_URL%/}"
+          WASM_URL="${BASE_URL}/${S3_KEY}"
+
+          echo "path=${WASM_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "sha256=${SHA256}" >> "${GITHUB_OUTPUT}"
+          echo "s3_key=${S3_KEY}" >> "${GITHUB_OUTPUT}"
+          echo "url=${WASM_URL}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.DIDKIT_WASM_AWS_ROLE_ARN }}
+          role-session-name: learncard-didkit-wasm
+
+      - name: Upload DIDKit WASM
+        run: |
+          aws s3 cp \
+              "${{ steps.wasm.outputs.path }}" \
+              "s3://${DIDKIT_WASM_BUCKET}/${{ steps.wasm.outputs.s3_key }}" \
+              --content-type application/wasm \
+              --cache-control public,max-age=31536000,immutable \
+              --metadata "sha256=${{ steps.wasm.outputs.sha256 }}"
+
+      - name: Update default WASM URL
+        run: node packages/plugins/didkit/scripts/set-default-wasm-url.mjs "${{ steps.wasm.outputs.url }}"
+
+      - name: Build didkit plugin
+        run: pnpm exec nx build didkit-plugin
+
+      - name: Prepare changeset
+        id: changes
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- lib/didkit lib/ssi packages/plugins/didkit/src/didkit; then
+              echo "has_changes=false" >> "${GITHUB_OUTPUT}"
+              exit 0
+          fi
+
+          mkdir -p .changeset
+          cat > .changeset/update-didkit-wasm.md <<EOF
+          ---
+          '@learncard/didkit-plugin': patch
+          ---
+
+          Update DIDKit WASM from didkit ${{ steps.submodules.outputs.didkit_short_sha }} and ssi ${{ steps.submodules.outputs.ssi_short_sha }}.
+          EOF
+
+          echo "has_changes=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Create pull request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+          commit-message: 'chore: update didkit wasm'
+          branch: automation/update-didkit-wasm
+          delete-branch: true
+          title: '[Auto] Update DidKit WASM'
+          body: |
+            This PR was generated automatically after a DidKit/SSI update.
+
+            Sources:
+            - didkit: `${{ steps.submodules.outputs.didkit_sha }}`
+            - ssi: `${{ steps.submodules.outputs.ssi_sha }}`
+            - wasm sha256: `${{ steps.wasm.outputs.sha256 }}`
+            - wasm URL: `${{ steps.wasm.outputs.url }}`
+
+            Trigger:
+            - event: `${{ github.event_name }}`
+            - source repo: `${{ github.event.client_payload.source_repo || 'manual-or-scheduled' }}`
+            - source sha: `${{ github.event.client_payload.source_sha || 'n/a' }}`
+          labels: |
+            automated pr
+          assignees: TaylorBeeston
+          reviewers: TaylorBeeston
+          add-paths: |
+            .changeset/update-didkit-wasm.md
+            lib/didkit
+            lib/ssi
+            packages/plugins/didkit/src/didkit/index.ts
+            packages/plugins/didkit/src/didkit/pkg
+
