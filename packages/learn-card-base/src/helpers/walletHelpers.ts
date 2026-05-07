@@ -5,6 +5,7 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
+import { getRenderMethodPlugin } from '@learncard/render-method-plugin';
 
 import { getSQLitePlugin } from 'learn-card-base/plugins/sqlite';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -80,7 +81,11 @@ export const getBespokeLearnCard = async (
         ? lerRsLc
         : await lerRsLc.addPlugin(await getSQLitePlugin(lerRsLc));
 
-    const bespokeLearnCard = sqliteAugmented as BespokeLearnCard;
+    const renderMethodAugmented = await sqliteAugmented.addPlugin(
+        getRenderMethodPlugin(sqliteAugmented)
+    );
+
+    const bespokeLearnCard = renderMethodAugmented as unknown as BespokeLearnCard;
 
     LEARN_CARDS[cacheKey] = bespokeLearnCard;
 
