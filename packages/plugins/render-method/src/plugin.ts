@@ -7,21 +7,23 @@ import {
     RENDER_METHOD_CONTEXT,
 } from './types';
 
+const DEFAULT_TEMPLATE_ID = 'https://templates.learncard.com/svg/1.0.0/id-card.svg';
+
 // ! for now we only support svg-mustache
 // TODO: Add other render suites and media types
 
-const buildTemplateRenderMethod = (config: AttachRenderMethodConfig): TemplateRenderMethod => ({
+const buildTemplateRenderMethod = (config?: AttachRenderMethodConfig): TemplateRenderMethod => ({
     type: 'TemplateRenderMethod',
     renderSuite: 'svg-mustache', // TODO: Add other render suites
     template: {
-        ...(config.templateId ? { id: config.templateId } : { value: config.templateValue! }),
+        ...(config?.templateValue ? { value: config.templateValue } : { id: config?.templateId ?? DEFAULT_TEMPLATE_ID }),
         mediaType: 'image/svg+xml', // TODO: Add other media types
-        ...(config.digestMultibase ? { digestMultibase: config.digestMultibase } : {}),
-        ...(config.renderProperty ? { renderProperty: config.renderProperty } : {}),
+        ...(config?.digestMultibase ? { digestMultibase: config.digestMultibase } : {}),
+        ...(config?.renderProperty ? { renderProperty: config.renderProperty } : {}),
     },
 } as TemplateRenderMethod);
 
-const attachRenderMethod = (vc: UnsignedVC, config: AttachRenderMethodConfig): UnsignedVC => {
+const attachRenderMethod = (vc: UnsignedVC, config?: AttachRenderMethodConfig): UnsignedVC => {
     const renderMethod = buildTemplateRenderMethod(config);
 
     const context = Array.isArray(vc['@context']) ? vc['@context'] : [vc['@context']];
@@ -55,7 +57,7 @@ export const getRenderMethodPlugin = (
     description:
         'Attaches W3C renderMethod to Verifiable Credentials for standards-based rendering',
     methods: {
-        attachRenderMethod: (_lc, vc, config) => attachRenderMethod(vc, config),
-        buildTemplateRenderMethod: (_lc, config) => buildTemplateRenderMethod(config),
+        attachRenderMethod: (_lc, vc, config?) => attachRenderMethod(vc, config),
+        buildTemplateRenderMethod: (_lc, config?) => buildTemplateRenderMethod(config),
     },
 });

@@ -15,8 +15,8 @@ export type AttachRenderMethodConfig =
     | (AttachRenderMethodConfigBase & { /** Inline base64-encoded SVG Mustache template content. */ templateValue: string; templateId?: never });
 
 export type RenderMethodPluginMethods = {
-    attachRenderMethod: (vc: UnsignedVC, config: AttachRenderMethodConfig) => UnsignedVC;
-    buildTemplateRenderMethod: (config: AttachRenderMethodConfig) => TemplateRenderMethod;
+    attachRenderMethod: (vc: UnsignedVC, config?: AttachRenderMethodConfig) => UnsignedVC;
+    buildTemplateRenderMethod: (config?: AttachRenderMethodConfig) => TemplateRenderMethod;
 };
 
 /** The render-method plugin is stateless and has no required dependent methods or control planes. */
