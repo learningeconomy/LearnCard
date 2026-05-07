@@ -1,6 +1,15 @@
 name: Update DidKit WASM
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/update-didkit-wasm.yml'
+      - '.github/actions/setup/**'
+      - 'packages/plugins/didkit/**'
+      - 'lib/didkit'
+      - 'lib/ssi'
   repository_dispatch:
     types:
       - didkit-main-updated
@@ -15,8 +24,6 @@ on:
         description: 'SSI ref to build'
         required: false
         default: main
-  schedule:
-    - cron: '17 8 * * *'
 
 concurrency:
   group: update-didkit-wasm
@@ -37,6 +44,7 @@ env:
 jobs:
   update:
     name: Build and publish DidKit WASM
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment: didkit-wasm-publish
     steps:
@@ -183,7 +191,7 @@ jobs:
           echo "has_changes=true" >> "${GITHUB_OUTPUT}"
 
       - name: Create pull request
-        if: steps.changes.outputs.has_changes == 'true'
+        if: steps.changes.outputs.has_changes == 'true' && github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
@@ -214,4 +222,3 @@ jobs:
             lib/ssi
             packages/plugins/didkit/src/didkit/index.ts
             packages/plugins/didkit/src/didkit/pkg
-
