@@ -40,6 +40,7 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
+        "@learncard/render-method-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
         "@learncard/sss-key-manager": "workspace:*",
