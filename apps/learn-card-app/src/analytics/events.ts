@@ -46,6 +46,10 @@ export const AnalyticsEvents = {
 
     // LC-1644 perf bench (admin-only)
     BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
+
+    // LC-1644 frontend perf telemetry — captures user-perceived sendCredential→claim flow.
+    // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
+    FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -182,6 +186,42 @@ export interface AnalyticsEventPayloads {
         listing_id: string;
         recipient_profile_id: string;
         run_label: string;
+    };
+
+    /**
+     * One iteration of the user-perceived sendCredential → claim flow.
+     *
+     * Phases (all milliseconds, undefined when phase not reached):
+     *  - request_to_response_ms: time from `learnCard.invoke.sendAppEvent` invocation
+     *    to the response promise resolving. Includes network RTT + brain-service total.
+     *    Joinable to backend `bench.appevent.iteration.total_ms` when both fire from
+     *    the bench panel (same `run_id`).
+     *  - response_to_modal_mount_ms: time from response received to `CredentialClaimModal`
+     *    `useEffect` first running. Captures React state propagation + lazy modal mount cost.
+     *  - modal_mount_to_credential_resolved_ms: time from modal mount to credential set in
+     *    state. Should be ~0 with Tasks 1+2 (`fast_path: true`); ~500–1500ms on the
+     *    URI-re-resolve fallback path.
+     *  - claim_phase_ms: time from "Accept" click to `claimed=true` rendered. Covers the
+     *    three-tRPC-call sequence (`addVCtoWallet`, `acceptCredential`,
+     *    `queryNotifications`, `updateNotificationMeta`).
+     *  - total_e2e_ms: end-to-end user-perceived latency from `sendAppEvent` invocation
+     *    to claim success state. The headline number for "did this feel slow?".
+     */
+    [AnalyticsEvents.FRONTEND_SENDCREDENTIAL_ITERATION]: {
+        run_id: string;
+        listing_id?: string;
+        event_type?: string;
+        outcome: 'claimed' | 'already_claimed' | 'modal_dismissed' | 'error';
+        fast_path?: boolean;
+        already_claimed?: boolean;
+        request_to_response_ms?: number;
+        response_to_modal_mount_ms?: number;
+        modal_mount_to_credential_resolved_ms?: number;
+        claim_phase_ms?: number;
+        total_e2e_ms?: number;
+        error_phase?: 'request' | 'modal_mount' | 'credential_resolve' | 'claim';
+        error_message?: string;
+        triggered_by_bench?: boolean;
     };
 }
 

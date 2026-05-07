@@ -8,6 +8,14 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, VP } from '@learncard/types';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import {
+    markModalMounted,
+    markCredentialResolved,
+    markClaimStarted,
+    markClaimCompleted,
+    flushOnError as flushSendCredentialFlowOnError,
+    flushOnDismiss as flushSendCredentialFlowOnDismiss,
+} from '../../helpers/sendCredentialFlow.helpers';
 
 interface CredentialClaimModalProps {
     credentialUri: string;
@@ -34,10 +42,21 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // LC-1644: Hoist wallet to ref so handleClaim can reuse it without a second initWallet()
     const walletRef = useRef<Awaited<ReturnType<typeof initWallet>> | null>(null);
 
+    // LC-1644: any dismiss path before claim completes flushes the in-flight perf flow as
+    // 'modal_dismissed'. Post-claim dismissals are no-ops because the flow is already terminated.
+    const handleDismiss = () => {
+        void flushSendCredentialFlowOnDismiss();
+        onDismiss();
+    };
+
     // Resolve the credential URI on mount
     // LC-1644: If preResolvedCredential is provided via prop, skip the network fetch entirely.
     useEffect(() => {
         let cancelled = false;
+
+        // LC-1644 perf telemetry — record modal mount time. The flow may not be active
+        // (e.g. modal opened from a non-sendCredential path); the helper no-ops in that case.
+        markModalMounted();
 
         const resolveCredential = async () => {
             try {
@@ -46,7 +65,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
                 if (preResolvedCredential) {
                     // Fast path — credential already available from APP_EVENT response
-                    if (!cancelled) setCredential(preResolvedCredential);
+                    if (!cancelled) {
+                        setCredential(preResolvedCredential);
+                        markCredentialResolved({ fastPath: true });
+                    }
 
                     // Still init wallet in background for handleClaim later
                     const wallet = await initWallet();
@@ -60,10 +82,17 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 const vc = await wallet?.read.get(credentialUri);
 
                 if (!vc) throw new Error('Error resolving credential');
-                if (!cancelled) setCredential(vc);
+                if (!cancelled) {
+                    setCredential(vc);
+                    markCredentialResolved({ fastPath: false });
+                }
             } catch (err) {
                 console.error('Failed to resolve credential:', err);
                 if (!cancelled) setError('Unable to load credential');
+                void flushSendCredentialFlowOnError({
+                    phase: 'credential_resolve',
+                    message: err instanceof Error ? err.message : String(err),
+                });
             } finally {
                 if (!cancelled) setIsLoading(false);
             }
@@ -77,35 +106,64 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         if (isClaiming || claimed) return;
 
         setIsClaiming(true);
+        markClaimStarted();
 
         try {
-            await addVCtoWallet({ uri: credentialUri });
+            // LC-1644 Phase 2 perf: parallelize the local wallet write with the server-side
+            // accept + notification query. All three are independent:
+            //   - addVCtoWallet → local IndexedDB / wallet write
+            //   - acceptCredential → server-side state update via tRPC
+            //   - queryNotifications → server-side read for the matching notification record
+            // Previously these ran sequentially, costing ~500–1500ms per JIRA estimates. Running
+            // in parallel cuts the claim phase to roughly the slowest individual call.
+            //
+            // We use Promise.allSettled so a server-side hiccup on accept/query doesn't fail
+            // the whole claim — we already treated those as best-effort below.
+            const wallet = walletRef.current;
 
-            // Find and update the notification for this credential
-            try {
-                const wallet = walletRef.current;
-                if (wallet) {
-                    await wallet.invoke.acceptCredential(credentialUri);
+            const [addResult, acceptResult, queryResult] = await Promise.allSettled([
+                addVCtoWallet({ uri: credentialUri }),
+                wallet ? wallet.invoke.acceptCredential(credentialUri) : Promise.resolve(),
+                wallet
+                    ? wallet.invoke.queryNotifications(
+                          { 'data.vcUris': credentialUri, archived: false },
+                          { limit: 1 }
+                      )
+                    : Promise.resolve(undefined),
+            ]);
 
-                    // Query for the notification with this credential URI
-                    const result = await wallet.invoke.queryNotifications(
-                        { 'data.vcUris': credentialUri, archived: false },
-                        { limit: 1 }
-                    );
+            // The local wallet write is the user-perceived "credential claimed" event — if it
+            // fails we have to surface the error. Server-side issues we just log.
+            if (addResult.status === 'rejected') throw addResult.reason;
 
-                    if (result && typeof result !== 'boolean' && result.notifications?.[0]?._id) {
-                        await wallet.invoke.updateNotificationMeta(result.notifications[0]._id, {
-                            actionStatus: 'COMPLETED',
-                            read: true,
-                        });
-                    }
-                }
-            } catch (notifErr) {
-                // Don't fail the claim if notification update fails
-                console.warn('Failed to update notification:', notifErr);
+            if (acceptResult.status === 'rejected') {
+                console.warn('Failed to accept credential server-side:', acceptResult.reason);
+            }
+
+            // Fire-and-forget the notification metadata update. The user already sees claim
+            // success — bookkeeping shouldn't block the UI.
+            if (
+                wallet &&
+                queryResult.status === 'fulfilled' &&
+                queryResult.value &&
+                typeof queryResult.value !== 'boolean' &&
+                queryResult.value.notifications?.[0]?._id
+            ) {
+                const notifId = queryResult.value.notifications[0]._id;
+                void wallet.invoke
+                    .updateNotificationMeta(notifId, {
+                        actionStatus: 'COMPLETED',
+                        read: true,
+                    })
+                    .catch((notifErr: unknown) => {
+                        console.warn('Failed to update notification:', notifErr);
+                    });
+            } else if (queryResult.status === 'rejected') {
+                console.warn('Failed to query notification:', queryResult.reason);
             }
 
             setClaimed(true);
+            void markClaimCompleted();
 
             presentToast('Successfully claimed Credential!', {
                 type: ToastTypeEnum.Success,
@@ -113,6 +171,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             });
         } catch (err) {
             console.error('Failed to claim credential:', err);
+            void flushSendCredentialFlowOnError({
+                phase: 'claim',
+                message: err instanceof Error ? err.message : String(err),
+            });
 
             presentToast('Unable to claim Credential', {
                 type: ToastTypeEnum.Error,
@@ -187,7 +249,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         </p>
 
                         <button
-                            onClick={onDismiss}
+                            onClick={() => {
+                                void flushSendCredentialFlowOnDismiss();
+                                onDismiss();
+                            }}
                             className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                         >
                             Close
@@ -212,7 +277,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col relative">
                 {/* Close button */}
                 <button
-                    onClick={onDismiss}
+                    onClick={handleDismiss}
                     disabled={isClaiming}
                     className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-md transition-colors disabled:opacity-50"
                 >
@@ -263,7 +328,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                     </button>
 
                     <button
-                        onClick={onDismiss}
+                        onClick={handleDismiss}
                         disabled={isClaiming}
                         className="w-full px-4 py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors disabled:opacity-50"
                     >
