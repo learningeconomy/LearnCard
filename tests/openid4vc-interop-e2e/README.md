@@ -201,31 +201,27 @@ the resolved Authorization Request. The remaining
 `it.skip` (full SD-JWT-VC roundtrip) becomes active when the
 plugin gains `dc+sd-jwt` presentation support.
 
-## Plugin status-list checking (Bitstring Status List v1.0)
+## Bitstring Status List checking
 
-Independent of any verifier interop, the plugin exposes
-`checkCredentialStatus(credential)` which decodes a held credential's
-`credentialStatus` entry against its referenced Status List
-Credential per [W3C VC Bitstring Status List v1.0](https://www.w3.org/TR/vc-bitstring-status-list/)
-(and the StatusList2021 legacy alias). Returns a typed outcome —
-`active` / `revoked` / `suspended` / `no_status` /
-`unsupported_status_type` — plus diagnostics (which list was
-consulted, which bit index was read, what the purpose was).
+Bitstring Status List revocation/suspension checking is performed
+inside `@learncard/didkit-plugin` as part of `verifyCredential`.
+A held credential carrying a `BitstringStatusListEntry`,
+`StatusList2021Entry`, or `RevocationList2020Status` is checked
+automatically — `lc.invoke.verifyCredential(vc)` returns a
+`VerificationCheck` whose `status: StatusCheckEntry[]` field
+exposes per-entry `entryType`, `statusPurpose`, `isSet`,
+`statusListCredential`, and `statusListIndex` so callers can render
+"revoked" / "suspended" / "active" UI without string-matching the
+human-readable `errors` array. End-to-end coverage of the full
+verify-with-status flow lives in
+`tests/e2e/tests/bitstring-status-list.spec.ts`.
 
-The decoder is exercised by 27 unit tests in
-`packages/plugins/openid4vc/src/vp/status.test.ts` covering:
-bitstring layout invariants (high-order-bit-first, byte
-boundaries, multi-kilobyte indices), both legacy and modern
-entry types, multiple status entries on one credential
-(any-set-bit-wins semantics), unsupported type strict/lax
-modes, encoding edge cases (multibase prefix, non-GZIP
-payload, malformed base64, out-of-range index), and fetch /
-network error paths.
-
-3 plugin-facade tests in `packages/plugins/openid4vc/src/plugin.test.ts`
-verify the `checkCredentialStatus` method is correctly wired
-through the host LearnCard adapter and threads the plugin's
-configured `fetchImpl` into status-list fetches by default.
+This is a change from earlier drafts of the openid4vc-plugin, which
+shipped a parallel TypeScript decoder + `checkCredentialStatus()`
+facade method. That code was removed once didkit gained native
+status-list support (TaylorBeeston/ssi
+`lc-status-array-and-structured-result`); keeping both would have
+meant two divergent implementations of the same W3C spec.
 
 ## Plugin DCQL pipeline
 
