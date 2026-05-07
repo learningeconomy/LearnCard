@@ -3,14 +3,16 @@ import { UnsignedVC, TemplateRenderMethod } from '@learncard/types';
 
 export const RENDER_METHOD_CONTEXT = 'https://w3id.org/vc/render-method/v1';
 
-export type AttachRenderMethodConfig = {
-    /** URL of the hosted SVG Mustache template. */
-    templateId: string;
+type AttachRenderMethodConfigBase = {
     /** Optional SHA-256 multibase digest of the template for integrity verification. */
     digestMultibase?: string;
     /** JSON Pointer paths (RFC 6901) limiting which VC fields are exposed to the template. */
     renderProperty?: string[];
 };
+
+export type AttachRenderMethodConfig =
+    | (AttachRenderMethodConfigBase & { /** URL of the hosted SVG Mustache template. */ templateId: string; templateValue?: never })
+    | (AttachRenderMethodConfigBase & { /** Inline base64-encoded SVG Mustache template content. */ templateValue: string; templateId?: never });
 
 export type RenderMethodPluginMethods = {
     attachRenderMethod: (vc: UnsignedVC, config: AttachRenderMethodConfig) => UnsignedVC;

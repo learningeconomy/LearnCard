@@ -14,12 +14,12 @@ const buildTemplateRenderMethod = (config: AttachRenderMethodConfig): TemplateRe
     type: 'TemplateRenderMethod',
     renderSuite: 'svg-mustache', // TODO: Add other render suites
     template: {
-        id: config.templateId,
+        ...(config.templateId ? { id: config.templateId } : { value: config.templateValue! }),
         mediaType: 'image/svg+xml', // TODO: Add other media types
         ...(config.digestMultibase ? { digestMultibase: config.digestMultibase } : {}),
         ...(config.renderProperty ? { renderProperty: config.renderProperty } : {}),
     },
-});
+} as TemplateRenderMethod);
 
 const attachRenderMethod = (vc: UnsignedVC, config: AttachRenderMethodConfig): UnsignedVC => {
     const renderMethod = buildTemplateRenderMethod(config);
