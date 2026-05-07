@@ -420,9 +420,17 @@ Providers are registered automatically on startup based on environment variables
 
 | Provider  | Env Variable      | Default   | Output Format                                |
 | --------- | ----------------- | --------- | -------------------------------------------- |
-| Console   | `TRACE_CONSOLE`   | `true`    | Indented tree with timing: `✓ db:query 45ms` |
+| Console   | `TRACE_CONSOLE`   | `false`   | Indented tree with timing: `✓ db:query 45ms` |
 | JSON      | `TRACE_JSON`      | `false`   | Structured JSON per span (for log ingestion) |
 | Sentry    | `SENTRY_DSN`      | disabled  | Sentry performance transactions              |
+
+Console output is **opt-in** because every tRPC procedure and every Cypher query produces a span (via the `openRoute` middleware and the auto-tracing `neogma.queryRunner.run` wrapper in `src/instance.ts`). Leaving it on by default would flood local dev consoles and test output. Enable it explicitly when debugging performance:
+
+```bash
+TRACE_CONSOLE=true pnpm dev
+```
+
+In production, prefer `SENTRY_DSN` for performance traces or `TRACE_JSON=true` for log aggregation.
 
 **Console output example:**
 ```
@@ -440,8 +448,8 @@ Providers are registered automatically on startup based on environment variables
 ### Configuration
 
 ```bash
-# Disable console tracing (enabled by default)
-TRACE_CONSOLE=false
+# Enable console tracing (off by default — opt in for local performance debugging)
+TRACE_CONSOLE=true
 
 # Enable JSON tracing for log aggregation
 TRACE_JSON=true
@@ -449,6 +457,8 @@ TRACE_JSON=true
 # Enable Sentry performance monitoring
 SENTRY_DSN=https://xxx@sentry.io/xxx
 ```
+
+Setting both `TRACE_CONSOLE=true` and `TRACE_JSON=true` will emit each span twice (once as the indented tree, once as JSON). Pick one for any given environment.
 
 ### Best Practices
 
