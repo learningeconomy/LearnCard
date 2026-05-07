@@ -19,10 +19,7 @@ export type RenderMethodPluginMethods = {
     buildTemplateRenderMethod: (config: AttachRenderMethodConfig) => TemplateRenderMethod;
 };
 
-/**
- * The render-method plugin is stateless and has no required dependent methods or control planes.
- * This type alias is defined for symmetry with other plugins and to allow future dependency additions.
- */
+/** The render-method plugin is stateless and has no required dependent methods or control planes. */
 export type RenderMethodDependentLearnCard = LearnCard<any>;
 
 export type RenderMethodPlugin = Plugin<
