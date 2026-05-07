@@ -133,18 +133,8 @@ export async function issueCredentialWithSigningAuthority(
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
     const ownerProfile = getIssuerOwnerProfile(issuer);
-    // LC-1644 bench: allow SA_OWNER_DID_OVERRIDE env var to force a specific ownerDid
-    // without threading the param through every caller. Takes precedence over the
-    // caller-supplied override so benches against remote SAs can redirect all calls
-    // to a registered owner — only set in bench/dev environments.
-    //
-    // We treat empty string as "unset" because compose interpolation (e.g. `${VAR:-}`)
-    // produces `""` when the host var is missing, and `??` would otherwise let that
-    // empty string through and break the SA lookup.
-    const envOverride = process.env.SA_OWNER_DID_OVERRIDE;
     const ownerDid =
-        (envOverride && envOverride.length > 0 ? envOverride : undefined)
-        ?? ownerDidOverride
+        ownerDidOverride
         ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
 
     const logContext = {
