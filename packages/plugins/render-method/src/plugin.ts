@@ -12,18 +12,17 @@ const DEFAULT_TEMPLATE_ID = 'https://templates.learncard.com/svg/1.0.0/id-card.s
 // ! for now we only support svg-mustache
 // TODO: Add other render suites and media types
 
-const buildTemplateRenderMethod = (config?: AttachRenderMethodConfig): TemplateRenderMethod => ({
+export const buildTemplateRenderMethod = (config?: AttachRenderMethodConfig): TemplateRenderMethod => ({
     type: 'TemplateRenderMethod',
     renderSuite: 'svg-mustache', // TODO: Add other render suites
-    template: {
-        ...(config?.templateValue ? { value: config.templateValue } : { id: config?.templateId ?? DEFAULT_TEMPLATE_ID }),
-        mediaType: 'image/svg+xml', // TODO: Add other media types
-        ...(config?.digestMultibase ? { digestMultibase: config.digestMultibase } : {}),
-        ...(config?.renderProperty ? { renderProperty: config.renderProperty } : {}),
-    },
-} as TemplateRenderMethod);
+    template: config?.templateValue
+        ? `data:image/svg+xml,${encodeURIComponent(config.templateValue)}`
+        : (config?.templateId ?? DEFAULT_TEMPLATE_ID),
+    ...(config?.renderProperty ? { renderProperty: config.renderProperty } : {}),
+    outputPreference: { mediaType: 'image/svg+xml' },
+} as unknown as TemplateRenderMethod);
 
-const attachRenderMethod = (vc: UnsignedVC, config?: AttachRenderMethodConfig): UnsignedVC => {
+export const attachRenderMethod = (vc: UnsignedVC, config?: AttachRenderMethodConfig): UnsignedVC => {
     const renderMethod = buildTemplateRenderMethod(config);
 
     const context = Array.isArray(vc['@context']) ? vc['@context'] : [vc['@context']];
