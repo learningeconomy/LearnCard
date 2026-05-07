@@ -296,7 +296,9 @@ export const issueCertifiedBoost = async (
     domain: string
 ): Promise<VC | JWE | false> => {
     return trace('certification', 'issueCertifiedBoost', async () => {
-        const learnCard = await trace('init', 'getLearnCard', () => getLearnCard());
+        const learnCard = await trace('init', 'getLearnCard', () =>
+            getLearnCard(undefined, true)
+        );
 
         let lcnDID = `did:web:${domain}`;
 
