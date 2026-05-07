@@ -1,0 +1,21 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "render-method-plugin",
+    "sourceRoot": "packages/plugins/render-method/src",
+    "projectType": "library",
+    "root": "packages/plugins/render-method",
+    "tags": [],
+    "implicitDependencies": ["types", "core"],
+    "namedInputs": {
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": { "script": "build" }
+        }
+    }
+}
