@@ -134,6 +134,24 @@ export const VC2EvidenceValidator = z
     .catchall(z.any());
 export type VC2Evidence = z.infer<typeof VC2EvidenceValidator>;
 
+export const TemplateRenderMethodValidator = z.object({
+    type: z.literal('TemplateRenderMethod'),
+    renderSuite: z.literal('svg-mustache'), // TODO: Add other render suites
+    template: z.object({
+        id: z.string().url(),
+        mediaType: z.literal('image/svg+xml'), // TODO: Add other media types
+        digestMultibase: z.string().optional(),
+        renderProperty: z.array(z.string()).optional(),
+    }),
+});
+export type TemplateRenderMethod = z.infer<typeof TemplateRenderMethodValidator>;
+
+export const RenderMethodValidator = z.union([
+    TemplateRenderMethodValidator,
+    z.record(z.string(), z.any()),
+]);
+export type RenderMethod = z.infer<typeof RenderMethodValidator>;
+
 export const UnsignedVCValidator = z
     .object({
         '@context': ContextValidator,
@@ -161,6 +179,7 @@ export const UnsignedVCValidator = z
         status: CredentialStatusValidator.or(CredentialStatusValidator.array()).optional(),
         termsOfUse: TermsOfUseValidator.or(TermsOfUseValidator.array()).optional(),
         evidence: z.union([VC2EvidenceValidator, z.array(VC2EvidenceValidator)]).optional(),
+        renderMethod: z.union([RenderMethodValidator, z.array(RenderMethodValidator)]).optional(),
     })
     .catchall(z.any());
 export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
