@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { attachRenderMethod } from '@learncard/render-method-plugin';
 import { VerificationItem, BoostRecipientInfo, LCNBoostStatusEnum, VC } from '@learncard/types';
 import {
     BoostCMSAppearanceDisplayTypeEnum,
@@ -374,12 +375,14 @@ export const updateBoost = async (
         console.warn('Failed to set nested alignments on updatedCredential', e);
     }
 
+    const credentialWithRenderMethod = attachRenderMethod(updatedCredential);
+
     const updatedBoost = await wallet?.invoke?.updateBoost(boostUri, {
         name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title,
         type: vcInput?.basicInfo.achievementType,
         category: vcInput?.basicInfo?.type,
         status: boostStatus,
-        credential: updatedCredential,
+        credential: credentialWithRenderMethod,
         defaultPermissions: {
             canView:
                 typeof vcInput?.boostPermissions?.canView === 'boolean'
@@ -724,7 +727,9 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
         attachments: vcInput?.mediaAttachments, // media attachments
     };
 
-    const vc = await wallet.invoke.issueCredential(newCredential);
+    const credentialWithRenderMethod = attachRenderMethod(newCredential);
+
+    const vc = await wallet.invoke.issueCredential(credentialWithRenderMethod);
 
     const boostUri = await wallet.invoke.createBoost(vc, {
         name: vcInput?.basicInfo?.name,
