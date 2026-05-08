@@ -86,6 +86,14 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
     );
 };
 
+const PersonGlyph: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+        <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z" />
+    </svg>
+);
+
+const firstChar = (s?: string) => (s && s.trim() ? s.trim()[0] : '');
+
 export const UserProfilePicture: React.FC<{
     customContainerClass?: string;
     customImageClass?: string;
@@ -95,19 +103,29 @@ export const UserProfilePicture: React.FC<{
 }> = ({ customContainerClass, customImageClass, customSize = 300, user, children }) => {
     const baseColor = 'bg-indigo-500' ?? getRandomBaseColor();
     const src = resizeAndChangeQuality(user?.image || user?.profileImage, customSize, 90);
-    const letterToDisplay =
-        user?.displayName?.substring(0, 1) ||
-        user?.profileId?.substring(0, 1) ||
-        user?.name?.substring(0, 1) ||
-        user?.email?.substring(0, 1) ||
-        '#';
 
-    if (!src) {
+    const letterToDisplay =
+        firstChar(user?.displayName) ||
+        firstChar(user?.profileId) ||
+        firstChar(user?.name) ||
+        firstChar(user?.email);
+
+    const [imageLoaded, setImageLoaded] = React.useState(false);
+    const [imageFailed, setImageFailed] = React.useState(false);
+
+    React.useEffect(() => {
+        setImageLoaded(false);
+        setImageFailed(false);
+    }, [src]);
+
+    const showFallbackOnly = !src || imageFailed;
+
+    if (showFallbackOnly) {
         return (
             <div
-                className={`rounded-full flex items-center justify-center font-bold uppercase select-none ${customContainerClass} ${baseColor}`}
+                className={`rounded-full flex items-center justify-center font-bold uppercase select-none ${customContainerClass} ${baseColor} text-white`}
             >
-                {letterToDisplay}
+                {letterToDisplay || <PersonGlyph className="w-1/2 h-1/2 opacity-90" />}
                 {children}
             </div>
         );
@@ -115,11 +133,23 @@ export const UserProfilePicture: React.FC<{
 
     return (
         <div className={`relative select-none ${customContainerClass}`}>
+            {/* Colored placeholder behind the <img>. Visible while the image
+                loads so the user never sees the browser's broken-image glyph
+                or a bare white circle. The img fades in over the placeholder
+                via the opacity transition once it paints. */}
+            <div
+                aria-hidden="true"
+                className={`absolute inset-0 rounded-full flex items-center justify-center font-bold uppercase ${baseColor} text-white`}
+            >
+                {letterToDisplay || <PersonGlyph className="w-1/2 h-1/2 opacity-90" />}
+            </div>
             <img
-                className={`rounded-full ${customImageClass}`}
+                className={`relative rounded-full transition-opacity duration-150 ${customImageClass} ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 alt="user"
                 src={src}
                 referrerPolicy="no-referrer"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageFailed(true)}
             />
             {children}
         </div>
