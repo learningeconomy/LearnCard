@@ -10,10 +10,14 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
+    UnsignedVC,
+    VC,
+    BitstringCredentialStatusEntry,
+    BitstringCredentialStatusPurpose,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
-import { isVC2Format } from '@learncard/helpers';
+import { getCredentialStatusArray, isVC2Format } from '@learncard/helpers';
 import Mustache from 'mustache';
 
 import {
@@ -236,6 +240,46 @@ const appendTemplateEvidence = (
 const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
     return (
         !!profile && 'did' in profile && typeof profile.did === 'string' && profile.did.length > 0
+    );
+};
+
+const appendNetworkCredentialStatus = async (
+    client: any,
+    credential: UnsignedVC,
+    statusPurposes: BitstringCredentialStatusPurpose[] = ['revocation']
+): Promise<UnsignedVC> => {
+    if (!isVC2Format(credential)) return credential;
+
+    const existingStatuses = getCredentialStatusArray(credential);
+    const missingPurposes = statusPurposes.filter(statusPurpose => {
+        return !existingStatuses.some(
+            status =>
+                status.type === 'BitstringStatusListEntry' && status.statusPurpose === statusPurpose
+        );
+    });
+
+    if (missingPurposes.length === 0) return credential;
+
+    const entries = (await client.boost.allocateCredentialStatus.mutate({
+        statusPurposes: missingPurposes,
+    })) as BitstringCredentialStatusEntry[];
+
+    const credentialStatuses = [...existingStatuses, ...entries];
+    credential.credentialStatus = (
+        credentialStatuses.length === 1 ? credentialStatuses[0] : credentialStatuses
+    ) as UnsignedVC['credentialStatus'];
+
+    return credential;
+};
+
+const issueCredentialWithNetworkStatus = async (
+    learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
+    client: any,
+    credential: UnsignedVC,
+    statusPurposes?: BitstringCredentialStatusPurpose[]
+): Promise<VC> => {
+    return learnCard.invoke.issueCredential(
+        await appendNetworkCredentialStatus(client, credential, statusPurposes)
     );
 };
 
@@ -797,7 +841,11 @@ export async function getLearnCardNetworkPlugin(
                     const myProfile = await client.profile.getProfile.query();
                     const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
                     const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
-                    const signedCredential = await _learnCard.invoke.issueCredential(vc);
+                    const signedCredential = await issueCredentialWithNetworkStatus(
+                        _learnCard,
+                        client,
+                        vc
+                    );
                     const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
                         proofFormat: 'jwt',
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
@@ -1257,10 +1305,31 @@ export async function getLearnCardNetworkPlugin(
 
                 return result;
             },
+            allocateCredentialStatus: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return (client.boost as any).allocateCredentialStatus.mutate(options);
+            },
             revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
                 await ensureUser();
 
                 return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
+            },
+            suspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return (client.boost as any).suspendBoostRecipient.mutate({
+                    boostUri,
+                    recipientProfileId,
+                });
+            },
+            unsuspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return (client.boost as any).unsuspendBoostRecipient.mutate({
+                    boostUri,
+                    recipientProfileId,
+                });
             },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();
@@ -1337,7 +1406,14 @@ export async function getLearnCardNetworkPlugin(
                     boost = options.overideFn(boost);
                 }
 
-                const vc = await _learnCard.invoke.issueCredential(boost);
+                const statusPurposes =
+                    typeof options === 'object' ? options.statusPurposes : undefined;
+                const vc = await issueCredentialWithNetworkStatus(
+                    _learnCard,
+                    client,
+                    boost,
+                    statusPurposes
+                );
 
                 // options is allowed to be a boolean to maintain backwards compatibility
                 if ((typeof options === 'object' && !options.encrypt) || !options) {
@@ -1475,7 +1551,11 @@ export async function getLearnCardNetworkPlugin(
                             boost.boostId = input.templateUri;
                         }
 
-                        const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                        const signedCredential = await issueCredentialWithNetworkStatus(
+                            _learnCard,
+                            client,
+                            boost
+                        );
                         const credentialUri = await _learnCard.invoke.sendCredential(
                             recipient,
                             signedCredential,
@@ -1567,7 +1647,11 @@ export async function getLearnCardNetworkPlugin(
                             if (boost?.type?.includes('BoostCredential'))
                                 boost.boostId = input.templateUri;
 
-                            const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                            const signedCredential = await issueCredentialWithNetworkStatus(
+                                _learnCard,
+                                client,
+                                boost
+                            );
 
                             if (isDid && recipient.startsWith('did:web:')) {
                                 const credentialUri = await _learnCard.invoke.sendCredential(
@@ -2519,7 +2603,6 @@ export const getVerifyBoostPlugin = async (
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
-
     return {
         name: 'VerifyBoost',
         displayName: 'Verify Boost Extension',
@@ -2536,15 +2619,33 @@ export const getVerifyBoostPlugin = async (
                         const verifyBoostCredential = await learnCard.invoke.verifyCredential(
                             boostCredential
                         );
+                        const boostCredentialErrors = verifyBoostCredential.errors ?? [];
+                        if (verifyBoostCredential.status?.length) {
+                            verificationCheck.status = [
+                                ...(verificationCheck.status ?? []),
+                                ...verifyBoostCredential.status,
+                            ];
+                        }
+
                         if (!boostCredential?.boostId && !credential?.boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
                             );
                         }
 
-                        if (verifyBoostCredential.errors?.length > 0) {
+                        if (boostCredentialErrors.length > 0) {
+                            if (
+                                boostCredentialErrors.some(error =>
+                                    /revoked|suspend|status/i.test(error)
+                                )
+                            ) {
+                                verificationCheck.checks = verificationCheck.checks.filter(
+                                    check => check !== 'status'
+                                );
+                            }
+
                             verificationCheck.errors = [
-                                ...(verifyBoostCredential.errors || []),
+                                ...boostCredentialErrors,
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];
