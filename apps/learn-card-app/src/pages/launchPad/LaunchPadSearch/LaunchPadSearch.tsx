@@ -44,13 +44,13 @@ export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
                         className="bg-grayscale-200 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[44px]"
                     />
                 </div>
-
-                <LaunchPadPopOverButton
+                {/*Going to hide this button for now until it gets hooked up to the new app system*/}
+                {/* <LaunchPadPopOverButton
                     filterBy={filterBy}
                     setFilterBy={setFilterBy}
                     sortBy={sortBy}
                     setSortBy={setSortBy}
-                />
+                /> */}
             </div>
         </div>
     );

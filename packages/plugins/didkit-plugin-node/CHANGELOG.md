@@ -1,5 +1,16 @@
 # @learncard/didkit-plugin-node
 
+## 0.2.13
+
+### Patch Changes
+
+-   [#1112](https://github.com/learningeconomy/LearnCard/pull/1112) [`0327b6c9870b0c2ca359f54629df019547eb118a`](https://github.com/learningeconomy/LearnCard/commit/0327b6c9870b0c2ca359f54629df019547eb118a) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the cargo group across 1 directory with 2 updates
+
+-   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`1e35f73c3a81f1517703d673823616cfcbb5798d`](https://github.com/learningeconomy/LearnCard/commit/1e35f73c3a81f1517703d673823616cfcbb5798d), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    -   @learncard/types@5.14.0
+    -   @learncard/didkit-plugin@1.8.7
+    -   @learncard/core@9.4.17
+
 ## 0.2.12
 
 ### Patch Changes

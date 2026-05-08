@@ -176,7 +176,7 @@ const AddressBookContactOptions: React.FC<{
                         <h1 className="font-poppins m-0 p-0 text-xl">Add Contact</h1>
                     </div>
                 </div>
-                <ul className="w-full flex flex-col items-center justify-center ion-padding">
+                <ul className="w-full flex flex-col items-center justify-center ion-padding cursor-pointer">
                     {addressBookMenuOptions?.map(action => {
                         const { id, title, icon, onClick } = action;
                         return (

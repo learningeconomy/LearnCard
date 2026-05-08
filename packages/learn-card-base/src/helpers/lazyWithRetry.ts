@@ -78,32 +78,50 @@ export function guardedChunkReload(): boolean {
     return false;
 }
 
+type Preloadable = React.LazyExoticComponent<React.ComponentType<any>> & {
+    preload: () => Promise<void>;
+};
+
 export function lazyWithRetry<T extends { default: React.ComponentType<any> }>(
     factory: () => Promise<T>
-) {
-    return React.lazy(async () => {
-        try {
-            return await factory();
-        } catch (firstErr) {
-            if (!isStaleChunkError(firstErr)) throw firstErr;
+): Preloadable {
+    let pending: Promise<T> | null = null;
 
-            // Retry once in case of transient network issues or CDN propagation delays during deployment
+    const load = (): Promise<T> => {
+        if (pending) return pending;
+        pending = (async () => {
             try {
                 return await factory();
-            } catch (retryErr) {
-                if (!isStaleChunkError(retryErr)) throw retryErr;
+            } catch (firstErr) {
+                if (!isStaleChunkError(firstErr)) throw firstErr;
+
+                try {
+                    return await factory();
+                } catch (retryErr) {
+                    if (!isStaleChunkError(retryErr)) throw retryErr;
+                }
+
+                if (shouldReload()) {
+                    recordReload();
+                    window.location.reload();
+
+                    return pendingForever<T>();
+                }
+
+                throw firstErr;
             }
+        })();
+        // On failure, clear so a future preload/render can retry.
+        pending.catch(() => {
+            pending = null;
+        });
+        return pending;
+    };
 
-            // Both attempts failed — reload the page if we haven't looped too many times
-            if (shouldReload()) {
-                recordReload();
-                window.location.reload();
-
-                return pendingForever<T>();
-            }
-
-            // Exhausted reloads — let the error boundary handle it
-            throw firstErr;
-        }
-    });
+    const Component = React.lazy(load) as Preloadable;
+    Component.preload = () => load().then(
+        () => undefined,
+        () => undefined
+    );
+    return Component;
 }
