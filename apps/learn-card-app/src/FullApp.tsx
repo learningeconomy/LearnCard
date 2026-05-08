@@ -37,7 +37,7 @@ import Toast from 'learn-card-base/components/toast/Toast';
 //
 // The installer is idempotent + guarded by `import.meta.env.DEV`,
 // so this is a no-op in production builds. See
-// `@/Users/jackson/Documents/Projects/LEStudios/LearnCard/apps/learn-card-app/src/pages/pathways/dev/pathwaysDevGlobals.ts:627`.
+// `src/pages/pathways/dev/pathwaysDevGlobals.ts`.
 installPathwaysDevGlobals();
 
 import { AnalyticsContextProvider } from '@analytics';
