@@ -16,7 +16,6 @@ import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/netw
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
-import { getStatusListPlugin } from '@learncard/status-list-plugin';
 
 import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -44,7 +43,6 @@ export const didWebNetworkLearnCardFromSeed = async ({
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
     openid4vc,
-    statusList,
     debug,
 }: DidWebNetworkLearnCardFromSeed['args']): Promise<
     DidWebNetworkLearnCardFromSeed['returnValue']
@@ -109,7 +107,5 @@ export const didWebNetworkLearnCardFromSeed = async ({
         await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter, extraHeaders })
     );
 
-    const oidcLc = await networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
-
-    return oidcLc.addPlugin(getStatusListPlugin(oidcLc, statusList));
+    return networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
 };

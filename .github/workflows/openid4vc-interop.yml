@@ -14,7 +14,6 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'packages/plugins/openid4vc/**'
-      - 'packages/plugins/status-list/**'
       - 'tests/openid4vc-interop-e2e/**'
       - 'tests/openid4vc-e2e/**'
       - 'pnpm-lock.yaml'
@@ -41,10 +40,8 @@ jobs:
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
 
-      - name: Build openid4vc + status-list plugins
-        run: |
-          pnpm exec nx build openid4vc-plugin
-          pnpm exec nx build status-list-plugin
+      - name: Build openid4vc plugin
+        run: pnpm exec nx build openid4vc-plugin
 
       - name: Run in-process OID4VC e2e suite
         run: pnpm --filter @workspace/openid4vc-e2e-tests test

@@ -159,6 +159,19 @@ describe('Bitstring Status List', () => {
             expect(unrevokedVerification.checks).toContain('proof');
             expect(unrevokedVerification.checks).toContain('status');
 
+            // Structured status field (added by ssi PR
+            // `lc-status-array-and-structured-result`). The unrevoked
+            // credential should produce exactly one StatusCheckEntry
+            // with isSet=false so consumers can affirmatively render
+            // "active" rather than inferring it from the absence of
+            // an error.
+            expect(unrevokedVerification.status).toHaveLength(1);
+            expect(unrevokedVerification.status?.[0]).toMatchObject({
+                entryType: 'BitstringStatusListEntry',
+                statusPurpose: 'revocation',
+                isSet: false,
+            });
+
             const revokedCredential = await issueCredentialWithStatus(
                 issuer,
                 verifier.id.did(),
@@ -167,7 +180,20 @@ describe('Bitstring Status List', () => {
             );
             const revokedVerification = await verifier.invoke.verifyCredential(revokedCredential);
 
+            // Backwards-compatible error string preserved for
+            // consumers that read the `errors` array.
             expect(revokedVerification.errors.join('\n')).toMatch(/revoked/i);
+
+            // Structured outcome — the new preferred surface.
+            // `isSet: true` + `statusPurpose: 'revocation'`
+            // unambiguously means "revoked" without string parsing.
+            expect(revokedVerification.status).toHaveLength(1);
+            expect(revokedVerification.status?.[0]).toMatchObject({
+                entryType: 'BitstringStatusListEntry',
+                statusPurpose: 'revocation',
+                isSet: true,
+            });
+
             expect(statusServer.requestCount).toBeGreaterThanOrEqual(2);
         } finally {
             await statusServer.close();
