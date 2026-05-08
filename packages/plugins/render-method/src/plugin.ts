@@ -7,7 +7,7 @@ import {
     RENDER_METHOD_CONTEXT,
 } from './types';
 
-const DEFAULT_TEMPLATE_ID = 'https://templates.learncard.com/svg/template-v1/card.svg';
+const DEFAULT_TEMPLATE_ID = 'https://templates.learncard.com/svg/card/card-1.0.0.svg';
 
 // ! for now we only support svg-mustache
 // TODO: Add other render suites and media types
