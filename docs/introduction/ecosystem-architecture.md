@@ -29,12 +29,12 @@ Every component below — LearnCard, LearnCloud, the standards core — exists t
 ## At a glance
 
 ```mermaid
-%%{init: {"layout": "elk"}}%%
+%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
 flowchart LR
-  classDef indigo stroke:#818cf8,fill:#eef2ff
-  classDef teal stroke:#2dd4bf,fill:#f0fdfa
-  classDef violet stroke:#a78bfa,fill:#f5f3ff
-  classDef orange stroke:#fb923c,fill:#fff7ed
+  classDef indigo stroke:#6366f1,stroke-width:2px,fill:transparent
+  classDef teal   stroke:#14b8a6,stroke-width:2px,fill:transparent
+  classDef violet stroke:#8b5cf6,stroke-width:2px,fill:transparent
+  classDef orange stroke:#f97316,stroke-width:2px,fill:transparent
 
   Eco["Schools · States · Employers · EdTech · Games · AI Agents · Partner Apps"]:::orange
 
@@ -128,8 +128,6 @@ Because the learner context is a first-class API, **AI sessions are portable**: 
 Every AI API call against learner data is gated by an explicit consent contract. The platform never operates on a learner's record without their (or their guardian's) approval.
 {% endhint %}
 
-→ [LearnCloud AI API](../sdks/learncloud-ai-api/README.md)
-
 ***
 
 ## How the stack stays interoperable
@@ -148,12 +146,12 @@ flowchart LR
 
   L1 --> L2 --> L3 --> L4 --> L5 --> L6
 
-  classDef indigo stroke:#818cf8,fill:#eef2ff;
-  classDef teal stroke:#2dd4bf,fill:#f0fdfa;
-  classDef violet stroke:#a78bfa,fill:#f5f3ff;
-  classDef orange stroke:#fb923c,fill:#fff7ed;
-  classDef fuchsia stroke:#e879f9,fill:#fdf4ff;
-  classDef green stroke:#4ade80,fill:#f0fdf4;
+  classDef indigo  stroke:#6366f1,stroke-width:2px,fill:transparent;
+  classDef teal    stroke:#14b8a6,stroke-width:2px,fill:transparent;
+  classDef violet  stroke:#8b5cf6,stroke-width:2px,fill:transparent;
+  classDef orange  stroke:#f97316,stroke-width:2px,fill:transparent;
+  classDef fuchsia stroke:#d946ef,stroke-width:2px,fill:transparent;
+  classDef green   stroke:#22c55e,stroke-width:2px,fill:transparent;
 ```
 
 | Layer | Today | Status |
@@ -164,7 +162,7 @@ flowchart LR
 | Schemas | OBv3, CLR 2.0, IEEE LER, custom JSON-LD | First-class |
 | Skills & alignment | CTDL via `ctid`; CASE / O\*NET / ESCO via Alignment URLs | First-class |
 | Exchange | VC-API, OIDC4VC, CHAPI, VPQR, claim links, inbox | Each has a plugin |
-| Trust | Signing Authorities, ConsentFlow contracts | First-class |
+| Trust | Signing Authorities, ConsentFlow contracts, Registries | First-class |
 
 ### Partners interoperate via standards, not custom integration code
 
@@ -212,7 +210,7 @@ In a typical K-12 or workforce flow:
 
 1. The **issuer** (school, state, employer, EdTech app) authenticates the learner with their existing identity system, then signs a credential bound to the learner's DID and sends it.
 2. The **holder** (the learner, or their guardian if a minor) receives it through a claim link, an inbox, or a direct send. The wallet stores it encrypted in LearnCloud Storage; the network records it as received.
-3. The **verifier** (college, employer, scholarship platform, AI agent) requests credentials via Partner Connect, VC-APIU, OID4VP, CHAPI, or MCP. The holder approves with selective disclosure, and the wallet returns a signed Verifiable Presentation.
+3. The **verifier** (college, employer, scholarship platform, AI agent) requests credentials via Partner Connect, VC-API, OID4VP, CHAPI, or MCP. The holder approves with selective disclosure, and the wallet returns a signed Verifiable Presentation.
 
 ### Identity providers, holder binding, and guardianship
 
