@@ -13,7 +13,7 @@
  * migration is a matter of appending one entry — not introducing a
  * whole new API seam under pressure.
  *
- * See `docs/pathways-storage-and-sync.md` § 6.1 for why this plumbing
+ * See `../docs/storage-and-sync.md` § 6.1 for why this plumbing
  * exists ahead of the server wire-up.
  */
 

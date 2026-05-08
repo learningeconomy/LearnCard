@@ -3,7 +3,7 @@
 Learner-owned, agent-orchestrated graph of commitments and evidence, with every
 node projectable to an Open Badges 3.0 credential.
 
-Full architecture: [`apps/learn-card-app/docs/pathways-architecture.md`](../../../docs/pathways-architecture.md).
+Full architecture: [`./docs/architecture.md`](./docs/architecture.md). Companion design notes live alongside it: [`./docs/storage-and-sync.md`](./docs/storage-and-sync.md) and [`./docs/synthesis.md`](./docs/synthesis.md).
 
 ## Status (April 2026)
 
@@ -48,7 +48,7 @@ What still needs to land **before flipping `enableJourneys` for real
 users**:
 
 1. **No Playwright E2E coverage** for the two flows the architecture spec
-   requires (`docs/pathways-architecture.md` § 16): cold-start → Today
+   requires (`docs/architecture.md` § 16): cold-start → Today
    < 10 s, and accept-proposal → next-action-changes. The unit suite is
    deep (see Testing below) but the user-visible paths have no end-to-end
    regression net.
@@ -78,7 +78,7 @@ Persistence (`persist.enabled = true`) is **on** for all four stores
 today (`pathwayStore`, `proposalStore`, `offlineQueueStore`,
 `mcpRegistryStore`) — the previously-listed blocker around losing
 state on refresh has been resolved. See
-`docs/pathways-architecture.md` § 17 for the full retrospective status
+`docs/architecture.md` § 17 for the full retrospective status
 column and recommended sequencing.
 
 ## Mount point

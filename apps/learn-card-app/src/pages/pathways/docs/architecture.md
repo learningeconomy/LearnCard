@@ -1,6 +1,6 @@
 # Pathways v2 — Architecture & UX Spec
 
-_Greenfield implementation in `apps/learn-card-app`, derived from `.superpowers/LearnCard_Pathways_Synthesis.md`._
+_Greenfield implementation in `apps/learn-card-app`, derived from [`./synthesis.md`](./synthesis.md)._
 
 This is the first‑pass architecture for the Pathways product inside the LearnCard app. It is explicitly **greenfield alongside** the existing `src/pages/ai-pathways/` feature (skill profile + CareerOneStop/OpenSyllabus exploration, routed at `/ai/pathways`). The existing feature stays shipping while v2 is built at a new route; v2 is intended to eventually absorb and replace it.
 

@@ -139,7 +139,7 @@ export const tenantFeatureConfigSchema = z.object({
 
     /**
      * Pathways v2 — greenfield experimental feature at `/pathways`.
-     * Default off. See `apps/learn-card-app/docs/pathways-architecture.md`.
+     * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.
      */
     pathways: z.boolean().default(false),
 }).passthrough();

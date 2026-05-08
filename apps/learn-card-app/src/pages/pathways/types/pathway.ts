@@ -1,7 +1,7 @@
 /**
  * Pathways data model — Zod schemas and inferred TS types.
  *
- * See `apps/learn-card-app/docs/pathways-architecture.md` § 3.
+ * See `../docs/architecture.md` § 3.
  *
  * Phase 0: lives in-app. Promoted to `@learncard/pathways-types` at end of
  * Phase 1 once the shapes are stable (Section 15).
@@ -513,7 +513,7 @@ export const AltitudeSchema = z.enum([
 export type Altitude = z.infer<typeof AltitudeSchema>;
 
 // -----------------------------------------------------------------
-// Schema version + revision — see `pathways-storage-and-sync.md` § 5.1
+// Schema version + revision — see `../docs/storage-and-sync.md` § 5.1
 //
 // `schemaVersion` is the document-level migration hinge: the number
 // we stamp on every pathway so `deserializePathway` can fan into the

@@ -4,7 +4,7 @@
 > client-only Zustand store. This doc captures the intended server-side
 > shape so the wire-up, when we're ready for it, doesn't require
 > re-deciding the fundamentals. Companion to
-> [`pathways-architecture.md`](./pathways-architecture.md) — read that
+> [`architecture.md`](./architecture.md) — read that
 > first for the in-app data model and agent pipeline; this doc focuses
 > strictly on *where state lives* and *how it moves*.
 
@@ -107,7 +107,7 @@ export const MongoPathwayValidator = z.object({
     updatedAt: z.string().datetime(),
     deletedAt: z.string().datetime().optional(), // soft-delete for sync clients
 
-    // Content — the Pathway doc from pathways-architecture.md § 3 ----
+    // Content — the Pathway doc from architecture.md § 3 ----
     // Encrypted as a whole blob using the same JWE envelope
     // CredentialRecord uses today. Index fields above stay in the
     // clear so learn-cloud can paginate / query without decrypting.
@@ -522,7 +522,7 @@ of implementing RPCs, not refactoring schemas.
 
 1. **Promote pathway types to `@learncard/pathways-types`.** The
    Phase-1 promotion already flagged in
-   `@/Users/jackson/Documents/Projects/LEStudios/LearnCard/apps/learn-card-app/docs/pathways-architecture.md`
+   [`./architecture.md`](./architecture.md)
    § 15. Until this ships, brain-service and learn-cloud can't import
    schemas without circular-deps. Move
    `@/Users/jackson/Documents/Projects/LEStudios/LearnCard/apps/learn-card-app/src/pages/pathways/types/`

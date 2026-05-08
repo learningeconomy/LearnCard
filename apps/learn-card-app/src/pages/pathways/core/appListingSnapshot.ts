@@ -20,7 +20,7 @@
  * refresh path (listing drift detection → refresh-proposal) will
  * live in a separate module alongside the agents.
  *
- * See `docs/pathways-storage-and-sync.md` § 4.1 for why snapshots
+ * See `../docs/storage-and-sync.md` § 4.1 for why snapshots
  * exist and how they support agent reasoning.
  */
 

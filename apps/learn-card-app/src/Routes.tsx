@@ -288,7 +288,7 @@ export const Routes: React.FC = () => {
                          * /ai/pathways feature. Gated by `usePathwaysEnabled`
                          * (tenant `features.pathways` AND LaunchDarkly
                          * `enableJourneys`, both default off). See
-                         * docs/pathways-architecture.md.
+                         * pages/pathways/docs/architecture.md.
                          */}
                         {pathwaysEnabled && (
                             <PrivateRoute path="/pathways" component={PathwaysShell} />
