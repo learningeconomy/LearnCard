@@ -22,6 +22,7 @@ import cache from '@cache';
 import { getLRUCache } from '@cache/in-memory-lru';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { resolveUri } from '@helpers/uri.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
@@ -862,15 +863,46 @@ const handleSendCredentialEvent = async (
     ]);
 
     perf.mark('logActivityAndSendBoost');
+
+    // LC-1644 fast-path enrichment: pre-resolve the credential via the same code
+    // path wallet.read.get(uri) uses on the client. This pays the wallet's
+    // resolution latency once on the backend (typically ~20-100ms — local Neo4j
+    // lookup, no external network) so the response payload's `credential` field
+    // is the same enriched version the wallet would have produced.
+    //
+    // Without this step, the frontend modal renders with the raw SA-signed VC
+    // which lacks the wallet's display-field hydration (issuer name, achievement
+    // metadata expansion), forcing a frontend shimmer + background re-fetch.
+    // With this step, the modal renders the enriched credential immediately on
+    // the fast path.
+    //
+    // Non-fatal: if resolution fails, fall back to the freshly-signed VC. The
+    // frontend's background-enrichment safety net still kicks in for any
+    // remaining unhydrated fields.
+    // Cast to any to bridge between learn-card-types VC and brain-service-local VC —
+    // both have the same shape but TypeScript treats them as nominally distinct
+    // because they're imported from different package roots.
+    let responseCredential: unknown = undefined;
+    if (typeof credential !== 'string') {
+        try {
+            const resolved = await resolveUri(credentialUri, ctx.domain);
+            responseCredential = resolved ?? credential;
+        } catch (e) {
+            console.warn('[appEvent] fast-path credential pre-resolution failed:', e);
+            responseCredential = credential;
+        }
+    }
+    perf.mark('preResolveCredential');
+
     perf.done({ listingId, boostUri });
 
     return {
         credentialUri,
         boostUri,
-        // LC-1644: Return the signed credential so the frontend can skip
-        // the redundant wallet.read.get() round-trip in CredentialClaimModal.
-        // This is optional — older clients that don't expect it still work.
-        credential: typeof credential !== 'string' ? credential : undefined,
+        // LC-1644: pre-resolved (enriched) credential so the frontend modal
+        // can render the proper title + issuer info without shimmer or
+        // background re-fetch. See enrichment block above for details.
+        credential: responseCredential,
     };
 };
 
