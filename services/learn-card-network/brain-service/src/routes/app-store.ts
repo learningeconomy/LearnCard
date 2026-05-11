@@ -2968,7 +2968,10 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            // Delete credentials received by this profile (CREDENTIAL_RECEIVED)
+            // Delete credentials received by this profile (CREDENTIAL_RECEIVED).
+            // size() in Cypher returns a neo4j.Integer object — wrap in Number() to
+            // satisfy the Zod number output schema (matches the codebase pattern in
+            // accesslayer/*/read.ts).
             const credResult = await neogma.queryRunner.run(
                 `MATCH (p:Profile {profileId: $profileId})<-[:CREDENTIAL_RECEIVED]-(c:Credential)
                  WITH collect(c) AS creds
@@ -2976,8 +2979,7 @@ export const appStoreRouter = t.router({
                  RETURN size(creds) AS cnt`,
                 { profileId: recipient.profileId }
             );
-            const credentialsDeleted =
-                (credResult.records[0]?.get('cnt') as number) ?? 0;
+            const credentialsDeleted = Number(credResult.records[0]?.get('cnt') ?? 0);
 
             // Delete inbox credentials (notifications) connected to this profile.
             // In the model, Profile has outgoing relationships to InboxCredential
@@ -2989,8 +2991,7 @@ export const appStoreRouter = t.router({
                  RETURN size(inboxes) AS cnt`,
                 { profileId: recipient.profileId }
             );
-            const notificationsDeleted =
-                (notifResult.records[0]?.get('cnt') as number) ?? 0;
+            const notificationsDeleted = Number(notifResult.records[0]?.get('cnt') ?? 0);
 
             // Delete credential activity entries where this profile is the recipient
             // (TO_RECIPIENT relationship from CredentialActivity to Profile).
@@ -3001,8 +3002,7 @@ export const appStoreRouter = t.router({
                  RETURN size(activities) AS cnt`,
                 { profileId: recipient.profileId }
             );
-            const activityEntriesDeleted =
-                (actResult.records[0]?.get('cnt') as number) ?? 0;
+            const activityEntriesDeleted = Number(actResult.records[0]?.get('cnt') ?? 0);
 
             return { credentialsDeleted, notificationsDeleted, activityEntriesDeleted };
         }),
