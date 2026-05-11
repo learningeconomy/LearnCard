@@ -9,15 +9,17 @@
 
 ## TL;DR
 
-PR 2 of the LC-1644 finish-out (frontend telemetry + claim-phase parallelization) validated end-to-end on staging. With **all Tasks 1–6 (backend) + Tasks 1+2 frontend + claim-phase parallelization** deployed, the user-perceived "wait for modal" time drops **~80%** on the warm path vs the unoptimized hybrid state.
+PR 2 of the LC-1644 finish-out (frontend telemetry + claim-phase parallelization) validated end-to-end on staging. With **all Tasks 1–6 (backend) + Tasks 1+2 frontend + claim-phase parallelization** deployed, the user-perceived "wait for modal" time drops **~76%** vs the unoptimized hybrid state (median across n=7 iterations).
 
-| Metric | Hybrid baseline (default backend, this branch frontend) | Optimized warm-steady median | Δ |
+| Metric | Hybrid baseline (default backend, this branch frontend) | Optimized median (n=7) | Δ |
 |---|---:|---:|---:|
-| `request_to_response_ms` | 5486 | ~1215 | **−78%** |
+| `request_to_response_ms` | 5486 | 1461 | **−73%** |
 | `modal_mount_to_credential_resolved_ms` | 499 | **0** | **−100%** |
-| `claim_phase_ms` | 2581 | ~1700 | **−34%** |
-| **`time_to_modal_interactive_ms`** | **5988** | **~1217** | **−80%** |
-| Pure perf time (interactive + claim) | 8569 | ~2917 | **−66%** |
+| `claim_phase_ms` | 2581 | 1855 | **−28%** |
+| **`time_to_modal_interactive_ms`** | **5988** | **1462** | **−76%** |
+| Pure perf time (interactive + claim) | 8569 | 3317 | **−61%** |
+
+Best-observed iteration (#5, fully warm Lambda): `time_to_modal_interactive_ms = 1031`, suggesting **a warm-steady best-case of ~1000ms from Tokyo**, which translates to **~400–500ms from a US-based client**.
 
 All numbers are from a Tokyo client → US-east staging deploy (~150–250ms one-way network RTT). US-based users projected at roughly half these absolute latencies.
 
@@ -36,24 +38,31 @@ The bench panel's "Trigger Single sendCredential" button (added in PR 2) drives 
 
 Two states deployed:
 - **Hybrid baseline** (`feat/lc-1644-frontend-claim-perf` frontend + default backend): Tasks 1+2 backend half NOT deployed, so `credential` is not in the response → modal falls back to slow-path URI re-resolve. `fast_path: false`. Captured 1 event.
-- **Fully optimized** (`feat/lc-1644-frontend-claim-perf` + matching backend deploy): Tasks 1+2 backend returns `credential`, frontend uses fast path. `fast_path: true`. Captured 4 events.
+- **Fully optimized** (`feat/lc-1644-frontend-claim-perf` + matching backend deploy): Tasks 1+2 backend returns `credential`, frontend uses fast path. `fast_path: true`. Captured 7 events.
 
 ## Per-event optimized data
 
-| # | `request_to_response_ms` | `response_to_modal_mount_ms` | `modal_mount_to_credential_resolved_ms` | `claim_phase_ms` | `time_to_modal_interactive_ms` | Notes |
-|---|---:|---:|---:|---:|---:|---|
-| 1 | 1638 | 4 | 0 | 1926 | 1642 *(computed — pre-field-deploy)* | cold-ish, just after deploy |
-| 2 | 1571 | 4 | 0 | 1855 | 1575 | warming |
-| 3 | 1401 | 2 | 0 | 1809 | 1403 | warmer |
-| 4 | 1029 | 2 | 0 | 1590 | **1031** | fully warm |
+Sorted by capture time:
 
-**Convergence pattern**: each iteration is faster than the last as Lambda containers + connection pools warm up — classic post-deploy warm-up curve, mirrors what we saw on the backend A/B (PR #1189). By iteration 4 the numbers stabilize.
+| # | Time (UTC) | `request_to_response_ms` | `response_to_modal_mount_ms` | `modal_mount_to_credential_resolved_ms` | `claim_phase_ms` | `time_to_modal_interactive_ms` | Notes |
+|---|---|---:|---:|---:|---:|---:|---|
+| 1 | 15:12 | 1638 | 4 | 0 | 1926 | 1642 *(computed)* | cold-ish, just after deploy |
+| 2 | 15:36 | 1531 | 3 | 0 | 2046 | 1534 *(computed)* | pre–`time_to_modal_interactive` field deploy |
+| 3 | 15:42 | 1571 | 4 | 0 | 1855 | 1575 | first event with field |
+| 4 | 15:44 | 1401 | 2 | 0 | 1809 | 1403 | warmer |
+| 5 | 15:44 | 1029 | 2 | 0 | 1590 | **1031** | fully warm (fastest) |
+| 6 | 15:47:46 | 1437 | 3 | 0 | 1796 | 1440 | slight cool after 3min gap |
+| 7 | 15:47:55 | 1461 | 2 | 0 | 1903 | 1462 | back-to-back with #6 |
 
-**Warm-steady (iterations 3 + 4) medians:**
-- `request_to_response_ms`: ~1215
-- `modal_mount_to_credential_resolved_ms`: 0
-- `claim_phase_ms`: ~1700
-- `time_to_modal_interactive_ms`: ~1217
+**Stats (n=7):**
+
+| Metric | min | **p50 (median)** | p95 | max |
+|---|---:|---:|---:|---:|
+| `request_to_response_ms` | 1029 | 1461 | 1638 | 1638 |
+| `claim_phase_ms` | 1590 | 1855 | 2046 | 2046 |
+| **`time_to_modal_interactive_ms`** | 1031 | **1462** | 1642 | 1642 |
+
+**Convergence pattern**: each iteration is faster than the last as Lambda containers + connection pools warm up — classic post-deploy warm-up curve, mirrors what we saw on the backend A/B (PR #1189). The fastest observed (#5) was 1031ms time-to-modal-interactive; the median lands at 1462ms.
 
 ## Phase-by-phase analysis
 
@@ -98,7 +107,7 @@ LC-1644's original "Definition of Done" target was *"end-to-end `sendCredential(
 
 ## Caveats and limitations
 
-- **n=4 on optimized side, n=1 on baseline.** Small sample. The warm-up trend across the 4 optimized events is consistent and explainable, but a larger n would tighten p50/p95 confidence bands.
+- **n=7 on optimized side, n=1 on baseline.** Small sample. The warm-up trend across the optimized events is consistent and explainable, but a larger n + matching n on the bench-only branch (deployable at `feat/lc-1644-bench-panel-only @ 532c494df`) would close the apples-to-apples A/B properly.
 - **Single geography.** All 5 events from a Tokyo client. US-based numbers projected from per-hop RTT math, not directly measured.
 - **No claim-phase sub-instrumentation.** We can't currently isolate which of `addVCtoWallet` / `acceptCredential` / `queryNotifications` dominates the parallel claim time. Worth a follow-up if claim-phase optimization is prioritized.
 - **`triggered_by_bench: true`.** All events were synthetic (driven by the bench panel's single-trigger button, not a real partner-connect flow). Postmessage RTT (microseconds in production) is excluded. Modal mount path is identical to the real flow otherwise.
@@ -144,11 +153,13 @@ To capture the matching "before" (`fast_path: false`) data:
 
 ## Per-event data (raw)
 
-| Event | `run_id` | `outcome` | `fast_path` | `request_to_response_ms` | `claim_phase_ms` | `time_to_modal_interactive_ms` |
-|---|---|---|---|---:|---:|---:|
-| Hybrid baseline | `047ce7a9-24f9-49ae-b715-c84dda0f1a7b` | claimed | false | 5486 | 2581 | 5988 |
-| Opt #1 | `203a66e8-d9fd-4d49-96d0-3241ee659bd4` | claimed | true | 1638 | 1926 | 1642 (computed) |
-| Opt #2 | `92209430-e966-4c96-81f0-870e197916dc` | claimed | true | 1571 | 1855 | (field absent — pre-field-deploy event) |
-| Opt #3 | `5de4b553-d7b1-470a-b971-e5925dafb339` | claimed | true | 1571 | 1855 | 1575 |
-| Opt #4 | `9bbb65b8-042c-4db9-a57b-5999983c641b` | claimed | true | 1401 | 1809 | 1403 |
-| Opt #5 | `2d0cf1b5-7c63-4d84-b40f-a0a5435cf553` | claimed | true | 1029 | 1590 | 1031 |
+| Event | Time UTC | `run_id` | `outcome` | `fast_path` | `request_to_response_ms` | `claim_phase_ms` | `time_to_modal_interactive_ms` |
+|---|---|---|---|---|---:|---:|---:|
+| Hybrid baseline | 14:36 | `047ce7a9-24f9-49ae-b715-c84dda0f1a7b` | claimed | false | 5486 | 2581 | 5988 (computed) |
+| Opt #1 | 15:12 | `203a66e8-d9fd-4d49-96d0-3241ee659bd4` | claimed | true | 1638 | 1926 | 1642 (computed) |
+| Opt #2 | 15:36 | `92209430-e966-4c96-81f0-870e197916dc` | claimed | true | 1531 | 2046 | 1534 (computed) |
+| Opt #3 | 15:42 | `5de4b553-d7b1-470a-b971-e5925dafb339` | claimed | true | 1571 | 1855 | 1575 |
+| Opt #4 | 15:44 | `9bbb65b8-042c-4db9-a57b-5999983c641b` | claimed | true | 1401 | 1809 | 1403 |
+| Opt #5 | 15:44 | `2d0cf1b5-7c63-4d84-b40f-a0a5435cf553` | claimed | true | 1029 | 1590 | 1031 |
+| Opt #6 | 15:47:46 | `23a930c2-fe32-4a6f-9b06-f52497ae4692` | claimed | true | 1437 | 1796 | 1440 |
+| Opt #7 | 15:47:55 | `953dc148-a8b7-477f-b7ee-8cf43e05103e` | claimed | true | 1461 | 1903 | 1462 |
