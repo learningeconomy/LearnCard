@@ -36,6 +36,7 @@ node_modules
 
 # Personal AI tooling (not shared — teammates may use different setups)
 .claude/
+.codex/
 .vexp/
 .superpowers/
 docs/superpowers/plans/

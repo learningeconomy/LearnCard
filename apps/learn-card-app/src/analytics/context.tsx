@@ -4,6 +4,7 @@ import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
 
 /**
  * Lazily load and instantiate the appropriate analytics provider.
@@ -104,6 +105,8 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
 
                 setProvider(loadedProvider);
                 setIsReady(true);
+                // LC-1644: wire frontend perf telemetry helper to the same provider
+                setSendCredentialFlowProvider(loadedProvider);
             })
             .catch(error => {
                 console.error('[Analytics] Failed to load provider', error);

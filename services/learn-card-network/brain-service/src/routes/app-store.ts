@@ -3038,16 +3038,40 @@ export const appStoreRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
             }
 
-            // Cleanup body intentionally a no-op stub on this comparison branch.
-            // The optimized branch (feat/lc-1644-appevent-perf) implements full
-            // delete via Cypher. For pre-deploy bench runs, manual cleanup is
-            // sufficient since iterations are small (≤100) and the bench profile
-            // is dedicated.
-            return {
-                credentialsDeleted: 0,
-                notificationsDeleted: 0,
-                activityEntriesDeleted: 0,
-            };
+            // Delete credentials received by this profile (CREDENTIAL_RECEIVED).
+            // size() in Cypher returns a neo4j.Integer object — wrap in Number() to
+            // satisfy the Zod number output schema (matches the codebase pattern in
+            // accesslayer/*/read.ts).
+            const credResult = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})<-[:CREDENTIAL_RECEIVED]-(c:Credential)
+                 WITH collect(c) AS creds
+                 FOREACH (n IN creds | DETACH DELETE n)
+                 RETURN size(creds) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const credentialsDeleted = Number(credResult.records[0]?.get('cnt') ?? 0);
+
+            // Delete inbox credentials (notifications) connected to this profile.
+            const notifResult = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})-[r]->(i:InboxCredential)
+                 WITH collect(DISTINCT i) AS inboxes
+                 FOREACH (n IN inboxes | DETACH DELETE n)
+                 RETURN size(inboxes) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const notificationsDeleted = Number(notifResult.records[0]?.get('cnt') ?? 0);
+
+            // Delete credential activity entries where this profile is the recipient.
+            const actResult = await neogma.queryRunner.run(
+                `MATCH (a:CredentialActivity)-[:TO_RECIPIENT]->(p:Profile {profileId: $profileId})
+                 WITH collect(a) AS activities
+                 FOREACH (n IN activities | DETACH DELETE n)
+                 RETURN size(activities) AS cnt`,
+                { profileId: recipient.profileId }
+            );
+            const activityEntriesDeleted = Number(actResult.records[0]?.get('cnt') ?? 0);
+
+            return { credentialsDeleted, notificationsDeleted, activityEntriesDeleted };
         }),
 });
 

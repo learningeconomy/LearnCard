@@ -6,6 +6,13 @@ import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 import type { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
+import { CredentialClaimModal } from '../../launchPad/CredentialClaimModal';
+import {
+    startFlow as startSendCredentialFlow,
+    markResponseReceived as markSendCredentialResponseReceived,
+    markClaimCompleted as markSendCredentialClaimCompleted,
+    flushOnError as flushSendCredentialFlowOnError,
+} from '../../../helpers/sendCredentialFlow.helpers';
 
 type RunStatus = 'idle' | 'running' | 'done' | 'error';
 
@@ -46,6 +53,17 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
     const [status, setStatus] = useState<RunStatus>('idle');
     const [result, setResult] = useState<BenchResult | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // --- LC-1644 frontend telemetry test (single-iteration, mounts the real modal) ---
+    type SingleStatus = 'idle' | 'running' | 'modal-open' | 'done' | 'error';
+    const [singleStatus, setSingleStatus] = useState<SingleStatus>('idle');
+    const [singleError, setSingleError] = useState<string | null>(null);
+    const [autoCleanupBeforeRun, setAutoCleanupBeforeRun] = useState(true);
+    const [iterationCount, setIterationCount] = useState(0);
+    const [modalProps, setModalProps] = useState<{
+        credentialUri: string;
+        boostUri?: string;
+    } | null>(null);
 
     const handleRun = async () => {
         if (!listingId.trim() || !recipientProfileId.trim() || !templateAlias.trim()) {
@@ -88,6 +106,103 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
             setErrorMessage(msg);
             setStatus('error');
         }
+    };
+
+    /**
+     * Trigger a single sendCredential and mount the real CredentialClaimModal.
+     *
+     * Exercises the full frontend telemetry path (request → response → modal mount →
+     * credential resolved → claim → completion) without needing an embedded partner app.
+     *
+     * NOTE: On this bench-only branch, the modal does NOT accept a credential prop —
+     * it always re-fetches via wallet.read.get(), so `fast_path` will be false in the
+     * resulting PostHog event. This is the "before" half of the LC-1644 frontend A/B.
+     */
+    const handleSingleSendCredential = async () => {
+        if (!listingId.trim() || !recipientProfileId.trim() || !templateAlias.trim()) {
+            presentToast('Fill in listing ID, recipient profile ID, and template alias', {
+                type: ToastTypeEnum.Error,
+            });
+            return;
+        }
+
+        setSingleStatus('running');
+        setSingleError(null);
+
+        try {
+            const wallet = await initWallet();
+
+            if (autoCleanupBeforeRun) {
+                try {
+                    await wallet.invoke.cleanupBenchAppEventData?.({
+                        recipientProfileId: recipientProfileId.trim(),
+                    });
+                } catch (cleanupErr) {
+                    console.warn('[bench] auto-cleanup failed (continuing)', cleanupErr);
+                }
+            }
+
+            startSendCredentialFlow({
+                listingId: listingId.trim(),
+                eventType: 'send-credential',
+                triggeredByBench: true,
+            });
+
+            let response;
+            try {
+                response = await wallet.invoke.sendAppEvent(listingId.trim(), {
+                    type: 'send-credential',
+                    templateAlias: templateAlias.trim(),
+                    templateData: { issuedAt: new Date().toISOString() },
+                });
+            } catch (err) {
+                void flushSendCredentialFlowOnError({
+                    phase: 'request',
+                    message: err instanceof Error ? err.message : String(err),
+                });
+                throw err;
+            }
+
+            const alreadyClaimed = !!response.alreadyClaimed;
+            markSendCredentialResponseReceived({ alreadyClaimed });
+
+            if (alreadyClaimed) {
+                void markSendCredentialClaimCompleted();
+                setSingleStatus('done');
+                setIterationCount(c => c + 1);
+                presentToast(
+                    'sendCredential returned alreadyClaimed=true. Run cleanup, or enable auto-cleanup, then try again.',
+                    { type: ToastTypeEnum.Success }
+                );
+                return;
+            }
+
+            const credentialUri = response.credentialUri as string | undefined;
+            if (!credentialUri) {
+                void flushSendCredentialFlowOnError({
+                    phase: 'request',
+                    message: 'Response missing credentialUri',
+                });
+                throw new Error('Response missing credentialUri');
+            }
+
+            setModalProps({
+                credentialUri,
+                boostUri: response.boostUri as string | undefined,
+            });
+            setSingleStatus('modal-open');
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            setSingleError(msg);
+            setSingleStatus('error');
+            presentToast(msg, { type: ToastTypeEnum.Error });
+        }
+    };
+
+    const handleSingleModalDismiss = () => {
+        setModalProps(null);
+        setSingleStatus('done');
+        setIterationCount(c => c + 1);
     };
 
     const handleCleanup = async () => {
@@ -224,6 +339,56 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                         </div>
                     )}
 
+                    {/* --- LC-1644 frontend telemetry test section --- */}
+                    <div className="border-t border-grayscale-200 pt-[16px] mt-[8px]">
+                        <h3 className="text-[14px] font-[700] text-grayscale-900 font-notoSans mb-[4px]">
+                            Frontend Telemetry Test (single iteration)
+                        </h3>
+                        <p className="text-[12px] text-grayscale-600 font-notoSans mb-[12px]">
+                            Triggers a single <code className="font-mono">sendCredential</code> and mounts the real claim modal so the
+                            full frontend perf flow fires. Click Accept inside the modal to emit{' '}
+                            <code className="font-mono">frontend.sendcredential.iteration</code> with all phase timings.{' '}
+                            <strong>This is the unoptimized branch — `fast_path` will always be false.</strong>
+                        </p>
+
+                        <label className="flex items-center gap-[8px] mb-[12px] text-[13px] text-grayscale-700 font-notoSans">
+                            <input
+                                type="checkbox"
+                                checked={autoCleanupBeforeRun}
+                                onChange={e => setAutoCleanupBeforeRun(e.target.checked)}
+                            />
+                            Auto-cleanup recipient before each run (avoids <code className="font-mono">alreadyClaimed=true</code> after first iteration)
+                        </label>
+
+                        <div className="flex gap-[12px] items-center">
+                            <button
+                                onClick={handleSingleSendCredential}
+                                disabled={singleStatus === 'running' || singleStatus === 'modal-open'}
+                                className="rounded-full bg-cyan-600 text-white px-[18px] py-[12px] text-[15px] font-[600] font-notoSans disabled:opacity-50 flex items-center justify-center gap-[8px]"
+                            >
+                                {singleStatus === 'running' && (
+                                    <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                                )}
+                                {singleStatus === 'running'
+                                    ? 'Triggering…'
+                                    : singleStatus === 'modal-open'
+                                      ? 'Modal open…'
+                                      : 'Trigger Single sendCredential'}
+                            </button>
+                            {iterationCount > 0 && (
+                                <span className="text-[13px] text-grayscale-600 font-notoSans">
+                                    {iterationCount} iteration{iterationCount === 1 ? '' : 's'} fired
+                                </span>
+                            )}
+                        </div>
+
+                        {singleStatus === 'error' && singleError && (
+                            <div className="bg-red-50 border border-red-200 rounded-[12px] p-[12px] mt-[12px]">
+                                <p className="text-[13px] text-red-700 font-mono break-all">{singleError}</p>
+                            </div>
+                        )}
+                    </div>
+
                     {status === 'done' && result && (
                         <div className="bg-emerald-50 border border-emerald-200 rounded-[12px] p-[16px] flex flex-col gap-[12px]">
                             <p className="text-[14px] font-[600] text-emerald-800 font-notoSans">
@@ -264,6 +429,18 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                     )}
                 </div>
             </section>
+
+            {/* The real CredentialClaimModal — mounted from the bench panel so every
+                phase mark (mount, credential resolved, claim, dismiss) fires through
+                the same code path the partner-connect iframe flow uses.
+                Bench-only branch: no credential prop, modal always re-fetches via URI. */}
+            {modalProps && (
+                <CredentialClaimModal
+                    credentialUri={modalProps.credentialUri}
+                    boostUri={modalProps.boostUri}
+                    onDismiss={handleSingleModalDismiss}
+                />
+            )}
         </section>
     );
 };

@@ -16,6 +16,12 @@ import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
+import {
+    startFlow as startSendCredentialFlow,
+    markResponseReceived as markSendCredentialResponseReceived,
+    markClaimCompleted as markSendCredentialClaimCompleted,
+    flushOnError as flushSendCredentialFlowOnError,
+} from '../../helpers/sendCredentialFlow.helpers';
 
 interface LaunchConfig {
     url?: string;
@@ -910,7 +916,34 @@ export function useLearnCardMessageHandlers({
                             throw new Error('sendAppEvent not available - rebuild types');
                         }
 
-                        const result = await learnCard.invoke.sendAppEvent(listingId, event);
+                        // LC-1644 perf telemetry — only the send-credential path triggers
+                        // the user-facing claim flow we want to time.
+                        const isSendCredential = event.type === 'send-credential';
+                        if (isSendCredential) {
+                            startSendCredentialFlow({
+                                listingId,
+                                eventType: event.type,
+                            });
+                        }
+
+                        let result;
+                        try {
+                            result = await learnCard.invoke.sendAppEvent(listingId, event);
+                        } catch (err) {
+                            if (isSendCredential) {
+                                void flushSendCredentialFlowOnError({
+                                    phase: 'request',
+                                    message: err instanceof Error ? err.message : String(err),
+                                });
+                            }
+                            throw err;
+                        }
+
+                        if (isSendCredential) {
+                            markSendCredentialResponseReceived({
+                                alreadyClaimed: !!result.alreadyClaimed,
+                            });
+                        }
 
                         // If a credential was issued via send-credential event, notify the parent component
                         // Note: check-credential also returns credentialUri but should NOT trigger the modal
@@ -924,6 +957,9 @@ export function useLearnCardMessageHandlers({
                                 result.credentialUri as string,
                                 result.boostUri as string | undefined
                             );
+                        } else if (isSendCredential) {
+                            // alreadyClaimed branch — modal never mounts, flush as terminal event.
+                            void markSendCredentialClaimCompleted();
                         }
 
                         if (event.type === 'send-ai-session-credential') {

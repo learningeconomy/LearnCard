@@ -8,6 +8,14 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, VP } from '@learncard/types';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import {
+    markModalMounted,
+    markCredentialResolved,
+    markClaimStarted,
+    markClaimCompleted,
+    flushOnError as flushSendCredentialFlowOnError,
+    flushOnDismiss as flushSendCredentialFlowOnDismiss,
+} from '../../helpers/sendCredentialFlow.helpers';
 
 interface CredentialClaimModalProps {
     credentialUri: string;
@@ -29,8 +37,21 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const [credential, setCredential] = useState<VC | VP | undefined | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Resolve the credential URI on mount
+    // LC-1644: any dismiss path before claim completes flushes the in-flight perf flow as
+    // 'modal_dismissed'. Post-claim dismissals are no-ops because the flow is already terminated.
+    const handleDismiss = () => {
+        void flushSendCredentialFlowOnDismiss();
+        onDismiss();
+    };
+
+    // Resolve the credential URI on mount.
+    // NOTE: On this branch (pre-optimization), there is no preResolvedCredential prop
+    // and no fast-path — every mount re-fetches via wallet.read.get(). This is the
+    // "before" half of the LC-1644 frontend A/B comparison.
     useEffect(() => {
+        // LC-1644 perf telemetry — record modal mount time.
+        markModalMounted();
+
         const resolveCredential = async () => {
             try {
                 setIsLoading(true);
@@ -41,9 +62,15 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 if (!vc) throw new Error('Error resolving credential');
 
                 setCredential(vc);
+                // Always false on this branch — Tasks 1+2 frontend not applied.
+                markCredentialResolved({ fastPath: false });
             } catch (err) {
                 console.error('Failed to resolve credential:', err);
                 setError('Unable to load credential');
+                void flushSendCredentialFlowOnError({
+                    phase: 'credential_resolve',
+                    message: err instanceof Error ? err.message : String(err),
+                });
             } finally {
                 setIsLoading(false);
             }
@@ -56,11 +83,13 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         if (isClaiming || claimed) return;
 
         setIsClaiming(true);
+        markClaimStarted();
 
         try {
             await addVCtoWallet({ uri: credentialUri });
-            
-            // Find and update the notification for this credential
+
+            // Find and update the notification for this credential.
+            // Sequential server-side tRPC calls — pre-optimization baseline.
             try {
                 const wallet = await initWallet();
                 if (wallet) {
@@ -85,6 +114,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             }
 
             setClaimed(true);
+            void markClaimCompleted();
 
             presentToast('Successfully claimed Credential!', {
                 type: ToastTypeEnum.Success,
@@ -92,6 +122,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             });
         } catch (err) {
             console.error('Failed to claim credential:', err);
+            void flushSendCredentialFlowOnError({
+                phase: 'claim',
+                message: err instanceof Error ? err.message : String(err),
+            });
 
             presentToast('Unable to claim Credential', {
                 type: ToastTypeEnum.Error,
@@ -191,7 +225,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col relative">
                 {/* Close button */}
                 <button
-                    onClick={onDismiss}
+                    onClick={handleDismiss}
                     disabled={isClaiming}
                     className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-md transition-colors disabled:opacity-50"
                 >
@@ -242,7 +276,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                     </button>
 
                     <button
-                        onClick={onDismiss}
+                        onClick={handleDismiss}
                         disabled={isClaiming}
                         className="w-full px-4 py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors disabled:opacity-50"
                     >

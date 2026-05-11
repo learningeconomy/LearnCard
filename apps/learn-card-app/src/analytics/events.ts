@@ -46,6 +46,10 @@ export const AnalyticsEvents = {
 
     // LC-1644 perf bench (admin-only)
     BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
+
+    // LC-1644 frontend perf telemetry — captures user-perceived sendCredential→claim flow.
+    // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
+    FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -182,6 +186,34 @@ export interface AnalyticsEventPayloads {
         listing_id: string;
         recipient_profile_id: string;
         run_label: string;
+    };
+
+    /**
+     * One iteration of the user-perceived sendCredential → claim flow.
+     *
+     * On this branch (bench-panel-only, pre-optimization), `fast_path` will always be
+     * false because Tasks 1+2 frontend changes are not present — the modal always
+     * re-resolves the credential from URI rather than using the response payload.
+     * Used as the "before" half of the LC-1644 frontend A/B comparison.
+     *
+     * See feat/lc-1644-frontend-claim-perf for full per-field documentation.
+     */
+    [AnalyticsEvents.FRONTEND_SENDCREDENTIAL_ITERATION]: {
+        run_id: string;
+        listing_id?: string;
+        event_type?: string;
+        outcome: 'claimed' | 'already_claimed' | 'modal_dismissed' | 'error';
+        fast_path?: boolean;
+        already_claimed?: boolean;
+        request_to_response_ms?: number;
+        response_to_modal_mount_ms?: number;
+        modal_mount_to_credential_resolved_ms?: number;
+        claim_phase_ms?: number;
+        time_to_modal_interactive_ms?: number;
+        total_e2e_ms?: number;
+        error_phase?: 'request' | 'modal_mount' | 'credential_resolve' | 'claim';
+        error_message?: string;
+        triggered_by_bench?: boolean;
     };
 }
 
