@@ -204,8 +204,15 @@ export interface AnalyticsEventPayloads {
      *  - claim_phase_ms: time from "Accept" click to `claimed=true` rendered. Covers the
      *    three-tRPC-call sequence (`addVCtoWallet`, `acceptCredential`,
      *    `queryNotifications`, `updateNotificationMeta`).
-     *  - total_e2e_ms: end-to-end user-perceived latency from `sendAppEvent` invocation
-     *    to claim success state. The headline number for "did this feel slow?".
+     *  - time_to_modal_interactive_ms: PERF METRIC. Time from `sendAppEvent` invocation
+     *    to credential rendered in the modal — the "how long does the user wait before
+     *    they can act?" number. Sum of request_to_response + response_to_modal_mount +
+     *    modal_mount_to_credential_resolved. Excludes user-think-time between modal
+     *    appearance and clicking Accept. This is the number to compare across A/B branches.
+     *  - total_e2e_ms: WALL CLOCK. End-to-end elapsed time from `sendAppEvent` invocation
+     *    to claim success state. INCLUDES the variable user-think-time between when the
+     *    modal becomes interactive and when the user clicks Accept. Useful for cohort/UX
+     *    analysis but NOT a perf metric — use `time_to_modal_interactive_ms` for that.
      */
     [AnalyticsEvents.FRONTEND_SENDCREDENTIAL_ITERATION]: {
         run_id: string;
@@ -218,6 +225,7 @@ export interface AnalyticsEventPayloads {
         response_to_modal_mount_ms?: number;
         modal_mount_to_credential_resolved_ms?: number;
         claim_phase_ms?: number;
+        time_to_modal_interactive_ms?: number;
         total_e2e_ms?: number;
         error_phase?: 'request' | 'modal_mount' | 'credential_resolve' | 'claim';
         error_message?: string;

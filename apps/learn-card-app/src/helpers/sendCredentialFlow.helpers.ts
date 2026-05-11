@@ -140,6 +140,13 @@ function buildPayload(
         flow.claimStartedAt !== undefined && claimEndAt !== undefined
             ? Math.round(claimEndAt - flow.claimStartedAt)
             : undefined;
+    // Perf metric: time from sendAppEvent invocation to credential rendered in the modal.
+    // Excludes user-think-time. This is the number to compare across A/B branches.
+    const timeToModalInteractive =
+        flow.credentialResolvedAt !== undefined
+            ? Math.round(flow.credentialResolvedAt - flow.requestStartedAt)
+            : undefined;
+    // Wall clock: includes user-think-time between modal appearing and Accept click.
     const totalE2e =
         outcome !== 'error' && outcome !== 'modal_dismissed'
             ? Math.round(now - flow.requestStartedAt)
@@ -156,6 +163,7 @@ function buildPayload(
         response_to_modal_mount_ms: responseToModalMount,
         modal_mount_to_credential_resolved_ms: modalMountToCredentialResolved,
         claim_phase_ms: claimPhase,
+        time_to_modal_interactive_ms: timeToModalInteractive,
         total_e2e_ms: totalE2e,
         triggered_by_bench: flow.triggeredByBench,
         ...extra,
