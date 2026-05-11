@@ -572,12 +572,16 @@ export const constructCertifiedBoostCredential = async (
 
     const isVC2 = isVC2Format(credential);
 
+    const renderMethodContext = 'https://digitalbazaar.github.io/vc-render-method-context/contexts/v2rc2.jsonld';
+    const innerRenderMethod = !isEncrypted(credential) ? (credential as VC).renderMethod : undefined;
+
     return {
         '@context': [
             isVC2
                 ? 'https://www.w3.org/ns/credentials/v2'
                 : 'https://www.w3.org/2018/credentials/v1',
             'https://ctx.learncard.com/boosts/1.0.1.json',
+            renderMethodContext,
         ],
         id: `urn:uuid:${uuidv4()}`,
         type: ['VerifiableCredential', 'CertifiedBoostCredential'],
@@ -586,6 +590,7 @@ export const constructCertifiedBoostCredential = async (
         credentialSubject: { id: issuerDid },
         boostId: boostURI,
         boostCredential: credential,
+        ...(innerRenderMethod ? { renderMethod: innerRenderMethod } : {}),
     };
 };
 

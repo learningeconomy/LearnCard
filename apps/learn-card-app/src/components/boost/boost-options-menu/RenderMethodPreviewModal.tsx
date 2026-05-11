@@ -20,8 +20,10 @@ const RenderMethodPreviewModal: React.FC<RenderMethodPreviewModalProps> = ({ boo
         desktop: ModalTypes.FullScreen,
     });
 
-    const credential = unwrapBoostCredential(boost as VC);
-    const renderMethod = getSvgMustacheRenderMethod(credential);
+    // renderMethod lives on the outer CertifiedBoostCredential (standards-compliant location)
+    // but the template data (name, image, credentialSubject, etc.) lives in the inner boostCredential
+    const renderMethod = getSvgMustacheRenderMethod(boost as VC);
+    const dataVc = unwrapBoostCredential(boost as VC) as VC;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -39,7 +41,7 @@ const RenderMethodPreviewModal: React.FC<RenderMethodPreviewModalProps> = ({ boo
                 <div className="overflow-auto">
                     {renderMethod ? (
                         <RenderMethodDisplay
-                            vc={credential}
+                            vc={dataVc}
                             renderMethod={renderMethod}
                             fallback={
                                 <div className="min-h-[420px] flex flex-col items-center justify-center gap-4 px-6 py-10 text-center">
