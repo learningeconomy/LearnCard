@@ -171,8 +171,18 @@ function buildPayload(
 }
 
 async function emit(payload: Iter): Promise<void> {
-    if (!analyticsProvider) return;
+    if (!analyticsProvider) {
+        console.warn('[sendCredentialFlow] emit skipped — no analytics provider wired', payload);
+        return;
+    }
     try {
+        console.debug(
+            '[sendCredentialFlow] emit',
+            payload.run_id,
+            payload.outcome,
+            `time_to_modal_interactive=${payload.time_to_modal_interactive_ms ?? '—'}ms`,
+            `total_e2e=${payload.total_e2e_ms ?? '—'}ms`
+        );
         await analyticsProvider.track(AnalyticsEvents.FRONTEND_SENDCREDENTIAL_ITERATION, payload);
     } catch (err) {
         // Telemetry must never break the user flow.
