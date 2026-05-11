@@ -15,6 +15,7 @@ import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { checkAppInstallEligibility } from '@learncard/helpers';
+import { openExternalLink } from '../../helpers/externalLinkHelpers';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -245,7 +246,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                 />
             );
         } else if (listing.launch_type === 'DIRECT_LINK' && launchConfig.url) {
-            window.open(launchConfig.url, '_blank');
+            await openExternalLink(launchConfig.url);
         } else if (listing.launch_type === 'SECOND_SCREEN' && launchConfig.url) {
             window.open(launchConfig.url, '_blank');
         } else {
