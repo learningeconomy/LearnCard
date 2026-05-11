@@ -32,6 +32,8 @@ Best-observed optimized iteration: `time_to_modal_interactive_ms = 1031` (fully 
 
 All numbers are from a Tokyo client → US-east staging deploy (~150–250ms one-way network RTT). US-based users projected at roughly half these absolute latencies.
 
+> **Update (later same day)**: after the UX-regression fix was moved from frontend background-enrichment (`6b449b86e`) to backend pre-resolve (`54f429274`), a matching `n=7` re-capture confirmed no meaningful perf regression — see [Re-validation after backend pre-resolve](#re-validation-after-backend-pre-resolve-commit-54f429274) below. Net effect: ~100ms (+7%) on `request_to_response_ms` and `time_to_modal_interactive_ms` in exchange for a strictly cleaner first-paint UX (no shimmer flash). `claim_phase_ms` and the 0ms `modal_mount_to_credential_resolved_ms` win are unaffected.
+
 ## Methodology
 
 The bench panel's "Trigger Single sendCredential" button (added in PR 2) drives the full claim flow:
@@ -131,24 +133,70 @@ Best-observed (event 5 of the optimized data): 1031ms. For a US-based client wit
 
 Wall-clock total including user-think-time between modal appearing and clicking Accept. Variable per user. Useful for UX/cohort analysis but NOT a perf metric.
 
-## UX regression and fix
+## UX regression and fix (superseded by backend pre-resolve)
 
 During testing, noticed that the Tasks 1+2 fast path causes the credential preview to render with generic fallback values during the brief render window:
 
 - Modal header subtitle: "Credential" generic text instead of the actual achievement name
 - `BoostEarnedCard`: "by [?]" with orange question mark badge, instead of the resolved issuer name with verified checkmark
 
-**Cause**: the `credential` field returned in the APP_EVENT response payload lacks the wallet-side enrichment (issuer registry resolution, display field hydration) that `wallet.read.get(uri)` provides on the slow path.
+**Cause**: the `credential` field originally returned in the APP_EVENT response payload lacked the wallet-side enrichment (issuer registry resolution, display field hydration) that `wallet.read.get(uri)` provides on the slow path.
 
-**Fix (commit `6b449b86e`)**:
-- Render modal immediately with the fast-path credential (preserving the 0ms time-to-modal-interactive perf win)
-- In the background, also fire `wallet.read.get(uri)` to fetch the enriched version. Once it lands (~500ms later), swap credential state — modal auto-upgrades.
-- During the enrichment window, show shimmer placeholders instead of generic fallbacks:
-  - Modal header subtitle: animated shimmer block instead of "Credential" text
-  - `BoostEarnedCard`: passed `loading={true}` to use its built-in skeleton state (already supported)
-- If enrichment fails (non-fatal), modal stays mounted with whatever data it has — claim flow continues to work
+**Initial fix (commit `6b449b86e`, superseded)**: frontend renders the unenriched fast-path credential immediately, fires `wallet.read.get(uri)` in the background, swaps state when enriched data lands. Shimmer placeholders cover the gap.
 
-**Trade-off**: zero impact on perf metrics — rendering still happens immediately with fast-path data. Only the visual quality during the brief enrichment window improves.
+**Final fix (commit `54f429274`)**: the backend now **pre-resolves the credential before sending the fast-path response**, so the frontend receives an already-enriched credential. No background fetch, no state swap, no shimmer needed. The frontend background-enrichment plumbing from `6b449b86e` is retained as a defensive fallback in case the response credential is ever missing enriched fields.
+
+**Trade-off**: see "Re-validation after backend pre-resolve" below — the new approach adds ~100ms of work on the response path (median `request_to_response_ms` 1461 → 1560, +7%) in exchange for a strictly cleaner first-paint UX with no shimmer flash. `time_to_modal_interactive_ms` median 1462 → 1562 (+7%); `claim_phase_ms` and the 0ms `modal_mount_to_credential_resolved_ms` win are unaffected.
+
+## Re-validation after backend pre-resolve (commit `54f429274`)
+
+After the UX regression fix moved from frontend background-enrichment (`6b449b86e`) to backend pre-resolve (`54f429274`), we re-captured a matching `n=11` optimized run to verify no perf regression. The trigger flow, recipient, listing, and client (Tokyo) are unchanged from the original optimized capture.
+
+### Per-event data (n=11, chronological)
+
+| # | Time UTC | `run_id` | `request_to_response_ms` | `response_to_modal_mount_ms` | `modal_mount_to_credential_resolved_ms` | `claim_phase_ms` | `time_to_modal_interactive_ms` | Notes |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| 1 | 17:23:03 | `8f534da1-6a7c-4311-b672-c8d46ff9b247` | 1560 | 2 | 0 | 1891 | 1562 | post-deploy, cold-ish |
+| 2 | 17:26:44 | `884b9b5a-f468-4a57-b70c-20f4c5ccefc9` | 1928 | 5 | 0 | 2004 | 1932 | ~3min gap — slight cool |
+| 3 | 17:35:16 | `7972bd13-f0c0-47ba-80ab-2b6eac11b34a` | 1774 | 3 | 0 | 1612 | 1778 | ~9min gap — cooled again |
+| 4 | 17:35:25 | `fefee030-d2ae-4da7-a208-931277e27c59` | 1271 | 3 | 0 | 1838 | 1274 | back-to-back, warming |
+| 5 | 17:36:56 | `d24d8cc2-fa77-4a04-a17e-f13aa742bac3` | 1561 | 3 | 0 | **1529** | 1563 | new claim-phase min |
+| 6 | 17:37:06 | `80a69520-17d4-422f-ba01-0199b73c9f5c` | 1189 | 2 | 0 | 1859 | 1191 | fully warm |
+| 7 | 17:38:52 | `a5e9e9ea-d13d-45c3-a114-a4a0da22ead5` | 1566 | 4 | 0 | 1728 | 1570 | warm, mid-pack |
+| 8 | 17:38:59 | `bd14548c-0d9f-47b4-9f83-d4d4a6ddcf7b` | **1144** | 1 | 0 | 1830 | **1145** | new bests for req→resp + interactive |
+| 9 | 18:23:48 | `20c3f18e-c361-4049-8997-dc72f146b068` | 1858 | 2 | 0 | 1659 | 1860 | new bench session, ~45min gap — re-cooled |
+| 10 | 18:27:54 | `2b7f37fe-b5fd-4a48-b3f2-ba517989620c` | 1568 | 12 | 0 | 1791 | 1580 | re-warmed after session-2 cold start |
+| 11 | 18:35:59 | `0327584b-9c0d-414f-9b11-67561fc303a1` | 1354 | 2 | 0 | 1875 | 1356 | warm-stable, 3rd-best interactive |
+
+### Stats (n=11) and comparison vs prior optimized n=7
+
+| Metric | min | **p50 (median)** | max | Prior n=7 p50 | Δ vs prior |
+|---|---:|---:|---:|---:|---:|
+| `request_to_response_ms` | 1144 | **1561** | 1928 | 1461 | +7% |
+| `claim_phase_ms` | 1529 | **1830** | 2004 | 1855 | −1% |
+| `time_to_modal_interactive_ms` | 1145 | **1563** | 1932 | 1462 | +7% |
+| `modal_mount_to_credential_resolved_ms` | 0 | **0** | 0 | 0 | 0% |
+
+**Acceptance criteria check** (target: `time_to_modal_interactive_ms` p50 ≤ 1700ms, all events `fast_path: true`, all events `mount→resolved = 0`):
+
+- ✅ p50 `time_to_modal_interactive_ms` = 1563ms (≤ 1700 target)
+- ✅ p50 `claim_phase_ms` = 1830ms (≤ 2100 target) — *slightly better than prior n=7's 1855*
+- ✅ `fast_path: true` on all 11 events
+- ✅ `modal_mount_to_credential_resolved_ms = 0` on all 11 events
+- ✅ All 11 events `outcome: "claimed"`
+
+### Interpretation
+
+The ~100ms drift on `request_to_response_ms` is the backend doing the wallet-side enrichment work that previously happened on the frontend via background `wallet.read.get(uri)`. Net user-perceived effect:
+
+- **Frontend background-enrichment approach (`6b449b86e`)**: faster `request_to_response_ms` (~1461ms) + shimmer placeholders for ~500ms while enrichment lands → modal flickers/upgrades.
+- **Backend pre-resolve approach (`54f429274`)**: ~100ms slower `request_to_response_ms` (~1560ms) but credential arrives already enriched → modal renders correctly on first paint, no flicker, no shimmer logic on the client.
+
+The latter is a strictly better UX trade. The 7% perf cost is well within iteration-to-iteration noise (prior n=7 itself spanned 1031–1642 on `interactive`, σ ~230ms; new n=11 spans 1145–1932 — overlapping distributions).
+
+`claim_phase_ms` is statistically unchanged (−1% median), as expected — backend pre-resolve only touches the response path, not the claim phase.
+
+**Conclusion**: backend pre-resolve **preserves the LC-1644 perf wins** while delivering cleaner first-paint UX. Promote to production unchanged.
 
 ## Composite stack win
 
