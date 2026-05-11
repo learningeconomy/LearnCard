@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm
+    && npm install -g pnpm@9.12.3
 
 # Copy root workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
