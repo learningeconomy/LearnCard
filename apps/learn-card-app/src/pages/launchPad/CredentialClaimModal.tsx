@@ -39,6 +39,15 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const [credential, setCredential] = useState<VC | VP | undefined | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // LC-1644 fast-path enrichment: when the modal is mounted with a preResolvedCredential
+    // (Tasks 1+2 fast path), the credential lacks the wallet-side enrichment that
+    // `wallet.read.get(uri)` provides (issuer registry name, verified badge, hydrated
+    // display fields). We render immediately for the perf win, then re-fetch via the
+    // wallet in the background and swap to the enriched version once it lands.
+    // While the background fetch is pending, fields that depend on enrichment show a
+    // shimmer placeholder rather than the generic "Credential" / "[?]" fallback.
+    const [isEnrichingFromFastPath, setIsEnrichingFromFastPath] = useState(false);
+
     // LC-1644: Hoist wallet to ref so handleClaim can reuse it without a second initWallet()
     const walletRef = useRef<Awaited<ReturnType<typeof initWallet>> | null>(null);
 
@@ -64,15 +73,35 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 setError(null);
 
                 if (preResolvedCredential) {
-                    // Fast path — credential already available from APP_EVENT response
+                    // Fast path — render immediately with what we have
                     if (!cancelled) {
                         setCredential(preResolvedCredential);
                         markCredentialResolved({ fastPath: true });
+                        setIsEnrichingFromFastPath(true);
                     }
 
-                    // Still init wallet in background for handleClaim later
+                    // Init wallet (needed for handleClaim later, also for enrichment)
                     const wallet = await initWallet();
                     if (!cancelled) walletRef.current = wallet;
+
+                    // Background enrichment: fetch the wallet-resolved version so the
+                    // preview gets the proper issuer name + verified badge + display fields.
+                    // Non-blocking for modal interactivity — user can click Accept any time.
+                    if (wallet) {
+                        try {
+                            const enriched = await wallet.read.get(credentialUri);
+                            if (!cancelled && enriched) {
+                                setCredential(enriched);
+                            }
+                        } catch (enrichErr) {
+                            // Enrichment failure is non-fatal — modal remains usable.
+                            console.warn('[claim] background enrichment failed:', enrichErr);
+                        } finally {
+                            if (!cancelled) setIsEnrichingFromFastPath(false);
+                        }
+                    } else if (!cancelled) {
+                        setIsEnrichingFromFastPath(false);
+                    }
                     return;
                 }
 
@@ -268,7 +297,13 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         ? credential?.credentialSubject[0]
         : credential?.credentialSubject;
 
-    const credentialName = credential?.name || subject?.achievement?.name || 'Credential';
+    const resolvedCredentialName = credential?.name || subject?.achievement?.name;
+    // LC-1644: while background enrichment is pending and we don't yet have a real
+    // name, show a skeleton instead of the generic "Credential" fallback. Once the
+    // enriched credential lands in state, this resolves to the real name and the
+    // shimmer disappears.
+    const showCredentialNameShimmer = isEnrichingFromFastPath && !resolvedCredentialName;
+    const credentialName = resolvedCredentialName || 'Credential';
 
     const actionButtonText = isClaiming ? 'Claiming...' : claimed ? 'Claimed' : 'Accept';
 
@@ -288,7 +323,16 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white text-center flex-shrink-0">
                     <h3 className="text-lg font-semibold">You've Earned a Credential!</h3>
 
-                    <p className="text-white/80 text-sm mt-1">{credentialName}</p>
+                    <p className="text-white/80 text-sm mt-1 min-h-[20px]">
+                        {showCredentialNameShimmer ? (
+                            <span
+                                className="inline-block h-[14px] w-32 bg-white/30 rounded animate-pulse align-middle"
+                                aria-label="Loading credential name"
+                            />
+                        ) : (
+                            credentialName
+                        )}
+                    </p>
                 </div>
 
                 {/* Credential Preview */}
@@ -302,6 +346,11 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                                 useWrapper={false}
                                 verifierState={false}
                                 className="shadow-lg"
+                                // LC-1644: while background enrichment is pending, render the
+                                // card's built-in skeleton state instead of the fast-path
+                                // credential's unenriched issuer "[?]" badge. Resolves itself
+                                // once the enriched credential lands in state.
+                                loading={isEnrichingFromFastPath}
                             />
                         </div>
                     </div>
