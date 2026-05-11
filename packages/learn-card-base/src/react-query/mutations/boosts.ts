@@ -1,5 +1,4 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { attachRenderMethod } from '@learncard/render-method-plugin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
 import {
@@ -256,9 +255,7 @@ export const useCreateBoost = () => {
                 credentialPayload.type = 'boost';
             }
 
-            const unsignedCredential = attachRenderMethod(
-                wallet.invoke.newCredential(credentialPayload as any)
-            );
+            const unsignedCredential = wallet.invoke.newCredential(credentialPayload as any);
 
             // // Set OBv3 alignments if we have any (from state.alignments or legacy state.skills)
             // try {
