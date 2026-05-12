@@ -51,12 +51,27 @@ interface CurrentFlow {
 let currentFlow: CurrentFlow | null = null;
 let analyticsProvider: AnalyticsProvider | null = null;
 
+// LD-flag-gated kill switch for natural (non-bench) production flows. Off by default
+// so a fresh process never emits until the LD flag is read. Bench-triggered events
+// bypass this gate (admin clicked the button, they want the data).
+let sendCredentialTelemetryEnabled = false;
+
 /**
  * Wire the helper to the analytics provider once at app boot. Called from a small
  * effect inside `AnalyticsContextProvider` consumers — see `useSendCredentialFlowWiring`.
  */
 export function setAnalyticsProvider(provider: AnalyticsProvider | null): void {
     analyticsProvider = provider;
+}
+
+/**
+ * Set by an effect inside `AnalyticsContextProvider` based on the LaunchDarkly flag
+ * `enableSendCredentialPosthogTelemetry`. Controls whether natural send-credential
+ * flows emit `frontend.sendcredential.iteration` events. Bench-panel-triggered
+ * flows are not gated by this.
+ */
+export function setSendCredentialTelemetryEnabled(enabled: boolean): void {
+    sendCredentialTelemetryEnabled = enabled;
 }
 
 function generateRunId(): string {
@@ -171,6 +186,12 @@ function buildPayload(
 }
 
 async function emit(payload: Iter): Promise<void> {
+    // LD-flag gate: natural production flows only emit when the flag is on.
+    // Bench-triggered flows bypass the gate so admin measurement campaigns
+    // keep working regardless of the production toggle.
+    if (!sendCredentialTelemetryEnabled && !payload.triggered_by_bench) {
+        return;
+    }
     if (!analyticsProvider) {
         console.warn('[sendCredentialFlow] emit skipped — no analytics provider wired', payload);
         return;
