@@ -1,5 +1,14 @@
 # @learncard/credential-viewer
 
+## 0.0.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/credential-library@1.0.3
+    -   @learncard/init@2.3.16
+    -   @learncard/simple-signing-plugin@1.1.21
+
 ## 0.0.4
 
 ### Patch Changes
