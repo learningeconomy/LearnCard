@@ -318,7 +318,12 @@ export async function issueCredentialWithSigningAuthority(
             for (let i = 0; i <= MAX_RETRIES; i++) {
                 try {
                     const result = await attempt(i);
-                    perf.mark(i === 0 ? 'http' : `http_retry_${i}`);
+                    // Use the same phase name for both the mark and the bench read so
+                    // they can't drift. Retry attempts mark `http_retry_N`; without the
+                    // shared variable, the bench read of `phases.http` would miss them
+                    // and record sa_http_ms: 0 on retry-successful runs.
+                    const httpPhase = i === 0 ? 'http' : `http_retry_${i}`;
+                    perf.mark(httpPhase);
                     perf.done({
                         saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
                         attempts: i + 1,
@@ -326,7 +331,7 @@ export async function issueCredentialWithSigningAuthority(
                     const benchCtx = benchContextStorage.getStore();
                     if (benchCtx) {
                         const captured = perf.capture();
-                        benchCtx.sa_http_ms = captured.phases.http ?? 0;
+                        benchCtx.sa_http_ms = captured.phases[httpPhase] ?? 0;
                         benchCtx.sa_didauthvp_ms = captured.phases.didAuthVp ?? 0;
                     }
                     return result;
