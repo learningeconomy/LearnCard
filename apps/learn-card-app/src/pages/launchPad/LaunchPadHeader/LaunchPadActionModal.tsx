@@ -555,7 +555,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = profileType === 'child';
-    const { isAiEnabled } = useAiFeatureGate();
+    const { isAiEnabled, isLoading: isAiFeatureLoading } = useAiFeatureGate();
 
     const selectedBorderColor: Record<LearnCardRolesEnum, string> = {
         [LearnCardRolesEnum.learner]: '#5EEAD4',
@@ -824,51 +824,58 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             </div>
 
             <div className="mt-1 flex flex-wrap justify-center gap-4">
-                {actions.map((label, i) => (
-                    <ActionButton
-                        key={`${label}-${i}`}
-                        label={label}
-                        bg={
-                            !actionModalButtonColors
-                                ? colorByLabel[label] ?? bgColors[i % bgColors.length]
-                                : ''
-                        }
-                        bgHex={
-                            actionModalButtonColors
-                                ? actionModalButtonColors[i % actionModalButtonColors.length]
-                                : undefined
-                        }
-                        textColor={actionModalTextColor}
-                        borderColor={actionModalButtonBorderColor}
-                        role={activeRole}
-                        onClick={
-                            label === 'View Family' && familyUri
-                                ? () => {
-                                      closeModal();
-                                      newModal(
-                                          <FamilyBoostPreviewWrapper uri={familyUri} />,
-                                          {},
-                                          {
-                                              desktop: ModalTypes.FullScreen,
-                                              mobile: ModalTypes.FullScreen,
-                                          }
-                                      );
-                                      history.push('/families');
-                                  }
-                                : label === 'View Learner Insights'
-                                ? handleViewLearnerInsights
-                                : label === 'View Child Insights'
-                                ? handleViewChildInsights
-                                : label === 'Edit Skills Frameworks'
-                                ? handleEditSkillsFrameworks
-                                : label === 'Request Learner Insights'
-                                ? () => void handleRequestLearnerInsights()
-                                : label === 'Add to LearnCard'
-                                ? handleAddToLearnCard
-                                : undefined
-                        }
-                    />
-                ))}
+                {isAiFeatureLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                          <div
+                              key={`skeleton-${i}`}
+                              className="w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] rounded-[20px] bg-grayscale-200 animate-pulse"
+                          />
+                      ))
+                    : actions.map((label, i) => (
+                          <ActionButton
+                              key={`${label}-${i}`}
+                              label={label}
+                              bg={
+                                  !actionModalButtonColors
+                                      ? colorByLabel[label] ?? bgColors[i % bgColors.length]
+                                      : ''
+                              }
+                              bgHex={
+                                  actionModalButtonColors
+                                      ? actionModalButtonColors[i % actionModalButtonColors.length]
+                                      : undefined
+                              }
+                              textColor={actionModalTextColor}
+                              borderColor={actionModalButtonBorderColor}
+                              role={activeRole}
+                              onClick={
+                                  label === 'View Family' && familyUri
+                                      ? () => {
+                                            closeModal();
+                                            newModal(
+                                                <FamilyBoostPreviewWrapper uri={familyUri} />,
+                                                {},
+                                                {
+                                                    desktop: ModalTypes.FullScreen,
+                                                    mobile: ModalTypes.FullScreen,
+                                                }
+                                            );
+                                            history.push('/families');
+                                        }
+                                      : label === 'View Learner Insights'
+                                      ? handleViewLearnerInsights
+                                      : label === 'View Child Insights'
+                                      ? handleViewChildInsights
+                                      : label === 'Edit Skills Frameworks'
+                                      ? handleEditSkillsFrameworks
+                                      : label === 'Request Learner Insights'
+                                      ? () => void handleRequestLearnerInsights()
+                                      : label === 'Add to LearnCard'
+                                      ? handleAddToLearnCard
+                                      : undefined
+                              }
+                          />
+                      ))}
             </div>
             <div
                 className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] py-[10px] ${
