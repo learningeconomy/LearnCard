@@ -6,6 +6,10 @@ export default defineConfig({
     test: {
         environment: 'node',
         globals: true,
-        include: ['test/uri-helpers.spec.ts', 'test/oidc-jwt.spec.ts'],
+        include: [
+            'test/uri-helpers.spec.ts',
+            'test/oidc-jwt.spec.ts',
+            'src/helpers/posthog.helpers.test.ts',
+        ],
     },
 });

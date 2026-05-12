@@ -2,6 +2,22 @@ import { PostHog } from 'posthog-node';
 
 let client: PostHog | null | undefined;
 
+/**
+ * Production kill switch for sendCredential PostHog telemetry.
+ *
+ * Set ENABLE_SEND_CREDENTIAL_TELEMETRY=true (string, exact match) to allow
+ * `bench.appevent.iteration` / `bench.appevent.run` events to emit. Any other
+ * value (including unset) is a hard no-op: captureBenchEvent returns false
+ * without initializing the PostHog client.
+ *
+ * Mirrors the frontend LaunchDarkly flag `enableSendCredentialPosthogTelemetry`.
+ * Brain-service has no LaunchDarkly client today, so we use an env var for
+ * parity. Toggleable via `aws lambda update-function-configuration` without
+ * a code redeploy.
+ */
+const isTelemetryEnabled = (): boolean =>
+    process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY === 'true';
+
 const getClient = (): PostHog | null => {
     if (client !== undefined) return client;
     const apiKey = process.env.POSTHOG_API_KEY;
@@ -34,6 +50,7 @@ export const captureBenchEvent = async (
     event: BenchEventName,
     properties: Record<string, unknown>
 ): Promise<boolean> => {
+    if (!isTelemetryEnabled()) return false;
     const ph = getClient();
     if (!ph) return false;
     try {
@@ -57,6 +74,7 @@ export const captureBenchEvent = async (
 };
 
 export const flushBenchEvents = async (): Promise<void> => {
+    if (!isTelemetryEnabled()) return;
     const ph = getClient();
     if (!ph) return;
     try {
