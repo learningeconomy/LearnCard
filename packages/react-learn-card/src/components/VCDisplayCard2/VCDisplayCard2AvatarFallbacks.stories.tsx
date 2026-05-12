@@ -69,100 +69,128 @@ const profileChip = (label: string) => (
     </div>
 );
 
+type AvatarFallbackMatrixType = 'badge' | 'certificate' | 'meritBadge';
+
 type VCDisplayCase = {
     title: string;
     description: string;
-    props: React.ComponentProps<typeof VCDisplayCard2>;
+    props: (matrixType: AvatarFallbackMatrixType) => React.ComponentProps<typeof VCDisplayCard2>;
+};
+
+const matrixTypeConfig: Record<
+    AvatarFallbackMatrixType,
+    {
+        heading: string;
+        displayType: 'badge' | 'certificate' | 'award';
+        categoryType: LCCategoryEnum;
+    }
+> = {
+    badge: {
+        heading: 'Badge avatar fallback matrix',
+        displayType: 'badge',
+        categoryType: LCCategoryEnum.socialBadge,
+    },
+    certificate: {
+        heading: 'Certificate avatar fallback matrix',
+        displayType: 'certificate',
+        categoryType: LCCategoryEnum.achievement,
+    },
+    meritBadge: {
+        heading: 'Merit badge avatar fallback matrix',
+        displayType: 'award',
+        categoryType: LCCategoryEnum.meritBadge,
+    },
 };
 
 const cases: VCDisplayCase[] = [
     {
         title: 'Trusted profiles with custom image components',
         description: 'Shows the override path when both issuer and subject provide custom avatars.',
-        props: {
+        props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:trusted-profiles',
                 issuer: trustedIssuer,
                 subjectId: trustedSubject.id,
                 title: 'Supported Learning Credential',
                 description: 'A clean baseline with trusted names and custom avatar overrides.',
-                displayType: 'certificate',
+                displayType: matrixTypeConfig[matrixType].displayType,
                 achievementImage: 'https://picsum.photos/600/400?1',
             }) as any,
             issuerOverride: trustedIssuer as any,
             issueeOverride: trustedSubject as any,
             issuerImageComponent: profileChip('NS'),
             subjectImageComponent: profileChip('AC'),
-            categoryType: LCCategoryEnum.achievement,
+            categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'trusted', results: {} },
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
-        },
+        }),
     },
     {
         title: 'did:web issuer with no name or image',
         description:
             'Uses the readable DID fallback and the icon avatar when profile data is sparse.',
-        props: {
+        props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:did-web-issuer',
                 issuer: 'did:web:network.learncard.com:users:donny',
                 subjectId: 'did:key:z6Mku1yR3226QyTfM7HBJeAc986TcnUms6CUSsYuoPb48Uyw',
                 title: 'Web Issuer Credential',
                 description: 'Issuer data is a DID only, with no display name or image.',
-                displayType: 'certificate',
+                displayType: matrixTypeConfig[matrixType].displayType,
                 achievementImage: 'https://picsum.photos/600/400?2',
             }) as any,
-            categoryType: LCCategoryEnum.achievement,
+            categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'unknown', results: {} },
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
-        },
+        }),
     },
     {
         title: 'Generic VC path with did:web issuer',
         description:
             'Covers the default VCDisplayCard2 front face without certificate or award routing.',
-        props: {
+        props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:generic-vc-path',
                 issuer: 'did:web:network.learncard.com:users:community',
                 subjectId: 'did:key:z6Mku1yR3226QyTfM7HBJeAc986TcnUms6CUSsYuoPb48Uyw',
                 title: 'Community Credential',
                 description: 'A plain VC layout with DID-only issuer data.',
+                displayType: matrixTypeConfig[matrixType].displayType,
                 achievementImage: 'https://picsum.photos/600/400?6',
             }) as any,
-            categoryType: LCCategoryEnum.achievement,
+            categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'unknown', results: {} },
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
-        },
+        }),
     },
     {
         title: 'Blank issuer profile and missing recipient name',
         description: 'Exercises the friendly Unknown issuer / Unknown recipient labels.',
-        props: {
+        props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:blank-profile',
                 issuer: {},
                 title: 'Sparse Credential',
                 description: 'Both sides are missing human-friendly labels.',
-                displayType: 'certificate',
+                displayType: matrixTypeConfig[matrixType].displayType,
                 achievementImage: 'https://picsum.photos/600/400?3',
             }) as any,
             issuerOverride: {} as any,
             issueeOverride: {} as any,
-            categoryType: LCCategoryEnum.achievement,
+            categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'untrusted', results: {} },
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
-        },
+        }),
     },
     {
         title: 'Ticket example did:jwk issuer and did:key subject',
         description:
             'Matches the provided shape with a JWK issuer and no human-readable issuer name.',
-        props: {
+        props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:875bdcbc-7443-4438-b50d-d1f6bd84b063',
                 issuer: {
@@ -171,53 +199,64 @@ const cases: VCDisplayCase[] = [
                 subjectId: 'did:key:z6Mku1yR3226QyTfM7HBJeAc986TcnUms6CUSsYuoPb48Uyw',
                 title: 'Bachelor of Science and Arts',
                 description: 'A credential with an issuer DID only and a key-based recipient DID.',
-                displayType: 'certificate',
+                displayType: matrixTypeConfig[matrixType].displayType,
                 achievementImage: 'https://picsum.photos/600/400?4',
             }) as any,
-            categoryType: LCCategoryEnum.achievement,
+            categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'unknown', results: {} },
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
-        },
+        }),
     },
     {
         title: 'Self-issued did:web credential',
         description:
             'Confirms the self-issued path still reads well when the issuer and subject match.',
-        props: {
+        props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:self-issued',
                 issuer: 'did:web:network.learncard.com:users:donny',
                 subjectId: 'did:web:network.learncard.com:users:donny',
                 title: 'Self Issued Credential',
                 description: 'The issuer and subject are the same DID.',
-                displayType: 'award',
+                displayType: matrixTypeConfig[matrixType].displayType,
                 achievementImage: 'https://picsum.photos/600/400?5',
             }) as any,
-            categoryType: LCCategoryEnum.meritBadge,
+            categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'unknown', results: {} },
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
-        },
+        }),
     },
 ];
 
-const AvatarFallbackMatrix: React.FC = () => {
+const buildMatrixCases = (matrixType: AvatarFallbackMatrixType) =>
+    cases.map(testCase => ({
+        ...testCase,
+        props: testCase.props(matrixType),
+    }));
+
+const AvatarFallbackMatrix: React.FC<{ matrixType: AvatarFallbackMatrixType }> = ({
+    matrixType,
+}) => {
+    const { heading } = matrixTypeConfig[matrixType];
+    const matrixCases = buildMatrixCases(matrixType);
+
     return (
         <div className="bg-grayscale-100 min-h-screen p-8">
             <div className="mx-auto max-w-[1200px] space-y-8">
                 <div className="space-y-2">
                     <h1 className="text-xl font-semibold text-grayscale-900 font-poppins">
-                        Credential avatar fallback matrix
+                        {heading}
                     </h1>
                     <p className="text-sm text-grayscale-600 leading-relaxed font-poppins max-w-[720px]">
-                        Use this story to verify issuer and subject visuals stay polished when
-                        names, images, or DID shapes are missing or unusual.
+                        Use this story to verify issuer and subject visuals stay polished for this
+                        credential type when names, images, or DID shapes are missing or unusual.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">
-                    {cases.map(testCase => (
+                    {matrixCases.map(testCase => (
                         <section
                             key={testCase.title}
                             className="rounded-[28px] bg-white p-6 shadow-[0_18px_50px_rgba(24,34,78,0.12)] space-y-4"
@@ -248,7 +287,18 @@ export default {
     argTypes: {},
 } as Meta<typeof VCDisplayCard2>;
 
-const Template: Story = () => <AvatarFallbackMatrix />;
+const Template: Story<{ matrixType: AvatarFallbackMatrixType }> = ({ matrixType }) => (
+    <AvatarFallbackMatrix matrixType={matrixType} />
+);
 
-export const AvatarFallbackMatrixStory = Template.bind({});
-AvatarFallbackMatrixStory.args = {};
+export const BadgeAvatarFallbackMatrixStory = Template.bind({});
+BadgeAvatarFallbackMatrixStory.args = { matrixType: 'badge' };
+BadgeAvatarFallbackMatrixStory.storyName = 'Badge Matrix';
+
+export const CertificateAvatarFallbackMatrixStory = Template.bind({});
+CertificateAvatarFallbackMatrixStory.args = { matrixType: 'certificate' };
+CertificateAvatarFallbackMatrixStory.storyName = 'Certificate Matrix';
+
+export const MeritBadgeAvatarFallbackMatrixStory = Template.bind({});
+MeritBadgeAvatarFallbackMatrixStory.args = { matrixType: 'meritBadge' };
+MeritBadgeAvatarFallbackMatrixStory.storyName = 'Merit Badge Matrix';
