@@ -104,8 +104,9 @@ const matrixTypeConfig: Record<
 
 const cases: VCDisplayCase[] = [
     {
-        title: 'Trusted profiles with custom image components',
-        description: 'Shows the override path when both issuer and subject provide custom avatars.',
+        title: 'Issuer and issuee profile images',
+        description:
+            'Shows the profile image path when both issuer and issuee provide images directly.',
         props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:trusted-profiles',
@@ -118,8 +119,6 @@ const cases: VCDisplayCase[] = [
             }) as any,
             issuerOverride: trustedIssuer as any,
             issueeOverride: trustedSubject as any,
-            issuerImageComponent: profileChip('NS'),
-            subjectImageComponent: profileChip('AC'),
             categoryType: matrixTypeConfig[matrixType].categoryType,
             knownDIDRegistry: { source: 'trusted', results: {} },
             isFrontOverride: true,
