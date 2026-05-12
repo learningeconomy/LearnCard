@@ -34,7 +34,7 @@
         "serverless-esbuild": "^1.25.0",
         "serverless-http": "^3.0.1",
         "serverless-plugin-warmup": "^8.1.0",
-        "simple-git": "^3.9.0",
+        "simple-git": "^3.36.0",
         "use-immer": "^0.7.0"
     },
     "devDependencies": {

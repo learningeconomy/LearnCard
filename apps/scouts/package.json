@@ -93,7 +93,7 @@
         "typewriter-effect": "^2.21.0",
         "unique-names-generator": "^4.7.1",
         "use-immer": "^0.9.0",
-        "uuid": "^9.0.1",
+        "uuid": "^14.0.0",
         "web-vitals": "^0.2.4",
         "zustand": "^3.7.2"
     },
@@ -154,7 +154,7 @@
         "autoprefixer": "^10.4.20",
         "jeep-sqlite": "2.5.8",
         "node-stdlib-browser": "1.2.1",
-        "postcss": "^8.5.2",
+        "postcss": "^8.5.10",
         "sass": "^1.84.0",
         "tailwindcss": "^3.4.17",
         "vite": "^6.4.2",

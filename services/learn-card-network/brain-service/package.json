@@ -92,7 +92,7 @@
         "tsc-alias": "^1.8.10",
         "zod-openapi": "^5.0.1",
         "twilio": "^5.7.1",
-        "uuid": "^9.0.0",
+        "uuid": "^14.0.0",
         "mustache": "^4.2.0"
     },
     "repository": {
