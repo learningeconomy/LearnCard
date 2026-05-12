@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.8.8
+
+### Patch Changes
+
+-   [#1216](https://github.com/learningeconomy/LearnCard/pull/1216) [`81482ce6a60c9c8c8218ee51016671488a2bfeae`](https://github.com/learningeconomy/LearnCard/commit/81482ce6a60c9c8c8218ee51016671488a2bfeae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for Array form `credentialStatus`
+
 ## 1.8.7
 
 ### Patch Changes
