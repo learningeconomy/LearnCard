@@ -6,7 +6,7 @@ import { LCR } from '../../types/credential-records';
 import { cloneDeep } from 'lodash';
 import { UnsignedVC, VC } from '@learncard/types';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
-import { pruneDeletedUrisFromConsentFlow } from './pruneConsentFlowDeletedCredentials';
+import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 
 // ** CONNECTION MUTATIONS **
@@ -175,13 +175,13 @@ export const useDeleteCredentialRecord = () => {
         uri: string;
     };
 
-    const isMissingConsentPruneProcedureError = (error: unknown) => {
+    const isMissingDeleteCredentialFromAllContractsProcedureError = (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
 
         return (
-            message.includes('contracts.pruneDeletedUrisFromConsentFlow') ||
+            message.includes('contracts.deleteCredentialFromAllContracts') ||
             message.includes(
-                'No procedure found on path "contracts.pruneDeletedUrisFromConsentFlow"'
+                'No procedure found on path "contracts.deleteCredentialFromAllContracts"'
             )
         );
     };
@@ -353,7 +353,7 @@ export const useDeleteCredentialRecord = () => {
                 });
             }
 
-            logDeleteCredentialRefresh('Scheduling targeted consent prune task', {
+            logDeleteCredentialRefresh('Scheduling credential cleanup task', {
                 uri: result.uri,
                 category,
                 contractUri: result.contractUri ?? null,
@@ -363,7 +363,7 @@ export const useDeleteCredentialRecord = () => {
                 const walletPromise = initWallet();
 
                 void (async () => {
-                    logDeleteCredentialRefresh('Running targeted consent prune after delete', {
+                    logDeleteCredentialRefresh('Running credential cleanup after delete', {
                         uri: result.uri,
                         category,
                         contractUri: result.contractUri ?? null,
@@ -371,35 +371,38 @@ export const useDeleteCredentialRecord = () => {
 
                     const wallet = await walletPromise;
 
-                    const pruneResult = await pruneDeletedUrisFromConsentFlow({
+                    const cleanupResult = await deleteCredentialFromAllContracts({
                         wallet,
                         queryClient,
                         deletedUris: [result.uri],
                     });
 
-                    logDeleteCredentialRefresh('Targeted consent prune completed after delete', {
+                    logDeleteCredentialRefresh('Credential cleanup completed after delete', {
                         uri: result.uri,
                         category,
                         contractUri: result.contractUri ?? null,
-                        contractsUpdated: pruneResult.contractsUpdated,
-                        removedSharedUris: pruneResult.removedSharedUris,
+                        contractsUpdated: cleanupResult.contractsUpdated,
+                        removedSharedUris: cleanupResult.removedSharedUris,
                     });
 
-                    logDeleteCredentialRefresh('Queueing AI Insight refresh after targeted prune', {
-                        uri: result.uri,
-                        category,
-                        contractUri: result.contractUri ?? null,
-                        contractsUpdated: pruneResult.contractsUpdated,
-                        removedSharedUris: pruneResult.removedSharedUris,
-                    });
+                    logDeleteCredentialRefresh(
+                        'Queueing AI Insight refresh after credential cleanup',
+                        {
+                            uri: result.uri,
+                            category,
+                            contractUri: result.contractUri ?? null,
+                            contractsUpdated: cleanupResult.contractsUpdated,
+                            removedSharedUris: cleanupResult.removedSharedUris,
+                        }
+                    );
                     await queueAiInsightCredentialRefresh({
                         wallet,
                         queryClient,
                     });
                 })().catch(error => {
-                    if (isMissingConsentPruneProcedureError(error)) {
+                    if (isMissingDeleteCredentialFromAllContractsProcedureError(error)) {
                         logDeleteCredentialRefresh(
-                            'Consent prune procedure missing; running full sync fallback',
+                            'Credential cleanup procedure missing; running full sync fallback',
                             {
                                 uri: result.uri,
                                 category,
@@ -425,11 +428,11 @@ export const useDeleteCredentialRecord = () => {
                                 wallet,
                                 queryClient,
                             });
-                        })().catch(fallbackError => {
+                        })().catch(cleanupFallbackError => {
                             if (ENABLE_DELETE_CREDENTIAL_LOGS) {
                                 console.error(
-                                    'Failed to run full sync fallback after prune failure:',
-                                    fallbackError
+                                    'Failed to run full sync fallback after cleanup failure:',
+                                    cleanupFallbackError
                                 );
                             }
                         });

@@ -4,7 +4,7 @@ import { cloneDeep } from 'lodash';
 
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
-export type PruneDeletedCredentialUrisResult = {
+export type DeleteCredentialFromAllContractsResult = {
     contractsUpdated: number;
     removedSharedUris: number;
 };
@@ -34,7 +34,7 @@ export const pruneDeletedUrisFromConsentTerms = (
     return { terms: nextTerms, removedSharedUris };
 };
 
-export const pruneDeletedUrisFromConsentFlow = async ({
+export const deleteCredentialFromAllContracts = async ({
     wallet,
     queryClient,
     deletedUris,
@@ -42,7 +42,7 @@ export const pruneDeletedUrisFromConsentFlow = async ({
     wallet: BespokeLearnCard;
     queryClient: QueryClient;
     deletedUris: string[];
-}): Promise<PruneDeletedCredentialUrisResult> => {
+}): Promise<DeleteCredentialFromAllContractsResult> => {
     const uniqueDeletedUris = [
         ...new Set(deletedUris.filter((uri): uri is string => Boolean(uri))),
     ];
@@ -51,28 +51,28 @@ export const pruneDeletedUrisFromConsentFlow = async ({
         return { contractsUpdated: 0, removedSharedUris: 0 };
     }
 
-    const ENABLE_CONSENT_PRUNE_LOGS = false;
+    const ENABLE_CREDENTIAL_CLEANUP_LOGS = false;
 
-    const logConsentPrune = (message: string, data?: Record<string, unknown>) => {
-        if (!ENABLE_CONSENT_PRUNE_LOGS) return;
+    const logCredentialCleanup = (message: string, data?: Record<string, unknown>) => {
+        if (!ENABLE_CREDENTIAL_CLEANUP_LOGS) return;
 
         try {
             if (data) {
-                console.log(`[ConsentFlowPrune] ${message}`, data);
+                console.log(`[CredentialCleanup] ${message}`, data);
             } else {
-                console.log(`[ConsentFlowPrune] ${message}`);
+                console.log(`[CredentialCleanup] ${message}`);
             }
         } catch {
             // Logging should never break credential cleanup.
         }
     };
 
-    logConsentPrune('Starting targeted prune', {
+    logCredentialCleanup('Starting credential cleanup', {
         deletedUriCount: uniqueDeletedUris.length,
         deletedUris: uniqueDeletedUris,
     });
 
-    const pruneResult = await wallet.invoke.pruneDeletedUrisFromConsentFlow({
+    const cleanupResult = await wallet.invoke.deleteCredentialFromAllContracts({
         deletedUris: uniqueDeletedUris,
     });
 
@@ -82,13 +82,13 @@ export const pruneDeletedUrisFromConsentFlow = async ({
     queryClient.invalidateQueries({ queryKey: ['useConsentFlowDataForDidByCategory'] });
     queryClient.invalidateQueries({ queryKey: ['useResolvedConsentFlowDataForDid'] });
 
-    logConsentPrune('Targeted prune completed', {
-        contractsUpdated: pruneResult?.contractsUpdated ?? 0,
-        removedSharedUris: pruneResult?.removedSharedUris ?? 0,
+    logCredentialCleanup('Credential cleanup completed', {
+        contractsUpdated: cleanupResult?.contractsUpdated ?? 0,
+        removedSharedUris: cleanupResult?.removedSharedUris ?? 0,
     });
 
     return {
-        contractsUpdated: pruneResult?.contractsUpdated ?? 0,
-        removedSharedUris: pruneResult?.removedSharedUris ?? 0,
+        contractsUpdated: cleanupResult?.contractsUpdated ?? 0,
+        removedSharedUris: cleanupResult?.removedSharedUris ?? 0,
     };
 };

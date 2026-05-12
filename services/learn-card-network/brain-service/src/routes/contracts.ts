@@ -1246,14 +1246,14 @@ export const contractsRouter = t.router({
             return true;
         }),
 
-    pruneDeletedUrisFromConsentFlow: profileRoute
+    deleteCredentialFromAllContracts: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/consent/prune-deleted-uris',
                 tags: ['Contracts'],
-                summary: 'Prune deleted credential URIs from consent terms',
+                summary: 'Delete credential references from all consent terms',
                 description:
                     'Removes deleted credential URIs from any live consent terms that still reference them',
             },

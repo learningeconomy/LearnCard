@@ -1745,10 +1745,10 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
-            pruneDeletedUrisFromConsentFlow: async (_learnCard, deletedUris) => {
+            deleteCredentialFromAllContracts: async (_learnCard, deletedUris) => {
                 await ensureUser();
 
-                return client.contracts.pruneDeletedUrisFromConsentFlow.mutate({
+                return client.contracts.deleteCredentialFromAllContracts.mutate({
                     deletedUris,
                 });
             },

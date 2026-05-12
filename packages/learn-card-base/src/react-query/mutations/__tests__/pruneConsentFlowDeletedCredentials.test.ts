@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { ConsentFlowTerms } from '@learncard/types';
 import {
-    pruneDeletedUrisFromConsentFlow,
+    deleteCredentialFromAllContracts,
     pruneDeletedUrisFromConsentTerms,
 } from '../pruneConsentFlowDeletedCredentials';
 
@@ -51,16 +51,16 @@ describe('pruneDeletedUrisFromConsentTerms', () => {
     });
 });
 
-describe('pruneDeletedUrisFromConsentFlow', () => {
+describe('deleteCredentialFromAllContracts', () => {
     const invalidateQueries = vi.fn();
-    const pruneDeletedUrisFromConsentFlowRoute = vi.fn().mockResolvedValue({
+    const deleteCredentialFromAllContractsRoute = vi.fn().mockResolvedValue({
         contractsUpdated: 1,
         removedSharedUris: 1,
     });
 
     const wallet = {
         invoke: {
-            pruneDeletedUrisFromConsentFlow: pruneDeletedUrisFromConsentFlowRoute,
+            deleteCredentialFromAllContracts: deleteCredentialFromAllContractsRoute,
         },
     } as never;
 
@@ -70,21 +70,21 @@ describe('pruneDeletedUrisFromConsentFlow', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        pruneDeletedUrisFromConsentFlowRoute.mockResolvedValue({
+        deleteCredentialFromAllContractsRoute.mockResolvedValue({
             contractsUpdated: 1,
             removedSharedUris: 1,
         });
     });
 
     it('calls the backend prune route with unique deleted URIs', async () => {
-        const result = await pruneDeletedUrisFromConsentFlow({
+        const result = await deleteCredentialFromAllContracts({
             wallet,
             queryClient,
             deletedUris: ['shared-delete', 'shared-delete'],
         });
 
-        expect(pruneDeletedUrisFromConsentFlowRoute).toHaveBeenCalledOnce();
-        expect(pruneDeletedUrisFromConsentFlowRoute).toHaveBeenCalledWith({
+        expect(deleteCredentialFromAllContractsRoute).toHaveBeenCalledOnce();
+        expect(deleteCredentialFromAllContractsRoute).toHaveBeenCalledWith({
             deletedUris: ['shared-delete'],
         });
         expect(result).toEqual({
@@ -94,7 +94,7 @@ describe('pruneDeletedUrisFromConsentFlow', () => {
     });
 
     it('invalidates consent-flow caches after targeted prune', async () => {
-        await pruneDeletedUrisFromConsentFlow({
+        await deleteCredentialFromAllContracts({
             wallet,
             queryClient,
             deletedUris: ['shared-delete'],

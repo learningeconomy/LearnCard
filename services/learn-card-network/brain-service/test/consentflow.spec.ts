@@ -2567,8 +2567,8 @@ describe('Consent Flow Contracts', () => {
         });
     });
 
-    describe('pruneDeletedUrisFromConsentFlow', () => {
-        it('should not allow you to prune deleted URIs without full auth', async () => {
+    describe('deleteCredentialFromAllContracts', () => {
+        it('should not allow you to delete credential references without full auth', async () => {
             const profileSuffix = `prune-auth-${Date.now()}`;
             await userA.clients.fullAuth.profile.createProfile({
                 profileId: `usera-${profileSuffix}`,
@@ -2611,13 +2611,13 @@ describe('Consent Flow Contracts', () => {
             });
 
             await expect(
-                noAuthClient.contracts.pruneDeletedUrisFromConsentFlow({
+                noAuthClient.contracts.deleteCredentialFromAllContracts({
                     deletedUris: ['delete-uri'],
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 
             await expect(
-                userB.clients.partialAuth.contracts.pruneDeletedUrisFromConsentFlow({
+                userB.clients.partialAuth.contracts.deleteCredentialFromAllContracts({
                     deletedUris: ['delete-uri'],
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
@@ -2665,7 +2665,7 @@ describe('Consent Flow Contracts', () => {
                 terms: pruneTerms,
             });
 
-            const result = await userD.clients.fullAuth.contracts.pruneDeletedUrisFromConsentFlow({
+            const result = await userD.clients.fullAuth.contracts.deleteCredentialFromAllContracts({
                 deletedUris: ['delete-uri'],
             });
 

@@ -508,7 +508,7 @@ export type LearnCardNetworkPluginMethods = {
         categories: Record<string, string[]>
     ) => Promise<boolean>;
 
-    pruneDeletedUrisFromConsentFlow: (deletedUris: string[]) => Promise<{
+    deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;
         removedSharedUris: number;
     }>;
