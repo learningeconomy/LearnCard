@@ -4,6 +4,10 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
+        user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+        tmpfs:
+            - /app/.nx-cache:mode=1777
+            - /app/node_modules/.cache:mode=1777
         container_name: 'lcn-app'
         expose:
             - 3000
@@ -39,6 +43,10 @@ services:
 
     watcher:
         image: learncard-monorepo-local
+        user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+        tmpfs:
+            - /app/.nx-cache:mode=1777
+            - /app/node_modules/.cache:mode=1777
         container_name: 'lcn-watcher'
         command:
             [
@@ -61,7 +69,6 @@ services:
             CHOKIDAR_INTERVAL: '1000'
         volumes:
             - ../../packages:/app/packages
-            - nx-cache:/app/node_modules/.cache
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -374,5 +381,3 @@ networks:
     learn-card:
         driver: bridge
 
-volumes:
-    nx-cache:
