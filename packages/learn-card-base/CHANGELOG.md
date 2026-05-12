@@ -1,5 +1,16 @@
 # learn-card-base
 
+## 0.1.32
+
+### Patch Changes
+
+-   [#1207](https://github.com/learningeconomy/LearnCard/pull/1207) [`3312e78f640f536660c91c643fc57cf02196b4dc`](https://github.com/learningeconomy/LearnCard/commit/3312e78f640f536660c91c643fc57cf02196b4dc) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1788] Bug fest
+
+-   [#1210](https://github.com/learningeconomy/LearnCard/pull/1210) [`f71f2fc5c89ce0fed8dc8e5558e4ed7a3ae22a55`](https://github.com/learningeconomy/LearnCard/commit/f71f2fc5c89ce0fed8dc8e5558e4ed7a3ae22a55) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1813] - publishing resume fails with "Protected term redefinition"
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.8
+
 ## 0.1.31
 
 ### Patch Changes
