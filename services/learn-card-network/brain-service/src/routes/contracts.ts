@@ -66,6 +66,7 @@ import {
     syncCredentialsToContract,
     updateRequestedForStatusIfExists,
     updateTerms,
+    pruneDeletedUrisFromConsentTerms,
     upsertRequestedForRelationship,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
@@ -1243,6 +1244,78 @@ export const contractsRouter = t.router({
             ]);
 
             return true;
+        }),
+
+    deleteCredentialFromAllContracts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/consent/prune-deleted-uris',
+                tags: ['Contracts'],
+                summary: 'Delete credential references from all consent terms',
+                description:
+                    'Removes deleted credential URIs from any live consent terms that still reference them',
+            },
+            requiredScope: 'contracts:write',
+        })
+        .input(
+            z.object({
+                deletedUris: z.string().array().min(1),
+            })
+        )
+        .output(
+            z.object({
+                contractsUpdated: z.number(),
+                removedSharedUris: z.number(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { deletedUris } = input;
+
+            const uniqueDeletedUris = [...new Set(deletedUris.filter(uri => Boolean(uri)))];
+            if (!uniqueDeletedUris.length) {
+                return { contractsUpdated: 0, removedSharedUris: 0 };
+            }
+
+            const pageSize = 100;
+            const allContracts: Awaited<ReturnType<typeof getConsentedContractsForProfile>> = [];
+            let contractsUpdated = 0;
+            let removedSharedUris = 0;
+            let cursor: string | undefined = undefined;
+
+            do {
+                const results = await getConsentedContractsForProfile(profile, {
+                    query: {},
+                    limit: pageSize + 1,
+                    cursor,
+                    domain: ctx.domain,
+                });
+
+                const contracts = results.slice(0, pageSize);
+                allContracts.push(...contracts);
+
+                cursor = results.length > pageSize ? contracts.at(-1)?.terms.updatedAt : undefined;
+            } while (cursor);
+
+            for (const contract of allContracts) {
+                if (contract.terms.status && contract.terms.status !== 'live') {
+                    continue;
+                }
+
+                const removed = await pruneDeletedUrisFromConsentTerms(
+                    contract.terms,
+                    uniqueDeletedUris
+                );
+
+                if (!removed) continue;
+
+                contractsUpdated += 1;
+                removedSharedUris += removed;
+            }
+
+            return { contractsUpdated, removedSharedUris };
         }),
 
     withdrawConsent: profileRoute
