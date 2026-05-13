@@ -13,6 +13,12 @@ on:
             - '.github/workflows/didkit-plugin-node-prebuilds.yml'
     workflow_dispatch:
 
+env:
+    # Skip mongodb-memory-server's postinstall binary download — it races when
+    # multiple workspace packages depend on it, and we don't run brain-service
+    # tests in this workflow.
+    MONGOMS_DISABLE_POSTINSTALL: "1"
+
 jobs:
     build:
         strategy:
