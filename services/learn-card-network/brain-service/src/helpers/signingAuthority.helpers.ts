@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Agent, setGlobalDispatcher } from 'undici';
+import { Agent } from 'undici';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
@@ -93,6 +93,12 @@ const sleep = (ms: number): Promise<void> => new Promise(res => setTimeout(res, 
 // Agent is per-origin pooled; one shared instance handles all SA endpoints. Created lazily
 // so tests that stub fetch don't trigger socket allocation. `pipelining: 1` keeps request
 // ordering deterministic (SA responses aren't idempotent — we don't want body reordering).
+//
+// Scope: this agent is passed per-call via fetch's `dispatcher` option (see attempt()
+// below). We deliberately do NOT install it as the global dispatcher — the SA tuning
+// (connections, keepAliveTimeout, allowH2) is appropriate for the LCA-API issuer
+// endpoint specifically; other outbound HTTP in the lambda (federation, notifications,
+// etc.) keeps Node's default fetch pool.
 let _saAgent: Agent | undefined;
 const getSaAgent = (): Agent => {
     if (!_saAgent) {
@@ -106,12 +112,7 @@ const getSaAgent = (): Agent => {
             // connection, further reducing handshake overhead across concurrent SA calls.
             allowH2: true,
         });
-        // Install as global dispatcher so native fetch() picks it up. Node's global
-        // fetch only honors a per-call `dispatcher` option when it's on undici's
-        // internal options object; setting the global dispatcher is the reliable path
-        // and also benefits any other SA-adjacent calls that use plain fetch.
-        setGlobalDispatcher(_saAgent);
-        console.log('[SA Helper] undici keepAlive agent installed as global dispatcher');
+        console.log('[SA Helper] undici keepAlive agent initialized (per-call dispatcher)');
     }
     return _saAgent;
 };
@@ -352,7 +353,10 @@ export async function issueCredentialWithSigningAuthority(
                 }
             }
             // Exhausted retries. Re-throw the last error with full context preserved.
-            throw lastError;
+            // Defensive ?? guard: lastError is only undefined if attempt() somehow
+            // exited cleanly without returning — shouldn't happen, but never throw
+            // `undefined` to callers.
+            throw lastError ?? new Error('SA request failed without recorded error');
         } catch (error) {
             const errMsg = error instanceof Error ? error.message : String(error);
             const errStack = error instanceof Error ? error.stack : undefined;
