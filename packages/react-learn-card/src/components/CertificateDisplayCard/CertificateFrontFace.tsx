@@ -245,7 +245,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         Certified by
                     </span>
                     {issuerDisplay.isDidValue ? (
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[16px] leading-[90%] font-jacques tracking-[0.25px] border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
                             <span className="font-[600]">
                                 {issuerDisplay.isDidValue ? 'Digital ID: ' : ''}
                             </span>
