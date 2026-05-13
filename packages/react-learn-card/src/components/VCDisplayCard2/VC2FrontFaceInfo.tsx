@@ -185,7 +185,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     {!issuerDisplay.isMissing && (
                                         <span className="issued-by flex flex-wrap items-baseline justify-center gap-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[14px]">
                                             <span className="font-medium text-grayscale-900">
-                                                by
+                                                By
                                             </span>
                                             {issuerDisplay.isDidValue ? (
                                                 <>
