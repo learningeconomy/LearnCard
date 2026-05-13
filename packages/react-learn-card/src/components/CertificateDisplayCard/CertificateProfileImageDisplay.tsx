@@ -23,29 +23,36 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
     avatarFingerprintColor,
     avatarFallbackVariant = 'initial',
 }) => {
-    const imageClassName = `h-[50px] w-[50px] rounded-full overflow-hidden ${
-        isIssuer ? '!absolute border-[2px] border-solid border-grayscale-200' : ''
-    }`;
+    const imageClassName =
+        'h-[50px] w-[50px] rounded-full overflow-hidden border-[2px] border-solid border-grayscale-200';
+
+    const profileImage = imageComponent ? (
+        <div className={imageClassName}>{imageComponent}</div>
+    ) : (
+        <UserProfilePicture
+            customContainerClass={imageClassName}
+            customImageClass="h-full w-full object-cover leading-normal"
+            user={{ image: imageUrl, name: userName }}
+            avatarColor={avatarColor}
+            avatarFingerprintColor={avatarFingerprintColor}
+            avatarFallbackVariant={avatarFallbackVariant}
+        />
+    );
 
     return (
         <div className={className}>
             {isIssuer && (
-                <div className="bg-white rounded-full p-[5px]">
-                    <IssuerSeal />
+                <div className="relative inline-flex items-center justify-center">
+                    <div className="bg-white rounded-full p-[5px]">
+                        <IssuerSeal />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        {profileImage}
+                    </div>
                 </div>
             )}
 
-            {imageComponent && <div className={imageClassName}>{imageComponent}</div>}
-            {!imageComponent && (
-                <UserProfilePicture
-                    customContainerClass={imageClassName}
-                    customImageClass="h-full w-full object-cover leading-normal"
-                    user={{ image: imageUrl, name: userName }}
-                    avatarColor={avatarColor}
-                    avatarFingerprintColor={avatarFingerprintColor}
-                    avatarFallbackVariant={avatarFallbackVariant}
-                />
-            )}
+            {!isIssuer && profileImage}
         </div>
     );
 };
