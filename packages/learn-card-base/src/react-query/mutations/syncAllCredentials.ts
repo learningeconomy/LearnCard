@@ -71,9 +71,7 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                     }
 
                     // Progress: categories found
-                    syncProgressStore.set.categoriesFound(
-                        Object.keys(recordsByCategory).length
-                    );
+                    syncProgressStore.set.categoriesFound(Object.keys(recordsByCategory).length);
 
                     cursor = page?.hasMore ? page?.cursor : undefined;
 
