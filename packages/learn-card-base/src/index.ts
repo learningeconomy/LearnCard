@@ -151,6 +151,7 @@ export * from './stores/sideMenuStore';
 export * from './stores/checklistStore';
 export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
+export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
 export * from './stores/boostPreviewStore';
 export {
@@ -211,6 +212,7 @@ export * from './types/boostAndCredentialMetadata';
 
 // Constants
 export * from './constants/gdprAgeLimits';
+export * from './constants/aiPassport';
 
 export * from './filestack/useFilestack';
 export * from './filestack/images/filestack.helpers';

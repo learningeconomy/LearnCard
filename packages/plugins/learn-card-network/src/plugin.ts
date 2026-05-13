@@ -1745,6 +1745,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            deleteCredentialFromAllContracts: async (_learnCard, deletedUris) => {
+                await ensureUser();
+
+                return client.contracts.deleteCredentialFromAllContracts.mutate({
+                    deletedUris,
+                });
+            },
+
             sendAiInsightsContractRequest: async (
                 _learnCard,
                 contractUri,
