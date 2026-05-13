@@ -36,7 +36,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/learningeconomy/LearnCard"
+        "url": "git+https://github.com/learningeconomy/LearnCard.git"
     },
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
