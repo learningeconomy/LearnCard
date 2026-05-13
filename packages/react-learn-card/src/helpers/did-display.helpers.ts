@@ -221,7 +221,7 @@ export const resolveProfileDisplay = (
     return {
         displayName: fallbackLabel,
         avatarLetter: '',
-        avatarColor: 'bg-emerald-700',
+        avatarColor: 'bg-grayscale-600',
         avatarFingerprintColor: 'text-white',
         isMissing: true,
         isDidValue: false,

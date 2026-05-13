@@ -284,7 +284,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer
-                    userName={issuerName}
+                    userName={issuerDisplay.isMissing ? '' : issuerName}
                     avatarColor={issuerDisplay.avatarColor}
                     avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
                     avatarFallbackVariant={issuerDisplay.isDidValue ? 'fingerprint' : 'initial'}
