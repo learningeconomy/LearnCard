@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
     AppEventValidator,
@@ -9,13 +10,24 @@ import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
 
+import { neogma } from '@instance';
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { PerfTracker } from '@helpers/perf';
 import cache from '@cache';
+import {
+    getBoostForListingCached,
+    readAppStoreListingByIdCached,
+    getIntegrationForListingCached,
+    getOwnerProfileForIntegrationCached,
+    getPrimarySigningAuthorityForListingCached,
+    getPrimarySigningAuthorityForIntegrationCached,
+} from '@cache/app-store.caches';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { resolveUri } from '@helpers/uri.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
@@ -115,7 +127,6 @@ import {
 import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
-import { neogma } from '@instance';
 import {
     handleIncrementCounterEvent,
     handleGetCounterEvent,
@@ -528,13 +539,21 @@ const getListingOrThrow = async (listingId: string) => {
     return listing;
 };
 
-// Helper to handle send-credential app event
-const handleSendCredentialEvent = async (
+// LC-1644 cache layer: see src/cache/app-store.caches.ts for the LRU-backed
+// helpers used by the hot handleSendCredentialEvent path below.
+
+// Helper to handle send-credential app event.
+// Exported so the bench router (mounted behind ENABLE_BENCH_ROUTES) can drive
+// repeated invocations against an arbitrary listing/recipient.
+export const handleSendCredentialEvent = async (
     ctx: { domain: string },
     profile: { profileId: string },
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    perfTracker?: PerfTracker
 ): Promise<Record<string, unknown>> => {
+    const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
+
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
@@ -543,14 +562,32 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
     }
 
-    // Get the boost associated with this app (templateAlias maps to internal boost)
-    const boostResult = await getBoostForListingByTemplateAlias(
-        listingId,
-        templateAlias,
-        ctx.domain
-    );
+    // LC-1644 Phase 1b: Fire the four input-only lookups in parallel. All depend only on
+    // listingId / templateAlias / profileId — none depend on each other. At staging each
+    // query is 0-3ms (local Neo4j), but production Neo4j adds ~10-50ms per query and the
+    // parallel batching + 30s LRU cache on the first three below compounds to ~50-150ms
+    // saved on warm lambda invocations. targetProfile is keyed by the requester's
+    // profileId (varies per user) so it's not cached.
+    const [boostResult, listing, integration, targetProfile] = await Promise.all([
+        getBoostForListingCached(listingId, templateAlias, ctx.domain),
+        readAppStoreListingByIdCached(listingId),
+        getIntegrationForListingCached(listingId),
+        getProfilesByProfileIds([profile.profileId]),
+    ]);
+    perf.mark('parallelReads');
+
     if (!boostResult) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+    }
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+    const target = targetProfile[0];
+    if (!targetProfile.length || !target) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
     const { boost, boostUri } = boostResult;
@@ -568,6 +605,8 @@ const handleSendCredentialEvent = async (
         );
 
         if (existingCredential && existingCredential.status !== 'revoked') {
+            perf.mark('duplicateCheck');
+            perf.done({ listingId, boostUri, duplicate: true });
             return {
                 hasCredential: true,
                 alreadyClaimed: true,
@@ -575,8 +614,10 @@ const handleSendCredentialEvent = async (
                 receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
                 status: existingCredential.status,
                 boostUri,
+                // credential not included — frontend skips modal when alreadyClaimed=true
             };
         }
+        perf.mark('duplicateCheck');
     }
 
     if (isDraftBoost(boost)) {
@@ -586,51 +627,36 @@ const handleSendCredentialEvent = async (
         });
     }
 
-    const listing = await readAppStoreListingById(listingId);
-    if (!listing) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
-    }
+    // LC-1644 Phase 1b (cont.): Batch 2 — three lookups that only depend on the Batch 1
+    // results (integration / listing). Run them concurrently; we pick the first non-null SA
+    // by priority (listing > integration > owner). The owner-level SA lookup depends on
+    // integrationOwner, so it runs in a final stage only if neither listingSa nor
+    // integrationSa resolved. All three reads are cached with 30s TTL; in steady-state
+    // production traffic this batch becomes an in-memory lookup.
+    const [integrationOwner, listingSa, integrationSa] = await Promise.all([
+        getOwnerProfileForIntegrationCached(integration.id),
+        getPrimarySigningAuthorityForListingCached(listing),
+        getPrimarySigningAuthorityForIntegrationCached(integration.id),
+    ]);
+    perf.mark('ownerAndSaReads');
 
-    // Get the integration that owns this listing
-    const integration = await getIntegrationForListing(listingId);
-    if (!integration) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-    }
-
-    // Get integration owner for signing
-    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
     if (!integrationOwner) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
     }
 
-    // Get signing authority for the listing, falling back to legacy integration SA or owner SA
-    const listingSa = await getPrimarySigningAuthorityForListing(listing);
-    const integrationSa = listingSa
-        ? undefined
-        : await getPrimarySigningAuthorityForIntegration(integration.id);
     const ownerSa =
         listingSa || integrationSa
             ? undefined
             : await getPrimarySigningAuthorityForUser(integrationOwner);
     const sa = listingSa ?? integrationSa ?? ownerSa;
 
+    perf.mark('saResolve');
+
     if (!sa) {
         throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'No signing authority configured for this app',
         });
-    }
-
-    // Get the target profile (the user making the request)
-    const targetProfile = await getProfilesByProfileIds([profile.profileId]);
-    if (!targetProfile.length) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-    }
-
-    const target = targetProfile[0];
-
-    if (!target) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
     // Build unsigned credential from boost template
@@ -686,6 +712,8 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    perf.mark('buildCredential');
+
     // Create CredentialIssuer from the listing
     const issuer: CredentialIssuer = {
         type: 'appStoreListing',
@@ -725,40 +753,89 @@ const handleSendCredentialEvent = async (
             saName: sa.relationship.name,
             saEndpoint: sa.signingAuthority.endpoint,
         });
+        perf.done({ listingId, boostUri, error: errMsg });
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: `Could not issue credential with signing authority: ${errMsg}`,
         });
     }
 
-    // Log credential activity FIRST to get activityId for chaining
-    const activityId = await logCredentialSent({
-        actorProfileId: integrationOwner.profileId,
-        recipientType: 'profile',
-        recipientIdentifier: target.profileId,
-        recipientProfileId: target.profileId,
-        boostUri,
-        integrationId: integration.id,
-        listingId,
-        source: 'appEvent',
-        metadata: { listingId, templateAlias },
-    });
+    perf.mark('saIssue');
 
-    // Send to user's wallet (credential stays pending until user claims via the app UI)
-    const credentialUri = await sendBoost({
-        from: issuer,
-        to: target,
-        boost,
-        credential,
-        domain: ctx.domain,
-        skipNotification: false,
-        activityId,
-        integrationId: integration.id,
-    });
+    // LC-1644 Phase 1d: run logCredentialSent + sendBoost in parallel. They previously
+    // ran serially because sendBoost needed activityId as a foreign key on the
+    // SentCredential relationship. We now pre-generate the activityId upfront (matching
+    // the uuid the activity log would have chosen itself) and pass it to both calls.
+    // Both writes produce the same Neo4j linkage as before; we just fan them out.
+    // At staging this saves ~40ms on the serial sum (logActivity 40ms + sendBoost 50ms).
+    const activityId = uuid();
+    const [, credentialUri] = await Promise.all([
+        logCredentialSent({
+            actorProfileId: integrationOwner.profileId,
+            recipientType: 'profile',
+            recipientIdentifier: target.profileId,
+            recipientProfileId: target.profileId,
+            boostUri,
+            integrationId: integration.id,
+            listingId,
+            source: 'appEvent',
+            metadata: { listingId, templateAlias },
+            activityId,
+        }),
+        sendBoost({
+            from: issuer,
+            to: target,
+            boost,
+            credential,
+            domain: ctx.domain,
+            skipNotification: false,
+            activityId,
+            integrationId: integration.id,
+            listingId,
+        }),
+    ]);
+
+    perf.mark('logActivityAndSendBoost');
+
+    // LC-1644 fast-path enrichment: pre-resolve the credential via the same code
+    // path wallet.read.get(uri) uses on the client. This pays the wallet's
+    // resolution latency once on the backend (typically ~20-100ms — local Neo4j
+    // lookup, no external network) so the response payload's `credential` field
+    // is the same enriched version the wallet would have produced.
+    //
+    // Without this step, the frontend modal renders with the raw SA-signed VC
+    // which lacks the wallet's display-field hydration (issuer name, achievement
+    // metadata expansion), forcing a frontend shimmer + background re-fetch.
+    // With this step, the modal renders the enriched credential immediately on
+    // the fast path.
+    //
+    // Non-fatal: if resolution fails, fall back to the freshly-signed VC. The
+    // frontend's background-enrichment safety net still kicks in for any
+    // remaining unhydrated fields.
+    // Cast to any to bridge between learn-card-types VC and brain-service-local VC —
+    // both have the same shape but TypeScript treats them as nominally distinct
+    // because they're imported from different package roots.
+    let responseCredential: unknown = undefined;
+    if (typeof credential !== 'string') {
+        try {
+            const resolved = await resolveUri(credentialUri, ctx.domain);
+            responseCredential = resolved ?? credential;
+        } catch (e) {
+            console.warn('[appEvent] fast-path credential pre-resolution failed:', e);
+            responseCredential = credential;
+        }
+    }
+    perf.mark('preResolveCredential');
+
+    perf.done({ listingId, boostUri });
 
     return {
         credentialUri,
         boostUri,
+        // LC-1644: pre-resolved (enriched) credential so the frontend modal
+        // can render the proper title + issuer info without shimmer or
+        // background re-fetch. See enrichment block above for details.
+        credential: responseCredential,
     };
 };
 
