@@ -91,7 +91,13 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                 run_label: label,
             });
 
-            const res = await wallet.invoke.benchAppEvent?.({
+            const lcnClient = wallet.invoke.getLCNClient?.();
+            if (!lcnClient?.bench) {
+                throw new Error(
+                    'Bench routes not enabled on this brain-service environment. Set ENABLE_BENCH_ROUTES=true on the server.'
+                );
+            }
+            const res = await lcnClient.bench.appEvent.mutate({
                 listingId: listingId.trim(),
                 recipientProfileId: recipientProfileId.trim(),
                 templateAlias: templateAlias.trim(),
@@ -99,8 +105,7 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                 warmup,
                 runLabel: label,
             });
-            if (!res) throw new Error('benchAppEvent not available on this wallet');
-            setResult(res as BenchResult);
+            setResult(res as unknown as BenchResult);
             setStatus('done');
             presentToast('Bench complete', { type: ToastTypeEnum.Success });
         } catch (err) {
@@ -142,9 +147,16 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
             // don't accumulate `alreadyClaimed=true` outcomes after the first run.
             if (autoCleanupBeforeRun) {
                 try {
-                    await wallet.invoke.cleanupBenchAppEventData?.({
-                        recipientProfileId: recipientProfileId.trim(),
-                    });
+                    const lcnClient = wallet.invoke.getLCNClient?.();
+                    if (lcnClient?.bench) {
+                        await lcnClient.bench.cleanupAppEventData.mutate({
+                            recipientProfileId: recipientProfileId.trim(),
+                        });
+                    } else {
+                        console.warn(
+                            '[bench] cleanup skipped: bench routes not enabled on this server'
+                        );
+                    }
                 } catch (cleanupErr) {
                     console.warn('[bench] auto-cleanup failed (continuing)', cleanupErr);
                 }
@@ -234,10 +246,15 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
         }
         try {
             const wallet = await initWallet();
-            const res = await wallet.invoke.cleanupBenchAppEventData?.({
+            const lcnClient = wallet.invoke.getLCNClient?.();
+            if (!lcnClient?.bench) {
+                throw new Error(
+                    'Bench routes not enabled on this brain-service environment. Set ENABLE_BENCH_ROUTES=true on the server.'
+                );
+            }
+            const res = await lcnClient.bench.cleanupAppEventData.mutate({
                 recipientProfileId: recipientProfileId.trim(),
             });
-            if (!res) throw new Error('cleanupBenchAppEventData not available');
             presentToast(
                 `Deleted ${res.credentialsDeleted} credentials, ${res.notificationsDeleted} notifications, ${res.activityEntriesDeleted} activity entries`,
                 { type: ToastTypeEnum.Success }
