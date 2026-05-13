@@ -10,6 +10,7 @@ type MeritBadgeProfileImageDisplayProps = {
     size?: string;
     userName?: string;
     avatarColor?: string;
+    avatarFingerprintColor?: string;
     avatarFallbackVariant?: 'initial' | 'fingerprint';
 };
 
@@ -21,6 +22,7 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
     size = 'big',
     userName,
     avatarColor,
+    avatarFingerprintColor,
     avatarFallbackVariant = 'initial',
 }) => {
     const imageClassName = `${
@@ -44,6 +46,7 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
                     customImageClass="h-full w-full object-cover"
                     user={{ image: imageUrl, name: userName }}
                     avatarColor={avatarColor}
+                    avatarFingerprintColor={avatarFingerprintColor}
                     avatarFallbackVariant={avatarFallbackVariant}
                 />
             )}

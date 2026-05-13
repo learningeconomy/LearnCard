@@ -63,6 +63,15 @@ const trustedSubject = {
     image: 'https://picsum.photos/200?2',
 };
 
+const fingerprintDidSet = {
+    webIssuer: 'did:web:alpha.example.org',
+    keySubjectOne: 'did:key:z6MkpX1aYzR3uN8bQ5cT7vH2jL9mF6sD4',
+    jwkIssuer: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IkVkMjU1MTkifQ',
+    keySubjectTwo: 'did:key:z6Mkq4C8nT1pV7xY2dH9jL6sR3wM5aZ8c',
+    peerIssuer: 'did:peer:2.Ez6Mkq4C8nT1pV7xY2dH9jL6sR3wM5aZ8c',
+    webSelfIssued: 'did:web:beta.example.net',
+};
+
 const profileChip = (label: string) => (
     <div className="flex h-full w-full items-center justify-center rounded-full bg-emerald-700 text-white font-semibold text-2xl">
         {label}
@@ -132,8 +141,8 @@ const cases: VCDisplayCase[] = [
         props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:did-web-issuer',
-                issuer: 'did:web:network.learncard.com:users:donny',
-                subjectId: 'did:key:z6Mku1yR3226QyTfM7HBJeAc986TcnUms6CUSsYuoPb48Uyw',
+                issuer: fingerprintDidSet.webIssuer,
+                subjectId: fingerprintDidSet.keySubjectOne,
                 title: 'Web Issuer Credential',
                 description: 'Issuer data is a DID only, with no display name or image.',
                 displayType: matrixTypeConfig[matrixType].displayType,
@@ -152,8 +161,8 @@ const cases: VCDisplayCase[] = [
         props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:generic-vc-path',
-                issuer: 'did:web:network.learncard.com:users:community',
-                subjectId: 'did:key:z6Mku1yR3226QyTfM7HBJeAc986TcnUms6CUSsYuoPb48Uyw',
+                issuer: fingerprintDidSet.jwkIssuer,
+                subjectId: fingerprintDidSet.keySubjectTwo,
                 title: 'Community Credential',
                 description: 'A plain VC layout with DID-only issuer data.',
                 displayType: matrixTypeConfig[matrixType].displayType,
@@ -193,9 +202,9 @@ const cases: VCDisplayCase[] = [
             credential: buildCredential({
                 id: 'urn:uuid:875bdcbc-7443-4438-b50d-d1f6bd84b063',
                 issuer: {
-                    id: 'did:jwk:eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IksxQnd1WFJMM1ZKUEVZM3ZUQWN1aXMzaGItM0VBQmMzNlFhUk9nNWFYVVEifQ',
+                    id: fingerprintDidSet.peerIssuer,
                 },
-                subjectId: 'did:key:z6Mku1yR3226QyTfM7HBJeAc986TcnUms6CUSsYuoPb48Uyw',
+                subjectId: fingerprintDidSet.keySubjectOne,
                 title: 'Bachelor of Science and Arts',
                 description: 'A credential with an issuer DID only and a key-based recipient DID.',
                 displayType: matrixTypeConfig[matrixType].displayType,
@@ -214,8 +223,8 @@ const cases: VCDisplayCase[] = [
         props: matrixType => ({
             credential: buildCredential({
                 id: 'urn:uuid:self-issued',
-                issuer: 'did:web:network.learncard.com:users:donny',
-                subjectId: 'did:web:network.learncard.com:users:donny',
+                issuer: fingerprintDidSet.webSelfIssued,
+                subjectId: fingerprintDidSet.webSelfIssued,
                 title: 'Self Issued Credential',
                 description: 'The issuer and subject are the same DID.',
                 displayType: matrixTypeConfig[matrixType].displayType,

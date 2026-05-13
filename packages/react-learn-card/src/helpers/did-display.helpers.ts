@@ -93,6 +93,16 @@ export const getAvatarLetterFromDid = (did: string): string => {
 // Avatar color
 // ---------------------------------------------------------------------------
 
+const hashString = (str: string): number => {
+    let hash = 0;
+
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    return hash;
+};
+
 const AVATAR_PALETTE = [
     'bg-indigo-600',
     'bg-emerald-700',
@@ -102,17 +112,48 @@ const AVATAR_PALETTE = [
     'bg-emerald-600',
 ] as const;
 
+const DID_AVATAR_PALETTE = [
+    { avatarColor: 'bg-lime-400', avatarFingerprintColor: 'text-black' },
+    { avatarColor: 'bg-green-500', avatarFingerprintColor: 'text-white' },
+    { avatarColor: 'bg-indigo-600', avatarFingerprintColor: 'text-cyan-200' },
+    { avatarColor: 'bg-pink-500', avatarFingerprintColor: 'text-yellow-300' },
+    { avatarColor: 'bg-yellow-300', avatarFingerprintColor: 'text-blue-600' },
+    { avatarColor: 'bg-fuchsia-300', avatarFingerprintColor: 'text-black' },
+    { avatarColor: 'bg-grayscale-900', avatarFingerprintColor: 'text-white' },
+    { avatarColor: 'bg-cyan-300', avatarFingerprintColor: 'text-red-600' },
+    { avatarColor: 'bg-grayscale-900', avatarFingerprintColor: 'text-lime-400' },
+    { avatarColor: 'bg-rose-600', avatarFingerprintColor: 'text-white' },
+    { avatarColor: 'bg-blue-800', avatarFingerprintColor: 'text-cyan-400' },
+    { avatarColor: 'bg-orange-600', avatarFingerprintColor: 'text-yellow-300' },
+    { avatarColor: 'bg-teal-300', avatarFingerprintColor: 'text-violet-600' },
+    { avatarColor: 'bg-grayscale-200', avatarFingerprintColor: 'text-sky-500' },
+    { avatarColor: 'bg-emerald-700', avatarFingerprintColor: 'text-yellow-300' },
+    { avatarColor: 'bg-fuchsia-500', avatarFingerprintColor: 'text-pink-200' },
+] as const;
+
+const getDidAvatarColorPair = (
+    did: string
+): {
+    avatarColor: string;
+    avatarFingerprintColor: string;
+} => {
+    if (!did) {
+        return {
+            avatarColor: 'bg-grayscale-600',
+            avatarFingerprintColor: 'text-white',
+        };
+    }
+
+    return DID_AVATAR_PALETTE[Math.abs(hashString(did)) % DID_AVATAR_PALETTE.length];
+};
+
 /**
  * Returns a deterministic Tailwind background-color class derived from a
  * string hash so that different entities get visually distinct avatars.
  */
 export const getAvatarColorFromString = (str: string): string => {
     if (!str) return 'bg-grayscale-600';
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+    return AVATAR_PALETTE[Math.abs(hashString(str)) % AVATAR_PALETTE.length];
 };
 
 // ---------------------------------------------------------------------------
@@ -132,6 +173,7 @@ export const resolveProfileDisplay = (
     displayName: string;
     avatarLetter: string;
     avatarColor: string;
+    avatarFingerprintColor: string;
     isMissing: boolean;
     isDidValue: boolean;
     isLCNetwork: boolean;
@@ -152,6 +194,7 @@ export const resolveProfileDisplay = (
             displayName: rawName,
             avatarLetter: rawName[0] ?? '',
             avatarColor: getAvatarColorFromString(rawName),
+            avatarFingerprintColor: 'text-white',
             isMissing: false,
             isDidValue: false,
             isLCNetwork: false,
@@ -162,10 +205,12 @@ export const resolveProfileDisplay = (
     const didStr = isDid(rawName) ? rawName : rawId;
     if (didStr && isDid(didStr)) {
         const lcNetwork = isLearnCardNetworkDid(didStr);
+        const avatarColors = getDidAvatarColorPair(didStr);
         return {
             displayName: formatDidDisplayName(didStr),
             avatarLetter: getAvatarLetterFromDid(didStr),
-            avatarColor: getAvatarColorFromString(didStr),
+            avatarColor: avatarColors.avatarColor,
+            avatarFingerprintColor: avatarColors.avatarFingerprintColor,
             isMissing: false,
             isDidValue: !lcNetwork,
             isLCNetwork: lcNetwork,
@@ -177,6 +222,7 @@ export const resolveProfileDisplay = (
         displayName: fallbackLabel,
         avatarLetter: '',
         avatarColor: 'bg-grayscale-600',
+        avatarFingerprintColor: 'text-white',
         isMissing: true,
         isDidValue: false,
         isLCNetwork: false,

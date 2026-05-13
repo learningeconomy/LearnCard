@@ -193,6 +193,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         className={`flex justify-center items-center ${textDarkColor}`}
                         userName={issueeName}
                         avatarColor={issueeDisplay.avatarColor}
+                        avatarFingerprintColor={issueeDisplay.avatarFingerprintColor}
                         avatarFallbackVariant={issueeDisplay.isDidValue ? 'fingerprint' : 'initial'}
                     />
                 )}
@@ -250,6 +251,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     size="small"
                     showSeal
                     avatarColor={issuerDisplay.avatarColor}
+                    avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
                     avatarFallbackVariant={issuerDisplay.isDidValue ? 'fingerprint' : 'initial'}
                 />
                 {customBodyContentSlot && customBodyContentSlot}

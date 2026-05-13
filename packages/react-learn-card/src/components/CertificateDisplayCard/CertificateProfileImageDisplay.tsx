@@ -9,6 +9,7 @@ type CertificateProfileImageDisplayProps = {
     className?: string;
     userName?: string;
     avatarColor?: string;
+    avatarFingerprintColor?: string;
     avatarFallbackVariant?: 'initial' | 'fingerprint';
 };
 
@@ -19,6 +20,7 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
     imageComponent,
     userName,
     avatarColor,
+    avatarFingerprintColor,
     avatarFallbackVariant = 'initial',
 }) => {
     const imageClassName = `h-[50px] w-[50px] rounded-full overflow-hidden ${
@@ -40,6 +42,7 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
                     customImageClass="h-full w-full object-cover leading-normal"
                     user={{ image: imageUrl, name: userName }}
                     avatarColor={avatarColor}
+                    avatarFingerprintColor={avatarFingerprintColor}
                     avatarFallbackVariant={avatarFallbackVariant}
                 />
             )}

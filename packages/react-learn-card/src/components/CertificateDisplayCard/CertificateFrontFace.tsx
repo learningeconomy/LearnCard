@@ -185,6 +185,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         isIssuer={isSelfVerified}
                         userName={issueeName}
                         avatarColor={issueeDisplay.avatarColor}
+                        avatarFingerprintColor={issueeDisplay.avatarFingerprintColor}
                         avatarFallbackVariant={issueeDisplay.isDidValue ? 'fingerprint' : 'initial'}
                     />
                 )}
@@ -285,6 +286,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     isIssuer
                     userName={issuerName}
                     avatarColor={issuerDisplay.avatarColor}
+                    avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
                     avatarFallbackVariant={issuerDisplay.isDidValue ? 'fingerprint' : 'initial'}
                 />
             )}
