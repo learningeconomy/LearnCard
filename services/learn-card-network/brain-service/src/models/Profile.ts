@@ -28,6 +28,10 @@ type CredentialRelationshipProps = {
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
+    status?: 'revoked' | 'suspended';
+    revokedAt?: string;
+    suspendedAt?: string;
+    unsuspendedAt?: string;
 } & Record<string, unknown>;
 
 export type ProfileRelationships = {
@@ -129,6 +133,19 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    status: { property: 'status', schema: { type: 'string', required: false } },
+                    revokedAt: {
+                        property: 'revokedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    suspendedAt: {
+                        property: 'suspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    unsuspendedAt: {
+                        property: 'unsuspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
                 },
             },
             presentationSent: {

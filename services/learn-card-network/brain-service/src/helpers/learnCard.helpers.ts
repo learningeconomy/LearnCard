@@ -171,10 +171,22 @@ export const getLearnCard = async (
 
 export const getServerDidWebDID = (): string => {
     const domainName = process.env.DOMAIN_NAME;
-    const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName;
+    const isOffline = !!process.env.IS_OFFLINE;
+
+    // Misconfig guard: a deployed (non-offline) environment without DOMAIN_NAME
+    // would silently fall back to localhost and produce an unresolvable did:web,
+    // breaking every signing operation. Fail loud at first call instead.
+    if (!domainName && !isOffline) {
+        throw new Error(
+            'getServerDidWebDID: DOMAIN_NAME must be set when IS_OFFLINE is not set ' +
+                '(missing both → unresolvable did:web). Set DOMAIN_NAME on the Lambda ' +
+                'or run with IS_OFFLINE=true for local development.'
+        );
+    }
+
+    // IS_OFFLINE forces localhost even if DOMAIN_NAME is set — preserves dev/prod
+    // isolation so an inherited prod env var can't leak into a local dev session.
+    const domain = isOffline ? `localhost%3A${process.env.PORT || 3000}` : domainName!;
     return `did:web:${domain}`;
 };
 
