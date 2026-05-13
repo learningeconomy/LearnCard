@@ -198,7 +198,23 @@ jobs:
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
 
+            - name: Check if version is already published
+              id: published
+              working-directory: packages/plugins/didkit-plugin-node
+              run: |
+                  PACKAGE=$(node -p "require('./package.json').name")
+                  VERSION=$(node -p "require('./package.json').version")
+
+                  if npm view "$PACKAGE@$VERSION" version > /dev/null 2>&1; then
+                    echo "exists=true" >> "$GITHUB_OUTPUT"
+                    echo "$PACKAGE@$VERSION is already published; skipping npm publish"
+                  else
+                    echo "exists=false" >> "$GITHUB_OUTPUT"
+                    echo "$PACKAGE@$VERSION is not published yet"
+                  fi
+
             - name: Download all artifacts
+              if: steps.published.outputs.exists != 'true'
               uses: actions/download-artifact@v4
               with:
                   path: packages/plugins/didkit-plugin-node/artifacts
@@ -206,23 +222,46 @@ jobs:
                   merge-multiple: true
 
             - name: List downloaded binaries
+              if: steps.published.outputs.exists != 'true'
               run: ls -la packages/plugins/didkit-plugin-node/artifacts/*.node
 
             - name: Create platform package directories
+              if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: pnpm create-npm-dir
 
             - name: Move artifacts to platform packages
+              if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: pnpm artifacts
 
             - name: Build TypeScript
+              if: steps.published.outputs.exists != 'true'
               run: pnpm exec nx run didkit-plugin-node:build
 
             - name: Publish platform packages
+              if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: pnpm exec napi prepublish -t npm --skip-gh-release
 
-            - name: Publish to npm
+            - name: Pack package
+              if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: npm publish --access public --ignore-scripts
+              run: pnpm pack --pack-destination "${{ runner.temp }}/didkit-plugin-node-pack"
+
+            - name: Validate packed package metadata
+              if: steps.published.outputs.exists != 'true'
+              run: |
+                  TARBALL=$(find "${{ runner.temp }}/didkit-plugin-node-pack" -name '*.tgz' -print -quit)
+                  tar -xOf "$TARBALL" package/package.json > "${{ runner.temp }}/didkit-plugin-node-package.json"
+
+                  if grep -q "workspace:" "${{ runner.temp }}/didkit-plugin-node-package.json"; then
+                    echo "Packed package still contains workspace protocol dependencies"
+                    cat "${{ runner.temp }}/didkit-plugin-node-package.json"
+                    exit 1
+                  fi
+
+            - name: Publish to npm
+              if: steps.published.outputs.exists != 'true'
+              working-directory: packages/plugins/didkit-plugin-node
+              run: npm publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public
