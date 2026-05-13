@@ -202,7 +202,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                                                 <span className="text-grayscale-900 font-semibold">
                                                     Digital ID:
                                                 </span>{' '}
-                                                <span className="text-grayscale-500">
+                                                <span className="text-grayscale-600">
                                                     {issueeName}
                                                 </span>
                                             </span>
@@ -249,7 +249,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                             <span className="font-[600]">
                                 {issuerDisplay.isDidValue ? 'Digital ID: ' : ''}
                             </span>
-                            {issuerName}
+                            <span className="text-grayscale-600">{issuerName}</span>
                         </span>
                     ) : (
                         <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
