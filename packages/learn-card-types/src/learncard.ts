@@ -1,10 +1,20 @@
 import { z } from 'zod';
 import { CredentialSubjectValidator, ProfileValidator } from './vc';
 
+export const StatusCheckEntryValidator = z.object({
+    entryType: z.string(),
+    statusPurpose: z.string(),
+    isSet: z.boolean(),
+    statusListCredential: z.string().optional(),
+    statusListIndex: z.string().optional(),
+});
+export type StatusCheckEntry = z.infer<typeof StatusCheckEntryValidator>;
+
 export const VerificationCheckValidator = z.object({
     checks: z.string().array(),
     warnings: z.string().array(),
     errors: z.string().array(),
+    status: StatusCheckEntryValidator.array().optional(),
 });
 export type VerificationCheck = z.infer<typeof VerificationCheckValidator>;
 

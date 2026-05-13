@@ -28,6 +28,8 @@ import {
     SkillQueryValidator,
     SendBoostInputValidator,
     SendBoostResponseValidator,
+    AllocateCredentialStatusInputValidator,
+    AllocatedBitstringStatusListEntryValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import {
@@ -182,6 +184,10 @@ import {
     sanitizeProfileForTier,
     stripSensitiveProfileListFields,
 } from '@helpers/profile-privacy.helpers';
+import {
+    allocateStatusListEntry,
+    appendBitstringStatusListEntries,
+} from '@helpers/status-list.helpers';
 
 /**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
@@ -586,6 +592,37 @@ export const boostsRouter = t.router({
                 cursor: result.cursor,
             };
         }),
+
+    allocateCredentialStatus: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/status/allocate',
+                tags: ['Boosts'],
+                summary: 'Allocate Bitstring credential status entries',
+                description:
+                    'Allocates Bitstring Status List entries for a credential before it is signed.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(AllocateCredentialStatusInputValidator)
+        .output(z.array(AllocatedBitstringStatusListEntryValidator))
+        .mutation(async ({ ctx, input }) => {
+            const statusPurposes = input.statusPurposes ?? ['revocation'];
+
+            return Promise.all(
+                statusPurposes.map(statusPurpose =>
+                    allocateStatusListEntry(
+                        ctx.user.profile.profileId,
+                        ctx.domain,
+                        statusPurpose,
+                        input.listSize
+                    )
+                )
+            );
+        }),
+
     sendBoost: profileRoute
         .meta({
             openapi: {
@@ -846,6 +883,12 @@ export const boostsRouter = t.router({
                                     message: 'Failed to prepare boost credential',
                                 });
                             }
+
+                            credential = await appendBitstringStatusListEntries(
+                                credential,
+                                profile.profileId,
+                                domain
+                            );
                         }
 
                         // Build inbox configuration from SendOptions
@@ -967,10 +1010,14 @@ export const boostsRouter = t.router({
 
                             signedVc = await traceInternal(
                                 'issueCredentialWithSigningAuthority:remoteInbox',
-                                () =>
+                                async () =>
                                     issueCredentialWithSigningAuthority(
                                         { type: 'profile', profile },
-                                        unsignedVc,
+                                        await appendBitstringStatusListEntries(
+                                            unsignedVc,
+                                            profile.profileId,
+                                            domain
+                                        ),
                                         signingAuthority,
                                         domain,
                                         false
@@ -1167,14 +1214,20 @@ export const boostsRouter = t.router({
                             });
                         }
 
-                        signedVc = await traceInternal('issueCredentialWithSigningAuthority', () =>
-                            issueCredentialWithSigningAuthority(
-                                { type: 'profile', profile },
-                                unsignedVc,
-                                signingAuthority,
-                                domain,
-                                false
-                            )
+                        signedVc = await traceInternal(
+                            'issueCredentialWithSigningAuthority',
+                            async () =>
+                                issueCredentialWithSigningAuthority(
+                                    { type: 'profile', profile },
+                                    await appendBitstringStatusListEntries(
+                                        unsignedVc,
+                                        profile.profileId,
+                                        domain
+                                    ),
+                                    signingAuthority,
+                                    domain,
+                                    false
+                                )
                         );
                     }
 
@@ -1853,8 +1906,9 @@ export const boostsRouter = t.router({
             }
 
             // Get the credential instance for this boost + recipient
-            const { getCredentialInstanceForBoostAndProfile } =
-                await import('@accesslayer/credential/read');
+            const { getCredentialInstanceForBoostAndProfile } = await import(
+                '@accesslayer/credential/read'
+            );
             const credential = await getCredentialInstanceForBoostAndProfile(
                 boost.id,
                 resolvedRecipientProfileId
@@ -1868,8 +1922,9 @@ export const boostsRouter = t.router({
             }
 
             // Revoke the credential
-            const { revokeCredentialReceived } =
-                await import('@accesslayer/credential/relationships/update');
+            const { revokeCredentialReceived } = await import(
+                '@accesslayer/credential/relationships/update'
+            );
             const revoked = await revokeCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -1885,6 +1940,171 @@ export const boostsRouter = t.router({
             // Process revoke hooks to remove permissions
             const { processRevokeHooks } = await import('@helpers/revoke-hooks.helpers');
             await processRevokeHooks(recipientProfile, credential);
+
+            return true;
+        }),
+
+    suspendBoostRecipient: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients/suspend',
+                tags: ['Boosts'],
+                summary: 'Suspend a boost recipient',
+                description:
+                    'Temporarily suspends a credential for a specified recipient. Suspension is reversible.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                boostUri: z.string(),
+                recipientProfileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, recipientProfileId } = input;
+
+            const resolvedRecipientProfileId = await getProfileIdFromString(
+                recipientProfileId,
+                ctx.domain
+            );
+            if (!resolvedRecipientProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const boost = await getBoostByUri(decodeURIComponent(boostUri));
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            }
+
+            const permissions = await getBoostPermissions(boost, profile);
+            if (!permissions.canRevoke) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message:
+                        'Profile does not have permission to suspend credentials for this boost',
+                });
+            }
+
+            const recipientProfile = await getProfileByProfileId(resolvedRecipientProfileId);
+            if (!recipientProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+
+            const { getCredentialInstanceForBoostAndProfile } = await import(
+                '@accesslayer/credential/read'
+            );
+            const credential = await getCredentialInstanceForBoostAndProfile(
+                boost.id,
+                resolvedRecipientProfileId
+            );
+
+            if (!credential) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No credential found for this recipient and boost',
+                });
+            }
+
+            const { suspendCredentialReceived } = await import(
+                '@accesslayer/credential/relationships/update'
+            );
+            const suspended = await suspendCredentialReceived(
+                credential.id,
+                resolvedRecipientProfileId
+            );
+
+            if (!suspended) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to suspend credential',
+                });
+            }
+
+            return true;
+        }),
+
+    unsuspendBoostRecipient: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients/unsuspend',
+                tags: ['Boosts'],
+                summary: 'Unsuspend a boost recipient',
+                description: 'Clears a temporary credential suspension for a specified recipient.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                boostUri: z.string(),
+                recipientProfileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, recipientProfileId } = input;
+
+            const resolvedRecipientProfileId = await getProfileIdFromString(
+                recipientProfileId,
+                ctx.domain
+            );
+            if (!resolvedRecipientProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const boost = await getBoostByUri(decodeURIComponent(boostUri));
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            }
+
+            const permissions = await getBoostPermissions(boost, profile);
+            if (!permissions.canRevoke) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message:
+                        'Profile does not have permission to unsuspend credentials for this boost',
+                });
+            }
+
+            const { getCredentialInstanceForBoostAndProfile } = await import(
+                '@accesslayer/credential/read'
+            );
+            const credential = await getCredentialInstanceForBoostAndProfile(
+                boost.id,
+                resolvedRecipientProfileId
+            );
+
+            if (!credential) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No credential found for this recipient and boost',
+                });
+            }
+
+            const { unsuspendCredentialReceived } = await import(
+                '@accesslayer/credential/relationships/update'
+            );
+            const unsuspended = await unsuspendCredentialReceived(
+                credential.id,
+                resolvedRecipientProfileId
+            );
+
+            if (!unsuspended) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Credential is not suspended',
+                });
+            }
 
             return true;
         }),
@@ -3106,7 +3326,7 @@ export const boostsRouter = t.router({
 
             // Use the generator's profile for SA lookup if available, fall back to boost owner
             const saOwner = generatorProfileId
-                ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
+                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
                 : boostOwner;
 
             const saOwnerProfile: ProfileType =
@@ -3115,12 +3335,12 @@ export const boostsRouter = t.router({
                 'profileId' in saOwner
                     ? { type: 'profile' as const, profile: saOwner }
                     : saOwner.type === 'profile'
-                      ? { type: 'profile' as const, profile: saOwner.profile }
-                      : {
-                            type: 'appStoreListing' as const,
-                            listing: saOwner.listing,
-                            ownerProfile: saOwner.ownerProfile,
-                        };
+                    ? { type: 'profile' as const, profile: saOwner.profile }
+                    : {
+                          type: 'appStoreListing' as const,
+                          listing: saOwner.listing,
+                          ownerProfile: saOwner.ownerProfile,
+                      };
 
             const signingAuthority = await getSigningAuthorityForUserByName(
                 saOwnerProfile,
@@ -3447,7 +3667,11 @@ export const boostsRouter = t.router({
             try {
                 credential = await issueCredentialWithSigningAuthority(
                     { type: 'profile', profile },
-                    unsignedVc,
+                    await appendBitstringStatusListEntries(
+                        unsignedVc,
+                        profile.profileId,
+                        ctx.domain
+                    ),
                     sa,
                     ctx.domain
                 );
