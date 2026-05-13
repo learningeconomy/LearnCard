@@ -62,14 +62,12 @@ const BoostCMSIDCard = lazyWithRetry(() => import('../boost-id-card/BoostIDCard'
 const BoostCMSIDAppearanceController = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController')
 );
-const BoostCMSPublish = lazyWithRetry(
-    () => import('./boostCMSForms/boostCMSPublish/boostCMSPublish')
-);
 
 import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSMediaDisplayWarning';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
+import BoostCMSPublish from './boostCMSForms/boostCMSPublish/boostCMSPublish';
 import RecoveryPrompt from '../../common/RecoveryPrompt';
 import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
