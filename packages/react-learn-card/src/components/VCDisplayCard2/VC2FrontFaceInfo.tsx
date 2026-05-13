@@ -64,6 +64,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         avatarColor: string,
         avatarTextClassName: string,
         avatarIconClassName: string,
+        avatarFallbackVariant: 'initial' | 'fingerprint',
         bigText?: boolean
     ) => {
         if (overrideComponent) return overrideComponent;
@@ -75,6 +76,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                 avatarColor={avatarColor}
                 avatarTextClassName={avatarTextClassName}
                 avatarIconClassName={avatarIconClassName}
+                avatarFallbackVariant={avatarFallbackVariant}
                 customContainerClass={`h-full w-full ${bigText ? '!text-4xl' : ''}`}
             />
         );
@@ -88,6 +90,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         issueeDisplay.avatarColor,
         'text-3xl leading-normal',
         'w-[60%] h-[60%] text-white/80',
+        issueeDisplay.isDidValue ? 'fingerprint' : 'initial',
         true
     );
     const issuerImageEl: React.ReactNode = getImageElement(
@@ -97,7 +100,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         issuerDisplay.avatarLetter,
         issuerDisplay.avatarColor,
         'text-xl leading-normal',
-        'w-[58%] h-[58%] text-white/80'
+        'w-[58%] h-[58%] text-white/80',
+        issuerDisplay.isDidValue ? 'fingerprint' : 'initial'
     );
 
     const issuerDid =
@@ -144,17 +148,19 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                     {!customBodyCardComponent && (
                         <>
                             <h3 className="flex flex-col text-center leading-[130%] w-full">
-                                <span
-                                    className={`font-poppins font-semibold text-[20px] leading-[130%] max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${
-                                        issueeDisplay.isMissing
-                                            ? 'text-grayscale-400 italic font-normal text-[16px]'
-                                            : issueeDisplay.isDidValue
-                                            ? 'text-grayscale-700 font-mono text-[14px] tracking-tight'
-                                            : 'text-grayscale-900'
-                                    }`}
-                                >
-                                    {issueeDisplay.displayName}
-                                </span>
+                                {!issueeDisplay.isMissing && issueeDisplay.isDidValue && (
+                                    <span className="flex flex-wrap items-baseline justify-center gap-1 text-[17px] leading-normal font-[600] font-poppins max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                                        <span className="text-grayscale-900">Digital ID:</span>
+                                        <span className="text-grayscale-500 underline">
+                                            {issueeDisplay.displayName}
+                                        </span>
+                                    </span>
+                                )}
+                                {!issueeDisplay.isMissing && !issueeDisplay.isDidValue && (
+                                    <span className="font-poppins font-semibold text-[20px] leading-[130%] max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-grayscale-900">
+                                        {issueeDisplay.displayName}
+                                    </span>
+                                )}
                                 {subjectDID &&
                                     !issueeDisplay.isDidValue &&
                                     !issueeDisplay.isLCNetwork && (
@@ -177,23 +183,26 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                         {createdAt}
                                     </span>
                                     {!issuerDisplay.isMissing && (
-                                        <span
-                                            className={`issued-by font-medium max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${
-                                                issuerDisplay.isDidValue
-                                                    ? 'text-grayscale-600 font-mono text-[12px] tracking-tight font-normal'
-                                                    : 'text-grayscale-900 text-[14px]'
-                                            }`}
-                                        >
-                                            by{' '}
-                                            <strong
-                                                className={
-                                                    issuerDisplay.isDidValue
-                                                        ? 'font-normal'
-                                                        : 'font-bold'
-                                                }
-                                            >
-                                                {issuerDisplay.displayName}
-                                            </strong>
+                                        <span className="issued-by flex flex-wrap items-baseline justify-center gap-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[14px]">
+                                            <span className="font-medium text-grayscale-900">
+                                                by
+                                            </span>
+                                            {issuerDisplay.isDidValue ? (
+                                                <>
+                                                    <span className="flex flex-wrap items-baseline justify-center gap-1 leading-normal font-[600] font-poppins max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                                                        <span className="text-grayscale-900">
+                                                            Digital ID:
+                                                        </span>
+                                                        <span className="text-grayscale-500 underline">
+                                                            {issueeDisplay.displayName}
+                                                        </span>
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <strong className="font-bold text-grayscale-900">
+                                                    {issuerDisplay.displayName}
+                                                </strong>
+                                            )}
                                         </span>
                                     )}
                                 </div>
