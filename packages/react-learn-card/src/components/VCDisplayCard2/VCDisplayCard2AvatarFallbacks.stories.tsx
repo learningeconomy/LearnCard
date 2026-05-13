@@ -64,12 +64,12 @@ const trustedSubject = {
 };
 
 const fingerprintDidSet = {
-    webIssuer: 'did:web:alpha.example.org',
+    webIssuer: 'did:web:blog.example.com',
     keySubjectOne: 'did:key:z6MkpX1aYzR3uN8bQ5cT7vH2jL9mF6sD4',
     jwkIssuer: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IkVkMjU1MTkifQ',
     keySubjectTwo: 'did:key:z6Mkq4C8nT1pV7xY2dH9jL6sR3wM5aZ8c',
-    peerIssuer: 'did:peer:2.Ez6Mkq4C8nT1pV7xY2dH9jL6sR3wM5aZ8c',
-    webSelfIssued: 'did:web:beta.example.net',
+    peerIssuer: 'did:peer:2bEz6Mkq4C8nT1pV7xY2dH9jL6sR3wM5aZ8c',
+    webSelfIssued: 'did:web:network.learncard.com:users:donny',
 };
 
 const profileChip = (label: string) => (
