@@ -21,6 +21,12 @@ export default defineConfig({
         ],
         env: {
             IS_E2E_TEST: 'true',
+            // The brain-service test suite runs against a local Neo4j container
+            // and never has a real DOMAIN_NAME. After LC-1644 made
+            // getServerDidWebDID() fail loud on (no DOMAIN_NAME && no IS_OFFLINE)
+            // to catch production misconfigs, the test env needs IS_OFFLINE=true
+            // so did:web resolves to localhost as it did before that change.
+            IS_OFFLINE: 'true',
             LOGIN_PROVIDER_DID: 'did:key:z6Mko9uYxDPk2BetRRziLz1xHN8nR5zQWdNjytKNDPcygHJP',
             APP_STORE_ADMIN_PROFILE_IDS: 'app-store-admin',
             TRACE_CONSOLE: 'false',
