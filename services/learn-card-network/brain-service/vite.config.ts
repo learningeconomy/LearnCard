@@ -24,9 +24,13 @@ export default defineConfig({
             // The brain-service test suite runs against a local Neo4j container
             // and never has a real DOMAIN_NAME. After LC-1644 made
             // getServerDidWebDID() fail loud on (no DOMAIN_NAME && no IS_OFFLINE)
-            // to catch production misconfigs, the test env needs IS_OFFLINE=true
-            // so did:web resolves to localhost as it did before that change.
-            IS_OFFLINE: 'true',
+            // to catch production misconfigs, we set DOMAIN_NAME here to the
+            // localhost value that was previously synthesised — satisfies the
+            // guard and produces the same did:web:localhost%3A3000 the suite
+            // was built against. Setting IS_OFFLINE instead would also work
+            // for the DID, but it invalidates the in-process LearnCard cache
+            // (see learnCard.helpers.ts:137) and breaks the cache tests.
+            DOMAIN_NAME: 'localhost%3A3000',
             LOGIN_PROVIDER_DID: 'did:key:z6Mko9uYxDPk2BetRRziLz1xHN8nR5zQWdNjytKNDPcygHJP',
             APP_STORE_ADMIN_PROFILE_IDS: 'app-store-admin',
             TRACE_CONSOLE: 'false',
