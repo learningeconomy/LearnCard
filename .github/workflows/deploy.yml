@@ -408,6 +408,11 @@ jobs:
                   SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
                   OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
                   OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
+                  # LC-1644 perf bench backend telemetry (admin-only). POSTHOG_HOST is a var (non-secret),
+                  # POSTHOG_API_KEY is a secret. GIT_SHA is the deploy commit for tagging events.
+                  POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+                  GIT_SHA: ${{ github.sha }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
