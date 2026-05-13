@@ -177,14 +177,18 @@ jobs:
         needs: build
         if: github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            id-token: write
+        env:
+            NPM_CONFIG_PROVENANCE: "true"
         steps:
             - uses: actions/checkout@v4
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: 20
-                  registry-url: 'https://registry.npmjs.org'
+                  node-version: 24.12.0
 
             - name: Install pnpm
               uses: pnpm/action-setup@v2
@@ -197,12 +201,16 @@ jobs:
             - name: Download all artifacts
               uses: actions/download-artifact@v4
               with:
-                  path: packages/plugins/didkit-plugin-node
+                  path: packages/plugins/didkit-plugin-node/artifacts
                   pattern: bindings-*
                   merge-multiple: true
 
             - name: List downloaded binaries
-              run: ls -la packages/plugins/didkit-plugin-node/*.node
+              run: ls -la packages/plugins/didkit-plugin-node/artifacts/*.node
+
+            - name: Create platform package directories
+              working-directory: packages/plugins/didkit-plugin-node
+              run: pnpm create-npm-dir
 
             - name: Move artifacts to platform packages
               working-directory: packages/plugins/didkit-plugin-node
@@ -213,21 +221,8 @@ jobs:
 
             - name: Publish platform packages
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm exec napi prepublish -t npm
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              run: pnpm exec napi prepublish -t npm --skip-gh-release
 
             - name: Publish to npm
-              run: |
-                  cd packages/plugins/didkit-plugin-node
-                  for dir in npm/*; do
-                    if [ -d "$dir" ]; then
-                      echo "Publishing $dir..."
-                      cd "$dir"
-                      npm publish --access public || true
-                      cd ../..
-                    fi
-                  done
-                  npm publish --access public || true
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              working-directory: packages/plugins/didkit-plugin-node
+              run: npm publish --access public --ignore-scripts
