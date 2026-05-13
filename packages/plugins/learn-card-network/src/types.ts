@@ -519,6 +519,11 @@ export type LearnCardNetworkPluginMethods = {
         categories: Record<string, string[]>
     ) => Promise<boolean>;
 
+    deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
+        contractsUpdated: number;
+        removedSharedUris: number;
+    }>;
+
     sendAiInsightsContractRequest: (
         contractUri: string,
         targetProfileId: string,
