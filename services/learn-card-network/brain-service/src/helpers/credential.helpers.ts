@@ -97,6 +97,20 @@ export const acceptCredential = async (
         });
     }
 
+    if (pendingVc.relationship.status === 'revoked') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential has been revoked',
+        });
+    }
+
+    if (pendingVc.relationship.status === 'suspended') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential is suspended',
+        });
+    }
+
     const alreadyReceived = await getCredentialReceivedByProfile(id, profile);
     if (alreadyReceived) {
         throw new TRPCError({

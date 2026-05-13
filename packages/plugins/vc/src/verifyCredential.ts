@@ -9,7 +9,7 @@ export const verifyCredential = (initLearnCard: VCDependentLearnCard) => {
         credential: VC,
         _options: Partial<ProofOptions> = {}
     ) => {
-        const options = _options;
+        const options: Partial<ProofOptions> = { ..._options };
 
         if (!options.checks) {
             options.checks = ['proof'];

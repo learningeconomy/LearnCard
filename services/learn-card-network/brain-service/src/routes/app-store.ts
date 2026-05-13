@@ -463,7 +463,7 @@ const AppCredentialRecordValidator = z.object({
     credentialId: z.string(),
     credentialUri: z.string(),
     date: z.string(),
-    status: z.enum(['pending', 'claimed', 'revoked']),
+    status: z.enum(['pending', 'claimed', 'revoked', 'suspended']),
     boostName: z.string().optional(),
     boostCategory: z.string().optional(),
     activityId: z.string().optional(),
@@ -1085,6 +1085,8 @@ const handleGetTemplateRecipientsEvent = async (
          MATCH (credential)-[:INSTANCE_OF]->(boost:Boost {id: $boostId})
          WHERE ${cursor ? 'sent.date < $cursor' : 'true'}
          OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile {profileId: sent.to})
+         WITH sent, received, credential
+         WHERE coalesce(sent.status, received.status, '') <> 'revoked'
          OPTIONAL MATCH (target:Profile {profileId: sent.to})
          RETURN sent, received, credential.id AS credentialId, target.profileId AS recipientProfileId, target.displayName AS recipientDisplayName
          ORDER BY sent.date DESC
@@ -1114,7 +1116,12 @@ const handleGetTemplateRecipientsEvent = async (
                 sentDate: sent.date as string,
                 claimedDate: received?.date as string | undefined,
                 credentialUri: getCredentialUri(record.get('credentialId') as string, ctx.domain),
-                status: received ? ('claimed' as const) : ('pending' as const),
+                status:
+                    sent.status === 'suspended'
+                        ? ('suspended' as const)
+                        : received
+                        ? ('claimed' as const)
+                        : ('pending' as const),
             };
         })
         .filter(
@@ -1126,7 +1133,7 @@ const handleGetTemplateRecipientsEvent = async (
                 sentDate: string;
                 claimedDate: string | undefined;
                 credentialUri: string;
-                status: 'pending' | 'claimed';
+                status: 'pending' | 'claimed' | 'suspended';
             } => Boolean(record.recipientProfileId)
         );
 

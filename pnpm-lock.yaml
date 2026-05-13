@@ -4384,6 +4384,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:*
         version: link:../../packages/plugins/didkit
+      '@learncard/helpers':
+        specifier: workspace:*
+        version: link:../../packages/learn-card-helpers
       '@learncard/init':
         specifier: workspace:*
         version: link:../../packages/learn-card-init

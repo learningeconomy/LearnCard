@@ -17,6 +17,7 @@
         "@learncard/core": "workspace:*",
         "@learncard/credential-library": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",

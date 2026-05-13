@@ -75,6 +75,7 @@ export * from './types';
 export * from './strings';
 export * from './numbers';
 export * from './state';
+export * from './bitstring-status-list';
 
 // Export utilities from shared-types migration
 export * from './Utilities';

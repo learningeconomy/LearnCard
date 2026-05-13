@@ -5,14 +5,12 @@ import { getDidWeb } from '@helpers/did.helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
 import type { UnsignedVC, VC, JWE } from '@learncard/types';
 import type { SigningAuthorityForUserType } from 'types/profile';
-import {
-    getIssuerOwnerProfile,
-    getIssuerProfileId,
-} from '../types/issuer';
+import { getIssuerOwnerProfile, getIssuerProfileId } from '../types/issuer';
 import type { CredentialIssuer } from '../types/issuer';
 import { trace, traceCrypto, traceHttp } from '@tracing';
 import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
+import { appendBitstringStatusListEntries } from './status-list.helpers';
 
 dotenv.config();
 
@@ -135,8 +133,12 @@ export async function issueCredentialWithSigningAuthority(
     const saDid = signingAuthorityForUser.relationship.did;
     const ownerProfile = getIssuerOwnerProfile(issuer);
     const ownerDid =
-        ownerDidOverride
-        ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
+        ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
+    const credentialToIssue = await appendBitstringStatusListEntries(
+        credential,
+        ownerProfile.profileId,
+        domain
+    );
 
     const logContext = {
         issuer: getIssuerProfileId(issuer),
@@ -153,7 +155,7 @@ export async function issueCredentialWithSigningAuthority(
         try {
 
             if (IS_TEST_ENVIRONMENT) {
-                return await _mockIssueCredentialWithSigningAuthority(credential);
+                return await _mockIssueCredentialWithSigningAuthority(credentialToIssue);
             }
 
             console.log('[SA Helper] Initiating credential issuance', logContext);
@@ -173,9 +175,9 @@ export async function issueCredentialWithSigningAuthority(
                 console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
             }
 
-            const subjectId = Array.isArray(credential?.credentialSubject)
-                ? credential?.credentialSubject[0]?.id
-                : credential?.credentialSubject?.id;
+            const subjectId = Array.isArray(credentialToIssue?.credentialSubject)
+                ? credentialToIssue?.credentialSubject[0]?.id
+                : credentialToIssue?.credentialSubject?.id;
 
             const encryption = encrypt
                 ? {
@@ -186,11 +188,11 @@ export async function issueCredentialWithSigningAuthority(
             console.log('[SA Helper] Request details:', {
                 subjectId,
                 encryptionRecipients: encryption?.recipients,
-                credentialType: credential?.type,
+                credentialType: credentialToIssue?.type,
             });
 
             const requestBody = JSON.stringify({
-                credential,
+                credential: credentialToIssue,
                 signingAuthority: {
                     ownerDid,
                     name: saName,

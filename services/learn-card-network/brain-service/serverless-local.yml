@@ -128,6 +128,17 @@ functions:
             - httpApi: GET /frameworks/{frameworkId}
             - httpApi: GET /frameworks/{frameworkId}/skills/{skillId}
 
+    statusLists:
+        handler: lambda.statusListsHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /status-lists/{id}
+            - httpApi: OPTIONS /status-lists/{id}
+
 resources:
     Resources:
         VPC:
