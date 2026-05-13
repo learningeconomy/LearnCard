@@ -9,6 +9,8 @@ type MeritBadgeProfileImageDisplayProps = {
     className?: string;
     size?: string;
     userName?: string;
+    avatarColor?: string;
+    avatarFallbackVariant?: 'initial' | 'fingerprint';
 };
 
 const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps> = ({
@@ -18,6 +20,8 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
     imageComponent,
     size = 'big',
     userName,
+    avatarColor,
+    avatarFallbackVariant = 'initial',
 }) => {
     const imageClassName = `${
         size === 'big' ? 'h-[60px] w-[60px]' : 'h-[39px] w-[39px]'
@@ -36,9 +40,11 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
             {imageComponent && <div className={imageClassName}>{imageComponent}</div>}
             {!imageComponent && (
                 <UserProfilePicture
-                    customContainerClass={`${imageClassName} ${!imageUrl ? 'pt-[6px]' : ''}`}
+                    customContainerClass={imageClassName}
                     customImageClass="h-full w-full object-cover"
                     user={{ image: imageUrl, name: userName }}
+                    avatarColor={avatarColor}
+                    avatarFallbackVariant={avatarFallbackVariant}
                 />
             )}
         </div>

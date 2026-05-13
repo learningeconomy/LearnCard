@@ -79,7 +79,6 @@ export type VCDisplayCard2Props = {
     customContentSlot?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
-    hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
 };
 
@@ -128,7 +127,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customContentSlot,
     customBodyContentSlot,
     unknownVerifierTitle,
-    hideAwardedTo,
     hideFrontFaceDetails,
 }) => {
     const {
@@ -223,7 +221,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
-                hideAwardedTo={hideAwardedTo}
                 hideFrontFaceDetails={hideFrontFaceDetails}
             />
         );
@@ -257,7 +254,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
-                hideAwardedTo={hideAwardedTo}
                 hideFrontFaceDetails={hideFrontFaceDetails}
             />
         );
