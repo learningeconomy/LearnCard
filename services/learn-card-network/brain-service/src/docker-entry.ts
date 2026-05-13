@@ -15,6 +15,7 @@ import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
+import { statusListsFastifyPlugin } from './status-lists';
 import { sendNotification } from '@helpers/notifications.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
 import { LCNNotificationValidator } from '@learncard/types';
@@ -105,6 +106,7 @@ server.get('/docs', (_request, reply) => {
 
 server.register(didFastifyPlugin);
 server.register(skillsViewerFastifyPlugin);
+server.register(statusListsFastifyPlugin);
 
 (async () => {
     try {
