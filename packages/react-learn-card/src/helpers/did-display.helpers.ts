@@ -119,7 +119,7 @@ const DID_AVATAR_PALETTE = [
     { avatarColor: 'bg-pink-500', avatarFingerprintColor: 'text-yellow-300' },
     { avatarColor: 'bg-yellow-300', avatarFingerprintColor: 'text-blue-600' },
     { avatarColor: 'bg-fuchsia-300', avatarFingerprintColor: 'text-black' },
-    { avatarColor: 'bg-grayscale-900', avatarFingerprintColor: 'text-white' },
+    { avatarColor: 'bg-emerald-800', avatarFingerprintColor: 'text-white' },
     { avatarColor: 'bg-cyan-300', avatarFingerprintColor: 'text-red-600' },
     { avatarColor: 'bg-grayscale-900', avatarFingerprintColor: 'text-lime-400' },
     { avatarColor: 'bg-rose-600', avatarFingerprintColor: 'text-white' },
@@ -139,7 +139,7 @@ const getDidAvatarColorPair = (
 } => {
     if (!did) {
         return {
-            avatarColor: 'bg-grayscale-600',
+            avatarColor: 'bg-emerald-700',
             avatarFingerprintColor: 'text-white',
         };
     }
@@ -152,7 +152,7 @@ const getDidAvatarColorPair = (
  * string hash so that different entities get visually distinct avatars.
  */
 export const getAvatarColorFromString = (str: string): string => {
-    if (!str) return 'bg-grayscale-600';
+    if (!str) return 'bg-emerald-700';
     return AVATAR_PALETTE[Math.abs(hashString(str)) % AVATAR_PALETTE.length];
 };
 
@@ -221,7 +221,7 @@ export const resolveProfileDisplay = (
     return {
         displayName: fallbackLabel,
         avatarLetter: '',
-        avatarColor: 'bg-grayscale-600',
+        avatarColor: 'bg-emerald-700',
         avatarFingerprintColor: 'text-white',
         isMissing: true,
         isDidValue: false,
