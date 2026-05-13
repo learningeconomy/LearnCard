@@ -36,6 +36,13 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isClaiming, setIsClaiming] = useState(false);
     const [claimed, setClaimed] = useState(false);
+    // LC-1644 fast-path safety: the modal renders interactive content as soon as
+    // preResolvedCredential arrives (before initWallet() resolves). Without this
+    // flag, a fast click on Accept would hit walletRef.current === null and the
+    // server-side accept + notification update would silently no-op while the
+    // local addVCtoWallet still succeeded — user sees "claimed" but the server
+    // never recorded it.
+    const [walletReady, setWalletReady] = useState(false);
     const [credential, setCredential] = useState<VC | VP | undefined | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +89,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
                     // Init wallet (needed for handleClaim later, also for enrichment)
                     const wallet = await initWallet();
-                    if (!cancelled) walletRef.current = wallet;
+                    if (!cancelled) {
+                        walletRef.current = wallet;
+                        if (wallet) setWalletReady(true);
+                    }
 
                     // Background enrichment: fetch the wallet-resolved version so the
                     // preview gets the proper issuer name + verified badge + display fields.
@@ -107,7 +117,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
                 // Slow path — fallback: fetch credential from network (back-compat)
                 const wallet = await initWallet();
-                if (!cancelled) walletRef.current = wallet;
+                if (!cancelled) {
+                    walletRef.current = wallet;
+                    if (wallet) setWalletReady(true);
+                }
                 const vc = await wallet?.read.get(credentialUri);
 
                 if (!vc) throw new Error('Error resolving credential');
@@ -138,6 +151,15 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         markClaimStarted();
 
         try {
+            // Belt-and-braces: if the fast path raced and walletRef hasn't been
+            // populated yet, await initWallet here before the parallel block so
+            // acceptCredential / queryNotifications can't silently no-op.
+            if (!walletRef.current) {
+                const wallet = await initWallet();
+                walletRef.current = wallet;
+                if (wallet) setWalletReady(true);
+            }
+
             // LC-1644 Phase 2 perf: parallelize the local wallet write with the server-side
             // accept + notification query. All three are independent:
             //   - addVCtoWallet → local IndexedDB / wallet write
@@ -360,13 +382,18 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
                     <button
                         onClick={handleClaim}
-                        disabled={isClaiming || claimed}
+                        disabled={isClaiming || claimed || !walletReady}
                         className="w-full px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {isClaiming ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
                                 Claiming...
+                            </>
+                        ) : !walletReady ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Preparing...
                             </>
                         ) : (
                             <>
