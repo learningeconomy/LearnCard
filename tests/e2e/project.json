@@ -5,7 +5,7 @@
     "projectType": "application",
     "root": "tests/e2e",
     "tags": [],
-    "implicitDependencies": ["init", "simple-signing-plugin", "nx-run-command"],
+    "implicitDependencies": ["init", "helpers", "simple-signing-plugin", "nx-run-command"],
     "namedInputs": {
         "tests": ["{projectRoot}/tests/**/*"]
     },

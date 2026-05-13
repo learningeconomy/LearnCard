@@ -37,7 +37,7 @@ The following steps describe the typical lifecycle of a Verifiable Credential, a
    * LearnCard SDK typically performs several validation steps:
      * Verifying the **digital signature** against the Issuer's public key to ensure authenticity and integrity.
      * Validating the credential's structure and data types against its defined **schema**.
-     * Checking **issuance and expiration dates** (if applicable) and potentially its revocation status.
+     * Checking **issuance and expiration dates** (if applicable) and [credential status](credential-status-and-bitstring-status-lists.md).
    * LearnCard SDK then returns a verification result (e.g., valid or invalid) to the **Verifier**.
 
 ### Practical Use Cases for Verifiable Credentials
@@ -104,4 +104,3 @@ sequenceDiagram
     Holder->>Core: "Store credential"
     Holder->>Verifier: "Present credential"
 ```
-
