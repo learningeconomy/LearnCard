@@ -14,6 +14,8 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useAcceptCredentialMutation } from './mutations';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { queueAiInsightCredentialRefresh } from './ai-passport';
 
 export type ConsentRecord = {
     credentialUri: string;
@@ -78,6 +80,31 @@ const pruneStaleSharedUris = (terms: ConsentFlowTerms, validSharedUris: Set<stri
 export const useSyncConsentContractsMutation = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const ENABLE_CONSENT_SYNC_LOGS = false;
+
+    const logConsentSync = (message: string, data?: Record<string, unknown>) => {
+        if (!ENABLE_CONSENT_SYNC_LOGS) return;
+
+        try {
+            if (data) {
+                console.log(`[ConsentSync] ${message}`, data);
+            } else {
+                console.log(`[ConsentSync] ${message}`);
+            }
+        } catch {
+            // logging should never break sync
+        }
+    };
+
+    const logConsentSyncError = (message: string, err: unknown, data?: Record<string, unknown>) => {
+        if (!ENABLE_CONSENT_SYNC_LOGS) return;
+
+        try {
+            console.error(`[ConsentSync] ${message}`, data ?? {}, err);
+        } catch {
+            // logging should never break sync
+        }
+    };
 
     return useMutation<
         void,
@@ -89,15 +116,14 @@ export const useSyncConsentContractsMutation = () => {
     >({
         mutationFn: async ({ recordsByCategory, allContracts }) => {
             const learnCard = await initWallet();
-            try {
-                const categorySummary = Object.entries(recordsByCategory)
-                    .map(([k, v]) => `${k}:${v?.length ?? 0}`)
-                    .join(', ');
-                console.log('[ConsentSync] Starting sync', {
-                    contracts: allContracts.length,
-                    categorySummary,
-                });
-            } catch {}
+            const categorySummary = Object.entries(recordsByCategory)
+                .map(([k, v]) => `${k}:${v?.length ?? 0}`)
+                .join(', ');
+            logConsentSync('Starting sync', {
+                contracts: allContracts.length,
+                categorySummary,
+                categories: Object.keys(recordsByCategory),
+            });
 
             for (const { contract, terms, uri: termsUri, expiresAt, oneTime } of allContracts) {
                 // Update current contract progress
@@ -105,17 +131,28 @@ export const useSyncConsentContractsMutation = () => {
                     syncProgressStore.set.currentContract(contract.owner.did);
                 } catch {}
 
-                try {
-                    console.log('[ConsentSync] Contract start', {
-                        ownerDid: contract.owner.did,
-                        termsUri,
-                    });
-                } catch {}
+                logConsentSync('Contract start', {
+                    ownerDid: contract.owner.did,
+                    contractUri: contract.uri,
+                    termsUri,
+                    expiresAt,
+                    oneTime,
+                });
 
                 let contractTerms = terms;
                 try {
-                    const validSharedUris = await getSharedUrisForOwner(learnCard, contract.owner.did);
+                    const validSharedUris = await getSharedUrisForOwner(
+                        learnCard,
+                        contract.owner.did
+                    );
                     const { nextTerms, removed } = pruneStaleSharedUris(terms, validSharedUris);
+
+                    logConsentSync('Shared URI inventory', {
+                        ownerDid: contract.owner.did,
+                        termsUri,
+                        validSharedUris: validSharedUris.size,
+                        removed,
+                    });
 
                     if (removed > 0) {
                         await learnCard.invoke.updateContractTerms(termsUri, {
@@ -126,18 +163,18 @@ export const useSyncConsentContractsMutation = () => {
 
                         contractTerms = nextTerms;
 
-                        console.log('[ConsentSync] Pruned stale shared URIs', {
+                        logConsentSync('Pruned stale shared URIs', {
                             ownerDid: contract.owner.did,
                             termsUri,
                             removed,
                         });
                     }
                 } catch (err) {
-                    const msg = `Prune failed for owner=${contract.owner.did} termsUri=${termsUri} :: ${
-                        (err as any)?.message || String(err)
-                    }`;
+                    const msg = `Prune failed for owner=${
+                        contract.owner.did
+                    } termsUri=${termsUri} :: ${(err as any)?.message || String(err)}`;
+                    logConsentSyncError('ERROR', err, { msg });
                     try {
-                        console.error('[ConsentSync] ERROR', msg, err);
                         syncProgressStore.set.lastError(msg);
                     } catch {}
                     throw new Error(msg);
@@ -148,7 +185,20 @@ export const useSyncConsentContractsMutation = () => {
                 await Promise.all(
                     (Object.entries(recordsByCategory) as [CredentialCategory, string[]][]).map(
                         async ([category, credUris]) => {
-                            const categoryInfo = contractTerms.read.credentials.categories[category];
+                            const categoryInfo =
+                                contractTerms.read.credentials.categories[category];
+
+                            logConsentSync('Evaluating category', {
+                                ownerDid: contract.owner.did,
+                                termsUri,
+                                category,
+                                candidateCount: credUris.length,
+                                hasCategoryInfo: Boolean(categoryInfo),
+                                shareAll: categoryInfo?.shareAll,
+                                sharing: categoryInfo?.sharing,
+                                shareUntil: categoryInfo?.shareUntil,
+                                existingSharedCount: categoryInfo?.shared?.length ?? 0,
+                            });
 
                             if (
                                 categoryInfo &&
@@ -167,20 +217,13 @@ export const useSyncConsentContractsMutation = () => {
                                             contractCategoryNameToCategoryMetadata(category)
                                                 ?.credentialType!
                                         ).catch(err => {
-                                            try {
-                                                console.error(
-                                                    '[ConsentSync] Share URI failed',
-                                                    {
-                                                        ownerDid: contract.owner.did,
-                                                        category,
-                                                        sourceUri: uri,
-                                                        termsUri,
-                                                        message:
-                                                            (err as any)?.message || String(err),
-                                                    },
-                                                    err
-                                                );
-                                            } catch {}
+                                            logConsentSyncError('Share URI failed', err, {
+                                                ownerDid: contract.owner.did,
+                                                category,
+                                                sourceUri: uri,
+                                                termsUri,
+                                                message: (err as any)?.message || String(err),
+                                            });
                                             throw err;
                                         })
                                     )
@@ -193,7 +236,27 @@ export const useSyncConsentContractsMutation = () => {
 
                                 if (validUris.length) {
                                     categoryMap[category] = validUris;
+                                    logConsentSync('Category ready for sync', {
+                                        ownerDid: contract.owner.did,
+                                        termsUri,
+                                        category,
+                                        validSharedCount: validUris.length,
+                                    });
+                                } else {
+                                    logConsentSync('Category had no new shared URIs to sync', {
+                                        ownerDid: contract.owner.did,
+                                        termsUri,
+                                        category,
+                                        candidateCount: credUris.length,
+                                    });
                                 }
+                            } else {
+                                logConsentSync('Category not eligible for sync', {
+                                    ownerDid: contract.owner.did,
+                                    termsUri,
+                                    category,
+                                    candidateCount: credUris.length,
+                                });
                             }
                         }
                     )
@@ -204,11 +267,36 @@ export const useSyncConsentContractsMutation = () => {
                         .map(([k, v]) => `${k}:${v?.length ?? 0}`)
                         .join(', ');
 
+                    logConsentSync('Syncing credentials to contract', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                        payloadSummary,
+                        payloadCategories: Object.keys(categoryMap),
+                    });
+
                     try {
                         await learnCard.invoke.syncCredentialsToContract(
                             termsUri,
                             categoryMap as Record<string, string[]>
                         );
+                        logConsentSync('syncCredentialsToContract completed', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            payloadSummary,
+                        });
+                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                            logConsentSync('Queueing AI Passport refresh', {
+                                ownerDid: contract.owner.did,
+                                termsUri,
+                                contractUri: contract.uri,
+                            });
+                            await queueAiInsightCredentialRefresh({
+                                wallet: learnCard,
+                                queryClient,
+                            });
+                        }
                         queryClient.invalidateQueries({
                             queryKey: ['useTermsTransactions', termsUri],
                         });
@@ -218,27 +306,27 @@ export const useSyncConsentContractsMutation = () => {
                         } termsUri=${termsUri} payload=[${payloadSummary}] :: ${
                             (err as any)?.message || String(err)
                         }`;
+                        logConsentSyncError('ERROR', err, { msg });
                         try {
-                            console.error('[ConsentSync] ERROR', msg, err);
                             syncProgressStore.set.lastError(msg);
                         } catch {}
                         throw new Error(msg);
                     }
                 } else {
-                    try {
-                        console.log('[ConsentSync] No credentials to sync for contract', {
-                            ownerDid: contract.owner.did,
-                            termsUri,
-                        });
-                    } catch {}
+                    logConsentSync('No credentials to sync for contract', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                    });
                 }
 
                 // Increment completed contracts
                 try {
                     const prev = syncProgressStore.get.contractsCompleted();
                     syncProgressStore.set.contractsCompleted(prev + 1);
-                    console.log('[ConsentSync] Contract done', {
+                    logConsentSync('Contract done', {
                         ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
                         termsUri,
                         completed: prev + 1,
                         total: syncProgressStore.get.totalContracts(),
