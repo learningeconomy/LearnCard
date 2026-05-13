@@ -34,9 +34,13 @@ export const getLRUCache = <T>(limit = 50) => {
             return undefined;
         }
 
+        // Move the touched entry to the front (most-recently-used) in O(n)
+        // splice+unshift rather than re-sorting the whole array on every hit.
         entry.timestamp = now;
-        items.sort((a, b) => b.timestamp - a.timestamp);
-        items = items.slice(0, limit);
+        if (index > 0) {
+            items.splice(index, 1);
+            items.unshift(entry);
+        }
 
         return entry.value;
     };
