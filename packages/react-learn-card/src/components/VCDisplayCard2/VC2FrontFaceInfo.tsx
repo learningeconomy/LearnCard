@@ -3,13 +3,9 @@ import { Flipped } from 'react-flip-toolkit';
 
 import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 
-import {
-    getImageFromProfile,
-    getInfoFromCredential,
-    getNameFromProfile,
-} from '../../helpers/credential.helpers';
+import { getImageFromProfile, getInfoFromCredential } from '../../helpers/credential.helpers';
+import { resolveProfileDisplay } from '../../helpers/did-display.helpers';
 import { isAppDidWeb } from '@learncard/helpers';
-import { truncateWithEllipsis } from '../../helpers/string.helpers';
 import { Profile, VC } from '@learncard/types';
 import VerifierStateBadgeAndText, {
     VerifierState,
@@ -50,10 +46,11 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     customBodyContentSlot,
     unknownVerifierTitle,
 }) => {
-    const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 20);
-    const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
+
+    const issueeDisplay = resolveProfileDisplay(issuee, '');
+    const issuerDisplay = resolveProfileDisplay(issuer, '');
 
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -63,14 +60,21 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         imageUrl: string,
         alt: string,
         overrideComponent: React.ReactNode | undefined,
+        avatarName: string,
+        avatarColor: string,
+        avatarTextClassName: string,
+        avatarIconClassName: string,
         bigText?: boolean
     ) => {
         if (overrideComponent) return overrideComponent;
 
         return (
             <UserProfilePicture
-                user={{ image: imageUrl, name: issueeName }}
+                user={{ image: imageUrl, name: avatarName }}
                 alt={alt}
+                avatarColor={avatarColor}
+                avatarTextClassName={avatarTextClassName}
+                avatarIconClassName={avatarIconClassName}
                 customContainerClass={`h-full w-full ${bigText ? '!text-4xl' : ''}`}
             />
         );
@@ -80,12 +84,20 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         issueeImage,
         'Issuee image',
         subjectImageComponent,
+        issueeDisplay.avatarLetter,
+        issueeDisplay.avatarColor,
+        'text-3xl leading-normal',
+        'w-[60%] h-[60%] text-white/80',
         true
     );
     const issuerImageEl: React.ReactNode = getImageElement(
         issuerImage,
         'Issuer image',
-        issuerImageComponent
+        issuerImageComponent,
+        issuerDisplay.avatarLetter,
+        issuerDisplay.avatarColor,
+        'text-xl leading-normal',
+        'w-[58%] h-[58%] text-white/80'
     );
 
     const issuerDid =
@@ -131,13 +143,25 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
                     {!customBodyCardComponent && (
                         <>
-                            <h3 className="text-[27px] flex flex-col text-center leading-[130%] text-grayscale-900 capitalize">
-                                {issueeName}
-                                {subjectDID && (
-                                    <span className="text-[12px] text-grayscale-700 leading-[18px] font-poppins font-[400] m-0 p-0 normal-case">
-                                        {subjectDID}
-                                    </span>
-                                )}
+                            <h3 className="flex flex-col text-center leading-[130%] w-full">
+                                <span
+                                    className={`font-poppins font-semibold text-[20px] leading-[130%] max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${
+                                        issueeDisplay.isMissing
+                                            ? 'text-grayscale-400 italic font-normal text-[16px]'
+                                            : issueeDisplay.isDidValue
+                                            ? 'text-grayscale-700 font-mono text-[14px] tracking-tight'
+                                            : 'text-grayscale-900'
+                                    }`}
+                                >
+                                    {issueeDisplay.displayName}
+                                </span>
+                                {subjectDID &&
+                                    !issueeDisplay.isDidValue &&
+                                    !issueeDisplay.isLCNetwork && (
+                                        <span className="text-[12px] text-grayscale-500 leading-[18px] font-poppins font-normal m-0 p-0">
+                                            {subjectDID}
+                                        </span>
+                                    )}
                             </h3>
                             <div className="relative">
                                 <div className="vc-issuee-image h-[60px] w-[60px] rounded-full overflow-hidden">
@@ -148,13 +172,30 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                 </div>
                             </div>
                             <div className="flex flex-col gap-[13px]">
-                                <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
+                                <div className="vc-issue-details mt-[10px] flex flex-col items-center font-poppins text-[14px] leading-[20px]">
                                     <span className="created-at text-grayscale-700">
                                         {createdAt}
                                     </span>
-                                    <span className="issued-by text-grayscale-900 font-[500]">
-                                        by <strong className="font-[700]">{issuerName}</strong>
-                                    </span>
+                                    {!issuerDisplay.isMissing && (
+                                        <span
+                                            className={`issued-by font-medium max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${
+                                                issuerDisplay.isDidValue
+                                                    ? 'text-grayscale-600 font-mono text-[12px] tracking-tight font-normal'
+                                                    : 'text-grayscale-900 text-[14px]'
+                                            }`}
+                                        >
+                                            by{' '}
+                                            <strong
+                                                className={
+                                                    issuerDisplay.isDidValue
+                                                        ? 'font-normal'
+                                                        : 'font-bold'
+                                                }
+                                            >
+                                                {issuerDisplay.displayName}
+                                            </strong>
+                                        </span>
+                                    )}
                                 </div>
                                 <VerifierStateBadgeAndText
                                     verifierState={verifierState}
