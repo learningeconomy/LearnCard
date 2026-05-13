@@ -8,6 +8,8 @@ type CertificateProfileImageDisplayProps = {
     isIssuer?: boolean;
     className?: string;
     userName?: string;
+    avatarColor?: string;
+    avatarFallbackVariant?: 'initial' | 'fingerprint';
 };
 
 const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayProps> = ({
@@ -16,6 +18,8 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
     className = '',
     imageComponent,
     userName,
+    avatarColor,
+    avatarFallbackVariant = 'initial',
 }) => {
     const imageClassName = `h-[50px] w-[50px] rounded-full overflow-hidden ${
         isIssuer ? '!absolute border-[2px] border-solid border-grayscale-200' : ''
@@ -32,9 +36,11 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
             {imageComponent && <div className={imageClassName}>{imageComponent}</div>}
             {!imageComponent && (
                 <UserProfilePicture
-                    customContainerClass={`${imageClassName} ${!imageUrl ? 'pt-[6px]' : ''}`}
-                    customImageClass="h-full w-full object-cover"
+                    customContainerClass={imageClassName}
+                    customImageClass="h-full w-full object-cover leading-normal"
                     user={{ image: imageUrl, name: userName }}
+                    avatarColor={avatarColor}
+                    avatarFallbackVariant={avatarFallbackVariant}
                 />
             )}
         </div>
