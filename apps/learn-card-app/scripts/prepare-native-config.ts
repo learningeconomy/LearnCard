@@ -42,6 +42,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync } from 'fs';
+import { createRequire } from 'module';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -49,6 +50,11 @@ import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchem
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
 import { deepMerge } from 'learn-card-base/src/config/deepMerge';
 import type { TenantConfig } from 'learn-card-base/src/config/tenantConfigSchema';
+
+const requireFromHere = createRequire(import.meta.url);
+const { readDefaultChannel } = requireFromHere('../../../tools/capgo/readDefaultChannel.cjs') as {
+    readDefaultChannel: (configPath: string) => string | undefined;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -482,33 +488,26 @@ console.log(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
 
 const nativeConfig = validatedConfig.native;
 
-// SSOT for the Capgo channel is `defaultChannel` in capacitor.config.ts.
-// This regex MUST stay in sync with `tools/capgo/getCapgoChannel.js` (used by CI
-// to pick the OTA upload channel). Tenant asset capacitor.config.json files must
-// NOT specify defaultChannel — they are wholesale-copied over the cap-synced
-// platform JSONs in step 5b, so a tenant override silently drops binaries off
-// the CI upload channel (see PR #1063 incident).
-const readDefaultCapgoChannel = (): string | undefined => {
-    const tsPath = resolve(APP_ROOT, 'capacitor.config.ts');
-
-    if (!existsSync(tsPath)) return undefined;
-
-    const content = readFileSync(tsPath, 'utf-8');
-    const match = content.match(/defaultChannel:\s*['"]([^'"]+)['"]/);
-
-    return match?.[1];
-};
-
-const defaultCapgoChannel = readDefaultCapgoChannel();
+// SSOT for the Capgo channel is `defaultChannel` in capacitor.config.ts; we read
+// it through the shared `tools/capgo/readDefaultChannel.cjs` helper that CI also
+// uses (via tools/capgo/getCapgoChannel.js). Tenant asset capacitor.config.json
+// files must NOT specify defaultChannel — they are wholesale-copied over the
+// cap-synced platform JSONs in step 5b, so a tenant override silently drops
+// installed binaries off the channel CI uploads to (PR #1063 incident).
+const defaultCapgoChannel = readDefaultChannel(resolve(APP_ROOT, 'capacitor.config.ts'));
 
 if (nativeConfig) {
-    console.log('\n⚙️  Patching Capacitor config with tenant native settings...');
-
-    if (defaultCapgoChannel) {
-        console.log(`   Capgo defaultChannel (from capacitor.config.ts): ${defaultCapgoChannel}`);
-    } else {
-        console.warn('   ⚠️  Could not read defaultChannel from capacitor.config.ts — Capgo OTA channel will not be patched');
+    if (!defaultCapgoChannel) {
+        console.error('❌ Failed to read CapacitorUpdater.defaultChannel from capacitor.config.ts.');
+        console.error('   Aborting: writing platform JSONs without a Capgo channel would silently');
+        console.error('   diverge from CI (tools/capgo/getCapgoChannel.js reads the same SSOT for');
+        console.error('   the upload channel — installed binaries would fall back to the plugin');
+        console.error('   default and miss every OTA bundle).');
+        process.exit(1);
     }
+
+    console.log('\n⚙️  Patching Capacitor config with tenant native settings...');
+    console.log(`   Capgo defaultChannel (from capacitor.config.ts): ${defaultCapgoChannel}`);
 
     const patchCapacitorConfigJson = (jsonPath: string): void => {
         if (!existsSync(jsonPath)) return;
@@ -521,10 +520,7 @@ if (nativeConfig) {
 
             if (raw.plugins?.CapacitorUpdater) {
                 raw.plugins.CapacitorUpdater.appId = nativeConfig.bundleId;
-
-                if (defaultCapgoChannel) {
-                    raw.plugins.CapacitorUpdater.defaultChannel = defaultCapgoChannel;
-                }
+                raw.plugins.CapacitorUpdater.defaultChannel = defaultCapgoChannel;
             }
 
             writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
