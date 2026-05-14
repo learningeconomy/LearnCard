@@ -81,9 +81,21 @@ export const RenderMethodDisplay: React.FC<RenderMethodDisplayProps> = ({
                 borderRadius: '28px',
                 pointerEvents: 'none',
                 userSelect: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
             }}
-            dangerouslySetInnerHTML={{ __html: state.svg }}
-        />
+        >
+            <div
+                style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+                dangerouslySetInnerHTML={{ __html: state.svg }}
+            />
+        </div>
     );
 };
 

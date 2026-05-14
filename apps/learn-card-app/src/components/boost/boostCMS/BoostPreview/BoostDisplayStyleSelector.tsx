@@ -3,18 +3,19 @@ import { IonIcon } from '@ionic/react';
 import { checkmarkCircle, ellipseOutline } from 'ionicons/icons';
 
 import { VC, UnsignedVC } from '@learncard/types';
-import {
-    BoostPreviewDisplayViewEnum,
-    boostPreviewStore,
-} from 'learn-card-base/stores/boostPreviewStore';
+import { BoostPreviewDisplayViewEnum, boostPreviewStore } from 'learn-card-base/stores/boostPreviewStore';
 import { getSvgMustacheRenderMethod } from '../../../../helpers/renderMethod.helpers';
 
 type BoostDisplayStyleSelectorProps = {
     credential: VC | UnsignedVC;
+    enableRenderMethod: boolean;
 };
 
-const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({ credential }) => {
-    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
+const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({
+    credential,
+    enableRenderMethod,
+}) => {
+    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     if (!renderMethod) return null;

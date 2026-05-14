@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import { IonFooter, IonPage } from '@ionic/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
@@ -55,6 +56,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     isClrChildCredential = false,
     renderMethodCredential,
 }) => {
+    const flags = useFlags();
+    const enableRenderMethod = flags?.enableRenderMethod === true;
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -147,8 +150,11 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         )}
                     </TruncateTextBox>
 
-                    {!isMediaDisplay && renderMethodCredential && (
-                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
+                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
+                        <BoostDisplayStyleSelector
+                            credential={renderMethodCredential}
+                            enableRenderMethod={enableRenderMethod}
+                        />
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonPage } from '@ionic/react';
 import { VCDisplayCard2 } from '@learncard/react';
@@ -141,9 +142,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
 }) => {
+    const flags = useFlags();
+    const enableRenderMethod = flags?.enableRenderMethod === true;
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
-    const renderMethod = getSvgMustacheRenderMethod(_credential as VC);
+    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(_credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     useEffect(() => {
@@ -152,11 +155,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }, [credentialWithEdits?.id]);
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            renderMethod
+            enableRenderMethod && renderMethod
                 ? BoostPreviewDisplayViewEnum.Issuer
                 : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credentialWithEdits?.id, renderMethod?.template]);
+    }, [credentialWithEdits?.id, renderMethod?.template, enableRenderMethod]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
 
@@ -182,7 +185,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const isIssuerViewSelected =
-        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod && Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const { isMobile } = useDeviceTypeByWidth();
 

@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
 import Lottie from 'react-lottie-player';
@@ -110,13 +111,15 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
+    const flags = useFlags();
+    const enableRenderMethod = flags?.enableRenderMethod === true;
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
-    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
+    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(credential as VC) as VC;
 
@@ -246,11 +249,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            renderMethod
+            enableRenderMethod && renderMethod
                 ? BoostPreviewDisplayViewEnum.Issuer
                 : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credential?.id, renderMethod?.template]);
+    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
 
     useEffect(() => {
         if (!isFront) {
@@ -262,7 +265,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [isFront]);
 
     const isIssuerViewSelected =
-        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const credentialDisplay = (
         <VCDisplayCardWrapper2

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonPage } from '@ionic/react';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
@@ -89,9 +90,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
 }) => {
+    const flags = useFlags();
+    const enableRenderMethod = flags?.enableRenderMethod === true;
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
-    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
+    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     useEffect(() => {
@@ -100,11 +103,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }, [credential?.id]);
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            renderMethod
+            enableRenderMethod && renderMethod
                 ? BoostPreviewDisplayViewEnum.Issuer
                 : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credential?.id, renderMethod?.template]);
+    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
     const [isFront, setIsFront] = useState(true);
     const { newModal, closeModal } = useModal();
 
@@ -183,7 +186,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const isIssuerViewSelected =
-        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod && Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;

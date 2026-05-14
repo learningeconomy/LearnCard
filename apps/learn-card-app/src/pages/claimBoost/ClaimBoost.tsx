@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -136,6 +137,8 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
+    const flags = useFlags();
+    const enableRenderMethod = flags?.enableRenderMethod === true;
 
     const rawBoostUri = query.get('boostUri') || uri;
     const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
@@ -326,7 +329,10 @@ const ClaimBoost: React.FC<{
 
     const isFamily = category === CredentialCategoryEnum.family;
     const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
-    const renderMethod = renderMethodSource ? getSvgMustacheRenderMethod(renderMethodSource) : null;
+    const renderMethod =
+        enableRenderMethod && renderMethodSource
+            ? getSvgMustacheRenderMethod(renderMethodSource)
+            : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
@@ -345,11 +351,11 @@ const ClaimBoost: React.FC<{
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            renderMethod
+            enableRenderMethod && renderMethod
                 ? BoostPreviewDisplayViewEnum.Issuer
                 : BoostPreviewDisplayViewEnum.Default
         );
-    }, [renderMethod?.template, renderMethodSource?.id]);
+    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -392,7 +398,9 @@ const ClaimBoost: React.FC<{
     }
 
     const isIssuerViewSelected =
-        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const renderClaimCredentialDisplay = (credentialToDisplay: VC) => (
         <VCDisplayCardWrapper2
