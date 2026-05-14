@@ -125,7 +125,13 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'learncardapp.netlify.com',
             'lcw.app'
         ],
-        customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
+        customSchemes: [
+            'dccrequest',
+            'msprequest',
+            'asuprequest',
+            'openid-credential-offer',
+            'openid4vp',
+        ]
     },
 };
 
