@@ -26,6 +26,7 @@
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { parseDefaultChannel } = require('./readDefaultChannel.cjs');
 
 const args = process.argv.slice(2);
 
@@ -115,13 +116,7 @@ const getChangedFiles = (baseSha, headSha) => {
 
 // --- Extractors -------------------------------------------------------------
 
-const extractDefaultChannel = (configContent) => {
-    if (!configContent) return null;
-
-    const m = configContent.match(/defaultChannel\s*:\s*['"]([^'"]+)['"]/);
-
-    return m ? m[1] : null;
-};
+const extractDefaultChannel = (configContent) => parseDefaultChannel(configContent) ?? null;
 
 const collectNativeDeps = (pkgJsonContent) => {
     if (!pkgJsonContent.trim()) return {};

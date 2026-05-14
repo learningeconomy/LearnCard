@@ -778,6 +778,12 @@ export const useGetProfile = (
     return useQuery<QueriedProfile | null>({
         enabled: enabled && (!!profileId || isLoggedIn),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
+        // The current user's profile changes rarely (avatar/displayName edits).
+        // Keep cached data fresh for 5 minutes so navigations between pages don't
+        // trigger background refetches that flicker dependent UI like
+        // UserProfilePicture in the header. Mutations that update the profile
+        // (e.g., editProfile) are responsible for invalidating this query.
+        staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
             // If user is logged in, try to use the wallet
             if (isLoggedIn) {

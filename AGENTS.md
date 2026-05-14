@@ -47,6 +47,11 @@ The apps define a custom color palette in their `tailwind.config.js`. **Never us
 | `emerald-50`–`emerald-900` | — | Success states, positive actions, focus rings |
 | `amber-50`–`amber-900` | — | Warnings, caution callouts |
 | `red-50`–`red-700` | — | Errors, destructive states |
+| `indigo-50`–`indigo-700` | — | **Navigation / route-swap accents only** — scoped to Pathways v2 wayfinding (Map "Navigate mode", route-swap proposal cards, What-If scenario selection). Do **not** use elsewhere. |
+
+#### Indigo scope (Pathways v2)
+
+Indigo is the **only non-grayscale neutral** permitted alongside emerald / amber / red, and only in the contexts above. The intent is to give learners a stable visual signal that "this is route-shape change, not structural edit" — emerald already means "positive / committed", and reusing it for route swaps muddies that signal. Files where this is currently load-bearing: `apps/learn-card-app/src/pages/pathways/proposals/ProposalCard.tsx`, `proposals/RouteDiffSummary.tsx`, `map/MapMode.tsx`, `what-if/WhatIfMode.tsx`. New indigo usage outside Pathways v2 should be flagged in review.
 
 ### Typography
 
