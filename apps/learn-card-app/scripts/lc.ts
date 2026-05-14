@@ -220,21 +220,72 @@ const seedAppStoreListing = async () => {
     );
 };
 
+/**
+ * Seed the Pathways v0.5 demo bundle — three AppStoreListings with a mix of
+ * launch types (EMBEDDED_IFRAME, DIRECT_LINK, AI_TUTOR), using deterministic
+ * UUIDs so the in-app dev seed (`src/pages/pathways/dev/devSeed.ts`) can
+ * reference them by ID without a lookup round-trip.
+ *
+ * All defaults come from the preset itself; only the owner profile is
+ * promptable here so you can seed the bundle under a specific dev account.
+ */
+const seedPathwayDemoBundle = async () => {
+    const seedScript = resolve(BRAIN_SERVICE_ROOT, 'scripts/seed-dev-app.ts');
+
+    if (!existsSync(seedScript)) {
+        console.error(`\n❌ Seed script not found at ${seedScript}`);
+        rl.close();
+        process.exit(1);
+    }
+
+    console.log('');
+    console.log(bold('🌱 Seed Pathways demo bundle'));
+    console.log(dim('   Seeds 3 AppStoreListings for the AWS Cloud Practitioner demo pathway:'));
+    console.log(dim('     • Coursera — AWS Cloud Essentials  (DIRECT_LINK)'));
+    console.log(dim('     • AWS Practice Studio              (EMBEDDED_IFRAME)'));
+    console.log(dim('     • Cloud Coach                       (AI_TUTOR)'));
+    console.log(dim('   Idempotent — safe to re-run.'));
+    console.log('');
+
+    const ownerProfileId = await ask(`  Owner profile ID ${dim('(dev-owner)')}: `);
+    const installFor = await ask(`  Install for profile ${dim('(skip to not auto-install)')}: `);
+
+    const flagParts: string[] = ['--preset pathway-demo'];
+
+    if (ownerProfileId) flagParts.push(`--profile ${ownerProfileId}`);
+    if (installFor) flagParts.push(`--install-for ${installFor}`);
+
+    const flagStr = flagParts.join(' ');
+    const cmd = `npx tsx scripts/seed-dev-app.ts ${flagStr}`;
+
+    runCommand(
+        cmd,
+        'Seeding Pathways demo bundle into local database',
+        `pnpm lc seed pathway-demo${ownerProfileId ? ` --profile ${ownerProfileId}` : ''}`,
+        BRAIN_SERVICE_ROOT,
+    );
+};
+
 const seedTestData = async () => {
     console.log('');
     console.log(bold('  🌱 Seed Test Data'));
     console.log(dim('   Populate your local database with dev data.'));
     console.log('');
     console.log(`  ${cyan('a')}  ${bold('App store listing')}       ${dim('— dev partner app + profile + listing')}`);
+    console.log(`  ${cyan('b')}  ${bold('Pathways demo bundle')}    ${dim('— 3 listings for the AWS Cloud Practitioner pathway')}`);
     console.log('');
     console.log(dim('  Press Enter to go back'));
     console.log('');
 
-    const sub = await ask('Pick [a]: ');
+    const sub = await ask('Pick [a, b]: ');
 
     switch (sub) {
         case 'a':
             await seedAppStoreListing();
+            break;
+
+        case 'b':
+            await seedPathwayDemoBundle();
             break;
 
         default:
@@ -799,7 +850,7 @@ const patchCapConfigSource = (serverUrl: string): void => {
     const serverBlock = `    server: {\n        url: '${serverUrl}',\n        cleartext: true,\n    },\n`;
 
     // Insert before the final `};` that closes the config object
-    const patched = content.replace(
+    let patched = content.replace(
         /(\n};\s*\nexport default config;)/,
         `\n${serverBlock}};\n\nexport default config;`,
     );
@@ -809,8 +860,27 @@ const patchCapConfigSource = (serverUrl: string): void => {
         return;
     }
 
+    // Also disable Capgo auto-update for the session — an OTA bundle landing
+    // mid-dev can force-reload off the LAN URL or pop the CapGoUpdateModal.
+    // The .bak restore in Step 3 puts `autoUpdate: true` back automatically.
+    const beforeCapgoPatch = patched;
+
+    patched = patched.replace(/autoUpdate:\s*true,/, 'autoUpdate: false,');
+
+    const capgoDisabled = patched !== beforeCapgoPatch;
+
     writeFileSync(CAP_CONFIG_TS, patched, 'utf-8');
     console.log(`   ${green('✓')} Patched capacitor.config.ts → server.url = ${serverUrl}`);
+
+    if (capgoDisabled) {
+        console.log(
+            `   ${green('✓')} Patched capacitor.config.ts → CapacitorUpdater.autoUpdate = false`,
+        );
+    } else {
+        console.warn(
+            `   ⚠️  Could not find \`autoUpdate: true\` in CapacitorUpdater — Capgo may still poll during the session`,
+        );
+    }
 };
 
 const unpatchCapConfigSource = (): void => {
@@ -827,6 +897,53 @@ const unpatchCapConfigSource = (): void => {
     try { execSync(`rm -f "${CAP_CONFIG_BACKUP}"`, { cwd: APP_ROOT }); } catch { /* ignore */ }
 
     console.log(`   ${green('✓')} Restored capacitor.config.ts from backup`);
+};
+
+/**
+ * Re-patch the platform `capacitor.config.json` files after
+ * `prepare-native-config.ts` has run.
+ *
+ * Why this exists: `prepare-native-config.ts` Step 5b (`cpSync` of
+ * `environments/<tenant>/assets/config/capacitor.config.json` over the
+ * cap-synced platform JSONs) wholesale replaces both
+ * `ios/App/App/capacitor.config.json` and the Android equivalent. That
+ * drops the `server` block we patched into the source TS in Step 1
+ * (so live-reload would silently fall back to the local bundle) AND
+ * restores `CapacitorUpdater.autoUpdate: true` (so Capgo polls for OTA
+ * bundles mid-dev session and can force-reload off the LAN URL).
+ *
+ * The platform JSONs are gitignored and regenerated on the next
+ * `prepare-native-config.ts` run, so no manual cleanup is needed —
+ * the next normal `pnpm lc` invocation lands us back on the canonical
+ * tenant config.
+ */
+const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
+    const platformPaths = [
+        resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'),
+        resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json'),
+    ];
+
+    for (const jsonPath of platformPaths) {
+        if (!existsSync(jsonPath)) continue;
+
+        try {
+            const raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+
+            raw.server = { url: serverUrl, cleartext: true };
+
+            if (raw.plugins?.CapacitorUpdater) {
+                raw.plugins.CapacitorUpdater.autoUpdate = false;
+            }
+
+            writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+
+            const relPath = jsonPath.replace(`${APP_ROOT}/`, '');
+
+            console.log(`   ${green('✓')} Patched ${relPath} → server.url + autoUpdate=false`);
+        } catch (err) {
+            console.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
+        }
+    }
 };
 
 /**
@@ -1019,24 +1136,33 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
 
     // Step 1: Patch capacitor.config.ts source with server.url for live-reload
     console.log('');
-    console.log(green('▶ Step 1/5 — Patching capacitor.config.ts with live-reload URL'));
+    console.log(green('▶ Step 1/6 — Patching capacitor.config.ts with live-reload URL'));
     patchCapConfigSource(serverUrl);
 
     // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
-    execBlocking('npx cap sync', 'Step 2/5 — Capacitor sync (with live-reload URL)');
+    execBlocking('npx cap sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
 
     // Step 3: Restore the original capacitor.config.ts so git stays clean
     console.log('');
-    console.log(green('▶ Step 3/5 — Restoring capacitor.config.ts (git stays clean)'));
+    console.log(green('▶ Step 3/6 — Restoring capacitor.config.ts (git stays clean)'));
     unpatchCapConfigSource();
 
-    // Step 4: Patch native projects with tenant config (after cap sync, so patches aren't clobbered)
+    // Step 4: Patch native projects with tenant config. This step COPIES the
+    // tenant base `capacitor.config.json` over the cap-synced platform JSONs,
+    // which drops the live-reload `server` block and restores Capgo
+    // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
-        'Step 4/5 — Patching native projects with tenant config',
+        'Step 4/6 — Patching native projects with tenant config',
     );
 
-    // Step 5: Launch Vite + open the IDE
+    // Step 5: Re-apply live-reload patches directly to the platform JSONs
+    // (the only thing that survives Step 4's tenant config copy).
+    console.log('');
+    console.log(green('▶ Step 5/6 — Re-applying live-reload patches to platform JSONs'));
+    patchPlatformJsonsForLiveReload(serverUrl);
+
+    // Step 6: Launch Vite + open the IDE
     console.log('');
     console.log(green('🚀 Starting Vite dev server + opening native IDE'));
     console.log('');

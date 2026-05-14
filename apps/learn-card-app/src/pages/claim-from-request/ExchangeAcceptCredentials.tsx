@@ -16,6 +16,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
     getAchievementType,
@@ -23,6 +24,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
@@ -89,7 +91,16 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         setClaiming(true);
 
         try {
-            await Promise.all(
+            // Capture the stored credential URIs so we can publish
+            // a `credential-ingested` bus event for each one. Without
+            // this, the VC-API `/request` claim path silently skips
+            // the pathway-progress reactor — unlike the
+            // `useAddCredentialToWallet` mutation (in
+            // `apps/learn-card-app/src/components/boost/mutations.ts`)
+            // which publishes the event in `onSuccess`. Exchange
+            // acceptance calls `storeAndAddVCToWallet` directly, so
+            // we do the publish inline here.
+            const storeResults = await Promise.all(
                 selectedCredentials.map(credential => {
                     const name = credential.name || 'Credential';
                     const category = getDefaultCategoryForCredential(credential);
@@ -104,6 +115,34 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     return storeAndAddVCToWallet(credential, { title: name }, 'LearnCloud', true);
                 })
             );
+
+            // Publish one `credential-ingested` event per claimed
+            // VC. Wrapped in try/catch (matching
+            // `useAddCredentialToWallet`): a corrupted VC or a bad
+            // bus listener must never break the core claim flow —
+            // the reactor's dedup-by-eventId tolerates a future
+            // replay sweep that catches anything we drop here.
+            selectedCredentials.forEach((credential, index) => {
+                const credentialUri = storeResults[index]?.credentialUri;
+
+                if (!credentialUri) return;
+
+                try {
+                    publishWalletEvent({
+                        kind: 'credential-ingested',
+                        eventId: uuidv4(),
+                        credentialUri,
+                        vc: credential as unknown as Record<string, unknown>,
+                        ingestedAt: new Date().toISOString(),
+                        source: 'vc-api-exchange',
+                    });
+                } catch (err) {
+                    console.error(
+                        '[ExchangeAcceptCredentials] failed to publish ingest event:',
+                        err,
+                    );
+                }
+            });
 
             setIsClaimed(true);
 

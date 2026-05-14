@@ -44,6 +44,44 @@ export const AnalyticsEvents = {
     LAUNCHPAD_QUICKNAV_ACTION_CLICKED: 'launchpad_quicknav_action_clicked',
     LAUNCHPAD_APP_INSTALLED: 'launchpad_app_installed',
 
+    // Pathways (see docs § 13). Phase 0 stubs — callers land in later phases.
+    PATHWAYS_ONBOARD_STARTED: 'pathways.onboard.started',
+    PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED: 'pathways.onboard.suggestionsRendered',
+    PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED: 'pathways.onboard.suggestionAccepted',
+    PATHWAYS_TODAY_NEXT_ACTION_SHOWN: 'pathways.today.nextActionShown',
+    PATHWAYS_TODAY_NEXT_ACTION_DISMISSED: 'pathways.today.nextActionDismissed',
+    PATHWAYS_NODE_TERMINATION_COMPLETED: 'pathways.node.terminationCompleted',
+    PATHWAYS_PROPOSAL_CREATED: 'pathways.proposal.created',
+    PATHWAYS_PROPOSAL_ACCEPTED: 'pathways.proposal.accepted',
+    PATHWAYS_PROPOSAL_REJECTED: 'pathways.proposal.rejected',
+    PATHWAYS_PROPOSAL_EXPIRED: 'pathways.proposal.expired',
+    PATHWAYS_AGENT_BUDGET_EXCEEDED: 'pathways.agent.budgetExceeded',
+    PATHWAYS_LEARNER_COST_SNAPSHOT: 'pathways.learnerCost.snapshot',
+    PATHWAYS_ENDORSEMENT_REQUESTED: 'pathways.endorsement.requested',
+    PATHWAYS_ENDORSEMENT_RECEIVED: 'pathways.endorsement.received',
+    PATHWAYS_ENDORSEMENT_DECLINED: 'pathways.endorsement.declined',
+    PATHWAYS_OFFLINE_CONFLICT: 'pathways.offline.conflict',
+    PATHWAYS_PATHWAY_SWITCHED: 'pathways.pathway.switched',
+    PATHWAYS_PATHWAY_REMOVED: 'pathways.pathway.removed',
+    PATHWAYS_COMPOSITE_OPENED: 'pathways.composite.opened',
+    PATHWAYS_CTDL_IMPORTED: 'pathways.ctdl.imported',
+    PATHWAYS_CATALOG_BROWSED: 'pathways.catalog.browsed',
+    PATHWAYS_CATALOG_SEARCHED: 'pathways.catalog.searched',
+
+    // Pathways — ActionDescriptor dispatch (docs § 3.7).
+    // Fires when a learner activates a node's primary CTA. `kind`
+    // carries the resolved `ActionDescriptor.kind` (including `none`
+    // for local-only nodes that fall back to the NodeDetail overlay);
+    // `source` is `'explicit' | 'earn-url' | 'mcp-policy' | 'none'`
+    // so we can measure how often authored descriptors drive dispatch
+    // versus legacy-field fallbacks.
+    PATHWAYS_ACTION_DISPATCHED: 'pathways.action.dispatched',
+
+    // Pathways — OutcomeSignal lifecycle (docs § 3.8).
+    PATHWAYS_OUTCOME_AUTOBIND_PROPOSED: 'pathways.outcome.autobindProposed',
+    PATHWAYS_OUTCOME_BOUND: 'pathways.outcome.bound',
+    PATHWAYS_OUTCOME_BINDING_CLEARED: 'pathways.outcome.bindingCleared',
+
     // OpenID4VC / OpenID4VP
     /**
      * Fired when a user explicitly taps "Tell LearnCard about this" on an
@@ -188,6 +226,218 @@ export interface AnalyticsEventPayloads {
         category?: string;
     };
 
+    // -- Pathways (docs § 13) ------------------------------------------------
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_STARTED]: {
+        hasWallet: boolean;
+        goalMode: 'free-text' | 'template' | 'skipped';
+    };
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED]: {
+        latencyMs: number;
+        vectorOnly: boolean;
+        suggestionCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED]: {
+        suggestionId: string;
+        position: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_SHOWN]: {
+        nodeId: string;
+        reasons: string[];
+        topScore: number;
+        runnerUpScores: number[];
+        /**
+         * Which selector produced this pick — `'route'` means the
+         * learner's committed `chosenRoute` drove the answer (turn-
+         * by-turn), `'ranking'` means the weighted scorer did. We
+         * break these out so we can measure how often learners are
+         * actually walking a route vs. bouncing through availability.
+         */
+        source?: 'route' | 'detour' | 'ranking';
+        /** 1-indexed position of the pick on the chosenRoute; only set when `source === 'route'`. */
+        routePosition?: number;
+        /** Total chosenRoute length; only set when `source === 'route'`. */
+        routeTotal?: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_DISMISSED]: {
+        nodeId: string;
+        reasons: string[];
+    };
+
+    [AnalyticsEvents.PATHWAYS_NODE_TERMINATION_COMPLETED]: {
+        nodeId: string;
+        terminationKind: string;
+        evidenceCount: number;
+        offlineQueued: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED]: {
+        agent: string;
+        pathwayId: string | null;
+        tokensIn?: number;
+        tokensOut?: number;
+        latencyMs: number;
+        costCents: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_ACCEPTED]: {
+        proposalId: string;
+        agent: string;
+        ageMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_REJECTED]: {
+        proposalId: string;
+        agent: string;
+        ageMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_EXPIRED]: {
+        proposalId: string;
+        agent: string;
+    };
+
+    [AnalyticsEvents.PATHWAYS_AGENT_BUDGET_EXCEEDED]: {
+        agent: string;
+        tier: 'low' | 'medium' | 'high';
+        cappedAt:
+            | 'per-invocation'
+            | 'per-learner-daily'
+            | 'per-learner-monthly'
+            | 'per-tenant-monthly';
+    };
+
+    [AnalyticsEvents.PATHWAYS_LEARNER_COST_SNAPSHOT]: {
+        learnerDid: string;
+        monthToDateCents: number;
+        byCapability: Record<string, number>;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_REQUESTED]: {
+        nodeId: string;
+        endorserRelationship: 'mentor' | 'peer' | 'guardian' | 'institution';
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_RECEIVED]: {
+        nodeId: string;
+        endorserTrustTier: string;
+        latencyMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_DECLINED]: {
+        nodeId: string;
+        reason?: string;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OFFLINE_CONFLICT]: {
+        mutationType: string;
+        resolution: 'client-wins' | 'server-wins' | 'last-write-wins' | 'learner-prompt';
+    };
+
+    [AnalyticsEvents.PATHWAYS_PATHWAY_SWITCHED]: {
+        fromPathwayId: string | null;
+        toPathwayId: string;
+        subscribedCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PATHWAY_REMOVED]: {
+        pathwayId: string;
+        remainingCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_COMPOSITE_OPENED]: {
+        parentPathwayId: string;
+        parentNodeId: string;
+        nestedPathwayId: string;
+        renderStyle: 'inline-expandable' | 'link-out';
+    };
+
+    [AnalyticsEvents.PATHWAYS_CTDL_IMPORTED]: {
+        ctid: string;
+        nodeCount: number;
+        warningCount: number;
+        hasDestination: boolean;
+        /**
+         * Where the import originated — the curated catalog card the
+         * learner clicked, a direct CTID / URL they pasted, or the
+         * cold-start `DiscoverStart` showcase picker on
+         * `/pathways/onboard`. Lets us measure whether the browse UX
+         * is actually getting used vs. power users bypassing it, and
+         * how often new learners pick a showcase to demo with versus
+         * describing their own goal.
+         */
+        importSource: 'catalog' | 'direct' | 'onboard';
+    };
+
+    [AnalyticsEvents.PATHWAYS_CATALOG_BROWSED]: {
+        /** Total entries visible at landing (after featured filter). */
+        entryCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_CATALOG_SEARCHED]: {
+        /** Length of the query string (not the string itself — no PII). */
+        queryLength: number;
+        /** Active tag-filter chips at search time. */
+        tagCount: number;
+        /** How many entries survived the filter + query. */
+        resultCount: number;
+    };
+
+    // -- Pathways — action dispatch (docs § 3.7) ----------------------------
+
+    [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
+        nodeId: string;
+        /** Resolved `ActionDescriptor.kind` at click time. */
+        kind:
+            | 'in-app-route'
+            | 'app-listing'
+            | 'ai-session'
+            | 'external-url'
+            | 'mcp-tool'
+            | 'none';
+        /** How the resolver arrived at that kind. */
+        source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
+        /**
+         * Coarse destination label — a URL, route path, listing id,
+         * or literal like `'in-app:node-detail'`. Never carries learner
+         * PII (query strings are safe because our in-app hrefs don't
+         * embed identifiers, but callers should avoid building hrefs
+         * that do).
+         */
+        destination: string;
+    };
+
+    // -- Pathways — outcome signal lifecycle (docs § 3.8) -------------------
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_AUTOBIND_PROPOSED]: {
+        pathwayId: string;
+        outcomeId: string;
+        signalKind: string;
+        issuerTrustTier: 'self' | 'peer' | 'trusted' | 'institution';
+        /** The VC's numeric value when the signal is `score-threshold`. */
+        observedValue?: number | string;
+        outOfWindow: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_BOUND]: {
+        pathwayId: string;
+        outcomeId: string;
+        signalKind: string;
+        boundVia: 'auto' | 'manual';
+        outOfWindow: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_BINDING_CLEARED]: {
+        pathwayId: string;
+        outcomeId: string;
+        /** Why we cleared — learner disputed, issuer revoked, etc. */
+        reason?: string;
+    };
+
     [AnalyticsEvents.OPENID_EXCHANGE_ERROR_REPORTED]: {
         /** Which OID4VC surface the error came from. */
         surface: 'vci' | 'vp';
@@ -225,6 +475,8 @@ export interface AnalyticsEventPayloads {
         /** Wallet build version (from package.json). */
         walletVersion?: string;
     };
+
+    // -- LC-1644 perf bench --------------------------------------------------
 
     [AnalyticsEvents.BENCH_APPEVENT_RUN_TRIGGERED]: {
         run_id: string;
