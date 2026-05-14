@@ -41,8 +41,7 @@
 		},
 		"CapacitorUpdater": {
 			"appId": "com.vetpass.app",
-			"autoUpdate": true,
-			"defaultChannel": "1.0.6"
+			"autoUpdate": true
 		}
 	},
 	"packageClassList": [

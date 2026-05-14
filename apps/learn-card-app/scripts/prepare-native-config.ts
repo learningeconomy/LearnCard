@@ -482,8 +482,33 @@ console.log(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
 
 const nativeConfig = validatedConfig.native;
 
+// SSOT for the Capgo channel is `defaultChannel` in capacitor.config.ts.
+// This regex MUST stay in sync with `tools/capgo/getCapgoChannel.js` (used by CI
+// to pick the OTA upload channel). Tenant asset capacitor.config.json files must
+// NOT specify defaultChannel — they are wholesale-copied over the cap-synced
+// platform JSONs in step 5b, so a tenant override silently drops binaries off
+// the CI upload channel (see PR #1063 incident).
+const readDefaultCapgoChannel = (): string | undefined => {
+    const tsPath = resolve(APP_ROOT, 'capacitor.config.ts');
+
+    if (!existsSync(tsPath)) return undefined;
+
+    const content = readFileSync(tsPath, 'utf-8');
+    const match = content.match(/defaultChannel:\s*['"]([^'"]+)['"]/);
+
+    return match?.[1];
+};
+
+const defaultCapgoChannel = readDefaultCapgoChannel();
+
 if (nativeConfig) {
     console.log('\n⚙️  Patching Capacitor config with tenant native settings...');
+
+    if (defaultCapgoChannel) {
+        console.log(`   Capgo defaultChannel (from capacitor.config.ts): ${defaultCapgoChannel}`);
+    } else {
+        console.warn('   ⚠️  Could not read defaultChannel from capacitor.config.ts — Capgo OTA channel will not be patched');
+    }
 
     const patchCapacitorConfigJson = (jsonPath: string): void => {
         if (!existsSync(jsonPath)) return;
@@ -496,6 +521,10 @@ if (nativeConfig) {
 
             if (raw.plugins?.CapacitorUpdater) {
                 raw.plugins.CapacitorUpdater.appId = nativeConfig.bundleId;
+
+                if (defaultCapgoChannel) {
+                    raw.plugins.CapacitorUpdater.defaultChannel = defaultCapgoChannel;
+                }
             }
 
             writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
