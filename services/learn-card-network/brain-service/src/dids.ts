@@ -1,11 +1,14 @@
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
-import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getAppDidWeb, getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import {
+    extractEd25519FromVerificationMethod,
+    normalizeDidDocumentForInterop,
+} from '@helpers/did-doc-normalize.helpers';
 import { isValidAppSlug } from '@helpers/slug.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
@@ -21,7 +24,7 @@ import {
     setDidDocForProfileManager,
     setDidDocForApp,
 } from '@cache/did-docs';
-import { DidDocument, JWK } from '@learncard/types';
+import { DidDocument } from '@learncard/types';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
 import { getDidMetadataForProfile } from '@accesslayer/did-metadata/relationships/read';
@@ -36,42 +39,10 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
-// Validate manager ID to prevent injection attacks
 const isValidManagerId = (id: string): boolean => {
-    // Manager IDs should be valid UUIDs
     const uuidPattern =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return typeof id === 'string' && uuidPattern.test(id);
-};
-
-// Extract Ed25519 public key bytes and a JWK from a verification method that may
-// have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
-const extractEd25519FromVerificationMethod = (vm: any): { bytes: Uint8Array; jwk: JWK } => {
-    // Prefer JWK if provided
-    const jwk = vm?.publicKeyJwk as JWK | undefined;
-    if (jwk?.x) {
-        const bytes = base64url.decode(`u${jwk.x}`);
-        return { bytes, jwk } as { bytes: Uint8Array; jwk: JWK };
-    }
-
-    // Handle Multikey / 2020 suite
-    const mb = vm?.publicKeyMultibase as string | undefined;
-    if (mb) {
-        const decoded = base58btc.decode(mb);
-        const bytes = decoded[0] === 0xed && decoded[1] === 0x01 ? decoded.slice(2) : decoded;
-        const x = base64url.encode(bytes).slice(1);
-        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
-    }
-
-    // Fallback: legacy base58 without multibase prefix
-    const b58 = vm?.publicKeyBase58 as string | undefined;
-    if (b58) {
-        const bytes = base58btc.baseDecode(b58);
-        const x = base64url.encode(bytes).slice(1);
-        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
-    }
-
-    throw new Error('Unsupported verification method format: missing public key');
 };
 
 export const app = Fastify();
@@ -256,6 +227,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             });
         });
 
+        normalizeDidDocumentForInterop(finalDoc);
+
         setDidDocForProfile(profileId, finalDoc);
 
         return reply.send(finalDoc);
@@ -401,6 +374,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ];
             });
         }
+
+        normalizeDidDocumentForInterop(finalDoc);
 
         await setDidDocForApp(slug, finalDoc);
 
@@ -556,6 +531,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ),
             ],
         } as any;
+
+        normalizeDidDocumentForInterop(finalDoc);
 
         setDidDocForProfile('::root::', finalDoc);
 
