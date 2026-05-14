@@ -3,10 +3,8 @@ import React from 'react';
 import TrashBin from '../../svgs/TrashBin';
 import ShareBoostLink from './ShareBoostLink';
 import JsonPreviewModal from './JsonPreviewModal';
-import EyeIcon from 'learn-card-base/svgs/EyeIcon';
 import BracketsIcon from '../../svgs/BracketsIcon';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
-import RenderMethodPreviewModal from './RenderMethodPreviewModal';
 
 import { ModalTypes, useModal, useConfirmation, useGetRecordForUri } from 'learn-card-base';
 
@@ -87,14 +85,6 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
         );
     };
 
-    const presentRenderMethodPreviewModal = () => {
-        newModal(
-            <RenderMethodPreviewModal boost={boost} />,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    };
-
     const boostMenuOptions: {
         id?: number;
         title?: string;
@@ -125,13 +115,6 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
         title: 'View Data',
         icon: <BracketsIcon className="text-grayscale-900" />,
         onClick: () => presentViewJsonModal(),
-    });
-
-    boostMenuOptions.push({
-        id: 4,
-        title: 'Preview Template',
-        icon: <EyeIcon className="text-grayscale-900" />,
-        onClick: () => presentRenderMethodPreviewModal(),
     });
 
     return (
