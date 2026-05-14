@@ -4,6 +4,14 @@
     "description": "LearnCard plugin for attaching W3C renderMethod to Verifiable Credentials",
     "main": "./dist/index.js",
     "module": "./dist/render-method-plugin.esm.js",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./src/index.ts",
+            "require": "./dist/index.js",
+            "default": "./src/index.ts"
+        }
+    },
     "files": [
         "dist"
     ],
