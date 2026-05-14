@@ -373,6 +373,9 @@ importers:
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
+      '@xyflow/react':
+        specifier: ^12.10.2
+        version: 12.10.2(@types/react@18.3.27)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       async:
         specifier: ^3.2.6
         version: 3.2.6
@@ -1063,6 +1066,25 @@ importers:
       tailwindcss:
         specifier: ^3.4.18
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
+
+  examples/app-store-apps/5-northstar-learning:
+    dependencies:
+      '@astrojs/netlify':
+        specifier: ^6.6.5
+        version: 6.6.5(@types/node@22.19.1)(astro@5.18.1(@netlify/blobs@10.7.4)(@types/node@22.19.1)(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(typescript@5.6.2)(yaml@2.8.1))(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1)
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../../../packages/learn-card-init
+      '@learncard/partner-connect':
+        specifier: workspace:*
+        version: link:../../../packages/learn-card-partner-connect-sdk
+      astro:
+        specifier: ^5.0.0
+        version: 5.18.1(@netlify/blobs@10.7.4)(@types/node@22.19.1)(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(typescript@5.6.2)(yaml@2.8.1)
+    devDependencies:
+      prettier-plugin-astro:
+        specifier: ^0.5.4
+        version: 0.5.5
 
   examples/chapi-example:
     dependencies:
@@ -12437,6 +12459,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.10':
     resolution: {integrity: sha512-mHH7I6fWdztaNjguGJOLaerXWnQymQ/xKQ8NqClIXoI2PJNgmpQG6DxFcLRs1aYyWg1iY8bPliLJi41u94KdCA==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -14589,6 +14612,15 @@ packages:
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
 
+  '@xyflow/react@12.10.2':
+    resolution: {integrity: sha512-CgIi6HwlcHXwlkTpr0fxLv/0sRVNZ8IdwKLzzeCscaYBwpvfcH1QFOCeaTCuEn1FQEs/B8CjnTSjhs8udgmBgQ==}
+    peerDependencies:
+      react: '>=17'
+      react-dom: '>=17'
+
+  '@xyflow/system@0.0.76':
+    resolution: {integrity: sha512-hvwvnRS1B3REwVDlWexsq7YQaPZeG3/mKo1jv38UmnpWmxihp14bW6VtEOuHEwJX2FvzFw8k77LyKSk/wiZVNA==}
+
   '@yarnpkg/esbuild-plugin-pnp@3.0.0-rc.15':
     resolution: {integrity: sha512-kYzDJO5CA9sy+on/s2aIW0411AklfCi8Ck/4QDivOqsMKpStZA2SsR+X27VTggGwpStWaLrjJcDcdDMowtG8MA==}
     engines: {node: '>=14.15.0'}
@@ -16176,6 +16208,9 @@ packages:
 
   class-variance-authority@0.7.0:
     resolution: {integrity: sha512-jFI8IQw4hczaL4ALINxqLEXQbWcNjoSkloa4IaufXCJr6QawJyw7tuRysRsrE8w2p/4gGaxKIt/hX3qz/IbD1A==}
+
+  classcat@5.0.5:
+    resolution: {integrity: sha512-JhZUT7JFcQy/EzW605k/ktHtncoo9vnyW/2GspNYwFlN1C/WmjuV/xtS04e9SOkL2sTdw0VAZ2UGCcQ9lR6p6w==}
 
   classnames@2.5.1:
     resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
@@ -30032,6 +30067,21 @@ packages:
     peerDependencies:
       react: '>=16.8'
     peerDependenciesMeta:
+      react:
+        optional: true
+
+  zustand@4.5.7:
+    resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
+    engines: {node: '>=12.7.0'}
+    peerDependencies:
+      '@types/react': '>=16.8'
+      immer: '>=9.0.6'
+      react: '>=16.8'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
       react:
         optional: true
 
@@ -45866,6 +45916,29 @@ snapshots:
 
   '@xtuc/long@4.2.2': {}
 
+  '@xyflow/react@12.10.2(@types/react@18.3.27)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@xyflow/system': 0.0.76
+      classcat: 5.0.5
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      zustand: 4.5.7(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
+  '@xyflow/system@0.0.76':
+    dependencies:
+      '@types/d3-drag': 3.0.7
+      '@types/d3-interpolate': 3.0.4
+      '@types/d3-selection': 3.0.11
+      '@types/d3-transition': 3.0.9
+      '@types/d3-zoom': 3.0.8
+      d3-drag: 3.0.0
+      d3-interpolate: 3.0.1
+      d3-selection: 3.0.0
+      d3-zoom: 3.0.0
+
   '@yarnpkg/esbuild-plugin-pnp@3.0.0-rc.15(esbuild@0.18.20)':
     dependencies:
       esbuild: 0.18.20
@@ -48230,6 +48303,8 @@ snapshots:
   class-variance-authority@0.7.0:
     dependencies:
       clsx: 2.0.0
+
+  classcat@5.0.5: {}
 
   classnames@2.5.1: {}
 
@@ -67382,6 +67457,14 @@ snapshots:
 
   zustand@3.7.2(react@18.3.1):
     optionalDependencies:
+      react: 18.3.1
+
+  zustand@4.5.7(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1):
+    dependencies:
+      use-sync-external-store: 1.6.0(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 18.3.27
+      immer: 10.2.0
       react: 18.3.1
 
   zwitch@1.0.5: {}
