@@ -4,6 +4,7 @@ import X from '../../../svgs/X';
 import { IonFooter } from '@ionic/react';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
+import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
@@ -29,6 +30,7 @@ import {
     DisplayTypeEnum,
 } from 'learn-card-base';
 import { VC, VerificationItem } from '@learncard/types';
+import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
 
 type BoostDetailsSideBarProps = {
@@ -42,6 +44,7 @@ type BoostDetailsSideBarProps = {
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
+    renderMethodCredential?: VC | UnsignedVC;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -54,6 +57,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     hideEndorsementRequestCard = false,
     isEarnedBoost,
     isClrChildCredential = false,
+    renderMethodCredential,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -136,6 +140,10 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    {!isMediaDisplay && renderMethodCredential && (
+                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
+                    )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
