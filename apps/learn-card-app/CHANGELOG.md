@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.95.12
+
+### Patch Changes
+
+-   [`212dbfc7d19888eb23b327472b6e93b15b396835`](https://github.com/learningeconomy/LearnCard/commit/212dbfc7d19888eb23b327472b6e93b15b396835) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix boost publish screen whitescreening
+
+-   [#1225](https://github.com/learningeconomy/LearnCard/pull/1225) [`773bbd425d2e87796d5d713450397723e3c21c71`](https://github.com/learningeconomy/LearnCard/commit/773bbd425d2e87796d5d713450397723e3c21c71) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1644] Optimize sendCredential performance: backend + frontend + telemetry
+
+-   [#1217](https://github.com/learningeconomy/LearnCard/pull/1217) [`5d402748c33bbe4f23aa38f45953d03274f38b65`](https://github.com/learningeconomy/LearnCard/commit/5d402748c33bbe4f23aa38f45953d03274f38b65) Thanks [@smurflo2](https://github.com/smurflo2)! - Automatically refresh AI Insights credential when adding or deleting credential
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/helpers@1.3.0
+    -   @learncard/lca-api-plugin@1.2.9
+    -   @learncard/react@2.9.26
+    -   @learncard/ler-rs-plugin@0.1.9
+    -   @learncard/open-badge-v2-plugin@1.1.19
+    -   @learncard/sss-key-manager@0.1.8
+
 ## 1.95.11
 
 ### Patch Changes
