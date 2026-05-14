@@ -81,7 +81,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
                 <UserProfilePicture
                     customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
                     customImageClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[48px] min-h-[48px]"
-                    customSize={120}
+                    customSize={96}
                     user={currentLCNUser ?? currentUser}
                 />
             </button>
