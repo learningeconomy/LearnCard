@@ -43,8 +43,16 @@ import * as Sentry from '@sentry/browser';
         },
     };
 
-    // initialize & hide splash screen
-    SplashScreen.hide();
+    // Splash screen is now hidden by AppRouter once auth state is settled
+    // (capacitor.config.ts has launchAutoHide=false). This bridges the native
+    // splash → final screen with no JS-side loader flashes for authenticated
+    // users on cold start. A 10s fallback below ensures the splash is never
+    // stuck if React fails to mount or auth init hangs unrecoverably.
+    if (Capacitor.isNativePlatform()) {
+        setTimeout(() => {
+            SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
+        }, 10_000);
+    }
 
     const LDProvider = await asyncWithLDProvider({ ...LAUNCH_DARKLY_CONFIG, ...ldOptions });
 
