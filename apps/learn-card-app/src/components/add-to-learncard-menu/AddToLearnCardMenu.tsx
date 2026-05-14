@@ -8,6 +8,7 @@ import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
+import PasteOrUploadClaimModal from '../paste-or-upload-claim/PasteOrUploadClaimModal';
 import CheckListContainer from '../learncard/checklist/CheckListContainer';
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
 import BoostTemplateSelector from '../boost/boost-template/BoostTemplateSelector';
@@ -36,6 +37,7 @@ export enum AddToLearnCardMenuEnum {
     createCredential = 'createCredential',
     uploadCredential = 'uploadCredential',
     claimCredential = 'claimCredential',
+    useClaimLink = 'useClaimLink',
 }
 
 export type AddToLearnCardMenuItem = {
@@ -117,6 +119,16 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         QRCodeScannerStore.set.showScanner(true);
     };
 
+    const handleUseClaimLinkButton = () => {
+        closeModal();
+
+        newModal(
+            <PasteOrUploadClaimModal />,
+            { hideButton: true, sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
+
     const addToLearnCardMenuItems: AddToLearnCardMenuItem[] = [];
 
     addToLearnCardMenuItems.push({
@@ -180,10 +192,17 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.claimCredential,
             Icon: ScanIcon,
-            label: 'Claim Credential',
+            label: 'Scan a QR Code',
             onClick: () => handleClaimCredentialButton(),
         });
     }
+
+    addToLearnCardMenuItems.push({
+        type: AddToLearnCardMenuEnum.useClaimLink,
+        Icon: UploadIcon,
+        label: 'Use a Claim Link',
+        onClick: () => handleUseClaimLinkButton(),
+    });
 
     return (
         <div className={`w-full flex flex-col justify-center p-4 ${className}`}>
