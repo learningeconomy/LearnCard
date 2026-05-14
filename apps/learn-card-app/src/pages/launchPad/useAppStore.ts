@@ -33,7 +33,7 @@ export const APP_STORE_CATEGORIES: AppStoreCategory[] = [
 
 // Map LaunchPad tab categories to app store categories
 export const mapTabToCategory = (tab: string): string | undefined => {
-    if (tab === 'All') return undefined;
+    if (tab === 'My Apps' || tab === 'All') return undefined;
 
     const mapping: Record<string, string> = {
         'AI': 'ai',
@@ -189,6 +189,8 @@ export const useAppStore = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['appStore', 'installCount', listingId],
                 });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'featuredCarousel'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'curatedList'] });
             },
         });
     };
@@ -208,6 +210,8 @@ export const useAppStore = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['appStore', 'installCount', listingId],
                 });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'featuredCarousel'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'curatedList'] });
             },
         });
     };

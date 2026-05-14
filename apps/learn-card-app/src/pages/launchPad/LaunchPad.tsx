@@ -60,7 +60,7 @@ const LaunchPad: React.FC = () => {
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
     const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
 
-    const [tab, setTab] = useState(LaunchPadTabEnum.all);
+    const [tab, setTab] = useState(LaunchPadTabEnum.myApps);
     const [filterBy, setFilterBy] = useState<LaunchPadFilterOptionsEnum>(
         LaunchPadFilterOptionsEnum.allApps
     );
@@ -73,6 +73,11 @@ const LaunchPad: React.FC = () => {
     // App Store hooks
     const { useBrowseAppStore, useFeaturedCarouselApps, useCuratedListApps, useInstalledApps } =
         useAppStore();
+
+    // Tab-mode flags for section gating
+    const isMyApps = tab === LaunchPadTabEnum.myApps;
+    const isAll = tab === LaunchPadTabEnum.all;
+    const isCategory = !isMyApps && !isAll;
 
     // Get category filter based on current tab
     const appStoreCategory = useMemo(() => mapTabToCategory(tab), [tab]);
@@ -99,15 +104,25 @@ const LaunchPad: React.FC = () => {
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
 
-    // Filter browse apps that aren't already installed
+    // Filter browse apps that aren't already installed (only on My Apps tab)
     const installedListingIds = new Set(installedApps.map(app => app.listing_id));
 
-    const availableApps = browseApps.filter(app => !installedListingIds.has(app.listing_id));
+    const availableApps = useMemo(
+        () =>
+            isMyApps
+                ? browseApps.filter(app => !installedListingIds.has(app.listing_id))
+                : browseApps,
+        [browseApps, installedListingIds, isMyApps]
+    );
 
-    // Curated apps that aren't installed (for "Featured Apps" section)
+    // Curated apps: filter installed out only on My Apps tab (Suggested shows non-installed)
+    // On category/All tabs, installed apps stay in Suggested with "Open" CTA
     const curatedAppsNotInstalled = useMemo(
-        () => (curatedListApps ?? []).filter(app => !installedListingIds.has(app.listing_id)),
-        [curatedListApps, installedListingIds]
+        () =>
+            isMyApps
+                ? (curatedListApps ?? []).filter(app => !installedListingIds.has(app.listing_id))
+                : (curatedListApps ?? []),
+        [curatedListApps, installedListingIds, isMyApps]
     );
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
@@ -444,15 +459,17 @@ const LaunchPad: React.FC = () => {
                         <LaunchPadHeader>
                             <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
                                 <LaunchPadAppTabs tab={tab} setTab={setTab} />
-                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
-                                {featuredCarouselApps && featuredCarouselApps.length > 0 && (
-                                    <FeaturedCarousel
-                                        apps={featuredCarouselApps}
-                                        installedAppIds={installedListingIds}
-                                        onInstallSuccess={refetchInstalledApps}
-                                        hideScrollDots={true}
-                                    />
-                                )}
+                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level (My Apps + All only) */}
+                                {(isMyApps || isAll) &&
+                                    featuredCarouselApps &&
+                                    featuredCarouselApps.length > 0 && (
+                                        <FeaturedCarousel
+                                            apps={featuredCarouselApps}
+                                            installedAppIds={installedListingIds}
+                                            onInstallSuccess={refetchInstalledApps}
+                                            hideScrollDots={true}
+                                        />
+                                    )}
                                 <LaunchPadSearch
                                     searchInput={searchInput}
                                     setSearchInput={setSearchInput}
@@ -500,12 +517,12 @@ const LaunchPad: React.FC = () => {
                                             />
                                         )}
 
-                                        {/* Installed App Store Apps (shown first) */}
-                                        {filteredInstalledApps.length > 0 && (
+                                        {/* Installed App Store Apps (shown first, My Apps only) */}
+                                        {isMyApps && filteredInstalledApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Your Apps
+                                                        Installed Apps
                                                     </p>
                                                 </div>
                                                 {filteredInstalledApps.map(app => (
@@ -563,7 +580,9 @@ const LaunchPad: React.FC = () => {
                                                     <AppStoreListItem
                                                         key={`available-${app.listing_id}`}
                                                         listing={app}
-                                                        isInstalled={false}
+                                                        isInstalled={installedListingIds.has(
+                                                            app.listing_id
+                                                        )}
                                                         onInstallSuccess={refetchInstalledApps}
                                                     />
                                                 ))}
@@ -592,12 +611,12 @@ const LaunchPad: React.FC = () => {
                                     lines="none"
                                     className="w-full max-w-[600px] bg-grayscale-100"
                                 >
-                                    {/* Installed App Store Apps (shown at top) */}
-                                    {filteredInstalledApps.length > 0 && (
+                                    {/* My Apps tab: Installed Apps (hidden if none) */}
+                                    {isMyApps && filteredInstalledApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Your Installed Apps
+                                                    Installed Apps
                                                 </p>
                                             </div>
                                             {filteredInstalledApps.map(app => (
@@ -611,60 +630,43 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Featured Apps (Curated List apps) */}
+                                    {/* Suggested Apps (CURATED_LIST) — all tabs */}
                                     {filteredCuratedApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Featured Apps
+                                                    Suggested Apps
                                                 </p>
                                             </div>
                                             {filteredCuratedApps.map(app => (
                                                 <AppStoreListItem
                                                     key={`curated-${app.listing_id}`}
                                                     listing={app}
-                                                    isInstalled={false}
+                                                    isInstalled={installedListingIds.has(
+                                                        app.listing_id
+                                                    )}
                                                     onInstallSuccess={refetchInstalledApps}
                                                 />
                                             ))}
                                         </>
                                     )}
 
-                                    {/* Plugins section - show all available plugins when on Plugins tab */}
-                                    {tab === LaunchPadTabEnum.plugins &&
+                                    {/* Category/All tabs: browse list (include installed apps with Open CTA) */}
+                                    {(isCategory || isAll) &&
                                         nonPromotedAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Plugins
-                                                    </p>
-                                                </div>
-                                                {nonPromotedAvailableApps.map(app => (
-                                                    <AppStoreListItem
-                                                        key={`plugin-${app.listing_id}`}
-                                                        listing={app}
-                                                        isInstalled={false}
-                                                        onInstallSuccess={refetchInstalledApps}
-                                                    />
-                                                ))}
-                                            </>
-                                        )}
-
-                                    {/* Discover More (Standard apps - only show when searching, not on Plugins tab) */}
-                                    {searchInput.length > 0 &&
-                                        tab !== LaunchPadTabEnum.plugins &&
-                                        nonPromotedAvailableApps.length > 0 && (
-                                            <>
-                                                <div className="px-2 pt-4 pb-2">
-                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Search Results
+                                                        {isAll ? 'All Apps' : `All ${tab}`}
                                                     </p>
                                                 </div>
                                                 {nonPromotedAvailableApps.map(app => (
                                                     <AppStoreListItem
                                                         key={`available-${app.listing_id}`}
                                                         listing={app}
-                                                        isInstalled={false}
+                                                        isInstalled={installedListingIds.has(
+                                                            app.listing_id
+                                                        )}
                                                         onInstallSuccess={refetchInstalledApps}
                                                     />
                                                 ))}
