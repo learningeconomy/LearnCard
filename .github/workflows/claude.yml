@@ -29,23 +29,75 @@ jobs:
       pull-requests: write
       issues: write
       id-token: write
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
+      # Body is read via env vars (NOT interpolated into the shell script) so
+      # untrusted comment content cannot inject shell commands. Do not change.
+      - name: Determine Claude model
+        id: model
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          BODY="${COMMENT_BODY}${REVIEW_BODY}${ISSUE_BODY}"
+          if [[ "$BODY" == *"@claude deep-review"* ]]; then
+              echo "model_flag=--model claude-opus-4-1" >> "$GITHUB_OUTPUT"
+              echo "mode=deep-review" >> "$GITHUB_OUTPUT"
+              echo "Mode: deep-review (Claude Opus 4.1)"
+          else
+              echo "model_flag=" >> "$GITHUB_OUTPUT"
+              echo "mode=standard" >> "$GITHUB_OUTPUT"
+              echo "Mode: standard (action default)"
+          fi
+
       - name: Run Claude PR Action
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           timeout_minutes: "60"
-          allowed_tools: "Bash,GitHub,View,GlobTool,GrepTool,BatchTool"
+          additional_permissions: |
+            actions: read
+            checks: read
+            workflows: read
+          claude_args: |
+            ${{ steps.model.outputs.model_flag }}
+            --allowedTools "Bash"
           custom_instructions: |
             ## PR Review & Auto-Approval
 
-            When asked to review a PR (e.g. "@claude review", "@claude review this"),
+            When asked to review a PR (e.g. "@claude review", "@claude review this", "@claude deep-review"),
             perform a thorough code review AND evaluate whether the PR qualifies for Auto-Approval.
+
+            ### Review Mode
+
+            You may be invoked in one of two modes, determined by the trigger phrase:
+
+            - `@claude review` — standard mode (Claude Sonnet). Apply lane logic and
+              hard-stop rules, comment on issues, auto-approve when criteria match.
+
+            - `@claude deep-review` — extended mode (Claude Opus 4.1). Same decision
+              framework as standard review, but invest more analysis effort:
+              • Read source files referenced by the diff, not just the diff itself,
+                to reason about cross-file implications.
+              • Look for subtle issues: race conditions, off-by-one, type unsoundness,
+                boundary edge cases (empty inputs, null/undefined, unicode, very
+                large inputs), error-handling cascades, async timing.
+              • Trace how changes interact with auth flows, state propagation, and
+                the public API surface of modified packages.
+              • Flag anything that "looks fine but might be wrong" with explicit
+                reasoning, even if you ultimately approve.
+
+              Begin your review with the line "**Deep Review Mode** — extended
+              analysis enabled" so readers know which depth was used. All
+              auto-approval rules, hard-stop rules, and lane limits apply
+              normally — the deeper analysis informs the decision, it does not
+              bypass any safeguard.
 
             ### Monorepo Context
 

@@ -11,6 +11,7 @@ import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
 import { CredentialActivity } from './CredentialActivity';
+import { StatusList } from './StatusList';
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
@@ -26,6 +27,11 @@ Credential.addRelationships({
             metadata: { property: 'metadata', schema: { type: 'object', required: false } },
             status: { property: 'status', schema: { type: 'string', required: false } },
             revokedAt: { property: 'revokedAt', schema: { type: 'string', required: false } },
+            suspendedAt: { property: 'suspendedAt', schema: { type: 'string', required: false } },
+            unsuspendedAt: {
+                property: 'unsuspendedAt',
+                schema: { type: 'string', required: false },
+            },
         },
     },
     instanceOf: {
@@ -90,6 +96,14 @@ Profile.addRelationships({
     },
 });
 
+Profile.addRelationships({
+    ownsStatusList: {
+        model: StatusList,
+        direction: 'out',
+        name: 'OWNS_STATUS_LIST',
+    },
+});
+
 const shouldCreateIndices =
     process.env.NODE_ENV === 'production' ||
     (process.env.NEO4J_SKIP_INDICES !== 'true' && process.env.NEO4J_SKIP_INDICES !== '1');
@@ -146,6 +160,9 @@ const indexQueries = [
     'CREATE INDEX credential_activity_actor_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.actorProfileId)',
     'CREATE INDEX credential_activity_eventtype_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.eventType)',
     'CREATE INDEX credential_activity_integration_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.integrationId)',
+    'CREATE INDEX bitstring_status_list_id_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.id)',
+    'CREATE INDEX bitstring_status_list_owner_purpose_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.ownerProfileId, s.statusPurpose)',
+    'CREATE INDEX bitstring_status_list_url_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.statusListCredential)',
     'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE',
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
 ];
@@ -211,3 +228,4 @@ export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
+export * from './StatusList';

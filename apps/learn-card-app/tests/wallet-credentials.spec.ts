@@ -128,7 +128,10 @@ test.describe('Wallet Credentials', () => {
             .click({ timeout: 30_000 });
 
         // Accept the credential
-        await page2.getByRole('button', { name: 'Details' }).click({ timeout: 30_000 });
+        // exact: true — avoids substring collision with sidemenu's "View version details" button
+        await page2
+            .getByRole('button', { name: 'Details', exact: true })
+            .click({ timeout: 30_000 });
         await page2.getByRole('button', { name: 'Accept' }).click({ timeout: 30_000 });
 
         // Assert credential was accepted

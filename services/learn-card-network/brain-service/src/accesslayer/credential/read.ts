@@ -64,11 +64,10 @@ export const getReceivedCredentialsForProfile = async (
           )
         : matchQuery;
 
-    // Filter out revoked credentials
+    // Filter out revoked credentials. New issuer-controlled statuses live on CREDENTIAL_SENT;
+    // received.status remains as a legacy fallback for older records.
     const query = fromQuery.raw(
-        `${
-            hasFromFilter ? 'AND' : 'WHERE'
-        } (received.status IS NULL OR received.status <> "revoked")`
+        `${hasFromFilter ? 'AND' : 'WHERE'} coalesce(sent.status, received.status, "") <> "revoked"`
     );
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -169,7 +168,12 @@ export const getIncomingCredentialsForProfile = async (
         `MATCH (source)-[relationship:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential)
          WHERE (source:Profile OR source:AppStoreListing)
            AND NOT (credential)-[:CREDENTIAL_RECEIVED]->()
-           ${from && from.length > 0 ? 'AND ((source:Profile AND source.profileId IN $from) OR (source:AppStoreListing AND source.listing_id IN $from))' : ''}
+           AND coalesce(relationship.status, "") <> "revoked"
+           ${
+               from && from.length > 0
+                   ? 'AND ((source:Profile AND source.profileId IN $from) OR (source:AppStoreListing AND source.listing_id IN $from))'
+                   : ''
+           }
          RETURN source, relationship, credential
          ORDER BY relationship.date DESC
          LIMIT ${safeLimit}`,
@@ -206,7 +210,7 @@ export interface CredentialStatusForBoostAndProfile {
     credential: CredentialInstance;
     sentDate?: string;
     receivedDate?: string;
-    status: 'pending' | 'claimed' | 'revoked';
+    status: 'pending' | 'claimed' | 'revoked' | 'suspended';
 }
 
 export const getCredentialStatusForBoostAndProfile = async (
@@ -239,15 +243,22 @@ export const getCredentialStatusForBoostAndProfile = async (
     }
 
     const sentProps = inflateRelationshipProperties(
-        ((record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {})
+        (record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {}
     );
     const receivedNode = record.get('received') as { properties?: Record<string, unknown> } | null;
     const receivedProps = receivedNode?.properties
         ? inflateRelationshipProperties(receivedNode.properties)
         : undefined;
 
-    const rawStatus = receivedProps?.status;
-    const status = rawStatus === 'revoked' ? 'revoked' : receivedProps ? 'claimed' : 'pending';
+    const rawStatus = sentProps.status ?? receivedProps?.status;
+    const status =
+        rawStatus === 'revoked'
+            ? 'revoked'
+            : rawStatus === 'suspended'
+            ? 'suspended'
+            : receivedProps
+            ? 'claimed'
+            : 'pending';
 
     return {
         credential,
@@ -283,30 +294,25 @@ export const getRevokedCredentialUrisForProfile = async (
     domain: string,
     profile: ProfileType
 ): Promise<string[]> => {
-    const results = convertQueryResultToPropertiesObjectArray<{
-        credential: CredentialType;
-    }>(
-        await new QueryBuilder()
-            .match({
-                related: [
-                    { identifier: 'credential', model: Credential },
-                    {
-                        ...Credential.getRelationshipByAlias('credentialReceived'),
-                        identifier: 'received',
-                    },
-                    {
-                        identifier: 'profile',
-                        model: Profile,
-                        where: { profileId: profile.profileId },
-                    },
-                ],
-            })
-            .where('received.status = "revoked"')
-            .return('credential')
-            .run()
+    const result = await neogma.queryRunner.run(
+        `MATCH (source)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential)
+         WHERE (source:Profile OR source:AppStoreListing) AND sent.status = "revoked"
+         RETURN DISTINCT credential
+         UNION
+         MATCH (credential:Credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
+         WHERE received.status = "revoked"
+         RETURN DISTINCT credential`,
+        { profileId: profile.profileId }
     );
 
-    return results.map(({ credential }) => getCredentialUri(credential.id, domain));
+    return result.records.map(record => {
+        const credential = inflateObject<CredentialType>(
+            ((record.get('credential') as { properties?: Record<string, unknown> })?.properties ??
+                {}) as CredentialType
+        );
+
+        return getCredentialUri(credential.id, domain);
+    });
 };
 
 /**
@@ -368,7 +374,7 @@ export const getCredentialsByIssuer = async (
         // Filter out revoked credentials unless includeRevoked is true
         if (!includeRevoked) {
             paginatedQuery = paginatedQuery.where(
-                `(received.status IS NULL OR received.status <> "revoked")`
+                `coalesce(sent.status, received.status, "") <> "revoked"`
             );
         }
 
@@ -398,7 +404,7 @@ export const getCredentialsByIssuer = async (
                 uri: getCredentialUri(credential.id, domain),
                 to: sentProps.to as string,
                 date: sentProps.date as string,
-                status: receivedProps?.status as string | undefined,
+                status: (sentProps.status ?? receivedProps?.status) as string | undefined,
             };
         });
 
@@ -449,7 +455,7 @@ export const getCredentialsByIssuer = async (
         // Filter out revoked credentials unless includeRevoked is true
         if (!includeRevoked) {
             paginatedQuery = paginatedQuery.where(
-                `(received.status IS NULL OR received.status <> "revoked")`
+                `coalesce(sent.status, received.status, "") <> "revoked"`
             );
         }
 
@@ -479,7 +485,7 @@ export const getCredentialsByIssuer = async (
                 uri: getCredentialUri(credential.id, domain),
                 to: sentProps.to as string,
                 date: sentProps.date as string,
-                status: receivedProps?.status as string | undefined,
+                status: (sentProps.status ?? receivedProps?.status) as string | undefined,
             };
         });
 

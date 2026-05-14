@@ -46,6 +46,7 @@ import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus, getBoostOwnerProfile } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
+import { appendBitstringStatusListEntries } from './status-list.helpers';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -293,7 +294,8 @@ export const verifyCredentialIsDerivedFromBoost = async (
 export const issueCertifiedBoost = async (
     boost: BoostInstance,
     credential: VC,
-    domain: string
+    domain: string,
+    ownerProfileId: string
 ): Promise<VC | JWE | false> => {
     return trace('certification', 'issueCertifiedBoost', async () => {
         const learnCard = await trace('init', 'getLearnCard', () =>
@@ -332,10 +334,16 @@ export const issueCertifiedBoost = async (
                     () => constructCertifiedBoostCredential(boost, credential, domain, lcnDID)
                 );
 
+                await traceInternal('appendBitstringStatusListEntries:certifiedBoost', () =>
+                    appendBitstringStatusListEntries(unsignedCertifiedBoost, ownerProfileId, domain)
+                );
+
                 // TODO: Encrypt Boost Credential
-                return traceCrypto('issueCredential', () =>
+                const certifiedBoost = await traceCrypto('issueCredential', () =>
                     learnCard.invoke.issueCredential(unsignedCertifiedBoost)
                 );
+
+                return certifiedBoost;
             } else {
                 console.warn(
                     'Credential is not derived from boost',
@@ -419,7 +427,8 @@ export const sendBoost = async ({
                 const certifiedBoost = await issueCertifiedBoost(
                     boost,
                     decryptedCredential,
-                    domain
+                    domain,
+                    fromProfile.profileId
                 );
 
                 if (certifiedBoost) {
@@ -534,7 +543,14 @@ export const sendBoost = async ({
 
             if (typeof boostUri === 'string') {
                 if (!skipNotification) {
-                    await trace('notification', 'addNotificationToQueue', () =>
+                    // LC-1644: fire-and-forget the BOOST_RECEIVED notification enqueue.
+                    // addNotificationToQueue is an SQS SendMessage in prod (~5-30ms) or a
+                    // direct webhook call in offline/dev. Neither produces a value the caller
+                    // needs, and notifications are eventually-consistent by design — there's
+                    // no correctness benefit to making sendBoost wait on the enqueue ack.
+                    // Any enqueue failure is logged so operators still have visibility;
+                    // the original boostUri return path is unaffected.
+                    trace('notification', 'addNotificationToQueue', () =>
                         addNotificationToQueue({
                             type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
                             to: to,
@@ -547,7 +563,14 @@ export const sendBoost = async ({
                                 vcUris: [boostUri!],
                             },
                         })
-                    );
+                    ).catch((err: unknown) => {
+                        console.error('[sendBoost] BOOST_RECEIVED notification enqueue failed', {
+                            err: err instanceof Error ? err.message : String(err),
+                            from: getIssuerProfileId(from),
+                            to: to.profileId,
+                            boostUri,
+                        });
+                    });
                 }
 
                 return boostUri;
@@ -611,6 +634,7 @@ export const issueClaimLinkBoost = async (
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
     const boostURI = getBoostUri(boostId, domain);
+    const fromProfile = getIssuerOwnerProfile(from);
 
     boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
@@ -633,7 +657,7 @@ export const issueClaimLinkBoost = async (
 
     const vc = await issueCredentialWithSigningAuthority(
         from,
-        boostCredential,
+        await appendBitstringStatusListEntries(boostCredential, fromProfile.profileId, domain),
         signingAuthorityForUser,
         domain,
         false

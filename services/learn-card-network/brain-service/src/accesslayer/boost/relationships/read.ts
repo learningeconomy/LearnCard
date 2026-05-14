@@ -386,7 +386,7 @@ export const getBoostRecipients = async (
         .with('sender, sent, received, recipient, credential')
         // Filter out revoked credentials using WITH barrier pattern
         .where(
-            `(received IS NULL OR coalesce(received.status, '') <> 'revoked')${
+            `coalesce(sent.status, received.status, '') <> 'revoked'${
                 whereClause ? ' AND ' + whereClause : ''
             }`
         );
@@ -481,7 +481,7 @@ export const getBoostRecipientsSkipLimit = async (
         })
         // Use WITH barrier pattern to properly filter revoked credentials
         .with('sender, sent, received, credential')
-        .where(`received IS NULL OR coalesce(received.status, '') <> 'revoked'`);
+        .where(`coalesce(sent.status, received.status, '') <> 'revoked'`);
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -524,15 +524,15 @@ export const countBoostRecipients = async (
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WITH DISTINCT sent.to AS recipientId, received
-            WHERE received IS NULL OR coalesce(received.status, '') <> 'revoked'
+            WITH DISTINCT sent.to AS recipientId, sent.status AS sentStatus, received
+            WHERE coalesce(sentStatus, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT recipientId) AS count
           `
         : `
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WHERE coalesce(received.status, '') <> 'revoked'
+            WHERE coalesce(sent.status, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT sent.to) AS count
           `;
 
