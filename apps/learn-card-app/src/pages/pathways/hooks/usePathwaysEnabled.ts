@@ -34,6 +34,5 @@ export const usePathwaysEnabled = (): boolean => {
     const features = useFeatureConfig();
     const flags = useFlags();
 
-    return true;
     return features.pathways === true && flags?.enableJourneys === true;
 };
