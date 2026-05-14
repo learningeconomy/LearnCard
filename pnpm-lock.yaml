@@ -1920,9 +1920,6 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:*
         version: link:../plugins/didkit
-      '@learncard/didkit-plugin-node':
-        specifier: workspace:*
-        version: link:../plugins/didkit-plugin-node
       '@learncard/dynamic-loader-plugin':
         specifier: workspace:*
         version: link:../plugins/dynamic-loader
@@ -1962,6 +1959,10 @@ importers:
       '@learncard/vpqr-plugin':
         specifier: workspace:*
         version: link:../plugins/vpqr
+    optionalDependencies:
+      '@learncard/didkit-plugin-node':
+        specifier: workspace:*
+        version: link:../plugins/didkit-plugin-node
     devDependencies:
       '@types/jest':
         specifier: ^29.2.2
