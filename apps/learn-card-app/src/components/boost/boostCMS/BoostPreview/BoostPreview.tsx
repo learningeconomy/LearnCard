@@ -8,11 +8,12 @@ import { boostPreviewStore } from 'learn-card-base';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 
-import { VC, VerificationItem } from '@learncard/types';
+import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
     useModal,
     useWallet,
@@ -26,6 +27,8 @@ import {
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getSvgMustacheRenderMethod } from '../../../../helpers/renderMethod.helpers';
+import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 export type IssueHistory = {
     id?: string | number;
@@ -140,11 +143,20 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
 }) => {
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
+    const renderMethod = getSvgMustacheRenderMethod(_credential as VC);
+    const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     useEffect(() => {
         // Reset to Details tab whenever the credential changes
         boostPreviewStore.set.updateSelectedTab(BoostPreviewTabsEnum.Details);
     }, [credentialWithEdits?.id]);
+    useEffect(() => {
+        boostPreviewStore.set.updateSelectedDisplayView(
+            renderMethod
+                ? BoostPreviewDisplayViewEnum.Issuer
+                : BoostPreviewDisplayViewEnum.Default
+        );
+    }, [credentialWithEdits?.id, renderMethod?.template]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
 
@@ -169,6 +181,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const selectedCredential = credential;
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const isIssuerViewSelected =
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -198,6 +212,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 existingEndorsements={existingEndorsements}
                 isEarnedBoost={isEarnedBoost}
                 isClrChildCredential={isClrChildCredential}
+                renderMethodCredential={_credential as VC | UnsignedVC}
             />,
             {
                 className: '!bg-transparent',
@@ -232,6 +247,41 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         );
     }
 
+    const credentialDisplay = (
+        <VCDisplayCard2
+            credential={credential}
+            issueeOverride={issueeOverride}
+            issuerOverride={issuerOverride}
+            issueHistory={issueHistory}
+            categoryType={categoryType}
+            verificationItems={verifications}
+            customThumbComponent={customThumbComponent}
+            customBodyCardComponent={customBodyCardComponent}
+            customFooterComponent={
+                isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+            }
+            subjectDID={subjectDID}
+            subjectImageComponent={subjectImageComponent}
+            issuerImageComponent={issuerImageComponent}
+            customDescription={customDescription}
+            customCriteria={customCriteria}
+            customIssueHistoryComponent={customIssueHistoryComponent}
+            enableLightbox
+            titleOverride={titleOverride}
+            knownDIDRegistry={knownDIDRegistry}
+            handleXClick={isCertificate ? closeModal : undefined}
+            hideIssueDate={hideIssueDate}
+            customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
+            hideNavButtons
+            setIsFrontOverride={setIsFront}
+            qrCodeOnClick={qrCodeOnClick}
+            hideQRCode={hideQRCode}
+            formattedDisplayType={formattedDisplayType}
+            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+            customBodyContentSlot={endorsementBadge}
+        />
+    );
+
     return (
         <IonPage>
             <div className="flex h-full">
@@ -246,45 +296,16 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
                             }`}
                         >
-                            <VCDisplayCard2
-                                credential={credential}
-                                issueeOverride={issueeOverride}
-                                issuerOverride={issuerOverride}
-                                issueHistory={issueHistory}
-                                categoryType={categoryType}
-                                verificationItems={verifications}
-                                customThumbComponent={customThumbComponent}
-                                customBodyCardComponent={customBodyCardComponent}
-                                customFooterComponent={
-                                    isClrChildCredential ? (
-                                        <VerifiedChildCLRFooter />
-                                    ) : (
-                                        customFooterComponent
-                                    )
-                                }
-                                subjectDID={subjectDID}
-                                subjectImageComponent={subjectImageComponent}
-                                issuerImageComponent={issuerImageComponent}
-                                customDescription={customDescription}
-                                customCriteria={customCriteria}
-                                customIssueHistoryComponent={customIssueHistoryComponent}
-                                enableLightbox
-                                titleOverride={titleOverride}
-                                knownDIDRegistry={knownDIDRegistry}
-                                handleXClick={isCertificate ? closeModal : undefined}
-                                hideIssueDate={hideIssueDate}
-                                customRibbonCategoryComponent={
-                                    <RibbonCategory categoryType={categoryType} />
-                                }
-                                hideNavButtons
-                                // isFrontOverride={isFront}
-                                setIsFrontOverride={setIsFront}
-                                qrCodeOnClick={qrCodeOnClick}
-                                hideQRCode={hideQRCode}
-                                formattedDisplayType={formattedDisplayType}
-                                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                                customBodyContentSlot={endorsementBadge}
-                            />
+                            {isIssuerViewSelected && renderMethod ? (
+                                <RenderMethodDisplay
+                                    vc={credential}
+                                    renderMethod={renderMethod}
+                                    fallback={credentialDisplay}
+                                    className="w-full"
+                                />
+                            ) : (
+                                credentialDisplay
+                            )}
                         </section>
                     </div>
                 </section>
@@ -307,6 +328,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         existingEndorsements={existingEndorsements}
                         isEarnedBoost={isEarnedBoost}
                         isClrChildCredential={isClrChildCredential}
+                        renderMethodCredential={_credential as VC | UnsignedVC}
                     />
                 )}
             </div>
