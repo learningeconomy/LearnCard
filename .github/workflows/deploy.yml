@@ -1094,6 +1094,26 @@ jobs:
               run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
 
     # ============================================================================
+    # SMOKETEST PUBLISHED NPM PACKAGES (verify external installability)
+    # Calls the reusable smoketest-npm-packages workflow against the freshly
+    # published `latest` dist-tags from a clean directory with no monorepo
+    # context. Catches regressions like the didkit-plugin-node@0.2.14
+    # workspace:* leak that broke `npx @learncard/cli` for external users.
+    # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
+    # so a failure here WILL mark the deploy workflow run as failed. Treat
+    # smoketest failures as a real signal — the package was published but is
+    # broken for external consumers. Nightly cron in smoketest-npm-packages.yml
+    # provides a second line of defense.
+    # ============================================================================
+    smoketest-published-packages:
+        name: Smoketest Published NPM Packages
+        needs: publish-npm
+        if: |
+            always() &&
+            needs.publish-npm.result == 'success'
+        uses: ./.github/workflows/smoketest-npm-packages.yml
+
+    # ============================================================================
     # SMOKETEST (after deploys — one job per target environment)
     # Fires when any deploy in this run succeeded, gated on the run's target.
     # ============================================================================

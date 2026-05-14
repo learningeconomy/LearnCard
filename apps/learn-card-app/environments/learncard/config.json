@@ -74,6 +74,7 @@
         "analytics": true,
         "themeSwitching": true,
         "introSlides": true,
+        "pathways": true,
         "launchPadQuickActions": false
     },
 
