@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.15.0
+
+### Minor Changes
+
+-   [#1223](https://github.com/learningeconomy/LearnCard/pull/1223) [`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add end-to-end W3C Bitstring Status List support for LearnCard Network credentials.
+
+    Issued VC 2.0 credentials now receive issuer-scoped Bitstring Status List entries, with support for revocation and suspension purposes, automatic list rollover, stable public status list credential URLs, and re-signed status list credentials when statuses change.
+
+    The network plugin exposes status-list allocation plus suspend and unsuspend operations, shared types and helpers are exported for status list entries and bit operations, and VC verification now relies on DIDKit's native array-form credential status support.
+
+    Prettified credential verification output now renders user-facing status messages such as `Status: Active`, `Status: Not Revoked`, `Status: Revoked`, and `Status: Suspended` instead of showing only the raw `status` check name.
+
 ## 5.14.0
 
 ### Minor Changes

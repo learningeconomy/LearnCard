@@ -1,5 +1,18 @@
 # learn-card-base
 
+## 0.1.33
+
+### Patch Changes
+
+-   [#1217](https://github.com/learningeconomy/LearnCard/pull/1217) [`5d402748c33bbe4f23aa38f45953d03274f38b65`](https://github.com/learningeconomy/LearnCard/commit/5d402748c33bbe4f23aa38f45953d03274f38b65) Thanks [@smurflo2](https://github.com/smurflo2)! - Automatically refresh AI Insights credential when adding or deleting credential
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/types@5.15.0
+    -   @learncard/helpers@1.3.0
+    -   @learncard/lca-api-plugin@1.2.9
+    -   @learncard/ler-rs-plugin@0.1.9
+    -   @learncard/sss-key-manager@0.1.8
+
 ## 0.1.32
 
 ### Patch Changes
