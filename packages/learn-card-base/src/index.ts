@@ -186,6 +186,7 @@ export {
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
+export * from './oid4vc-resilience';
 export * from './components/openid4vc/ExchangeErrorDisplay';
 export * from './components/openid4vc/IssuerHeader';
 export * from './components/openid4vc/VerifierHeader';

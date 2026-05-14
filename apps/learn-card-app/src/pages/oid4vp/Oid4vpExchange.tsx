@@ -40,6 +40,9 @@ import {
     type WalletForCandidates,
 } from './candidatePool';
 import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcSigner';
+import { resilientPresentCredentials } from '../../helpers/oid4vc-resilience/resilientVp';
+import { useResilientExchange } from '../../hooks/useResilientExchange';
+import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
 
 /**
  * Phases the page can be in. Modeled as a discriminated union so the
@@ -126,6 +129,8 @@ const Oid4vpExchange: React.FC = () => {
     // configured analytics provider (product), with both rails kept
     // independent so a failure in one doesn't break the other.
     const reportError = useExchangeErrorReporting('vp');
+
+    const resilience = useResilientExchange({ surface: 'vp' });
 
     // -----------------------------------------------------------------
     // Resolve the request + load the candidate pool.
@@ -214,27 +219,36 @@ const Oid4vpExchange: React.FC = () => {
                 );
             }
 
-            // Fall back to did:key for local-dev `did:web:localhost`
-            // profiles — foreign verifiers can't HTTPS-resolve them.
-            // When we swap the signer we must also swap the VP holder
-            // so the outer VP's `holder` field matches the proof JWT
-            // issuer (otherwise the verifier rejects the mismatch).
-            const signer = await buildLocalDidWebSignerOverride(
-                wallet as unknown as Parameters<
-                    typeof buildLocalDidWebSignerOverride
-                >[0]
-            );
-            const holder = signer
-                ? (wallet as unknown as {
-                      id: { did: (m?: string) => string };
-                  }).id.did('key')
-                : undefined;
+            let result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>>;
+            if (resilience.isEnabled) {
+                result = await resilientPresentCredentials({
+                    wallet: wallet as unknown as Parameters<
+                        typeof resilientPresentCredentials
+                    >[0]['wallet'],
+                    request: currentPhase.request,
+                    chosen,
+                    callbacks: resilience.callbacks,
+                });
+            } else {
+                // Legacy code path — preserved verbatim so disabling
+                // the resilience flag returns to pre-LC-1xxx behavior.
+                const signer = await buildLocalDidWebSignerOverride(
+                    wallet as unknown as Parameters<
+                        typeof buildLocalDidWebSignerOverride
+                    >[0]
+                );
+                const holder = signer
+                    ? (wallet as unknown as {
+                          id: { did: (m?: string) => string };
+                      }).id.did('key')
+                    : undefined;
 
-            const result = await wallet.invoke.presentCredentials(
-                currentPhase.request,
-                chosen,
-                { signer, holder }
-            );
+                result = await wallet.invoke.presentCredentials(
+                    currentPhase.request,
+                    chosen,
+                    { signer, holder }
+                );
+            }
 
             // Pull the W3C VCs out of the picked candidates so the
             // finished screen can render them as `BoostEarnedCard`s.
@@ -362,6 +376,10 @@ const Oid4vpExchange: React.FC = () => {
                     />
                 )}
             </IonContent>
+            <RecoveryPromptModal
+                prompt={resilience.pendingPrompt}
+                onResolve={resilience.resolvePrompt}
+            />
         </IonPage>
     );
 };

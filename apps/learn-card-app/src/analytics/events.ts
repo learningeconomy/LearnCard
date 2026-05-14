@@ -91,6 +91,27 @@ export const AnalyticsEvents = {
      */
     OPENID_EXCHANGE_ERROR_REPORTED: 'openid_exchange_error_reported',
 
+    /**
+     * One attempt of an OID4VC/VP exchange under the resilience
+     * orchestrator. Emits once per strategy attempt (success or
+     * failure). Joinable across attempts by `exchange_run_id`.
+     */
+    OPENID_RESILIENCE_ATTEMPT: 'openid_resilience_attempt',
+
+    /**
+     * Recovery decision the orchestrator made after a failed attempt.
+     * Joinable to the failed attempt by `exchange_run_id` +
+     * `attempt_number`.
+     */
+    OPENID_RESILIENCE_DECISION: 'openid_resilience_decision',
+
+    /**
+     * Final outcome of an exchange that went through the resilience
+     * orchestrator. Lets product see "% of exchanges that succeeded
+     * after fallback" and "% that surfaced error after exhaustion".
+     */
+    OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
+
     // LC-1644 perf bench (admin-only)
     BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
 
@@ -474,6 +495,58 @@ export interface AnalyticsEventPayloads {
         userNote?: string;
         /** Wallet build version (from package.json). */
         walletVersion?: string;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_ATTEMPT]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        strategy_id: string;
+        strategy_axis: 'signer' | 'transport' | 'trust';
+        outcome: 'succeeded' | 'failed';
+        duration_ms: number;
+        error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        counterparty?: string;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_DECISION]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        decision: 'retry_silent' | 'retry_with_prompt' | 'surface_error';
+        next_strategy_id?: string;
+        next_strategy_axis?: 'signer' | 'transport' | 'trust';
+        prompt_severity?: 'info' | 'warning';
+        backoff_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_OUTCOME]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        outcome:
+            | 'success_first_attempt'
+            | 'success_after_fallback'
+            | 'failure_user_cancelled'
+            | 'failure_exhausted';
+        total_attempts: number;
+        signers_tried: string[];
+        transport_retries: number;
+        trust_gaps_accepted: number;
+        final_error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        counterparty?: string;
+        total_duration_ms: number;
     };
 
     // -- LC-1644 perf bench --------------------------------------------------
