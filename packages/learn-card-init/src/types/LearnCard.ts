@@ -17,6 +17,7 @@ import { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { DidWebPlugin } from '@learncard/did-web-plugin';
 import { EncryptionPluginType } from '@learncard/encryption-plugin';
+import { OpenID4VCPlugin, OpenID4VCPluginConfig } from '@learncard/openid4vc-plugin';
 
 import { InitFunction, GenericInitFunction } from './helpers';
 
@@ -33,6 +34,15 @@ export type LearnCardConfig = {
     didkit: InitInput | Promise<InitInput> | 'node';
     allowRemoteContexts?: boolean;
     ethereumConfig: EthereumConfig;
+    /**
+     * Optional configuration for the OpenID4VC holder plugin
+     * (OID4VCI + OID4VP + SIOPv2). The plugin is wired automatically
+     * into seed-based wallet shapes; this hook lets hosts customise
+     * the network policy (e.g., a trust-pinned fetch, a custom DID
+     * resolver for verifying Request Objects, X.509 trust roots).
+     * Omitting this works for the common case.
+     */
+    openid4vc?: OpenID4VCPluginConfig;
     debug?: typeof console.log;
 };
 
@@ -71,7 +81,8 @@ export type LearnCardFromSeed = InitFunction<
             EthereumPlugin,
             VpqrPlugin,
             CHAPIPlugin,
-            LearnCardPlugin
+            LearnCardPlugin,
+            OpenID4VCPlugin
         ]
     >
 >;
@@ -102,7 +113,8 @@ export type NetworkLearnCardFromSeed = InitFunction<
             CHAPIPlugin,
             VerifyBoostPlugin,
             LearnCardPlugin,
-            LearnCardNetworkPlugin
+            LearnCardNetworkPlugin,
+            OpenID4VCPlugin
         ]
     >
 >;
@@ -153,7 +165,8 @@ export type DidWebLearnCardFromSeed = InitFunction<
             VpqrPlugin,
             CHAPIPlugin,
             LearnCardPlugin,
-            DidWebPlugin
+            DidWebPlugin,
+            OpenID4VCPlugin
         ]
     >
 >;
@@ -186,7 +199,8 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             VerifyBoostPlugin,
             LearnCardPlugin,
             DidWebPlugin,
-            LearnCardNetworkPlugin
+            LearnCardNetworkPlugin,
+            OpenID4VCPlugin
         ]
     >
 >;
