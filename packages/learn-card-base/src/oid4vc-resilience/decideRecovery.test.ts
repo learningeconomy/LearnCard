@@ -51,6 +51,71 @@ describe('decideRecovery', () => {
             }
         });
 
+        it('reads err.body.message when the plugin wraps the issuer response in a generic VciError', () => {
+            // Regression: walt.id returns 500 with the real error in the
+            // body, and the plugin wraps it with a generic message like
+            // "Credential endpoint returned 500 (unknown)". The pattern
+            // match must search err.body.message, not just err.message.
+            const wrapped = Object.assign(new Error('Credential endpoint returned 500 (unknown)'), {
+                name: 'VciError',
+                code: 'credential_request_failed',
+                status: 500,
+                body: {
+                    exception: true,
+                    id: 'IllegalStateException',
+                    status: 'Internal Server Error',
+                    code: '500',
+                    message:
+                        'No valid public key JWKs found in DID document for did:web:staging.network.learncard.com:users:demo-account',
+                },
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+            if (decision.kind !== 'retry_silent') return;
+            expect(decision.nextStrategy).toEqual({ axis: 'signer', id: 'did:key' });
+        });
+
+        it('reads OAuth2-style error_description on err.body', () => {
+            const wrapped = Object.assign(new Error('Generic'), {
+                name: 'VciError',
+                code: 'credential_request_failed',
+                body: { error: 'invalid_proof', error_description: 'kid could not resolve DID' },
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+        });
+
+        it('reads err.cause when the root failure is a wrapped fetch error', () => {
+            const wrapped = Object.assign(new Error('Generic'), {
+                name: 'VciError',
+                code: 'credential_request_failed',
+                cause: new Error('No valid public key JWKs in DID document'),
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+        });
+
         it('prompts the user before falling back to a non-did:key signer strategy', () => {
             // `decideRecovery` is generic over signer-strategy ids (the
             // app picks which ones are applicable). The policy under test

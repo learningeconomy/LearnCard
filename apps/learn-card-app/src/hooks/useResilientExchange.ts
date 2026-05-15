@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     type OrchestratorTelemetryEvent,
     type RunWithRecoveryCallbacks,
@@ -17,12 +16,6 @@ interface UseResilientExchangeArgs {
 }
 
 interface UseResilientExchangeResult {
-    /**
-     * Whether the resilience layer is enabled for the current user.
-     * Gated behind the LaunchDarkly flag `enableOid4vcResilience`.
-     * Default off so rollout is gradual.
-     */
-    isEnabled: boolean;
     /**
      * Pass straight into `runWithRecovery` or any wrapper that takes
      * `RunWithRecoveryCallbacks`. Memoized so consumers passing this
@@ -70,15 +63,11 @@ const strategyAxisFromId = (id: string): 'signer' | 'transport' | 'trust' => {
  *    prompt is resolved as `false` so the orchestrator's pending
  *    Promise doesn't leak.
  *  - Tracks per-attempt timing for the final OUTCOME event.
- *  - Reports the LaunchDarkly feature flag so pages can fall back to
- *    the non-resilient code path when disabled.
  */
 export const useResilientExchange = ({
     surface,
     counterparty,
 }: UseResilientExchangeArgs): UseResilientExchangeResult => {
-    const flags = useFlags();
-    const isEnabled = Boolean(flags.enableOid4vcResilience);
     const { track } = useAnalytics();
 
     const [runId, setRunId] = useState<string>(cryptoRandomId);
@@ -216,6 +205,23 @@ export const useResilientExchange = ({
                 return;
             }
 
+            if (event.type === 'unrecognized_recoverable_failure') {
+                void track(AnalyticsEvents.OPENID_RESILIENCE_UNRECOGNIZED_FAILURE, {
+                    surface,
+                    exchange_run_id: runId,
+                    attempt_number: event.attemptNumber,
+                    error_kind: event.friendly.kind as 'wallet' | 'request_invalid' | 'unknown',
+                    error_name: event.errorName,
+                    error_code: event.errorCode,
+                    http_status: event.httpStatus,
+                    message_hash: event.messageHash,
+                    pattern_matched: event.patternMatched,
+                    signers_tried: event.attemptLog.signersTried,
+                    counterparty,
+                });
+                return;
+            }
+
             if (event.type === 'prompt_resolved' && !event.accepted) {
                 if (!outcomeReportedRef.current) {
                     outcomeReportedRef.current = true;
@@ -244,5 +250,5 @@ export const useResilientExchange = ({
         [handlePrompt, handleTelemetry]
     );
 
-    return { isEnabled, callbacks, pendingPrompt, resolvePrompt, resetRun };
+    return { callbacks, pendingPrompt, resolvePrompt, resetRun };
 };

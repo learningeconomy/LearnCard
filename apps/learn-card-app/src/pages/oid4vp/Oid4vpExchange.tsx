@@ -39,7 +39,7 @@ import {
     type PooledCandidate,
     type WalletForCandidates,
 } from './candidatePool';
-import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcSigner';
+
 import { resilientPresentCredentials } from '../../helpers/oid4vc-resilience/resilientVp';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
@@ -219,9 +219,8 @@ const Oid4vpExchange: React.FC = () => {
                 );
             }
 
-            let result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>>;
-            if (resilience.isEnabled) {
-                result = await resilientPresentCredentials({
+            const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
+                await resilientPresentCredentials({
                     wallet: wallet as unknown as Parameters<
                         typeof resilientPresentCredentials
                     >[0]['wallet'],
@@ -229,26 +228,6 @@ const Oid4vpExchange: React.FC = () => {
                     chosen,
                     callbacks: resilience.callbacks,
                 });
-            } else {
-                // Legacy code path — preserved verbatim so disabling
-                // the resilience flag returns to pre-LC-1xxx behavior.
-                const signer = await buildLocalDidWebSignerOverride(
-                    wallet as unknown as Parameters<
-                        typeof buildLocalDidWebSignerOverride
-                    >[0]
-                );
-                const holder = signer
-                    ? (wallet as unknown as {
-                          id: { did: (m?: string) => string };
-                      }).id.did('key')
-                    : undefined;
-
-                result = await wallet.invoke.presentCredentials(
-                    currentPhase.request,
-                    chosen,
-                    { signer, holder }
-                );
-            }
 
             // Pull the W3C VCs out of the picked candidates so the
             // finished screen can render them as `BoostEarnedCard`s.

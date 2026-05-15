@@ -1,5 +1,6 @@
-import { getFriendlyOpenID4VCError } from '../helpers/openid4vcErrors';
-import { decideRecovery } from './decideRecovery';
+import { getFriendlyOpenID4VCError, type ExchangeErrorKind } from '../helpers/openid4vcErrors';
+import { decideRecovery, extractErrorMessage, isSignerResolutionFailure } from './decideRecovery';
+import { extractErrorFields, hashMessage } from './errorFields';
 import {
     createEmptyAttemptLog,
     type AttemptLog,
@@ -8,6 +9,22 @@ import {
     type RunWithRecoveryCallbacks,
     type RunWithRecoveryConfig,
 } from './types';
+
+/**
+ * Friendly kinds that MIGHT have been recoverable but weren't — when
+ * the orchestrator surfaces an error of one of these kinds, we emit
+ * `unrecognized_recoverable_failure` so production telemetry can be
+ * mined for new structured-dispatch / pattern entries.
+ *
+ * Excludes `transport` (already has its own retry policy), `format_gap`
+ * (terminal by definition), and `trust_gap` (user-driven outcome, not
+ * a pattern miss).
+ */
+const POTENTIALLY_RECOVERABLE_KINDS: ReadonlySet<ExchangeErrorKind> = new Set([
+    'wallet',
+    'request_invalid',
+    'unknown',
+]);
 
 const sleep = (ms: number): Promise<void> =>
     new Promise(resolve => {
@@ -110,6 +127,22 @@ export const runWithRecovery = async <R>(
                     friendly,
                     attemptLog: snapshotLog(attemptLog),
                 });
+
+                if (POTENTIALLY_RECOVERABLE_KINDS.has(friendly.kind)) {
+                    const fields = extractErrorFields(raw);
+                    callbacks.onTelemetry?.({
+                        type: 'unrecognized_recoverable_failure',
+                        attemptNumber,
+                        messageHash: hashMessage(extractErrorMessage(raw)),
+                        errorName: fields.name,
+                        errorCode: fields.code,
+                        httpStatus: fields.status,
+                        friendly,
+                        patternMatched: isSignerResolutionFailure(friendly, raw),
+                        attemptLog: snapshotLog(attemptLog),
+                    });
+                }
+
                 throw raw;
             }
 

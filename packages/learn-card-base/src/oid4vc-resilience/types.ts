@@ -122,6 +122,34 @@ export type OrchestratorTelemetryEvent =
           type: 'orchestrator_exhausted';
           friendly: FriendlyErrorInfo;
           attemptLog: AttemptLog;
+      }
+    | {
+          type: 'unrecognized_recoverable_failure';
+          attemptNumber: number;
+          /** Stable 8-char FNV-1a hash of the extracted message corpus. */
+          messageHash: string;
+          /** `error.name` from the raw exception when present (`VciError`, …). */
+          errorName?: string;
+          /** Plugin-side error code (`credential_request_failed`, …). */
+          errorCode?: string;
+          /** HTTP status when the exception originated from an HTTP response. */
+          httpStatus?: number;
+          /**
+           * The classified friendly kind. Restricted to kinds the
+           * orchestrator considers potentially recoverable; if the kind
+           * isn't in `{wallet, request_invalid, unknown}` this event
+           * isn't emitted at all.
+           */
+          friendly: FriendlyErrorInfo;
+          /**
+           * Whether our pattern + structured signer-failure check
+           * matched. `false` is the canary signal — it means we surfaced
+           * an error that LOOKED recoverable on shape (recoverable kind)
+           * but we didn't recognize the specific failure pattern. These
+           * are the rows to mine for new structured-dispatch entries.
+           */
+          patternMatched: boolean;
+          attemptLog: AttemptLog;
       };
 
 export interface RunWithRecoveryCallbacks {

@@ -44,7 +44,7 @@ import {
     loadAuthCodeState,
     saveAuthCodeState,
 } from './authCodeStorage';
-import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcSigner';
+
 import {
     resilientAcceptAndStoreCredentialOffer,
     resilientCompleteCredentialOfferAuthCode,
@@ -178,9 +178,8 @@ const Oid4vciExchange: React.FC = () => {
                     );
                 }
 
-                let accepted: AcceptedCredentialResult;
-                if (resilience.isEnabled) {
-                    accepted = await resilientCompleteCredentialOfferAuthCode({
+                const accepted: AcceptedCredentialResult =
+                    await resilientCompleteCredentialOfferAuthCode({
                         wallet: wallet as unknown as Parameters<
                             typeof resilientCompleteCredentialOfferAuthCode
                         >[0]['wallet'],
@@ -189,21 +188,6 @@ const Oid4vciExchange: React.FC = () => {
                         state: state ?? undefined,
                         callbacks: resilience.callbacks,
                     });
-                } else {
-                    // Legacy code path — preserved verbatim so disabling the
-                    // resilience flag returns to the pre-LC-1xxx behavior.
-                    const signer = await buildLocalDidWebSignerOverride(
-                        wallet as unknown as Parameters<
-                            typeof buildLocalDidWebSignerOverride
-                        >[0]
-                    );
-                    accepted = await wallet.invoke.completeCredentialOfferAuthCode({
-                        flowHandle: persisted.flowHandle,
-                        code,
-                        state: state ?? undefined,
-                        signer,
-                    });
-                }
 
                 // `completeCredentialOfferAuthCode` returns the issued
                 // credentials but does not persist them — storage is
@@ -331,9 +315,8 @@ const Oid4vciExchange: React.FC = () => {
                 if (hasPreAuth) {
                     setPhase({ kind: 'storing' });
 
-                    let result: AcceptedCredentialResult & StoreAcceptedCredentialsResult;
-                    if (resilience.isEnabled) {
-                        result = await resilientAcceptAndStoreCredentialOffer({
+                    const result: AcceptedCredentialResult & StoreAcceptedCredentialsResult =
+                        await resilientAcceptAndStoreCredentialOffer({
                             wallet: wallet as unknown as Parameters<
                                 typeof resilientAcceptAndStoreCredentialOffer
                             >[0]['wallet'],
@@ -344,23 +327,6 @@ const Oid4vciExchange: React.FC = () => {
                             },
                             callbacks: resilience.callbacks,
                         });
-                    } else {
-                        // Legacy code path — preserved verbatim so disabling
-                        // the resilience flag returns to pre-LC-1xxx behavior.
-                        const signer = await buildLocalDidWebSignerOverride(
-                            wallet as unknown as Parameters<
-                                typeof buildLocalDidWebSignerOverride
-                            >[0]
-                        );
-                        result = await wallet.invoke.acceptAndStoreCredentialOffer(
-                            currentOffer,
-                            {
-                                txCode,
-                                signer,
-                                ...buildStoreOptions(),
-                            }
-                        );
-                    }
 
                     const issuerInfo = pickIssuerInfo(
                         currentOffer.credential_issuer,
