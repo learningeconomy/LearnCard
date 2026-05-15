@@ -33,6 +33,32 @@ export type ParsedClaimInput =
     | { kind: 'unrecognized'; reason: UnrecognizedReason };
 
 /**
+ * Tenant-aware overrides for which custom URL schemes and HTTPS
+ * hostnames the wallet recognizes. Sourced from the tenant config so
+ * each LearnCard-derived app (LearnCard, VetPass, ScoutPass, …)
+ * routes its own deep links without forking the parser.
+ *
+ * Both lists are normalized: schemes are matched case-insensitively;
+ * hosts may be supplied as bare hostnames (`learncard.app`) OR full
+ * origins (`https://learncard.app`) and we'll handle either form.
+ */
+export interface ParseClaimInputConfig {
+    customSchemes?: string[];
+    httpsDomains?: string[];
+}
+
+const DEFAULT_CUSTOM_SCHEMES = ['dccrequest', 'msprequest', 'asuprequest'];
+const DEFAULT_HTTPS_DOMAINS = ['lcw.app'];
+
+const normalizeHost = (host: string): string => {
+    try {
+        return new URL(host.includes('://') ? host : `https://${host}`).host.toLowerCase();
+    } catch {
+        return host.toLowerCase();
+    }
+};
+
+/**
  * Pure disambiguator: any string in → discriminated kind out.
  *
  * Mirrors the format detection that lived inside
@@ -52,9 +78,17 @@ export type ParsedClaimInput =
  * Empty / whitespace-only input returns `{ kind: 'unrecognized',
  * reason: 'empty' }` so callers can disable a Continue button.
  */
-export const parseClaimInput = (input: string): ParsedClaimInput => {
+export const parseClaimInput = (
+    input: string,
+    config: ParseClaimInputConfig = {}
+): ParsedClaimInput => {
     const trimmed = input.trim();
     if (!trimmed) return { kind: 'unrecognized', reason: 'empty' };
+
+    const customSchemes = (config.customSchemes ?? DEFAULT_CUSTOM_SCHEMES).map(s =>
+        s.toLowerCase()
+    );
+    const httpsHostnames = (config.httpsDomains ?? DEFAULT_HTTPS_DOMAINS).map(normalizeHost);
 
     let parsedUrl: URL | null = null;
     try {
@@ -73,8 +107,7 @@ export const parseClaimInput = (input: string): ParsedClaimInput => {
             return { kind: 'oid4vp', requestUrl: trimmed };
         }
 
-        const CUSTOM_VC_API_SCHEMES = ['dccrequest', 'msprequest', 'asuprequest'];
-        if (CUSTOM_VC_API_SCHEMES.includes(scheme)) {
+        if (customSchemes.includes(scheme)) {
             const tail = (parsedUrl.pathname || '') + parsedUrl.search + parsedUrl.hash;
             const path = parsedUrl.pathname ? tail : `/request${tail}`;
             return { kind: 'vc-api-custom-scheme', path };
@@ -83,8 +116,7 @@ export const parseClaimInput = (input: string): ParsedClaimInput => {
         const queryClassification = classifyQueryParams(parsedUrl.searchParams, trimmed);
         if (queryClassification) return queryClassification;
 
-        const LCW_HTTPS_ORIGINS = ['https://lcw.app'];
-        if (LCW_HTTPS_ORIGINS.includes(parsedUrl.origin)) {
+        if (httpsHostnames.includes(parsedUrl.host.toLowerCase())) {
             const path = parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
             return { kind: 'lcw-https', path };
         }

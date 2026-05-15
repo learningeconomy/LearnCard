@@ -2,10 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import QrScanner from 'qr-scanner';
 
-import { useToast, ToastTypeEnum, useModal } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 
 import { useClaimInputRouter, type ClaimInputSource } from '../../hooks/useClaimInputRouter';
 import type { UnrecognizedReason } from '../../hooks/parseClaimInput';
+import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
+import AddContactView, {
+    AddContactViewMode,
+} from '../../pages/addressBook/addContactView/AddContactView';
 
 const UNRECOGNIZED_COPY: Record<UnrecognizedReason, string> = {
     empty: '',
@@ -21,7 +25,7 @@ const UNRECOGNIZED_COPY: Record<UnrecognizedReason, string> = {
 const QR_DECODE_OPTIONS = { returnDetailedScanResult: true } as const;
 
 export const PasteOrUploadClaimModal: React.FC = () => {
-    const { closeModal } = useModal();
+    const { closeModal, newModal } = useModal();
     const { presentToast } = useToast();
 
     const [pasted, setPasted] = useState('');
@@ -33,6 +37,41 @@ export const PasteOrUploadClaimModal: React.FC = () => {
     const pasteRouter = useClaimInputRouter({ source: 'paste' });
     const uploadRouter = useClaimInputRouter({ source: 'image_upload' });
     const clipboardRouter = useClaimInputRouter({ source: 'clipboard_auto' });
+
+    const openDownstreamClaimBoostModal = useCallback(
+        (props: {
+            uri?: string;
+            claimChallenge?: string;
+            vc?: import('@learncard/types').VC;
+        }) => {
+            newModal(
+                <ClaimBoost
+                    uri={props.uri}
+                    claimChallenge={props.claimChallenge}
+                    dismissClaimModal={closeModal}
+                    vc={props.vc ?? null}
+                />,
+                { hideButton: true },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            );
+        },
+        [newModal, closeModal]
+    );
+
+    const openDownstreamAddContactModal = useCallback(
+        (contact: import('../../pages/addressBook/addressBookHelpers').AddressBookContact) => {
+            newModal(
+                <AddContactView
+                    user={contact}
+                    handleCancel={closeModal}
+                    mode={AddContactViewMode.requestConnection}
+                />,
+                { hideButton: true },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            );
+        },
+        [newModal, closeModal]
+    );
 
     const dispatch = useCallback(
         async (input: string, source: ClaimInputSource): Promise<boolean> => {
@@ -52,11 +91,28 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                     return false;
                 }
 
-                if (result.kind === 'open_website') {
+                // The router's 'routed' / 'open_website' / 'open_*' kinds all
+                // require the modal to step out of the way so the user can see
+                // whatever opens next (a new modal, a navigation target, a new
+                // tab). Close ourselves FIRST, then open the downstream modal —
+                // matches the established `closeModal() → newModal()` pattern in
+                // AddToLearnCardMenu.
+                closeModal();
+
+                if (result.kind === 'open_claim_boost') {
+                    openDownstreamClaimBoostModal({
+                        uri: result.boost.uri,
+                        claimChallenge: result.boost.challenge,
+                    });
+                } else if (result.kind === 'open_claim_vc') {
+                    openDownstreamClaimBoostModal({ vc: result.vc });
+                } else if (result.kind === 'open_contact') {
+                    openDownstreamAddContactModal(result.contact);
+                } else if (result.kind === 'open_website') {
                     window.open(result.url, '_blank');
                 }
+                // 'routed' — the router already called history.push; nothing more to do.
 
-                closeModal();
                 return true;
             } catch (err) {
                 presentToast(
@@ -68,7 +124,15 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 setIsProcessing(false);
             }
         },
-        [pasteRouter, uploadRouter, clipboardRouter, closeModal, presentToast]
+        [
+            pasteRouter,
+            uploadRouter,
+            clipboardRouter,
+            closeModal,
+            presentToast,
+            openDownstreamClaimBoostModal,
+            openDownstreamAddContactModal,
+        ]
     );
 
     const handleContinueWithPaste = useCallback(async () => {

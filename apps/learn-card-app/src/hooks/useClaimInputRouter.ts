@@ -1,23 +1,46 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import type { VC } from '@learncard/types';
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 
 import { useUploadVcFromText } from './useUploadVcFromText';
 import { useAnalytics } from '../analytics/context';
 import { AnalyticsEvents } from '../analytics/events';
+import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import type { AddressBookContact } from '../pages/addressBook/addressBookHelpers';
 import {
     parseClaimInput,
     type ClaimSurface,
     type ParsedClaimInput,
+    type ParseClaimInputConfig,
     type UnrecognizedReason,
 } from './parseClaimInput';
 
-export type { ClaimSurface, ParsedClaimInput, UnrecognizedReason } from './parseClaimInput';
+export type {
+    ClaimSurface,
+    ParsedClaimInput,
+    ParseClaimInputConfig,
+    UnrecognizedReason,
+} from './parseClaimInput';
 export { parseClaimInput } from './parseClaimInput';
 
 export type ClaimInputSource = 'camera' | 'paste' | 'image_upload' | 'clipboard_auto';
+
+const INTERACTION_URL_TIMEOUT_MS = 10_000;
+
+const fetchWithTimeout = async (
+    url: string,
+    init: RequestInit,
+    timeoutMs: number
+): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...init, signal: controller.signal });
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
 
 /**
  * The structured outcome of routing a claim input. Returned by the
@@ -72,13 +95,21 @@ export const useClaimInputRouter = ({
 }: UseClaimInputRouterOptions): ((input: string) => Promise<ClaimRouteResult>) => {
     const history = useHistory();
     const { initWallet } = useWallet();
-    const { presentToast } = useToast();
     const { validateTextVC } = useUploadVcFromText();
     const { track } = useAnalytics();
 
+    const parserConfig = useMemo<ParseClaimInputConfig>(() => {
+        const tenant = getResolvedTenantConfig();
+        const nativeConfig = tenant.native;
+        return {
+            customSchemes: nativeConfig?.customSchemes,
+            httpsDomains: nativeConfig?.deepLinkDomains,
+        };
+    }, []);
+
     return useCallback(
         async (input: string): Promise<ClaimRouteResult> => {
-            const parsed = parseClaimInput(input);
+            const parsed = parseClaimInput(input, parserConfig);
 
             const emit = (result: ClaimRouteResult) => {
                 void track(AnalyticsEvents.CLAIM_INPUT_ROUTED, {
@@ -135,10 +166,6 @@ export const useClaimInputRouter = ({
             if (parsed.kind === 'raw-vc-candidate') {
                 const errors = validateTextVC(parsed.raw);
                 if (errors) {
-                    presentToast(`Invalid credential: ${errors.join(', ')}`, {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
                     return emit({ kind: 'unrecognized', reason: 'invalid_vc', raw: input });
                 }
                 const vc = JSON.parse(parsed.raw) as VC;
@@ -147,9 +174,11 @@ export const useClaimInputRouter = ({
 
             if (parsed.kind === 'interaction-url') {
                 try {
-                    const response = await fetch(parsed.url, {
-                        headers: { Accept: 'application/json' },
-                    });
+                    const response = await fetchWithTimeout(
+                        parsed.url,
+                        { headers: { Accept: 'application/json' } },
+                        INTERACTION_URL_TIMEOUT_MS
+                    );
                     const interactionData = await response.json();
                     if (interactionData?.protocols?.openid4vci) {
                         const path = `/oid4vci?offer=${encodeURIComponent(
@@ -190,6 +219,6 @@ export const useClaimInputRouter = ({
 
             return emit({ kind: 'unrecognized', reason: 'unknown_format', raw: input });
         },
-        [history, initWallet, presentToast, validateTextVC, source, track]
+        [history, initWallet, validateTextVC, source, track, parserConfig]
     );
 };

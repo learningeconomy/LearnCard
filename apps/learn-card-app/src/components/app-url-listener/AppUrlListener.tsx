@@ -2,87 +2,67 @@ import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { PluginListenerHandle } from '@capacitor/core';
+
 import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
+import {
+    parseClaimInput,
+    type ParseClaimInputConfig,
+} from '../../hooks/parseClaimInput';
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
 
-    const deepLinkDomains = useMemo(
-        () => {
-            const config = getResolvedTenantConfig();
-            const nativeConfig = config.native;
-
-            const domains = (nativeConfig?.deepLinkDomains ?? ['learncard.app'])
-                .map(d => `https://${d}`);
-
-            const schemes = nativeConfig?.customSchemes ?? ['dccrequest', 'msprequest', 'asuprequest'];
-
-            return {
-                httpsDomains: domains,
-                customSchemes: schemes,
-            };
-        },
-        []
-    );
+    const parserConfig = useMemo<ParseClaimInputConfig>(() => {
+        const config = getResolvedTenantConfig();
+        const nativeConfig = config.native;
+        return {
+            customSchemes:
+                nativeConfig?.customSchemes ?? ['dccrequest', 'msprequest', 'asuprequest'],
+            httpsDomains: nativeConfig?.deepLinkDomains ?? ['learncard.app'],
+        };
+    }, []);
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
 
         const handleUrlOpen = (event: URLOpenListenerEvent) => {
             try {
-                const eventUrl = new URL(event.url);
+                const parsed = parseClaimInput(event.url, parserConfig);
 
-                for (const domain of deepLinkDomains.httpsDomains) {
-                    const domainUrl = new URL(domain);
-
-                    if (eventUrl.origin === domainUrl.origin) {
-                        const path = eventUrl.pathname + eventUrl.search + eventUrl.hash;
-                        history.push(path);
+                switch (parsed.kind) {
+                    case 'oid4vci':
+                        history.push(`/oid4vci?offer=${encodeURIComponent(parsed.offerUrl)}`);
                         return;
-                    }
-                }
-
-                const scheme = eventUrl.protocol.replace(':', '');
-
-                // OpenID4VC/VP deep links route to dedicated pages so we can render
-                // OIDC-specific consent UI, instead of being funneled through /request.
-                if (scheme === 'openid-credential-offer') {
-                    history.push(`/oid4vci?offer=${encodeURIComponent(event.url)}`);
-                    return;
-                }
-
-                if (scheme === 'openid4vp') {
-                    history.push(`/oid4vp?request=${encodeURIComponent(event.url)}`);
-                    return;
-                }
-
-                if (deepLinkDomains.customSchemes.includes(scheme)) {
-                    const fullPath = eventUrl.pathname + eventUrl.search + eventUrl.hash;
-
-                    // Route to the request page
-                    const targetPath = `/request${fullPath}`;
-
-                    history.push(targetPath);
-                    return;
+                    case 'oid4vp':
+                        history.push(`/oid4vp?request=${encodeURIComponent(parsed.requestUrl)}`);
+                        return;
+                    case 'vc-api-custom-scheme':
+                    case 'lcw-https':
+                        history.push(parsed.path);
+                        return;
+                    default:
+                        // Other kinds (boost-claim, interaction-url, connection-request,
+                        // raw-vc-candidate, unrecognized) aren't valid deep-link payloads:
+                        // they only make sense from inside the app (scanner or paste
+                        // modal), not from an OS-level URL open.
+                        return;
                 }
             } catch (error) {
                 console.error('Error processing deep link:', error);
             }
         };
 
-        // Async setup with proper Promise handling
         const setupListener = async () => {
             listener = await App.addListener('appUrlOpen', handleUrlOpen);
         };
         setupListener();
 
-        // Cleanup function
         return () => {
             if (listener) {
                 listener.remove();
             }
         };
-    }, [history, deepLinkDomains]);
+    }, [history, parserConfig]);
 
     return null;
 };

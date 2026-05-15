@@ -66,6 +66,66 @@ describe('parseClaimInput', () => {
         });
     });
 
+    describe('tenant-aware HTTPS domain matching', () => {
+        it('matches the configured tenant domain (bare hostname)', () => {
+            const result = parseClaimInput('https://vetpass.app/oid4vci?offer=x', {
+                httpsDomains: ['vetpass.app'],
+            });
+            expect(result.kind).toBe('lcw-https');
+            if (result.kind === 'lcw-https') {
+                expect(result.path).toBe('/oid4vci?offer=x');
+            }
+        });
+
+        it('matches the configured tenant domain (full origin)', () => {
+            const result = parseClaimInput('https://scoutpass.app/claim', {
+                httpsDomains: ['https://scoutpass.app'],
+            });
+            expect(result.kind).toBe('lcw-https');
+        });
+
+        it('rejects domains not in the configured list', () => {
+            const result = parseClaimInput('https://lcw.app/x', {
+                httpsDomains: ['vetpass.app'],
+            });
+            expect(result.kind).toBe('unrecognized');
+            if (result.kind === 'unrecognized') expect(result.reason).toBe('unknown_scheme');
+        });
+
+        it('matches case-insensitively on host', () => {
+            const result = parseClaimInput('https://LEARNCARD.APP/x', {
+                httpsDomains: ['learncard.app'],
+            });
+            expect(result.kind).toBe('lcw-https');
+        });
+
+        it('uses default lcw.app when config omits httpsDomains', () => {
+            const result = parseClaimInput('https://lcw.app/x');
+            expect(result.kind).toBe('lcw-https');
+        });
+    });
+
+    describe('tenant-aware custom scheme matching', () => {
+        it('accepts custom schemes from tenant config', () => {
+            const result = parseClaimInput('vcrequest://issue?id=1', {
+                customSchemes: ['vcrequest'],
+            });
+            expect(result.kind).toBe('vc-api-custom-scheme');
+        });
+
+        it('rejects custom schemes not in tenant config', () => {
+            const result = parseClaimInput('dccrequest://issue?id=1', {
+                customSchemes: ['vcrequest'],
+            });
+            expect(result.kind).toBe('unrecognized');
+        });
+
+        it('falls back to defaults when customSchemes is omitted', () => {
+            const result = parseClaimInput('dccrequest://issue?id=1');
+            expect(result.kind).toBe('vc-api-custom-scheme');
+        });
+    });
+
     describe('boost-claim query params', () => {
         it('detects ?boostUri=&challenge= on a https URL', () => {
             const result = parseClaimInput(
