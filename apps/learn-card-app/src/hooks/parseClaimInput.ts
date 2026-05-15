@@ -29,7 +29,7 @@ export type ParsedClaimInput =
     | { kind: 'boost-claim'; boostUri: string; challenge: string }
     | { kind: 'interaction-url'; url: string }
     | { kind: 'connection-request'; did: string; profileId: string }
-    | { kind: 'raw-vc-candidate'; raw: string }
+    | { kind: 'raw-vc-candidate'; raw: string; parsed: unknown }
     | { kind: 'unrecognized'; reason: UnrecognizedReason };
 
 /**
@@ -47,15 +47,50 @@ export interface ParseClaimInputConfig {
     httpsDomains?: string[];
 }
 
-const DEFAULT_CUSTOM_SCHEMES = ['dccrequest', 'msprequest', 'asuprequest'];
-const DEFAULT_HTTPS_DOMAINS = ['lcw.app'];
+/**
+ * Last-resort defaults when no tenant config is plumbed in. These
+ * match what AppUrlListener and the QR scanner historically accepted
+ * BEFORE the tenant-aware refactor:
+ *  - Custom schemes: standard VC-API requestors.
+ *  - HTTPS domains: both LearnCard properties (Universal-Link domain
+ *    + legacy LCW shortlink) so neither caller silently rejects URLs
+ *    the other used to accept.
+ *
+ * Production code should always pass tenant config explicitly via
+ * `ParseClaimInputConfig`; these constants only fire on the test
+ * path and any code path that omits tenant resolution.
+ */
+export const DEFAULT_CUSTOM_SCHEMES = ['dccrequest', 'msprequest', 'asuprequest'];
+export const DEFAULT_HTTPS_DOMAINS = ['learncard.app', 'lcw.app'];
 
-const normalizeHost = (host: string): string => {
+export const normalizeClaimInputHost = (host: string): string => {
     try {
         return new URL(host.includes('://') ? host : `https://${host}`).host.toLowerCase();
     } catch {
         return host.toLowerCase();
     }
+};
+
+/**
+ * Returns true if `url` resolves to one of the recognized tenant
+ * HTTPS hostnames (per `parseClaimInput`'s config / defaults).
+ * Exported so AppUrlListener can restore its legacy "trust the
+ * tenant domain, push the URL as-is" behavior for query-classified
+ * kinds that the parser would otherwise hide as `boost-claim` etc.
+ */
+export const isTenantHttpsUrl = (
+    url: string,
+    config: ParseClaimInputConfig = {}
+): boolean => {
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return false;
+    }
+    if (parsed.protocol !== 'https:') return false;
+    const hostnames = (config.httpsDomains ?? DEFAULT_HTTPS_DOMAINS).map(normalizeClaimInputHost);
+    return hostnames.includes(parsed.host.toLowerCase());
 };
 
 /**
@@ -88,13 +123,17 @@ export const parseClaimInput = (
     const customSchemes = (config.customSchemes ?? DEFAULT_CUSTOM_SCHEMES).map(s =>
         s.toLowerCase()
     );
-    const httpsHostnames = (config.httpsDomains ?? DEFAULT_HTTPS_DOMAINS).map(normalizeHost);
+    const httpsHostnames = (config.httpsDomains ?? DEFAULT_HTTPS_DOMAINS).map(normalizeClaimInputHost);
 
     let parsedUrl: URL | null = null;
     try {
         parsedUrl = new URL(trimmed);
     } catch {
         parsedUrl = null;
+    }
+
+    if (!parsedUrl && /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
+        return { kind: 'unrecognized', reason: 'malformed_url' };
     }
 
     if (parsedUrl) {
@@ -127,8 +166,9 @@ export const parseClaimInput = (
     const bareQueryClassification = classifyBareQueryString(trimmed);
     if (bareQueryClassification) return bareQueryClassification;
 
-    if (looksLikeVcJson(trimmed)) {
-        return { kind: 'raw-vc-candidate', raw: trimmed };
+    const vcJsonMatch = parseAsVcCandidate(trimmed);
+    if (vcJsonMatch) {
+        return { kind: 'raw-vc-candidate', raw: trimmed, parsed: vcJsonMatch };
     }
 
     return { kind: 'unrecognized', reason: 'unknown_format' };
@@ -168,20 +208,20 @@ const classifyBareQueryString = (input: string): ParsedClaimInput | null => {
     }
 };
 
-const looksLikeVcJson = (input: string): boolean => {
-    const head = input.trimStart()[0];
-    if (head !== '{' && head !== '[') return false;
+const parseAsVcCandidate = (input: string): unknown | null => {
+    const head = input[0];
+    if (head !== '{' && head !== '[') return null;
     try {
-        const parsed = JSON.parse(input);
-        if (!parsed || typeof parsed !== 'object') return false;
-        const ctx = (parsed as Record<string, unknown>)['@context'];
-        const type = (parsed as Record<string, unknown>).type;
-        const hasContext = Boolean(ctx);
+        const parsed: unknown = JSON.parse(input);
+        if (!parsed || typeof parsed !== 'object') return null;
+        const obj = parsed as Record<string, unknown>;
+        const hasContext = Boolean(obj['@context']);
+        const type = obj.type;
         const hasVcType =
             (typeof type === 'string' && type.includes('VerifiableCredential')) ||
             (Array.isArray(type) && type.includes('VerifiableCredential'));
-        return hasContext && hasVcType;
+        return hasContext && hasVcType ? parsed : null;
     } catch {
-        return false;
+        return null;
     }
 };

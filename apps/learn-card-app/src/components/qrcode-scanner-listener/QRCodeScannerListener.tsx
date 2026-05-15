@@ -18,7 +18,7 @@ import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
 
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
-    const route = useClaimInputRouter({ source: 'camera' });
+    const route = useClaimInputRouter({ defaultSource: 'camera' });
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
 

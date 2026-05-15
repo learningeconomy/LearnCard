@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import QrScanner from 'qr-scanner';
 
 import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
+import type { VC } from '@learncard/types';
 
 import { useClaimInputRouter, type ClaimInputSource } from '../../hooks/useClaimInputRouter';
 import type { UnrecognizedReason } from '../../hooks/parseClaimInput';
@@ -10,19 +11,57 @@ import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
+import type { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 
-const UNRECOGNIZED_COPY: Record<UnrecognizedReason, string> = {
-    empty: '',
-    malformed_url:
-        "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.",
-    unknown_scheme:
-        "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.",
-    invalid_vc: "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.",
-    unknown_format:
-        "We couldn't make sense of that. Paste a claim link or upload a QR code image.",
+const unrecognizedCopyFor = (reason: UnrecognizedReason): string => {
+    switch (reason) {
+        case 'empty':
+            return 'Paste a link or upload a QR code image to continue.';
+        case 'malformed_url':
+            return "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.";
+        case 'unknown_scheme':
+            return "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.";
+        case 'invalid_vc':
+            return "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.";
+        case 'unknown_format':
+            return "We couldn't make sense of that. Paste a claim link or upload a QR code image.";
+    }
 };
 
-const QR_DECODE_OPTIONS = { returnDetailedScanResult: true } as const;
+const CLAIM_LINK_PREFIXES = [
+    'openid-credential-offer://',
+    'openid4vp://',
+    'dccrequest://',
+    'msprequest://',
+    'asuprequest://',
+];
+
+const looksLikeClaimLink = (text: string): boolean => {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+    if (CLAIM_LINK_PREFIXES.some(p => trimmed.toLowerCase().startsWith(p))) return true;
+    return trimmed.includes('boostUri=') || trimmed.includes('iuv=1');
+};
+
+const tryReadClipboardForClaim = async (): Promise<string | null> => {
+    if (!navigator.clipboard?.readText) return null;
+    if (typeof navigator.permissions?.query === 'function') {
+        try {
+            const status = await navigator.permissions.query({
+                name: 'clipboard-read' as PermissionName,
+            });
+            if (status.state !== 'granted') return null;
+        } catch {
+            return null;
+        }
+    }
+    try {
+        const text = await navigator.clipboard.readText();
+        return text && looksLikeClaimLink(text) ? text : null;
+    } catch {
+        return null;
+    }
+};
 
 export const PasteOrUploadClaimModal: React.FC = () => {
     const { closeModal, newModal } = useModal();
@@ -31,19 +70,15 @@ export const PasteOrUploadClaimModal: React.FC = () => {
     const [pasted, setPasted] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorCopy, setErrorCopy] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const dragDepthRef = useRef(0);
 
-    const pasteRouter = useClaimInputRouter({ source: 'paste' });
-    const uploadRouter = useClaimInputRouter({ source: 'image_upload' });
-    const clipboardRouter = useClaimInputRouter({ source: 'clipboard_auto' });
+    const route = useClaimInputRouter({ defaultSource: 'paste' });
 
     const openDownstreamClaimBoostModal = useCallback(
-        (props: {
-            uri?: string;
-            claimChallenge?: string;
-            vc?: import('@learncard/types').VC;
-        }) => {
+        (props: { uri?: string; claimChallenge?: string; vc?: VC }) => {
             newModal(
                 <ClaimBoost
                     uri={props.uri}
@@ -59,7 +94,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
     );
 
     const openDownstreamAddContactModal = useCallback(
-        (contact: import('../../pages/addressBook/addressBookHelpers').AddressBookContact) => {
+        (contact: AddressBookContact) => {
             newModal(
                 <AddContactView
                     user={contact}
@@ -75,28 +110,15 @@ export const PasteOrUploadClaimModal: React.FC = () => {
 
     const dispatch = useCallback(
         async (input: string, source: ClaimInputSource): Promise<boolean> => {
-            const router =
-                source === 'paste'
-                    ? pasteRouter
-                    : source === 'image_upload'
-                      ? uploadRouter
-                      : clipboardRouter;
-
             setIsProcessing(true);
             try {
-                const result = await router(input);
+                const result = await route(input, source);
 
                 if (result.kind === 'unrecognized') {
-                    setErrorCopy(UNRECOGNIZED_COPY[result.reason] || UNRECOGNIZED_COPY.unknown_format);
+                    setErrorCopy(unrecognizedCopyFor(result.reason));
                     return false;
                 }
 
-                // The router's 'routed' / 'open_website' / 'open_*' kinds all
-                // require the modal to step out of the way so the user can see
-                // whatever opens next (a new modal, a navigation target, a new
-                // tab). Close ourselves FIRST, then open the downstream modal —
-                // matches the established `closeModal() → newModal()` pattern in
-                // AddToLearnCardMenu.
                 closeModal();
 
                 if (result.kind === 'open_claim_boost') {
@@ -111,12 +133,11 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 } else if (result.kind === 'open_website') {
                     window.open(result.url, '_blank');
                 }
-                // 'routed' — the router already called history.push; nothing more to do.
 
                 return true;
             } catch (err) {
                 presentToast(
-                    `Couldn't process that — ${err instanceof Error ? err.message : 'unknown error'}`,
+                    `Oops! ${err instanceof Error ? err.message : 'Something went wrong.'}`,
                     { type: ToastTypeEnum.Error, hasDismissButton: true }
                 );
                 return false;
@@ -125,9 +146,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
             }
         },
         [
-            pasteRouter,
-            uploadRouter,
-            clipboardRouter,
+            route,
             closeModal,
             presentToast,
             openDownstreamClaimBoostModal,
@@ -144,8 +163,11 @@ export const PasteOrUploadClaimModal: React.FC = () => {
         async (file: File) => {
             setErrorCopy(null);
             try {
-                const scanResult = await QrScanner.scanImage(file, QR_DECODE_OPTIONS);
-                const decoded = typeof scanResult === 'string' ? scanResult : scanResult.data;
+                const scanResult = await QrScanner.scanImage(file, {
+                    returnDetailedScanResult: true,
+                });
+                const decoded =
+                    typeof scanResult === 'string' ? scanResult : scanResult.data;
                 if (!decoded) {
                     setErrorCopy(
                         "We couldn't find a QR code in that image. Make sure the QR fills most of the photo and isn't blurry."
@@ -164,46 +186,43 @@ export const PasteOrUploadClaimModal: React.FC = () => {
 
     useEffect(() => {
         let cancelled = false;
-        const tryClipboard = async () => {
-            if (!navigator.clipboard?.readText) return;
-            try {
-                const text = await navigator.clipboard.readText();
-                if (cancelled || !text) return;
-                const looksLikeClaim =
-                    text.startsWith('openid-credential-offer://') ||
-                    text.startsWith('openid4vp://') ||
-                    text.startsWith('dccrequest://') ||
-                    text.startsWith('msprequest://') ||
-                    text.startsWith('asuprequest://') ||
-                    text.includes('boostUri=') ||
-                    text.includes('iuv=1');
-                if (looksLikeClaim) {
-                    setPasted(text);
-                }
-            } catch {
-                // Permissions API denied — silent, the user can paste manually
-            }
-        };
-        void tryClipboard();
+        void tryReadClipboardForClaim().then(text => {
+            if (!cancelled && text) setPasted(text);
+        });
         return () => {
             cancelled = true;
         };
     }, []);
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-
-    const handleDrop = useCallback(
-        async (e: React.DragEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const file = e.dataTransfer.files?.[0];
-            if (file && file.type.startsWith('image/')) {
-                await handleFile(file);
-            }
-        },
+    const dragHandlers = useMemo(
+        () => ({
+            onDragEnter: (e: React.DragEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragDepthRef.current += 1;
+                if (dragDepthRef.current === 1) setIsDragging(true);
+            },
+            onDragOver: (e: React.DragEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+            },
+            onDragLeave: (e: React.DragEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+                if (dragDepthRef.current === 0) setIsDragging(false);
+            },
+            onDrop: async (e: React.DragEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragDepthRef.current = 0;
+                setIsDragging(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file && file.type.startsWith('image/')) {
+                    await handleFile(file);
+                }
+            },
+        }),
         [handleFile]
     );
 
@@ -280,14 +299,27 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            onDragOver={handleDragOver}
-                            onDrop={handleDrop}
+                            {...dragHandlers}
                             disabled={isProcessing}
-                            className="w-full py-6 px-4 rounded-xl border-2 border-dashed border-grayscale-300 hover:border-grayscale-400 hover:bg-grayscale-10 transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed"
+                            className={`w-full py-6 px-4 rounded-xl border-2 border-dashed transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed ${
+                                isDragging
+                                    ? 'border-emerald-500 bg-emerald-50'
+                                    : 'border-grayscale-300 hover:border-grayscale-400 hover:bg-grayscale-10'
+                            }`}
                         >
-                            <p className="text-sm text-grayscale-700 font-medium">Choose an image</p>
-                            <p className="text-xs text-grayscale-500 mt-1">
-                                or drop it here
+                            <p
+                                className={`text-sm font-medium ${
+                                    isDragging ? 'text-emerald-700' : 'text-grayscale-700'
+                                }`}
+                            >
+                                {isDragging ? 'Drop it!' : 'Choose an image'}
+                            </p>
+                            <p
+                                className={`text-xs mt-1 ${
+                                    isDragging ? 'text-emerald-600' : 'text-grayscale-500'
+                                }`}
+                            >
+                                {isDragging ? 'Release to upload' : 'or drop it here'}
                             </p>
                         </button>
                         <input

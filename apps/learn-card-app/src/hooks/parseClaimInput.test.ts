@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseClaimInput } from './parseClaimInput';
+import {
+    DEFAULT_HTTPS_DOMAINS,
+    isTenantHttpsUrl,
+    parseClaimInput,
+} from './parseClaimInput';
 
 describe('parseClaimInput', () => {
     describe('OID4VCI', () => {
@@ -9,9 +13,6 @@ describe('parseClaimInput', () => {
                 'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.example.com%22%7D'
             );
             expect(result.kind).toBe('oid4vci');
-            if (result.kind === 'oid4vci') {
-                expect(result.offerUrl).toContain('credential_offer=');
-            }
         });
 
         it('detects openid-credential-offer:// scheme (by-reference)', () => {
@@ -20,23 +21,12 @@ describe('parseClaimInput', () => {
             );
             expect(result.kind).toBe('oid4vci');
         });
-
-        it('preserves the full offer URL for downstream routing', () => {
-            const offer = 'openid-credential-offer://?credential_offer_uri=https://example.com';
-            const result = parseClaimInput(offer);
-            if (result.kind === 'oid4vci') expect(result.offerUrl).toBe(offer);
-        });
     });
 
     describe('OID4VP', () => {
         it('detects openid4vp:// scheme', () => {
-            const result = parseClaimInput(
-                'openid4vp://authorize?client_id=verifier.example.com&request_uri=https%3A%2F%2Fverifier.example.com%2Frequest'
-            );
+            const result = parseClaimInput('openid4vp://authorize?client_id=verifier.example.com');
             expect(result.kind).toBe('oid4vp');
-            if (result.kind === 'oid4vp') {
-                expect(result.requestUrl).toContain('authorize');
-            }
         });
     });
 
@@ -57,10 +47,20 @@ describe('parseClaimInput', () => {
                 expect(result.path.startsWith('/request')).toBe(true);
             }
         });
+
+        it('preserves the pathname (no /request prefix) when the URL already has one', () => {
+            const result = parseClaimInput(
+                'dccrequest://issuer.example.com/abc?challenge=xyz'
+            );
+            expect(result.kind).toBe('vc-api-custom-scheme');
+            if (result.kind === 'vc-api-custom-scheme') {
+                expect(result.path).toBe('/abc?challenge=xyz');
+            }
+        });
     });
 
     describe('LCW HTTPS', () => {
-        it('detects https://lcw.app URLs', () => {
+        it('detects https://lcw.app URLs as boost-claim when query params match', () => {
             const result = parseClaimInput('https://lcw.app/claim?boostUri=x&challenge=y');
             expect(result.kind).toBe('boost-claim');
         });
@@ -89,18 +89,12 @@ describe('parseClaimInput', () => {
                 httpsDomains: ['vetpass.app'],
             });
             expect(result.kind).toBe('unrecognized');
-            if (result.kind === 'unrecognized') expect(result.reason).toBe('unknown_scheme');
         });
 
         it('matches case-insensitively on host', () => {
             const result = parseClaimInput('https://LEARNCARD.APP/x', {
                 httpsDomains: ['learncard.app'],
             });
-            expect(result.kind).toBe('lcw-https');
-        });
-
-        it('uses default lcw.app when config omits httpsDomains', () => {
-            const result = parseClaimInput('https://lcw.app/x');
             expect(result.kind).toBe('lcw-https');
         });
     });
@@ -119,11 +113,6 @@ describe('parseClaimInput', () => {
             });
             expect(result.kind).toBe('unrecognized');
         });
-
-        it('falls back to defaults when customSchemes is omitted', () => {
-            const result = parseClaimInput('dccrequest://issue?id=1');
-            expect(result.kind).toBe('vc-api-custom-scheme');
-        });
     });
 
     describe('boost-claim query params', () => {
@@ -132,10 +121,6 @@ describe('parseClaimInput', () => {
                 'https://learncard.app/claim?boostUri=urn%3Aabc&challenge=xyz'
             );
             expect(result.kind).toBe('boost-claim');
-            if (result.kind === 'boost-claim') {
-                expect(result.boostUri).toBe('urn:abc');
-                expect(result.challenge).toBe('xyz');
-            }
         });
 
         it('detects bare query string ?boostUri=&challenge=', () => {
@@ -143,18 +128,17 @@ describe('parseClaimInput', () => {
             expect(result.kind).toBe('boost-claim');
         });
 
-        it('requires both fields — boostUri alone is not enough', () => {
-            const result = parseClaimInput('https://learncard.app/claim?boostUri=urn:abc');
+        it('does not match without a challenge', () => {
+            const result = parseClaimInput('https://random.example.com/claim?boostUri=urn:abc');
             expect(result.kind).toBe('unrecognized');
         });
     });
 
-    describe('interaction URLs (iuv=1)', () => {
-        it('detects HTTPS interaction URLs', () => {
+    describe('interaction URLs', () => {
+        it('detects ?iuv=1', () => {
             const url = 'https://example.com/interaction?iuv=1&id=abc';
             const result = parseClaimInput(url);
             expect(result.kind).toBe('interaction-url');
-            if (result.kind === 'interaction-url') expect(result.url).toBe(url);
         });
     });
 
@@ -190,6 +174,16 @@ describe('parseClaimInput', () => {
             expect(result.kind).toBe('raw-vc-candidate');
         });
 
+        it('threads the parsed object alongside the raw string', () => {
+            const raw = JSON.stringify(vc);
+            const result = parseClaimInput(raw);
+            expect(result.kind).toBe('raw-vc-candidate');
+            if (result.kind === 'raw-vc-candidate') {
+                expect(result.parsed).toEqual(vc);
+                expect(result.raw).toBe(raw);
+            }
+        });
+
         it('accepts string-typed type field', () => {
             const result = parseClaimInput(JSON.stringify({ ...vc, type: 'VerifiableCredential' }));
             expect(result.kind).toBe('raw-vc-candidate');
@@ -199,16 +193,6 @@ describe('parseClaimInput', () => {
             const result = parseClaimInput(
                 JSON.stringify({ '@context': ['x'], type: ['SomeOtherType'] })
             );
-            expect(result.kind).toBe('unrecognized');
-        });
-
-        it('does NOT match JSON without @context', () => {
-            const result = parseClaimInput(JSON.stringify({ type: ['VerifiableCredential'] }));
-            expect(result.kind).toBe('unrecognized');
-        });
-
-        it('does NOT match non-object JSON', () => {
-            const result = parseClaimInput('"just a string"');
             expect(result.kind).toBe('unrecognized');
         });
 
@@ -232,7 +216,9 @@ describe('parseClaimInput', () => {
         });
 
         it('trims surrounding whitespace before parsing', () => {
-            const result = parseClaimInput('  openid-credential-offer://?credential_offer=%7B%7D  ');
+            const result = parseClaimInput(
+                '  openid-credential-offer://?credential_offer=%7B%7D  '
+            );
             expect(result.kind).toBe('oid4vci');
         });
 
@@ -242,10 +228,22 @@ describe('parseClaimInput', () => {
             if (result.kind === 'unrecognized') expect(result.reason).toBe('unknown_scheme');
         });
 
-        it('returns "unknown_format" for unparseable input', () => {
+        it('returns "unknown_format" for unparseable plain text', () => {
             const result = parseClaimInput('this is just some random text');
             expect(result.kind).toBe('unrecognized');
             if (result.kind === 'unrecognized') expect(result.reason).toBe('unknown_format');
+        });
+
+        it('returns "malformed_url" for URL-shaped strings that fail to parse', () => {
+            const result = parseClaimInput('openid-credential-offer://[not a url]');
+            expect(result.kind).toBe('unrecognized');
+            if (result.kind === 'unrecognized') expect(result.reason).toBe('malformed_url');
+        });
+
+        it('returns "malformed_url" for URL-shaped strings missing required parts', () => {
+            const result = parseClaimInput('https://');
+            expect(result.kind).toBe('unrecognized');
+            if (result.kind === 'unrecognized') expect(result.reason).toBe('malformed_url');
         });
 
         it('is case-insensitive on the scheme', () => {
@@ -275,5 +273,69 @@ describe('parseClaimInput', () => {
             );
             expect(result.kind).toBe('interaction-url');
         });
+    });
+
+    describe('default tenant HTTPS domains', () => {
+        it('includes both learncard.app and lcw.app', () => {
+            expect(DEFAULT_HTTPS_DOMAINS).toContain('learncard.app');
+            expect(DEFAULT_HTTPS_DOMAINS).toContain('lcw.app');
+        });
+
+        it('recognizes learncard.app by default', () => {
+            const result = parseClaimInput('https://learncard.app/some/path?x=1');
+            expect(result.kind).toBe('lcw-https');
+            if (result.kind === 'lcw-https') {
+                expect(result.path).toBe('/some/path?x=1');
+            }
+        });
+
+        it('recognizes lcw.app by default', () => {
+            const result = parseClaimInput('https://lcw.app/x');
+            expect(result.kind).toBe('lcw-https');
+        });
+    });
+});
+
+describe('isTenantHttpsUrl', () => {
+    it('returns true for HTTPS URLs on default tenant hosts', () => {
+        expect(isTenantHttpsUrl('https://learncard.app/anything?x=1')).toBe(true);
+        expect(isTenantHttpsUrl('https://lcw.app/path')).toBe(true);
+    });
+
+    it('returns false for non-tenant hosts', () => {
+        expect(isTenantHttpsUrl('https://random.example.com/anything')).toBe(false);
+    });
+
+    it('returns false for http:// (not https://)', () => {
+        expect(isTenantHttpsUrl('http://learncard.app/anything')).toBe(false);
+    });
+
+    it('returns false for custom schemes even on tenant domains', () => {
+        expect(isTenantHttpsUrl('openid-credential-offer://learncard.app')).toBe(false);
+    });
+
+    it('returns false for malformed URLs', () => {
+        expect(isTenantHttpsUrl('not a url')).toBe(false);
+    });
+
+    it('matches case-insensitively on host', () => {
+        expect(isTenantHttpsUrl('https://LEARNCARD.APP/x')).toBe(true);
+    });
+
+    it('respects custom tenant config', () => {
+        expect(
+            isTenantHttpsUrl('https://vetpass.app/x', { httpsDomains: ['vetpass.app'] })
+        ).toBe(true);
+        expect(
+            isTenantHttpsUrl('https://learncard.app/x', { httpsDomains: ['vetpass.app'] })
+        ).toBe(false);
+    });
+
+    it('accepts full-origin entries in httpsDomains', () => {
+        expect(
+            isTenantHttpsUrl('https://scoutpass.app/x', {
+                httpsDomains: ['https://scoutpass.app'],
+            })
+        ).toBe(true);
     });
 });

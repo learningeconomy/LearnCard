@@ -3,30 +3,27 @@ import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { PluginListenerHandle } from '@capacitor/core';
 
-import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import {
+    isTenantHttpsUrl,
     parseClaimInput,
     type ParseClaimInputConfig,
 } from '../../hooks/parseClaimInput';
+import { resolveTenantParseConfig } from '../../hooks/resolveTenantParseConfig';
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
 
-    const parserConfig = useMemo<ParseClaimInputConfig>(() => {
-        const config = getResolvedTenantConfig();
-        const nativeConfig = config.native;
-        return {
-            customSchemes:
-                nativeConfig?.customSchemes ?? ['dccrequest', 'msprequest', 'asuprequest'],
-            httpsDomains: nativeConfig?.deepLinkDomains ?? ['learncard.app'],
-        };
-    }, []);
+    const parserConfig = useMemo<ParseClaimInputConfig>(
+        () => resolveTenantParseConfig(),
+        []
+    );
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
 
         const handleUrlOpen = (event: URLOpenListenerEvent) => {
             try {
+                const isOnTenantHttpsDomain = isTenantHttpsUrl(event.url, parserConfig);
                 const parsed = parseClaimInput(event.url, parserConfig);
 
                 switch (parsed.kind) {
@@ -40,11 +37,31 @@ export const AppUrlListener: React.FC = () => {
                     case 'lcw-https':
                         history.push(parsed.path);
                         return;
+                    case 'boost-claim':
+                    case 'interaction-url':
+                    case 'connection-request':
+                        // Legacy fallback: parseClaimInput's query-classified kinds
+                        // (`?boostUri=&challenge=`, `?iuv=1`, `?did=did:web:…:users:…`)
+                        // preempt the HTTPS-host check by design — that's correct for
+                        // the in-app paste flow where the consumer is a modal. But the
+                        // OLD AppUrlListener trusted the tenant domain and ALWAYS
+                        // pushed `pathname+search+hash` for Universal Links on it. We
+                        // preserve that here so OS-level deep links on the tenant
+                        // domain remain a passthrough (regardless of whether a current
+                        // consumer reads those query params — preserves forward
+                        // compatibility with planned consumers).
+                        if (isOnTenantHttpsDomain) {
+                            try {
+                                const url = new URL(event.url);
+                                history.push(url.pathname + url.search + url.hash);
+                            } catch {
+                                // unreachable: we already know event.url parses
+                            }
+                        }
+                        return;
                     default:
-                        // Other kinds (boost-claim, interaction-url, connection-request,
-                        // raw-vc-candidate, unrecognized) aren't valid deep-link payloads:
-                        // they only make sense from inside the app (scanner or paste
-                        // modal), not from an OS-level URL open.
+                        // raw-vc-candidate / unrecognized — never produced by an OS-
+                        // level URL open. No-op.
                         return;
                 }
             } catch (error) {

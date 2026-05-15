@@ -6,7 +6,6 @@ import { useWallet } from 'learn-card-base';
 import { useUploadVcFromText } from './useUploadVcFromText';
 import { useAnalytics } from '../analytics/context';
 import { AnalyticsEvents } from '../analytics/events';
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import type { AddressBookContact } from '../pages/addressBook/addressBookHelpers';
 import {
     parseClaimInput,
@@ -15,6 +14,7 @@ import {
     type ParseClaimInputConfig,
     type UnrecognizedReason,
 } from './parseClaimInput';
+import { resolveTenantParseConfig } from './resolveTenantParseConfig';
 
 export type {
     ClaimSurface,
@@ -25,6 +25,11 @@ export type {
 export { parseClaimInput } from './parseClaimInput';
 
 export type ClaimInputSource = 'camera' | 'paste' | 'image_upload' | 'clipboard_auto';
+
+export type ClaimInputRouter = (
+    input: string,
+    source: ClaimInputSource
+) => Promise<ClaimRouteResult>;
 
 const INTERACTION_URL_TIMEOUT_MS = 10_000;
 
@@ -58,7 +63,12 @@ export type ClaimRouteResult =
     | { kind: 'unrecognized'; reason: UnrecognizedReason; raw: string };
 
 export interface UseClaimInputRouterOptions {
-    source: ClaimInputSource;
+    /**
+     * Default `source` for telemetry when the caller doesn't pass one
+     * at dispatch time. Kept for callers (like the camera scanner)
+     * whose source never changes per call.
+     */
+    defaultSource: ClaimInputSource;
 }
 
 const SURFACE_TO_PATH: Record<ClaimSurface, (parsed: ParsedClaimInput) => string | null> = {
@@ -91,24 +101,20 @@ const SURFACE_TO_PATH: Record<ClaimSurface, (parsed: ParsedClaimInput) => string
  * dispatch contract.
  */
 export const useClaimInputRouter = ({
-    source,
-}: UseClaimInputRouterOptions): ((input: string) => Promise<ClaimRouteResult>) => {
+    defaultSource,
+}: UseClaimInputRouterOptions): ClaimInputRouter => {
     const history = useHistory();
     const { initWallet } = useWallet();
     const { validateTextVC } = useUploadVcFromText();
     const { track } = useAnalytics();
 
-    const parserConfig = useMemo<ParseClaimInputConfig>(() => {
-        const tenant = getResolvedTenantConfig();
-        const nativeConfig = tenant.native;
-        return {
-            customSchemes: nativeConfig?.customSchemes,
-            httpsDomains: nativeConfig?.deepLinkDomains,
-        };
-    }, []);
+    const parserConfig = useMemo<ParseClaimInputConfig>(
+        () => resolveTenantParseConfig(),
+        []
+    );
 
     return useCallback(
-        async (input: string): Promise<ClaimRouteResult> => {
+        async (input: string, source: ClaimInputSource = defaultSource): Promise<ClaimRouteResult> => {
             const parsed = parseClaimInput(input, parserConfig);
 
             const emit = (result: ClaimRouteResult) => {
@@ -168,8 +174,7 @@ export const useClaimInputRouter = ({
                 if (errors) {
                     return emit({ kind: 'unrecognized', reason: 'invalid_vc', raw: input });
                 }
-                const vc = JSON.parse(parsed.raw) as VC;
-                return emit({ kind: 'open_claim_vc', vc });
+                return emit({ kind: 'open_claim_vc', vc: parsed.parsed as VC });
             }
 
             if (parsed.kind === 'interaction-url') {
@@ -219,6 +224,6 @@ export const useClaimInputRouter = ({
 
             return emit({ kind: 'unrecognized', reason: 'unknown_format', raw: input });
         },
-        [history, initWallet, validateTextVC, source, track, parserConfig]
+        [history, initWallet, validateTextVC, defaultSource, track, parserConfig]
     );
 };

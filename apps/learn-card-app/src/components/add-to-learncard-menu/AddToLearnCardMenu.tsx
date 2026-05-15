@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -8,8 +8,11 @@ import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
-import PasteOrUploadClaimModal from '../paste-or-upload-claim/PasteOrUploadClaimModal';
 import CheckListContainer from '../learncard/checklist/CheckListContainer';
+
+const LazyPasteOrUploadClaimModal = lazy(
+    () => import('../paste-or-upload-claim/PasteOrUploadClaimModal')
+);
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
 import BoostTemplateSelector from '../boost/boost-template/BoostTemplateSelector';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
@@ -123,7 +126,9 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         closeModal();
 
         newModal(
-            <PasteOrUploadClaimModal />,
+            <Suspense fallback={null}>
+                <LazyPasteOrUploadClaimModal />
+            </Suspense>,
             { hideButton: true, sectionClassName: '!max-w-[500px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
