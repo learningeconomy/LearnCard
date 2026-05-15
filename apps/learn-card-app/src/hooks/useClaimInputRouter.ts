@@ -166,7 +166,9 @@ export const useClaimInputRouter = ({
                         return emit({ kind: 'routed', surface: 'oid4vp', path });
                     }
                     if (interactionData?.protocols?.vcapi) {
-                        const path = `/request?vc_request_url=${interactionData.protocols.vcapi}`;
+                        const path = `/request?vc_request_url=${encodeURIComponent(
+                            interactionData.protocols.vcapi
+                        )}`;
                         history.push(path);
                         return emit({
                             kind: 'routed',
