@@ -115,6 +115,109 @@ describe('decideRecovery', () => {
 
             expect(decision.kind).toBe('retry_silent');
         });
+    });
+
+    describe('structured signer-failure dispatch', () => {
+        it('matches VciError + credential_request_failed + 5xx (the walt.id case) regardless of message text', () => {
+            const wrapped = Object.assign(new Error('Generic wrapper'), {
+                name: 'VciError',
+                code: 'credential_request_failed',
+                status: 500,
+                body: { something: 'totally unrelated to DIDs' },
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+        });
+
+        it('matches VciError + proof_signing_failed at any status', () => {
+            const wrapped = Object.assign(new Error('no status field'), {
+                name: 'VciError',
+                code: 'proof_signing_failed',
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('wallet'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+        });
+
+        it('matches VpSubmitError on 5xx (verifier-side retryable)', () => {
+            const wrapped = Object.assign(new Error('Generic'), {
+                name: 'VpSubmitError',
+                status: 503,
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+        });
+
+        it('matches OAuth2-style body.error = "invalid_proof"', () => {
+            const wrapped = Object.assign(new Error('Generic'), {
+                name: 'VciError',
+                code: 'token_request_failed',
+                body: { error: 'invalid_proof', error_description: 'kid not bound' },
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+        });
+
+        it('does NOT match VciError + credential_request_failed at 4xx (user error, not server)', () => {
+            const wrapped = Object.assign(new Error('Bad request'), {
+                name: 'VciError',
+                code: 'credential_request_failed',
+                status: 400,
+                body: { error: 'invalid_request' },
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('surface_error');
+        });
+
+        it('does NOT match VpError (not in the dispatch table)', () => {
+            const wrapped = Object.assign(new Error('Generic'), {
+                name: 'VpError',
+                status: 500,
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('surface_error');
+        });
 
         it('prompts the user before falling back to a non-did:key signer strategy', () => {
             // `decideRecovery` is generic over signer-strategy ids (the
