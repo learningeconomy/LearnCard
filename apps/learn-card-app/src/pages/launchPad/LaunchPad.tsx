@@ -104,15 +104,17 @@ const LaunchPad: React.FC = () => {
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
 
-    // Filter browse apps that aren't already installed (only on My Apps tab)
+    // Filter browse apps that aren't already installed (only on My Apps tab, and only when not searching)
     const installedListingIds = new Set(installedApps.map(app => app.listing_id));
+
+    const isSearching = searchInput.trim().length > 0;
 
     const availableApps = useMemo(
         () =>
-            isMyApps
+            isMyApps && !isSearching
                 ? browseApps.filter(app => !installedListingIds.has(app.listing_id))
                 : browseApps,
-        [browseApps, installedListingIds, isMyApps]
+        [browseApps, installedListingIds, isMyApps, isSearching]
     );
 
     // Curated apps: filter installed out only on My Apps tab (Suggested shows non-installed)
@@ -458,25 +460,6 @@ const LaunchPad: React.FC = () => {
                                                 app={customAppFromQueryParams}
                                                 filterBy={filterBy}
                                             />
-                                        )}
-
-                                        {/* Installed App Store Apps (shown first, My Apps only) */}
-                                        {isMyApps && filteredInstalledApps.length > 0 && (
-                                            <>
-                                                <div className="px-2 pt-4 pb-2">
-                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Installed Apps
-                                                    </p>
-                                                </div>
-                                                {filteredInstalledApps.map(app => (
-                                                    <AppStoreListItem
-                                                        key={`installed-${app.listing_id}`}
-                                                        listing={app}
-                                                        isInstalled={true}
-                                                        onInstallSuccess={refetchInstalledApps}
-                                                    />
-                                                ))}
-                                            </>
                                         )}
 
                                         {/* Legacy Apps and Contracts */}
