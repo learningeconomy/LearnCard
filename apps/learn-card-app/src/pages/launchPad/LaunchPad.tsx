@@ -688,7 +688,7 @@ const LaunchPad: React.FC = () => {
                                     )}
 
                                     {filterBy === LaunchPadFilterOptionsEnum.allApps &&
-                                        tab === LaunchPadTabEnum.all && <LaunchPadBecomeAnApp />}
+                                        (isMyApps || isAll) && <LaunchPadBecomeAnApp />}
                                 </IonList>
                             )}
                         </div>
