@@ -516,7 +516,7 @@ const LaunchPad: React.FC = () => {
                                                             app => app.category === 'plugin'
                                                         )
                                                             ? 'Plugins'
-                                                            : 'Discover More Apps'}
+                                                            : 'Search Results'}
                                                     </p>
                                                 </div>
                                                 {filteredAvailableApps.map(app => (
