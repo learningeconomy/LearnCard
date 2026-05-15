@@ -146,7 +146,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
             { hideButton: true, sectionClassName: '!max-w-[500px]' },
-            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
 
