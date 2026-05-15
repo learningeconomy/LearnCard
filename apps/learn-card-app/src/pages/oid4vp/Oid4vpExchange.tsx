@@ -101,6 +101,12 @@ type Phase =
            * (before the request was parsed).
            */
           clientInfo?: ClientInfo;
+          retryConsent?: {
+              request: AuthorizationRequest;
+              selection?: SelectionResult;
+              dcqlSelection?: DcqlSelectionResult;
+              pool: PooledCandidate[];
+          };
       };
 
 /**
@@ -194,6 +200,7 @@ const Oid4vpExchange: React.FC = () => {
     // -----------------------------------------------------------------
     const handleApprove = useCallback(async (picks: ConsentPicks) => {
         if (phase.kind !== 'consent') return;
+        resilience.resetRun();
         const currentPhase = phase;
         // Capture branded identity once so we can thread it through the
         // submitting and finished states without re-deriving after the
@@ -249,13 +256,34 @@ const Oid4vpExchange: React.FC = () => {
             // Carry `clientInfo` through to the error phase so the
             // failure screen still renders the branded `VerifierHeader`
             // — the user keeps brand context even when the share fails.
-            setPhase({ kind: 'error', error, clientInfo });
+            setPhase({
+                kind: 'error',
+                error,
+                clientInfo,
+                retryConsent: {
+                    request: currentPhase.request,
+                    selection: currentPhase.selection,
+                    dcqlSelection: currentPhase.dcqlSelection,
+                    pool: currentPhase.pool,
+                },
+            });
         }
-    }, [phase, initWallet]);
+    }, [phase, initWallet, resilience]);
 
     const handleCancel = useCallback(() => {
         history.push('/');
     }, [history]);
+
+    const handleRetry = useCallback(() => {
+        if (phase.kind !== 'error' || !phase.retryConsent) return;
+        setPhase({
+            kind: 'consent',
+            request: phase.retryConsent.request,
+            selection: phase.retryConsent.selection,
+            dcqlSelection: phase.retryConsent.dcqlSelection,
+            pool: phase.retryConsent.pool,
+        });
+    }, [phase]);
 
     // -----------------------------------------------------------------
     // Render
@@ -351,6 +379,7 @@ const Oid4vpExchange: React.FC = () => {
                                 }
                             )
                         }
+                        onRetry={phase.retryConsent ? handleRetry : undefined}
                         onCancel={() => history.push('/')}
                     />
                 )}

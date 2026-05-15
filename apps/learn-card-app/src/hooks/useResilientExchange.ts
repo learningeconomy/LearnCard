@@ -34,6 +34,10 @@ interface UseResilientExchangeResult {
      * (`exchange_run_id` would otherwise join attempts across runs and
      * outcome events would fire only once per mount). Call this
      * before kicking off a retry attempt on the same page.
+     *
+     * Same-tick safe: telemetry reads the new id from a ref, so an
+     * `await wrapper(callbacks)` fired immediately after `resetRun()`
+     * lands its events under the new id (no waiting for re-render).
      */
     resetRun: () => void;
 }
@@ -71,6 +75,7 @@ export const useResilientExchange = ({
     const { track } = useAnalytics();
 
     const [runId, setRunId] = useState<string>(cryptoRandomId);
+    const runIdRef = useRef<string>(runId);
     const startedAtRef = useRef<number>(Date.now());
     const outcomeReportedRef = useRef<boolean>(false);
 
@@ -78,7 +83,9 @@ export const useResilientExchange = ({
     const promptResolverRef = useRef<((accepted: boolean) => void) | null>(null);
 
     const resetRun = useCallback(() => {
-        setRunId(cryptoRandomId());
+        const newId = cryptoRandomId();
+        runIdRef.current = newId;
+        setRunId(newId);
         startedAtRef.current = Date.now();
         outcomeReportedRef.current = false;
     }, []);
@@ -116,7 +123,7 @@ export const useResilientExchange = ({
             if (event.type === 'attempt_succeeded') {
                 void track(AnalyticsEvents.OPENID_RESILIENCE_ATTEMPT, {
                     surface,
-                    exchange_run_id: runId,
+                    exchange_run_id: runIdRef.current,
                     attempt_number: event.attemptNumber,
                     strategy_id: event.strategyId,
                     strategy_axis: strategyAxisFromId(event.strategyId),
@@ -130,7 +137,7 @@ export const useResilientExchange = ({
                     const isFirstAttempt = event.attemptNumber === 1;
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
                         surface,
-                        exchange_run_id: runId,
+                        exchange_run_id: runIdRef.current,
                         outcome: isFirstAttempt
                             ? 'success_first_attempt'
                             : 'success_after_fallback',
@@ -148,7 +155,7 @@ export const useResilientExchange = ({
             if (event.type === 'attempt_failed') {
                 void track(AnalyticsEvents.OPENID_RESILIENCE_ATTEMPT, {
                     surface,
-                    exchange_run_id: runId,
+                    exchange_run_id: runIdRef.current,
                     attempt_number: event.attemptNumber,
                     strategy_id: event.strategyId,
                     strategy_axis: strategyAxisFromId(event.strategyId),
@@ -163,7 +170,7 @@ export const useResilientExchange = ({
             if (event.type === 'decision_made') {
                 void track(AnalyticsEvents.OPENID_RESILIENCE_DECISION, {
                     surface,
-                    exchange_run_id: runId,
+                    exchange_run_id: runIdRef.current,
                     attempt_number: event.attemptNumber,
                     decision: event.decision.kind,
                     next_strategy_id:
@@ -191,7 +198,7 @@ export const useResilientExchange = ({
                     outcomeReportedRef.current = true;
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
                         surface,
-                        exchange_run_id: runId,
+                        exchange_run_id: runIdRef.current,
                         outcome: 'failure_exhausted',
                         total_attempts: event.attemptLog.signersTried.length,
                         signers_tried: event.attemptLog.signersTried,
@@ -208,7 +215,7 @@ export const useResilientExchange = ({
             if (event.type === 'unrecognized_recoverable_failure') {
                 void track(AnalyticsEvents.OPENID_RESILIENCE_UNRECOGNIZED_FAILURE, {
                     surface,
-                    exchange_run_id: runId,
+                    exchange_run_id: runIdRef.current,
                     attempt_number: event.attemptNumber,
                     error_kind: event.friendly.kind as 'wallet' | 'request_invalid' | 'unknown',
                     error_name: event.errorName,
@@ -227,7 +234,7 @@ export const useResilientExchange = ({
                     outcomeReportedRef.current = true;
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
                         surface,
-                        exchange_run_id: runId,
+                        exchange_run_id: runIdRef.current,
                         outcome: 'failure_user_cancelled',
                         total_attempts: event.attemptLog.signersTried.length,
                         signers_tried: event.attemptLog.signersTried,
@@ -239,7 +246,7 @@ export const useResilientExchange = ({
                 }
             }
         },
-        [counterparty, surface, track, runId]
+        [counterparty, surface, track]
     );
 
     const callbacks = useMemo<RunWithRecoveryCallbacks>(
