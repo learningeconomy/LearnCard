@@ -276,9 +276,13 @@ describe('parseClaimInput', () => {
     });
 
     describe('default tenant HTTPS domains', () => {
-        it('includes both learncard.app and lcw.app', () => {
-            expect(DEFAULT_HTTPS_DOMAINS).toContain('learncard.app');
-            expect(DEFAULT_HTTPS_DOMAINS).toContain('lcw.app');
+        it('mirrors DEFAULT_LEARNCARD_TENANT_CONFIG.native.deepLinkDomains', () => {
+            expect(DEFAULT_HTTPS_DOMAINS).toEqual([
+                'learncard.app',
+                'learncardapp.netlify.app',
+                'learncardapp.netlify.com',
+                'lcw.app',
+            ]);
         });
 
         it('recognizes learncard.app by default', () => {
@@ -292,6 +296,57 @@ describe('parseClaimInput', () => {
         it('recognizes lcw.app by default', () => {
             const result = parseClaimInput('https://lcw.app/x');
             expect(result.kind).toBe('lcw-https');
+        });
+
+        it('recognizes Netlify preview hosts by default', () => {
+            expect(
+                parseClaimInput('https://learncardapp.netlify.app/some/path').kind
+            ).toBe('lcw-https');
+            expect(
+                parseClaimInput('https://learncardapp.netlify.com/some/path').kind
+            ).toBe('lcw-https');
+        });
+    });
+
+    describe('bare tenant root rejection', () => {
+        it('rejects https://learncard.app (no path, no query, no hash) as unrecognized', () => {
+            const result = parseClaimInput('https://learncard.app');
+            expect(result.kind).toBe('unrecognized');
+            if (result.kind === 'unrecognized') {
+                expect(result.reason).toBe('unknown_format');
+            }
+        });
+
+        it('rejects https://learncard.app/ (root path only) as unrecognized', () => {
+            const result = parseClaimInput('https://learncard.app/');
+            expect(result.kind).toBe('unrecognized');
+            if (result.kind === 'unrecognized') {
+                expect(result.reason).toBe('unknown_format');
+            }
+        });
+
+        it('still accepts root path with a query string', () => {
+            const result = parseClaimInput('https://learncard.app/?x=1');
+            expect(result.kind).toBe('lcw-https');
+            if (result.kind === 'lcw-https') {
+                expect(result.path).toBe('/?x=1');
+            }
+        });
+
+        it('still accepts root path with a hash', () => {
+            const result = parseClaimInput('https://learncard.app/#wallet');
+            expect(result.kind).toBe('lcw-https');
+            if (result.kind === 'lcw-https') {
+                expect(result.path).toBe('/#wallet');
+            }
+        });
+
+        it('still accepts non-root paths', () => {
+            const result = parseClaimInput('https://learncard.app/x');
+            expect(result.kind).toBe('lcw-https');
+            if (result.kind === 'lcw-https') {
+                expect(result.path).toBe('/x');
+            }
         });
     });
 });

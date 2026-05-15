@@ -2,8 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IonContent, IonPage } from '@ionic/react';
 import QrScanner from 'qr-scanner';
 
-import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
-import type { VC } from '@learncard/types';
+import { useToast, ToastTypeEnum, useModal } from 'learn-card-base';
 
 import { useClaimInputRouter, type ClaimInputSource } from '../../hooks/useClaimInputRouter';
 import type { UnrecognizedReason } from '../../hooks/parseClaimInput';
@@ -11,7 +10,6 @@ import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
-import type { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 
 const unrecognizedCopyFor = (reason: UnrecognizedReason): string => {
     switch (reason) {
@@ -40,7 +38,19 @@ const looksLikeClaimLink = (text: string): boolean => {
     const trimmed = text.trim();
     if (!trimmed) return false;
     if (CLAIM_LINK_PREFIXES.some(p => trimmed.toLowerCase().startsWith(p))) return true;
-    return trimmed.includes('boostUri=') || trimmed.includes('iuv=1');
+
+    const queryIndex = trimmed.indexOf('?');
+    if (queryIndex === -1) return false;
+    try {
+        const params = new URLSearchParams(trimmed.substring(queryIndex));
+        if (params.has('boostUri')) return true;
+        if (params.get('iuv') === '1') return true;
+        const did = params.get('did') ?? '';
+        if (did.includes('did:web') && did.includes('users:')) return true;
+    } catch {
+        return false;
+    }
+    return false;
 };
 
 const tryReadClipboardForClaim = async (): Promise<string | null> => {
@@ -64,7 +74,7 @@ const tryReadClipboardForClaim = async (): Promise<string | null> => {
 };
 
 export const PasteOrUploadClaimModal: React.FC = () => {
-    const { closeModal, newModal } = useModal();
+    const { closeModal, replaceModal } = useModal();
     const { presentToast } = useToast();
 
     const [pasted, setPasted] = useState('');
@@ -77,37 +87,6 @@ export const PasteOrUploadClaimModal: React.FC = () => {
 
     const route = useClaimInputRouter({ defaultSource: 'paste' });
 
-    const openDownstreamClaimBoostModal = useCallback(
-        (props: { uri?: string; claimChallenge?: string; vc?: VC }) => {
-            newModal(
-                <ClaimBoost
-                    uri={props.uri}
-                    claimChallenge={props.claimChallenge}
-                    dismissClaimModal={closeModal}
-                    vc={props.vc ?? null}
-                />,
-                { hideButton: true },
-                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-            );
-        },
-        [newModal, closeModal]
-    );
-
-    const openDownstreamAddContactModal = useCallback(
-        (contact: AddressBookContact) => {
-            newModal(
-                <AddContactView
-                    user={contact}
-                    handleCancel={closeModal}
-                    mode={AddContactViewMode.requestConnection}
-                />,
-                { hideButton: true },
-                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-            );
-        },
-        [newModal, closeModal]
-    );
-
     const dispatch = useCallback(
         async (input: string, source: ClaimInputSource): Promise<boolean> => {
             setIsProcessing(true);
@@ -119,19 +98,35 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                     return false;
                 }
 
-                closeModal();
-
                 if (result.kind === 'open_claim_boost') {
-                    openDownstreamClaimBoostModal({
-                        uri: result.boost.uri,
-                        claimChallenge: result.boost.challenge,
-                    });
+                    replaceModal(
+                        <ClaimBoost
+                            uri={result.boost.uri}
+                            claimChallenge={result.boost.challenge}
+                            dismissClaimModal={closeModal}
+                            vc={null}
+                        />,
+                        { hideButton: true }
+                    );
                 } else if (result.kind === 'open_claim_vc') {
-                    openDownstreamClaimBoostModal({ vc: result.vc });
+                    replaceModal(
+                        <ClaimBoost dismissClaimModal={closeModal} vc={result.vc} />,
+                        { hideButton: true }
+                    );
                 } else if (result.kind === 'open_contact') {
-                    openDownstreamAddContactModal(result.contact);
+                    replaceModal(
+                        <AddContactView
+                            user={result.contact}
+                            handleCancel={closeModal}
+                            mode={AddContactViewMode.requestConnection}
+                        />,
+                        { hideButton: true }
+                    );
                 } else if (result.kind === 'open_website') {
+                    closeModal();
                     window.open(result.url, '_blank');
+                } else if (result.kind === 'routed') {
+                    closeModal();
                 }
 
                 return true;
@@ -145,13 +140,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 setIsProcessing(false);
             }
         },
-        [
-            route,
-            closeModal,
-            presentToast,
-            openDownstreamClaimBoostModal,
-            openDownstreamAddContactModal,
-        ]
+        [route, closeModal, replaceModal, presentToast]
     );
 
     const handleContinueWithPaste = useCallback(async () => {

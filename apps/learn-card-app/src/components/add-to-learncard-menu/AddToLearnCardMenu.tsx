@@ -126,7 +126,13 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         closeModal();
 
         newModal(
-            <Suspense fallback={null}>
+            <Suspense
+                fallback={
+                    <div className="flex items-center justify-center p-12">
+                        <span className="w-6 h-6 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin" />
+                    </div>
+                }
+            >
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
             { hideButton: true, sectionClassName: '!max-w-[500px]' },

@@ -49,19 +49,31 @@ export interface ParseClaimInputConfig {
 
 /**
  * Last-resort defaults when no tenant config is plumbed in. These
- * match what AppUrlListener and the QR scanner historically accepted
- * BEFORE the tenant-aware refactor:
- *  - Custom schemes: standard VC-API requestors.
- *  - HTTPS domains: both LearnCard properties (Universal-Link domain
- *    + legacy LCW shortlink) so neither caller silently rejects URLs
- *    the other used to accept.
+ * mirror `DEFAULT_LEARNCARD_TENANT_CONFIG.native.{customSchemes,
+ * deepLinkDomains}` so the parser-only fallback path (early bootstrap,
+ * unit tests, any code that forgets to thread `ParseClaimInputConfig`)
+ * doesn't silently disagree with the canonical config.
  *
- * Production code should always pass tenant config explicitly via
- * `ParseClaimInputConfig`; these constants only fire on the test
- * path and any code path that omits tenant resolution.
+ * Production code always resolves tenant config explicitly via
+ * `resolveTenantParseConfig()`; these constants are the safety net,
+ * not the source of truth — the canonical source for native build
+ * artifacts AND runtime parsing is `tenantDefaults.ts`. If you change
+ * one, change the other.
+ *
+ * `openid-credential-offer` and `openid4vp` are intentionally OMITTED
+ * from `DEFAULT_CUSTOM_SCHEMES` because they're short-circuited at
+ * lines ~145 below into dedicated `oid4vci` / `oid4vp` discriminants
+ * before the custom-scheme list is consulted. They live in
+ * `tenantDefaults.customSchemes` only for build-time OS scheme
+ * registration; see the comment over there.
  */
 export const DEFAULT_CUSTOM_SCHEMES = ['dccrequest', 'msprequest', 'asuprequest'];
-export const DEFAULT_HTTPS_DOMAINS = ['learncard.app', 'lcw.app'];
+export const DEFAULT_HTTPS_DOMAINS = [
+    'learncard.app',
+    'learncardapp.netlify.app',
+    'learncardapp.netlify.com',
+    'lcw.app',
+];
 
 export const normalizeClaimInputHost = (host: string): string => {
     try {
@@ -156,8 +168,13 @@ export const parseClaimInput = (
         if (queryClassification) return queryClassification;
 
         if (httpsHostnames.includes(parsedUrl.host.toLowerCase())) {
-            const path = parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
-            return { kind: 'lcw-https', path };
+            const pathname = parsedUrl.pathname || '/';
+            const hasMeaningfulPath =
+                pathname !== '/' || Boolean(parsedUrl.search) || Boolean(parsedUrl.hash);
+            if (!hasMeaningfulPath) {
+                return { kind: 'unrecognized', reason: 'unknown_format' };
+            }
+            return { kind: 'lcw-https', path: pathname + parsedUrl.search + parsedUrl.hash };
         }
 
         return { kind: 'unrecognized', reason: 'unknown_scheme' };
