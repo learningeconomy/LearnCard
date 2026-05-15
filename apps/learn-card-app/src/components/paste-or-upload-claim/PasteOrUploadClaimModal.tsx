@@ -3,7 +3,7 @@ import { IonFooter, IonHeader, IonToolbar } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import QrScanner from 'qr-scanner';
 
-import { useToast, ToastTypeEnum, useModal } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 
@@ -77,7 +77,7 @@ const tryReadClipboardForClaim = async (): Promise<string | null> => {
 };
 
 export const PasteOrUploadClaimModal: React.FC = () => {
-    const { closeModal, replaceModal } = useModal();
+    const { closeModal, replaceModal, newModal } = useModal();
     const { presentToast } = useToast();
     const safeArea = useSafeArea();
 
@@ -106,19 +106,29 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 }
 
                 if (result.kind === 'open_claim_boost') {
-                    replaceModal(
+                    closeModal();
+                    newModal(
                         <ClaimBoost
                             uri={result.boost.uri}
                             claimChallenge={result.boost.challenge}
                             dismissClaimModal={closeModal}
                             vc={null}
                         />,
-                        { hideButton: true }
+                        { hideButton: true },
+                        {
+                            desktop: ModalTypes.FullScreen,
+                            mobile: ModalTypes.FullScreen,
+                        }
                     );
                 } else if (result.kind === 'open_claim_vc') {
-                    replaceModal(
+                    closeModal();
+                    newModal(
                         <ClaimBoost dismissClaimModal={closeModal} vc={result.vc} />,
-                        { hideButton: true }
+                        { hideButton: true },
+                        {
+                            desktop: ModalTypes.FullScreen,
+                            mobile: ModalTypes.FullScreen,
+                        }
                     );
                 } else if (result.kind === 'open_contact') {
                     replaceModal(
@@ -147,7 +157,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 setIsProcessing(false);
             }
         },
-        [route, closeModal, replaceModal, presentToast]
+        [route, closeModal, newModal, replaceModal, presentToast]
     );
 
     const handleContinueWithPaste = useCallback(async () => {
