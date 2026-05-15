@@ -51,7 +51,7 @@ app:
         oidc:
           redirectUri: "http://localhost:3000"
           idTokenExpirySeconds: 3600
-      - name: "LearnCard Interop - OID4VP 1.0 DCQL (jwt_vc_json)"
+      - name: "LearnCard Interop - OID4VP 1.0 DCQL (ldp_vc)"
         clientId: "lc-oid4vp10-jwt"
         clientSecret: "lc-interop-secret"
         type: native
@@ -59,8 +59,10 @@ app:
         query:
           - type:
               - VerifiableCredential
+            context:
+              - "https://www.w3.org/2018/credentials/v1"
             format:
-              - jwt_vc_json
+              - ldp_vc
         oid4vpVersion: "OID4VP-1.0"
         oidc:
           redirectUri: "http://localhost:3000"

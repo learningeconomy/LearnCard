@@ -201,7 +201,7 @@ export const buildPresentation = (
     const makeId = options.makeId ?? defaultMakeId;
 
     const unsignedVp: UnsignedVP = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        '@context': [deriveVpContextFromInnerCredentials(normalized.map(n => n.credential))],
         id: options.presentationId ?? `urn:uuid:${makeUuidV4(makeId)}`,
         type: ['VerifiablePresentation'],
         holder,
@@ -274,6 +274,46 @@ const normalizeForEmbedding = (
     }
 
     return { credential: candidate.credential, format };
+};
+
+const VCDM_V1_CONTEXT = 'https://www.w3.org/2018/credentials/v1';
+const VCDM_V2_CONTEXT = 'https://www.w3.org/ns/credentials/v2';
+
+/**
+ * Choose the right VCDM context for the unsigned VP envelope based on
+ * the inner credentials it will carry.
+ *
+ * The two W3C VCDM contexts (`/2018/credentials/v1` and
+ * `/ns/credentials/v2`) define overlapping but incompatible term
+ * shapes — JSON-LD expansion fails with `"Protected term redefinition"`
+ * when a v2 credential is wrapped in a v1 VP (or vice versa) because
+ * shared terms like `issuer` get redefined under the protected v2
+ * context.
+ *
+ * Resolution:
+ *   1. Any inner credential carrying the v2 context → VP uses v2.
+ *   2. Otherwise → VP uses v1 (the historical default).
+ *
+ * JWT VC strings can't be context-inspected without decoding, so they
+ * fall through to v1 — which is also what the JWT VC payload's wrapped
+ * VP claim conventionally uses. Mixed credentials work because LD
+ * expansion happens on the LD-shaped slots only; JWT-VC strings ride
+ * through as opaque values at `verifiableCredential[N]`.
+ */
+const deriveVpContextFromInnerCredentials = (credentials: unknown[]): string => {
+    const contexts = credentials.flatMap(credential => {
+        if (!credential || typeof credential !== 'object') return [];
+        const ctx = (credential as { '@context'?: unknown })['@context'];
+        if (Array.isArray(ctx)) return ctx;
+        if (typeof ctx === 'string') return [ctx];
+        return [];
+    });
+
+    const hasV2 = contexts.some(
+        ctx => typeof ctx === 'string' && ctx.includes('/credentials/v2')
+    );
+
+    return hasV2 ? VCDM_V2_CONTEXT : VCDM_V1_CONTEXT;
 };
 
 const extractCompactJws = (credential: unknown): string | undefined => {

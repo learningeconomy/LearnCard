@@ -30,20 +30,30 @@ const WORKFLOW_ID = 'lc-oid4vp10-jwt';
 const CLIENT_SECRET = 'lc-interop-secret';
 
 describe('interop: OpenCred OID4VP 1.0 + DCQL roundtrip', () => {
-    // SKIPPED — Plugin gap.
+    // SKIPPED — upstream OpenCred bug, not LearnCard.
     //
-    // OpenCred OID4VP-1.0 emits `client_id=decentralized_identifier:did:web:...`
-    // in the URL but `client_id=did:web:...` inside the signed Request Object
-    // payload (per OID4VP 1.0 §5.10 client-id-prefix semantics). The openid4vc
-    // plugin's `verifyAndDecodeRequestObject` enforces strict equality between
-    // outer-URL and signed `client_id`, rejecting the legal prefix-vs-bare
-    // mismatch with RequestObjectError('client_id_mismatch', ...). Until the
-    // plugin's outer-URL parser strips the OID4VP-1.0 prefix before the
-    // equality check, this roundtrip can't complete.
+    // The plugin's prefix-equality fix (vp/request-object.ts) and
+    // OID4VP-1.0 `decentralized_identifier:` prefix support
+    // (vp/client-id-prefix.ts) now route this flow correctly through
+    // resolveAuthorizationRequest. What blocks the roundtrip is
+    // OpenCred's DCQL output: it emits
     //
-    // Same issue is documented in tests/openid4vc-interop-e2e/tests/eudi-parsing.spec.ts
-    // — EUDI's reference verifier uses the same client_id format.
-    it.skip('[plugin gap: OID4VP 1.0 prefix equality] LearnCard-issued LD-VC satisfies OpenCred DCQL query', async () => {
+    //   meta.type_values: [
+    //     "https://www.w3.org/2018/credentials#VerifiableCredential"
+    //   ]
+    //
+    // but the OID4VP 1.0 §B.1 / DCQL `credential_query.meta.type_values`
+    // schema for W3C VC requires `Array<Array<string>>` — an outer
+    // array of alternative type sets, each an array of required types.
+    // The plugin's DCQL parser (and the canonical `dcql` reference
+    // library) enforces the spec shape, so OpenCred's flat array is
+    // rejected with a schema error.
+    //
+    // Fixing this requires OpenCred upstream to wrap each type_values
+    // element in an extra array. Filed upstream at
+    // https://github.com/stateofca/opencred (see audit notes); this
+    // test re-activates when OpenCred ships the fix.
+    it.skip('[upstream OpenCred bug: malformed DCQL type_values] LearnCard-issued LD-VC satisfies OpenCred DCQL query', async () => {
         const wallet = await getLearnCard('b'.repeat(64));
 
         const unsigned = buildUnsignedBasicV1(wallet);

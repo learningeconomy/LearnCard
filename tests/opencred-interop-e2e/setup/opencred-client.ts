@@ -235,13 +235,22 @@ export const inlineRequestUri = async (
     const headers: Record<string, string> = {
         Accept: 'application/oauth-authz-req+jwt',
     };
+    let body: string | undefined;
     if (method === 'POST') {
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        // OpenCred parses the profile / response_mode / client_id_scheme
+        // from req.body on POST (req.query on GET). Forward whatever
+        // query params live on request_uri as form fields so the
+        // OID4VP-1.0 (`profile=OID4VP-1.0`) hint isn't lost in transit.
+        const requestUriParams = new URLSearchParams(
+            requestUri.split('?')[1] ?? ''
+        );
+        body = requestUriParams.toString();
     }
     const res = await fetch(requestUri, {
         method,
         headers,
-        ...(method === 'POST' && { body: '' }),
+        ...(body !== undefined && { body }),
     });
     if (!res.ok) {
         throw new Error(

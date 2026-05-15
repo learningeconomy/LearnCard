@@ -197,40 +197,6 @@ export type DidWebSeedLearnCard = Omit<RawDidWebLearnCard, 'invoke'> & {
     invoke: InteropInvoke;
 };
 
-/**
- * Wrap `wallet.invoke.issuePresentation` so VPs signed for OID4VP
- * verifiers carry the correct W3C VCDM proof purpose.
- *
- * The vc-plugin defaults VP signing to `proofPurpose: 'assertionMethod'`
- * (correct for credentials, wrong for presentations per VCDM §4.2 and
- * Data Integrity §2.2.1). OpenCred — and any other spec-strict
- * verifier — runs LD proofs through a `presentationSuite` that
- * requires `authentication`, so the wallet's VP is rejected with
- * "Did not verify any proofs; insufficient proofs matched the
- * acceptable suite(s) and required purpose(s)". When the openid4vc
- * plugin signals VP signing by passing `{domain, challenge}`, we
- * inject `proofPurpose: 'authentication'`; other calls flow through
- * untouched.
- */
-const wrapIssuePresentationForOid4vp = (wallet: { invoke: Record<string, unknown> }): void => {
-    const original = wallet.invoke.issuePresentation as
-        | ((vp: unknown, opts?: Record<string, unknown>) => Promise<unknown>)
-        | undefined;
-    if (typeof original !== 'function') return;
-
-    wallet.invoke.issuePresentation = async (
-        vp: unknown,
-        opts: Record<string, unknown> = {}
-    ) => {
-        const isOid4vpVpSigning =
-            typeof opts.domain === 'string' && typeof opts.challenge === 'string';
-        const patched = isOid4vpVpSigning
-            ? { proofPurpose: 'authentication', ...opts }
-            : opts;
-        return original(vp, patched);
-    };
-};
-
 export const getLearnCard = async (
     seed: string = 'a'.repeat(64)
 ): Promise<SeedLearnCard> => {
@@ -242,7 +208,6 @@ export const getLearnCard = async (
             fetch: buildOpencredFetchAdapter(),
         },
     });
-    wrapIssuePresentationForOid4vp(wallet as { invoke: Record<string, unknown> });
     return wallet as unknown as SeedLearnCard;
 };
 
@@ -259,6 +224,5 @@ export const getLearnCardWithDidWeb = async (
             fetch: buildOpencredFetchAdapter(),
         },
     });
-    wrapIssuePresentationForOid4vp(wallet as { invoke: Record<string, unknown> });
     return wallet as unknown as DidWebSeedLearnCard;
 };
