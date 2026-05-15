@@ -1,0 +1,112 @@
+app:
+  server:
+    baseUri: "http://localhost:22080"
+  mongodb:
+    url: "mongodb://mongo:27017/OpenCred"
+  opencred:
+    didWeb:
+      mainEnabled: true
+      linkageEnabled: false
+    signingKeys:
+      - type: ES256
+        id: 4087a4bb16392a2f958ea82a6c9e17598b4d4d952f9a39017bf41e227ae4da20
+        privateKeyPem: |
+          -----BEGIN PRIVATE KEY-----
+          MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgsvRm3zb07v/ctuHR
+          Jf1zL6LL4p7u50D1OYG5LY9MBkehRANCAATPGzT5N2L3wycNQyUvigYWFn3sx1ke
+          PnZ3KYAI9NJKwvbXgozxo4sRO3Vta1Q99BnebydNxZ2Xy3CEkolmmqIN
+          -----END PRIVATE KEY-----
+        publicKeyPem: |
+          -----BEGIN PUBLIC KEY-----
+          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzxs0+Tdi98MnDUMlL4oGFhZ97MdZ
+          Hj52dymACPTSSsL214KM8aOLETt1bWtUPfQZ3m8nTcWdl8twhJKJZpqiDQ==
+          -----END PUBLIC KEY-----
+        purpose:
+          - authorization_request
+          - id_token
+    workflows:
+      - name: "LearnCard Interop - OID4VP Draft 18 (jwt_vc_json)"
+        clientId: "lc-draft18-jwt"
+        clientSecret: "lc-interop-secret"
+        type: native
+        public: false
+        query:
+          - type:
+              - VerifiableCredential
+            format:
+              - jwt_vc_json
+        oidc:
+          redirectUri: "http://localhost:3000"
+          idTokenExpirySeconds: 3600
+      - name: "LearnCard Interop - OID4VP Draft 18 (ldp_vc)"
+        clientId: "lc-draft18-ldp"
+        clientSecret: "lc-interop-secret"
+        type: native
+        public: false
+        query:
+          - type:
+              - VerifiableCredential
+            format:
+              - ldp_vc
+        oidc:
+          redirectUri: "http://localhost:3000"
+          idTokenExpirySeconds: 3600
+      - name: "LearnCard Interop - OID4VP 1.0 DCQL (jwt_vc_json)"
+        clientId: "lc-oid4vp10-jwt"
+        clientSecret: "lc-interop-secret"
+        type: native
+        public: false
+        query:
+          - type:
+              - VerifiableCredential
+            format:
+              - jwt_vc_json
+        oid4vpVersion: "OID4VP-1.0"
+        oidc:
+          redirectUri: "http://localhost:3000"
+          idTokenExpirySeconds: 3600
+      - name: "LearnCard Interop - Multi-credential (jwt_vc_json)"
+        clientId: "lc-multi-jwt"
+        clientSecret: "lc-interop-secret"
+        type: native
+        public: false
+        query:
+          - type:
+              - UniversityDegreeCredential
+            format:
+              - jwt_vc_json
+          - type:
+              - OpenBadgeCredential
+            format:
+              - jwt_vc_json
+        oidc:
+          redirectUri: "http://localhost:3000"
+          idTokenExpirySeconds: 3600
+      - name: "LearnCard Interop - OpenBadge LDP"
+        clientId: "lc-openbadge-ldp"
+        clientSecret: "lc-interop-secret"
+        type: native
+        public: false
+        query:
+          - type:
+              - OpenBadgeCredential
+            format:
+              - ldp_vc
+        oidc:
+          redirectUri: "http://localhost:3000"
+          idTokenExpirySeconds: 3600
+    options:
+      exchangeProtocols:
+        - openid4vp
+        - chapi
+      recordExpiresDurationMs: 86400000
+      exchangeTtlSeconds: 900
+      includeQRByDefault: false
+      OID4VPdefault: "OID4VP-draft18"
+      workflowListingEnabled: false
+      debug: true
+    defaultBrand:
+      cta: "#0B669D"
+      primary: "#045199"
+      header: "#0979c4"
+    defaultLanguage: en
