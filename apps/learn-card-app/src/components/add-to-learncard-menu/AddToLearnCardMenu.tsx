@@ -73,7 +73,9 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     const existingTopics = topics?.pages?.[0]?.records || [];
 
     useEffect(() => {
-        void importPasteOrUploadClaimModal();
+        void importPasteOrUploadClaimModal().catch(err => {
+            console.error('[ClaimLink] Failed to preload PasteOrUploadClaimModal chunk:', err);
+        });
     }, []);
 
     const handleNewSession = async (showAiAppSelector?: boolean) => {

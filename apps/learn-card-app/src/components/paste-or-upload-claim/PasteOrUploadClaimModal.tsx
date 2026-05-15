@@ -88,6 +88,13 @@ export const PasteOrUploadClaimModal: React.FC = () => {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dragDepthRef = useRef(0);
+    const mountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
     const route = useClaimInputRouter({ defaultSource: 'paste' });
 
@@ -101,7 +108,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 const result = await route(input, source);
 
                 if (result.kind === 'unrecognized') {
-                    setErrorCopy(unrecognizedCopyFor(result.reason));
+                    if (mountedRef.current) setErrorCopy(unrecognizedCopyFor(result.reason));
                     return false;
                 }
 
@@ -154,7 +161,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 );
                 return false;
             } finally {
-                setIsProcessing(false);
+                if (mountedRef.current) setIsProcessing(false);
             }
         },
         [route, closeModal, newModal, replaceModal, presentToast]
