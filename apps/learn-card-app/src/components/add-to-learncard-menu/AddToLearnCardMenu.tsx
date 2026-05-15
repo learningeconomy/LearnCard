@@ -8,6 +8,7 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
+import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import CheckListContainer from '../learncard/checklist/CheckListContainer';
 
@@ -220,7 +221,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
 
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.useClaimLink,
-        Icon: UploadIcon,
+        Icon: LinkOutlinedIcon,
         label: 'Use a Claim Link',
         onClick: () => handleUseClaimLinkButton(),
     });
