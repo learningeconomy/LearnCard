@@ -1,5 +1,6 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
@@ -10,8 +11,19 @@ import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import CheckListContainer from '../learncard/checklist/CheckListContainer';
 
-const LazyPasteOrUploadClaimModal = lazy(
-    () => import('../paste-or-upload-claim/PasteOrUploadClaimModal')
+const importPasteOrUploadClaimModal = () =>
+    import('../paste-or-upload-claim/PasteOrUploadClaimModal');
+
+const LazyPasteOrUploadClaimModal = lazy(importPasteOrUploadClaimModal);
+
+const PasteOrUploadClaimModalFallback: React.FC = () => (
+    <IonPage>
+        <IonContent>
+            <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
+                <IonSpinner name="crescent" className="text-grayscale-700" />
+            </div>
+        </IonContent>
+    </IonPage>
 );
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
 import BoostTemplateSelector from '../boost/boost-template/BoostTemplateSelector';
@@ -58,6 +70,10 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
+
+    useEffect(() => {
+        void importPasteOrUploadClaimModal();
+    }, []);
 
     const handleNewSession = async (showAiAppSelector?: boolean) => {
         chatBotStore.set.resetStore();
@@ -126,13 +142,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         closeModal();
 
         newModal(
-            <Suspense
-                fallback={
-                    <div className="flex items-center justify-center p-12">
-                        <span className="w-6 h-6 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin" />
-                    </div>
-                }
-            >
+            <Suspense fallback={<PasteOrUploadClaimModalFallback />}>
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
             { hideButton: true, sectionClassName: '!max-w-[500px]' },
