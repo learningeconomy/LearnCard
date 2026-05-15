@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 
+import { preferredFaviconUrl } from '../../helpers/faviconHelpers';
+
 /**
  * The subset of `CredentialIssuerMetadata` (from `@learncard/openid4vc-plugin`)
  * we actually render. Kept inline so this component can be used both with
@@ -104,11 +106,20 @@ interface IssuerAvatarProps {
 /**
  * Avatar fallback chain:
  *   1. Issuer's branded `metadata.display.logo.uri`
- *   2. Google s2 favicon for the domain (works for any HTTPS issuer)
+ *   2. Apex-domain favicon (e.g. `walt.id` for `issuer.demo.walt.id`)
  *   3. Deterministic gradient + initials tile (Slack-style)
  *
+ * We deliberately target the APEX, not the literal host, because:
+ *  - OID4VC admin subdomains (`issuer.`, `verifier.`, `vci.`) rarely
+ *    host their own favicon; the parent brand reliably does.
+ *  - Google's s2 favicon service returns a 200 + generic globe for
+ *    unknown hosts (not a 404), so an `<img onError>`-driven multi-
+ *    URL chain wouldn't actually advance — the request "succeeds"
+ *    with a placeholder. Apex-first gets the right brand on first
+ *    paint instead.
+ *
  * The component tracks the active tier in state so `<img onError>`
- * can advance the chain without a re-mount.
+ * on the logo can advance the chain without a re-mount.
  */
 const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
     logoUri,
@@ -116,9 +127,7 @@ const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
     seed,
     altText,
 }) => {
-    const fallbackFavicon = domain
-        ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`
-        : undefined;
+    const fallbackFavicon = preferredFaviconUrl(domain);
 
     const [tier, setTier] = useState<0 | 1 | 2>(() => {
         if (logoUri) return 0;
