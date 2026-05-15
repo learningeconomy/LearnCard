@@ -93,6 +93,8 @@ type Phase =
           issuerUrl?: string;
           issuerName?: string;
           issuerLogoUri?: string;
+          retryOffer?: CredentialOffer;
+          retryMetadata?: CredentialIssuerMetadata;
       };
 
 /**
@@ -299,6 +301,7 @@ const Oid4vciExchange: React.FC = () => {
     const handleAccept = useCallback(
         async ({ txCode }: { txCode?: string }) => {
             if (phase.kind !== 'consent') return;
+            resilience.resetRun();
             const currentOffer = phase.offer;
             // Capture before any setPhase calls reshape `phase` so we can
             // forward the metadata into the `finished` state for branded
@@ -374,6 +377,8 @@ const Oid4vciExchange: React.FC = () => {
                                 'Storage is unavailable, so we can’t resume after the issuer redirect. Try again with browsing data enabled.',
                         },
                         issuerUrl: currentOffer.credential_issuer,
+                        retryOffer: currentOffer,
+                        retryMetadata: currentMetadata,
                     });
                     return;
                 }
@@ -398,15 +403,26 @@ const Oid4vciExchange: React.FC = () => {
                     issuerUrl: currentOffer.credential_issuer,
                     issuerName: issuerInfoSnapshot.name,
                     issuerLogoUri: issuerInfoSnapshot.logoUri,
+                    retryOffer: currentOffer,
+                    retryMetadata: currentMetadata,
                 });
             }
         },
-        [phase, initWallet, offer]
+        [phase, initWallet, offer, resilience]
     );
 
     const handleViewWallet = useCallback(() => {
         history.push('/');
     }, [history]);
+
+    const handleRetry = useCallback(() => {
+        if (phase.kind !== 'error' || !phase.retryOffer) return;
+        setPhase({
+            kind: 'consent',
+            offer: phase.retryOffer,
+            metadata: phase.retryMetadata,
+        });
+    }, [phase]);
 
     // -----------------------------------------------------------------
     // Render
@@ -517,6 +533,7 @@ const Oid4vciExchange: React.FC = () => {
                                 }
                             )
                         }
+                        onRetry={phase.retryOffer ? handleRetry : undefined}
                         onCancel={() => history.push('/')}
                     />
                 )}
