@@ -515,8 +515,16 @@ const LaunchPad: React.FC = () => {
                                                         filteredAvailableApps.every(
                                                             app => app.category === 'plugin'
                                                         )
-                                                            ? 'Plugins'
-                                                            : 'Search Results'}
+                                                            ? `${filteredAvailableApps.length} ${
+                                                                  filteredAvailableApps.length === 1
+                                                                      ? 'Plugin'
+                                                                      : 'Plugins'
+                                                              }`
+                                                            : `${filteredAvailableApps.length} Search ${
+                                                                  filteredAvailableApps.length === 1
+                                                                      ? 'Result'
+                                                                      : 'Results'
+                                                              }`}
                                                     </p>
                                                 </div>
                                                 {filteredAvailableApps.map(app => (
