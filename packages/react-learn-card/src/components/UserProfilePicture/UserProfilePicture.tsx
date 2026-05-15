@@ -1,20 +1,22 @@
 import React from 'react';
 
 const PersonSilhouette: React.FC<{ className?: string }> = ({ className = '' }) => (
-    <svg viewBox="0 0 31 31" fill="none" className={className} aria-hidden="true">
+    <svg
+        width="22"
+        height="22"
+        viewBox="0 0 22 22"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+    >
         <path
-            d="M15.5 19.25C19.6421 19.25 23 15.8921 23 11.75C23 7.60786 19.6421 4.25 15.5 4.25C11.3579 4.25 8 7.60786 8 11.75C8 15.8921 11.3579 19.25 15.5 19.25Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            d="M10.7115 13.5488C6.86057 13.5488 3.57129 14.156 3.57129 16.5845C3.57129 19.014 6.84004 19.6426 10.7115 19.6426C14.5624 19.6426 17.8516 19.0363 17.8516 16.6069C17.8516 14.1774 14.5838 13.5488 10.7115 13.5488Z"
+            fill="#353E64"
         />
         <path
-            d="M4.13159 25.8114C5.2842 23.8164 6.94153 22.1598 8.93708 21.008C10.9326 19.8563 13.1961 19.25 15.5002 19.25C17.8043 19.25 20.0678 19.8564 22.0633 21.0082C24.0588 22.1599 25.7161 23.8166 26.8687 25.8116"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            opacity="0.4"
+            d="M10.7115 11.2361C13.3347 11.2361 15.4365 9.13345 15.4365 6.51113C15.4365 3.88881 13.3347 1.78613 10.7115 1.78613C8.08913 1.78613 5.98645 3.88881 5.98645 6.51113C5.98645 9.13345 8.08913 11.2361 10.7115 11.2361Z"
+            fill="#353E64"
         />
     </svg>
 );
@@ -46,6 +48,7 @@ export const UserProfilePicture: React.FC<{
     avatarFingerprintColor?: string;
     avatarTextClassName?: string;
     avatarIconClassName?: string;
+    avatarSilhouetteClassName?: string;
     avatarFallbackVariant?: 'initial' | 'fingerprint';
 }> = ({
     customContainerClass,
@@ -57,6 +60,7 @@ export const UserProfilePicture: React.FC<{
     avatarFingerprintColor,
     avatarTextClassName,
     avatarIconClassName,
+    avatarSilhouetteClassName,
     avatarFallbackVariant = 'initial',
 }) => {
     const baseColor = avatarColor || 'bg-grayscale-700';
@@ -83,7 +87,7 @@ export const UserProfilePicture: React.FC<{
                     <span className={avatarTextClassName || ''}>{letterToDisplay}</span>
                 ) : (
                     <PersonSilhouette
-                        className={avatarIconClassName || 'w-[58%] h-[58%] text-white/80'}
+                        className={avatarSilhouetteClassName || avatarIconClassName}
                     />
                 )}
                 {children}

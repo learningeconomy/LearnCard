@@ -64,6 +64,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         avatarColor: string,
         avatarFingerprintColor: string,
         avatarTextClassName: string,
+        avatarSilhouetteClassName: string,
         avatarFallbackVariant: 'initial' | 'fingerprint',
         bigText?: boolean
     ) => {
@@ -76,6 +77,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                 avatarColor={avatarColor}
                 avatarFingerprintColor={avatarFingerprintColor}
                 avatarTextClassName={avatarTextClassName}
+                avatarSilhouetteClassName={avatarSilhouetteClassName}
                 avatarIconClassName={
                     avatarFallbackVariant === 'fingerprint' ? 'w-[60%] h-[60%]' : undefined
                 }
@@ -93,6 +95,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         issueeDisplay.avatarColor,
         issueeDisplay.avatarFingerprintColor,
         'text-3xl leading-normal',
+        'h-[43px] w-[43px]',
         issueeDisplay.isDidValue ? 'fingerprint' : 'initial',
         true
     );
@@ -104,6 +107,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         issuerDisplay.avatarColor,
         issuerDisplay.avatarFingerprintColor,
         'text-xl leading-normal',
+        'h-[22px] w-[22px]',
         issuerDisplay.isDidValue ? 'fingerprint' : 'initial'
     );
 

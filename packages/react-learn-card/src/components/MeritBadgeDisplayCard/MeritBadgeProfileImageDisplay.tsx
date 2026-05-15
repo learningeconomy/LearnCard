@@ -28,6 +28,7 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
     const imageClassName = `${
         size === 'big' ? 'h-[60px] w-[60px]' : 'h-[39px] w-[39px]'
     } rounded-full overflow-hidden border-[2px] border-solid border-grayscale-200`;
+    const silhouetteClassName = size === 'big' ? 'h-[43px] w-[43px]' : 'h-[28px] w-[28px]';
 
     const profileImage = imageComponent ? (
         <div className={imageClassName}>{imageComponent}</div>
@@ -38,6 +39,7 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
             user={{ image: imageUrl, name: userName }}
             avatarColor={avatarColor}
             avatarFingerprintColor={avatarFingerprintColor}
+            avatarSilhouetteClassName={silhouetteClassName}
             avatarFallbackVariant={avatarFallbackVariant}
         />
     );
