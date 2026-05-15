@@ -112,7 +112,7 @@ export const AnalyticsEvents = {
      */
     OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
 
-    /**
+    /** 
      * Fired when the resilience orchestrator gave up on an error
      * whose classified `kind` suggested it might have been
      * recoverable (wallet / request_invalid / unknown). Used to mine
@@ -123,6 +123,13 @@ export const AnalyticsEvents = {
      * is included.
      */
     OPENID_RESILIENCE_UNRECOGNIZED_FAILURE: 'openid_resilience_unrecognized_failure',
+    /**
+     * Fired every time a claim-input string is routed (camera scan,
+     * paste field, image upload, clipboard auto-detect). Lets product
+     * answer "where do users actually claim from?" and "what fraction
+     * of pastes are unrecognized?".
+     */
+    CLAIM_INPUT_ROUTED: 'claim_input_routed',
 
     // LC-1644 perf bench (admin-only)
     BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
@@ -573,6 +580,42 @@ export interface AnalyticsEventPayloads {
         pattern_matched: boolean;
         signers_tried: string[];
         counterparty?: string;
+    };
+
+    [AnalyticsEvents.CLAIM_INPUT_ROUTED]: {
+        source: 'camera' | 'paste' | 'image_upload' | 'clipboard_auto';
+        parsed_kind:
+            | 'oid4vci'
+            | 'oid4vp'
+            | 'vc-api-custom-scheme'
+            | 'lcw-https'
+            | 'boost-claim'
+            | 'connection-request'
+            | 'raw-vc-candidate'
+            | 'interaction-url'
+            | 'unrecognized';
+        outcome:
+            | 'routed'
+            | 'open_contact'
+            | 'open_claim_boost'
+            | 'open_claim_vc'
+            | 'open_website'
+            | 'unrecognized';
+        unrecognized_reason?:
+            | 'empty'
+            | 'malformed_url'
+            | 'unknown_scheme'
+            | 'invalid_vc'
+            | 'unknown_format';
+        surface?:
+            | 'oid4vci'
+            | 'oid4vp'
+            | 'vc-api-custom-scheme'
+            | 'lcw-https'
+            | 'boost-claim'
+            | 'connection-request'
+            | 'raw-vc'
+            | 'interaction';
     };
 }
 
