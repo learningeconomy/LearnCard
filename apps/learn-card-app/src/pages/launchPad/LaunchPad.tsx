@@ -183,7 +183,6 @@ const LaunchPad: React.FC = () => {
 
     const aiAppContracts = aiApps.map(app => app.contractUri);
 
-    // Separate legacy apps from coming soon apps
     const legacyAppsAndContracts = useMemo<LaunchPadItem[]>(() => {
         return [
             ...aiApps,
@@ -192,20 +191,10 @@ const LaunchPad: React.FC = () => {
         ];
     }, [aiApps, apps, contracts, aiAppContracts]);
 
-    // Coming soon apps from LaunchDarkly flag
-    const comingSoonApps = useMemo<LaunchPadItem[]>(() => {
-        return (flags.comingSoonApps || []) as unknown as LaunchPadItem[];
-    }, [flags.comingSoonApps]);
-
-    // Combined for backwards compatibility with existing filtering
-    const appsAndContracts = useMemo<LaunchPadItem[]>(() => {
-        return [...legacyAppsAndContracts, ...comingSoonApps];
-    }, [legacyAppsAndContracts, comingSoonApps]);
-
     const filteredAppsAndContracts = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
-        return appsAndContracts.filter(item => {
+        return legacyAppsAndContracts.filter(item => {
             const contractName = item?.data?.name?.toLowerCase() || '';
             const appName = item?.name?.toLowerCase() || '';
 
@@ -242,7 +231,7 @@ const LaunchPad: React.FC = () => {
 
             return contractName?.includes(lowerSearch) || appName?.includes(lowerSearch);
         });
-    }, [appsAndContracts, searchInput]);
+    }, [legacyAppsAndContracts, searchInput]);
 
     const sortedAppsAndContracts = useMemo(() => {
         const withDemoFirst = filteredAppsAndContracts.slice().sort((a, b) => {
@@ -339,7 +328,7 @@ const LaunchPad: React.FC = () => {
         return filteredAvailableApps.filter(app => !featuredAndCuratedIds.has(app.listing_id));
     }, [filteredAvailableApps, featuredAndCuratedIds]);
 
-    // Filter legacy apps (non-coming-soon) for display
+    // Filter legacy apps for display
     const filteredLegacyApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
@@ -385,50 +374,6 @@ const LaunchPad: React.FC = () => {
             return contractName?.includes(lowerSearch) || appName?.includes(lowerSearch);
         });
     }, [legacyAppsAndContracts, searchInput, tab]);
-
-    // Filter coming soon apps for display
-    const filteredComingSoonApps = useMemo(() => {
-        const lowerSearch = searchInput?.toLowerCase() || '';
-
-        return comingSoonApps.filter(item => {
-            const appName = item?.name?.toLowerCase() || '';
-
-            // Tab filtering
-            if (
-                tab === LaunchPadTabEnum.ai &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
-                !item?.appType?.includes(LaunchPadAppType.AI)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.learning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.learning) &&
-                !item?.appType?.includes(LaunchPadAppType.LEARNING)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.games &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.games) &&
-                !item?.appType?.includes(LaunchPadAppType.GAME)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.tools &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
-                !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
-            ) {
-                return false;
-            }
-
-            return appName?.includes(lowerSearch);
-        });
-    }, [comingSoonApps, searchInput, tab]);
 
     // Create custom app from query params if provided
     const customAppFromQueryParams: LaunchPadAppListItemType | null = useMemo(() => {
@@ -686,7 +631,7 @@ const LaunchPad: React.FC = () => {
                                         />
                                     )}
 
-                                    {/* Legacy Apps and Contracts (non-coming-soon) */}
+                                    {/* Legacy Apps and Contracts */}
                                     {filteredLegacyApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
@@ -739,24 +684,6 @@ const LaunchPad: React.FC = () => {
                                                     />
                                                 );
                                             })}
-                                        </>
-                                    )}
-
-                                    {/* Coming Soon Apps (shown last) */}
-                                    {filteredComingSoonApps.length > 0 && (
-                                        <>
-                                            <div className="px-2 pt-4 pb-2">
-                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Coming Soon
-                                                </p>
-                                            </div>
-                                            {filteredComingSoonApps.map((app, index) => (
-                                                <LaunchPadAppListItem
-                                                    key={`coming-soon-${index}`}
-                                                    app={app as LaunchPadAppListItemType}
-                                                    filterBy={filterBy}
-                                                />
-                                            ))}
                                         </>
                                     )}
 
