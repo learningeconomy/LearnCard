@@ -39,6 +39,7 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
             user={{ image: imageUrl, name: userName }}
             avatarColor={avatarColor}
             avatarFingerprintColor={avatarFingerprintColor}
+            avatarIconClassName={silhouetteClassName}
             avatarSilhouetteClassName={silhouetteClassName}
             avatarFallbackVariant={avatarFallbackVariant}
         />

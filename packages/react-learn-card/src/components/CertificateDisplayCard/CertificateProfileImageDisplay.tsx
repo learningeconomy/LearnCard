@@ -25,6 +25,7 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
 }) => {
     const imageClassName =
         'h-[50px] w-[50px] rounded-full overflow-hidden border-[2px] border-solid border-grayscale-200';
+    const fingerprintClassName = isIssuer ? 'h-[38px] w-[38px]' : 'h-[36px] w-[36px]';
     const silhouetteClassName = 'h-[38px] w-[38px]';
 
     const profileImage = imageComponent ? (
@@ -36,6 +37,7 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
             user={{ image: imageUrl, name: userName }}
             avatarColor={avatarColor}
             avatarFingerprintColor={avatarFingerprintColor}
+            avatarIconClassName={fingerprintClassName}
             avatarSilhouetteClassName={silhouetteClassName}
             avatarFallbackVariant={avatarFallbackVariant}
         />

@@ -19,6 +19,23 @@ describe('MeritBadgeProfileImageDisplay', () => {
         expect(silhouette?.classList.contains('w-[43px]')).toBe(true);
     });
 
+    test('uses a 43px fingerprint for the issuee badge fallback', () => {
+        const { container } = render(
+            <MeritBadgeProfileImageDisplay
+                size="big"
+                userName=""
+                imageUrl=""
+                avatarFallbackVariant="fingerprint"
+            />
+        );
+
+        const fingerprint = container.querySelector('svg');
+
+        expect(fingerprint).not.toBeNull();
+        expect(fingerprint?.classList.contains('h-[43px]')).toBe(true);
+        expect(fingerprint?.classList.contains('w-[43px]')).toBe(true);
+    });
+
     test('uses a 28px silhouette for the issuer badge fallback', () => {
         const { container } = render(
             <MeritBadgeProfileImageDisplay size="small" showSeal userName="" imageUrl="" />
@@ -30,5 +47,24 @@ describe('MeritBadgeProfileImageDisplay', () => {
         expect(silhouette).not.toBeNull();
         expect(silhouette?.classList.contains('h-[28px]')).toBe(true);
         expect(silhouette?.classList.contains('w-[28px]')).toBe(true);
+    });
+
+    test('uses a 28px fingerprint for the issuer badge fallback', () => {
+        const { container } = render(
+            <MeritBadgeProfileImageDisplay
+                size="small"
+                showSeal
+                userName=""
+                imageUrl=""
+                avatarFallbackVariant="fingerprint"
+            />
+        );
+
+        const fingerprints = container.querySelectorAll('svg');
+        const fingerprint = fingerprints[fingerprints.length - 1];
+
+        expect(fingerprint).not.toBeNull();
+        expect(fingerprint?.classList.contains('h-[28px]')).toBe(true);
+        expect(fingerprint?.classList.contains('w-[28px]')).toBe(true);
     });
 });

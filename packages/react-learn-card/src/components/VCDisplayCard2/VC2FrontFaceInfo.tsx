@@ -77,10 +77,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                 avatarColor={avatarColor}
                 avatarFingerprintColor={avatarFingerprintColor}
                 avatarTextClassName={avatarTextClassName}
+                avatarIconClassName={avatarSilhouetteClassName}
                 avatarSilhouetteClassName={avatarSilhouetteClassName}
-                avatarIconClassName={
-                    avatarFallbackVariant === 'fingerprint' ? 'w-[60%] h-[60%]' : undefined
-                }
                 avatarFallbackVariant={avatarFallbackVariant}
                 customContainerClass={`h-full w-full ${bigText ? '!text-4xl' : ''}`}
             />
