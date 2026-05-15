@@ -51,14 +51,88 @@ describe('runWithRecovery', () => {
         });
 
         const telemetry = collectTelemetry();
-        const result = await runWithRecovery(runner, {
-            availableSigners: ['did:web', 'did:key'],
-        }, { onTelemetry: telemetry.onTelemetry });
+        const result = await runWithRecovery(
+            runner,
+            { availableSigners: ['did:web', 'did:key'] },
+            { onTelemetry: telemetry.onTelemetry }
+        );
 
         expect(result).toBe('success-via-did:key');
         expect(runner).toHaveBeenCalledTimes(2);
+
         const decisionEvents = telemetry.events.filter(e => e.type === 'decision_made');
         expect(decisionEvents).toHaveLength(1);
+        const decision = decisionEvents[0];
+        if (decision.type !== 'decision_made') throw new Error('unreachable');
+        expect(decision.decision.kind).toBe('retry_silent');
+        if (decision.decision.kind !== 'retry_silent') throw new Error('unreachable');
+        expect(decision.decision.nextStrategy).toEqual({ axis: 'signer', id: 'did:key' });
+        expect(decision.attemptNumber).toBe(1);
+    });
+
+    it('threads attemptNumber through decision_made for transport retries (not just signersTried.length)', async () => {
+        // Regression: previously consumers had to infer attemptNumber from
+        // `attemptLog.signersTried.length`, which stays flat on transport
+        // retries. The orchestrator must emit attemptNumber directly.
+        let calls = 0;
+        const runner = vi.fn(async () => {
+            calls += 1;
+            if (calls < 3) throw makeFetchError();
+            return 'ok';
+        });
+
+        const telemetry = collectTelemetry();
+        await runWithRecovery(
+            runner,
+            { availableSigners: ['did:key'] },
+            { onTelemetry: telemetry.onTelemetry }
+        );
+
+        const decisions = telemetry.events.filter(e => e.type === 'decision_made');
+        expect(decisions).toHaveLength(2);
+        if (decisions[0].type !== 'decision_made' || decisions[1].type !== 'decision_made') {
+            throw new Error('unreachable');
+        }
+        expect(decisions[0].attemptNumber).toBe(1);
+        expect(decisions[1].attemptNumber).toBe(2);
+    });
+
+    it('preserves the signer across transport retries (does not revert to did:web after did:key fallback)', async () => {
+        // Regression: the wrapper must track the signer-in-effect across
+        // orchestrator iterations. When a transport retry follows a
+        // signer fallback, the next attempt must use the SAME signer
+        // chosen at fallback (did:key), not revert to availableSigners[0]
+        // (did:web — the signer we already proved broken).
+        //
+        // Sequence: did:web sig-resolution fail → decision retry_silent
+        // (signer/did:key) → did:key transport fail → decision
+        // retry_silent (transport) → did:key succeeds.
+        let didKeyAttempts = 0;
+        const seenStrategiesByAttempt: string[] = [];
+        const runner = vi.fn(async ({ strategy }) => {
+            seenStrategiesByAttempt.push(strategy.id);
+            if (strategy.id === 'did:web') throw sigResolutionFailure();
+            // strategy.id will be 'did:key' on attempt 2, but on attempt 3
+            // it will be a transport-retry id — the WRAPPER must still
+            // dispatch with did:key.
+            didKeyAttempts += 1;
+            if (didKeyAttempts === 1) throw makeFetchError();
+            return 'success';
+        });
+
+        const result = await runWithRecovery(runner, {
+            availableSigners: ['did:web', 'did:key'],
+        });
+
+        expect(result).toBe('success');
+        expect(runner).toHaveBeenCalledTimes(3);
+        // Attempt 1: signer/did:web | Attempt 2: signer/did:key |
+        // Attempt 3: transport/transport-retry-1 — but the WRAPPER's
+        // currentSignerId remains did:key. The orchestrator only knows
+        // about strategy.id; the wrapper tracks the actual signer.
+        expect(seenStrategiesByAttempt[0]).toBe('did:web');
+        expect(seenStrategiesByAttempt[1]).toBe('did:key');
+        expect(seenStrategiesByAttempt[2]).toMatch(/^transport-retry-/);
     });
 
     it('prompts the user before non-did:key signer fallback and respects refusal', async () => {
@@ -156,6 +230,140 @@ describe('runWithRecovery', () => {
             e => e.type === 'orchestrator_exhausted'
         );
         expect(exhaustedEvents).toHaveLength(1);
+    });
+
+    describe('unrecognized_recoverable_failure telemetry', () => {
+        it('emits the event when surfacing a wallet/request_invalid error with no recognized pattern', async () => {
+            const wrapped = Object.assign(new Error('totally novel vendor error'), {
+                name: 'VciError',
+                code: 'metadata_invalid',
+                status: 400,
+            });
+            const runner = vi.fn(async () => {
+                throw wrapped;
+            });
+
+            const telemetry = collectTelemetry();
+            await expect(
+                runWithRecovery(
+                    runner,
+                    { availableSigners: ['did:key'] },
+                    { onTelemetry: telemetry.onTelemetry }
+                )
+            ).rejects.toBe(wrapped);
+
+            const unrecognized = telemetry.events.find(
+                e => e.type === 'unrecognized_recoverable_failure'
+            );
+            expect(unrecognized).toBeDefined();
+            if (unrecognized?.type !== 'unrecognized_recoverable_failure') return;
+            expect(unrecognized.errorName).toBe('VciError');
+            expect(unrecognized.errorCode).toBe('metadata_invalid');
+            expect(unrecognized.httpStatus).toBe(400);
+            expect(unrecognized.patternMatched).toBe(false);
+            expect(unrecognized.messageHash).toMatch(/^[0-9a-f]{8}$/);
+            expect(unrecognized.attemptNumber).toBe(1);
+        });
+
+        it('marks patternMatched=true when the failure WAS recognized but we exhausted fallbacks', async () => {
+            // Both signers fail with a recognized signer-resolution error;
+            // orchestrator surfaces after exhausting the chain. The event
+            // still fires (kind is potentially recoverable) but
+            // patternMatched=true says "we tried, ran out of options."
+            const runner = vi.fn(async () => {
+                throw sigResolutionFailure();
+            });
+
+            const telemetry = collectTelemetry();
+            await expect(
+                runWithRecovery(
+                    runner,
+                    { availableSigners: ['did:web', 'did:key'] },
+                    { onTelemetry: telemetry.onTelemetry }
+                )
+            ).rejects.toThrow();
+
+            const unrecognized = telemetry.events.find(
+                e => e.type === 'unrecognized_recoverable_failure'
+            );
+            expect(unrecognized).toBeDefined();
+            if (unrecognized?.type !== 'unrecognized_recoverable_failure') return;
+            expect(unrecognized.patternMatched).toBe(true);
+        });
+
+        it('does NOT emit for format_gap errors (terminal by definition)', async () => {
+            const wrapped = Object.assign(new Error('format not supported'), {
+                name: 'VciError',
+                code: 'unsupported_format',
+            });
+            const runner = vi.fn(async () => {
+                throw wrapped;
+            });
+
+            const telemetry = collectTelemetry();
+            await expect(
+                runWithRecovery(
+                    runner,
+                    { availableSigners: ['did:key'] },
+                    { onTelemetry: telemetry.onTelemetry }
+                )
+            ).rejects.toBe(wrapped);
+
+            const unrecognized = telemetry.events.find(
+                e => e.type === 'unrecognized_recoverable_failure'
+            );
+            expect(unrecognized).toBeUndefined();
+        });
+
+        it('does NOT emit for transport errors (already retried separately)', async () => {
+            const runner = vi.fn(async () => {
+                throw makeFetchError();
+            });
+
+            const telemetry = collectTelemetry();
+            await expect(
+                runWithRecovery(
+                    runner,
+                    { availableSigners: ['did:key'] },
+                    { onTelemetry: telemetry.onTelemetry }
+                )
+            ).rejects.toThrow();
+
+            const unrecognized = telemetry.events.find(
+                e => e.type === 'unrecognized_recoverable_failure'
+            );
+            expect(unrecognized).toBeUndefined();
+        });
+
+        it('hashes the same message to the same hash deterministically', async () => {
+            const message = 'a specific recurring error message that we want to cluster on';
+            const runner = vi.fn(async () => {
+                throw Object.assign(new Error(message), {
+                    name: 'VciError',
+                    code: 'metadata_invalid',
+                });
+            });
+
+            const collect = async (): Promise<string> => {
+                const t = collectTelemetry();
+                await expect(
+                    runWithRecovery(
+                        runner,
+                        { availableSigners: ['did:key'] },
+                        { onTelemetry: t.onTelemetry }
+                    )
+                ).rejects.toThrow();
+                const e = t.events.find(x => x.type === 'unrecognized_recoverable_failure');
+                if (e?.type !== 'unrecognized_recoverable_failure') {
+                    throw new Error('expected event missing');
+                }
+                return e.messageHash;
+            };
+
+            const a = await collect();
+            const b = await collect();
+            expect(a).toBe(b);
+        });
     });
 
     it('invokes onAttempt with the previous error from attempt 2 onward', async () => {

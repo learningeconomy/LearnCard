@@ -57,6 +57,27 @@ export type RecoveryDecision =
  * to their analytics / Sentry / log sinks. Every event carries an
  * `attemptLog` snapshot so receivers can reconstruct the fallback
  * chain.
+ *
+ * Event ordering inside one iteration of the retry loop:
+ *  1. `attempt_started`
+ *  2. either `attempt_succeeded` (loop exits) OR `attempt_failed`
+ *  3. `decision_made` (only after `attempt_failed`) — carries the
+ *     decision that WILL be applied, including the upcoming prompt
+ *     for `retry_with_prompt`. Consumers wiring side effects to a
+ *     decision should NOT use this event to render the prompt — that
+ *     happens via `prompt_shown` next, and the user response via
+ *     `prompt_resolved`. Treat `decision_made` as the intent log,
+ *     not the user-facing trigger.
+ *  4. `prompt_shown` + `prompt_resolved` (only for `retry_with_prompt`)
+ *  5. `orchestrator_exhausted` if the decision was `surface_error` or
+ *     if the prompt was declined.
+ *
+ * `attemptNumber` is included on every event that maps to a specific
+ * iteration (started/succeeded/failed/decision_made), letting
+ * receivers join `decision_made` to `attempt_failed` by
+ * (`exchange_run_id`, `attemptNumber`) without inferring from
+ * `attemptLog.signersTried.length` (which is wrong for transport
+ * retries — they don't grow `signersTried`).
  */
 export type OrchestratorTelemetryEvent =
     | {
@@ -83,6 +104,7 @@ export type OrchestratorTelemetryEvent =
       }
     | {
           type: 'decision_made';
+          attemptNumber: number;
           decision: RecoveryDecision;
           attemptLog: AttemptLog;
       }
@@ -99,6 +121,34 @@ export type OrchestratorTelemetryEvent =
     | {
           type: 'orchestrator_exhausted';
           friendly: FriendlyErrorInfo;
+          attemptLog: AttemptLog;
+      }
+    | {
+          type: 'unrecognized_recoverable_failure';
+          attemptNumber: number;
+          /** Stable 8-char FNV-1a hash of the extracted message corpus. */
+          messageHash: string;
+          /** `error.name` from the raw exception when present (`VciError`, …). */
+          errorName?: string;
+          /** Plugin-side error code (`credential_request_failed`, …). */
+          errorCode?: string;
+          /** HTTP status when the exception originated from an HTTP response. */
+          httpStatus?: number;
+          /**
+           * The classified friendly kind. Restricted to kinds the
+           * orchestrator considers potentially recoverable; if the kind
+           * isn't in `{wallet, request_invalid, unknown}` this event
+           * isn't emitted at all.
+           */
+          friendly: FriendlyErrorInfo;
+          /**
+           * Whether our pattern + structured signer-failure check
+           * matched. `false` is the canary signal — it means we surfaced
+           * an error that LOOKED recoverable on shape (recoverable kind)
+           * but we didn't recognize the specific failure pattern. These
+           * are the rows to mine for new structured-dispatch entries.
+           */
+          patternMatched: boolean;
           attemptLog: AttemptLog;
       };
 

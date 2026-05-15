@@ -112,6 +112,17 @@ export const AnalyticsEvents = {
      */
     OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
 
+    /** 
+     * Fired when the resilience orchestrator gave up on an error
+     * whose classified `kind` suggested it might have been
+     * recoverable (wallet / request_invalid / unknown). Used to mine
+     * production for new signer-failure patterns: filter on
+     * `pattern_matched=false` in the dashboard to find shapes worth
+     * adding to STRUCTURED_SIGNER_FAILURES or SIGNER_FAILURE_PATTERNS.
+     * Payload omits raw message text (PII risk) — only a stable hash
+     * is included.
+     */
+    OPENID_RESILIENCE_UNRECOGNIZED_FAILURE: 'openid_resilience_unrecognized_failure',
     /**
      * Fired every time a claim-input string is routed (camera scan,
      * paste field, image upload, clipboard auto-detect). Lets product
@@ -555,6 +566,20 @@ export interface AnalyticsEventPayloads {
             | 'unknown';
         counterparty?: string;
         total_duration_ms: number;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_UNRECOGNIZED_FAILURE]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        error_kind: 'wallet' | 'request_invalid' | 'unknown';
+        error_name?: string;
+        error_code?: string;
+        http_status?: number;
+        message_hash: string;
+        pattern_matched: boolean;
+        signers_tried: string[];
+        counterparty?: string;
     };
 
     [AnalyticsEvents.CLAIM_INPUT_ROUTED]: {

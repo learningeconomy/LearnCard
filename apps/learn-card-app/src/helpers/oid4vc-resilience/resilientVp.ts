@@ -72,16 +72,16 @@ export const resilientPresentCredentials = async ({
     submitted: SubmitPresentationResult;
 }> => {
     const availableSigners = getApplicableSignerStrategies(wallet);
+    let currentSignerId: SignerStrategyId = availableSigners[0];
 
     return runWithRecovery(
         async ({ strategy }) => {
-            const signerStrategyId: SignerStrategyId =
-                strategy.axis === 'signer'
-                    ? (strategy.id as SignerStrategyId)
-                    : availableSigners[0];
+            if (strategy.axis === 'signer') {
+                currentSignerId = strategy.id as SignerStrategyId;
+            }
 
-            const signer = await buildSignerForStrategy(wallet, signerStrategyId);
-            const holder = getHolderDidForStrategy(wallet, signerStrategyId);
+            const signer = await buildSignerForStrategy(wallet, currentSignerId);
+            const holder = getHolderDidForStrategy(wallet, currentSignerId);
 
             return wallet.invoke.presentCredentials(request, chosen, {
                 signer,
