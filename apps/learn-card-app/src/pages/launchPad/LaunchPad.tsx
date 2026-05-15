@@ -459,17 +459,15 @@ const LaunchPad: React.FC = () => {
                         <LaunchPadHeader>
                             <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
                                 <LaunchPadAppTabs tab={tab} setTab={setTab} />
-                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level (My Apps + All only) */}
-                                {(isMyApps || isAll) &&
-                                    featuredCarouselApps &&
-                                    featuredCarouselApps.length > 0 && (
-                                        <FeaturedCarousel
-                                            apps={featuredCarouselApps}
-                                            installedAppIds={installedListingIds}
-                                            onInstallSuccess={refetchInstalledApps}
-                                            hideScrollDots={true}
-                                        />
-                                    )}
+                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level on every tab */}
+                                {featuredCarouselApps && featuredCarouselApps.length > 0 && (
+                                    <FeaturedCarousel
+                                        apps={featuredCarouselApps}
+                                        installedAppIds={installedListingIds}
+                                        onInstallSuccess={refetchInstalledApps}
+                                        hideScrollDots={true}
+                                    />
+                                )}
                                 <LaunchPadSearch
                                     searchInput={searchInput}
                                     setSearchInput={setSearchInput}
