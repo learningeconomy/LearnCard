@@ -59,15 +59,20 @@ export const resilientAcceptAndStoreCredentialOffer = async ({
     AcceptedCredentialResult & StoreAcceptedCredentialsResult
 > => {
     const availableSigners = getApplicableSignerStrategies(wallet);
+    // Tracks the signer-in-effect across orchestrator iterations so that
+    // transport retries (axis !== 'signer') don't silently revert to
+    // availableSigners[0] and re-attempt with the signer we already
+    // proved broken. Updated only when the orchestrator hands us a new
+    // signer strategy.
+    let currentSignerId: SignerStrategyId = availableSigners[0];
 
     return runWithRecovery(
         async ({ strategy }) => {
-            const signerStrategyId: SignerStrategyId =
-                strategy.axis === 'signer'
-                    ? (strategy.id as SignerStrategyId)
-                    : availableSigners[0];
+            if (strategy.axis === 'signer') {
+                currentSignerId = strategy.id as SignerStrategyId;
+            }
 
-            const signer = await buildSignerForStrategy(wallet, signerStrategyId);
+            const signer = await buildSignerForStrategy(wallet, currentSignerId);
 
             return wallet.invoke.acceptAndStoreCredentialOffer(offer, {
                 ...options,
@@ -100,15 +105,15 @@ export const resilientCompleteCredentialOfferAuthCode = async ({
     callbacks,
 }: ResilientCompleteAuthCodeArgs): Promise<AcceptedCredentialResult> => {
     const availableSigners = getApplicableSignerStrategies(wallet);
+    let currentSignerId: SignerStrategyId = availableSigners[0];
 
     return runWithRecovery(
         async ({ strategy }) => {
-            const signerStrategyId: SignerStrategyId =
-                strategy.axis === 'signer'
-                    ? (strategy.id as SignerStrategyId)
-                    : availableSigners[0];
+            if (strategy.axis === 'signer') {
+                currentSignerId = strategy.id as SignerStrategyId;
+            }
 
-            const signer = await buildSignerForStrategy(wallet, signerStrategyId);
+            const signer = await buildSignerForStrategy(wallet, currentSignerId);
 
             return wallet.invoke.completeCredentialOfferAuthCode({
                 flowHandle,

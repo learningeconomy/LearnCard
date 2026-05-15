@@ -14,6 +14,12 @@ const sleep = (ms: number): Promise<void> =>
         setTimeout(resolve, ms);
     });
 
+const snapshotLog = (log: AttemptLog): AttemptLog => ({
+    signersTried: [...log.signersTried],
+    transportRetries: log.transportRetries,
+    trustGapsAccepted: log.trustGapsAccepted,
+});
+
 /**
  * Drive `runner` with strategy fallback and classified-error retry.
  *
@@ -56,18 +62,18 @@ export const runWithRecovery = async <R>(
             type: 'attempt_started',
             strategyId: strategy.id,
             attemptNumber,
-            attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+            attemptLog: snapshotLog(attemptLog),
         });
 
         const startTime = Date.now();
         try {
-            const result = await runner({ strategy, attemptLog: { ...attemptLog } });
+            const result = await runner({ strategy, attemptLog: snapshotLog(attemptLog) });
             callbacks.onTelemetry?.({
                 type: 'attempt_succeeded',
                 strategyId: strategy.id,
                 attemptNumber,
                 durationMs: Date.now() - startTime,
-                attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+                attemptLog: snapshotLog(attemptLog),
             });
             return result;
         } catch (raw) {
@@ -81,27 +87,28 @@ export const runWithRecovery = async <R>(
                 durationMs: Date.now() - startTime,
                 friendly,
                 errorKind: friendly.kind,
-                attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+                attemptLog: snapshotLog(attemptLog),
             });
 
             const decision = decideRecovery({
                 friendly,
                 raw,
-                attempted: attemptLog,
+                attempted: snapshotLog(attemptLog),
                 availableSigners: config.availableSigners,
             });
 
             callbacks.onTelemetry?.({
                 type: 'decision_made',
+                attemptNumber,
                 decision,
-                attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+                attemptLog: snapshotLog(attemptLog),
             });
 
             if (decision.kind === 'surface_error') {
                 callbacks.onTelemetry?.({
                     type: 'orchestrator_exhausted',
                     friendly,
-                    attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+                    attemptLog: snapshotLog(attemptLog),
                 });
                 throw raw;
             }
@@ -110,22 +117,19 @@ export const runWithRecovery = async <R>(
                 callbacks.onTelemetry?.({
                     type: 'prompt_shown',
                     prompt: decision.prompt,
-                    attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+                    attemptLog: snapshotLog(attemptLog),
                 });
                 const userOk = (await callbacks.onPrompt?.(decision.prompt)) ?? false;
                 callbacks.onTelemetry?.({
                     type: 'prompt_resolved',
                     accepted: userOk,
-                    attemptLog: { ...attemptLog, signersTried: [...attemptLog.signersTried] },
+                    attemptLog: snapshotLog(attemptLog),
                 });
                 if (!userOk) {
                     callbacks.onTelemetry?.({
                         type: 'orchestrator_exhausted',
                         friendly,
-                        attemptLog: {
-                            ...attemptLog,
-                            signersTried: [...attemptLog.signersTried],
-                        },
+                        attemptLog: snapshotLog(attemptLog),
                     });
                     throw raw;
                 }

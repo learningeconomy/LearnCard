@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     type OrchestratorTelemetryEvent,
@@ -25,7 +25,8 @@ interface UseResilientExchangeResult {
     isEnabled: boolean;
     /**
      * Pass straight into `runWithRecovery` or any wrapper that takes
-     * `RunWithRecoveryCallbacks`.
+     * `RunWithRecoveryCallbacks`. Memoized so consumers passing this
+     * into `useEffect` deps or memoizers see a stable reference.
      */
     callbacks: RunWithRecoveryCallbacks;
     /**
@@ -34,6 +35,14 @@ interface UseResilientExchangeResult {
      */
     pendingPrompt: UserPrompt | null;
     resolvePrompt: (accepted: boolean) => void;
+    /**
+     * Resets the run id + outcome bookkeeping so a single page can
+     * drive multiple exchanges without colliding in analytics
+     * (`exchange_run_id` would otherwise join attempts across runs and
+     * outcome events would fire only once per mount). Call this
+     * before kicking off a retry attempt on the same page.
+     */
+    resetRun: () => void;
 }
 
 const cryptoRandomId = (): string => {
@@ -43,14 +52,23 @@ const cryptoRandomId = (): string => {
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
+const strategyAxisFromId = (id: string): 'signer' | 'transport' | 'trust' => {
+    if (id.startsWith('transport-')) return 'transport';
+    if (id === 'accept-untrusted') return 'trust';
+    return 'signer';
+};
+
 /**
  * Hook that wires the resilience orchestrator into a React page:
- *  - Generates a stable `exchange_run_id` per mount so all telemetry
- *    events from one exchange share a join key.
+ *  - Generates a stable `exchange_run_id` per run so all telemetry
+ *    events from one exchange share a join key. Bump via `resetRun()`
+ *    if the same page drives more than one exchange.
  *  - Maps orchestrator telemetry events to typed analytics events.
  *  - Surfaces `pendingPrompt` for the page to render via
  *    `RecoveryPromptModal`, and resolves the orchestrator's awaiting
- *    promise when the user picks an option.
+ *    promise when the user picks an option. On unmount, any in-flight
+ *    prompt is resolved as `false` so the orchestrator's pending
+ *    Promise doesn't leak.
  *  - Tracks per-attempt timing for the final OUTCOME event.
  *  - Reports the LaunchDarkly feature flag so pages can fall back to
  *    the non-resilient code path when disabled.
@@ -63,14 +81,15 @@ export const useResilientExchange = ({
     const isEnabled = Boolean(flags.enableOid4vcResilience);
     const { track } = useAnalytics();
 
-    const exchangeRunIdRef = useRef<string>(cryptoRandomId());
+    const [runId, setRunId] = useState<string>(cryptoRandomId);
     const startedAtRef = useRef<number>(Date.now());
     const outcomeReportedRef = useRef<boolean>(false);
 
     const [pendingPrompt, setPendingPrompt] = useState<UserPrompt | null>(null);
     const promptResolverRef = useRef<((accepted: boolean) => void) | null>(null);
 
-    useEffect(() => {
+    const resetRun = useCallback(() => {
+        setRunId(cryptoRandomId());
         startedAtRef.current = Date.now();
         outcomeReportedRef.current = false;
     }, []);
@@ -91,10 +110,20 @@ export const useResilientExchange = ({
         []
     );
 
+    // Resolve any in-flight prompt as "declined" on unmount so the
+    // orchestrator's awaiting `Promise<boolean>` doesn't leak (and
+    // pin the wallet + offer closures behind it).
+    useEffect(
+        () => () => {
+            const resolver = promptResolverRef.current;
+            promptResolverRef.current = null;
+            resolver?.(false);
+        },
+        []
+    );
+
     const handleTelemetry = useCallback(
         (event: OrchestratorTelemetryEvent) => {
-            const runId = exchangeRunIdRef.current;
-
             if (event.type === 'attempt_succeeded') {
                 void track(AnalyticsEvents.OPENID_RESILIENCE_ATTEMPT, {
                     surface,
@@ -146,7 +175,7 @@ export const useResilientExchange = ({
                 void track(AnalyticsEvents.OPENID_RESILIENCE_DECISION, {
                     surface,
                     exchange_run_id: runId,
-                    attempt_number: event.attemptLog.signersTried.length,
+                    attempt_number: event.attemptNumber,
                     decision: event.decision.kind,
                     next_strategy_id:
                         event.decision.kind !== 'surface_error'
@@ -204,19 +233,16 @@ export const useResilientExchange = ({
                 }
             }
         },
-        [counterparty, surface, track]
+        [counterparty, surface, track, runId]
     );
 
-    const callbacks: RunWithRecoveryCallbacks = {
-        onPrompt: handlePrompt,
-        onTelemetry: handleTelemetry,
-    };
+    const callbacks = useMemo<RunWithRecoveryCallbacks>(
+        () => ({
+            onPrompt: handlePrompt,
+            onTelemetry: handleTelemetry,
+        }),
+        [handlePrompt, handleTelemetry]
+    );
 
-    return { isEnabled, callbacks, pendingPrompt, resolvePrompt };
-};
-
-const strategyAxisFromId = (id: string): 'signer' | 'transport' | 'trust' => {
-    if (id.startsWith('transport-')) return 'transport';
-    if (id === 'accept-untrusted') return 'trust';
-    return 'signer';
+    return { isEnabled, callbacks, pendingPrompt, resolvePrompt, resetRun };
 };

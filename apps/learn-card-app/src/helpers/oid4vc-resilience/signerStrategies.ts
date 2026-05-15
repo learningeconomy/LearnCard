@@ -4,19 +4,23 @@ import {
 } from '@learncard/openid4vc-plugin';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
-export type SignerStrategyId = 'did:web' | 'did:key' | 'did:jwk';
+export type SignerStrategyId = 'did:web' | 'did:key';
 
 /**
- * Preferred signer order for OID4VCI/VP. did:web first (matches the
- * user's network identity), then did:key as the universally-resolvable
- * fallback. did:jwk is reserved for verifiers that explicitly reject
- * key-based identifiers — gated behind a user prompt because it
- * surfaces a different identity to the counterparty.
+ * Preferred signer order for OID4VCI/VP. `did:web` first (matches
+ * the user's network identity), then `did:key` as the universally-
+ * resolvable fallback. Single source of truth — `getApplicableSigner
+ * Strategies` filters this list rather than maintaining its own order.
+ *
+ * To add a new strategy: append it here, then extend the `switch`
+ * statements in `buildSignerForStrategy` + `getHolderDidForStrategy`
+ * AND the applicability check in `getApplicableSignerStrategies`.
+ * The TypeScript compiler will fail any partial extension because
+ * `SignerStrategyId` is exhaustively switched.
  */
-export const SIGNER_STRATEGY_PREFERENCE: SignerStrategyId[] = [
+export const SIGNER_STRATEGY_PREFERENCE: readonly SignerStrategyId[] = [
     'did:web',
     'did:key',
-    'did:jwk',
 ];
 
 const buildEd25519Signer = async (
@@ -28,21 +32,28 @@ const buildEd25519Signer = async (
     return createJoseEd25519Signer({ keypair, kid });
 };
 
+const isStrategyApplicable = (
+    wallet: BespokeLearnCard,
+    strategyId: SignerStrategyId
+): boolean => {
+    switch (strategyId) {
+        case 'did:web':
+            return wallet.id.did().startsWith('did:web:');
+        case 'did:key':
+            return true;
+    }
+};
+
 /**
- * Compute the strategy list applicable to the active wallet. Always
- * returns at least one entry (did:key works for any wallet). did:web
- * is included only when the active DID is a did:web (typically for
- * users with a network profile).
+ * Compute the strategy list applicable to the active wallet, derived
+ * from `SIGNER_STRATEGY_PREFERENCE` (not a separate hardcoded list).
+ * Always returns at least `['did:key']` since did:key works for any
+ * wallet.
  */
 export const getApplicableSignerStrategies = (
     wallet: BespokeLearnCard
-): SignerStrategyId[] => {
-    const activeDid = wallet.id.did();
-    const strategies: SignerStrategyId[] = [];
-    if (activeDid.startsWith('did:web:')) strategies.push('did:web');
-    strategies.push('did:key');
-    return strategies;
-};
+): SignerStrategyId[] =>
+    SIGNER_STRATEGY_PREFERENCE.filter(strategy => isStrategyApplicable(wallet, strategy));
 
 /**
  * Build a `ProofJwtSigner` for a given strategy id. Returns `undefined`
@@ -65,13 +76,6 @@ export const buildSignerForStrategy = async (
             const did = wallet.id.did('key');
             return buildEd25519Signer(wallet, did);
         }
-        case 'did:jwk': {
-            // did:jwk requires a different verification-method shape that
-            // we don't currently emit. Falls back to undefined so the
-            // plugin uses its default — this is a placeholder for future
-            // expansion when a verifier explicitly demands did:jwk.
-            return undefined;
-        }
     }
 };
 
@@ -91,7 +95,5 @@ export const getHolderDidForStrategy = (
         }
         case 'did:key':
             return wallet.id.did('key');
-        case 'did:jwk':
-            return undefined;
     }
 };

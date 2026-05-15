@@ -51,7 +51,12 @@ describe('decideRecovery', () => {
             }
         });
 
-        it('prompts the user before falling back to did:jwk (non-did:key strategy)', () => {
+        it('prompts the user before falling back to a non-did:key signer strategy', () => {
+            // `decideRecovery` is generic over signer-strategy ids (the
+            // app picks which ones are applicable). The policy under test
+            // is: any next strategy that isn't `did:key` requires user
+            // consent first because it surfaces a different identity to
+            // the counterparty.
             const decision = decideRecovery({
                 friendly: friendly('wallet'),
                 raw: sigResolutionError,
@@ -59,12 +64,15 @@ describe('decideRecovery', () => {
                     ...createEmptyAttemptLog(),
                     signersTried: ['did:web', 'did:key'],
                 },
-                availableSigners: ['did:web', 'did:key', 'did:jwk'],
+                availableSigners: ['did:web', 'did:key', 'did:hypothetical'],
             });
 
             expect(decision.kind).toBe('retry_with_prompt');
             if (decision.kind !== 'retry_with_prompt') return;
-            expect(decision.nextStrategy).toEqual({ axis: 'signer', id: 'did:jwk' });
+            expect(decision.nextStrategy).toEqual({
+                axis: 'signer',
+                id: 'did:hypothetical',
+            });
             expect(decision.prompt.severity).toBe('info');
             expect(decision.prompt.title).not.toMatch(/DID|JWK|wallet/i);
         });
