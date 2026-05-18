@@ -1,10 +1,12 @@
 ---
-'@learncard/sd-jwt-vc-plugin': patch
+'@learncard/sd-jwt-vc-plugin': minor
 '@learncard/openid4vc-plugin': minor
 '@learncard/init': minor
 ---
 
-Slice 2b + 2c — SD-JWT-VC plumbed end-to-end into the LearnCard SDK.
+Slice 2b + 2c — SD-JWT-VC plumbed end-to-end into the LearnCard SDK with real verification at both receipt and display time.
+
+**`@learncard/sd-jwt-vc-plugin`** — adds a `verifyCredential` extension method following the same `VerifyExtension` pattern used by `@learncard/expiration-plugin`. When the credential's `proof.type` is `SdJwtCompactProof`, it routes through the SD-JWT-aware verifier (DID resolution + disclosure-hash check + issuer signature); everything else falls through to the chained vc-plugin / DIDKit verifier. The wallet's existing `learnCard.invoke.verifyCredential(vc)` call site (`VCDisplayCardWrapper2`) gets correct SD-JWT-VC verification with **zero changes to vc-plugin** and zero app-side branching. This closes the silent-pass hole where DIDKit returned `{ errors: [] }` for unknown proof types.
 
 **`@learncard/openid4vc-plugin`** — when an OID4VCI issuer returns a `dc+sd-jwt` or `vc+sd-jwt` credential, the wallet now:
 

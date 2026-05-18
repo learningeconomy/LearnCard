@@ -94,6 +94,33 @@ const callPluginParse = async (
     }
 };
 
+interface VerificationCheckLike {
+    errors?: unknown;
+    warnings?: unknown;
+    checks?: unknown;
+}
+
+const callPluginVerify = async (
+    learnCard: LearnCard<any, any, any>,
+    compact: string
+): Promise<VerificationCheckLike | undefined> => {
+    const verifyFn = (learnCard?.invoke as Record<string, unknown> | undefined)?.verifySdJwtVc;
+    if (typeof verifyFn !== 'function') return undefined;
+    try {
+        return (await (verifyFn as (c: string) => Promise<VerificationCheckLike>)(
+            compact
+        )) as VerificationCheckLike;
+    } catch (e) {
+        throw new VciError(
+            'unsupported_format',
+            `Failed to verify SD-JWT-VC credential at receipt: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
+            { cause: e }
+        );
+    }
+};
+
 export const synthesizeSdJwtVc = async (
     credential: unknown,
     format: string,
@@ -114,6 +141,23 @@ export const synthesizeSdJwtVc = async (
             'unsupported_format',
             `OID4VCI issuer advertised credential format "${format}" but SD-JWT JOSE header typ is "${headerTyp}"`
         );
+    }
+
+    // Verify the issuer signature + disclosure hash integrity BEFORE synthesizing
+    // the wallet-side W3C VC. Without this, a tampered or unsigned SD-JWT would
+    // be stored under proof.type='SdJwtCompactProof' and the downstream
+    // verifyCredential delegation in vc-plugin would be the only check — leaving
+    // a window where the credential exists in the wallet store but its signature
+    // has never been validated. Fail at receipt rather than at first display.
+    const verification = await callPluginVerify(learnCard, credential);
+    if (verification) {
+        const errors = Array.isArray(verification.errors) ? verification.errors : [];
+        if (errors.length > 0) {
+            throw new VciError(
+                'unsupported_format',
+                `SD-JWT-VC failed receipt verification: ${errors.join('; ')}`
+            );
+        }
     }
 
     const issuedAtIso = parsed.issuedAt?.toISOString() ?? new Date().toISOString();
