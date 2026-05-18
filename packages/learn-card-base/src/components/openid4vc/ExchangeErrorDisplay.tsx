@@ -188,7 +188,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
     const isFormatGap = friendlyError.kind === 'format_gap';
 
     return (
-        <div className="min-h-full flex items-center justify-center p-4 font-poppins">
+        <div className="min-h-full flex items-center justify-center p-4 font-poppins safe-area-top-margin">
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden animate-fade-in-up">
                 <div className={`${theme.headerClass} px-6 py-7 text-center`}>
                     <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
