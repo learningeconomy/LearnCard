@@ -408,6 +408,11 @@ jobs:
                   SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
                   OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
                   OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
+                  # LC-1644 perf bench backend telemetry (admin-only). POSTHOG_HOST is a var (non-secret),
+                  # POSTHOG_API_KEY is a secret. GIT_SHA is the deploy commit for tagging events.
+                  POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+                  GIT_SHA: ${{ github.sha }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -1087,6 +1092,26 @@ jobs:
 
             - name: Publish to NPM
               run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
+
+    # ============================================================================
+    # SMOKETEST PUBLISHED NPM PACKAGES (verify external installability)
+    # Calls the reusable smoketest-npm-packages workflow against the freshly
+    # published `latest` dist-tags from a clean directory with no monorepo
+    # context. Catches regressions like the didkit-plugin-node@0.2.14
+    # workspace:* leak that broke `npx @learncard/cli` for external users.
+    # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
+    # so a failure here WILL mark the deploy workflow run as failed. Treat
+    # smoketest failures as a real signal — the package was published but is
+    # broken for external consumers. Nightly cron in smoketest-npm-packages.yml
+    # provides a second line of defense.
+    # ============================================================================
+    smoketest-published-packages:
+        name: Smoketest Published NPM Packages
+        needs: publish-npm
+        if: |
+            always() &&
+            needs.publish-npm.result == 'success'
+        uses: ./.github/workflows/smoketest-npm-packages.yml
 
     # ============================================================================
     # SMOKETEST (after deploys — one job per target environment)

@@ -1,5 +1,32 @@
 # @learncard/cli
 
+## 3.3.176
+
+### Patch Changes
+
+-   [#1233](https://github.com/learningeconomy/LearnCard/pull/1233) [`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344) Thanks [@Custard7](https://github.com/Custard7)! - chore: Update CLI & Init Packages
+
+-   Updated dependencies [[`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344), [`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/init@2.3.18
+    -   @learncard/types@5.15.0
+    -   @learncard/core@9.4.18
+    -   @learncard/didkit-plugin@1.8.9
+    -   @learncard/learn-cloud-plugin@2.3.23
+    -   @learncard/ler-rs-plugin@0.1.9
+    -   @learncard/linked-claims-plugin@0.2.18
+    -   @learncard/open-badge-v2-plugin@1.1.19
+    -   @learncard/simple-signing-plugin@1.1.22
+
+## 3.3.173
+
+### Patch Changes
+
+-   Updated dependencies [[`81482ce6a60c9c8c8218ee51016671488a2bfeae`](https://github.com/learningeconomy/LearnCard/commit/81482ce6a60c9c8c8218ee51016671488a2bfeae)]:
+    -   @learncard/didkit-plugin@1.8.8
+    -   @learncard/init@2.3.16
+    -   @learncard/learn-cloud-plugin@2.3.22
+    -   @learncard/simple-signing-plugin@1.1.21
+
 ## 3.3.172
 
 ### Patch Changes

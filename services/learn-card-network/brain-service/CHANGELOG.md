@@ -1,5 +1,48 @@
 # @learncard/network-brain-service
 
+## 3.15.0
+
+### Minor Changes
+
+-   [#1223](https://github.com/learningeconomy/LearnCard/pull/1223) [`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add end-to-end W3C Bitstring Status List support for LearnCard Network credentials.
+
+    Issued VC 2.0 credentials now receive issuer-scoped Bitstring Status List entries, with support for revocation and suspension purposes, automatic list rollover, stable public status list credential URLs, and re-signed status list credentials when statuses change.
+
+    The network plugin exposes status-list allocation plus suspend and unsuspend operations, shared types and helpers are exported for status list entries and bit operations, and VC verification now relies on DIDKit's native array-form credential status support.
+
+    Prettified credential verification output now renders user-facing status messages such as `Status: Active`, `Status: Not Revoked`, `Status: Revoked`, and `Status: Suspended` instead of showing only the raw `status` check name.
+
+### Patch Changes
+
+-   [#1225](https://github.com/learningeconomy/LearnCard/pull/1225) [`773bbd425d2e87796d5d713450397723e3c21c71`](https://github.com/learningeconomy/LearnCard/commit/773bbd425d2e87796d5d713450397723e3c21c71) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1644] Optimize sendCredential performance: backend + frontend + telemetry
+
+-   [#1217](https://github.com/learningeconomy/LearnCard/pull/1217) [`5d402748c33bbe4f23aa38f45953d03274f38b65`](https://github.com/learningeconomy/LearnCard/commit/5d402748c33bbe4f23aa38f45953d03274f38b65) Thanks [@smurflo2](https://github.com/smurflo2)! - Automatically refresh AI Insights credential when adding or deleting credential
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7), [`53b315f16688fbe74f9f01f771cb3fe6263f33b6`](https://github.com/learningeconomy/LearnCard/commit/53b315f16688fbe74f9f01f771cb3fe6263f33b6)]:
+    -   @learncard/types@5.15.0
+    -   @learncard/helpers@1.3.0
+    -   @learncard/vc-plugin@1.4.14
+    -   @learncard/learn-card-plugin@1.2.18
+    -   @learncard/email-templates@1.0.2
+    -   @learncard/core@9.4.18
+    -   @learncard/did-web-plugin@1.1.18
+    -   @learncard/didkey-plugin@1.1.18
+    -   @learncard/didkit-plugin@1.8.9
+    -   @learncard/didkit-plugin-node@0.2.16
+    -   @learncard/encryption-plugin@1.1.18
+    -   @learncard/vc-templates-plugin@1.1.18
+    -   @learncard/crypto-plugin@1.1.18
+    -   @learncard/dynamic-loader-plugin@1.1.18
+    -   @learncard/expiration-plugin@1.2.18
+
+## 3.14.5
+
+### Patch Changes
+
+-   Updated dependencies [[`81482ce6a60c9c8c8218ee51016671488a2bfeae`](https://github.com/learningeconomy/LearnCard/commit/81482ce6a60c9c8c8218ee51016671488a2bfeae)]:
+    -   @learncard/didkit-plugin@1.8.8
+    -   @learncard/didkit-plugin-node@0.2.14
+
 ## 3.14.4
 
 ### Patch Changes

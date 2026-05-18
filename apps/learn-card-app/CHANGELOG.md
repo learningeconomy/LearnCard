@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.95.12
+
+### Patch Changes
+
+-   [`212dbfc7d19888eb23b327472b6e93b15b396835`](https://github.com/learningeconomy/LearnCard/commit/212dbfc7d19888eb23b327472b6e93b15b396835) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix boost publish screen whitescreening
+
+-   [#1225](https://github.com/learningeconomy/LearnCard/pull/1225) [`773bbd425d2e87796d5d713450397723e3c21c71`](https://github.com/learningeconomy/LearnCard/commit/773bbd425d2e87796d5d713450397723e3c21c71) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1644] Optimize sendCredential performance: backend + frontend + telemetry
+
+-   [#1217](https://github.com/learningeconomy/LearnCard/pull/1217) [`5d402748c33bbe4f23aa38f45953d03274f38b65`](https://github.com/learningeconomy/LearnCard/commit/5d402748c33bbe4f23aa38f45953d03274f38b65) Thanks [@smurflo2](https://github.com/smurflo2)! - Automatically refresh AI Insights credential when adding or deleting credential
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/helpers@1.3.0
+    -   @learncard/lca-api-plugin@1.2.9
+    -   @learncard/react@2.9.26
+    -   @learncard/ler-rs-plugin@0.1.9
+    -   @learncard/open-badge-v2-plugin@1.1.19
+    -   @learncard/sss-key-manager@0.1.8
+
+## 1.95.11
+
+### Patch Changes
+
+-   [#1207](https://github.com/learningeconomy/LearnCard/pull/1207) [`3312e78f640f536660c91c643fc57cf02196b4dc`](https://github.com/learningeconomy/LearnCard/commit/3312e78f640f536660c91c643fc57cf02196b4dc) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1788] Bug fest
+
+-   [#1209](https://github.com/learningeconomy/LearnCard/pull/1209) [`bf68df3640b7d78c434b8466e5855ec384447eb0`](https://github.com/learningeconomy/LearnCard/commit/bf68df3640b7d78c434b8466e5855ec384447eb0) Thanks [@goblincore](https://github.com/goblincore)! - Build My LearnCard: upload-success toast is now persistent, includes the filename and target wallet categories, and appears immediately when parsing finishes (no more 5-6s lag). Also: empty-extraction uploads no longer say "Successfully Parsed" (LC-1792).
+
+-   [#1206](https://github.com/learningeconomy/LearnCard/pull/1206) [`c249dfb2390d3b14832790c3dec8ce84aef5de34`](https://github.com/learningeconomy/LearnCard/commit/c249dfb2390d3b14832790c3dec8ce84aef5de34) Thanks [@goblincore](https://github.com/goblincore)! - Build My LearnCard: artifacts now disappear instantly on delete; wallet remove and checklist refetch run in the background, with rollback on failure (LC-1793).
+
+-   [#1210](https://github.com/learningeconomy/LearnCard/pull/1210) [`f71f2fc5c89ce0fed8dc8e5558e4ed7a3ae22a55`](https://github.com/learningeconomy/LearnCard/commit/f71f2fc5c89ce0fed8dc8e5558e4ed7a3ae22a55) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1813] - publishing resume fails with "Protected term redefinition"
+
+-   [#1215](https://github.com/learningeconomy/LearnCard/pull/1215) [`99b64725dfdc58d569832d6d2e6ef9f572073d35`](https://github.com/learningeconomy/LearnCard/commit/99b64725dfdc58d569832d6d2e6ef9f572073d35) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1788] Bug fest polishes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.8
+    -   @learncard/react@2.9.25
+
 ## 1.95.10
 
 ### Patch Changes

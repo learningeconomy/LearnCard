@@ -140,6 +140,12 @@ provider:
         OIDC_EXPECTED_AUDIENCE: ${env:OIDC_EXPECTED_AUDIENCE, ""}
         APP_STORE_ADMIN_PROFILE_IDS: ${env:APP_STORE_ADMIN_PROFILE_IDS, ""}
         APP_BRAND: ${env:APP_BRAND, 'scouts'}
+        # LC-1644 perf bench (admin-only). Optional — if unset, the bench still runs
+        # but emits no PostHog events. POSTHOG_HOST falls back to the helper's default
+        # (https://us.i.posthog.com).
+        POSTHOG_API_KEY: ${env:POSTHOG_API_KEY, ""}
+        POSTHOG_HOST: ${env:POSTHOG_HOST, ""}
+        GIT_SHA: ${env:GIT_SHA, ""}
     tracing:
         apiGateway: true
         lambda: true
@@ -206,6 +212,17 @@ functions:
             - httpApi: GET /skills/{skillId}
             - httpApi: GET /frameworks/{frameworkId}
             - httpApi: GET /frameworks/{frameworkId}/skills/{skillId}
+
+    statusLists:
+        handler: lambda.statusListsHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /status-lists/{id}
+            - httpApi: OPTIONS /status-lists/{id}
 
 resources:
     Resources:

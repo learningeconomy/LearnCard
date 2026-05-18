@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 
@@ -9,19 +8,17 @@ import AddContactView, {
 } from '../../pages/addressBook/addContactView/AddContactView';
 import { IonModal, IonContent, IonPage, IonSpinner } from '@ionic/react';
 
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { VC } from '@learncard/types';
+import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
 
 export const QRCodeScannerListener: React.FC = () => {
-    const history = useHistory();
-    const { initWallet } = useWallet();
     const { presentToast } = useToast();
-    const { validateTextVC } = useUploadVcFromText();
+    const route = useClaimInputRouter({ defaultSource: 'camera' });
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
 
@@ -32,43 +29,7 @@ export const QRCodeScannerListener: React.FC = () => {
     const [boost, setBoost] = useState<{ uri: string; challenge: string } | null>(null);
     const [vc, setVC] = useState<VC | null>(null);
 
-    const [interaction, setInteraction] = useState<string | null>(null);
-
     const [loading, setLoading] = useState<boolean>(false);
-
-    const fetchInteractionData = async () => {
-        console.log('Fetching interaction data!', interaction);
-        try {
-            if (!interaction) return;
-            setLoading(true);
-
-            const response = await fetch(interaction, {
-                headers: {
-                    Accept: 'application/json',
-                },
-            });
-            const interactionData = await response.json();
-            console.log('Interaction data', interactionData);
-            if (interactionData?.protocols?.vcapi) {
-                console.log('VC API URL', interactionData?.protocols?.vcapi);
-                history.push(`/request?vc_request_url=${interactionData?.protocols?.vcapi}`);
-            } else if (interactionData?.protocols?.website) {
-                console.log('Website URL', interactionData?.protocols?.website);
-                window.open(interactionData?.protocols?.website, '_blank');
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-            setInteraction(null);
-        }
-    };
-
-    useEffect(() => {
-        if (interaction) {
-            fetchInteractionData();
-        }
-    }, [interaction]);
 
     const handleStartScanning = async () => {
         return new Promise(async resolve => {
@@ -86,120 +47,54 @@ export const QRCodeScannerListener: React.FC = () => {
     };
 
     const handleScan = async (qrCodeValue: string) => {
-        const wallet = await initWallet();
         await handleCancelScanning();
 
         try {
-            if (qrCodeValue) {
-                await handleCancelScanning();
+            if (!qrCodeValue) return;
 
-                let eventUrl: URL | null = null;
-                try {
-                    eventUrl = new URL(qrCodeValue);
-                } catch {
-                    // Not a URL → skip this check
-                }
+            setLoading(true);
+            const result = await route(qrCodeValue);
+            setLoading(false);
 
-                // handles custom schemes and https domains
-                if (eventUrl) {
-                    const scheme = eventUrl.protocol.replace(':', '');
-                    const customSchemes = ['dccrequest', 'msprequest', 'asuprequest'];
-                    const httpsDomains = ['https://lcw.app'];
-
-                    if (customSchemes.includes(scheme) || httpsDomains.includes(eventUrl.origin)) {
-                        let fullPath = eventUrl.pathname + eventUrl.search + eventUrl.hash;
-
-                        // If pathname is empty (custom scheme), default to /request
-                        if (!eventUrl.pathname) {
-                            fullPath = '/request' + fullPath;
-                        }
-
-                        history.push(fullPath);
-                        return;
-                    }
-                }
-
-                const queryStringIndex = qrCodeValue.indexOf('?');
-                const queryString =
-                    queryStringIndex !== -1 ? qrCodeValue.substring(queryStringIndex) : qrCodeValue;
-                const query = new URLSearchParams(queryString);
-
-                let profileId = null;
-                const userDid = query.get('did') ?? '';
-                const boostUri = query.get('boostUri');
-                const challenge = query.get('challenge');
-                const iuv = query.get('iuv');
-
-                const isLCNetworkUrl = userDid.includes('did:web');
-
-                if (boostUri && challenge) {
-                    setBoost({ uri: boostUri, challenge: challenge });
-                    setIsClaimModalOpen(true);
-                    return;
-                } else if (iuv === '1') {
-                    setInteraction(qrCodeValue);
-                    return;
-                } else if (isLCNetworkUrl) {
-                    const regex = /(users:)(.*)/;
-                    profileId = userDid?.match(regex)?.[2];
-
-                    if (profileId) {
-                        try {
-                            setLoading(true);
-                            const user = await wallet?.invoke?.getProfile(profileId);
-                            if (user) {
-                                setContact(user);
-                                setIsOpen(true);
-                                setLoading(false);
-                                return;
-                            }
-                        } catch {
-                            setIsOpen(true);
-                            setLoading(false);
-                        }
-                    }
-                }
-                // handle raw VCs
-                try {
-                    const rawVC = JSON.parse(qrCodeValue);
-
-                    if (rawVC['@context'] && rawVC?.type?.includes('VerifiableCredential')) {
-                        const validationErrors = validateTextVC(qrCodeValue);
-                        if (!validationErrors) {
-                            setVC(rawVC);
-                            setIsClaimModalOpen(true);
-                            return;
-                        } else {
-                            presentToast(`Invalid VC: ${validationErrors.join(', ')}`, {
-                                type: ToastTypeEnum.Error,
-                                hasDismissButton: true,
-                            });
-                        }
-                    }
-                } catch {
-                    // not JSON, ignore
-                }
-
-                setContact(null);
+            if (result.kind === 'open_contact') {
+                setContact(result.contact);
                 setIsOpen(true);
-
-                setBoost(null);
-                setVC(null);
-                setInteraction(null);
-                setIsClaimModalOpen(false);
-
-                setLoading(false);
                 return;
             }
+            if (result.kind === 'open_claim_boost') {
+                setBoost(result.boost);
+                setVC(null);
+                setIsClaimModalOpen(true);
+                return;
+            }
+            if (result.kind === 'open_claim_vc') {
+                setBoost(null);
+                setVC(result.vc);
+                setIsClaimModalOpen(true);
+                return;
+            }
+            if (result.kind === 'open_website') {
+                window.open(result.url, '_blank');
+                return;
+            }
+            if (result.kind === 'unrecognized') {
+                setContact(null);
+                setIsOpen(true);
+                return;
+            }
+            // 'routed' — the router already called history.push; nothing more to do.
         } catch (error) {
             console.log('❌❌ scanner::error ❌❌', error);
             await handleCancelScanning();
-            setInteraction(null);
+            setLoading(false);
 
-            presentToast(`Oops! ${error?.message ?? 'There was an error scanning the QR Code.'}`, {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
+            presentToast(
+                `Oops! ${error instanceof Error ? error.message : 'There was an error scanning the QR Code.'}`,
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -207,10 +102,7 @@ export const QRCodeScannerListener: React.FC = () => {
         document?.querySelector('#app-router')?.classList?.remove('scanner-active');
         QRCodeScannerStore.set.showScanner(false);
 
-        // Remove all listeners
         await BarcodeScanner?.removeAllListeners();
-
-        // Stop the barcode scanner
         await BarcodeScanner?.stopScan();
     };
 
@@ -218,7 +110,7 @@ export const QRCodeScannerListener: React.FC = () => {
         if (Capacitor.isNativePlatform()) {
             if (showScanner) {
                 handleStartScanning()
-                    .then(async res => {
+                    .then(async (res: any) => {
                         console.log('scan::success', res);
                         await handleScan(res?.rawValue);
                     })

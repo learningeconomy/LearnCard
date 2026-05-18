@@ -1,5 +1,14 @@
 # @learncard/linked-claims-plugin
 
+## 0.2.18
+
+### Patch Changes
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/types@5.15.0
+    -   @learncard/vc-plugin@1.4.14
+    -   @learncard/core@9.4.18
+
 ## 0.2.17
 
 ### Patch Changes

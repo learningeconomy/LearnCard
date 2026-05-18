@@ -10,10 +10,14 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
+    UnsignedVC,
+    VC,
+    BitstringCredentialStatusEntry,
+    BitstringCredentialStatusPurpose,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
-import { isVC2Format } from '@learncard/helpers';
+import { getCredentialStatusArray, isVC2Format } from '@learncard/helpers';
 import Mustache from 'mustache';
 
 import {
@@ -239,6 +243,46 @@ const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is
     );
 };
 
+const appendNetworkCredentialStatus = async (
+    client: any,
+    credential: UnsignedVC,
+    statusPurposes: BitstringCredentialStatusPurpose[] = ['revocation']
+): Promise<UnsignedVC> => {
+    if (!isVC2Format(credential)) return credential;
+
+    const existingStatuses = getCredentialStatusArray(credential);
+    const missingPurposes = statusPurposes.filter(statusPurpose => {
+        return !existingStatuses.some(
+            status =>
+                status.type === 'BitstringStatusListEntry' && status.statusPurpose === statusPurpose
+        );
+    });
+
+    if (missingPurposes.length === 0) return credential;
+
+    const entries = (await client.boost.allocateCredentialStatus.mutate({
+        statusPurposes: missingPurposes,
+    })) as BitstringCredentialStatusEntry[];
+
+    const credentialStatuses = [...existingStatuses, ...entries];
+    credential.credentialStatus = (
+        credentialStatuses.length === 1 ? credentialStatuses[0] : credentialStatuses
+    ) as UnsignedVC['credentialStatus'];
+
+    return credential;
+};
+
+const issueCredentialWithNetworkStatus = async (
+    learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
+    client: any,
+    credential: UnsignedVC,
+    statusPurposes?: BitstringCredentialStatusPurpose[]
+): Promise<VC> => {
+    return learnCard.invoke.issueCredential(
+        await appendNetworkCredentialStatus(client, credential, statusPurposes)
+    );
+};
+
 export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
@@ -269,9 +313,9 @@ export async function getLearnCardNetworkPlugin(
     apiTokenOrOptions?:
         | string
         | {
-              guardianApprovalGetter?: GuardianApprovalGetter;
-              extraHeaders?: Record<string, string>;
-          },
+            guardianApprovalGetter?: GuardianApprovalGetter;
+            extraHeaders?: Record<string, string>;
+        },
     options?: {
         guardianApprovalGetter?: GuardianApprovalGetter;
         extraHeaders?: Record<string, string>;
@@ -301,20 +345,20 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
         : await getClient(
-              url,
-              async challenge => {
-                  const jwt = await learnCard.invoke.getDidAuthVp({
-                      proofFormat: 'jwt',
-                      challenge,
-                  });
+            url,
+            async challenge => {
+                const jwt = await learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge,
+                });
 
-                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                  return jwt;
-              },
-              guardianApprovalGetter,
-              extraHeaders
-          );
+                return jwt;
+            },
+            guardianApprovalGetter,
+            extraHeaders
+        );
 
     let userData: LCNProfile | undefined;
 
@@ -382,9 +426,8 @@ export async function getLearnCardNetworkPlugin(
         recipientDid: string
     ): Promise<string> => {
         const serviceUrl = new URL(url);
-        const serviceDomain = `${serviceUrl.hostname}${
-            serviceUrl.port ? `%3A${serviceUrl.port}` : ''
-        }`;
+        const serviceDomain = `${serviceUrl.hostname}${serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+            }`;
         const localServiceDid = `did:web:${serviceDomain}`;
 
         const getInferredServiceDid = (did: string): string | null => {
@@ -645,7 +688,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -797,7 +840,11 @@ export async function getLearnCardNetworkPlugin(
                     const myProfile = await client.profile.getProfile.query();
                     const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
                     const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
-                    const signedCredential = await _learnCard.invoke.issueCredential(vc);
+                    const signedCredential = await issueCredentialWithNetworkStatus(
+                        _learnCard,
+                        client,
+                        vc
+                    );
                     const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
                         proofFormat: 'jwt',
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
@@ -1257,10 +1304,31 @@ export async function getLearnCardNetworkPlugin(
 
                 return result;
             },
+            allocateCredentialStatus: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.boost.allocateCredentialStatus.mutate(options);
+            },
             revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
                 await ensureUser();
 
                 return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
+            },
+            suspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return client.boost.suspendBoostRecipient.mutate({
+                    boostUri,
+                    recipientProfileId,
+                });
+            },
+            unsuspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return client.boost.unsuspendBoostRecipient.mutate({
+                    boostUri,
+                    recipientProfileId,
+                });
             },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();
@@ -1325,10 +1393,9 @@ export async function getLearnCardNetworkPlugin(
                         );
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${
-                                error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1337,7 +1404,14 @@ export async function getLearnCardNetworkPlugin(
                     boost = options.overideFn(boost);
                 }
 
-                const vc = await _learnCard.invoke.issueCredential(boost);
+                const statusPurposes =
+                    typeof options === 'object' ? options.statusPurposes : undefined;
+                const vc = await issueCredentialWithNetworkStatus(
+                    _learnCard,
+                    client,
+                    boost,
+                    statusPurposes
+                );
 
                 // options is allowed to be a boolean to maintain backwards compatibility
                 if ((typeof options === 'object' && !options.encrypt) || !options) {
@@ -1426,9 +1500,8 @@ export async function getLearnCardNetworkPlugin(
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
                     const serviceUrl = new URL(url);
-                    const serviceDomain = `${serviceUrl.hostname}${
-                        serviceUrl.port ? `%3A${serviceUrl.port}` : ''
-                    }`;
+                    const serviceDomain = `${serviceUrl.hostname}${serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+                        }`;
                     const recipientDomain = recipient.startsWith('did:web:')
                         ? recipient.split(':')[2]
                         : undefined;
@@ -1475,7 +1548,11 @@ export async function getLearnCardNetworkPlugin(
                             boost.boostId = input.templateUri;
                         }
 
-                        const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                        const signedCredential = await issueCredentialWithNetworkStatus(
+                            _learnCard,
+                            client,
+                            boost
+                        );
                         const credentialUri = await _learnCard.invoke.sendCredential(
                             recipient,
                             signedCredential,
@@ -1537,8 +1614,7 @@ export async function getLearnCardNetworkPlugin(
                                     );
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${
-                                            error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1567,7 +1643,11 @@ export async function getLearnCardNetworkPlugin(
                             if (boost?.type?.includes('BoostCredential'))
                                 boost.boostId = input.templateUri;
 
-                            const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                            const signedCredential = await issueCredentialWithNetworkStatus(
+                                _learnCard,
+                                client,
+                                boost
+                            );
 
                             if (isDid && recipient.startsWith('did:web:')) {
                                 const credentialUri = await _learnCard.invoke.sendCredential(
@@ -1745,6 +1825,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            deleteCredentialFromAllContracts: async (_learnCard, deletedUris) => {
+                await ensureUser();
+
+                return client.contracts.deleteCredentialFromAllContracts.mutate({
+                    deletedUris,
+                });
+            },
+
             sendAiInsightsContractRequest: async (
                 _learnCard,
                 contractUri,
@@ -1809,7 +1897,7 @@ export async function getLearnCardNetworkPlugin(
             getSharedInsightsRequestsForProfile: async (_learnCard, targetProfileId) => {
                 await ensureUser();
 
-                return (client.contracts as any).getSharedInsightsRequestsForProfile.query({
+                return client.contracts.getSharedInsightsRequestsForProfile.query({
                     targetProfileId,
                 });
             },
@@ -2519,7 +2607,6 @@ export const getVerifyBoostPlugin = async (
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
-
     return {
         name: 'VerifyBoost',
         displayName: 'Verify Boost Extension',
@@ -2536,15 +2623,33 @@ export const getVerifyBoostPlugin = async (
                         const verifyBoostCredential = await learnCard.invoke.verifyCredential(
                             boostCredential
                         );
+                        const boostCredentialErrors = verifyBoostCredential.errors ?? [];
+                        if (verifyBoostCredential.status?.length) {
+                            verificationCheck.status = [
+                                ...(verificationCheck.status ?? []),
+                                ...verifyBoostCredential.status,
+                            ];
+                        }
+
                         if (!boostCredential?.boostId && !credential?.boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
                             );
                         }
 
-                        if (verifyBoostCredential.errors?.length > 0) {
+                        if (boostCredentialErrors.length > 0) {
+                            if (
+                                boostCredentialErrors.some(error =>
+                                    /revoked|suspend|status/i.test(error)
+                                )
+                            ) {
+                                verificationCheck.checks = verificationCheck.checks.filter(
+                                    check => check !== 'status'
+                                );
+                            }
+
                             verificationCheck.errors = [
-                                ...(verifyBoostCredential.errors || []),
+                                ...boostCredentialErrors,
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];

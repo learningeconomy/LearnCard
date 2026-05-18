@@ -151,6 +151,7 @@ export * from './stores/sideMenuStore';
 export * from './stores/checklistStore';
 export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
+export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
 export * from './stores/boostPreviewStore';
 export {
@@ -184,6 +185,12 @@ export {
 
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentials/queries';
+export * from './helpers/openid4vcErrors';
+export * from './helpers/faviconHelpers';
+export * from './oid4vc-resilience';
+export * from './components/openid4vc/ExchangeErrorDisplay';
+export * from './components/openid4vc/IssuerHeader';
+export * from './components/openid4vc/VerifierHeader';
 export * from './helpers/web3AuthHelpers';
 export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
@@ -211,6 +218,7 @@ export * from './types/boostAndCredentialMetadata';
 
 // Constants
 export * from './constants/gdprAgeLimits';
+export * from './constants/aiPassport';
 
 export * from './filestack/useFilestack';
 export * from './filestack/images/filestack.helpers';
@@ -258,3 +266,4 @@ export * from './svgs/navbar/navbarIcons';
 export * from './svgs/navbar/formal/navbarFormalIcons';
 export * from './svgs/ScoutsLogo';
 export * from './svgs/ScoutLogoAndText';
+export * from './svgs/Compass';
