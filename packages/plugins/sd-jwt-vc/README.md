@@ -9,16 +9,19 @@ Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in
 
 ## Status
 
-**Holder read-path: feature-complete.** The plugin parses, reconstructs, and verifies SD-JWT-VCs against any DID-resolvable issuer (`did:key`, `did:web`, `did:jwk`). Presentation (KB-JWT signing) lands in Slice 3; status list lands in Slice 4.
+**Holder read-path + wallet display: feature-complete.** The plugin parses, verifies, categorizes, and produces a wallet-ready display view-model for SD-JWT-VCs against any DID-resolvable issuer (`did:key`, `did:web`, `did:jwk`). Presentation (KB-JWT signing) lands in Slice 3; status list lands in Slice 4.
 
 | Capability | Status |
 |---|---|
 | Parse compact serialization (Issuer JWT + Disclosures + optional KB-JWT) | ✅ Slice 1 |
 | Reconstruct fully-disclosed claims | ✅ Slice 1 |
-| Verify issuer signature (via DID resolution) + disclosure hashes | ✅ Slice 1 |
-| `dc+sd-jwt` and legacy `vc+sd-jwt` format strings | ✅ Slice 1 |
-| Per-claim selective disclosure preview | ✅ Slice 1 |
-| Wallet display view-model (`vct` → category) | ⏳ Slice 2 |
+| Verify issuer signature (via DID resolution + assertionMethod check) | ✅ Slice 1 |
+| `dc+sd-jwt` and legacy `vc+sd-jwt` format strings (auto-detected from JOSE `typ`) | ✅ Slice 1 |
+| JOSE `typ` validation (draft-16 §3.2.1.1) | ✅ Slice 1 |
+| `vct` → wallet category mapping (`categorizeSdJwt`) | ✅ Slice 2 |
+| Wallet display view-model (`toSdJwtDisplayViewModel`) | ✅ Slice 2 |
+| openid4vc integration (OID4VCI receipt + wallet store delegation) | ⏳ Slice 2b |
+| Wallet-app `VCDisplayCard` adapter | ⏳ Slice 2c |
 | Holder presentation + KB-JWT signing | ⏳ Slice 3 |
 | Token Status List checking (cached + network) | ⏳ Slice 4 |
 

@@ -2,6 +2,8 @@ import type { Plugin, LearnCard } from '@learncard/core';
 import type { VerificationCheck } from '@learncard/types';
 import type { DidkitPluginMethods } from '@learncard/didkit-plugin';
 
+import type { SdJwtDisplayViewModel } from './display';
+
 export const SD_JWT_VC_FORMAT = 'dc+sd-jwt' as const;
 export const SD_JWT_VC_FORMAT_LEGACY = 'vc+sd-jwt' as const;
 
@@ -105,6 +107,10 @@ export type SdJwtVcPluginMethods = {
     ) => Promise<VerificationCheck>;
 
     decodeSdJwtClaims: (compact: string) => Promise<Record<string, unknown>>;
+
+    categorizeSdJwtVct: (vct: string) => string;
+
+    toSdJwtDisplayViewModel: (parsed: ParsedSdJwtVc) => SdJwtDisplayViewModel;
 };
 
 // TODO(LC-1796 Slice 3+): replace the second `any` with a concrete control-plane

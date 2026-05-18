@@ -1,6 +1,13 @@
 export { getSdJwtVcPlugin } from './plugin';
 export { parseSdJwtVc } from './parse';
 export { verifySdJwtVc } from './verify';
+export {
+    categorizeSdJwt,
+    registerSdJwtVctCategory,
+    DEFAULT_SD_JWT_VC_CATEGORY,
+    SD_JWT_VC_CATEGORY_MAP,
+} from './categorize';
+export { toSdJwtDisplayViewModel, type SdJwtDisplayViewModel } from './display';
 export { sha256Hasher, isSupportedHashAlg } from './hasher';
 export { randomSalt, SD_JWT_SALT_LENGTH_BYTES } from './salt';
 export { createJoseVerifier, type IssuerVerifier } from './signer';

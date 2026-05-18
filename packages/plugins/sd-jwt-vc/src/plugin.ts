@@ -1,5 +1,7 @@
 import { parseSdJwtVc } from './parse';
 import { verifySdJwtVc } from './verify';
+import { categorizeSdJwt } from './categorize';
+import { toSdJwtDisplayViewModel } from './display';
 import { type SdJwtVcDependentLearnCard, type SdJwtVcPlugin } from './types';
 
 export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcPlugin => ({
@@ -17,5 +19,9 @@ export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcP
             const parsed = await parseSdJwtVc(compact);
             return parsed.claims;
         },
+
+        categorizeSdJwtVct: (_lc, vct: string) => categorizeSdJwt(vct),
+
+        toSdJwtDisplayViewModel: (_lc, parsed) => toSdJwtDisplayViewModel(parsed),
     },
 });
