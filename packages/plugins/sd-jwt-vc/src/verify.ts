@@ -106,9 +106,17 @@ const resolveIssuerJwk = async (
     }
 
     const jwk = method.publicKeyJwk as unknown as JWK;
-    const headerAlg = parsed.header.alg;
-    const alg = headerAlg || (jwk.alg as string | undefined) || 'EdDSA';
+    // header.alg is enforced as a non-empty string by parseSdJwtVc, so it is
+    // the load-bearing source here; the JWK.alg and 'EdDSA' floors are purely
+    // defensive against malformed inputs that bypass parse.
+    const alg = parsed.header.alg || (jwk.alg as string | undefined) || 'EdDSA';
     return { jwk, alg };
+};
+
+const errorToMessage = (e: unknown): string => {
+    if (e instanceof SdJwtVcError) return `${e.code}: ${e.message}`;
+    if (e instanceof Error) return e.message;
+    return String(e);
 };
 
 const ensureNotExpired = (
@@ -162,9 +170,7 @@ export const verifySdJwtVc = async (
         checks.push('parse');
         checks.push('disclosure_hash_integrity');
     } catch (e) {
-        const message =
-            e instanceof SdJwtVcError ? `${e.code}: ${e.message}` : (e as Error).message;
-        return { checks, warnings, errors: [message] };
+        return { checks, warnings, errors: [errorToMessage(e)] };
     }
 
     let issuerJwk: JWK;
@@ -175,9 +181,7 @@ export const verifySdJwtVc = async (
         issuerAlg = resolved.alg;
         checks.push('issuer_resolved');
     } catch (e) {
-        const message =
-            e instanceof SdJwtVcError ? `${e.code}: ${e.message}` : (e as Error).message;
-        return { checks, warnings, errors: [message] };
+        return { checks, warnings, errors: [errorToMessage(e)] };
     }
 
     const { verifier, getLastError } = await createJoseVerifier(issuerJwk, issuerAlg);

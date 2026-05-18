@@ -266,6 +266,38 @@ describe('verifySdJwtVc', () => {
         expect(result.errors).toEqual([]);
         expect(result.checks).toContain('issuer_signature');
     });
+
+    it('relies on parsed.header.alg when the DID-document JWK omits alg', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const { alg: _omittedAlg, ...jwkWithoutAlg } = publicJwk as Record<string, unknown> & {
+            alg?: unknown;
+        };
+        const learnCard = {
+            invoke: {
+                resolveDid: jest.fn(async (did: string) => {
+                    if (did !== ISSUER_DID) throw new Error(`Unexpected DID resolve: ${did}`);
+                    return {
+                        '@context': ['https://www.w3.org/ns/did/v1'],
+                        id: ISSUER_DID,
+                        verificationMethod: [
+                            {
+                                id: ISSUER_KID,
+                                type: 'JsonWebKey2020',
+                                controller: ISSUER_DID,
+                                publicKeyJwk: jwkWithoutAlg,
+                            },
+                        ],
+                        authentication: [ISSUER_KID],
+                        assertionMethod: [ISSUER_KID],
+                    };
+                }),
+            },
+        } as unknown as LearnCardMock;
+
+        const result = await verifySdJwtVc(learnCard, compact);
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+    });
 });
 
 describe('decodeSdJwtClaims (via plugin surface)', () => {
