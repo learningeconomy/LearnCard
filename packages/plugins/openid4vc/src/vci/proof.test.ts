@@ -1,4 +1,5 @@
 import { generateKeyPair, exportJWK, jwtVerify, importJWK } from 'jose';
+import * as ed from '@noble/ed25519';
 
 import { buildProofJwt, createJoseEd25519Signer, OID4VCI_PROOF_TYP } from './proof';
 import { ProofJwtSigner } from './types';
@@ -117,8 +118,35 @@ describe('createJoseEd25519Signer', () => {
         ).rejects.toMatchObject({ code: 'proof_signing_failed' });
     });
 
+    it('rejects Ed25519 JWKs missing the private scalar', async () => {
+        await expect(
+            createJoseEd25519Signer({
+                keypair: {
+                    kty: 'OKP',
+                    crv: 'Ed25519',
+                    x: 'public-only',
+                    d: '',
+                },
+                kid: 'did:key:z6Mk#z6Mk',
+            })
+        ).rejects.toMatchObject({ code: 'proof_signing_failed' });
+    });
+
+    it('rejects Ed25519 JWKs with wrong-length private scalar', async () => {
+        await expect(
+            createJoseEd25519Signer({
+                keypair: {
+                    kty: 'OKP',
+                    crv: 'Ed25519',
+                    x: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                    d: 'AA',
+                },
+                kid: 'did:key:z6Mk#z6Mk',
+            })
+        ).rejects.toMatchObject({ code: 'proof_signing_failed' });
+    });
+
     it('produces a JWT verifiable with the matching public key', async () => {
-        // Generate an Ed25519 keypair via jose, export to JWK form.
         const keys = await generateKeyPair('EdDSA', { extractable: true });
         const privJwk = await exportJWK(keys.privateKey);
         const pubJwk = await exportJWK(keys.publicKey);
@@ -139,7 +167,6 @@ describe('createJoseEd25519Signer', () => {
             nonce: 'nonce-value',
         });
 
-        // Verify the JWT with the matching public key.
         const pubKey = await importJWK(pubJwk, 'EdDSA');
         const { payload, protectedHeader } = await jwtVerify(jwt, pubKey);
 
@@ -150,4 +177,81 @@ describe('createJoseEd25519Signer', () => {
         expect(payload.nonce).toBe('nonce-value');
         expect(typeof payload.iat).toBe('number');
     });
+
+    it('produces a signature verifiable with @noble/ed25519 — no WebCrypto in the verify path', async () => {
+        // Regression test for iOS WKWebView dev mode (http://<IP>:3000)
+        // where `crypto.subtle` is `undefined`. If the signer is correct,
+        // a pure-JS verifier must accept it without ever touching subtle.
+        const keys = await generateKeyPair('EdDSA', { extractable: true });
+        const privJwk = await exportJWK(keys.privateKey);
+        const pubJwk = await exportJWK(keys.publicKey);
+
+        const signer = await createJoseEd25519Signer({
+            keypair: {
+                kty: privJwk.kty!,
+                crv: privJwk.crv!,
+                x: privJwk.x!,
+                d: privJwk.d!,
+            },
+            kid: 'did:key:z6Mk#z6Mk',
+        });
+
+        const jwt = await buildProofJwt({
+            signer,
+            audience: 'https://issuer.example.com',
+            nonce: 'iOS-WKWebView-nonce',
+        });
+
+        const [headerB64, payloadB64, sigB64] = jwt.split('.');
+        const signingInput = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+        const signatureBytes = b64urlDecode(sigB64!);
+        const publicKeyBytes = b64urlDecode(pubJwk.x!);
+
+        const isValid = await ed.verifyAsync(signatureBytes, signingInput, publicKeyBytes);
+        expect(isValid).toBe(true);
+    });
+
+    it('signs without invoking crypto.subtle.importKey', async () => {
+        // Direct guard against the iOS dev-mode failure mode. The old
+        // jose-backed signer called crypto.subtle.importKey to load the
+        // Ed25519 key — if that call ever returns, this test will catch
+        // it before users do.
+        const subtle = (globalThis as { crypto?: Crypto }).crypto?.subtle;
+        if (!subtle) {
+            return;
+        }
+
+        const importKeySpy = jest.spyOn(subtle, 'importKey');
+
+        const keys = await generateKeyPair('EdDSA', { extractable: true });
+        const privJwk = await exportJWK(keys.privateKey);
+
+        const signer = await createJoseEd25519Signer({
+            keypair: {
+                kty: privJwk.kty!,
+                crv: privJwk.crv!,
+                x: privJwk.x!,
+                d: privJwk.d!,
+            },
+            kid: 'did:key:z6Mk#z6Mk',
+        });
+
+        importKeySpy.mockClear();
+
+        await buildProofJwt({
+            signer,
+            audience: 'https://issuer.example.com',
+        });
+
+        expect(importKeySpy).not.toHaveBeenCalled();
+
+        importKeySpy.mockRestore();
+    });
 });
+
+const b64urlDecode = (input: string): Uint8Array => {
+    const pad = input.length % 4;
+    const padded = pad === 0 ? input : input + '='.repeat(4 - pad);
+    const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+    return new Uint8Array(Buffer.from(base64, 'base64'));
+};
