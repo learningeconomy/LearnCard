@@ -14,6 +14,7 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getSdJwtVcPlugin } from '@learncard/sd-jwt-vc-plugin';
 
 import { LearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -84,5 +85,7 @@ export const learnCardFromSeed = async ({
 
     const lcLc = await chapiLc.addPlugin(getLearnCardPlugin(chapiLc));
 
-    return lcLc.addPlugin(getOpenID4VCPlugin(lcLc, openid4vc));
+    const sdJwtVcLc = await lcLc.addPlugin(getSdJwtVcPlugin(lcLc));
+
+    return sdJwtVcLc.addPlugin(getOpenID4VCPlugin(sdJwtVcLc, openid4vc));
 };

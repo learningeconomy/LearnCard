@@ -1999,6 +1999,9 @@ importers:
       '@learncard/openid4vc-plugin':
         specifier: workspace:*
         version: link:../plugins/openid4vc
+      '@learncard/sd-jwt-vc-plugin':
+        specifier: workspace:*
+        version: link:../plugins/sd-jwt-vc
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -4034,7 +4037,7 @@ importers:
         version: 1.4.0
       openai:
         specifier: ^4.55.7
-        version: 4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
+        version: 4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
@@ -59470,7 +59473,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
+  openai@4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -59480,7 +59483,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
     transitivePeerDependencies:
       - encoding
