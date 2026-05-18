@@ -26,8 +26,8 @@ export const buildTemplateRenderMethod = (
             : config?.templateId ?? DEFAULT_TEMPLATE_ID,
         // Only include renderProperty when explicitly provided to avoid overriding VC defaults
         ...(config?.renderProperty ? { renderProperty: config.renderProperty } : {}),
-        outputPreference: { mediaType: 'image/svg+xml' },
-    } as unknown as TemplateRenderMethod);
+        outputPreference: { mediaType: 'image/svg+xml' as const },
+    });
 
 /** Attaches a TemplateRenderMethod to an unsigned VC, merging with any existing renderMethod entries.
  * Also injects the render method JSON-LD context if not already present. */

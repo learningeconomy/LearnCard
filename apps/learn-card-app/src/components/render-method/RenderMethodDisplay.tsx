@@ -39,7 +39,7 @@ export const RenderMethodDisplay: React.FC<RenderMethodDisplayProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [vc, renderMethod]);
+    }, [vc?.id, renderMethod?.template, renderMethod?.renderSuite]);
 
     if (state.status === 'error') return <>{fallback}</>;
 

@@ -538,7 +538,7 @@ const ClaimBoost: React.FC<{
                         verificationItems={vcVerifications}
                         credential={boost}
                         categoryType={category}
-                        renderMethodCredential={boost as VC}
+                        renderMethodCredential={renderMethodSource as VC}
                     />
                 )}
             </div>

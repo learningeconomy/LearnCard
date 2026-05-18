@@ -323,10 +323,11 @@ const DOMPURIFY_SVG_CONFIG: DOMPurifyConfig = {
  * affect safety: template loading, data shaping, interpolation, and sanitization.
  *
  * Template loading:
- * - `data:image/svg+xml,...` templates are decoded locally. This is what
- *   `buildTemplateRenderMethod({ templateValue })` creates.
- * - Other templates are fetched from their URL. A non-2xx response throws so callers can fall back
- *   to the default card UI.
+ * - `data:` URIs are decoded locally without a network request. URI-encoded payloads use
+ *   `decodeURIComponent`; base64 payloads (`;base64` in the MIME prefix) use `atob`.
+ *   `buildTemplateRenderMethod({ templateValue })` always emits URI-encoded form.
+ * - Other templates are fetched from their URL with a 5-second timeout. A non-2xx response throws
+ *   so callers can fall back to the default card UI.
  *
  * Data loading:
  * - When `renderProperty` is present, those JSON Pointers are expanded from the top-level VC.
@@ -371,10 +372,14 @@ export async function renderSvgMustache(
     let svgTemplate: string;
 
     if (template.startsWith('data:')) {
-        const [, encoded] = template.split(',');
-        svgTemplate = decodeURIComponent(encoded);
+        const commaIdx = template.indexOf(',');
+        const meta = template.slice(0, commaIdx);
+        const payload = template.slice(commaIdx + 1);
+        svgTemplate = meta.endsWith(';base64')
+            ? atob(payload)
+            : decodeURIComponent(payload);
     } else {
-        const response = await fetch(template);
+        const response = await fetch(template, { signal: AbortSignal.timeout(5000) });
         if (!response.ok) {
             throw new Error(
                 `Failed to fetch SVG template: ${response.status} ${response.statusText}`
