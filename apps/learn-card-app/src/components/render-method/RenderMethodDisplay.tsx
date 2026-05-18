@@ -58,16 +58,15 @@ export const RenderMethodDisplay: React.FC<RenderMethodDisplayProps> = ({
                 }}
             >
                 <div
+                    className="animate-spin"
                     style={{
                         width: '36px',
                         height: '36px',
                         border: '3px solid #6366f1',
                         borderTopColor: 'transparent',
                         borderRadius: '50%',
-                        animation: 'spin 0.8s linear infinite',
                     }}
                 />
-                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }

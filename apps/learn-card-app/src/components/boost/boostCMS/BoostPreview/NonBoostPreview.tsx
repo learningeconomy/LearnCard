@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
@@ -90,8 +90,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
 }) => {
-    const flags = useFlags();
-    const enableRenderMethod = flags?.enableRenderMethod === true;
+    const enableRenderMethod = useRenderMethodEnabled();
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;

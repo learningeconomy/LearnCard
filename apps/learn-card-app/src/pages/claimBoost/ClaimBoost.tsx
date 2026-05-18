@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -137,8 +137,7 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
-    const flags = useFlags();
-    const enableRenderMethod = flags?.enableRenderMethod === true;
+    const enableRenderMethod = useRenderMethodEnabled();
 
     const rawBoostUri = query.get('boostUri') || uri;
     const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;

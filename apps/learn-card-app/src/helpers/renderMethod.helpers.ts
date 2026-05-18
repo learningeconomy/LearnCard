@@ -1,7 +1,7 @@
 import Mustache from 'mustache';
 import DOMPurify, { type Config as DOMPurifyConfig } from 'dompurify';
 
-import { VC, TemplateRenderMethod, RenderMethodValidator } from '@learncard/types';
+import { VC, TemplateRenderMethod, TemplateRenderMethodValidator } from '@learncard/types';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 type JsonRecord = Record<string, unknown>;
@@ -223,7 +223,7 @@ function buildRenderDataForProperties(vc: VC, pointers: string[]): JsonRecord {
  * - Unwraps `CertifiedBoostCredential` to its inner boost credential.
  * - Looks at the effective credential's `renderMethod`.
  * - Treats a single object and an array with the same iteration path.
- * - Validates each candidate with `RenderMethodValidator` before trusting its shape.
+ * - Validates each candidate with `TemplateRenderMethodValidator` before trusting its shape.
  * - Returns only `TemplateRenderMethod` entries using the supported `svg-mustache` suite.
  *
  * Example test data:
@@ -252,16 +252,9 @@ export function getSvgMustacheRenderMethod(vc: VC): TemplateRenderMethod | null 
 
     const entries = Array.isArray(raw) ? raw : [raw];
     for (const entry of entries) {
-        const parsed = RenderMethodValidator.safeParse(entry);
-        if (
-            parsed.success &&
-            parsed.data &&
-            'type' in parsed.data &&
-            parsed.data.type === 'TemplateRenderMethod' &&
-            'renderSuite' in parsed.data &&
-            parsed.data.renderSuite === 'svg-mustache'
-        ) {
-            return parsed.data as TemplateRenderMethod;
+        const parsed = TemplateRenderMethodValidator.safeParse(entry);
+        if (parsed.success && parsed.data.renderSuite === 'svg-mustache') {
+            return parsed.data;
         }
     }
     return null;

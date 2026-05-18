@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
 import Lottie from 'react-lottie-player';
@@ -111,8 +111,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
-    const flags = useFlags();
-    const enableRenderMethod = flags?.enableRenderMethod === true;
+    const enableRenderMethod = useRenderMethodEnabled();
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import { IonFooter, IonPage } from '@ionic/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
@@ -56,8 +56,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     isClrChildCredential = false,
     renderMethodCredential,
 }) => {
-    const flags = useFlags();
-    const enableRenderMethod = flags?.enableRenderMethod === true;
+    const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();

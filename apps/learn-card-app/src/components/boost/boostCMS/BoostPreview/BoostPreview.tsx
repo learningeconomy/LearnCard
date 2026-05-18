@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
 import { VCDisplayCard2 } from '@learncard/react';
@@ -142,8 +142,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
 }) => {
-    const flags = useFlags();
-    const enableRenderMethod = flags?.enableRenderMethod === true;
+    const enableRenderMethod = useRenderMethodEnabled();
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(_credential as VC) : null;
