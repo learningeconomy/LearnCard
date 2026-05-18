@@ -207,7 +207,7 @@ const defaultCategoryFor = (
             ?.categorizeSdJwtVct;
         if (typeof categorizer === 'function') {
             try {
-                const result = (categorizer as (v: string) => unknown)(sdJwtVct);
+                const result = (categorizer as (v: string) => string)(sdJwtVct);
                 if (typeof result === 'string' && result.length > 0) return result;
             } catch {
                 // fall through to the W3C heuristic below

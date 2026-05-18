@@ -10,6 +10,12 @@ import { VciError } from './errors';
 const FAKE_COMPACT =
     'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload-segment.sig~';
 
+const HOLDER_JWK = {
+    kty: 'OKP',
+    crv: 'Ed25519',
+    x: 'fXYZ-test-only-not-a-real-key-value',
+};
+
 const makeParsed = (overrides: Record<string, unknown> = {}) => ({
     vct: 'https://example.com/credentials/test-cert',
     issuer: 'did:web:issuer.example.com',
@@ -105,6 +111,95 @@ describe('synthesizeSdJwtVc', () => {
         );
     });
 
+    it('omits proof.verificationMethod when the issuer is an HTTPS URL (not a DID)', async () => {
+        const parsed = makeParsed({
+            issuer: 'https://issuer.example.com',
+            header: { alg: 'EdDSA', typ: 'dc+sd-jwt' },
+        });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+        expect(
+            (result.vc.proof as { verificationMethod?: string }).verificationMethod
+        ).toBeUndefined();
+    });
+
+    it('synthesizes a did:jwk for credentialSubject.id when cnf.jwk is present', async () => {
+        const parsed = makeParsed({ holderPublicKey: HOLDER_JWK });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+        const subjectId = (result.vc.credentialSubject as { id?: string }).id;
+        expect(subjectId).toMatch(/^did:jwk:/);
+    });
+
+    it('strips private JWK fields before synthesizing did:jwk', async () => {
+        const parsed = makeParsed({
+            holderPublicKey: {
+                ...HOLDER_JWK,
+                d: 'private-key-bytes-MUST-NOT-leak-into-did',
+            },
+        });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+        const subjectId = (result.vc.credentialSubject as { id?: string }).id ?? '';
+        const encoded = subjectId.replace(/^did:jwk:/, '');
+        const padded = encoded + '='.repeat((4 - (encoded.length % 4)) % 4);
+        const json = Buffer.from(
+            padded.replace(/-/g, '+').replace(/_/g, '/'),
+            'base64'
+        ).toString('utf-8');
+        expect(json).not.toContain('private-key-bytes-MUST-NOT-leak-into-did');
+        expect(json).not.toMatch(/"d":/);
+    });
+
+    it('leaves credentialSubject.id undefined when no cnf claim is present', async () => {
+        const parsed = makeParsed();
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+        expect((result.vc.credentialSubject as { id?: string }).id).toBeUndefined();
+    });
+
+    it('throws when the OID4VCI format and the SD-JWT JOSE header typ disagree', async () => {
+        const parsed = makeParsed({
+            header: { alg: 'EdDSA', typ: 'vc+sd-jwt', kid: 'did:web:issuer.example.com#key-1' },
+        });
+        const learnCard = makeLearnCard(parsed);
+        await expect(
+            synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard)
+        ).rejects.toMatchObject({
+            code: 'unsupported_format',
+            message: expect.stringMatching(/dc\+sd-jwt.*vc\+sd-jwt/),
+        });
+    });
+
+    it('accepts a legacy vc+sd-jwt credential when format and typ agree', async () => {
+        const parsed = makeParsed({
+            header: { alg: 'EdDSA', typ: 'vc+sd-jwt', kid: 'did:web:issuer.example.com#key-1' },
+        });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(
+            FAKE_COMPACT,
+            SD_JWT_VC_FORMAT_LEGACY,
+            learnCard
+        );
+
+        expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT_LEGACY);
+        expect(result.vc.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential']);
+    });
+
+    it('accepts credentials whose JOSE header omits typ (issuer didn\'t set it)', async () => {
+        const parsed = makeParsed({
+            header: { alg: 'EdDSA', kid: 'did:web:issuer.example.com#key-1' },
+        });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+        expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
+    });
+
     it('emits validUntil only when the credential has an exp', async () => {
         const learnCard = makeLearnCard(makeParsed());
         const noExp = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
@@ -149,21 +244,42 @@ describe('synthesizeSdJwtVc', () => {
 });
 
 describe('extractSdJwtVct', () => {
-    it('returns the vct when the synthesized extension is present', () => {
+    it('returns the vct only when proof.type === "SdJwtCompactProof"', () => {
+        expect(
+            extractSdJwtVct({
+                '@context': [],
+                type: 'VerifiableCredential',
+                sdJwtVct: 'https://example.com/credentials/x',
+                proof: { type: 'SdJwtCompactProof', jwt: '...' },
+            } as Parameters<typeof extractSdJwtVct>[0])
+        ).toBe('https://example.com/credentials/x');
+    });
+
+    it('returns undefined when proof.type is missing or non-matching', () => {
         expect(
             extractSdJwtVct({
                 '@context': [],
                 type: 'VerifiableCredential',
                 sdJwtVct: 'https://example.com/credentials/x',
             } as Parameters<typeof extractSdJwtVct>[0])
-        ).toBe('https://example.com/credentials/x');
-    });
+        ).toBeUndefined();
 
-    it('returns undefined when the extension is missing or non-string', () => {
         expect(
             extractSdJwtVct({
                 '@context': [],
                 type: 'VerifiableCredential',
+                sdJwtVct: 'https://example.com/credentials/x',
+                proof: { type: 'JwtProof2020', jwt: '...' },
+            } as Parameters<typeof extractSdJwtVct>[0])
+        ).toBeUndefined();
+    });
+
+    it('returns undefined when the sdJwtVct extension is missing or non-string', () => {
+        expect(
+            extractSdJwtVct({
+                '@context': [],
+                type: 'VerifiableCredential',
+                proof: { type: 'SdJwtCompactProof', jwt: '...' },
             } as Parameters<typeof extractSdJwtVct>[0])
         ).toBeUndefined();
         expect(
@@ -171,6 +287,7 @@ describe('extractSdJwtVct', () => {
                 '@context': [],
                 type: 'VerifiableCredential',
                 sdJwtVct: 42,
+                proof: { type: 'SdJwtCompactProof', jwt: '...' },
             } as unknown as Parameters<typeof extractSdJwtVct>[0])
         ).toBeUndefined();
     });
