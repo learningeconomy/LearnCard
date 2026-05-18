@@ -16,6 +16,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc .gitignore .nxignore ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY tools/scripts tools/scripts
+COPY tools/capgo tools/capgo
 RUN chmod +x /app/tools/scripts/nx-watch-build.sh
 
 COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/

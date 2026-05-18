@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Eye } from 'lucide-react';
 
+import { preferredFaviconUrl } from '../../helpers/faviconHelpers';
+
 /**
  * Subset of OID4VP `client_metadata` we render on the consent screen.
  * Verifier metadata fields are loosely-typed in the spec (each verifier
@@ -110,11 +112,15 @@ interface VerifierAvatarProps {
 }
 
 /**
- * Three-tier verifier avatar (logo → favicon → gradient initials).
- * Mirrors the IssuerHeader chain so OID4VCI and OID4VP consent
- * screens have identical trust affordances. The fallback `Eye` icon
- * is reserved for non-URL `client_id`s like opaque DID schemes,
- * where no domain favicon makes sense.
+ * Three-tier verifier avatar (logo → apex-domain favicon → gradient
+ * initials). Mirrors the IssuerHeader chain so OID4VCI and OID4VP
+ * consent screens have identical trust affordances. The fallback
+ * `Eye` icon is reserved for non-URL `client_id`s like opaque DID
+ * schemes, where no domain favicon makes sense.
+ *
+ * Apex-first: see IssuerHeader's docstring for why a multi-URL
+ * chain wouldn't actually advance on Google's 200-with-globe
+ * fallback.
  */
 const VerifierAvatar: React.FC<VerifierAvatarProps> = ({
     logoUri,
@@ -122,9 +128,7 @@ const VerifierAvatar: React.FC<VerifierAvatarProps> = ({
     seed,
     altText,
 }) => {
-    const fallbackFavicon = domain
-        ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`
-        : undefined;
+    const fallbackFavicon = preferredFaviconUrl(domain);
 
     const [tier, setTier] = useState<0 | 1 | 2>(() => {
         if (logoUri) return 0;
@@ -141,10 +145,6 @@ const VerifierAvatar: React.FC<VerifierAvatarProps> = ({
 
     if (tier === 2) {
         if (!domain) {
-            // Opaque (non-URL) client_id — no meaningful host or
-            // favicon, so render the neutral Eye glyph rather than a
-            // hash-derived gradient that misleadingly suggests
-            // "I know this verifier".
             return (
                 <div className="shrink-0 w-12 h-12 rounded-xl bg-white border border-grayscale-200 overflow-hidden flex items-center justify-center">
                     <Eye className="w-6 h-6 text-grayscale-500" />
