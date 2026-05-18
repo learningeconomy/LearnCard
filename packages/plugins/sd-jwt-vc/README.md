@@ -18,10 +18,10 @@ Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in
 | Verify issuer signature (via DID resolution + assertionMethod check) | ✅ Slice 1 |
 | `dc+sd-jwt` and legacy `vc+sd-jwt` format strings (auto-detected from JOSE `typ`) | ✅ Slice 1 |
 | JOSE `typ` validation (draft-16 §3.2.1.1) | ✅ Slice 1 |
-| `vct` → wallet category mapping (`categorizeSdJwt`) | ✅ Slice 2 |
-| Wallet display view-model (`toSdJwtDisplayViewModel`) | ✅ Slice 2 |
-| openid4vc integration (OID4VCI receipt + wallet store delegation) | ⏳ Slice 2b |
-| Wallet-app `VCDisplayCard` adapter | ⏳ Slice 2c |
+| `vct` → wallet category mapping (`categorizeSdJwt`) | ✅ Slice 2a |
+| Wallet display view-model (`toSdJwtDisplayViewModel`) | ✅ Slice 2a |
+| openid4vc integration (OID4VCI receipt + wallet store delegation) | ✅ Slice 2b |
+| Auto-wiring into `@learncard/init` seed-based initializers | ✅ Slice 2c |
 | Holder presentation + KB-JWT signing | ⏳ Slice 3 |
 | Token Status List checking (cached + network) | ⏳ Slice 4 |
 
@@ -39,11 +39,31 @@ Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in
 
 ## Installation
 
+The plugin is **auto-wired into every seed-based `@learncard/init` initializer** (`learnCardFromSeed`, `networkLearnCardFromSeed`, `didWebLearnCardFromSeed`, `didWebNetworkLearnCardFromSeed`). Hosts pick it up on upgrade without code changes.
+
+For custom LearnCards that don't use `@learncard/init`:
+
 ```bash
 pnpm add @learncard/sd-jwt-vc-plugin
 ```
 
 Required peer plugin: `@learncard/didkit-plugin` (for issuer DID resolution).
+
+## Manual smoke test (walt.id sandbox)
+
+End-to-end verification that a real SD-JWT-VC issued by walt.id flows through OID4VCI → openid4vc → sd-jwt-vc → LearnCloud index:
+
+1. Visit `https://portal.walt.id` → Issuer → pick the SD-JWT-VC profile → "Create Offer".
+2. Copy the resulting `openid-credential-offer://…` URI.
+3. In a Node REPL with a seed-based LearnCard:
+    ```js
+    const lc = await initLearnCard({ seed: 'a'.repeat(64) });
+    const result = await lc.invoke.acceptAndStoreCredentialOffer('openid-credential-offer://...');
+    console.log(result.stored[0].format);   // → "dc+sd-jwt"
+    console.log(result.stored[0].vc.type);  // → ["VerifiableCredential", "SdJwtVcCredential"]
+    console.log(result.stored[0].vc.sdJwtVct);  // → walt.id's vct
+    ```
+4. Confirm the credential appears in `lc.index.LearnCloud.get({ category: 'Achievement' })` (or `'ID'` for PID-shaped vcts).
 
 ## Usage
 

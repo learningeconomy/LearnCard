@@ -16,6 +16,7 @@ import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/netw
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getSdJwtVcPlugin } from '@learncard/sd-jwt-vc-plugin';
 
 import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -107,5 +108,7 @@ export const didWebNetworkLearnCardFromSeed = async ({
         await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter, extraHeaders })
     );
 
-    return networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
+    const sdJwtVcLc = await networkLc.addPlugin(getSdJwtVcPlugin(networkLc));
+
+    return sdJwtVcLc.addPlugin(getOpenID4VCPlugin(sdJwtVcLc, openid4vc));
 };

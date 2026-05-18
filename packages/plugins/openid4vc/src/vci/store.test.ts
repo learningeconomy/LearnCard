@@ -310,4 +310,119 @@ describe('storeAcceptedCredentials', () => {
         expect(addToIndex).toHaveBeenCalledTimes(1);
         expect(result.stored[0].uri).toBe('custom:uri');
     });
+
+    describe('SD-JWT-VC delegation', () => {
+        const makeLearnCardWithSdJwt = (
+            parseFn?: jest.Mock,
+            categorizeFn?: jest.Mock
+        ) => {
+            const invoke: Record<string, unknown> = {};
+            if (parseFn) invoke.parseSdJwtVc = parseFn;
+            if (categorizeFn) invoke.categorizeSdJwtVct = categorizeFn;
+            return {
+                store: { LearnCloud: { uploadEncrypted: jest.fn().mockResolvedValue('lc:abc') } },
+                index: { LearnCloud: { add: jest.fn().mockResolvedValue(true) } },
+                invoke,
+            } as unknown as LearnCard<any, any, any>;
+        };
+
+        const sdJwtAccepted = (format = 'dc+sd-jwt'): AcceptedCredentialResult => ({
+            credentials: [
+                {
+                    format,
+                    credential:
+                        'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload.sig~',
+                    configuration_id: 'TestSdJwtVc',
+                },
+            ],
+        });
+
+        const fakeParsed = {
+            vct: 'https://ca.gov/credentials/career-passport-test',
+            issuer: 'did:web:issuer.example.com',
+            issuedAt: new Date('2024-01-01T00:00:00.000Z'),
+            claims: {
+                iss: 'did:web:issuer.example.com',
+                iat: 1704067200,
+                vct: 'https://ca.gov/credentials/career-passport-test',
+                given_name: 'Ada',
+            },
+            header: { alg: 'EdDSA', typ: 'dc+sd-jwt', kid: 'did:web:issuer.example.com#key-1' },
+            rawSdJwt: 'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload.sig~',
+            hasKeyBinding: false,
+        };
+
+        it('delegates parse to the sd-jwt-vc plugin and category to categorizeSdJwtVct', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const categorizeFn = jest.fn().mockReturnValue('ID');
+            const learnCard = makeLearnCardWithSdJwt(parseFn, categorizeFn);
+
+            const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
+
+            expect(result.failures).toEqual([]);
+            expect(result.stored).toHaveLength(1);
+            expect(parseFn).toHaveBeenCalledTimes(1);
+            expect(categorizeFn).toHaveBeenCalledWith(
+                'https://ca.gov/credentials/career-passport-test'
+            );
+            const addedRecord = (
+                (learnCard.index as unknown as { LearnCloud: { add: jest.Mock } }).LearnCloud.add
+                    .mock.calls[0] as unknown[]
+            )[0] as { category: string };
+            expect(addedRecord.category).toBe('ID');
+        });
+
+        it('also handles the legacy vc+sd-jwt format string', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const categorizeFn = jest.fn().mockReturnValue('Achievement');
+            const learnCard = makeLearnCardWithSdJwt(parseFn, categorizeFn);
+
+            const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted('vc+sd-jwt'));
+
+            expect(result.failures).toEqual([]);
+            expect(parseFn).toHaveBeenCalledTimes(1);
+            expect(result.stored[0].format).toBe('vc+sd-jwt');
+        });
+
+        it('falls back to the W3C heuristic when categorizeSdJwtVct is unavailable', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const learnCard = makeLearnCardWithSdJwt(parseFn);
+
+            const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
+
+            expect(result.failures).toEqual([]);
+            const addedRecord = (
+                (learnCard.index as unknown as { LearnCloud: { add: jest.Mock } }).LearnCloud.add
+                    .mock.calls[0] as unknown[]
+            )[0] as { category: string };
+            expect(addedRecord.category).toBe('Achievement');
+        });
+
+        it('records a failure when the sd-jwt-vc plugin is not installed', async () => {
+            const learnCard = makeLearnCardWithSdJwt();
+
+            const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
+
+            expect(result.stored).toEqual([]);
+            expect(result.failures).toHaveLength(1);
+            expect(result.failures[0].error.code).toBe('unsupported_format');
+            expect(result.failures[0].error.message).toMatch(/sd-jwt-vc-plugin/);
+        });
+
+        it('preserves the SD-JWT compact form under proof.jwt of the synthesized VC', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+
+            const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
+
+            expect(result.stored[0].vc.type).toEqual([
+                'VerifiableCredential',
+                'SdJwtVcCredential',
+            ]);
+            expect((result.stored[0].vc.proof as { jwt: string }).jwt).toBe(fakeParsed.rawSdJwt);
+            expect((result.stored[0].vc as Record<string, unknown>).sdJwtVct).toBe(
+                fakeParsed.vct
+            );
+        });
+    });
 });
