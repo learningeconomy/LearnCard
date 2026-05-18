@@ -44,7 +44,13 @@ import {
     loadAuthCodeState,
     saveAuthCodeState,
 } from './authCodeStorage';
-import { buildLocalDidWebSignerOverride } from '../../helpers/localDidWebOid4vcSigner';
+
+import {
+    resilientAcceptAndStoreCredentialOffer,
+    resilientCompleteCredentialOfferAuthCode,
+} from '../../helpers/oid4vc-resilience/resilientVci';
+import { useResilientExchange } from '../../hooks/useResilientExchange';
+import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
 
 const PRE_AUTH_GRANT_KEY = 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
@@ -87,6 +93,8 @@ type Phase =
           issuerUrl?: string;
           issuerName?: string;
           issuerLogoUri?: string;
+          retryOffer?: CredentialOffer;
+          retryMetadata?: CredentialIssuerMetadata;
       };
 
 /**
@@ -127,6 +135,8 @@ const Oid4vciExchange: React.FC = () => {
     // configured analytics provider (product), with both rails kept
     // independent so a failure in one doesn't break the other.
     const reportError = useExchangeErrorReporting('vci');
+
+    const resilience = useResilientExchange({ surface: 'vci' });
 
     // -----------------------------------------------------------------
     // Drive auth-code RETURN leg (resume from issuer redirect).
@@ -170,20 +180,16 @@ const Oid4vciExchange: React.FC = () => {
                     );
                 }
 
-                // Fall back to did:key for local-dev `did:web:localhost`
-                // profiles — foreign issuers can't HTTPS-resolve them.
-                const signer = await buildLocalDidWebSignerOverride(
-                    wallet as unknown as Parameters<
-                        typeof buildLocalDidWebSignerOverride
-                    >[0]
-                );
-
-                const accepted = await wallet.invoke.completeCredentialOfferAuthCode({
-                    flowHandle: persisted.flowHandle,
-                    code,
-                    state: state ?? undefined,
-                    signer,
-                });
+                const accepted: AcceptedCredentialResult =
+                    await resilientCompleteCredentialOfferAuthCode({
+                        wallet: wallet as unknown as Parameters<
+                            typeof resilientCompleteCredentialOfferAuthCode
+                        >[0]['wallet'],
+                        flowHandle: persisted.flowHandle,
+                        code,
+                        state: state ?? undefined,
+                        callbacks: resilience.callbacks,
+                    });
 
                 // `completeCredentialOfferAuthCode` returns the issued
                 // credentials but does not persist them — storage is
@@ -295,6 +301,7 @@ const Oid4vciExchange: React.FC = () => {
     const handleAccept = useCallback(
         async ({ txCode }: { txCode?: string }) => {
             if (phase.kind !== 'consent') return;
+            resilience.resetRun();
             const currentOffer = phase.offer;
             // Capture before any setPhase calls reshape `phase` so we can
             // forward the metadata into the `finished` state for branded
@@ -311,22 +318,18 @@ const Oid4vciExchange: React.FC = () => {
                 if (hasPreAuth) {
                     setPhase({ kind: 'storing' });
 
-                    // Fall back to did:key for local-dev `did:web:localhost`
-                    // profiles — foreign issuers can't HTTPS-resolve them.
-                    const signer = await buildLocalDidWebSignerOverride(
-                        wallet as unknown as Parameters<
-                            typeof buildLocalDidWebSignerOverride
-                        >[0]
-                    );
-
-                    const result = await wallet.invoke.acceptAndStoreCredentialOffer(
-                        currentOffer,
-                        {
-                            txCode,
-                            signer,
-                            ...buildStoreOptions(),
-                        }
-                    );
+                    const result: AcceptedCredentialResult & StoreAcceptedCredentialsResult =
+                        await resilientAcceptAndStoreCredentialOffer({
+                            wallet: wallet as unknown as Parameters<
+                                typeof resilientAcceptAndStoreCredentialOffer
+                            >[0]['wallet'],
+                            offer: currentOffer,
+                            options: {
+                                txCode,
+                                ...buildStoreOptions(),
+                            },
+                            callbacks: resilience.callbacks,
+                        });
 
                     const issuerInfo = pickIssuerInfo(
                         currentOffer.credential_issuer,
@@ -374,6 +377,8 @@ const Oid4vciExchange: React.FC = () => {
                                 'Storage is unavailable, so we can’t resume after the issuer redirect. Try again with browsing data enabled.',
                         },
                         issuerUrl: currentOffer.credential_issuer,
+                        retryOffer: currentOffer,
+                        retryMetadata: currentMetadata,
                     });
                     return;
                 }
@@ -398,15 +403,26 @@ const Oid4vciExchange: React.FC = () => {
                     issuerUrl: currentOffer.credential_issuer,
                     issuerName: issuerInfoSnapshot.name,
                     issuerLogoUri: issuerInfoSnapshot.logoUri,
+                    retryOffer: currentOffer,
+                    retryMetadata: currentMetadata,
                 });
             }
         },
-        [phase, initWallet, offer]
+        [phase, initWallet, offer, resilience]
     );
 
     const handleViewWallet = useCallback(() => {
         history.push('/');
     }, [history]);
+
+    const handleRetry = useCallback(() => {
+        if (phase.kind !== 'error' || !phase.retryOffer) return;
+        setPhase({
+            kind: 'consent',
+            offer: phase.retryOffer,
+            metadata: phase.retryMetadata,
+        });
+    }, [phase]);
 
     // -----------------------------------------------------------------
     // Render
@@ -517,10 +533,15 @@ const Oid4vciExchange: React.FC = () => {
                                 }
                             )
                         }
+                        onRetry={phase.retryOffer ? handleRetry : undefined}
                         onCancel={() => history.push('/')}
                     />
                 )}
             </IonContent>
+            <RecoveryPromptModal
+                prompt={resilience.pendingPrompt}
+                onResolve={resilience.resolvePrompt}
+            />
         </IonPage>
     );
 };
