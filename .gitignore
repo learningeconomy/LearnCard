@@ -41,6 +41,7 @@ node_modules
 docs/superpowers/plans/
 docs/superpowers/specs/
 docs/superpowers
+internal-docs/*
 .github/copilot-instructions.md
 .worktrees/
 CLAUDE.local.md

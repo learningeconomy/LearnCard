@@ -2,6 +2,7 @@ import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
 
 import { verifySdJwtVc } from './verify';
+import { getSdJwtVcPlugin } from './plugin';
 import { sha256Hasher } from './hasher';
 import { randomSalt } from './salt';
 
@@ -177,12 +178,115 @@ describe('verifySdJwtVc', () => {
         expect(result.errors.some(e => e.includes('vct_mismatch'))).toBe(true);
     });
 
-    it('rejects an SD-JWT-VC tampered after signing', async () => {
+    it('rejects an SD-JWT-VC with a tampered disclosure (specific error)', async () => {
         const { compact, publicJwk } = await issueTestCredential();
-        const tampered = compact.replace(/~([A-Za-z0-9_-]+)~/, '~XXXTAMPEREDXXX~');
+        const tamperedDisclosure = compact.replace(/~([A-Za-z0-9_-]{4,})~/, '~XXXTAMPEREDXXX~');
+        const learnCard = buildLearnCardMock(publicJwk);
+
+        const result = await verifySdJwtVc(learnCard, tamperedDisclosure);
+        const allMsgs = result.errors.join(' | ');
+        expect(allMsgs).toMatch(/invalid_compact_form|disclosure_hash_mismatch/);
+    });
+
+    it('rejects an SD-JWT-VC with a tampered JWT payload (signature path)', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const [jwt, ...rest] = compact.split('~');
+        const [header, , signature] = jwt!.split('.');
+        const fakePayload = Buffer.from(
+            JSON.stringify({
+                iss: ISSUER_DID,
+                iat: Math.floor(Date.now() / 1000),
+                vct: 'https://example.com/credentials/test-cert',
+                attacker: 'forged',
+            })
+        )
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
+        const tampered = [`${header}.${fakePayload}.${signature}`, ...rest].join('~');
         const learnCard = buildLearnCardMock(publicJwk);
 
         const result = await verifySdJwtVc(learnCard, tampered);
-        expect(result.errors.length).toBeGreaterThan(0);
+        expect(result.errors.some(e => e.startsWith('signature_invalid:'))).toBe(true);
+    });
+
+    it('rejects when iss is an HTTPS URL (only DID-based issuers supported in Slice 1)', async () => {
+        const { signer } = await makeIssuerSigner();
+        const instance = new SDJwtVcInstance({
+            hasher: sha256Hasher,
+            hashAlg: 'sha-256',
+            saltGenerator: randomSalt,
+            signer,
+            signAlg: 'EdDSA',
+        });
+        const compact = await instance.issue(
+            {
+                iss: 'https://issuer.example.com',
+                iat: Math.floor(Date.now() / 1000),
+                vct: 'https://example.com/credentials/test-cert',
+                given_name: 'Ada',
+            },
+            { _sd: ['given_name'] },
+            { header: { alg: 'EdDSA' } }
+        );
+        const learnCard = buildLearnCardMock({});
+
+        const result = await verifySdJwtVc(learnCard, compact);
+        expect(result.errors.some(e => e.includes('issuer_resolution_failed'))).toBe(true);
+    });
+
+    it('returns hard error when audience option is provided in read path (no KB-JWT)', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = buildLearnCardMock(publicJwk);
+
+        const result = await verifySdJwtVc(learnCard, compact, {
+            audience: 'https://verifier.example.com',
+        });
+        expect(result.errors.some(e => e.includes('audience_or_nonce_requires_kb_jwt'))).toBe(
+            true
+        );
+    });
+
+    it('returns hard error when nonce option is provided in read path (no KB-JWT)', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = buildLearnCardMock(publicJwk);
+
+        const result = await verifySdJwtVc(learnCard, compact, { nonce: 'abc' });
+        expect(result.errors.some(e => e.includes('audience_or_nonce_requires_kb_jwt'))).toBe(
+            true
+        );
+    });
+
+    it('verifies through the legacy vc+sd-jwt format string', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = buildLearnCardMock(publicJwk);
+
+        const result = await verifySdJwtVc(learnCard, compact, {}, 'vc+sd-jwt');
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+    });
+});
+
+describe('decodeSdJwtClaims (via plugin surface)', () => {
+    it('returns the fully-reconstructed claims', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = buildLearnCardMock(publicJwk);
+        const plugin = getSdJwtVcPlugin(learnCard);
+
+        const claims = await plugin.methods.decodeSdJwtClaims(learnCard as never, compact);
+        expect(claims.given_name).toBe('Ada');
+        expect(claims.family_name).toBe('Lovelace');
+        expect(claims.iss).toBe(ISSUER_DID);
+        expect(claims.vct).toBe('https://example.com/credentials/test-cert');
+    });
+
+    it('throws SdJwtVcError when input is not a valid compact form', async () => {
+        const learnCard = buildLearnCardMock({});
+        const plugin = getSdJwtVcPlugin(learnCard);
+
+        await expect(
+            plugin.methods.decodeSdJwtClaims(learnCard as never, 'not-an-sd-jwt')
+        ).rejects.toMatchObject({ code: 'invalid_compact_form' });
     });
 });

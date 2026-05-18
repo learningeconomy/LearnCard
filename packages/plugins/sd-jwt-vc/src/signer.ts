@@ -4,7 +4,15 @@ import { SdJwtVcError } from './types';
 
 export type IssuerVerifier = (data: string, sig: string) => Promise<boolean>;
 
-export const createJoseVerifier = async (publicJwk: JWK, alg: string): Promise<IssuerVerifier> => {
+export interface CreateJoseVerifierResult {
+    verifier: IssuerVerifier;
+    getLastError: () => Error | undefined;
+}
+
+export const createJoseVerifier = async (
+    publicJwk: JWK,
+    alg: string
+): Promise<CreateJoseVerifierResult> => {
     let key;
     try {
         key = await importJWK(publicJwk, alg);
@@ -18,33 +26,19 @@ export const createJoseVerifier = async (publicJwk: JWK, alg: string): Promise<I
         );
     }
 
-    return async (data: string, sig: string): Promise<boolean> => {
+    let lastError: Error | undefined;
+
+    const verifier: IssuerVerifier = async (data, sig) => {
         const compact = `${data}.${sig}`;
         try {
             await compactVerify(compact, key);
+            lastError = undefined;
             return true;
-        } catch {
+        } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
             return false;
         }
     };
-};
 
-export const decodeJoseHeader = (jwt: string): Record<string, unknown> => {
-    const parts = jwt.split('.');
-    if (parts.length < 2) {
-        throw new SdJwtVcError('invalid_jwt', 'JWT must have at least 2 segments');
-    }
-    const headerSegment = parts[0]!;
-    try {
-        const padded = headerSegment + '='.repeat((4 - (headerSegment.length % 4)) % 4);
-        const normalized = padded.replace(/-/g, '+').replace(/_/g, '/');
-        const json = atob(normalized);
-        return JSON.parse(json);
-    } catch (e) {
-        throw new SdJwtVcError(
-            'invalid_jwt',
-            `Failed to decode JWT header: ${e instanceof Error ? e.message : String(e)}`,
-            { cause: e }
-        );
-    }
+    return { verifier, getLastError: () => lastError };
 };

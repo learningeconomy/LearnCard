@@ -4,7 +4,8 @@ SD-JWT-VC holder + verifier support for LearnCard. Implements:
 
 - [RFC 9901](https://www.rfc-editor.org/rfc/rfc9901.html) — Selective Disclosure for JWTs (SD-JWT)
 - [draft-ietf-oauth-sd-jwt-vc-16](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/16/) — SD-JWT-VC profile for Verifiable Credentials
-- Token Status List (cached + network paths) for revocation/suspension checks
+
+Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in the status table below.
 
 ## Status
 
@@ -70,7 +71,9 @@ All errors thrown by this plugin are `SdJwtVcError` instances with a stable `cod
 pnpm --filter @learncard/sd-jwt-vc-plugin test
 ```
 
-The plugin's unit suite uses OpenWallet Foundation SD-JWT-VC test vectors (RFC 9901 Appendix A) as conformance fixtures.
+The unit suite round-trips real credentials end-to-end: each test generates a fresh Ed25519 keypair, issues an SD-JWT-VC via `SDJwtVcInstance` from the OpenWallet Foundation library, then exercises the plugin's `parse` / `verify` paths against the live output. Hand-crafted fixtures cover the negative-shape cases (missing `iss`, `vct`, `alg`).
+
+Cross-implementation conformance against RFC 9901 Appendix A vectors and OpenWallet's published test suite lands as part of Slice 4 (see status table above).
 
 ## License
 

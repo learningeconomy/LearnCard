@@ -5,7 +5,6 @@ import {
     SdJwtVcError,
     SD_JWT_VC_FORMAT,
     SD_JWT_VC_FORMAT_LEGACY,
-    isSdJwtCompact,
     type ParsedSdJwtVc,
     type SdJwtHeader,
     type SdJwtPayload,
@@ -21,10 +20,10 @@ export const parseSdJwtVc = async (
     compact: string,
     format: SdJwtVcFormat = SD_JWT_VC_FORMAT
 ): Promise<ParsedSdJwtVc> => {
-    if (!isSdJwtCompact(compact)) {
+    if (typeof compact !== 'string' || compact.length === 0) {
         throw new SdJwtVcError(
             'invalid_compact_form',
-            'Input is not a valid SD-JWT compact serialization (expected `<JWT>~<Disclosure>~...`)'
+            'SD-JWT compact form must be a non-empty string'
         );
     }
 
@@ -34,7 +33,7 @@ export const parseSdJwtVc = async (
     } catch (e) {
         throw new SdJwtVcError(
             'invalid_compact_form',
-            `Failed to decode SD-JWT: ${e instanceof Error ? e.message : String(e)}`,
+            `Failed to decode SD-JWT compact form: ${e instanceof Error ? e.message : String(e)}`,
             { cause: e }
         );
     }

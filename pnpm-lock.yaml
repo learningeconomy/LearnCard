@@ -3145,6 +3145,9 @@ importers:
       '@sd-jwt/core':
         specifier: ^0.19.0
         version: 0.19.0
+      '@sd-jwt/decode':
+        specifier: ^0.19.0
+        version: 0.19.0
       '@sd-jwt/jwt-status-list':
         specifier: ^0.19.0
         version: 0.19.0

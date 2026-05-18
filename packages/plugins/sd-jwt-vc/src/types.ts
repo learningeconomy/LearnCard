@@ -10,8 +10,7 @@ export type SdJwtVcFormat = typeof SD_JWT_VC_FORMAT | typeof SD_JWT_VC_FORMAT_LE
 export const isSdJwtVcFormat = (value: unknown): value is SdJwtVcFormat =>
     value === SD_JWT_VC_FORMAT || value === SD_JWT_VC_FORMAT_LEGACY;
 
-export const isSdJwtCompact = (value: unknown): value is string =>
-    typeof value === 'string' && value.includes('~') && value.split('.').length >= 3;
+export const CLOCK_SKEW_MS = 60_000;
 
 export interface SdJwtHeader {
     alg: string;
@@ -80,18 +79,19 @@ export type SdJwtVcErrorCode =
 
 export class SdJwtVcError extends Error {
     public readonly code: SdJwtVcErrorCode;
-    public readonly cause?: unknown;
 
     constructor(code: SdJwtVcErrorCode, message: string, options: { cause?: unknown } = {}) {
-        super(message);
+        super(message, options);
         this.name = 'SdJwtVcError';
         this.code = code;
-        this.cause = options.cause;
     }
 }
 
 export type SdJwtVcPluginDependentMethods = Pick<DidkitPluginMethods, 'resolveDid'>;
 
+// TODO(LC-1796 Slice 3+): tighten the host LearnCard's plane constraint once we
+// start touching the `id` plane for KB-JWT signing. Slice 1's read path doesn't
+// need it, so `any` here is intentional but should not be permanent.
 export type SdJwtVcDependentLearnCard = LearnCard<any, 'id', SdJwtVcPluginDependentMethods>;
 
 export type SdJwtVcPluginMethods = {
@@ -105,6 +105,9 @@ export type SdJwtVcPluginMethods = {
     decodeSdJwtClaims: (compact: string) => Promise<Record<string, unknown>>;
 };
 
+// TODO(LC-1796 Slice 3+): replace the second `any` with a concrete control-plane
+// list once we wire the plugin into apps. Tracking parity with the other format
+// plugins (vc, open-badge-v2) which still use `any` for the planes generic.
 export type SdJwtVcPlugin = Plugin<
     'SDJwtVc',
     any,

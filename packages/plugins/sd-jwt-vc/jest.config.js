@@ -12,8 +12,6 @@ module.exports = {
         '^@sd-jwt/core$': '<rootDir>/../../../node_modules/@sd-jwt/core/dist/index.mjs',
         '^@sd-jwt/decode$': '<rootDir>/../../../node_modules/@sd-jwt/decode/dist/index.mjs',
         '^@sd-jwt/sd-jwt-vc$': '<rootDir>/../../../node_modules/@sd-jwt/sd-jwt-vc/dist/index.mjs',
-        '^@sd-jwt/jwt-status-list$':
-            '<rootDir>/../../../node_modules/@sd-jwt/jwt-status-list/dist/index.mjs',
     },
     modulePaths: ['<rootDir>'],
     preset: 'ts-jest',

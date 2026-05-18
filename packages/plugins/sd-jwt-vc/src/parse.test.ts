@@ -148,4 +148,31 @@ describe('parseSdJwtVc', () => {
         const parsed = await parseSdJwtVc(issued, 'vc+sd-jwt');
         expect(parsed.format).toBe('vc+sd-jwt');
     });
+
+    it('extracts holderPublicKey from a cnf.jwk claim', async () => {
+        const holderJwk = {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            x: 'fXYZ-test-only-not-a-real-key-value',
+        };
+        const { instance } = await buildIssuerInstance();
+        const withCnf = await instance.issue(
+            {
+                iss: 'did:jwk:eyJpc3N1ZXItdGVzdC1maXh0dXJlIjp0cnVlfQ',
+                iat: Math.floor(Date.now() / 1000),
+                vct: 'https://example.com/credentials/test-cert',
+                given_name: 'Ada',
+                cnf: { jwk: holderJwk },
+            },
+            { _sd: ['given_name'] }
+        );
+
+        const parsed = await parseSdJwtVc(withCnf);
+        expect(parsed.holderPublicKey).toEqual(holderJwk);
+    });
+
+    it('leaves holderPublicKey undefined when cnf is absent', async () => {
+        const parsed = await parseSdJwtVc(issued);
+        expect(parsed.holderPublicKey).toBeUndefined();
+    });
 });

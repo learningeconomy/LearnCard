@@ -5,10 +5,12 @@ import type { JWK } from 'jose';
 
 import { sha256Hasher } from './hasher';
 import { randomSalt } from './salt';
-import { createJoseVerifier, decodeJoseHeader } from './signer';
+import { createJoseVerifier } from './signer';
 import { parseSdJwtVc } from './parse';
 import {
+    CLOCK_SKEW_MS,
     SdJwtVcError,
+    type ParsedSdJwtVc,
     type SdJwtVcDependentLearnCard,
     type SdJwtVcFormat,
     type VerifySdJwtVcOptions,
@@ -72,7 +74,7 @@ const findVerificationMethod = (
 const resolveIssuerJwk = async (
     learnCard: SdJwtVcDependentLearnCard,
     issuerDid: string,
-    kid: string | undefined
+    parsed: ParsedSdJwtVc
 ): Promise<{ jwk: JWK; alg: string }> => {
     if (!issuerDid.startsWith('did:')) {
         throw new SdJwtVcError(
@@ -94,6 +96,7 @@ const resolveIssuerJwk = async (
         );
     }
 
+    const kid = typeof parsed.header.kid === 'string' ? parsed.header.kid : undefined;
     const method = findVerificationMethod(doc, kid, issuerDid);
     if (!method.publicKeyJwk) {
         throw new SdJwtVcError(
@@ -103,7 +106,8 @@ const resolveIssuerJwk = async (
     }
 
     const jwk = method.publicKeyJwk as unknown as JWK;
-    const alg = (jwk.alg as string | undefined) ?? 'EdDSA';
+    const headerAlg = parsed.header.alg;
+    const alg = headerAlg || (jwk.alg as string | undefined) || 'EdDSA';
     return { jwk, alg };
 };
 
@@ -112,8 +116,8 @@ const ensureNotExpired = (
     now: Date,
     errors: string[]
 ): void => {
-    if (expiresAt && expiresAt.getTime() <= now.getTime()) {
-        errors.push(`Credential expired at ${expiresAt.toISOString()}`);
+    if (expiresAt && expiresAt.getTime() + CLOCK_SKEW_MS <= now.getTime()) {
+        errors.push(`expired: Credential expired at ${expiresAt.toISOString()}`);
     }
 };
 
@@ -125,11 +129,11 @@ const ensureNotBefore = (
 ): void => {
     if (notBefore && notBefore.getTime() > now.getTime()) {
         const skewMs = notBefore.getTime() - now.getTime();
-        if (skewMs > 60_000) {
-            errors.push(`Credential not valid until ${notBefore.toISOString()}`);
+        if (skewMs > CLOCK_SKEW_MS) {
+            errors.push(`not_yet_valid: Credential not valid until ${notBefore.toISOString()}`);
         } else {
             warnings.push(
-                `Credential nbf is in the future by ${skewMs}ms (within clock-skew tolerance)`
+                `nbf is in the future by ${skewMs}ms (within ${CLOCK_SKEW_MS}ms clock-skew tolerance)`
             );
         }
     }
@@ -145,7 +149,14 @@ export const verifySdJwtVc = async (
     const warnings: string[] = [];
     const errors: string[] = [];
 
-    let parsed;
+    if (options.audience !== undefined || options.nonce !== undefined) {
+        errors.push(
+            'audience_or_nonce_requires_kb_jwt: audience/nonce verification needs a Key Binding JWT, which is implemented in Slice 3 (presentation). Do not pass these options in the read path.'
+        );
+        return { checks, warnings, errors };
+    }
+
+    let parsed: ParsedSdJwtVc;
     try {
         parsed = await parseSdJwtVc(compact, format);
         checks.push('parse');
@@ -153,25 +164,23 @@ export const verifySdJwtVc = async (
     } catch (e) {
         const message =
             e instanceof SdJwtVcError ? `${e.code}: ${e.message}` : (e as Error).message;
-        return { checks, warnings, errors: [...errors, message] };
+        return { checks, warnings, errors: [message] };
     }
 
     let issuerJwk: JWK;
     let issuerAlg: string;
     try {
-        const decodedHeader = decodeJoseHeader(compact.split('~')[0]!);
-        const kid = typeof decodedHeader.kid === 'string' ? decodedHeader.kid : undefined;
-        const resolved = await resolveIssuerJwk(learnCard, parsed.issuer, kid);
+        const resolved = await resolveIssuerJwk(learnCard, parsed.issuer, parsed);
         issuerJwk = resolved.jwk;
         issuerAlg = resolved.alg;
         checks.push('issuer_resolved');
     } catch (e) {
         const message =
             e instanceof SdJwtVcError ? `${e.code}: ${e.message}` : (e as Error).message;
-        return { checks, warnings, errors: [...errors, message] };
+        return { checks, warnings, errors: [message] };
     }
 
-    const verifier = await createJoseVerifier(issuerJwk, issuerAlg);
+    const { verifier, getLastError } = await createJoseVerifier(issuerJwk, issuerAlg);
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,
         hashAlg: 'sha-256',
@@ -183,25 +192,24 @@ export const verifySdJwtVc = async (
         await instance.verify(compact);
         checks.push('issuer_signature');
     } catch (e) {
-        errors.push(
-            `signature_invalid: ${e instanceof Error ? e.message : String(e)}`
-        );
+        const joseError = getLastError();
+        const detail = joseError?.message ?? (e instanceof Error ? e.message : String(e));
+        errors.push(`signature_invalid: ${detail}`);
         return { checks, warnings, errors };
     }
 
     const now = options.now ? options.now() : new Date();
 
-    ensureNotExpired(parsed.expiresAt, now, errors);
-    if (errors.length === 0) checks.push('expiration');
-
-    ensureNotBefore(parsed.notBefore, now, warnings, errors);
-
     if (options.expectedVct && parsed.vct !== options.expectedVct) {
         errors.push(`vct_mismatch: expected "${options.expectedVct}", got "${parsed.vct}"`);
     }
 
-    if (options.audience || options.nonce) {
-        warnings.push('audience/nonce checks require a KB-JWT (Slice 3); skipped in read path');
+    ensureNotExpired(parsed.expiresAt, now, errors);
+    ensureNotBefore(parsed.notBefore, now, warnings, errors);
+
+    if (errors.length === 0) {
+        if (options.expectedVct !== undefined) checks.push('vct');
+        checks.push('expiration');
     }
 
     if (!options.skipStatusCheck && parsed.rawPayload.status !== undefined) {

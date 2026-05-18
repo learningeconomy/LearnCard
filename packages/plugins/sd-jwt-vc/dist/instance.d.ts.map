@@ -1,1 +1,0 @@
-{"version":3,"file":"instance.d.ts","sourceRoot":"","sources":["../src/instance.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,eAAe,EAAE,MAAM,mBAAmB,CAAC;AAIpD,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,UAAU,CAAC;AAE/C,MAAM,WAAW,qBAAqB;IAClC,QAAQ,CAAC,EAAE,cAAc,CAAC;CAC7B;AAED,eAAO,MAAM,qBAAqB,aAAa,qBAAqB,KAAQ,eAO3E,CAAC"}

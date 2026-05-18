@@ -8,7 +8,7 @@
         "outDir": "dist",
         "strict": true,
         "esModuleInterop": true,
-        "lib": ["dom", "es2021"],
+        "lib": ["dom", "es2021", "es2022.error"],
         "noLib": false,
         "rootDir": "src",
         "skipLibCheck": true,
