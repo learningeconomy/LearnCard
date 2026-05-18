@@ -43,6 +43,7 @@
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/vc-plugin": "workspace:^",
+        "@noble/curves": "^1.9.0",
         "@noble/ed25519": "^2.3.0",
         "@noble/hashes": "^1.8.0",
         "@peculiar/x509": "^1.12.0",

@@ -1,6 +1,8 @@
 import { getClient, Client } from '@learncard/lca-api-client';
 import { LearnCard } from '@learncard/core';
 import pbkdf2Hmac from 'pbkdf2-hmac';
+import { hmac } from '@noble/hashes/hmac';
+import { sha256 } from '@noble/hashes/sha2';
 
 import { ThemeEnum } from './types';
 
@@ -322,26 +324,17 @@ export const getLCAPlugin = async (
                         return undefined;
                     }
 
-                    const crypto = learnCard.invoke.crypto();
-
                     const uint8Message = new TextEncoder().encode(message);
 
                     const pk = encryptionJwk.d;
-                    const hmacKey = await pbkdf2Hmac(pk, 'salt', 1000, 32);
-                    const cryptoKey = await crypto.subtle.importKey(
-                        'raw',
-                        hmacKey,
-                        { name: 'HMAC', hash: 'SHA-256' },
-                        false,
-                        ['sign']
+                    const hmacKey = new Uint8Array(
+                        await pbkdf2Hmac(pk, 'salt', 1000, 32)
                     );
 
-                    const digestBuffer = await crypto.subtle.sign('HMAC', cryptoKey, uint8Message);
+                    const digestBytes = hmac(sha256, hmacKey, uint8Message);
 
-                    const digestArray = Array.from(new Uint8Array(digestBuffer));
-
-                    return digestArray
-                        .map(byte => (byte as any).toString(16).padStart(2, '0'))
+                    return Array.from(digestBytes)
+                        .map(byte => byte.toString(16).padStart(2, '0'))
                         .join('');
                 },
                 getFirebaseUserByEmail: async (_learnCard, email) => {

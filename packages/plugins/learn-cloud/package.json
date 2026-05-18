@@ -43,6 +43,7 @@
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/helpers": "workspace:^",
         "@learncard/learn-cloud-client": "workspace:*",
+        "@noble/hashes": "^1.8.0",
         "json-stringify-deterministic": "^1.0.8",
         "lodash": "^4.17.21",
         "pbkdf2-hmac": "^1.2.1"

@@ -276,6 +276,25 @@ export const encryptResponseObject = async (
         signer,
     } = options;
 
+    // JARM encryption routes through `jose` (ECDH-ES + AES-GCM/CBC +
+    // HMAC) which all depend on `crypto.subtle`. In non-secure browser
+    // contexts (iOS WKWebView dev hot-reload over `http://<LAN-IP>:3000`)
+    // subtle is `undefined` and the encrypt call crashes with
+    // "undefined is not an object". Surface a typed, actionable error
+    // here rather than letting the raw failure bubble to the UI.
+    // Pure-JS JWE is intentionally out of scope: the surface (ECDH +
+    // ConcatKDF + AES + HMAC + key-wrap variants) is too broad to
+    // reimplement safely without dedicated review.
+    if (
+        typeof (globalThis as { crypto?: { subtle?: unknown } }).crypto
+            ?.subtle === 'undefined'
+    ) {
+        throw new JarmEncryptError(
+            'unsupported_alg',
+            'JARM (direct_post.jwt) encryption requires the Web Crypto API (crypto.subtle), which is not available in this runtime. On iOS WKWebView this typically means the app is loaded over a non-secure origin (e.g. `pnpm start --host` over http://<LAN-IP>:3000). Either run dev mode over HTTPS (`vite --https`) or test against a verifier that supports cleartext `direct_post` response mode.'
+        );
+    }
+
     const alg =
         clientMetadata.authorization_encrypted_response_alg ?? DEFAULT_JWE_ALG;
     const enc =

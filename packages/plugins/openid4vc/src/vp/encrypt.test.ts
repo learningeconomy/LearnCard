@@ -707,3 +707,43 @@ describe('encryptResponseObject — interop with jose CompactSign signer', () =>
         expect(publicKey).toBeDefined();
     });
 });
+
+describe('encryptResponseObject — iOS dev-mode (non-secure context) guard', () => {
+    it('throws a typed error with HTTPS-dev hint when crypto.subtle is unavailable', async () => {
+        const verifier = await makeEcVerifierKey();
+
+        const originalCryptoDescriptor = Object.getOwnPropertyDescriptor(
+            globalThis,
+            'crypto'
+        );
+
+        try {
+            Object.defineProperty(globalThis, 'crypto', {
+                configurable: true,
+                writable: true,
+                value: { getRandomValues: () => new Uint8Array() },
+            });
+
+            await expect(
+                encryptResponseObject({
+                    payload: PAYLOAD,
+                    clientMetadata: {
+                        jwks: { keys: [verifier.publicJwk] },
+                    },
+                    verifierNonce: VERIFIER_NONCE,
+                })
+            ).rejects.toMatchObject({
+                code: 'unsupported_alg',
+                message: expect.stringContaining('Web Crypto'),
+            });
+        } finally {
+            if (originalCryptoDescriptor) {
+                Object.defineProperty(
+                    globalThis,
+                    'crypto',
+                    originalCryptoDescriptor
+                );
+            }
+        }
+    });
+});

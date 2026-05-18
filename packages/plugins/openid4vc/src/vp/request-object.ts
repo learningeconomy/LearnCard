@@ -37,8 +37,9 @@
  * plug in their own resolver to support `did:key`, `did:ion`, etc.
  */
 import * as x509 from '@peculiar/x509';
+import { sha256 } from '@noble/hashes/sha2';
 
-import { importJWK, importX509, jwtVerify, JWK } from 'jose';
+import type { JWK } from 'jose';
 
 import {
     AuthorizationRequest,
@@ -51,6 +52,11 @@ import {
 } from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
+import {
+    jwkFromX509SubjectPublicKey,
+    JwsVerifyError,
+    verifyCompactJws,
+} from './jws-verify';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -437,26 +443,12 @@ const verifyWithDid = async (ctx: VerifyCtx): Promise<void> => {
         );
     }
 
-    let key: Awaited<ReturnType<typeof importJWK>>;
-    try {
-        key = await importJWK(vm.publicKeyJwk, alg);
-    } catch (e) {
-        throw new RequestObjectError(
-            'request_signer_untrusted',
-            `Failed to import publicKeyJwk from ${vm.id}: ${describe(e)}`,
-            { cause: e }
-        );
-    }
-
-    try {
-        await jwtVerify(jws, key);
-    } catch (e) {
-        throw new RequestObjectError(
-            'request_signature_invalid',
-            `JWS signature verification failed: ${describe(e)}`,
-            { cause: e }
-        );
-    }
+    await runPureJwsVerify({
+        jws,
+        publicKeyJwk: vm.publicKeyJwk,
+        alg,
+        signerLabel: vm.id,
+    });
 };
 
 const findVerificationMethod = (
@@ -532,29 +524,12 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
         await verifyChainToTrustedRoots(chain, trusted);
     }
 
-    // JWS signature must verify against the leaf cert's public key.
-    const leafPem = derToPem(x5c[0] as string);
-
-    let key: Awaited<ReturnType<typeof importX509>>;
-    try {
-        key = await importX509(leafPem, asString(header.alg) ?? 'RS256');
-    } catch (e) {
-        throw new RequestObjectError(
-            'request_signer_untrusted',
-            `Failed to import leaf X.509 cert: ${describe(e)}`,
-            { cause: e }
-        );
-    }
-
-    try {
-        await jwtVerify(jws, key);
-    } catch (e) {
-        throw new RequestObjectError(
-            'request_signature_invalid',
-            `JWS signature verification failed: ${describe(e)}`,
-            { cause: e }
-        );
-    }
+    await verifyJwsAgainstLeafCert({
+        jws,
+        leaf,
+        alg: asString(header.alg) ?? 'RS256',
+        signerLabel: `x509:${leaf.subject}`,
+    });
 };
 
 const buildCertChain = (
@@ -617,13 +592,28 @@ const verifyChainToTrustedRoots = async (
     );
 };
 
-// Verify that `child` is signed by `parent`'s public key. Defensive
-// against algorithm mismatches that throw inside Web Crypto rather
-// than returning false.
+/**
+ * Verify that `child` is signed by `parent`'s public key.
+ *
+ * Routes through `@peculiar/x509`'s `cert.verify`, which calls
+ * `crypto.subtle.verify` under the hood. On runtimes where
+ * `crypto.subtle` is `undefined` (iOS WKWebView dev hot-reload over
+ * `http://<LAN-IP>:3000`), `verify` throws synchronously inside the
+ * library; we surface a typed error so the chain-walker reports
+ * `request_signer_untrusted` with an actionable message instead of
+ * bubbling the raw "undefined is not an object" up to the UI.
+ */
 const safeVerify = async (
     child: x509.X509Certificate,
     parent: x509.X509Certificate
 ): Promise<boolean> => {
+    if (!hasSubtleCrypto()) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            'X.509 chain validation requires Web Crypto API (crypto.subtle), which is unavailable in this runtime. iOS WKWebView dev hot-reload over http://<IP>:3000 has no secure context — switch to HTTPS dev mode (e.g. `vite --https`) or omit `trustedX509Roots` and set `unsafeAllowSelfSigned: true` for local interop.'
+        );
+    }
+
     try {
         return await child.verify({ publicKey: parent.publicKey });
     } catch {
@@ -631,15 +621,26 @@ const safeVerify = async (
     }
 };
 
-const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
-    const buf = await cert.getThumbprint('SHA-256');
-    const bytes = new Uint8Array(buf);
+/**
+ * Compute the SHA-256 thumbprint of a certificate's DER encoding.
+ *
+ * Uses `@noble/hashes` rather than `cert.getThumbprint()` so this stays
+ * available even when `crypto.subtle` is undefined (iOS dev mode). The
+ * output matches the canonical "cert SHA-256 fingerprint" representation
+ * used by browsers and openssl.
+ */
+const fingerprintHex = (cert: x509.X509Certificate): string => {
+    const digest = sha256(new Uint8Array(cert.rawData));
     let hex = '';
-    for (let i = 0; i < bytes.length; i++) {
-        hex += bytes[i]!.toString(16).padStart(2, '0');
+    for (let i = 0; i < digest.length; i++) {
+        hex += digest[i]!.toString(16).padStart(2, '0');
     }
     return hex;
 };
+
+const hasSubtleCrypto = (): boolean =>
+    typeof (globalThis as { crypto?: { subtle?: unknown } }).crypto?.subtle !==
+    'undefined';
 
 /**
  * SAN DNS binding check: returns true when `host` matches any
@@ -753,27 +754,14 @@ const verifyWithPreRegistered = async (ctx: VerifyCtx): Promise<void> => {
     // *some* embedded key so a tampered Request Object is still
     // caught.
     const leafPem = derToPem(x5c[0] as string);
+    const leaf = new x509.X509Certificate(leafPem);
 
-    let key: Awaited<ReturnType<typeof importX509>>;
-    try {
-        key = await importX509(leafPem, asString(header.alg) ?? 'RS256');
-    } catch (e) {
-        throw new RequestObjectError(
-            'request_signer_untrusted',
-            `Failed to import leaf X.509 cert: ${describe(e)}`,
-            { cause: e }
-        );
-    }
-
-    try {
-        await jwtVerify(jws, key);
-    } catch (e) {
-        throw new RequestObjectError(
-            'request_signature_invalid',
-            `JWS signature verification failed: ${describe(e)}`,
-            { cause: e }
-        );
-    }
+    await verifyJwsAgainstLeafCert({
+        jws,
+        leaf,
+        alg: asString(header.alg) ?? 'RS256',
+        signerLabel: `x509:${leaf.subject}`,
+    });
 };
 
 const hostFromClientId = (clientId: string): string => {
@@ -984,6 +972,93 @@ const b64urlDecode = (b64: string): string => {
     const pad = '='.repeat((4 - (b64.length % 4)) % 4);
     const std = b64.replace(/-/g, '+').replace(/_/g, '/') + pad;
     return Buffer.from(std, 'base64').toString('utf8');
+};
+
+/**
+ * Run pure-JS JWS verification and translate {@link JwsVerifyError}
+ * codes to the equivalent {@link RequestObjectError} codes. Centralised
+ * here so both the DID and X.509 paths get identical error mapping
+ * (and identical iOS-dev-mode behaviour).
+ */
+const runPureJwsVerify = async (args: {
+    jws: string;
+    publicKeyJwk: JWK;
+    alg: string;
+    signerLabel: string;
+}): Promise<void> => {
+    const { jws, publicKeyJwk, alg, signerLabel } = args;
+    try {
+        await verifyCompactJws({ jws, publicKeyJwk, alg });
+    } catch (e) {
+        if (e instanceof JwsVerifyError) {
+            if (e.code === 'unsupported_alg') {
+                throw new RequestObjectError(
+                    'request_signer_untrusted',
+                    `JWS algorithm ${alg} from ${signerLabel} is not supported by the pure-JS verifier (signed Request Object verification). Holder-side JWS verification supports EdDSA, ES256, ES256K, ES384, ES512. For RSA-based signers, run the wallet in a secure context (HTTPS / capacitor://localhost).`,
+                    { cause: e }
+                );
+            }
+
+            if (e.code === 'invalid_jwk') {
+                throw new RequestObjectError(
+                    'request_signer_untrusted',
+                    `JWK from ${signerLabel} is not usable for ${alg} verification: ${e.message}`,
+                    { cause: e }
+                );
+            }
+
+            throw new RequestObjectError(
+                'request_signature_invalid',
+                `JWS signature verification failed: ${e.message}`,
+                { cause: e }
+            );
+        }
+        throw new RequestObjectError(
+            'request_signature_invalid',
+            `JWS signature verification failed: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+};
+
+/**
+ * Extract a JWK from an X.509 leaf certificate's public key and verify
+ * the supplied JWS against it. Wraps the JWK-extraction failure case in
+ * a typed `RequestObjectError` so the x509 / pre-registered call sites
+ * stay symmetric with the DID call site.
+ */
+const verifyJwsAgainstLeafCert = async (args: {
+    jws: string;
+    leaf: x509.X509Certificate;
+    alg: string;
+    signerLabel: string;
+}): Promise<void> => {
+    const { jws, leaf, alg, signerLabel } = args;
+
+    let publicKeyJwk: JWK;
+    try {
+        publicKeyJwk = jwkFromX509SubjectPublicKey(leaf);
+    } catch (e) {
+        if (e instanceof JwsVerifyError) {
+            throw new RequestObjectError(
+                'request_signer_untrusted',
+                `Failed to extract public key from x509 leaf (${signerLabel}): ${e.message}. Holder-side x509 verification supports Ed25519 and EC (P-256/P-384/P-521/secp256k1). RSA-keyed verifiers require Web Crypto, available only in secure contexts.`,
+                { cause: e }
+            );
+        }
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Failed to extract public key from x509 leaf (${signerLabel}): ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    await runPureJwsVerify({
+        jws,
+        publicKeyJwk,
+        alg,
+        signerLabel,
+    });
 };
 
 const describe = (e: unknown): string => (e instanceof Error ? e.message : String(e));
