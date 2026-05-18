@@ -199,7 +199,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                                             Digital ID:
                                                         </span>
                                                         <span className="text-grayscale-500 underline">
-                                                            {issueeDisplay.displayName}
+                                                            {issuerDisplay.displayName}
                                                         </span>
                                                     </span>
                                                 </>
