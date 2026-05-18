@@ -2,6 +2,7 @@ import Mustache from 'mustache';
 import DOMPurify, { type Config as DOMPurifyConfig } from 'dompurify';
 
 import { VC, TemplateRenderMethod, RenderMethodValidator } from '@learncard/types';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 type JsonRecord = Record<string, unknown>;
 export type RenderMethodData = JsonRecord;
@@ -124,8 +125,9 @@ const buildRenderDataFromPointers = (vc: VC, pointers: string[]): Record<string,
  * shapes while keeping the top-level credential as the single source of truth.
  *
  * Placement contract:
- * `renderMethod` belongs on the top-level OBv3 credential wrapper. This helper intentionally does
- * not inspect or select `boostCredential.renderMethod`.
+ * For regular VCs, `renderMethod` lives on the credential itself. For boost credentials
+ * (`CertifiedBoostCredential`), renderMethod lives on the inner `boostCredential` — callers
+ * should pass the unwrapped credential here (see `getSvgMustacheRenderMethod` for lookup).
  *
  * How it works:
  * - Spreads the top-level credential at the top level.
@@ -210,11 +212,16 @@ function buildRenderDataForProperties(vc: VC, pointers: string[]): JsonRecord {
  *
  * Why this exists:
  * VCs can store `renderMethod` as a single object or an array. Preview components only need the
- * first supported `TemplateRenderMethod` that this app can render. The render method is expected
- * on the top-level OBv3 credential wrapper, not the nested `boostCredential`.
+ * first supported `TemplateRenderMethod` that this app can render.
+ *
+ * Boost handling:
+ * For `CertifiedBoostCredential`, the render method lives on the inner `boostCredential` (the
+ * actual boost VC), not the wrapper. This function unwraps the credential first so callers
+ * don't need to think about the wrapping layer.
  *
  * How it works:
- * - Looks at `vc.renderMethod`.
+ * - Unwraps `CertifiedBoostCredential` to its inner boost credential.
+ * - Looks at the effective credential's `renderMethod`.
  * - Treats a single object and an array with the same iteration path.
  * - Validates each candidate with `RenderMethodValidator` before trusting its shape.
  * - Returns only `TemplateRenderMethod` entries using the supported `svg-mustache` suite.
@@ -238,7 +245,8 @@ function buildRenderDataForProperties(vc: VC, pointers: string[]): JsonRecord {
  * ```
  */
 export function getSvgMustacheRenderMethod(vc: VC): TemplateRenderMethod | null {
-    const root = vc as Record<string, unknown>;
+    const effectiveVc = unwrapBoostCredential(vc) ?? vc;
+    const root = effectiveVc as Record<string, unknown>;
     const raw = root.renderMethod;
     if (!raw) return null;
 

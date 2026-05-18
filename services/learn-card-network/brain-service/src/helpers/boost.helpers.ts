@@ -595,23 +595,12 @@ export const constructCertifiedBoostCredential = async (
 
     const isVC2 = isVC2Format(credential);
 
-    const renderMethodContext = 'https://digitalbazaar.github.io/vc-render-method-context/contexts/v2rc2.jsonld';
-    // W3C renderMethod — svg-mustache suite, defaulting to v1.0.0 of our card template.
-    // Bump this URL when a new template version is published to templates.learncard.com.
-    const renderMethod = {
-        type: 'TemplateRenderMethod',
-        renderSuite: 'svg-mustache',
-        template: 'https://templates.learncard.com/svg/card/card-1.0.0.svg',
-        outputPreference: { mediaType: 'image/svg+xml' },
-    };
-
     return {
         '@context': [
             isVC2
                 ? 'https://www.w3.org/ns/credentials/v2'
                 : 'https://www.w3.org/2018/credentials/v1',
             'https://ctx.learncard.com/boosts/1.0.1.json',
-            renderMethodContext,
         ],
         id: `urn:uuid:${uuidv4()}`,
         type: ['VerifiableCredential', 'CertifiedBoostCredential'],
@@ -620,7 +609,6 @@ export const constructCertifiedBoostCredential = async (
         credentialSubject: { id: issuerDid },
         boostId: boostURI,
         boostCredential: credential,
-        renderMethod,
     };
 };
 
