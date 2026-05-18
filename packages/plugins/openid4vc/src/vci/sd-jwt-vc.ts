@@ -22,6 +22,9 @@ interface ParsedSdJwtVcLike {
     hasKeyBinding: boolean;
 }
 
+// Keep in sync with @learncard/sd-jwt-vc-plugin's display.ts SD_JWT_METADATA_CLAIMS.
+// Duplication is deliberate: openid4vc does NOT hard-import sd-jwt-vc (runtime
+// feature-detect only) so the two packages can be installed independently.
 const SD_JWT_RESERVED_CLAIMS = new Set([
     'iss',
     'iat',
@@ -35,6 +38,29 @@ const SD_JWT_RESERVED_CLAIMS = new Set([
     '...',
     'status',
 ]);
+
+const PRIVATE_JWK_FIELDS = new Set(['d', 'dp', 'dq', 'p', 'q', 'qi', 'oth', 'k']);
+
+const bytesToBase64Url = (bytes: Uint8Array): string => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const synthesizeDidJwk = (jwk: Record<string, unknown>): string | undefined => {
+    if (typeof jwk.kty !== 'string') return undefined;
+    const publicOnly: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(jwk)) {
+        if (!PRIVATE_JWK_FIELDS.has(key)) publicOnly[key] = value;
+    }
+    try {
+        const json = JSON.stringify(publicOnly);
+        const b64 = bytesToBase64Url(new TextEncoder().encode(json));
+        return `did:jwk:${b64}`;
+    } catch {
+        return undefined;
+    }
+};
 
 const stripReservedClaims = (claims: Record<string, unknown>): Record<string, unknown> => {
     const out: Record<string, unknown> = {};
@@ -82,20 +108,41 @@ export const synthesizeSdJwtVc = async (
 
     const parsed = await callPluginParse(learnCard, credential);
 
+    const headerTyp = parsed.header?.typ;
+    if (typeof headerTyp === 'string' && headerTyp !== format) {
+        throw new VciError(
+            'unsupported_format',
+            `OID4VCI issuer advertised credential format "${format}" but SD-JWT JOSE header typ is "${headerTyp}"`
+        );
+    }
+
     const issuedAtIso = parsed.issuedAt?.toISOString() ?? new Date().toISOString();
-    const verificationMethod =
-        typeof parsed.header?.kid === 'string'
-            ? parsed.header.kid.startsWith('#')
-                ? `${parsed.issuer}${parsed.header.kid}`
-                : parsed.header.kid
-            : `${parsed.issuer}#0`;
+
+    const issuerIsDid = parsed.issuer.startsWith('did:');
+    const kid = parsed.header?.kid;
+    const verificationMethod = !issuerIsDid
+        ? undefined
+        : typeof kid === 'string'
+        ? kid.startsWith('#')
+            ? `${parsed.issuer}${kid}`
+            : kid
+        : `${parsed.issuer}#0`;
 
     const subject: { id?: string; [k: string]: unknown } = {
         ...stripReservedClaims(parsed.claims),
     };
-    const cnfKid = parsed.holderPublicKey && (parsed.holderPublicKey.kid as unknown);
-    if (typeof cnfKid === 'string') subject.id = cnfKid;
-    else if (parsed.issuer) subject.id = parsed.issuer;
+    if (parsed.holderPublicKey) {
+        const holderDid = synthesizeDidJwk(parsed.holderPublicKey);
+        if (holderDid) subject.id = holderDid;
+    }
+
+    const proof: Record<string, unknown> = {
+        type: 'SdJwtCompactProof',
+        created: issuedAtIso,
+        proofPurpose: 'assertionMethod',
+        jwt: credential,
+    };
+    if (verificationMethod) proof.verificationMethod = verificationMethod;
 
     const vc: W3CVerifiableCredential = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -104,13 +151,7 @@ export const synthesizeSdJwtVc = async (
         validFrom: issuedAtIso,
         credentialSubject: subject,
         sdJwtVct: parsed.vct,
-        proof: {
-            type: 'SdJwtCompactProof',
-            created: issuedAtIso,
-            proofPurpose: 'assertionMethod',
-            verificationMethod,
-            jwt: credential,
-        },
+        proof,
     };
 
     if (parsed.expiresAt) vc.validUntil = parsed.expiresAt.toISOString();
@@ -119,6 +160,10 @@ export const synthesizeSdJwtVc = async (
 };
 
 export const extractSdJwtVct = (vc: W3CVerifiableCredential): string | undefined => {
+    const proof = (vc as { proof?: unknown }).proof;
+    const proofType =
+        proof && typeof proof === 'object' ? (proof as { type?: unknown }).type : undefined;
+    if (proofType !== 'SdJwtCompactProof') return undefined;
     const value = (vc as Record<string, unknown>).sdJwtVct;
     return typeof value === 'string' && value.length > 0 ? value : undefined;
 };

@@ -14,6 +14,9 @@ export interface SdJwtDisplayViewModel {
     hasKeyBinding: boolean;
 }
 
+// Keep in sync with @learncard/openid4vc-plugin's sd-jwt-vc.ts SD_JWT_RESERVED_CLAIMS.
+// Duplication is deliberate: openid4vc does NOT hard-import sd-jwt-vc (runtime
+// feature-detect only) so the two packages can be installed independently.
 const SD_JWT_METADATA_CLAIMS = new Set([
     'iss',
     'iat',

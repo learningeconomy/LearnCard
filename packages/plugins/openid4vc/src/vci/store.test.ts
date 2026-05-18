@@ -373,7 +373,15 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('also handles the legacy vc+sd-jwt format string', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const legacyParsed = {
+                ...fakeParsed,
+                header: {
+                    alg: 'EdDSA',
+                    typ: 'vc+sd-jwt',
+                    kid: 'did:web:issuer.example.com#key-1',
+                },
+            };
+            const parseFn = jest.fn().mockResolvedValue(legacyParsed);
             const categorizeFn = jest.fn().mockReturnValue('Achievement');
             const learnCard = makeLearnCardWithSdJwt(parseFn, categorizeFn);
 
