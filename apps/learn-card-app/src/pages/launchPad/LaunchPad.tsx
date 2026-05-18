@@ -95,8 +95,9 @@ const LaunchPad: React.FC = () => {
         limit: 50,
     });
 
-    // Fetch featured carousel apps
-    const { data: featuredCarouselApps } = useFeaturedCarouselApps();
+    // Fetch featured carousel apps. On My Apps / All, appStoreCategory is undefined → cross-category.
+    // On category tabs, the carousel is scoped to that category.
+    const { data: featuredCarouselApps } = useFeaturedCarouselApps(appStoreCategory);
 
     // Fetch curated list apps
     const { data: curatedListApps } = useCuratedListApps();
@@ -117,15 +118,8 @@ const LaunchPad: React.FC = () => {
         [browseApps, installedListingIds, isMyApps, isSearching]
     );
 
-    // Curated apps: filter installed out only on My Apps tab (Suggested shows non-installed)
-    // On category/All tabs, installed apps stay in Suggested with "Open" CTA
-    const curatedAppsNotInstalled = useMemo(
-        () =>
-            isMyApps
-                ? (curatedListApps ?? []).filter(app => !installedListingIds.has(app.listing_id))
-                : (curatedListApps ?? []),
-        [curatedListApps, installedListingIds, isMyApps]
-    );
+    // Curated apps: never filter installed out — Suggested shows them with "Open" CTA on every tab.
+    const curatedApps = useMemo(() => curatedListApps ?? [], [curatedListApps]);
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
@@ -302,11 +296,11 @@ const LaunchPad: React.FC = () => {
         });
     }, [availableApps, searchInput]);
 
-    // Filtered curated apps (for Featured Apps section)
+    // Filtered curated apps (for Suggested Apps section)
     const filteredCuratedApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
-        return curatedAppsNotInstalled.filter(app => {
+        return curatedApps.filter(app => {
             // Filter by category if one is selected
             if (
                 appStoreCategory &&
@@ -323,7 +317,7 @@ const LaunchPad: React.FC = () => {
 
             return true;
         });
-    }, [curatedAppsNotInstalled, searchInput, appStoreCategory]);
+    }, [curatedApps, searchInput, appStoreCategory]);
 
     // Non-promoted available apps (for Discover More section)
     const nonPromotedAvailableApps = useMemo(() => {
