@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -13,7 +13,7 @@ import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav
 import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
-import Checkmark from 'learn-card-base/svgs/Checkmark';
+import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
 import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
@@ -40,7 +40,11 @@ import { RequestInsightsModal } from '../../ai-insights/request-insights/Request
 import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
-import { roleIcons } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
+import {
+    roleIcons,
+    iconBgColors,
+} from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
+import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
 import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
@@ -452,35 +456,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
 
-    const roleScrollRef = useRef<HTMLDivElement>(null);
-    const selectedRoleRef = useRef<HTMLButtonElement>(null);
-    const isCenteringRef = useRef(false);
-    const isInitialRoleSetRef = useRef(true);
-
-    // Filter out counselor for the visible roles list
-    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
-
-    // Handle infinite scroll - jump to middle set when reaching edges
-    const handleScroll = () => {
-        // Skip jump logic while centering to avoid conflicts
-        if (isCenteringRef.current) return;
-        if (!roleScrollRef.current) return;
-        const container = roleScrollRef.current;
-        const scrollLeft = container.scrollLeft;
-        const scrollWidth = container.scrollWidth;
-        const clientWidth = container.clientWidth;
-        const oneSetWidth = (scrollWidth - clientWidth) / 2;
-
-        // If scrolled to the left clone set, jump to middle
-        if (scrollLeft < oneSetWidth * 0.1) {
-            container.scrollLeft = scrollLeft + oneSetWidth;
-        }
-        // If scrolled to the right clone set, jump to middle
-        else if (scrollLeft > oneSetWidth * 1.9) {
-            container.scrollLeft = scrollLeft - oneSetWidth;
-        }
-    };
-
     const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
         setRole(newRole);
         setOptimisticRole(newRole);
@@ -499,47 +474,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         }
     };
 
-    // Center the selected role in the scroll container (in the middle set)
-    const centerRole = (smooth = true) => {
-        if (selectedRoleRef.current && roleScrollRef.current) {
-            isCenteringRef.current = true;
-            const container = roleScrollRef.current;
-            const selectedElement = selectedRoleRef.current;
-
-            // Use getBoundingClientRect for accurate pill center positioning
-            const containerRect = container.getBoundingClientRect();
-            const elementRect = selectedElement.getBoundingClientRect();
-
-            // Calculate the center of the pill relative to the container's visible area
-            const elementCenterInViewport = elementRect.left + elementRect.width / 2;
-            const containerCenterInViewport = containerRect.left + containerRect.width / 2;
-
-            // Adjust scroll by the difference to center the pill
-            const scrollAdjustment = elementCenterInViewport - containerCenterInViewport;
-
-            container.scrollTo({
-                left: container.scrollLeft + scrollAdjustment,
-                behavior: smooth ? 'smooth' : 'instant',
-            });
-            // Re-enable infinite scroll after animation completes
-            setTimeout(
-                () => {
-                    isCenteringRef.current = false;
-                },
-                smooth ? 400 : 50
-            );
-        }
-    };
-
-    // Center on role change (instant for initial set, smooth for user changes)
-    useEffect(() => {
-        if (role === null) return;
-        const useInstant = isInitialRoleSetRef.current;
-        isInitialRoleSetRef.current = false;
-        const timer = setTimeout(() => centerRole(!useInstant), useInstant ? 150 : 50);
-        return () => clearTimeout(timer);
-    }, [role]);
-
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
             setOptimisticRole(null);
@@ -557,27 +491,13 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const isChildProfile = profileType === 'child';
     const { isAiEnabled, isLoading: isAiFeatureLoading } = useAiFeatureGate();
 
-    const selectedBorderColor: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: '#5EEAD4',
-        [LearnCardRolesEnum.guardian]: '#C4B5FD',
-        [LearnCardRolesEnum.teacher]: '#FDE047',
-        [LearnCardRolesEnum.admin]: '#67E8F9',
-        [LearnCardRolesEnum.counselor]: '#C4B5FD',
-        [LearnCardRolesEnum.developer]: '#BEF264',
-    };
-
-    const selectedBgColor: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: '#CCFBF1',
-        [LearnCardRolesEnum.guardian]: '#EDE9FE',
-        [LearnCardRolesEnum.teacher]: '#FEF9C3',
-        [LearnCardRolesEnum.admin]: '#CFFAFE',
-        [LearnCardRolesEnum.counselor]: '#EDE9FE',
-        [LearnCardRolesEnum.developer]: '#ECFCCB',
-    };
-
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
+
+    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
+    const roleIconSrc = roleIcons[activeRole];
+    const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
@@ -804,13 +724,56 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 >
                     <X className="w-[30px] h-[30px] text-grayscale-600" />
                 </button>
-                <p className="text-grayscale-700 font-normal text-[16px] font-poppins py-[20px]">
+                <p className="text-grayscale-700 font-normal text-[16px] font-poppins pt-[20px] pb-[12px]">
                     <span className="mr-2">{emoji}</span>
                     <span>
                         {greeting}
                         {name ? `, ${name}` : ''}
                     </span>
                 </p>
+                <div className="w-full flex items-center justify-center pb-[12px]">
+                    <button
+                        type="button"
+                        disabled={isChildProfile}
+                        onClick={
+                            isChildProfile
+                                ? undefined
+                                : () =>
+                                      newModal(
+                                          <LaunchPadRoleSelector
+                                              role={activeRole}
+                                              setRole={handleRoleChange}
+                                          />,
+                                          {
+                                              sectionClassName:
+                                                  '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                          },
+                                          {
+                                              mobile: ModalTypes.Freeform,
+                                              desktop: ModalTypes.Freeform,
+                                          }
+                                      )
+                        }
+                        className={`rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold ${
+                            isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                    >
+                        <span className="p-[3px] pr-[8px] flex items-center justify-center gap-2">
+                            <span
+                                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                                style={roleIconBgStyle}
+                            >
+                                <img
+                                    src={roleIconSrc}
+                                    alt={`${roleLabel} icon`}
+                                    className="h-[20px] w-[20px] object-contain"
+                                />
+                            </span>
+                            <span>{roleLabel}</span>
+                            {!isChildProfile && <CaretDown className="ml-[2px]" />}
+                        </span>
+                    </button>
+                </div>
                 <h3
                     className={`text-[20px] font-poppins font-semibold ${
                         !actionModalCardTextColor ? 'text-grayscale-800' : ''
@@ -876,86 +839,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                               }
                           />
                       ))}
-            </div>
-            <div
-                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] py-[10px] ${
-                    !actionModalCardBgColor ? 'bg-white' : ''
-                }`}
-            >
-                <div
-                    ref={roleScrollRef}
-                    onScroll={handleScroll}
-                    className="w-full flex items-center gap-[10px] overflow-x-auto scrollbar-hide"
-                >
-                    {[0, 1, 2].map(setIndex =>
-                        visibleRoles.map(roleItem => {
-                            const isSelected = activeRole === roleItem.type;
-                            const roleIcon = roleIcons[roleItem.type];
-                            const shouldAssignRef = setIndex === 1 && isSelected;
-
-                            return (
-                                <button
-                                    key={`${setIndex}-${roleItem.type}`}
-                                    ref={shouldAssignRef ? selectedRoleRef : null}
-                                    type="button"
-                                    disabled={isChildProfile}
-                                    onClick={
-                                        isChildProfile
-                                            ? undefined
-                                            : () => handleRoleChange(roleItem.type)
-                                    }
-                                    className={`flex-shrink-0 rounded-[43px] border border-solid transition-all ${
-                                        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
-                                    }`}
-                                    style={
-                                        isSelected
-                                            ? {
-                                                  borderColor: selectedBorderColor[roleItem.type],
-                                                  backgroundColor: selectedBgColor[roleItem.type],
-                                              }
-                                            : {
-                                                  borderColor: '#E2E3E9',
-                                                  backgroundColor: 'white',
-                                                  opacity: 0.6,
-                                              }
-                                    }
-                                >
-                                    <span className="py-[5px] pl-[10px] pr-[5px] flex items-center gap-[15px]">
-                                        <span className="flex items-center gap-2">
-                                            <img
-                                                src={roleIcon}
-                                                alt={`${roleItem.title} icon`}
-                                                className="h-[22px] w-[22px] object-contain"
-                                            />
-                                            <span
-                                                className={`${
-                                                    isSelected
-                                                        ? 'text-grayscale-900'
-                                                        : 'text-grayscale-600'
-                                                } text-[14px] font-poppins font-semibold`}
-                                            >
-                                                {roleItem.title}
-                                            </span>
-                                        </span>
-                                        {isSelected ? (
-                                            <span
-                                                className="flex items-center justify-center h-[24px] w-[24px] rounded-full"
-                                                style={{ backgroundColor: 'white' }}
-                                            >
-                                                <Checkmark
-                                                    version="no-padding"
-                                                    className="h-[15px] w-[15px] text-[#18224E]"
-                                                />
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center h-[24px] w-[24px] rounded-full bg-grayscale-200" />
-                                        )}
-                                    </span>
-                                </button>
-                            );
-                        })
-                    )}
-                </div>
             </div>
             {showFooterNav && (
                 <div className="mt-1 grid grid-cols-2 gap-3">
