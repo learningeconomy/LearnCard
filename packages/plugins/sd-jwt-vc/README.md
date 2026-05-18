@@ -22,6 +22,7 @@ Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in
 | Wallet display view-model (`toSdJwtDisplayViewModel`) | ✅ Slice 2a |
 | openid4vc integration (OID4VCI receipt + wallet store delegation) | ✅ Slice 2b |
 | Auto-wiring into `@learncard/init` seed-based initializers | ✅ Slice 2c |
+| `learnCard.invoke.verifyCredential` extension — routes SD-JWT credentials through the SD-JWT verifier, leaves W3C credentials on the existing path | ✅ Slice 2d |
 | Holder presentation + KB-JWT signing | ⏳ Slice 3 |
 | Token Status List checking (cached + network) | ⏳ Slice 4 |
 
@@ -33,9 +34,17 @@ Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in
 ## Architectural notes
 
 - **Format-plugin, not transport.** The plugin is self-contained — it knows nothing about OID4VCI, OID4VP, or VC-API. The `openid4vc` plugin delegates to this plugin via `learnCard.invoke.parseSdJwtVc()`, `verifySdJwtVc()`, etc.
+- **Extends `verifyCredential`** the same way `expiration-plugin` does — implements `VerifyExtension` so calls to `learnCard.invoke.verifyCredential(vc)` route SD-JWT credentials (proof.type `'SdJwtCompactProof'`) through the SD-JWT-aware verifier, and leave all other credentials on the previously-chained verify path. `vc-plugin` has no SD-JWT knowledge; the routing lives entirely here. Plugin-install order matters: install this plugin **after** `vc-plugin` and any other `VerifyExtension`-providing plugins (e.g., `expiration-plugin`).
 - **Library**: `@sd-jwt/core` + `@sd-jwt/sd-jwt-vc` (OpenWallet Foundation, Apache-2.0). Callback-based crypto so our existing `jose` Ed25519 signer plugs in.
 - **DID resolution**: delegated to `@learncard/didkit-plugin` (`resolveDid()`). Supports `did:key`, `did:web`, `did:jwk`, `did:ethr`, `did:pkh:*`, `did:tz`.
 - **Browser-first**: no Node-only dependencies. Uses Web Crypto SHA-256, `crypto.getRandomValues`, and `jose`.
+
+## Verification model
+
+SD-JWT-VC credentials are verified at **two points**:
+
+1. **At receipt time** — the `openid4vc` plugin calls `learnCard.invoke.verifySdJwtVc(compact)` before synthesizing the W3C-VC-shaped object. If the issuer signature or disclosure hashes fail, the credential lands in `result.failures` and never enters the wallet store.
+2. **At display / re-verify time** — the wallet's existing `learnCard.invoke.verifyCredential(vc)` call routes through this plugin's `verifyCredential` extension. SD-JWT credentials are re-verified via the SD-JWT path; everything else falls through to the chained verifier. This catches credentials whose issuer's DID rotated since claim, expired credentials, etc.
 
 ## Installation
 

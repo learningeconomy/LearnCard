@@ -34,13 +34,22 @@ const makeParsed = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 });
 
-const makeLearnCard = (parsed: unknown, throws?: Error) =>
+const makeLearnCard = (
+    parsed: unknown,
+    throws?: Error,
+    verifyResult: { errors?: string[]; warnings?: string[]; checks?: string[] } = {
+        errors: [],
+        warnings: [],
+        checks: ['parse', 'issuer_signature'],
+    }
+) =>
     ({
         invoke: {
             parseSdJwtVc: jest.fn(async () => {
                 if (throws) throw throws;
                 return parsed;
             }),
+            verifySdJwtVc: jest.fn(async () => verifyResult),
         },
     } as unknown as Parameters<typeof synthesizeSdJwtVc>[2]);
 
@@ -198,6 +207,84 @@ describe('synthesizeSdJwtVc', () => {
         const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
 
         expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
+    });
+
+    describe('receipt-time signature verification', () => {
+        it('rejects credentials whose issuer signature does not verify', async () => {
+            const parsed = makeParsed();
+            const learnCard = makeLearnCard(parsed, undefined, {
+                errors: ['signature_invalid: bad sig'],
+                warnings: [],
+                checks: ['parse'],
+            });
+
+            await expect(
+                synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard)
+            ).rejects.toMatchObject({
+                code: 'unsupported_format',
+                message: expect.stringContaining('signature_invalid'),
+            });
+        });
+
+        it('rejects credentials with disclosure hash mismatches', async () => {
+            const parsed = makeParsed();
+            const learnCard = makeLearnCard(parsed, undefined, {
+                errors: ['disclosure_hash_mismatch: tampered claim'],
+                warnings: [],
+                checks: [],
+            });
+
+            await expect(
+                synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard)
+            ).rejects.toMatchObject({ code: 'unsupported_format' });
+        });
+
+        it('aggregates multiple verification errors into a single rejection', async () => {
+            const parsed = makeParsed();
+            const learnCard = makeLearnCard(parsed, undefined, {
+                errors: ['expired: …', 'signature_invalid: …'],
+                warnings: [],
+                checks: [],
+            });
+
+            await expect(
+                synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard)
+            ).rejects.toMatchObject({
+                message: expect.stringMatching(/expired.*signature_invalid|signature_invalid.*expired/),
+            });
+        });
+
+        it('passes when verification returns only warnings (e.g., status_check_deferred)', async () => {
+            const parsed = makeParsed();
+            const learnCard = makeLearnCard(parsed, undefined, {
+                errors: [],
+                warnings: ['status_check_deferred: TSL is Slice 4'],
+                checks: ['parse', 'issuer_signature'],
+            });
+
+            const result = await synthesizeSdJwtVc(
+                FAKE_COMPACT,
+                SD_JWT_VC_FORMAT,
+                learnCard
+            );
+            expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
+        });
+
+        it('continues without verification when verifySdJwtVc is not available on the learnCard', async () => {
+            const parsed = makeParsed();
+            const learnCard = {
+                invoke: {
+                    parseSdJwtVc: jest.fn(async () => parsed),
+                },
+            } as unknown as Parameters<typeof synthesizeSdJwtVc>[2];
+
+            const result = await synthesizeSdJwtVc(
+                FAKE_COMPACT,
+                SD_JWT_VC_FORMAT,
+                learnCard
+            );
+            expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
+        });
     });
 
     it('emits validUntil only when the credential has an exp', async () => {
