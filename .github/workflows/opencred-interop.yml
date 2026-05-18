@@ -1,0 +1,64 @@
+name: OpenCred Interop Tests
+
+# Runs the cross-vendor OpenCred interop suite against the LearnCard
+# wallet (openid4vc plugin + vc plugin + didkit plugin). Tests cold-
+# start a Docker stack (build from upstream + MongoDB + service ready
+# checks; ~5-10 minutes on a fresh machine), so we gate them on paths
+# that can plausibly change verifier-side behaviour, plus manual
+# dispatch.
+#
+# The openid4vc-interop.yml workflow continues to run on every relevant
+# PR for walt.id / Sphereon / EUDI coverage; this file is its
+# California-DMV / OpenCred counterpart.
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+        paths:
+            - 'packages/plugins/openid4vc/**'
+            - 'packages/plugins/vc/**'
+            - 'packages/plugins/didkit/**'
+            - 'packages/credential-library/**'
+            - 'packages/learn-card-init/**'
+            - 'tests/opencred-interop-e2e/**'
+            - 'pnpm-lock.yaml'
+            - '.github/workflows/opencred-interop.yml'
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: 'Branch to test'
+                required: true
+                default: 'main'
+
+jobs:
+    interop:
+        name: Interop (OpenCred verifier)
+        runs-on: ubuntu-latest
+        timeout-minutes: 60
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Build openid4vc plugin
+              run: pnpm exec nx build openid4vc-plugin
+
+            - name: Run OpenCred interop suite (docker compose)
+              run: pnpm --filter @workspace/opencred-interop-e2e-tests test:interop:e2e
+              env:
+                  CI: 'true'
+
+            - name: Dump docker compose logs on failure
+              if: failure()
+              working-directory: tests/opencred-interop-e2e
+              run: docker compose logs --no-color --tail=500 || true
+
+            - name: Tear down docker compose
+              if: always()
+              working-directory: tests/opencred-interop-e2e
+              run: docker compose down -v --remove-orphans || true

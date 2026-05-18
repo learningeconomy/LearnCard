@@ -31,7 +31,7 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
         const options = {
             ...(signingOptions.proofFormat === 'jwt'
                 ? {}
-                : { proofPurpose: 'assertionMethod', type: proofType }),
+                : { proofPurpose: 'authentication', type: proofType }),
             ...signingOptions,
         };
 

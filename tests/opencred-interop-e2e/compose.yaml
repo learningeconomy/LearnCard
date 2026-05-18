@@ -1,0 +1,75 @@
+# OpenCred interop stack for cross-vendor verifier testing.
+#
+# OpenCred (https://github.com/stateofca/opencred) is California's
+# open-source verifier platform. It accepts W3C VCs via OID4VP and CHAPI,
+# returns OIDC id_tokens, and persists exchange state in MongoDB.
+#
+# Architecture:
+#  - `opencred`   — verifier service on port 22443 (HTTPS, self-signed)
+#  - `mongo`      — exchange + DID history persistence
+#
+# OpenCred has no published Docker image — we build from a pinned commit
+# of the upstream repo. The git context syntax (`#<sha>`) pins the build
+# to a deterministic snapshot so the suite is reproducible across runs.
+
+services:
+    mongo:
+        image: mongo:7
+        container_name: opencred-interop-mongo
+        ports:
+            - '27018:27017'
+        networks:
+            - opencred-interop
+        healthcheck:
+            test: ['CMD-SHELL', 'mongosh --quiet --eval "db.adminCommand({ ping: 1 }).ok" --port 27017 | grep -q "^1$$" || exit 1']
+            interval: 5s
+            timeout: 5s
+            retries: 20
+            start_period: 10s
+        tmpfs:
+            - /data/db
+
+    opencred:
+        image: opencred-interop:pinned
+        build:
+            # Pinned to the commit audited for this interop suite.
+            # Bump this SHA together with the test assertions when
+            # OpenCred ships a breaking spec change we need to track.
+            context: https://github.com/stateofca/opencred.git#4ecabe382043d2d63baf7c307518c61c16544ea7
+        container_name: opencred-interop-server
+        depends_on:
+            mongo:
+                condition: service_healthy
+        environment:
+            NODE_ENV: production
+        ports:
+            - '22080:22080'
+        networks:
+            - opencred-interop
+        volumes:
+            # OpenCred's dev.js entrypoint loads config from
+            # `<app-root>/configs/combined.yaml` and base64-encodes
+            # it into BEDROCK_CONFIG. The README's mention of
+            # `/etc/app-config` predates the bundled Dockerfile and
+            # does not match the running container's discovery path.
+            - ./configs/opencred.yaml:/home/node/app/configs/combined.yaml:ro
+        healthcheck:
+            # OpenCred's `config.express.httpOnly = true` makes the
+            # express app attach to the HTTP listener (22080) only —
+            # HTTPS on 22443 stays bound to bedrock-server's
+            # placeholder gatekeeper returning 503 forever. Tests hit
+            # HTTP for the same reason; HSTS and TLS are out of scope
+            # for cross-vendor interop verification.
+            test:
+                [
+                    'CMD-SHELL',
+                    'wget -qO- http://localhost:22080/health/live >/dev/null 2>&1 || exit 1',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 60
+            start_period: 30s
+
+networks:
+    opencred-interop:
+        driver: bridge

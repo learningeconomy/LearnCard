@@ -215,7 +215,20 @@ export const verifyAndDecodeRequestObject = async (
     // else's signed request and re-point it. This check runs even
     // when sig verification is bypassed — it's an integrity check on
     // the host-supplied URL, not on the JWS signature.
-    if (opts.urlClientId && opts.urlClientId !== clientId) {
+    //
+    // We compare the post-prefix VALUES (e.g. `did:web:foo`), not the
+    // raw client_id strings. OID4VP 1.0 §5.9 lets the URL carry an
+    // explicit prefix (e.g. `decentralized_identifier:did:web:foo`)
+    // while the JWS payload carries the bare DID URI — both refer to
+    // the same verifier and the spec considers them equivalent. Naive
+    // string equality would falsely reject this legal pairing,
+    // breaking interop with every OID4VP 1.0 verifier that emits the
+    // explicit form (EUDI reference verifier, OpenCred OID4VP-1.0
+    // profile, …).
+    const urlValue = opts.urlClientId
+        ? deriveClientIdPrefix(opts.urlClientId, legacyScheme).value
+        : undefined;
+    if (urlValue !== undefined && urlValue !== prefixValue) {
         throw new RequestObjectError(
             'client_id_mismatch',
             `Outer URL client_id (${opts.urlClientId}) does not match signed Request Object client_id (${clientId})`
