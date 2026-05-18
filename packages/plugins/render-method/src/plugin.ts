@@ -7,37 +7,96 @@ import {
     RENDER_METHOD_CONTEXT,
 } from './types';
 
-const DEFAULT_TEMPLATE_ID = 'https://templates.learncard.com/svg/card/card-1.0.0.svg';
+/**
+ * The default hosted SVG Mustache template, served from `packages/render-method-templates/`.
+ *
+ * Exported so callers can opt in to the default explicitly:
+ *
+ *     lc.invoke.attachRenderMethod(vc, { templateId: DEFAULT_TEMPLATE_ID })
+ *
+ * Per the opt-in contract for `attachRenderMethod`, calling without a config will NOT attach this
+ * template — callers must be explicit.
+ */
+export const DEFAULT_TEMPLATE_ID = 'https://templates.learncard.com/svg/card/card-1.0.0.svg';
 
-// ! for now we only support svg-mustache
-// TODO: Add other render suites and media types
+/**
+ * Validates a `templateId` URL. Only `http://` and `https://` schemes are accepted.
+ *
+ * Why this exists: the `templateId` is fetched at render time. Permitting `javascript:`,
+ * `file:`, or empty strings would expose the renderer to obvious script-injection or
+ * local-file-read vectors. The renderer (`renderSvgMustache`) also runs DOMPurify as a
+ * second line of defense, but blocking unsafe schemes at the source is cheaper.
+ */
+const isValidTemplateId = (templateId: string): boolean => {
+    if (!templateId || !templateId.trim()) return false;
+    return /^https?:\/\//i.test(templateId);
+};
 
-/** Builds a TemplateRenderMethod object from the given config.
- * If templateValue is provided, it is embedded as a data URI; otherwise templateId or the default template is used. */
+/**
+ * Builds a `TemplateRenderMethod` from the given config. Inline `templateValue` takes priority
+ * and is URL-encoded into a `data:image/svg+xml,...` URI. Otherwise `templateId` is used as-is.
+ *
+ * @throws if neither `templateId` nor `templateValue` is provided, if `templateId` is not http(s),
+ *         or if `templateValue` is empty.
+ */
 export const buildTemplateRenderMethod = (
-    config?: AttachRenderMethodConfig
-): TemplateRenderMethod =>
-    ({
-        type: 'TemplateRenderMethod',
-        renderSuite: 'svg-mustache', // TODO: Add other render suites
-        // Inline SVG takes priority over a template ID reference
-        template: config?.templateValue
-            ? `data:image/svg+xml,${encodeURIComponent(config.templateValue)}`
-            : config?.templateId ?? DEFAULT_TEMPLATE_ID,
-        // Only include renderProperty when explicitly provided to avoid overriding VC defaults
-        ...(config?.renderProperty ? { renderProperty: config.renderProperty } : {}),
-        outputPreference: { mediaType: 'image/svg+xml' as const },
-    });
+    config: AttachRenderMethodConfig
+): TemplateRenderMethod => {
+    let template: string;
 
-/** Attaches a TemplateRenderMethod to an unsigned VC, merging with any existing renderMethod entries.
- * Also injects the render method JSON-LD context if not already present. */
+    if ('templateValue' in config && config.templateValue !== undefined) {
+        if (!config.templateValue.trim()) {
+            throw new Error(
+                'buildTemplateRenderMethod: `templateValue` must be a non-empty SVG string.'
+            );
+        }
+        template = `data:image/svg+xml,${encodeURIComponent(config.templateValue)}`;
+    } else if ('templateId' in config && config.templateId !== undefined) {
+        if (!isValidTemplateId(config.templateId)) {
+            throw new Error(
+                `buildTemplateRenderMethod: \`templateId\` must be an http(s) URL, got: ${config.templateId}`
+            );
+        }
+        template = config.templateId;
+    } else {
+        throw new Error(
+            'buildTemplateRenderMethod: must provide either `templateId` or `templateValue` in config.'
+        );
+    }
+
+    return {
+        type: 'TemplateRenderMethod',
+        // TODO: Add other render suites (e.g., WebRenderingTemplate2022, HtmlMustacheRenderingTemplate)
+        renderSuite: 'svg-mustache',
+        template,
+        // Only include renderProperty when explicitly provided to avoid overriding VC defaults
+        ...(config.renderProperty ? { renderProperty: config.renderProperty } : {}),
+        // TODO: Make mediaType configurable per renderSuite once additional suites are supported
+        outputPreference: { mediaType: 'image/svg+xml' as const },
+    };
+};
+
+/**
+ * Attaches a `TemplateRenderMethod` to an unsigned VC, merging with any existing `renderMethod`
+ * entries. Injects the render-method JSON-LD context if not already present.
+ *
+ * **Opt-in semantics:** If `config` is omitted, the VC is returned UNCHANGED. The caller must
+ * explicitly opt in by providing `templateId` or `templateValue`. Pass `DEFAULT_TEMPLATE_ID` to
+ * use the default hosted template.
+ *
+ * This contract intentionally avoids polluting every issued credential's `@context` with the
+ * draft render-method context URL. See `RENDER_METHOD_CONTEXT` for the rationale.
+ */
 export const attachRenderMethod = (
     vc: UnsignedVC,
     config?: AttachRenderMethodConfig
 ): UnsignedVC => {
+    // Opt-in: no config → no-op. Callers must explicitly choose a template.
+    if (!config) return vc;
+
     const renderMethod = buildTemplateRenderMethod(config);
 
-    // Normalize @context to an array so we can safely append to it
+    // Normalize @context to an array so we can safely append to it.
     const context = Array.isArray(vc['@context']) ? vc['@context'] : [vc['@context']];
     const updatedContext = context.includes(RENDER_METHOD_CONTEXT)
         ? context
@@ -47,13 +106,10 @@ export const attachRenderMethod = (
     let updatedRenderMethod: TemplateRenderMethod | TemplateRenderMethod[];
 
     if (!existingRenderMethod) {
-        // No prior renderMethod — set directly (spec allows a single object, not just arrays)
         updatedRenderMethod = renderMethod;
     } else if (Array.isArray(existingRenderMethod)) {
-        // Append to the existing array
         updatedRenderMethod = [...(existingRenderMethod as TemplateRenderMethod[]), renderMethod];
     } else {
-        // Wrap the single existing entry together with the new one
         updatedRenderMethod = [existingRenderMethod as TemplateRenderMethod, renderMethod];
     }
 
@@ -72,7 +128,7 @@ export const getRenderMethodPlugin = (
     description:
         'Attaches W3C renderMethod to Verifiable Credentials for standards-based rendering',
     methods: {
-        attachRenderMethod: (_lc, vc, config?) => attachRenderMethod(vc, config),
-        buildTemplateRenderMethod: (_lc, config?) => buildTemplateRenderMethod(config),
+        attachRenderMethod: (_lc, vc, config) => attachRenderMethod(vc, config),
+        buildTemplateRenderMethod: (_lc, config) => buildTemplateRenderMethod(config),
     },
 });

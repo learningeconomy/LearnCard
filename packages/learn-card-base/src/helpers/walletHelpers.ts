@@ -85,7 +85,7 @@ export const getBespokeLearnCard = async (
         getRenderMethodPlugin(sqliteAugmented)
     );
 
-    const bespokeLearnCard = renderMethodAugmented as unknown as BespokeLearnCard;
+    const bespokeLearnCard = renderMethodAugmented as BespokeLearnCard;
 
     LEARN_CARDS[cacheKey] = bespokeLearnCard;
 

@@ -16,6 +16,6 @@
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "bundler"
     },
-    "include": ["src", "src/test"],
-    "exclude": ["node_modules", "example"]
+    "include": ["src"],
+    "exclude": ["node_modules", "example", "src/test", "**/*.test.ts"]
 }

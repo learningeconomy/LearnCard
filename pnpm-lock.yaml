@@ -3156,14 +3156,13 @@ importers:
         version: 4.20.6
 
   packages/plugins/render-method:
-    dependencies:
+    devDependencies:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
       '@learncard/types':
         specifier: workspace:*
         version: link:../../learn-card-types
-    devDependencies:
       '@types/jest':
         specifier: ^29.2.2
         version: 29.5.14

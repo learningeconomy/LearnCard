@@ -256,7 +256,6 @@ export const useCreateBoost = () => {
             }
 
             const unsignedCredential = wallet.invoke.newCredential(credentialPayload as any);
-            const credentialWithRenderMethod = wallet.invoke.attachRenderMethod(unsignedCredential as any);
 
             // // Set OBv3 alignments if we have any (from state.alignments or legacy state.skills)
             // try {
@@ -277,7 +276,7 @@ export const useCreateBoost = () => {
                 // makes request to LCN, second param is metadata associated with template
                 // metadata is used to categorize etc
                 // skillIds will auto-attach framework and align these skills
-                boostUri = await wallet.invoke.createBoost(credentialWithRenderMethod, {
+                boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
                     category:
@@ -299,7 +298,7 @@ export const useCreateBoost = () => {
                 // makes request to LCN, second param is metadata associated with template
                 // metadata is used to categorize etc
                 // skillIds will auto-attach framework and align these skills
-                boostUri = await wallet.invoke.createChildBoost(parentUri, credentialWithRenderMethod, {
+                boostUri = await wallet.invoke.createChildBoost(parentUri, unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
                     category:
@@ -649,7 +648,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 // makes request to LCN, second param is metadata associated with template
                 // metadata is used to categorize etc
                 // skillIds will auto-attach framework and align these skills
-                boostUri = await wallet.invoke.createBoost(credentialWithRenderMethod, {
+                boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
                     category: CredentialCategoryEnum.skill,
