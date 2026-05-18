@@ -258,11 +258,53 @@ describe('verifySdJwtVc', () => {
         );
     });
 
-    it('verifies through the legacy vc+sd-jwt format string', async () => {
+    it('rejects when the resolved key is not in assertionMethod (W3C DID §5.3.2)', async () => {
         const { compact, publicJwk } = await issueTestCredential();
-        const learnCard = buildLearnCardMock(publicJwk);
+        const learnCard = {
+            invoke: {
+                resolveDid: jest.fn(async () => ({
+                    '@context': ['https://www.w3.org/ns/did/v1'],
+                    id: ISSUER_DID,
+                    verificationMethod: [
+                        {
+                            id: ISSUER_KID,
+                            type: 'JsonWebKey2020',
+                            controller: ISSUER_DID,
+                            publicKeyJwk: { ...publicJwk, alg: 'EdDSA' },
+                        },
+                    ],
+                    keyAgreement: [ISSUER_KID],
+                })),
+            },
+        } as unknown as LearnCardMock;
 
-        const result = await verifySdJwtVc(learnCard, compact, {}, 'vc+sd-jwt');
+        const result = await verifySdJwtVc(learnCard, compact);
+        expect(
+            result.errors.some(e => e.includes('verification_method_not_authorized'))
+        ).toBe(true);
+    });
+
+    it('accepts a fragment-only ("#key-1") reference in assertionMethod', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = {
+            invoke: {
+                resolveDid: jest.fn(async () => ({
+                    '@context': ['https://www.w3.org/ns/did/v1'],
+                    id: ISSUER_DID,
+                    verificationMethod: [
+                        {
+                            id: ISSUER_KID,
+                            type: 'JsonWebKey2020',
+                            controller: ISSUER_DID,
+                            publicKeyJwk: { ...publicJwk, alg: 'EdDSA' },
+                        },
+                    ],
+                    assertionMethod: ['#key-1'],
+                })),
+            },
+        } as unknown as LearnCardMock;
+
+        const result = await verifySdJwtVc(learnCard, compact);
         expect(result.errors).toEqual([]);
         expect(result.checks).toContain('issuer_signature');
     });

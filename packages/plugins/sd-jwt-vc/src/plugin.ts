@@ -1,10 +1,6 @@
 import { parseSdJwtVc } from './parse';
 import { verifySdJwtVc } from './verify';
-import {
-    SD_JWT_VC_FORMAT,
-    type SdJwtVcDependentLearnCard,
-    type SdJwtVcPlugin,
-} from './types';
+import { type SdJwtVcDependentLearnCard, type SdJwtVcPlugin } from './types';
 
 export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcPlugin => ({
     name: 'SDJwtVc',
@@ -12,13 +8,13 @@ export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcP
     description:
         'SD-JWT-VC holder + verifier support (RFC 9901 + draft-ietf-oauth-sd-jwt-vc). Selective-disclosure JWT credentials with DID-resolvable issuer verification.',
     methods: {
-        parseSdJwtVc: async (_lc, compact: string) => parseSdJwtVc(compact, SD_JWT_VC_FORMAT),
+        parseSdJwtVc: async (_lc, compact: string) => parseSdJwtVc(compact),
 
         verifySdJwtVc: async (_lc, compact: string, options = {}) =>
-            verifySdJwtVc(learnCard, compact, options, SD_JWT_VC_FORMAT),
+            verifySdJwtVc(learnCard, compact, options),
 
         decodeSdJwtClaims: async (_lc, compact: string) => {
-            const parsed = await parseSdJwtVc(compact, SD_JWT_VC_FORMAT);
+            const parsed = await parseSdJwtVc(compact);
             return parsed.claims;
         },
     },

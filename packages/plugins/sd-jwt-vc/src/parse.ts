@@ -16,10 +16,12 @@ const epochToDate = (seconds: unknown): Date | undefined => {
     return new Date(seconds * 1000);
 };
 
-export const parseSdJwtVc = async (
-    compact: string,
-    format: SdJwtVcFormat = SD_JWT_VC_FORMAT
-): Promise<ParsedSdJwtVc> => {
+const deriveFormatFromTyp = (typ: unknown): SdJwtVcFormat => {
+    if (typ === SD_JWT_VC_FORMAT_LEGACY) return SD_JWT_VC_FORMAT_LEGACY;
+    return SD_JWT_VC_FORMAT;
+};
+
+export const parseSdJwtVc = async (compact: string): Promise<ParsedSdJwtVc> => {
     if (typeof compact !== 'string' || compact.length === 0) {
         throw new SdJwtVcError(
             'invalid_compact_form',
@@ -43,6 +45,16 @@ export const parseSdJwtVc = async (
 
     if (typeof header.alg !== 'string' || header.alg.length === 0) {
         throw new SdJwtVcError('missing_alg', 'SD-JWT header missing `alg`');
+    }
+    if (
+        header.typ !== undefined &&
+        header.typ !== SD_JWT_VC_FORMAT &&
+        header.typ !== SD_JWT_VC_FORMAT_LEGACY
+    ) {
+        throw new SdJwtVcError(
+            'invalid_typ',
+            `SD-JWT-VC JOSE header has typ="${header.typ}"; expected "${SD_JWT_VC_FORMAT}" or legacy "${SD_JWT_VC_FORMAT_LEGACY}" per draft-ietf-oauth-sd-jwt-vc-16 §3.2.1.1`
+        );
     }
     if (typeof payload.iss !== 'string' || payload.iss.length === 0) {
         throw new SdJwtVcError('missing_iss', 'SD-JWT payload missing `iss`');
@@ -92,8 +104,7 @@ export const parseSdJwtVc = async (
         header,
         rawPayload: payload,
         rawSdJwt: compact,
-        format:
-            format === SD_JWT_VC_FORMAT_LEGACY ? SD_JWT_VC_FORMAT_LEGACY : SD_JWT_VC_FORMAT,
+        format: deriveFormatFromTyp(header.typ),
         hasKeyBinding: Boolean(decoded.kbJwt),
     };
 };

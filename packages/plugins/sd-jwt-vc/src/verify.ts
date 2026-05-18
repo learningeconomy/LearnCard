@@ -12,7 +12,6 @@ import {
     SdJwtVcError,
     type ParsedSdJwtVc,
     type SdJwtVcDependentLearnCard,
-    type SdJwtVcFormat,
     type VerifySdJwtVcOptions,
 } from './types';
 
@@ -71,6 +70,27 @@ const findVerificationMethod = (
     );
 };
 
+const isAuthorizedForAssertion = (
+    doc: DidDocument | undefined,
+    methodId: string | undefined,
+    issuerDid: string
+): boolean => {
+    const entries = (doc?.assertionMethod ?? []) as Array<unknown>;
+    if (entries.length === 0 || !methodId) return false;
+    const methodFragment = extractFragment(methodId);
+    for (const entry of entries) {
+        if (typeof entry === 'string') {
+            if (entry === methodId) return true;
+            if (entry.startsWith('#') && extractFragment(entry) === methodFragment) return true;
+            if (entry === `${issuerDid}${methodFragment ? `#${methodFragment}` : ''}`) return true;
+        } else if (entry && typeof entry === 'object') {
+            const entryId = (entry as { id?: unknown }).id;
+            if (typeof entryId === 'string' && entryId === methodId) return true;
+        }
+    }
+    return false;
+};
+
 const resolveIssuerJwk = async (
     learnCard: SdJwtVcDependentLearnCard,
     issuerDid: string,
@@ -102,6 +122,13 @@ const resolveIssuerJwk = async (
         throw new SdJwtVcError(
             'verification_method_not_found',
             `Verification method for "${issuerDid}" / kid "${kid ?? '(none)'}" has no publicKeyJwk`
+        );
+    }
+
+    if (!isAuthorizedForAssertion(doc, method.id, issuerDid)) {
+        throw new SdJwtVcError(
+            'verification_method_not_authorized',
+            `Verification method "${method.id ?? '(none)'}" is not in the assertionMethod set of issuer "${issuerDid}", so it cannot sign credentials per W3C DID Core §5.3.2`
         );
     }
 
@@ -150,8 +177,7 @@ const ensureNotBefore = (
 export const verifySdJwtVc = async (
     learnCard: SdJwtVcDependentLearnCard,
     compact: string,
-    options: VerifySdJwtVcOptions = {},
-    format: SdJwtVcFormat = 'dc+sd-jwt'
+    options: VerifySdJwtVcOptions = {}
 ): Promise<VerificationCheck> => {
     const checks: string[] = [];
     const warnings: string[] = [];
@@ -166,7 +192,7 @@ export const verifySdJwtVc = async (
 
     let parsed: ParsedSdJwtVc;
     try {
-        parsed = await parseSdJwtVc(compact, format);
+        parsed = await parseSdJwtVc(compact);
         checks.push('parse');
         checks.push('disclosure_hash_integrity');
     } catch (e) {

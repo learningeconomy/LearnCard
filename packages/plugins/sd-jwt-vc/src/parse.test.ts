@@ -144,9 +144,30 @@ describe('parseSdJwtVc', () => {
         await expect(parseSdJwtVc(noAlg)).rejects.toMatchObject({ code: 'missing_alg' });
     });
 
-    it('preserves legacy vc+sd-jwt format tag when requested', async () => {
-        const parsed = await parseSdJwtVc(issued, 'vc+sd-jwt');
+    it('detects legacy vc+sd-jwt format from the JOSE header typ', async () => {
+        const legacy = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA', typ: 'vc+sd-jwt' }
+        );
+        const parsed = await parseSdJwtVc(legacy);
         expect(parsed.format).toBe('vc+sd-jwt');
+    });
+
+    it('defaults to canonical dc+sd-jwt format when typ is absent', async () => {
+        const noTyp = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA' }
+        );
+        const parsed = await parseSdJwtVc(noTyp);
+        expect(parsed.format).toBe('dc+sd-jwt');
+    });
+
+    it('rejects an unrecognized JOSE header typ value (draft-16 §3.2.1.1)', async () => {
+        const wrongTyp = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA', typ: 'JWT' }
+        );
+        await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({ code: 'invalid_typ' });
     });
 
     it('extracts holderPublicKey from a cnf.jwk claim', async () => {

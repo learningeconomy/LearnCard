@@ -9,7 +9,6 @@ module.exports = {
         // point it at the .mjs files directly. The `\.mjs?$` transform
         // below converts them via esbuild-jest. Same shape as the openid4vc
         // plugin uses for `dcql`.
-        '^@sd-jwt/core$': '<rootDir>/../../../node_modules/@sd-jwt/core/dist/index.mjs',
         '^@sd-jwt/decode$': '<rootDir>/../../../node_modules/@sd-jwt/decode/dist/index.mjs',
         '^@sd-jwt/sd-jwt-vc$': '<rootDir>/../../../node_modules/@sd-jwt/sd-jwt-vc/dist/index.mjs',
     },

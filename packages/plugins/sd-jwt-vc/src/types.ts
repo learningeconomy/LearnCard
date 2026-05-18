@@ -59,6 +59,7 @@ export interface VerifySdJwtVcOptions {
 export type SdJwtVcErrorCode =
     | 'invalid_compact_form'
     | 'invalid_jwt'
+    | 'invalid_typ'
     | 'missing_iss'
     | 'missing_vct'
     | 'missing_alg'
@@ -67,6 +68,7 @@ export type SdJwtVcErrorCode =
     | 'disclosure_hash_mismatch'
     | 'issuer_resolution_failed'
     | 'verification_method_not_found'
+    | 'verification_method_not_authorized'
     | 'signature_invalid'
     | 'expired'
     | 'not_yet_valid'
