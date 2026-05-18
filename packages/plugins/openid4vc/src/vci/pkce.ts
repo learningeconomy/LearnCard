@@ -16,10 +16,17 @@
  * provides no security benefit, and OpenID4VCI \u00a76.2 mandates `S256`
  * when PKCE is used.
  *
- * Cross-platform: uses the Web Crypto API (`crypto.getRandomValues` +
- * `crypto.subtle.digest`) which is available natively in browsers and
- * in Node \u2265 18. Async because `subtle.digest` is async by spec.
+ * **Cross-platform crypto:**
+ * - **Randomness** uses `crypto.getRandomValues`, which is available in
+ *   every browser / WKWebView context (including non-secure origins) and
+ *   in Node \u2265 18.
+ * - **SHA-256** uses `@noble/hashes` rather than `crypto.subtle.digest`.
+ *   `subtle` is `undefined` on iOS WKWebView when the page is loaded
+ *   over a non-secure origin (e.g. the `pnpm start --host` dev workflow
+ *   that points Capacitor at `http://<LAN-IP>:3000`), so the pure-JS
+ *   path is the only one that survives every deployment shape.
  */
+import { sha256 } from '@noble/hashes/sha2';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -108,7 +115,9 @@ export const generatePkcePair = async (
  * extracts it later at token-exchange time) can re-derive the
  * challenge for assertions and logs.
  *
- * Async because Web Crypto's `subtle.digest` is async by spec.
+ * Returns `Promise<string>` even though the hash itself is synchronous
+ * to keep the public surface stable across the previous `subtle.digest`
+ * implementation.
  */
 export const computeS256Challenge = async (verifier: string): Promise<string> => {
     if (typeof verifier !== 'string' || verifier.length < 24) {
@@ -119,8 +128,8 @@ export const computeS256Challenge = async (verifier: string): Promise<string> =>
     }
 
     const bytes = new TextEncoder().encode(verifier);
-    const digest = await getSubtle().digest('SHA-256', bytes);
-    return toB64url(new Uint8Array(digest));
+    const digest = sha256(bytes);
+    return toB64url(digest);
 };
 
 /**
@@ -181,15 +190,4 @@ const getCrypto = (): Crypto => {
         );
     }
     return c;
-};
-
-const getSubtle = (): SubtleCrypto => {
-    const subtle = getCrypto().subtle;
-    if (!subtle) {
-        throw new PkceError(
-            'invalid_verifier',
-            'crypto.subtle not available in this runtime'
-        );
-    }
-    return subtle;
 };
