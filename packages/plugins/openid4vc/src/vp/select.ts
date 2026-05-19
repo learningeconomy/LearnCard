@@ -245,8 +245,9 @@ export const buildPresentationSubmission = (
  */
 export const inferCredentialFormat = (credential: unknown): string | undefined => {
     if (typeof credential === 'string') {
-        // Compact JWS has exactly three segments; a signed JSON-LD VC
-        // is never serialized this way.
+        if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(credential)) {
+            return 'dc+sd-jwt';
+        }
         return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(credential)
             ? 'jwt_vc_json'
             : undefined;
@@ -255,14 +256,19 @@ export const inferCredentialFormat = (credential: unknown): string | undefined =
     if (!credential || typeof credential !== 'object') return undefined;
 
     const vc = credential as Record<string, unknown>;
-    const proof = vc.proof as Record<string, unknown> | undefined;
+    const proofValue = vc.proof;
+    const proof =
+        Array.isArray(proofValue)
+            ? (proofValue.find(p => p && typeof p === 'object') as Record<string, unknown> | undefined)
+            : (proofValue as Record<string, unknown> | undefined);
 
     if (proof && typeof proof === 'object') {
+        if (proof.type === 'SdJwtCompactProof' && typeof proof.jwt === 'string') {
+            return 'dc+sd-jwt';
+        }
         if (typeof proof.jwt === 'string' || proof.type === 'JwtProof2020') {
             return 'jwt_vc_json';
         }
-        // Every Data Integrity / legacy Linked Data Proof suite is ldp_vc
-        // for OID4VP purposes. We don't need to discriminate by suite here.
         if (typeof proof.type === 'string') return 'ldp_vc';
     }
 

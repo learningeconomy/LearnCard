@@ -7,6 +7,7 @@ import type {
     PresentationSubmissionDescriptor,
 } from './select';
 import { PresentationDefinition } from './types';
+import type { SdJwtDiscloseFrame } from './sign';
 
 /**
  * Slice 7a — **Verifiable Presentation construction**.
@@ -56,8 +57,15 @@ import { PresentationDefinition } from './types';
  *   `learnCard.invoke.issuePresentation`).
  * - `jwt_vp_json` — compact JWS whose payload wraps the VP under a
  *   top-level `vp` claim (VCDM §6.3.1).
+ * - `dc+sd-jwt` / `vc+sd-jwt` — SD-JWT-VC passthrough. The compact
+ *   `<JWT>~<disclosures>~<KB-JWT>` IS the presentation per OID4VP
+ *   §6.1.1; the signing layer routes through
+ *   `learnCard.invoke.presentSdJwtVc` instead of building a VP
+ *   envelope. Mixed SD-JWT + VC selections are rejected
+ *   (`unknown_credential_format`) — they would require multi-format
+ *   `vp_token` arrays which Slice 3 doesn't yet model.
  */
-export type VpFormat = 'ldp_vp' | 'jwt_vp_json';
+export type VpFormat = 'ldp_vp' | 'jwt_vp_json' | 'dc+sd-jwt' | 'vc+sd-jwt';
 
 /**
  * A single user pick: "this candidate satisfies this input_descriptor".
@@ -68,6 +76,12 @@ export type VpFormat = 'ldp_vp' | 'jwt_vp_json';
 export interface ChosenCredential {
     descriptorId: string;
     candidate: CandidateCredential;
+    /**
+     * Optional per-claim consent frame. Honored only when the chosen
+     * candidate is an SD-JWT-VC; ignored otherwise. Omitted = release
+     * every disclosable claim (no selective disclosure).
+     */
+    disclose?: SdJwtDiscloseFrame;
 }
 
 export interface BuildPresentationOptions {
@@ -110,6 +124,10 @@ export interface PreparedPresentation {
      *   `learnCard.invoke.issuePresentation(unsignedVp, signingOptions)`.
      * - For `jwt_vp_json`: wrap as the `vp` claim of a JWT and sign
      *   (Slice 7b).
+     *
+     * For SD-JWT-VC envelopes (`dc+sd-jwt` / `vc+sd-jwt`) this is a
+     * placeholder VP that the signing layer ignores; the source
+     * compact form lives in {@link sdJwtSource} instead.
      */
     unsignedVp: UnsignedVP;
 
@@ -125,6 +143,19 @@ export interface PreparedPresentation {
      * decide serialization (compact JWS string vs. JSON object).
      */
     innerFormats: string[];
+
+    /**
+     * Set ONLY when `vpFormat` is an SD-JWT-VC format. Carries the
+     * source compact `<JWT>~<disclosures>` the holder chose plus the
+     * per-claim consent frame; the signing layer feeds this into
+     * `learnCard.invoke.presentSdJwtVc` to apply selective disclosure
+     * + KB-JWT and emits the resulting compact string as the
+     * `vp_token` value (no W3C VP envelope).
+     */
+    sdJwtSource?: {
+        compact: string;
+        disclose?: SdJwtDiscloseFrame;
+    };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -180,7 +211,6 @@ export const buildPresentation = (
 
     const descriptorIds = new Set(pd.input_descriptors.map(d => d.id));
 
-    // Normalize each pick into (innerFormat, serializedCredential).
     const normalized = chosen.map((pick, index) => {
         if (!descriptorIds.has(pick.descriptorId)) {
             throw new BuildPresentationError(
@@ -194,6 +224,29 @@ export const buildPresentation = (
             ...normalizeForEmbedding(pick.candidate, index),
         };
     });
+
+    const sdJwtCount = normalized.filter(n => isSdJwtFormat(n.format)).length;
+    if (sdJwtCount > 0 && sdJwtCount !== normalized.length) {
+        throw new BuildPresentationError(
+            'unknown_credential_format',
+            `Mixed SD-JWT-VC + W3C-VC selections are not supported in a single PEX submission (got ${sdJwtCount} SD-JWT and ${normalized.length - sdJwtCount} non-SD-JWT). Submit them as separate presentations or use DCQL.`
+        );
+    }
+
+    if (sdJwtCount > 0) {
+        if (normalized.length > 1) {
+            throw new BuildPresentationError(
+                'unknown_credential_format',
+                'PEX submission with multiple SD-JWT-VCs is not yet supported (Slice 3 supports exactly one SD-JWT per PEX submission; multi-credential SD-JWT presentations are a follow-up)'
+            );
+        }
+        return buildSdJwtPexPassthrough(
+            options,
+            normalized[0]!,
+            holder,
+            chosen[0]!.disclose
+        );
+    }
 
     const vpFormat =
         options.envelopeFormat ?? inferEnvelopeFormat(pd, normalized.map(n => n.format));
@@ -223,6 +276,55 @@ export const buildPresentation = (
         submission,
         vpFormat,
         innerFormats: normalized.map(n => n.format),
+    };
+};
+
+const isSdJwtFormat = (format: string): boolean =>
+    format === 'dc+sd-jwt' || format === 'vc+sd-jwt';
+
+const buildSdJwtPexPassthrough = (
+    options: BuildPresentationOptions,
+    normalized: { descriptorId: string; credential: unknown; format: string },
+    holder: string,
+    disclose?: SdJwtDiscloseFrame
+): PreparedPresentation => {
+    const compact = typeof normalized.credential === 'string' ? normalized.credential : undefined;
+    if (!compact) {
+        throw new BuildPresentationError(
+            'invalid_jwt_vc',
+            `SD-JWT-VC candidate for descriptor "${normalized.descriptorId}" did not normalize to a compact string`
+        );
+    }
+
+    const vpFormat = normalized.format as 'dc+sd-jwt' | 'vc+sd-jwt';
+    const makeId = options.makeId ?? defaultMakeId;
+
+    const placeholderVp: UnsignedVP = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        id: options.presentationId ?? `urn:uuid:${makeUuidV4(makeId)}`,
+        type: ['VerifiablePresentation'],
+        holder,
+        verifiableCredential: [] as unknown as UnsignedVP['verifiableCredential'],
+    };
+
+    const submission: PresentationSubmission = {
+        id: options.submissionId ?? makeId(),
+        definition_id: options.pd.id,
+        descriptor_map: [
+            {
+                id: normalized.descriptorId,
+                format: normalized.format,
+                path: '$',
+            },
+        ],
+    };
+
+    return {
+        unsignedVp: placeholderVp,
+        submission,
+        vpFormat,
+        innerFormats: [normalized.format],
+        sdJwtSource: disclose ? { compact, disclose } : { compact },
     };
 };
 
@@ -273,7 +375,39 @@ const normalizeForEmbedding = (
         return { credential: jws, format };
     }
 
+    if (format === 'dc+sd-jwt' || format === 'vc+sd-jwt') {
+        const compact = extractSdJwtCompactFromCandidate(candidate.credential);
+        if (!compact) {
+            throw new BuildPresentationError(
+                'invalid_jwt_vc',
+                `Chosen credential at index ${index} is tagged ${format} but has no compact SD-JWT form (expected a string with disclosure separators, or an object with proof.type="SdJwtCompactProof" and string proof.jwt)`
+            );
+        }
+        return { credential: compact, format };
+    }
+
     return { credential: candidate.credential, format };
+};
+
+const extractSdJwtCompactFromCandidate = (credential: unknown): string | undefined => {
+    if (typeof credential === 'string') {
+        return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(credential)
+            ? credential
+            : undefined;
+    }
+    if (credential && typeof credential === 'object') {
+        const proof = (credential as { proof?: unknown }).proof;
+        const proofObj = Array.isArray(proof)
+            ? proof.find(p => typeof p === 'object' && p !== null)
+            : proof;
+        if (proofObj && typeof proofObj === 'object') {
+            const candidate = (proofObj as { type?: unknown; jwt?: unknown });
+            if (candidate.type === 'SdJwtCompactProof' && typeof candidate.jwt === 'string') {
+                return candidate.jwt;
+            }
+        }
+    }
+    return undefined;
 };
 
 const extractCompactJws = (credential: unknown): string | undefined => {
