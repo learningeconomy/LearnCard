@@ -1,5 +1,12 @@
 # @learncard/sss-key-manager
 
+## 0.1.9
+
+### Patch Changes
+
+-   Updated dependencies [[`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/types@5.16.0
+
 ## 0.1.8
 
 ### Patch Changes

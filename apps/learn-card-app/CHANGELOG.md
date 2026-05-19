@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.95.13
+
+### Patch Changes
+
+-   [#1201](https://github.com/learningeconomy/LearnCard/pull/1201) [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1794]
+
+-   [#1221](https://github.com/learningeconomy/LearnCard/pull/1221) [`8746f659aa05c75e4e5a5a3273c2b5dd052d980c`](https://github.com/learningeconomy/LearnCard/commit/8746f659aa05c75e4e5a5a3273c2b5dd052d980c) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1841] Eliminate cold-start flash sequence
+
+-   [#1238](https://github.com/learningeconomy/LearnCard/pull/1238) [`180973146cacf9e69b312841ccbb40fa32423c30`](https://github.com/learningeconomy/LearnCard/commit/180973146cacf9e69b312841ccbb40fa32423c30) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add fallback resiliency strategies to OIDC exchanges
+
+-   [#1238](https://github.com/learningeconomy/LearnCard/pull/1238) [`180973146cacf9e69b312841ccbb40fa32423c30`](https://github.com/learningeconomy/LearnCard/commit/180973146cacf9e69b312841ccbb40fa32423c30) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add fallback resiliency strategies to OIDC exchanges
+
+-   [#1237](https://github.com/learningeconomy/LearnCard/pull/1237) [`3116d75cf8d2b0f4638f76365b9d8ca92c8b9b3a`](https://github.com/learningeconomy/LearnCard/commit/3116d75cf8d2b0f4638f76365b9d8ca92c8b9b3a) Thanks [@Custard7](https://github.com/Custard7)! - fix: CapGo Drift
+
+-   [#1239](https://github.com/learningeconomy/LearnCard/pull/1239) [`13fdb2f58b67c48ae30053095924eaf356ed6564`](https://github.com/learningeconomy/LearnCard/commit/13fdb2f58b67c48ae30053095924eaf356ed6564) Thanks [@Custard7](https://github.com/Custard7)! - Use a claim link
+
+-   Updated dependencies [[`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88)]:
+    -   @learncard/react@2.9.27
+    -   @learncard/lca-api-plugin@1.2.10
+    -   @learncard/helpers@1.3.1
+    -   @learncard/ler-rs-plugin@0.1.10
+    -   @learncard/open-badge-v2-plugin@1.1.20
+    -   @learncard/sss-key-manager@0.1.9
+
 ## 1.95.12
 
 ### Patch Changes

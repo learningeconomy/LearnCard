@@ -1,5 +1,15 @@
 # @learncard/credential-viewer
 
+## 0.0.7
+
+### Patch Changes
+
+-   Updated dependencies [[`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/init@2.3.19
+    -   @learncard/types@5.16.0
+    -   @learncard/credential-library@1.0.5
+    -   @learncard/simple-signing-plugin@1.1.23
+
 ## 0.0.6
 
 ### Patch Changes
