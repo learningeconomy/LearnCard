@@ -141,7 +141,9 @@ const buildRenderDataFromPointers = (
     vc: AnyCredential,
     pointers: string[]
 ): JsonRecord => {
-    const result: JsonRecord = {};
+    const result: JsonRecord = Object.create(null) as JsonRecord;
+    const isUnsafeKey = (key: string): boolean =>
+        key === '__proto__' || key === 'constructor' || key === 'prototype';
 
     for (const pointer of pointers) {
         const value = resolvePointer(vc, pointer);
@@ -152,13 +154,20 @@ const buildRenderDataFromPointers = (
             .split('/')
             .map(p => p.replace(/~1/g, '/').replace(/~0/g, '~'));
 
+        if (parts.some(isUnsafeKey)) continue;
+
         let current = result;
         for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i];
-            if (!current[part] || typeof current[part] !== 'object') current[part] = {};
+            if (!current[part] || typeof current[part] !== 'object') {
+                current[part] = Object.create(null) as JsonRecord;
+            }
             current = current[part] as JsonRecord;
         }
-        current[parts[parts.length - 1]] = value;
+
+        const lastPart = parts[parts.length - 1];
+        if (isUnsafeKey(lastPart)) continue;
+        current[lastPart] = value;
     }
 
     return result;
