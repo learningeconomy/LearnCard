@@ -219,7 +219,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     };
 
     const earnedBoostIdCardProps = {
-        credential: cred,
+        credential,
         categoryType: categoryType,
         issuerOverride: issuerName,
         issueeOverride: issueeName,
