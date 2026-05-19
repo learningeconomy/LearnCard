@@ -84,11 +84,11 @@ export const didWebLearnCardFromSeed = async ({
 
     const chapiLc = await vpqrLc.addPlugin(await getCHAPIPlugin());
 
-    const lcLc = await chapiLc.addPlugin(getLearnCardPlugin(chapiLc));
+    const sdJwtVcLc = await chapiLc.addPlugin(getSdJwtVcPlugin(chapiLc));
+
+    const lcLc = await sdJwtVcLc.addPlugin(getLearnCardPlugin(sdJwtVcLc));
 
     const didWebLc = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
 
-    const sdJwtVcLc = await didWebLc.addPlugin(getSdJwtVcPlugin(didWebLc));
-
-    return sdJwtVcLc.addPlugin(getOpenID4VCPlugin(sdJwtVcLc, openid4vc));
+    return didWebLc.addPlugin(getOpenID4VCPlugin(didWebLc, openid4vc));
 };
