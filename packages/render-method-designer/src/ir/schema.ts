@@ -35,6 +35,14 @@ const fillRef = z.discriminatedUnion('kind', [
     }),
 ]);
 
+const shadowEffect = z.object({
+    offsetX: z.number(),
+    offsetY: z.number(),
+    blur: z.number().nonnegative(),
+    color: colorRef,
+    opacity: z.number().min(0).max(1),
+});
+
 const baseElement = z.object({
     id: z.string().min(1),
     visibility: visibility.optional(),
@@ -49,6 +57,7 @@ const rectElement = baseElement.extend({
     rx: z.number().nonnegative().optional(),
     fill: fillRef,
     stroke: z.object({ color: colorRef, width: z.number().nonnegative() }).optional(),
+    shadow: shadowEffect.optional(),
 });
 
 const textElement = baseElement.extend({
@@ -75,6 +84,25 @@ const imageElement = baseElement.extend({
     fit: z.enum(['contain', 'cover']),
     clip: z.enum(['none', 'rounded', 'circle']),
     cornerRadius: z.number().nonnegative().optional(),
+    shadow: shadowEffect.optional(),
+});
+
+const pathElement = baseElement.extend({
+    type: z.literal('path'),
+    x: z.number(),
+    y: z.number(),
+    w: z.number().positive(),
+    h: z.number().positive(),
+    d: z.string().min(1),
+    naturalBBox: z.object({
+        x: z.number(),
+        y: z.number(),
+        w: z.number().positive(),
+        h: z.number().positive(),
+    }),
+    fill: fillRef,
+    stroke: z.object({ color: colorRef, width: z.number().nonnegative() }).optional(),
+    shadow: shadowEffect.optional(),
 });
 
 const fieldRowElement = baseElement.extend({
@@ -105,6 +133,7 @@ const designerElement = z.discriminatedUnion('type', [
     imageElement,
     fieldRowElement,
     dividerElement,
+    pathElement,
 ]);
 
 const theme = z.object({

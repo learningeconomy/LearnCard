@@ -6,7 +6,9 @@ import type {
     FieldRowElement,
     FillRef,
     ImageElement,
+    PathElement,
     RectElement,
+    ShadowEffect,
     StringValue,
     TextElement,
     Theme,
@@ -119,13 +121,72 @@ const stringContent = (sv: StringValue): string => {
     return `{{${sv.path}}}`;
 };
 
+/**
+ * Emit a drop-shadow filter chain into the shared defs map and return the filter-id (or
+ * the empty string when no shadow). The chain matches Figma's canonical drop-shadow
+ * output so re-importing an emitted SVG round-trips cleanly through `parse.ts`. Filter
+ * ids are derived from the shadow's content so identical shadows on multiple elements
+ * dedupe to one filter definition.
+ */
+const emitShadow = (
+    shadow: ShadowEffect | undefined,
+    theme: Theme,
+    defs: Map<string, string>
+): string => {
+    if (!shadow) return '';
+    const color = resolveColor(shadow.color, theme);
+    const colorMatrix = hexToColorMatrix(color, shadow.opacity);
+    const id = `shadow_${shadow.offsetX}_${shadow.offsetY}_${shadow.blur}_${color.replace('#', '')}_${shadow.opacity}`;
+    if (!defs.has(id)) {
+        defs.set(
+            id,
+            `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">` +
+                `<feFlood flood-opacity="0" result="BackgroundImageFix"/>` +
+                `<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>` +
+                `<feOffset dx="${shadow.offsetX}" dy="${shadow.offsetY}"/>` +
+                `<feGaussianBlur stdDeviation="${shadow.blur / 2}"/>` +
+                `<feComposite in2="hardAlpha" operator="out"/>` +
+                `<feColorMatrix type="matrix" values="${colorMatrix}"/>` +
+                `<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>` +
+                `<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>` +
+                `</filter>`
+        );
+    }
+    return id;
+};
+
+/**
+ * Convert a `#RRGGBB` color to the 5×4 SVG colorMatrix row used in the drop-shadow
+ * filter (`R 0 0 0 0 / 0 G 0 0 0 / 0 0 B 0 0 / 0 0 0 opacity 0`). The bytes are
+ * normalized to 0–1 floats per the SVG spec.
+ */
+const hexToColorMatrix = (hex: string, opacity: number): string => {
+    const clean = hex.replace('#', '');
+    const r = parseInt(clean.slice(0, 2), 16) / 255;
+    const g = parseInt(clean.slice(2, 4), 16) / 255;
+    const b = parseInt(clean.slice(4, 6), 16) / 255;
+    return `0 0 0 0 ${r.toFixed(3)} 0 0 0 0 ${g.toFixed(3)} 0 0 0 0 ${b.toFixed(3)} 0 0 0 ${opacity.toFixed(3)} 0`;
+};
+
+const wrapWithShadow = (
+    inner: string,
+    shadow: ShadowEffect | undefined,
+    theme: Theme,
+    defs: Map<string, string>
+): string => {
+    const filterId = emitShadow(shadow, theme, defs);
+    if (!filterId) return inner;
+    return `<g filter="url(#${filterId})">${inner}</g>`;
+};
+
 const emitRect = (el: RectElement, theme: Theme, defs: Map<string, string>): string => {
     const fill = emitFill(el.fill, theme, defs);
     const rx = el.rx ? ` rx="${el.rx}"` : '';
     const stroke = el.stroke
         ? ` stroke="${resolveColor(el.stroke.color, theme)}" stroke-width="${el.stroke.width}"`
         : '';
-    return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}"${rx} fill="${fill}"${stroke}/>`;
+    const inner = `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}"${rx} fill="${fill}"${stroke}/>`;
+    return wrapWithShadow(inner, el.shadow, theme, defs);
 };
 
 /**
@@ -171,18 +232,44 @@ const emitBoundString = (
     return `${formattedTier}${formattedAbsentBranch}`;
 };
 
-const emitImage = (el: ImageElement, defs: Map<string, string>): string => {
+const emitImage = (el: ImageElement, theme: Theme, defs: Map<string, string>): string => {
     const clipId = emitImageClip(el, defs);
     const clipAttr = clipId ? ` clip-path="url(#${clipId})"` : '';
     const preserveAspect =
         el.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet';
     const baseAttrs = `x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" preserveAspectRatio="${preserveAspect}"${clipAttr}`;
 
-    if (el.source.kind === 'url') {
-        return `<image ${baseAttrs} href="${escapeXml(el.source.value)}"/>`;
-    }
-    const { path } = el.source;
-    return `{{#${path}}}<image ${baseAttrs} href="{{${path}}}"/>{{/${path}}}`;
+    const inner =
+        el.source.kind === 'url'
+            ? `<image ${baseAttrs} href="${escapeXml(el.source.value)}"/>`
+            : `{{#${el.source.path}}}<image ${baseAttrs} href="{{${el.source.path}}}"/>{{/${el.source.path}}}`;
+    return wrapWithShadow(inner, el.shadow, theme, defs);
+};
+
+/**
+ * Emit a path element. The path's `d` is in its natural coordinate space; we wrap it in
+ * a `<g transform="translate(x,y) scale(sx,sy) translate(-nbx,-nby)">` chain so the
+ * visible bounding box ends up at (`el.x`, `el.y`) with size (`el.w`, `el.h`).
+ *
+ * For non-uniform IR scales (w/h ratio ≠ naturalBBox ratio) the path stretches
+ * non-proportionally — the designer's resize handles enforce proportional resize but
+ * direct IR edits can violate this. Strokes scale with the path; this is a known
+ * limitation of SVG transforms.
+ */
+const emitPath = (el: PathElement, theme: Theme, defs: Map<string, string>): string => {
+    const fill = emitFill(el.fill, theme, defs);
+    const stroke = el.stroke
+        ? ` stroke="${resolveColor(el.stroke.color, theme)}" stroke-width="${el.stroke.width}"`
+        : '';
+    const sx = el.naturalBBox.w === 0 ? 1 : el.w / el.naturalBBox.w;
+    const sy = el.naturalBBox.h === 0 ? 1 : el.h / el.naturalBBox.h;
+    const tx = el.x;
+    const ty = el.y;
+    const nbx = el.naturalBBox.x;
+    const nby = el.naturalBBox.y;
+    const transform = `translate(${tx} ${ty}) scale(${sx} ${sy}) translate(${-nbx} ${-nby})`;
+    const inner = `<g transform="${transform}"><path d="${escapeXml(el.d)}" fill="${fill}"${stroke}/></g>`;
+    return wrapWithShadow(inner, el.shadow, theme, defs);
 };
 
 const emitFieldRow = (el: FieldRowElement, theme: Theme): string => {
@@ -217,13 +304,16 @@ const emitElement = (el: DesignerElement, theme: Theme, defs: Map<string, string
             markup = emitText(el, theme);
             break;
         case 'image':
-            markup = emitImage(el, defs);
+            markup = emitImage(el, theme, defs);
             break;
         case 'field-row':
             markup = emitFieldRow(el, theme);
             break;
         case 'divider':
             markup = emitDivider(el, theme);
+            break;
+        case 'path':
+            markup = emitPath(el, theme, defs);
             break;
     }
     return wrapVisibility(markup, el.visibility);

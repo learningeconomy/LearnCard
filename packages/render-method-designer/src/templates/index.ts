@@ -2,6 +2,8 @@ import type { CredentialTemplate } from '../ir/types';
 import { classicTemplate } from './classic';
 import { modernTemplate } from './modern';
 import { minimalTemplate } from './minimal';
+import { classFormalTemplate } from './class-formal';
+import { emblemBadgeTemplate } from './emblem-badge';
 
 export interface TemplateGalleryEntry {
     id: string;
@@ -29,6 +31,26 @@ export const STARTER_TEMPLATES: TemplateGalleryEntry[] = [
         description: 'Clean, bordered, monochrome. Good for institutional or formal credentials.',
         template: minimalTemplate,
     },
+    {
+        id: 'class-formal',
+        name: 'Class — Formal',
+        description:
+            'Portrait certificate with circular seal, ceremonial copy, and verified footer. Built for academic course credentials.',
+        template: classFormalTemplate,
+    },
+    {
+        id: 'emblem-badge',
+        name: 'Emblem Badge',
+        description:
+            'Square 12-pointed badge with drop shadow + bound inner image. Built for achievements and recognition.',
+        template: emblemBadgeTemplate,
+    },
 ];
 
-export { classicTemplate, modernTemplate, minimalTemplate };
+export {
+    classicTemplate,
+    modernTemplate,
+    minimalTemplate,
+    classFormalTemplate,
+    emblemBadgeTemplate,
+};

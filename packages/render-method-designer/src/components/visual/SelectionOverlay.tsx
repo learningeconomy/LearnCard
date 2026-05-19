@@ -15,6 +15,7 @@ export const elementBounds = (
     switch (el.type) {
         case 'rect':
         case 'image':
+        case 'path':
             return { x: el.x, y: el.y, w: el.w, h: el.h };
         case 'field-row':
             return {
@@ -40,6 +41,10 @@ export const supportedResizeDirections = (el: DesignerElement): ResizeDirection[
         case 'rect':
         case 'image':
             return ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+        case 'path':
+            // Paths support corner-only resize (proportional); non-uniform path scaling
+            // requires path-data transformation we don't do.
+            return ['nw', 'ne', 'se', 'sw'];
         case 'field-row':
         case 'divider':
             return ['w', 'e'];

@@ -6,7 +6,9 @@ import type {
     DividerElement,
     FillRef,
     ImageElement,
+    PathElement,
     RectElement,
+    ShadowEffect,
     StringValue,
     TextElement,
 } from './types';
@@ -15,15 +17,22 @@ import type {
  * SVG-to-IR import.
  *
  * Scope: this parser handles the SVG primitives our IR can express — `<rect>`, `<text>`,
- * `<image>`, `<line>`, plus `<linearGradient>` and `<clipPath>` references. Everything else
- * (`<path>`, `<polygon>`, `<circle>`, `<ellipse>`, transforms on `<g>`, filters, masks,
- * patterns, foreignObject, animations, scripts) produces a warning and is dropped.
+ * `<image>`, `<line>`, `<path>`, plus `<linearGradient>`, `<clipPath>`, `<pattern>`-via-
+ * `<use>`-via-`<image>` image-fill chains (Figma's canonical pattern), and `<filter>`
+ * drop-shadow chains. Translate + scale transforms on `<g>` and `<clipPath>` children are
+ * baked into child coordinates. Everything else (`<polygon>`, `<circle>`, `<ellipse>`,
+ * `<mask>`, rotate/skew/matrix transforms, animations, scripts) produces a warning and
+ * is dropped.
  *
  * For credentials authored in our own designer this is round-trip-lossless. For arbitrary
- * SVG (Figma/Illustrator exports) it usually isn't — most of those files use `<path>` for
- * any shape that isn't a perfect rectangle. The dialog offers an "embed as background"
- * fallback for those cases: drop the unsupported SVG into a single `<image>` element using
- * a `data:image/svg+xml` URI.
+ * SVG (Figma/Illustrator exports) most features survive: rects, paths, image fills,
+ * drop-shadows, simple transforms. The fundamental limitation is text-as-path (Figma's
+ * "Outline text" export setting) — those paths come through as graphics, not bindable
+ * text. The README documents the Figma export checklist to avoid this.
+ *
+ * The dialog offers an "embed as background" fallback for SVGs that can't be parsed at
+ * all: drop the unsupported SVG into a single `<image>` element using a
+ * `data:image/svg+xml` URI.
  *
  * Mustache placeholders inside `<text>` content are auto-detected: if the text content is
  * the single pattern `{{path}}`, the resulting `TextElement` gets a `binding` content with
@@ -58,8 +67,12 @@ const SUPPORTED_ROOT_TAGS = new Set([
     'text',
     'image',
     'line',
+    'path',
     'linearGradient',
     'clipPath',
+    'pattern',
+    'use',
+    'filter',
     'stop',
     'circle',
     'tspan',
@@ -107,9 +120,32 @@ interface ClipDef {
     cornerRadius?: number;
 }
 
+/**
+ * Pattern definition resolved to a hosted image. Figma exports images as
+ * `<pattern><use xlink:href="#imageId"/></pattern>` and then references the pattern via
+ * `<rect fill="url(#patternId)">`. We pre-resolve the pattern → use → image chain so
+ * fill-resolution can directly know "this rect is actually an image."
+ */
+interface PatternImageDef {
+    href: string;
+    /** Optional scale baked into the `<use transform="scale(s)">` — needed for fit calc. */
+    scale: number;
+}
+
+/** Drop-shadow filter definition extracted from a Figma drop-shadow filter chain. */
+interface ShadowFilterDef {
+    offsetX: number;
+    offsetY: number;
+    blur: number;
+    color: string;
+    opacity: number;
+}
+
 interface Defs {
     gradients: Map<string, GradientDef>;
     clips: Map<string, ClipDef>;
+    patternImages: Map<string, PatternImageDef>;
+    shadows: Map<string, ShadowFilterDef>;
 }
 
 const parseUrlRef = (raw: string | null): string | null => {
@@ -143,34 +179,109 @@ const parseClipPath = (el: Element): ClipDef | null => {
     return { kind: 'rounded', cornerRadius: rx > 0 ? rx : 12 };
 };
 
+const parseTransformScale = (transform: string | null): number => {
+    if (!transform) return 1;
+    const m = transform.match(/scale\(\s*(-?\d+(?:\.\d+)?)/);
+    if (!m) return 1;
+    const scale = parseFloat(m[1]);
+    return Number.isFinite(scale) ? scale : 1;
+};
+
+/**
+ * Resolve a `<pattern>` → `<use xlink:href="#imageId">` → `<image href="data:...">` chain
+ * into a {href, scale} pair. Figma uses this exclusively for any rect that should display
+ * an image — the rect's `fill="url(#patternId)"` references this resolved entry.
+ *
+ * Returns null when the pattern doesn't fit this exact shape (it might be a checkered
+ * pattern fill or other non-image use case — those are dropped at the fill-resolution
+ * step with a warning).
+ */
+const resolvePatternImage = (
+    patternEl: Element,
+    imageMap: Map<string, string>
+): PatternImageDef | null => {
+    const useEl = Array.from(patternEl.children).find(c => c.tagName === 'use');
+    if (!useEl) return null;
+    const href = useEl.getAttribute('xlink:href') ?? useEl.getAttribute('href');
+    if (!href || !href.startsWith('#')) return null;
+    const imageHref = imageMap.get(href.slice(1));
+    if (!imageHref) return null;
+    return { href: imageHref, scale: parseTransformScale(useEl.getAttribute('transform')) };
+};
+
+/**
+ * Detect Figma's canonical drop-shadow filter and reduce to a `ShadowFilterDef`. The
+ * heuristic: a `<filter>` element containing `<feOffset>` + `<feGaussianBlur>` +
+ * `<feColorMatrix>`. If those three are present, extract the offset (dx/dy), blur
+ * (stdDeviation × 2 to convert from std-dev to perceived blur radius — Figma's pixel
+ * value is the radius, SVG's `stdDeviation` is half), and color/opacity from the second
+ * `<feColorMatrix>`'s diagonal.
+ */
+const parseDropShadowFilter = (filterEl: Element): ShadowFilterDef | null => {
+    const offsetEl = filterEl.querySelector('feOffset');
+    const blurEl = filterEl.querySelector('feGaussianBlur');
+    const colorMatrixEls = filterEl.querySelectorAll('feColorMatrix');
+    if (!offsetEl || !blurEl || colorMatrixEls.length < 1) return null;
+    const offsetX = numAttr(offsetEl, 'dx', 0);
+    const offsetY = numAttr(offsetEl, 'dy', 0);
+    const blur = numAttr(blurEl, 'stdDeviation', 0) * 2;
+    let color = '#000000';
+    let opacity = 0.25;
+    for (let i = colorMatrixEls.length - 1; i >= 0; i--) {
+        const values = (colorMatrixEls[i].getAttribute('values') ?? '').trim();
+        if (!values) continue;
+        const nums = values.split(/\s+/).map(parseFloat);
+        if (nums.length < 20) continue;
+        const r = nums[4];
+        const g = nums[9];
+        const b = nums[14];
+        const a = nums[18];
+        if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b) && r >= 0 && r <= 1) {
+            color = `#${[r, g, b].map(n => Math.round(n * 255).toString(16).padStart(2, '0').toUpperCase()).join('')}`;
+            if (Number.isFinite(a)) opacity = a;
+            break;
+        }
+    }
+    return { offsetX, offsetY, blur, color, opacity };
+};
+
 const collectDefs = (root: Element): Defs => {
-    const defs: Defs = { gradients: new Map(), clips: new Map() };
-    const defsEls = root.querySelectorAll('defs');
-    defsEls.forEach(d => {
-        Array.from(d.children).forEach(child => {
+    const defs: Defs = {
+        gradients: new Map(),
+        clips: new Map(),
+        patternImages: new Map(),
+        shadows: new Map(),
+    };
+
+    const imageMap = new Map<string, string>();
+    root.querySelectorAll('image[id]').forEach(img => {
+        const id = img.getAttribute('id');
+        const href = img.getAttribute('xlink:href') ?? img.getAttribute('href');
+        if (id && href) imageMap.set(id, href);
+    });
+
+    const collectFromContainer = (container: Element) => {
+        Array.from(container.children).forEach(child => {
             const id = child.getAttribute('id');
             if (!id) return;
-            if (child.tagName === 'linearGradient') {
+            if (child.tagName === 'linearGradient' && !defs.gradients.has(id)) {
                 const g = parseLinearGradient(child);
                 if (g) defs.gradients.set(id, g);
-            } else if (child.tagName === 'clipPath') {
+            } else if (child.tagName === 'clipPath' && !defs.clips.has(id)) {
                 const c = parseClipPath(child);
                 if (c) defs.clips.set(id, c);
+            } else if (child.tagName === 'pattern' && !defs.patternImages.has(id)) {
+                const p = resolvePatternImage(child, imageMap);
+                if (p) defs.patternImages.set(id, p);
+            } else if (child.tagName === 'filter' && !defs.shadows.has(id)) {
+                const s = parseDropShadowFilter(child);
+                if (s) defs.shadows.set(id, s);
             }
         });
-    });
-    // Also accept top-level gradients/clipPaths outside <defs>
-    root.querySelectorAll('linearGradient, clipPath').forEach(child => {
-        const id = child.getAttribute('id');
-        if (!id) return;
-        if (child.tagName === 'linearGradient' && !defs.gradients.has(id)) {
-            const g = parseLinearGradient(child);
-            if (g) defs.gradients.set(id, g);
-        } else if (child.tagName === 'clipPath' && !defs.clips.has(id)) {
-            const c = parseClipPath(child);
-            if (c) defs.clips.set(id, c);
-        }
-    });
+    };
+
+    root.querySelectorAll('defs').forEach(collectFromContainer);
+    collectFromContainer(root);
     return defs;
 };
 
@@ -189,10 +300,46 @@ const parseFill = (el: Element, defs: Defs): FillRef => {
     return { kind: 'solid', color: normalized ?? '#000000' };
 };
 
-const parseRect = (el: Element, defs: Defs): RectElement => {
+/**
+ * Detect a rect whose `fill="url(#patternId)"` references a resolved pattern-image. If
+ * so, return the image href — the caller synthesizes an `ImageElement` from the rect's
+ * geometry. Otherwise return null and the caller produces a normal `RectElement`.
+ */
+const detectPatternImageFill = (el: Element, defs: Defs): string | null => {
+    const fillRef = parseUrlRef(strAttr(el, 'fill'));
+    if (!fillRef) return null;
+    const patternImage = defs.patternImages.get(fillRef);
+    return patternImage ? patternImage.href : null;
+};
+
+const parseRect = (
+    el: Element,
+    defs: Defs,
+    inheritedShadow?: ShadowEffect
+): RectElement | ImageElement => {
+    const imageHref = detectPatternImageFill(el, defs);
+    if (imageHref) {
+        const clipRef = parseUrlRef(strAttr(el, 'clip-path'));
+        const clipDef = clipRef ? defs.clips.get(clipRef) : null;
+        const image: ImageElement = {
+            id: generateId('image'),
+            type: 'image',
+            x: numAttr(el, 'x'),
+            y: numAttr(el, 'y'),
+            w: numAttr(el, 'width', 100),
+            h: numAttr(el, 'height', 100),
+            source: { kind: 'url', value: imageHref },
+            fit: 'cover',
+            clip: clipDef ? clipDef.kind : 'none',
+            cornerRadius: clipDef && clipDef.kind === 'rounded' ? clipDef.cornerRadius : undefined,
+        };
+        if (inheritedShadow) image.shadow = inheritedShadow;
+        return image;
+    }
+
     const stroke = strAttr(el, 'stroke');
     const strokeWidth = numAttr(el, 'stroke-width', 1);
-    return {
+    const rect: RectElement = {
         id: generateId('rect'),
         type: 'rect',
         x: numAttr(el, 'x'),
@@ -206,6 +353,135 @@ const parseRect = (el: Element, defs: Defs): RectElement => {
                 ? { color: normalizeColor(stroke) ?? stroke, width: strokeWidth }
                 : undefined,
     };
+    if (inheritedShadow) rect.shadow = inheritedShadow;
+    return rect;
+};
+
+/**
+ * Compute an approximate bounding box for a path's `d` string by extracting all numeric
+ * pairs. Treats them as absolute coordinates — for paths emitted by Figma (which always
+ * uses absolute commands) this is exact. For paths with relative commands (lowercase m/
+ * l/c) this over-estimates because it doesn't apply the running cursor. The over-estimate
+ * is conservative (never crops the visible path), so selection bounds may be slightly
+ * loose but never wrong-in-a-clipping-way.
+ *
+ * For Phase 4 this is good enough. A proper SVGPathData parser (~200 LOC) would replace
+ * this in a future phase when non-uniform path resize becomes a requirement.
+ */
+const approximatePathBBox = (
+    d: string
+): { x: number; y: number; w: number; h: number } => {
+    const nums = d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+    if (nums.length < 2) return { x: 0, y: 0, w: 0, h: 0 };
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i + 1 < nums.length; i += 2) {
+        const x = nums[i];
+        const y = nums[i + 1];
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+    }
+    if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 0, h: 0 };
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+};
+
+const parsePath = (
+    el: Element,
+    defs: Defs,
+    inheritedShadow?: ShadowEffect
+): PathElement | null => {
+    const d = strAttr(el, 'd');
+    if (!d || !d.trim()) return null;
+    const stroke = strAttr(el, 'stroke');
+    const strokeWidth = numAttr(el, 'stroke-width', 1);
+    const bbox = approximatePathBBox(d);
+    const path: PathElement = {
+        id: generateId('path'),
+        type: 'path',
+        x: bbox.x,
+        y: bbox.y,
+        w: Math.max(bbox.w, 1),
+        h: Math.max(bbox.h, 1),
+        d,
+        naturalBBox: { x: bbox.x, y: bbox.y, w: Math.max(bbox.w, 1), h: Math.max(bbox.h, 1) },
+        fill: parseFill(el, defs),
+        stroke:
+            stroke && stroke !== 'none'
+                ? { color: normalizeColor(stroke) ?? stroke, width: strokeWidth }
+                : undefined,
+    };
+    if (inheritedShadow) path.shadow = inheritedShadow;
+    return path;
+};
+
+interface ParsedTransform {
+    translateX: number;
+    translateY: number;
+    scaleX: number;
+    scaleY: number;
+    /** Rotate/skew/matrix transforms can't be cleanly baked into our IR — when present
+     *  we set this flag so the caller can drop the element with a warning. */
+    isUnsupported: boolean;
+}
+
+const IDENTITY_TRANSFORM: ParsedTransform = {
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    isUnsupported: false,
+};
+
+/**
+ * Parse a `transform="translate(x,y) scale(s)"` attribute into translate + scale
+ * components. Returns identity for an absent or empty attribute. Sets `isUnsupported`
+ * when the transform contains rotate/skew/matrix functions — the caller drops the
+ * element with a warning rather than baking a wrong transform.
+ */
+const parseTransform = (raw: string | null): ParsedTransform => {
+    if (!raw || !raw.trim()) return IDENTITY_TRANSFORM;
+    if (/rotate|skew|matrix/.test(raw)) return { ...IDENTITY_TRANSFORM, isUnsupported: true };
+
+    let translateX = 0;
+    let translateY = 0;
+    let scaleX = 1;
+    let scaleY = 1;
+
+    const translateMatch = raw.match(/translate\(\s*(-?\d+(?:\.\d+)?)(?:\s*,?\s*(-?\d+(?:\.\d+)?))?\s*\)/);
+    if (translateMatch) {
+        translateX = parseFloat(translateMatch[1]);
+        translateY = translateMatch[2] ? parseFloat(translateMatch[2]) : 0;
+    }
+    const scaleMatch = raw.match(/scale\(\s*(-?\d+(?:\.\d+)?)(?:\s*,?\s*(-?\d+(?:\.\d+)?))?\s*\)/);
+    if (scaleMatch) {
+        scaleX = parseFloat(scaleMatch[1]);
+        scaleY = scaleMatch[2] ? parseFloat(scaleMatch[2]) : scaleX;
+    }
+    return { translateX, translateY, scaleX, scaleY, isUnsupported: false };
+};
+
+/**
+ * Apply a parsed transform to an element that has x/y/(w/h) coordinates. Mutates in
+ * place. For paths, we shift the naturalBBox and recompute IR x/y/w/h; for other
+ * elements, we apply translate+scale directly to x/y/w/h. Drop-shadow offsets are NOT
+ * scaled — they're cosmetic pixel values.
+ */
+const applyTransformToElement = (element: DesignerElement, t: ParsedTransform): void => {
+    if (t.translateX === 0 && t.translateY === 0 && t.scaleX === 1 && t.scaleY === 1) return;
+    if ('x' in element) {
+        (element as { x: number }).x = (element as { x: number }).x * t.scaleX + t.translateX;
+    }
+    if ('y' in element) {
+        (element as { y: number }).y = (element as { y: number }).y * t.scaleY + t.translateY;
+    }
+    if ('w' in element && typeof (element as { w?: number }).w === 'number') {
+        (element as { w: number }).w *= t.scaleX;
+    }
+    if ('h' in element && typeof (element as { h?: number }).h === 'number') {
+        (element as { h: number }).h *= t.scaleY;
+    }
 };
 
 const extractTextContent = (el: Element): string => {
@@ -282,67 +558,123 @@ const parseLine = (el: Element): DividerElement | null => {
     };
 };
 
+/**
+ * Recursive SVG → IR walker. Threads an inherited shadow and a parent transform through
+ * recursion so wrapping `<g filter="url(#shadow)">` propagates the shadow to children,
+ * and `<g transform="translate/scale">` bakes the offset into child coordinates. Both
+ * effects apply at the LEAF (rect/path/image) — intermediate `<g>` wrappers are not
+ * preserved in the IR.
+ */
 const walk = (
     node: Element,
     defs: Defs,
     out: DesignerElement[],
-    warnings: ImportWarning[]
+    warnings: ImportWarning[],
+    inheritedShadow?: ShadowEffect,
+    parentTransform: ParsedTransform = IDENTITY_TRANSFORM
 ): number => {
     let dropped = 0;
     Array.from(node.children).forEach(child => {
         const tag = child.tagName;
-        if (tag === 'defs' || tag === 'linearGradient' || tag === 'clipPath' || tag === 'stop') {
+        if (
+            tag === 'defs' ||
+            tag === 'linearGradient' ||
+            tag === 'clipPath' ||
+            tag === 'pattern' ||
+            tag === 'filter' ||
+            tag === 'use' ||
+            tag === 'stop'
+        ) {
             return;
         }
         if (tag === 'g') {
-            const transform = strAttr(child, 'transform');
-            if (transform && transform.trim() !== '') {
+            const transform = parseTransform(strAttr(child, 'transform'));
+            if (transform.isUnsupported) {
                 warnings.push({
                     severity: 'warning',
-                    message: `Dropped <g transform="${transform}"> — transform baking is not yet supported.`,
+                    message: `Dropped <g transform="${strAttr(child, 'transform')}"> — rotate / skew / matrix transforms aren't supported.`,
                 });
                 dropped++;
                 return;
             }
-            dropped += walk(child, defs, out, warnings);
+            const combined: ParsedTransform = {
+                translateX: parentTransform.translateX + parentTransform.scaleX * transform.translateX,
+                translateY: parentTransform.translateY + parentTransform.scaleY * transform.translateY,
+                scaleX: parentTransform.scaleX * transform.scaleX,
+                scaleY: parentTransform.scaleY * transform.scaleY,
+                isUnsupported: false,
+            };
+            // Detect `<g filter="url(#X)">` and propagate the shadow def to leaf elements.
+            const filterRef = parseUrlRef(strAttr(child, 'filter'));
+            const filterShadow = filterRef ? defs.shadows.get(filterRef) : null;
+            const propagatedShadow: ShadowEffect | undefined = filterShadow
+                ? {
+                      offsetX: filterShadow.offsetX,
+                      offsetY: filterShadow.offsetY,
+                      blur: filterShadow.blur,
+                      color: filterShadow.color,
+                      opacity: filterShadow.opacity,
+                  }
+                : inheritedShadow;
+            if (!filterShadow && filterRef) {
+                warnings.push({
+                    severity: 'warning',
+                    message: `Filter <#${filterRef}> wasn't a recognized drop-shadow — non-drop-shadow filters are dropped.`,
+                });
+            }
+            dropped += walk(child, defs, out, warnings, propagatedShadow, combined);
             return;
         }
-        if (tag === 'rect') {
-            out.push(parseRect(child, defs));
-            return;
-        }
-        if (tag === 'text') {
-            out.push(parseText(child));
-            return;
-        }
-        if (tag === 'image') {
-            out.push(parseImage(child, defs));
-            return;
-        }
-        if (tag === 'line') {
-            const div = parseLine(child);
-            if (div) {
-                out.push(div);
+        const isLeaf = ['rect', 'text', 'image', 'line', 'path'].includes(tag);
+        if (!isLeaf) {
+            if (!SUPPORTED_ROOT_TAGS.has(tag)) {
+                warnings.push({
+                    severity: 'warning',
+                    message: `Dropped <${tag}> — not supported by the IR.`,
+                });
+                dropped++;
             } else {
+                warnings.push({
+                    severity: 'info',
+                    message: `Ignored <${tag}> at this position.`,
+                });
+            }
+            return;
+        }
+
+        let element: DesignerElement | null = null;
+        if (tag === 'rect') {
+            element = parseRect(child, defs, inheritedShadow);
+        } else if (tag === 'text') {
+            element = parseText(child);
+        } else if (tag === 'image') {
+            element = parseImage(child, defs);
+            if (inheritedShadow && element.type === 'image') element.shadow = inheritedShadow;
+        } else if (tag === 'line') {
+            element = parseLine(child);
+            if (!element) {
                 warnings.push({
                     severity: 'warning',
                     message: 'Dropped non-horizontal <line> — only horizontal dividers are supported.',
                 });
                 dropped++;
+                return;
             }
-            return;
+        } else if (tag === 'path') {
+            element = parsePath(child, defs, inheritedShadow);
+            if (!element) {
+                warnings.push({
+                    severity: 'warning',
+                    message: 'Dropped <path> with empty `d` attribute.',
+                });
+                dropped++;
+                return;
+            }
         }
-        if (!SUPPORTED_ROOT_TAGS.has(tag)) {
-            warnings.push({
-                severity: 'warning',
-                message: `Dropped <${tag}> — not supported by the IR.`,
-            });
-            dropped++;
-        } else {
-            warnings.push({
-                severity: 'info',
-                message: `Ignored <${tag}> at this position.`,
-            });
+
+        if (element) {
+            applyTransformToElement(element, parentTransform);
+            out.push(element);
         }
     });
     return dropped;

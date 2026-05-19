@@ -8,7 +8,9 @@ import type {
     FieldRowElement,
     FillRef,
     ImageElement,
+    PathElement,
     RectElement,
+    ShadowEffect,
     StringValue,
     TextElement,
     Theme,
@@ -73,6 +75,25 @@ const gradientIdFor = (fill: FillRef, key: string): string => {
     return `canvas_grad_${key}`;
 };
 
+/**
+ * Compose a CSS `filter` string from an optional `ShadowEffect`. Returns undefined for
+ * no shadow; otherwise emits a `drop-shadow(dx dy blur color)` filter. The opacity is
+ * baked into the color by converting hex → rgba.
+ *
+ * Why CSS filter instead of SVG `<filter>` definition in canvas preview: CSS `filter`
+ * doesn't require a defs entry and gets cached automatically by the browser, keeping
+ * the canvas render fast for templates with many shadowed elements.
+ */
+const shadowToCssFilter = (shadow: ShadowEffect | undefined, theme: Theme): string | undefined => {
+    if (!shadow) return undefined;
+    const color = resolveColor(shadow.color, theme);
+    const clean = color.replace('#', '');
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    return `drop-shadow(${shadow.offsetX}px ${shadow.offsetY}px ${shadow.blur}px rgba(${r}, ${g}, ${b}, ${shadow.opacity}))`;
+};
+
 interface RenderProps<E extends DesignerElement> {
     el: E;
     theme: Theme;
@@ -83,8 +104,9 @@ const RectRender: React.FC<RenderProps<RectElement>> = ({ el, theme }) => {
     const gradId = gradientIdFor(el.fill, el.id);
     const fill =
         el.fill.kind === 'solid' ? resolveColor(el.fill.color, theme) : `url(#${gradId})`;
+    const filter = shadowToCssFilter(el.shadow, theme);
     return (
-        <g data-element-id={el.id} style={{ cursor: 'move' }}>
+        <g data-element-id={el.id} style={{ cursor: 'move', filter }}>
             {el.fill.kind === 'linear-gradient' && (
                 <defs>
                     <linearGradient
@@ -140,8 +162,9 @@ const ImageRender: React.FC<RenderProps<ImageElement>> = ({ el, theme, data }) =
             ? el.source.value
             : (lookupPath(data, el.source.path) as string | undefined);
     const clipId = `canvas_clip_${el.id}`;
+    const filter = shadowToCssFilter(el.shadow, theme);
     return (
-        <g data-element-id={el.id} style={{ cursor: 'move' }}>
+        <g data-element-id={el.id} style={{ cursor: 'move', filter }}>
             {el.clip !== 'none' && (
                 <defs>
                     <clipPath id={clipId}>
@@ -234,6 +257,48 @@ const DividerRender: React.FC<RenderProps<DividerElement>> = ({ el, theme }) => 
     </g>
 );
 
+/**
+ * Render a `PathElement`. Wraps the path in a transform chain that places its natural
+ * bounding box at the element's (`x`, `y`) coordinates with size (`w`, `h`). Stroke
+ * widths scale with the path — a known limitation. See `emit.ts`'s `emitPath` for the
+ * mirror logic on the save side.
+ */
+const PathRender: React.FC<RenderProps<PathElement>> = ({ el, theme }) => {
+    const gradId = gradientIdFor(el.fill, el.id);
+    const fill =
+        el.fill.kind === 'solid' ? resolveColor(el.fill.color, theme) : `url(#${gradId})`;
+    const sx = el.naturalBBox.w === 0 ? 1 : el.w / el.naturalBBox.w;
+    const sy = el.naturalBBox.h === 0 ? 1 : el.h / el.naturalBBox.h;
+    const transform = `translate(${el.x}, ${el.y}) scale(${sx}, ${sy}) translate(${-el.naturalBBox.x}, ${-el.naturalBBox.y})`;
+    const filter = shadowToCssFilter(el.shadow, theme);
+    return (
+        <g data-element-id={el.id} style={{ cursor: 'move', filter }}>
+            {el.fill.kind === 'linear-gradient' && (
+                <defs>
+                    <linearGradient
+                        id={gradId}
+                        x1="0%"
+                        y1="0%"
+                        x2={el.fill.direction === 'horizontal' || el.fill.direction === 'diagonal' ? '100%' : '0%'}
+                        y2={el.fill.direction === 'vertical' || el.fill.direction === 'diagonal' ? '100%' : '0%'}
+                    >
+                        <stop offset="0%" stopColor={resolveColor(el.fill.from, theme)} />
+                        <stop offset="100%" stopColor={resolveColor(el.fill.to, theme)} />
+                    </linearGradient>
+                </defs>
+            )}
+            <g transform={transform}>
+                <path
+                    d={el.d}
+                    fill={fill}
+                    stroke={el.stroke ? resolveColor(el.stroke.color, theme) : undefined}
+                    strokeWidth={el.stroke?.width}
+                />
+            </g>
+        </g>
+    );
+};
+
 const renderElement = (
     el: DesignerElement,
     theme: Theme,
@@ -250,6 +315,8 @@ const renderElement = (
             return <FieldRowRender key={el.id} el={el} theme={theme} data={data} />;
         case 'divider':
             return <DividerRender key={el.id} el={el} theme={theme} data={data} />;
+        case 'path':
+            return <PathRender key={el.id} el={el} theme={theme} data={data} />;
         default:
             return null;
     }

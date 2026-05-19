@@ -25,6 +25,7 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
     image: 'Image',
     'field-row': 'Field Row',
     divider: 'Divider',
+    path: 'Path',
 };
 
 const ELEMENT_ICONS: Record<ElementType, string> = {
@@ -33,6 +34,7 @@ const ELEMENT_ICONS: Record<ElementType, string> = {
     image: '🖼',
     'field-row': '☰',
     divider: '—',
+    path: '✦',
 };
 
 const elementSummary = (el: DesignerElement): string => {
@@ -49,6 +51,8 @@ const elementSummary = (el: DesignerElement): string => {
             return el.fill.kind === 'solid' ? 'Solid' : 'Gradient';
         case 'divider':
             return `${el.w}px`;
+        case 'path':
+            return el.fill.kind === 'solid' ? 'Imported path' : 'Imported path (gradient)';
     }
 };
 

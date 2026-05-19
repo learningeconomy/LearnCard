@@ -13,6 +13,8 @@ import type {
     TextElement,
 } from '../../ir/types';
 
+type LibraryElementType = Exclude<ElementType, 'path'>;
+
 /**
  * Factory functions that produce a sensible default element of each type. Defaults
  * use theme tokens (`$primary`, `$muted`, etc.) so the new element picks up the
@@ -20,7 +22,7 @@ import type {
  * center so newly added elements appear visible rather than off-screen.
  */
 const elementFactories: Record<
-    ElementType,
+    LibraryElementType,
     (centerX: number, centerY: number) => DesignerElement
 > = {
     rect: (cx, cy): RectElement => ({
@@ -80,7 +82,7 @@ const elementFactories: Record<
 };
 
 const ELEMENT_LIBRARY: Array<{
-    type: ElementType;
+    type: LibraryElementType;
     label: string;
     icon: string;
 }> = [
@@ -99,7 +101,7 @@ export const ElementLibrary: React.FC<ElementLibraryProps> = ({ store }) => {
     const size = useStore(store, (s: DesignerStore) => s.template.size);
     const addElement = useStore(store, (s: DesignerStore) => s.addElement);
 
-    const handleAdd = (type: ElementType) => {
+    const handleAdd = (type: LibraryElementType) => {
         const factory = elementFactories[type];
         const cx = size.w / 2;
         const cy = size.h / 2;

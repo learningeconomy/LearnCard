@@ -53,6 +53,20 @@ export type FillRef =
           direction: 'horizontal' | 'vertical' | 'diagonal';
       };
 
+/**
+ * Drop-shadow effect. Applied to rect, image, and path elements via an SVG filter chain
+ * at emit time. The parser detects the canonical Figma drop-shadow filter and reduces it
+ * to this shape; the emitter expands it back into `<feFlood>`/`<feOffset>`/
+ * `<feGaussianBlur>` etc. See `parse.ts` and `emit.ts` for the chain.
+ */
+export interface ShadowEffect {
+    offsetX: number;
+    offsetY: number;
+    blur: number;
+    color: ColorRef;
+    opacity: number;
+}
+
 interface BaseElement {
     id: string;
     visibility?: Visibility;
@@ -67,6 +81,7 @@ export interface RectElement extends BaseElement {
     rx?: number;
     fill: FillRef;
     stroke?: { color: ColorRef; width: number };
+    shadow?: ShadowEffect;
 }
 
 export interface TextElement extends BaseElement {
@@ -93,6 +108,29 @@ export interface ImageElement extends BaseElement {
     fit: 'contain' | 'cover';
     clip: 'none' | 'rounded' | 'circle';
     cornerRadius?: number;
+    shadow?: ShadowEffect;
+}
+
+/**
+ * A free-form path. Imported from SVG (Figma exports, logos, badges); not authored from
+ * scratch in the designer. The `d` string is in the path's natural coordinate space —
+ * `naturalBBox` is the cached bounding box of `d` so the renderer can derive a transform
+ * that places the path at (`x`, `y`) with size (`w`, `h`).
+ *
+ * Resize is proportional only — non-uniform path transformation requires multiplying
+ * every coordinate in `d` through a matrix, which is out of scope.
+ */
+export interface PathElement extends BaseElement {
+    type: 'path';
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    d: string;
+    naturalBBox: { x: number; y: number; w: number; h: number };
+    fill: FillRef;
+    stroke?: { color: ColorRef; width: number };
+    shadow?: ShadowEffect;
 }
 
 export interface FieldRowElement extends BaseElement {
@@ -122,7 +160,8 @@ export type DesignerElement =
     | TextElement
     | ImageElement
     | FieldRowElement
-    | DividerElement;
+    | DividerElement
+    | PathElement;
 
 export type ElementType = DesignerElement['type'];
 

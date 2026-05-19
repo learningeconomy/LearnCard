@@ -86,30 +86,56 @@ The code-first editor: CodeMirror XML + Mustache, sample-VC live preview, variab
 
 ## SVG import
 
-Click **Change template → Import SVG** to bring in an existing design. The parser handles the IR-compatible subset:
+Click **Change template → Import SVG** to bring in an existing design. The parser handles a substantial IR-compatible subset, including Figma's specific export patterns:
 
 | Supported | Behavior |
 |---|---|
-| `<rect>` | → `RectElement` (with stroke/rounded corners) |
+| `<rect>` | → `RectElement` (with stroke/rounded corners/shadow) |
 | `<text>` | → `TextElement`. If the content is exactly `{{path}}`, becomes a binding. |
 | `<image>` | → `ImageElement` (URL source; clip-path detection for rounded/circle) |
 | `<line>` (horizontal) | → `DividerElement` |
+| `<path>` | → `PathElement` with cached natural-bbox (logos, badges, decorations) |
 | `<linearGradient>` | Applied when referenced via `url(#id)` on fills |
-| `<clipPath>` | Applied when referenced from `<image>` |
+| `<clipPath>` | Applied when referenced from `<image>`, including `<rect transform="translate(…)">` children |
+| `<pattern>` + `<use>` + `<image>` (Figma image-fill chain) | Resolved into an `ImageElement` at the host rect's geometry |
+| `<filter>` (Figma drop-shadow chain) | Reduced to `ShadowEffect` and applied to the leaf element of the filter group |
+| `<g transform="translate(x,y) scale(s)">` | Baked into child coordinates |
 
-Everything else (`<path>`, `<polygon>`, `<circle>`, `<ellipse>`, `<g transform>`, filters, masks, patterns, foreignObject, animations) is dropped with a warning. For arbitrary SVG (Figma/Illustrator exports usually use `<path>` for any non-rectangular shape), check **"Embed as background"** in the import dialog — the original SVG is preserved as a `data:image/svg+xml` URI inside a single `ImageElement` and you build on top of it.
+Dropped with warnings (and the import dialog shows a list of what was lost):
 
-Round-trip is lossless for SVG that this package itself emitted. For arbitrary SVG, expect lossy conversion or use the fallback.
+- `<polygon>`, `<circle>` (other than in clip-paths), `<ellipse>`
+- `<mask>` — Figma uses these for inset-border effects; use a stroked rect instead
+- `rotate()`, `skew()`, `matrix()` transforms
+- Non-drop-shadow `<filter>` chains (inner-shadow, blur, color-matrix as standalone)
+- `<foreignObject>`, animations, scripts
+
+Use the **"Embed as background"** option in the import dialog for SVG you can't parse at all — the original is preserved as a `data:image/svg+xml` URI inside a single `ImageElement`, and you build on top.
+
+### Figma export checklist
+
+For best results when exporting SVG from Figma:
+
+1. **Disable "Outline text"** in the SVG export dialog. With outline-text on, Figma renders every text glyph as a `<path>` — the import sees graphics, not editable text, and you lose the ability to add Mustache bindings. With outline-text off, text comes through as `<text>` elements that can carry `{{credentialSubject.name}}` etc.
+2. **Add Mustache placeholders directly in Figma text fields.** Write `{{credentialSubject.name}}` as the recipient text in your Figma file; the importer auto-detects this and creates a binding.
+3. **Use rects instead of masks for inset borders.** Figma's mask-based "inset stroke" rendering can't be parsed back to an IR primitive. A regular `<rect stroke="…" />` with appropriate stroke-width is simpler and imports cleanly.
+4. **Pre-flatten rotated groups.** Group rotations aren't baked — use Figma's "Flatten selection" before exporting any rotated element.
+5. **Keep SVGs under 5MB.** Embedded raster images bloat the data URI; downscale photos to ≤1024×1024 before embedding in Figma.
+
+A correctly exported Figma SVG should round-trip with **rects, paths, image-fills, drop-shadows, and editable text bindings all preserved.**
 
 ## Starter templates
 
-Three ship in the box:
+Five ship in the box:
 
 | ID | Name | Use case |
 |---|---|---|
 | `classic` | Classic Card | Centered avatar, gradient header, IDs and badges |
 | `modern` | Modern Bold | Full-bleed dark gradient, eyebrow text, premium credentials |
 | `minimal` | Minimal | Clean bordered monochrome, institutional/formal credentials |
+| `class-formal` | Class — Formal | Portrait certificate with seal, ceremonial copy, verified footer. Academic course credentials. |
+| `emblem-badge` | Emblem Badge | Square 12-pointed badge with drop shadow + bound inner image. Achievements + recognition. |
+
+The last two are **re-authored natively** from designer-output Figma references (see `examples/render-method-designer/sample-svgs/`). The Figma badge outline `<path>` is preserved verbatim for visual fidelity; everything else (theme colors, text bindings, drop shadow, inner image) is editable. This re-authoring pattern is the recommended workflow for shipping new starter templates: take a Figma design as visual reference, decompose into IR primitives by hand, ship as a JSON template — *not* by importing the raw export.
 
 Add your own gallery entries via `extraTemplates` on `VisualEditor` or compose your own picker around the IR.
 
@@ -187,20 +213,29 @@ For visual-mode support of new suites you'll also need a suite-aware emitter; Ph
 - ✅ Visual ↔ Code mode toggle
 - ✅ Undo / redo
 
-**Phase 3 (this release)**:
+**Phase 3**:
 - ✅ Canvas drag-to-move (pointer-based, click-vs-drag threshold, one undo step per drag)
 - ✅ 8-handle resize + snap-to-grid (configurable step, defaults to 4px)
 - ✅ Element library (click-to-add Text/Rect/Image/Field Row/Divider at canvas center)
 - ✅ Drag-reorder layers via `@dnd-kit/sortable`
-- ✅ SVG import (`<rect>`, `<text>`, `<image>`, `<line>`, gradients, clip-paths) with warning list and embed-as-background fallback for arbitrary input
+- ✅ SVG import (basic subset + warning list + embed-as-background fallback)
 
-**Phase 4 (later, optional)**:
+**Phase 4 (this release)**:
+- ✅ `PathElement` first-class support (parsed from Figma exports, rendered + emitted with proportional resize)
+- ✅ Image-via-pattern parser chain (Figma's canonical image-fill indirection resolves to `ImageElement`)
+- ✅ Drop-shadow effect (`ShadowEffect` on rect/image/path, parsed from Figma drop-shadow filter chains, emitted as canonical filter, CSS-`filter` in canvas)
+- ✅ `<g transform="translate/scale">` baking into child coordinates
+- ✅ Two new starter templates (`class-formal`, `emblem-badge`) re-authored natively from Figma references
+- ✅ Figma export workflow documented (see "Figma export checklist" above)
+
+**Phase 5 (later, optional)**:
 - Multi-select + alignment tools
 - Block grammar for slot-typed composition
 - Custom asset upload (logos, signatures)
-- Expanded starter gallery (commissioned design pass)
+- Non-uniform path resize (requires path-data matrix transformation)
+- `<mask>` detection for common Figma inset-border patterns
+- Rotate / matrix transforms baked via matrix multiplication
 - Real font-metrics-aware text wrapping
-- Full SVG import (paths, polygons, transforms baked) via a real geometry engine
 
 ## Boundary
 

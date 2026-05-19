@@ -7,7 +7,9 @@ import type {
     DividerElement,
     FieldRowElement,
     ImageElement,
+    PathElement,
     RectElement,
+    ShadowEffect,
     StringValue,
     TextElement,
     Theme,
@@ -416,6 +418,162 @@ const DividerPanel: React.FC<{
     </>
 );
 
+const PathPanel: React.FC<{
+    el: PathElement;
+    patch: (p: Partial<PathElement>) => void;
+    theme: Theme;
+}> = ({ el, patch, theme }) => (
+    <>
+        <PositionFields el={el} onPatch={p => patch(p)} includeSize={true} />
+        <Section title="Appearance">
+            <SelectInput
+                label="Fill type"
+                value={el.fill.kind}
+                onChange={kind => {
+                    if (kind === 'solid') patch({ fill: { kind: 'solid', color: '$primary' } });
+                    else
+                        patch({
+                            fill: {
+                                kind: 'linear-gradient',
+                                from: '$primary',
+                                to: '$secondary',
+                                direction: 'horizontal',
+                            },
+                        });
+                }}
+                options={[
+                    { value: 'solid', label: 'Solid' },
+                    { value: 'linear-gradient', label: 'Gradient' },
+                ]}
+            />
+            {el.fill.kind === 'solid' ? (
+                <ColorInput
+                    label="Fill"
+                    value={el.fill.color}
+                    onChange={c => patch({ fill: { kind: 'solid', color: c } })}
+                    theme={theme}
+                />
+            ) : (
+                <>
+                    <ColorInput
+                        label="From"
+                        value={el.fill.from}
+                        onChange={c =>
+                            patch({
+                                fill: { ...el.fill, kind: 'linear-gradient', from: c } as PathElement['fill'],
+                            })
+                        }
+                        theme={theme}
+                    />
+                    <ColorInput
+                        label="To"
+                        value={el.fill.to}
+                        onChange={c =>
+                            patch({
+                                fill: { ...el.fill, kind: 'linear-gradient', to: c } as PathElement['fill'],
+                            })
+                        }
+                        theme={theme}
+                    />
+                </>
+            )}
+        </Section>
+        <Section title="Path data">
+            <div style={{ fontSize: '11px', color: '#8B91A7', fontStyle: 'italic' }}>
+                Imported from SVG. Edit shape via the source SVG; the designer doesn&apos;t edit
+                path geometry directly.
+            </div>
+            <div
+                style={{
+                    fontSize: '10px',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: '#52597A',
+                    background: '#FBFBFC',
+                    padding: '6px',
+                    borderRadius: '4px',
+                    border: '1px solid #E2E3E9',
+                    maxHeight: '60px',
+                    overflowY: 'auto',
+                    wordBreak: 'break-all',
+                }}
+            >
+                {el.d.length > 200 ? `${el.d.slice(0, 200)}…` : el.d}
+            </div>
+        </Section>
+    </>
+);
+
+/**
+ * Shadow editor — reusable across rect, image, and path elements. Toggle adds/removes
+ * the shadow property; the four numeric fields control offset + blur + opacity + color.
+ */
+const ShadowSection: React.FC<{
+    shadow: ShadowEffect | undefined;
+    onChange: (next: ShadowEffect | undefined) => void;
+    theme: Theme;
+}> = ({ shadow, onChange, theme }) => (
+    <Section title="Shadow">
+        <label
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12px',
+                color: '#52597A',
+                cursor: 'pointer',
+            }}
+        >
+            <input
+                type="checkbox"
+                checked={!!shadow}
+                onChange={e =>
+                    onChange(
+                        e.target.checked
+                            ? { offsetX: 0, offsetY: 3, blur: 4, color: '#000000', opacity: 0.25 }
+                            : undefined
+                    )
+                }
+            />
+            <span>Drop shadow</span>
+        </label>
+        {shadow && (
+            <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <NumberInput
+                        label="Offset X"
+                        value={shadow.offsetX}
+                        onChange={n => onChange({ ...shadow, offsetX: n })}
+                    />
+                    <NumberInput
+                        label="Offset Y"
+                        value={shadow.offsetY}
+                        onChange={n => onChange({ ...shadow, offsetY: n })}
+                    />
+                    <NumberInput
+                        label="Blur"
+                        value={shadow.blur}
+                        onChange={n => onChange({ ...shadow, blur: Math.max(0, n) })}
+                    />
+                    <NumberInput
+                        label="Opacity"
+                        value={shadow.opacity}
+                        step={0.05}
+                        onChange={n =>
+                            onChange({ ...shadow, opacity: Math.max(0, Math.min(1, n)) })
+                        }
+                    />
+                </div>
+                <ColorInput
+                    label="Color"
+                    value={shadow.color}
+                    onChange={c => onChange({ ...shadow, color: c })}
+                    theme={theme}
+                />
+            </>
+        )}
+    </Section>
+);
+
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ store, data }) => {
     const selectedId = useStore(store, s => s.selectedElementId);
     const element = useStore(store, s =>
@@ -482,6 +640,21 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ store, data })
             {element.type === 'image' && <ImagePanel el={element} patch={patch} theme={theme} />}
             {element.type === 'field-row' && <FieldRowPanel el={element} patch={patch} theme={theme} data={data} />}
             {element.type === 'divider' && <DividerPanel el={element} patch={patch} theme={theme} />}
+            {element.type === 'path' && <PathPanel el={element} patch={patch} theme={theme} />}
+
+            {(element.type === 'rect' || element.type === 'image' || element.type === 'path') && (
+                <ShadowSection
+                    shadow={element.shadow}
+                    onChange={next =>
+                        updateElement(element.id, el => {
+                            if (el.type === 'rect' || el.type === 'image' || el.type === 'path') {
+                                el.shadow = next;
+                            }
+                        })
+                    }
+                    theme={theme}
+                />
+            )}
 
             <VisibilitySection visibility={element.visibility} onChange={setVisibility} />
         </div>
