@@ -60,6 +60,8 @@ export type EvidenceDisplayModel = {
     genre?: SourceMappedField<string>;
     audience?: SourceMappedField<string>;
     type?: SourceMappedField<string[] | string>;
+    /** MIME type extracted from data URI, or inferred from URL file extension. */
+    mimeType?: string;
     isInlineDataUri: boolean;
     isLargeInlineDataUri: boolean;
     sourceCredentialId: string;
@@ -69,7 +71,10 @@ export type EvidenceDisplayModel = {
 export type CourseDisplayModel = {
     name?: SourceMappedField<string>;
     humanCode?: SourceMappedField<string>;
+    fieldOfStudy?: SourceMappedField<string>;
     creditsAvailable?: SourceMappedField<number>;
+    creditsEarned?: SourceMappedField<number>;
+    term?: SourceMappedField<string>;
     description?: SourceMappedField<string>;
     earnedAt?: SourceMappedField<string>;
     validUntil?: SourceMappedField<string>;
@@ -117,6 +122,16 @@ export type OtherAcademicRecordModel = {
     reason: 'unsupportedAchievementType' | 'ambiguous' | 'missingAchievement' | 'notTranscriptSpecific';
 };
 
+/** Normalized issuer address for display, with provenance. */
+export type IssuerAddressDisplayModel = {
+    streetAddress?: string;
+    addressLocality?: string;
+    addressRegion?: string;
+    postalCode?: string;
+    addressCountry?: string;
+    sourcePath: string;
+};
+
 /** Complete normalized display model consumed by transcript renderer surfaces and views. */
 export type ClrTranscriptDisplayModel = {
     meta: {
@@ -133,6 +148,7 @@ export type ClrTranscriptDisplayModel = {
         image?: SourceMappedField<string>;
         issuerName?: SourceMappedField<string>;
         issuerId?: SourceMappedField<string>;
+        issuerAddress?: IssuerAddressDisplayModel;
         issuedAt?: SourceMappedField<string>;
         awardedDate?: SourceMappedField<string>;
         validUntil?: SourceMappedField<string>;
@@ -187,6 +203,16 @@ const PROGRAM_TYPES = new Set([
 
 const LARGE_INLINE_EVIDENCE_THRESHOLD = 100_000;
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/;
+
+/** Formats an ISO-8601 date string to a human-readable form (e.g. "Jan 15, 2025"). Passes non-date strings through unchanged. */
+export const formatClrDate = (value: string): string => {
+    if (!ISO_DATE_RE.test(value)) return value;
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
 // Creates a fully traced value so UI and debug views can link rendered data back to source fields.
 const asMapped = <T>(
     value: T,
@@ -200,20 +226,46 @@ const asArray = <T>(value: T | T[] | undefined): T[] => {
     return Array.isArray(value) ? value : [value];
 };
 
-const getLearnerName = (identifiers: Array<Record<string, unknown>>): string | undefined => {
-    // IdentityObject format (CLR v2 hashed identity): identityType + identityHash
-    const fromIdentityObject = identifiers.find(
-        id => id.identityType === 'name' && typeof id.identityHash === 'string'
-    );
-    if (fromIdentityObject) return fromIdentityObject.identityHash as string;
-
-    // IdentifierEntry format (OB3 plain identifier): identifierType + identifier
-    const fromIdentifierEntry = identifiers.find(
-        id => id.identifierType === 'name' && typeof id.identifier === 'string'
-    );
-    if (fromIdentifierEntry) return fromIdentifierEntry.identifier as string;
-
+// Extracts the raw string value from either IdentityObject (identityHash) or IdentifierEntry (identifier).
+const extractIdentifierValue = (id: Record<string, unknown>): string | undefined => {
+    if (typeof id.identityHash === 'string') return id.identityHash;
+    if (typeof id.identifier === 'string') return id.identifier;
     return undefined;
+};
+
+// Finds the first identifier matching any of the given type values across both CLR identity formats.
+const findIdentifierByType = (
+    identifiers: Array<Record<string, unknown>>,
+    types: string[]
+): string | undefined => {
+    for (const type of types) {
+        const match = identifiers.find(id => id.identityType === type || id.identifierType === type);
+        if (match) {
+            const value = extractIdentifierValue(match);
+            if (value) return value;
+        }
+    }
+    return undefined;
+};
+
+// Resolves the best available learner display string:
+// name > email > any other extractable identifier value > subject DID.
+const getLearnerName = (
+    identifiers: Array<Record<string, unknown>>,
+    subjectId?: string
+): string | undefined => {
+    const name = findIdentifierByType(identifiers, ['name']);
+    if (name) return name;
+
+    const email = findIdentifierByType(identifiers, ['emailAddress', 'email']);
+    if (email) return email;
+
+    for (const id of identifiers) {
+        const value = extractIdentifierValue(id);
+        if (value) return value;
+    }
+
+    return subjectId;
 };
 
 const collectEvidence = (
@@ -227,6 +279,13 @@ const collectEvidence = (
         const id = typeof ev.id === 'string' ? ev.id : undefined;
         const isInlineDataUri = typeof id === 'string' && id.startsWith('data:');
         const isLargeInlineDataUri = isInlineDataUri && id.length > LARGE_INLINE_EVIDENCE_THRESHOLD;
+        const mimeType = isInlineDataUri
+            ? id!.slice(5, id!.indexOf(';'))
+            : typeof id === 'string'
+              ? (/\.pdf$/i.test(id) ? 'application/pdf'
+                : /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(id) ? `image/${id.match(/\.(\w+)$/)?.[1]?.toLowerCase()}`
+                : undefined)
+              : undefined;
 
         if (isLargeInlineDataUri) {
             warnings.push({
@@ -280,6 +339,7 @@ const collectEvidence = (
             type: ev.type
                 ? asMapped(ev.type as string[] | string, `${basePath}[${index}].type`, 'evidence.type', sourceCredentialId)
                 : undefined,
+            mimeType,
             isInlineDataUri,
             isLargeInlineDataUri,
             sourceCredentialId,
@@ -421,9 +481,21 @@ const classifyRecord = (
         typeof achievement.humanCode === 'string'
             ? asMapped(achievement.humanCode, 'achievement.humanCode', 'achievement.humanCode', nestedId)
             : undefined;
+    const fieldOfStudy =
+        typeof achievement.fieldOfStudy === 'string'
+            ? asMapped(achievement.fieldOfStudy, 'achievement.fieldOfStudy', 'achievement.fieldOfStudy', nestedId)
+            : undefined;
     const creditsAvailable =
         typeof achievement.creditsAvailable === 'number'
             ? asMapped(achievement.creditsAvailable, 'achievement.creditsAvailable', 'achievement.creditsAvailable', nestedId)
+            : undefined;
+    const creditsEarned =
+        typeof nestedSubject.creditsEarned === 'number'
+            ? asMapped(nestedSubject.creditsEarned, 'credentialSubject.creditsEarned', 'credentialSubject.creditsEarned', nestedId)
+            : undefined;
+    const term =
+        typeof nestedSubject.term === 'string'
+            ? asMapped(nestedSubject.term, 'credentialSubject.term', 'credentialSubject.term', nestedId)
             : undefined;
 
     // earnedAt and validUntil come from the nested VC envelope, not the achievement.
@@ -441,7 +513,10 @@ const classifyRecord = (
             course: {
                 name: achievementName,
                 humanCode,
+                fieldOfStudy,
                 creditsAvailable,
+                creditsEarned,
+                term,
                 description: achievementDescription,
                 earnedAt,
                 validUntil,
@@ -546,6 +621,7 @@ export const normalizeClrTranscriptDisplayModel = (
 
     const credentialId = typeof rawCredential.id === 'string' ? rawCredential.id : 'unknown-credential-id';
     const issuer = (rawCredential.issuer ?? {}) as Record<string, unknown>;
+    const subjectId = typeof credentialSubject.id === 'string' ? credentialSubject.id : undefined;
     const learnerIdentifiers = asArray<Record<string, unknown>>(
         credentialSubject.identifier as Array<Record<string, unknown>>
     );
@@ -686,6 +762,17 @@ export const normalizeClrTranscriptDisplayModel = (
                 typeof issuer.id === 'string'
                     ? asMapped(issuer.id, 'issuer.id', 'credential.issuer.id', credentialId)
                     : undefined,
+            issuerAddress: (() => {
+                const addr = issuer.address as Record<string, unknown> | undefined;
+                if (!addr || typeof addr !== 'object') return undefined;
+                const streetAddress = typeof addr.streetAddress === 'string' ? addr.streetAddress : undefined;
+                const addressLocality = typeof addr.addressLocality === 'string' ? addr.addressLocality : undefined;
+                const addressRegion = typeof addr.addressRegion === 'string' ? addr.addressRegion : undefined;
+                const postalCode = typeof addr.postalCode === 'string' ? addr.postalCode : undefined;
+                const addressCountry = typeof addr.addressCountry === 'string' ? addr.addressCountry : undefined;
+                if (!streetAddress && !addressLocality && !addressRegion && !postalCode && !addressCountry) return undefined;
+                return { streetAddress, addressLocality, addressRegion, postalCode, addressCountry, sourcePath: 'issuer.address' };
+            })(),
             issuedAt:
                 typeof rawCredential.validFrom === 'string'
                     ? asMapped(rawCredential.validFrom, 'validFrom', 'credential.validFrom', credentialId)
@@ -698,14 +785,17 @@ export const normalizeClrTranscriptDisplayModel = (
                 typeof rawCredential.validUntil === 'string'
                     ? asMapped(rawCredential.validUntil, 'validUntil', 'credential.validUntil', credentialId)
                     : undefined,
-            learnerName: getLearnerName(learnerIdentifiers)
-                ? asMapped(
-                      getLearnerName(learnerIdentifiers) as string,
-                      'credentialSubject.identifier',
-                      'credentialSubject.identifier',
-                      credentialId
-                  )
-                : undefined,
+            learnerName: (() => {
+                const resolved = getLearnerName(learnerIdentifiers, subjectId);
+                if (!resolved) return undefined;
+                const isSubjectIdFallback = resolved === subjectId && learnerIdentifiers.length === 0;
+                return asMapped(
+                    resolved,
+                    isSubjectIdFallback ? 'credentialSubject.id' : 'credentialSubject.identifier',
+                    isSubjectIdFallback ? 'credentialSubject.id' : 'credentialSubject.identifier',
+                    credentialId
+                );
+            })(),
             learnerIdentifiers: asMapped(
                 learnerIdentifiers,
                 'credentialSubject.identifier',
