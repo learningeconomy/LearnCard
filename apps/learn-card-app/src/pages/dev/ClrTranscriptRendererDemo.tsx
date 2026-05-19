@@ -5,6 +5,7 @@ import { clrUniversityTranscript } from '../../../../../packages/credential-libr
 import { clrNdStudentTranscript } from '../../../../../packages/credential-library/src/fixtures/clr/nd-student-transcript';
 import { clrGreatPlainsFull } from '../../../../../packages/credential-library/src/fixtures/clr/great-plains-full';
 import { clrMinimal } from '../../../../../packages/credential-library/src/fixtures/clr/minimal';
+import { clrWestbridgeFull } from '../../../../../packages/credential-library/src/fixtures/clr/westbridge-full';
 
 import {
     normalizeClrTranscriptDisplayModel,
@@ -18,6 +19,7 @@ import {
 } from '../../components/clr-transcript';
 
 const FIXTURES = {
+    westbridge: clrWestbridgeFull.credential as Record<string, unknown>,
     university: clrUniversityTranscript.credential as Record<string, unknown>,
     nd: clrNdStudentTranscript.credential as Record<string, unknown>,
     greatPlains: clrGreatPlainsFull.credential as Record<string, unknown>,
@@ -25,6 +27,7 @@ const FIXTURES = {
 };
 
 const FIXTURE_LABELS: Record<string, string> = {
+    westbridge: 'Westbridge (Full)',
     university: 'University',
     nd: 'North Dakota',
     greatPlains: 'Great Plains',
@@ -41,7 +44,7 @@ const VIEWER_LABELS: Record<string, string> = {
 type FixtureKey = keyof typeof FIXTURES;
 
 const ClrTranscriptRendererDemo = () => {
-    const [fixture, setFixture] = useState<FixtureKey>('university');
+    const [fixture, setFixture] = useState<FixtureKey>('westbridge');
     const [viewer, setViewer] = useState<ClrTranscriptViewer>('student');
     const [surface, setSurface] = useState<ClrTranscriptSurface>(ClrTranscriptSurface.Full);
 

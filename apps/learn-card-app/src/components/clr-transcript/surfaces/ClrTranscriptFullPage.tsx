@@ -148,6 +148,7 @@ const ClrTranscriptFullPage = ({ model, options }: Props) => {
                 course={selectedCourse}
                 onClose={() => setSelectedCourse(null)}
                 adminMode={adminMode}
+                associations={model.associations}
             />
         </div>
     );

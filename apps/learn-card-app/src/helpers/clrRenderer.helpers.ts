@@ -122,6 +122,17 @@ export type OtherAcademicRecordModel = {
     reason: 'unsupportedAchievementType' | 'ambiguous' | 'missingAchievement' | 'notTranscriptSpecific';
 };
 
+/** A single resolved association between two credentials in this CLR. */
+export type AssociationDisplayModel = {
+    associationType: string;
+    sourceId: string;
+    targetId: string;
+    /** Resolved name of the source credential (from its name or achievement.name). */
+    sourceName?: string;
+    /** Resolved name of the target credential (from its name or achievement.name). */
+    targetName?: string;
+};
+
 /** Normalized issuer address for display, with provenance. */
 export type IssuerAddressDisplayModel = {
     streetAddress?: string;
@@ -168,6 +179,7 @@ export type ClrTranscriptDisplayModel = {
     assessments: AssessmentDisplayModel[];
     otherRecords: OtherAcademicRecordModel[];
     evidence: EvidenceDisplayModel[];
+    associations: AssociationDisplayModel[];
     warnings: DisplayWarning[];
     quality: {
         level: 'rich' | 'usable' | 'sparse' | 'poor';
@@ -635,6 +647,20 @@ export const normalizeClrTranscriptDisplayModel = (
 
     let explicitGpa: SourceMappedField<string | number | boolean> | undefined;
 
+    // Build id → display name map for association resolution.
+    const credentialNameById = new Map<string, string>();
+    for (const nc of nestedCredentials) {
+        const ncId = typeof nc.id === 'string' ? nc.id : undefined;
+        if (!ncId) continue;
+        const ncSubject = (nc.credentialSubject ?? {}) as Record<string, unknown>;
+        const ncAchievement = (ncSubject.achievement ?? {}) as Record<string, unknown>;
+        const name =
+            (typeof nc.name === 'string' ? nc.name : undefined) ??
+            (typeof ncAchievement.name === 'string' ? ncAchievement.name : undefined) ??
+            ncId;
+        credentialNameById.set(ncId, name);
+    }
+
     for (const nestedCredential of nestedCredentials) {
         const normalized = classifyRecord(nestedCredential, warnings);
         if (normalized.course) courses.push(normalized.course);
@@ -645,6 +671,22 @@ export const normalizeClrTranscriptDisplayModel = (
         if (!explicitGpa && normalized.gpa) explicitGpa = normalized.gpa;
         evidence.push(...normalized.evidence);
     }
+
+    const associations: AssociationDisplayModel[] = asArray<Record<string, unknown>>(
+        credentialSubject.association as Record<string, unknown>[]
+    ).flatMap(assoc => {
+        const associationType = typeof assoc.associationType === 'string' ? assoc.associationType : undefined;
+        const targetId = typeof assoc.targetId === 'string' ? assoc.targetId : undefined;
+        if (!associationType || !targetId) return [];
+        const sourceId = typeof assoc.sourceId === 'string' ? assoc.sourceId : '';
+        return [{
+            associationType,
+            sourceId,
+            targetId,
+            sourceName: credentialNameById.get(sourceId),
+            targetName: credentialNameById.get(targetId),
+        }];
+    });
 
     const partial = rawCredential.partial === true;
     if (partial) {
@@ -816,6 +858,7 @@ export const normalizeClrTranscriptDisplayModel = (
         assessments,
         otherRecords,
         evidence,
+        associations,
         warnings,
         quality: {
             level: qualityLevel,

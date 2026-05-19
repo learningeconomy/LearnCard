@@ -1,4 +1,4 @@
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AssociationDisplayModel, CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
 import ClrProvenanceTable from './ClrProvenanceTable';
@@ -8,14 +8,23 @@ type Props = {
     course: CourseDisplayModel | null;
     onClose: () => void;
     adminMode?: boolean;
+    associations?: AssociationDisplayModel[];
 };
 
-const ClrCourseDetailPanel = ({ course, onClose, adminMode = false }: Props) => {
+const ClrCourseDetailPanel = ({ course, onClose, adminMode = false, associations = [] }: Props) => {
     const primaryResult = course?.results.find(r => r.value);
     const grade = primaryResult ? String(primaryResult.value.value) : undefined;
     const credits = course
         ? (course.creditsEarned?.value ?? course.creditsAvailable?.value)
         : undefined;
+
+    const id = course?.sourceCredentialId;
+    const prerequisites = associations.filter(
+        a => a.associationType === 'precedes' && a.targetId === id && a.sourceName
+    );
+    const partOf = associations.filter(
+        a => a.associationType === 'isChildOf' && a.sourceId === id && a.targetName
+    );
 
     return (
         <>
@@ -103,6 +112,44 @@ const ClrCourseDetailPanel = ({ course, onClose, adminMode = false }: Props) => 
                                 <p className="text-sm text-grayscale-700 leading-relaxed">
                                     {course.description.value}
                                 </p>
+                            </div>
+                        )}
+
+                        {/* Part of program */}
+                        {partOf.length > 0 && (
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
+                                    Part of
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {partOf.map(a => (
+                                        <span
+                                            key={a.targetId}
+                                            className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-full px-2.5 py-0.5"
+                                        >
+                                            {a.targetName}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Prerequisites */}
+                        {prerequisites.length > 0 && (
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
+                                    Prerequisites
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {prerequisites.map(a => (
+                                        <span
+                                            key={a.sourceId}
+                                            className="text-xs text-grayscale-700 bg-grayscale-100 border border-grayscale-200 rounded-full px-2.5 py-0.5"
+                                        >
+                                            {a.sourceName}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
