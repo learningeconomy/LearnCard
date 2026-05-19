@@ -116,7 +116,7 @@ const MobileNavBar: React.FC = () => {
                             backgroundPosition: 'center top',
                             backgroundRepeat: 'no-repeat',
                         }}
-                        className="!mb-[10px] pb-[5px]"
+                        className="pb-[15px]"
                     >
                         {/*
                             tab prop is needed to prevent hard refresh...
