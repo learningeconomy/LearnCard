@@ -170,13 +170,15 @@ const LaunchPad: React.FC = () => {
         });
     }, [installedApps, searchInput, appStoreCategory]);
 
-    // Set of featured carousel and curated app IDs (to avoid duplicates in regular browse)
-    const featuredAndCuratedIds = useMemo(() => {
+    // Set of curated (Suggested Apps) IDs — used to avoid duplicating curated picks
+    // in the "All {Category}"/"All Apps" list (they already have their own section).
+    // Featured carousel apps intentionally still appear in the list so users can find
+    // them by browsing as well as in the carousel.
+    const curatedIds = useMemo(() => {
         const ids = new Set<string>();
-        (featuredCarouselApps ?? []).forEach(app => ids.add(app.listing_id));
         (curatedListApps ?? []).forEach(app => ids.add(app.listing_id));
         return ids;
-    }, [featuredCarouselApps, curatedListApps]);
+    }, [curatedListApps]);
 
     const filteredAvailableApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
@@ -219,8 +221,8 @@ const LaunchPad: React.FC = () => {
 
     // Non-promoted available apps (for Discover More section)
     const nonPromotedAvailableApps = useMemo(() => {
-        return filteredAvailableApps.filter(app => !featuredAndCuratedIds.has(app.listing_id));
-    }, [filteredAvailableApps, featuredAndCuratedIds]);
+        return filteredAvailableApps.filter(app => !curatedIds.has(app.listing_id));
+    }, [filteredAvailableApps, curatedIds]);
 
     // Create custom app from query params if provided
     const customAppFromQueryParams: LaunchPadAppListItemType | null = useMemo(() => {
