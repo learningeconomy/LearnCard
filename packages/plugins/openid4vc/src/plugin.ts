@@ -28,7 +28,7 @@ import {
     ResolveAuthorizationRequestOptions,
 } from './vp/parse';
 import { AuthorizationRequest } from './vp/types';
-import { selectCredentials } from './vp/select';
+import { selectCredentials, type SdJwtParser } from './vp/select';
 import {
     buildPresentation as buildPresentationFn,
     ChosenCredential,
@@ -189,24 +189,24 @@ export const getOpenID4VCPlugin = (
             resolveAuthorizationRequest: async (_lc, input) =>
                 resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions),
 
-            prepareVerifiablePresentation: async (_lc, input, credentials) => {
+            prepareVerifiablePresentation: async (learnCard, input, credentials) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+                const sdJwtParser = buildSdJwtParser(learnCard);
 
-                // DCQL takes precedence over PEX when both are
-                // somehow present (the parser already rejects that
-                // case, but be defensive).
                 if (request.dcql_query) {
-                    const dcqlSelection = selectCredentialsForDcql(
+                    const dcqlSelection = await selectCredentialsForDcql(
                         credentials,
-                        request.dcql_query
+                        request.dcql_query,
+                        { sdJwtParser }
                     );
                     return { request, dcqlSelection };
                 }
 
                 if (request.presentation_definition) {
-                    const selection = selectCredentials(
+                    const selection = await selectCredentials(
                         credentials,
-                        request.presentation_definition
+                        request.presentation_definition,
+                        { sdJwtParser }
                     );
                     return { request, selection };
                 }
@@ -620,6 +620,38 @@ const buildLdpVpSigner = (
     sign: async (unsignedVp, { domain, challenge }) =>
         learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
 });
+
+/**
+ * Build an SD-JWT-VC parser callback for the matcher layer. Wired to
+ * `learnCard.invoke.parseSdJwtVc` via runtime feature-detect so the
+ * matcher never hard-imports `@learncard/sd-jwt-vc-plugin` (same
+ * Slice 2b convention as `buildSdJwtPresenter` below). Returns
+ * undefined when the sd-jwt-vc plugin isn't installed — the matcher
+ * then falls back to its no-decode behavior for SD-JWT candidates.
+ */
+const buildSdJwtParser = (
+    learnCard: OpenID4VCDependentLearnCard
+): SdJwtParser | undefined => {
+    const invoke = (learnCard as unknown as { invoke: Record<string, unknown> }).invoke;
+    if (typeof invoke?.parseSdJwtVc !== 'function') return undefined;
+
+    return async (compact: string) => {
+        const parsed = await (
+            invoke.parseSdJwtVc as (c: string) => Promise<{
+                vct?: string;
+                issuer?: string;
+                claims: Record<string, unknown>;
+                holderPublicKey?: Record<string, unknown>;
+            }>
+        )(compact);
+        return {
+            claims: parsed.claims,
+            vct: parsed.vct,
+            issuer: parsed.issuer,
+            holderPublicKey: parsed.holderPublicKey,
+        };
+    };
+};
 
 /**
  * Build an SD-JWT-VC presenter callback bound to the host LearnCard.
