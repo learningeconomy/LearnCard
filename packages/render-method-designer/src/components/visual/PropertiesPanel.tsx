@@ -235,6 +235,65 @@ const TextPanel: React.FC<{
                 onChange={n => patch({ letterSpacing: n })}
             />
         </Section>
+        <Section title="Wrapping">
+            <label
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '12px',
+                    color: '#52597A',
+                    cursor: 'pointer',
+                }}
+            >
+                <input
+                    type="checkbox"
+                    checked={!!el.wrap}
+                    onChange={e =>
+                        patch(
+                            e.target.checked
+                                ? {
+                                      maxWidth: el.maxWidth ?? 220,
+                                      wrap: { lineHeight: 1.2, maxLines: 2, overflow: 'ellipsis' },
+                                  }
+                                : { wrap: undefined }
+                        )
+                    }
+                />
+                <span>Wrap text in box</span>
+            </label>
+            {el.wrap && (
+                <>
+                    <NumberInput
+                        label="Box width"
+                        value={el.maxWidth ?? 220}
+                        onChange={n => patch({ maxWidth: Math.max(1, n) })}
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <NumberInput
+                            label="Line height"
+                            value={el.wrap.lineHeight}
+                            step={0.1}
+                            onChange={n => patch({ wrap: { ...el.wrap!, lineHeight: Math.max(0.8, n) } })}
+                        />
+                        <NumberInput
+                            label="Max lines"
+                            value={el.wrap.maxLines}
+                            onChange={n => patch({ wrap: { ...el.wrap!, maxLines: Math.max(1, Math.round(n)) } })}
+                        />
+                    </div>
+                    <SelectInput
+                        label="Overflow"
+                        value={el.wrap.overflow}
+                        onChange={overflow => patch({ wrap: { ...el.wrap!, overflow } })}
+                        options={[
+                            { value: 'clip', label: 'Clip' },
+                            { value: 'ellipsis', label: 'Ellipsis' },
+                        ]}
+                    />
+                </>
+            )}
+        </Section>
     </>
 );
 

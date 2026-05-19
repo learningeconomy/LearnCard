@@ -89,6 +89,17 @@ export interface TextElement extends BaseElement {
     x: number;
     y: number;
     maxWidth?: number;
+    /**
+     * Optional wrapping policy. `maxWidth` is the wrapping box width; when omitted the text
+     * behaves as a single SVG line. Wrapping is implemented via `<tspan>` line-breaking in
+     * Canvas preview and for static/fallback text in emitted SVG. Runtime-bound Mustache
+     * text still degrades to single-line on third-party renderers — see README.
+     */
+    wrap?: {
+        lineHeight: number;
+        maxLines: number;
+        overflow: 'clip' | 'ellipsis';
+    };
     content: StringValue;
     font: FontRef;
     size: number;

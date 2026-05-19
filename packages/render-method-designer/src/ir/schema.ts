@@ -65,6 +65,13 @@ const textElement = baseElement.extend({
     x: z.number(),
     y: z.number(),
     maxWidth: z.number().positive().optional(),
+    wrap: z
+        .object({
+            lineHeight: z.number().positive(),
+            maxLines: z.number().int().positive(),
+            overflow: z.enum(['clip', 'ellipsis']),
+        })
+        .optional(),
     content: stringValue,
     font: fontRef,
     size: z.number().positive(),

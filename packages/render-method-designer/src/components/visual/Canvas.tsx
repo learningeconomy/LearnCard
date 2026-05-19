@@ -26,6 +26,7 @@ import {
     snap,
     type ResizeDirection,
 } from '../../lib/coord';
+import { layoutWrappedText, approximateTextWidth } from '../../lib/text-wrap';
 import { SelectionOverlay, elementBounds, supportedResizeDirections } from './SelectionOverlay';
 
 /**
@@ -138,6 +139,17 @@ const RectRender: React.FC<RenderProps<RectElement>> = ({ el, theme }) => {
 const TextRender: React.FC<RenderProps<TextElement>> = ({ el, theme, data }) => {
     const text = resolveString(el.content, data);
     if (!text && el.content.kind === 'binding' && !el.content.fallback) return null;
+    const measure = (value: string): number => {
+        if (typeof document === 'undefined') {
+            return approximateTextWidth(value, el.size, el.letterSpacing ?? 0);
+        }
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return approximateTextWidth(value, el.size, el.letterSpacing ?? 0);
+        ctx.font = `${el.weight} ${el.size}px ${resolveFont(el.font, theme)}`;
+        return ctx.measureText(value).width + Math.max(0, value.length - 1) * (el.letterSpacing ?? 0);
+    };
+    const wrapped = layoutWrappedText(text, el, measure);
     return (
         <g data-element-id={el.id} style={{ cursor: 'move' }}>
             <text
@@ -150,7 +162,17 @@ const TextRender: React.FC<RenderProps<TextElement>> = ({ el, theme, data }) => 
                 textAnchor={el.align}
                 letterSpacing={el.letterSpacing}
             >
-                {text}
+                {wrapped.lines.length <= 1
+                    ? text
+                    : wrapped.lines.map((line, index) => (
+                          <tspan
+                              key={`${el.id}-${index}`}
+                              x={el.x}
+                              dy={index === 0 ? 0 : wrapped.lineHeightPx}
+                          >
+                              {line}
+                          </tspan>
+                      ))}
             </text>
         </g>
     );

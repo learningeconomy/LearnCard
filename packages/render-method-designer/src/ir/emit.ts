@@ -1,4 +1,5 @@
 import { resolveColor, resolveFont } from './theme';
+import { layoutWrappedText, approximateTextWidth } from '../lib/text-wrap';
 import type {
     CredentialTemplate,
     DesignerElement,
@@ -107,6 +108,21 @@ const textAttrs = (el: TextElement, theme: Theme): string => {
     return `x="${el.x}" y="${el.y}" font-family="${family}" font-size="${el.size}" font-weight="${el.weight}" fill="${color}" text-anchor="${el.align}"${ls}`;
 };
 
+const emitWrappedTextContent = (text: string, el: TextElement): string => {
+    if (!el.wrap || !el.maxWidth) return escapeXml(text);
+    const wrapped = layoutWrappedText(
+        text,
+        el,
+        value => approximateTextWidth(value, el.size, el.letterSpacing ?? 0)
+    );
+    if (wrapped.lines.length <= 1) return escapeXml(text);
+    return wrapped.lines
+        .map((line, index) =>
+            `<tspan x="${el.x}" dy="${index === 0 ? 0 : wrapped.lineHeightPx}">${escapeXml(line)}</tspan>`
+        )
+        .join('');
+};
+
 /**
  * Emit a string value as a `<text>` element body. For `static`, returns the escaped
  * literal. For `binding`, emits the Mustache reference (`{{path}}`); Mustache will
@@ -205,9 +221,28 @@ const emitRect = (el: RectElement, theme: Theme, defs: Map<string, string>): str
 const emitText = (el: TextElement, theme: Theme): string => {
     const attrs = textAttrs(el, theme);
     if (el.content.kind === 'static') {
-        return `<text ${attrs}>${stringContent(el.content)}</text>`;
+        return `<text ${attrs}>${emitWrappedTextContent(el.content.value, el)}</text>`;
     }
-    return emitBoundString(el.content, attrs, 'text');
+    return emitBoundText(el, attrs);
+};
+
+const emitBoundText = (
+    el: TextElement,
+    attrs: string
+): string => {
+    const { path, fallback, format } = el.content as { kind: 'binding'; path: string; fallback?: string; format?: string };
+    const formattedPath = format ? `formattedValues.${path}.${format}` : null;
+
+    const rawTier = `{{#${path}}}<text ${attrs}>{{${path}}}</text>{{/${path}}}`;
+    const fallbackTier = fallback
+        ? `{{^${path}}}<text ${attrs}>${emitWrappedTextContent(fallback, el)}</text>{{/${path}}}`
+        : '';
+
+    if (!formattedPath) return `${rawTier}${fallbackTier}`;
+
+    const formattedTier = `{{#${formattedPath}}}<text ${attrs}>{{${formattedPath}}}</text>{{/${formattedPath}}}`;
+    const formattedAbsentBranch = `{{^${formattedPath}}}${rawTier}${fallbackTier}{{/${formattedPath}}}`;
+    return `${formattedTier}${formattedAbsentBranch}`;
 };
 
 const emitBoundString = (

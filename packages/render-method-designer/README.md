@@ -78,6 +78,7 @@ interface RenderMethodDesignerProps {
 - **Canvas** renders the IR directly as React-SVG. Click any element to select; drag to move; eight handles on the selection box resize the element. Snap-to-grid (4px default, configurable via `gridStep` and `snapToGrid` props on `Canvas`). All drag-and-resize interactions collapse to a single undo step.
 - **Layers** mirrors the IR tree, with drag-to-reorder via `@dnd-kit/sortable`. ⧉ duplicates; ✕ deletes. The library at the top of the panel adds new primitives (Text / Rect / Image / Field Row / Divider) at the canvas center.
 - **Properties** dispatches by element type: Text, Rect, Image, Field-Row, Divider. Each surfaces a binding picker driven by the active sample VC.
+- **Text wrapping** is available on Text elements. Enable **Wrap text in box** in the Properties panel to set a box width, line height, max lines, and overflow policy (`clip` or `ellipsis`). Canvas preview uses real line-breaking into SVG `<tspan>`s.
 - **Theme** exposes the 8-color palette + heading/body fonts. Theme tokens are referenced as `$primary` etc. on the IR; the emitter resolves them at save time.
 
 ## Code mode
@@ -166,6 +167,40 @@ The emitter generates a 3-tier Mustache fallback so templates render correctly e
 ```
 
 A LearnCard wallet (with the `formattedValues` convention) renders "July 1, 2024". A wallet that doesn't know the convention falls through to the raw ISO. See [`@learncard/render-method-plugin` README](../plugins/render-method/README.md#the-formattedvalues-convention) for the full contract.
+
+## Text wrapping
+
+SVG `<text>` has no native word-wrapping model that behaves consistently across renderers, so the designer uses a **text-box** abstraction on top of SVG:
+
+```ts
+type TextElement = {
+  x: number;
+  y: number;
+  maxWidth?: number;
+  wrap?: {
+    lineHeight: number;
+    maxLines: number;
+    overflow: 'clip' | 'ellipsis';
+  };
+  // ...rest omitted
+}
+```
+
+When `wrap` is present and `maxWidth` is set:
+
+- **Canvas preview** measures the resolved string and emits multiple `<tspan>` lines.
+- **SVG emitter** does the same for **static text** and **literal fallback text**.
+- **Runtime-bound Mustache text** still degrades to a single line in the emitted SVG unless the renderer pre-computes wrapped line variants. This package does **not** yet ship a `wrappedValues` convention — that would be the next step if you want runtime-accurate wrapping for arbitrary bound strings across wallets.
+
+In practice this means:
+
+| Text kind | Canvas preview | Emitted SVG |
+|---|---|---|
+| Static text | wrapped | wrapped (`<tspan>`) |
+| Binding with fallback | wrapped | fallback wrapped, bound value single-line |
+| Binding without fallback | wrapped | single-line |
+
+This is still the best current trade-off for SVG portability: no `<foreignObject>`, no HTML rendering dependency, no sanitizer changes.
 
 ## Architecture
 
