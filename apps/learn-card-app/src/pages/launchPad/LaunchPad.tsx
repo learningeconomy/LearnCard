@@ -344,8 +344,16 @@ const LaunchPad: React.FC = () => {
                                         )}
                                     </IonList>
 
-                                    {filteredInstalledApps.length === 0 &&
-                                        filteredAvailableApps.length === 0 &&
+                                    {/*
+                                     * Show "no results" when nothing actually renders in this branch.
+                                     * Installed apps are not rendered as a separate section in search
+                                     * mode (any installed matches surface via browseApps in
+                                     * filteredAvailableApps), so don't gate the message on
+                                     * filteredInstalledApps — otherwise a search for an installed-but-
+                                     * delisted app (in installedApps but not in browseApps) would
+                                     * suppress the message while rendering nothing.
+                                     */}
+                                    {filteredAvailableApps.length === 0 &&
                                         !customAppFromQueryParams && (
                                             <div className="w-full flex items-center justify-center z-10">
                                                 <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
