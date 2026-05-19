@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Lock, ShieldAlert } from 'lucide-react';
+import { Lock, ShieldAlert, Check } from 'lucide-react';
 
 import { BoostPageViewMode, VerifierHeader, useWallet } from 'learn-card-base';
 import {
@@ -416,64 +416,57 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parse
                 </div>
             )}
 
-            {parsedSdJwt && parsedSdJwt.disclosureKeys?.length > 0 && (
+            {parsedSdJwt && (parsedSdJwt.disclosureKeys?.length ?? 0) > 0 && (
                 <div className="mt-4 pt-4 border-t border-grayscale-200">
                     <p className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wide">
-                        Claims to share
+                        What you'll share
+                    </p>
+                    <p className="text-xs text-grayscale-500 leading-relaxed mb-3">
+                        Uncheck anything you don't want to share with {verifierName}.
                     </p>
                     
-                    <ul className="space-y-3 mb-4">
-                        {parsedSdJwt.disclosureKeys.map((key: string) => {
+                    <ul className="space-y-1 mb-4">
+                        {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
                             const val = parsedSdJwt.claims?.[key];
                             const isChecked = discloseFrame?.[key] ?? true;
                             return (
-                                <li key={key} className="flex items-start gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={(e) => onClaimChange?.(key, e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded border-grayscale-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                                    />
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-grayscale-900">
-                                            {humanizeClaimKey(key)}
-                                        </span>
-                                        <span className="text-xs text-grayscale-600">
-                                            {typeof val === 'object' ? JSON.stringify(val) : String(val)}
-                                        </span>
-                                    </div>
+                                <li key={key}>
+                                    <label className="flex items-start gap-3 p-2 rounded-xl hover:bg-grayscale-10 cursor-pointer transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => onClaimChange?.(key, e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className="mt-0.5 shrink-0">
+                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isChecked ? 'bg-emerald-100 text-emerald-600' : 'bg-grayscale-200 text-transparent'}`}>
+                                                <Check className="w-3 h-3" strokeWidth={3} />
+                                            </div>
+                                        </div>
+                                        <div className={`flex flex-col min-w-0 transition-opacity ${isChecked ? 'opacity-100' : 'opacity-50'}`}>
+                                            <span className="text-sm font-medium text-grayscale-900 truncate">
+                                                {humanizeClaimKey(key)}
+                                            </span>
+                                            <span className="text-xs text-grayscale-500 truncate">
+                                                {isChecked ? (typeof val === 'object' ? JSON.stringify(val) : String(val)) : 'hidden'}
+                                            </span>
+                                        </div>
+                                    </label>
                                 </li>
                             );
                         })}
-                        {Object.keys(parsedSdJwt.claims || {})
-                            .filter(k => !parsedSdJwt.disclosureKeys?.includes(k) && !['iss', 'vct', 'iat', 'exp', 'nbf', 'jti', 'sub', 'status', 'cnf', '_sd', '_sd_alg'].includes(k))
-                            .map(key => {
-                                const val = parsedSdJwt.claims[key];
-                                return (
-                                    <li key={key} className="flex items-start gap-3 opacity-70">
-                                        <div className="mt-0.5 w-4 h-4 flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-grayscale-400" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-medium text-grayscale-900">
-                                                {humanizeClaimKey(key)} <span className="text-xs font-normal text-grayscale-500">(Required)</span>
-                                            </span>
-                                            <span className="text-xs text-grayscale-600">
-                                                {typeof val === 'object' ? JSON.stringify(val) : String(val)}
-                                            </span>
-                                        </div>
-                                    </li>
-                                );
-                            })}
                     </ul>
                     <p className="text-xs text-grayscale-500 leading-relaxed">
-                        These details will be sent to {verifierName}. Other identifying info (issuer, type) is always included.
+                        Issuer name and credential type are always shared.
                     </p>
                 </div>
             )}
             {isParsingSdJwt && (
-                <div className="mt-4 pt-4 border-t border-grayscale-200 flex justify-center">
-                    <span className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                <div className="mt-4 pt-4 border-t border-grayscale-200">
+                    <div className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-grayscale-200 rounded-xl">
+                        <span className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-2" />
+                        <span className="text-xs text-grayscale-500">Reading what's inside…</span>
+                    </div>
                 </div>
             )}
         </li>

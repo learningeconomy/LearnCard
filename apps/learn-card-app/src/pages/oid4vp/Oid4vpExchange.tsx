@@ -10,6 +10,7 @@ import {
     useIsLoggedIn,
     useWallet,
 } from 'learn-card-base';
+import { humanizeCredentialType } from 'learn-card-base/helpers/credentialHelpers';
 
 import {
     sanitizeCounterparty,
@@ -32,7 +33,7 @@ import RequestConsent, {
     type ConsentPicks,
 } from './components/RequestConsent';
 import RequestSubmitting from './components/RequestSubmitting';
-import RequestFinished from './components/RequestFinished';
+import RequestFinished, { type SharedClaimsEntry } from './components/RequestFinished';
 import RequestCannotSatisfy from './components/RequestCannotSatisfy';
 import {
     loadCandidatePool,
@@ -43,6 +44,35 @@ import {
 import { resilientPresentCredentials } from '../../helpers/oid4vc-resilience/resilientVp';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
+
+interface ParsedSdJwtForConsent {
+    disclosureKeys?: string[];
+    claims?: Record<string, unknown>;
+    vct?: string;
+}
+
+interface SdJwtAwareInvoke {
+    parseSdJwtVc?: (compact: string) => Promise<ParsedSdJwtForConsent>;
+}
+
+const getSdJwtCompact = (credential: unknown): string | undefined => {
+    if (typeof credential === 'string' && credential.includes('~')) {
+        return credential;
+    }
+    if (credential && typeof credential === 'object') {
+        const proofValue = (credential as { proof?: unknown }).proof;
+        const proof = Array.isArray(proofValue)
+            ? proofValue.find(p => p && typeof p === 'object')
+            : proofValue;
+        if (proof && typeof proof === 'object') {
+            const { type, jwt } = proof as { type?: unknown; jwt?: unknown };
+            if (type === 'SdJwtCompactProof' && typeof jwt === 'string') {
+                return jwt;
+            }
+        }
+    }
+    return undefined;
+};
 
 /**
  * Phases the page can be in. Modeled as a discriminated union so the
@@ -89,6 +119,7 @@ type Phase =
            * BoostEarnedCard — the success screen falls back gracefully.
            */
            sharedCredentials: VC[];
+           sharedClaimsBreakdown?: SharedClaimsEntry[];
       }
     | {
           kind: 'error';
@@ -226,6 +257,49 @@ const Oid4vpExchange: React.FC = () => {
                 );
             }
 
+            const sharedClaimsBreakdown: SharedClaimsEntry[] = [];
+            const invoke = wallet.invoke as unknown as SdJwtAwareInvoke;
+            if (typeof invoke.parseSdJwtVc === 'function') {
+                for (const c of chosen) {
+                    const compact = getSdJwtCompact(c.candidate.credential);
+                    if (compact) {
+                        try {
+                            const parsed = await invoke.parseSdJwtVc(compact);
+                            if (parsed.disclosureKeys && parsed.claims) {
+                                const rowId = ('descriptorId' in c) ? c.descriptorId : c.credentialQueryId;
+                                const discloseFrame = rowId ? picks.disclose[rowId] : undefined;
+                                
+                                const disclosedClaims: Record<string, unknown> = {};
+                                const hiddenClaimKeys: string[] = [];
+                                
+                                for (const key of parsed.disclosureKeys) {
+                                    const isDisclosed = discloseFrame ? discloseFrame[key] !== false : true;
+                                    if (isDisclosed) {
+                                        disclosedClaims[key] = parsed.claims[key];
+                                    } else {
+                                        hiddenClaimKeys.push(key);
+                                    }
+                                }
+                                
+                                const vc = extractW3cVc(c.candidate.credential);
+                                const credentialName = vc?.name || humanizeCredentialType(parsed.vct || '') || parsed.vct;
+                                const candidateId = (c.candidate as CandidateCredential).id;
+                                
+                                sharedClaimsBreakdown.push({
+                                    credentialId: candidateId,
+                                    vct: parsed.vct,
+                                    credentialName,
+                                    disclosedClaims,
+                                    hiddenClaimKeys,
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse SD-JWT for breakdown', e);
+                        }
+                    }
+                }
+            }
+
             const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
                 await resilientPresentCredentials({
                     wallet: wallet as unknown as Parameters<
@@ -250,6 +324,7 @@ const Oid4vpExchange: React.FC = () => {
                 submitted: result.submitted,
                 clientInfo,
                 sharedCredentials,
+                sharedClaimsBreakdown,
             });
         } catch (error) {
             console.error('OID4VP: presentation failed', error);
@@ -350,6 +425,7 @@ const Oid4vpExchange: React.FC = () => {
                         clientIdScheme={phase.clientInfo.clientIdScheme}
                         clientDisplay={phase.clientInfo.display}
                         sharedCredentials={phase.sharedCredentials}
+                        sharedClaimsBreakdown={phase.sharedClaimsBreakdown}
                         onDone={() => history.push('/')}
                     />
                 )}
