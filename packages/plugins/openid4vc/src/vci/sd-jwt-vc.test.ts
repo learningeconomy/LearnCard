@@ -133,6 +133,18 @@ describe('synthesizeSdJwtVc', () => {
         ).toBeUndefined();
     });
 
+    it('omits proof.verificationMethod when issuer is a DID but the SD-JWT header has no kid', async () => {
+        const parsed = makeParsed({
+            issuer: 'did:web:issuer.example.com',
+            header: { alg: 'EdDSA', typ: 'dc+sd-jwt' },
+        });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+        const vm = (result.vc.proof as { verificationMethod?: string }).verificationMethod;
+        expect(vm).toBeUndefined();
+    });
+
     it('synthesizes a did:jwk for credentialSubject.id when cnf.jwk is present', async () => {
         const parsed = makeParsed({ holderPublicKey: HOLDER_JWK });
         const learnCard = makeLearnCard(parsed);
@@ -140,6 +152,34 @@ describe('synthesizeSdJwtVc', () => {
 
         const subjectId = (result.vc.credentialSubject as { id?: string }).id;
         expect(subjectId).toMatch(/^did:jwk:/);
+    });
+
+    it('produces a deterministic did:jwk regardless of JWK property insertion order (RFC 8785 JCS)', async () => {
+        const orderingA: Record<string, unknown> = {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            x: 'fXYZ-test-only-not-a-real-key-value',
+        };
+        const orderingB: Record<string, unknown> = {
+            x: 'fXYZ-test-only-not-a-real-key-value',
+            crv: 'Ed25519',
+            kty: 'OKP',
+        };
+
+        const resultA = await synthesizeSdJwtVc(
+            FAKE_COMPACT,
+            SD_JWT_VC_FORMAT,
+            makeLearnCard(makeParsed({ holderPublicKey: orderingA }))
+        );
+        const resultB = await synthesizeSdJwtVc(
+            FAKE_COMPACT,
+            SD_JWT_VC_FORMAT,
+            makeLearnCard(makeParsed({ holderPublicKey: orderingB }))
+        );
+
+        const subjectA = (resultA.vc.credentialSubject as { id?: string }).id;
+        const subjectB = (resultB.vc.credentialSubject as { id?: string }).id;
+        expect(subjectA).toBe(subjectB);
     });
 
     it('strips private JWK fields before synthesizing did:jwk', async () => {
@@ -284,6 +324,25 @@ describe('synthesizeSdJwtVc', () => {
                 learnCard
             );
             expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
+        });
+
+        it('passes { skipStatusCheck: true } to receipt-time verification (revocation freshness is a display-time concern)', async () => {
+            const parsed = makeParsed();
+            const verifyFn = jest.fn().mockResolvedValue({
+                checks: ['issuer_signature'],
+                warnings: [],
+                errors: [],
+            });
+            const learnCard = {
+                invoke: {
+                    parseSdJwtVc: jest.fn(async () => parsed),
+                    verifySdJwtVc: verifyFn,
+                },
+            } as unknown as Parameters<typeof synthesizeSdJwtVc>[2];
+
+            await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
+
+            expect(verifyFn).toHaveBeenCalledWith(FAKE_COMPACT, { skipStatusCheck: true });
         });
     });
 

@@ -54,7 +54,17 @@ const synthesizeDidJwk = (jwk: Record<string, unknown>): string | undefined => {
         if (!PRIVATE_JWK_FIELDS.has(key)) publicOnly[key] = value;
     }
     try {
-        const json = JSON.stringify(publicOnly);
+        // RFC 8785 JCS canonicalization for the JWK before base64url encoding —
+        // required by the did:jwk spec so the same key material produces the same
+        // did:jwk regardless of JWK property insertion order across implementations.
+        // For standard JWKs (EC / OKP / RSA), all field values are ASCII strings
+        // (base64url / enum), so top-level lexicographic key sort + JSON.stringify
+        // is equivalent to full JCS. If a JWK gains nested-object extension members,
+        // this needs a recursive canonicalizer.
+        const sortedKeys = Object.keys(publicOnly).sort();
+        const canonical: Record<string, unknown> = {};
+        for (const k of sortedKeys) canonical[k] = publicOnly[k];
+        const json = JSON.stringify(canonical);
         const b64 = bytesToBase64Url(new TextEncoder().encode(json));
         return `did:jwk:${b64}`;
     } catch {
@@ -107,9 +117,18 @@ const callPluginVerify = async (
     const verifyFn = (learnCard?.invoke as Record<string, unknown> | undefined)?.verifySdJwtVc;
     if (typeof verifyFn !== 'function') return undefined;
     try {
-        return (await (verifyFn as (c: string) => Promise<VerificationCheckLike>)(
-            compact
-        )) as VerificationCheckLike;
+        // Receipt-time verification covers signature + disclosure-hash integrity
+        // ONLY. Status (Token Status List) is intentionally skipped here because
+        // freshness checks belong at display / re-verify time — at receipt the
+        // issuer may not have published the status list yet, especially in
+        // integration / staging. The wallet's existing verifyCredential call on
+        // display will catch revocation when status checking ships in Slice 4.
+        return (await (
+            verifyFn as (
+                c: string,
+                opts: Record<string, unknown>
+            ) => Promise<VerificationCheckLike>
+        )(compact, { skipStatusCheck: true })) as VerificationCheckLike;
     } catch (e) {
         throw new VciError(
             'unsupported_format',
@@ -164,13 +183,18 @@ export const synthesizeSdJwtVc = async (
 
     const issuerIsDid = parsed.issuer.startsWith('did:');
     const kid = parsed.header?.kid;
-    const verificationMethod = !issuerIsDid
-        ? undefined
-        : typeof kid === 'string'
-        ? kid.startsWith('#')
-            ? `${parsed.issuer}${kid}`
-            : kid
-        : `${parsed.issuer}#0`;
+    // verificationMethod is emitted only when we have a concrete kid pointing at
+    // a real verification method in the issuer's DID document. If the JOSE header
+    // didn't set kid, we omit it rather than fabricating `${issuer}#0` — that
+    // fragment usually doesn't resolve, and the real signature lives in proof.jwt
+    // anyway. Consumers that need the VM can re-derive it from the SD-JWT header
+    // once kid arrives.
+    const verificationMethod =
+        issuerIsDid && typeof kid === 'string'
+            ? kid.startsWith('#')
+                ? `${parsed.issuer}${kid}`
+                : kid
+            : undefined;
 
     const subject: { id?: string; [k: string]: unknown } = {
         ...stripReservedClaims(parsed.claims),
