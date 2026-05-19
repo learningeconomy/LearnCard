@@ -31,7 +31,7 @@ import {
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
 import FeaturedCarousel from './FeaturedCarousel';
-import { Compass } from 'lucide-react';
+import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
@@ -482,9 +482,10 @@ const LaunchPad: React.FC = () => {
 
                                         return (
                                             <div className="w-full flex flex-col items-center justify-center py-16 px-6 text-center">
-                                                <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mb-4">
-                                                    <Compass className="w-8 h-8 text-grayscale-400" />
-                                                </div>
+                                                <NavBarLaunchPadIcon
+                                                    version="2"
+                                                    className="w-20 h-20 mb-4"
+                                                />
                                                 <p className="text-base font-semibold text-grayscale-900 mb-1 font-poppins">
                                                     {title}
                                                 </p>
