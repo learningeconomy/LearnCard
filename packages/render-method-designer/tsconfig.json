@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "jsx": "react-jsx",
+        "declaration": true,
+        "declarationMap": true,
+        "emitDeclarationOnly": true,
+        "outDir": "dist",
+        "strict": true,
+        "esModuleInterop": true,
+        "lib": ["dom", "es2021"],
+        "noLib": false,
+        "rootDir": "src",
+        "skipLibCheck": true,
+        "paths": {},
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "bundler"
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.test.tsx"]
+}

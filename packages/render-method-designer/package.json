@@ -1,0 +1,69 @@
+{
+    "name": "@learncard/render-method-designer",
+    "version": "0.0.1",
+    "description": "Reusable React UI for authoring W3C renderMethod templates (SVG Mustache today, format-pluggable).",
+    "main": "./dist/index.js",
+    "module": "./dist/render-method-designer.esm.js",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "module": "./dist/render-method-designer.esm.js",
+            "import": "./dist/render-method-designer.esm.js",
+            "require": "./dist/index.js",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/render-method-designer/README.md",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/learningeconomy/LearnCard.git"
+    },
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "devDependencies": {
+        "@learncard/types": "workspace:*",
+        "@testing-library/react": "^14.0.0",
+        "@types/dompurify": "^3.0.5",
+        "@types/mustache": "^4.2.5",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.0.6",
+        "esbuild": "^0.27.1",
+        "happy-dom": "^14.0.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "shx": "^0.3.4",
+        "typescript": "5.6.2",
+        "vitest": "^1.6.0"
+    },
+    "dependencies": {
+        "@codemirror/lang-xml": "^6.1.0",
+        "@codemirror/state": "^6.4.1",
+        "@codemirror/view": "^6.28.0",
+        "@uiw/codemirror-theme-github": "^4.23.0",
+        "@uiw/react-codemirror": "^4.23.0",
+        "dompurify": "^3.0.6",
+        "immer": "^10.0.0",
+        "mustache": "^4.2.0",
+        "react-colorful": "^5.6.1",
+        "zod": "^3.23.8",
+        "zustand": "^4.5.0"
+    },
+    "peerDependencies": {
+        "@learncard/types": "workspace:*",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0"
+    },
+    "types": "./dist/index.d.ts",
+    "sideEffects": false
+}
