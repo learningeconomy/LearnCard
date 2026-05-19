@@ -230,7 +230,7 @@ const MobileNavBar: React.FC = () => {
                                             )}
                                         </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold mt-[3px] text-[12px] ${
+                                            className={`font-notoSans font-bold text-[12px] ${
                                                 isNotificationTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor

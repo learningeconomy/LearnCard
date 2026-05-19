@@ -46,10 +46,12 @@ ion-tab-bar {
     position: absolute;
     right: 20px;
     // Bar has pb-[15px]; flex siblings center within content area (above the
-    // padding), so absolute centering at 50% appears ~7-8px below them. Pull
-    // up by half the bar's bottom padding to align with Apps/Passport.
-    top: calc(50% - 8px);
-    transform: translateY(-50%);
+    // padding), so absolute centering at 50% appears below them. Pull up to
+    // align with Apps/Passport. The translateY uses -45% (instead of -50%)
+    // specifically for the bell icon's visual centering — paired with mt-0
+    // on the label JSX.
+    top: calc(50% - 7px);
+    transform: translateY(-45%);
     z-index: 9999;
     background: none;
 
@@ -64,8 +66,8 @@ ion-tab-bar {
 .mobile-nav-hamburger-button {
     background: none;
     position: absolute;
-    // See note on .mobile-nav-notification-button — same bar-padding offset.
-    top: calc(50% - 8px);
+    // Same bar-padding offset as .mobile-nav-notification-button.
+    top: calc(50% - 7px);
     left: 20px;
     transform: translateY(-50%);
     height: 35px;
