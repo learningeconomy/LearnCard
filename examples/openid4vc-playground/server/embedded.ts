@@ -196,15 +196,16 @@ export const createEmbeddedVerifySession = async (opts: {
         createdAt: Date.now(),
     });
 
-    const presentationDefinitionUri = `${opts.publicBaseUrl}/embedded/verifier/pd/${sessionId}`;
     const responseUri = `${opts.publicBaseUrl}/embedded/verifier/response/${sessionId}`;
+
+    const presentationDefinition = buildPresentationDefinition(sessionId, vct);
 
     const params = new URLSearchParams({
         client_id: `${opts.publicBaseUrl}/embedded/verifier`,
         client_id_scheme: 'redirect_uri',
         response_type: 'vp_token',
         response_mode: 'direct_post',
-        presentation_definition_uri: presentationDefinitionUri,
+        presentation_definition: JSON.stringify(presentationDefinition),
         response_uri: responseUri,
         nonce,
         state,
@@ -215,6 +216,30 @@ export const createEmbeddedVerifySession = async (opts: {
         state,
     };
 };
+
+const buildPresentationDefinition = (sessionId: string, vct: string) => ({
+    id: sessionId,
+    input_descriptors: [
+        {
+            id: 'playground-sd-jwt',
+            format: {
+                'dc+sd-jwt': { alg: ['EdDSA'] },
+                'vc+sd-jwt': { alg: ['EdDSA'] },
+            },
+            constraints: {
+                fields: [
+                    {
+                        path: ['$.vct'],
+                        filter: {
+                            type: 'string',
+                            const: vct,
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+});
 
 export const getEmbeddedVerifyStatus = (state: string): VerifierSession['verdict'] => {
     const session = verifierSessions.get(state);
@@ -464,30 +489,7 @@ const handlePresentationDefinition = async (
     if (!session) {
         return writeJson(res, 404, { error: 'unknown_session' });
     }
-
-    return writeJson(res, 200, {
-        id: sessionId,
-        input_descriptors: [
-            {
-                id: 'playground-sd-jwt',
-                format: {
-                    'dc+sd-jwt': { alg: ['EdDSA'] },
-                    'vc+sd-jwt': { alg: ['EdDSA'] },
-                },
-                constraints: {
-                    fields: [
-                        {
-                            path: ['$.vct'],
-                            filter: {
-                                type: 'string',
-                                const: session.expectedVct,
-                            },
-                        },
-                    ],
-                },
-            },
-        ],
-    });
+    return writeJson(res, 200, buildPresentationDefinition(sessionId, session.expectedVct));
 };
 
 const handleVerifierResponse = async (
