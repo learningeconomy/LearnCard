@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
 
-import { clrUniversityTranscript } from '../../../../../packages/credential-library/src/fixtures/clr/university-transcript';
-import { clrNdStudentTranscript } from '../../../../../packages/credential-library/src/fixtures/clr/nd-student-transcript';
-import { clrGreatPlainsFull } from '../../../../../packages/credential-library/src/fixtures/clr/great-plains-full';
-import { clrMinimal } from '../../../../../packages/credential-library/src/fixtures/clr/minimal';
-import { clrWestbridgeFull } from '../../../../../packages/credential-library/src/fixtures/clr/westbridge-full';
+import {
+    clrUniversityTranscript,
+    clrNdStudentTranscript,
+    clrGreatPlainsFull,
+    clrMinimal,
+    clrWestbridgeFull,
+} from '@learncard/credential-library';
 
 import {
     normalizeClrTranscriptDisplayModel,
