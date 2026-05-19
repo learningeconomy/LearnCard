@@ -100,7 +100,13 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                 transform-gpu
                             `}
                         >
-                            <div className="flex items-center gap-4 h-full">
+                            <div
+                                className="flex items-center gap-4 h-full"
+                                style={{
+                                    WebkitTextSizeAdjust: '100%',
+                                    textSizeAdjust: '100%',
+                                }}
+                            >
                                 {/* App Icon */}
                                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/20 flex-shrink-0 shadow-lg">
                                     <img
