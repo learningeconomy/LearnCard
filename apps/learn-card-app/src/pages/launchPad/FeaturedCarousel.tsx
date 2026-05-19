@@ -91,7 +91,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                             key={app.listing_id}
                             onClick={() => handleOpenDetail(app, appIsInstalled)}
                             className={`
-                                flex-shrink-0 h-[120px] rounded-2xl p-5
+                                flex-shrink-0 min-h-[140px] rounded-2xl p-5
                                 ${isSingleApp ? 'w-full' : 'w-[280px]'}
                                 ${colorClass}
                                 snap-start cursor-pointer
