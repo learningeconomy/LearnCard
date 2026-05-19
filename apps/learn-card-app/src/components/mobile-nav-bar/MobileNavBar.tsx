@@ -223,10 +223,10 @@ const MobileNavBar: React.FC = () => {
                                         <div className="relative">
                                             <NotificationIcon
                                                 version={isNotificationTabActive ? '2' : '1'}
-                                                className="h-[35px] w-[35px] mt-[0px] mb-0"
+                                                className="h-[40px] w-[40px] mt-[0px] mb-0"
                                             />
                                             {unreadCount > 0 && (
-                                                <div className="absolute top-0 right-[2px] h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
+                                                <div className="absolute top-0 right-[5px] h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
                                             )}
                                         </div>
                                         <IonLabel

@@ -46,11 +46,11 @@ ion-tab-bar {
     position: absolute;
     right: 20px;
     // Bar has pb-[15px]; flex siblings center within content area (above the
-    // padding), so absolute centering at 50% appears below them. Pull up to
-    // align with Apps/Passport. The translateY uses -45% (instead of -50%)
-    // specifically for the bell icon's visual centering — paired with mt-0
-    // on the label JSX.
-    top: calc(50% - 7px);
+    // padding), so absolute centering at 50% appears below them. The bell
+    // icon also runs slightly taller (40px) than Apps' rocket, so the offset
+    // here is larger than the hamburger's to keep visual alignment.
+    // Paired with translateY(-45%) (instead of -50%) and mt-0 on the label.
+    top: calc(50% - 11px);
     transform: translateY(-45%);
     z-index: 9999;
     background: none;
