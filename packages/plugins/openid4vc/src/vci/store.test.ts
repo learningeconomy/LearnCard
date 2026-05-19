@@ -426,7 +426,11 @@ describe('storeAcceptedCredentials', () => {
             expect(result.stored[0].vc.type).toEqual([
                 'VerifiableCredential',
                 'SdJwtVcCredential',
+                'CareerPassportTest',
             ]);
+            expect((result.stored[0].vc as Record<string, unknown>).name).toBe(
+                'Career Passport Test'
+            );
             expect((result.stored[0].vc.proof as { jwt: string }).jwt).toBe(fakeParsed.rawSdJwt);
             expect((result.stored[0].vc as Record<string, unknown>).sdJwtVct).toBe(
                 fakeParsed.vct

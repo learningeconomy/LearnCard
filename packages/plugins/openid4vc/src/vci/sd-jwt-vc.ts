@@ -41,6 +41,97 @@ const SD_JWT_RESERVED_CLAIMS = new Set([
 
 const PRIVATE_JWK_FIELDS = new Set(['d', 'dp', 'dq', 'p', 'q', 'qi', 'oth', 'k']);
 
+/**
+ * Extract the meaningful identifying segment from a `vct` so we can map it onto
+ * the W3C-VC `type` array and the `name` field. SD-JWT-VC carries its semantic
+ * type in the `vct` claim; the W3C wrapper we synthesize needs that surfaced
+ * somewhere ordinary display components already look, otherwise every wrapped
+ * SD-JWT credential renders as the generic "SdJwtVcCredential" marker and the
+ * user can't tell them apart.
+ *
+ * Returns `undefined` for `vct` values where no meaningful name can be derived
+ * (numeric-only URN tails, empty string) — callers omit the derived type rather
+ * than emit garbage like "Credential1".
+ */
+const extractVctSegment = (vct: string): string | undefined => {
+    let segment: string | undefined;
+
+    try {
+        const url = new URL(vct);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+            const parts = url.pathname.split('/').filter(Boolean);
+            if (parts.length > 0) segment = parts[parts.length - 1]!;
+        }
+    } catch {
+        // Not URL-shaped — fall through to URN / plain-string handling.
+    }
+
+    if (segment === undefined) {
+        if (vct.includes(':')) {
+            const parts = vct.split(':').filter(Boolean);
+            const last = parts[parts.length - 1];
+            // Skip purely numeric trailing segments (e.g., URN version tags like
+            // "urn:eudi:pid:1") — the semantically meaningful name is one up.
+            if (last && !/^\d+$/.test(last)) {
+                segment = last;
+            } else if (parts.length >= 2) {
+                segment = parts[parts.length - 2];
+            }
+        } else {
+            segment = vct;
+        }
+    }
+
+    return segment && segment.length > 0 ? segment : undefined;
+};
+
+/**
+ * PascalCase identifier suitable for the W3C-VC `type` array. Picks acronyms
+ * for short single-word lowercase segments ("pid" → "PID") and otherwise
+ * concatenates capitalized words ("playground-credential" → "PlaygroundCredential").
+ */
+export const deriveTypeFromVct = (vct: string | undefined): string | undefined => {
+    if (!vct || typeof vct !== 'string') return undefined;
+    const segment = extractVctSegment(vct);
+    if (!segment) return undefined;
+
+    const normalized = segment
+        .replace(/[-_.]+/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .trim();
+    const words = normalized.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return undefined;
+
+    if (words.length === 1 && words[0]!.length <= 4 && words[0] === words[0]!.toLowerCase()) {
+        return words[0]!.toUpperCase();
+    }
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+};
+
+/**
+ * Human-readable display name for the `name` field on the synthesized W3C
+ * wrapper. Same input handling as {@link deriveTypeFromVct} but keeps spaces
+ * between words so it reads naturally in UIs ("Playground Credential" not
+ * "PlaygroundCredential").
+ */
+export const deriveNameFromVct = (vct: string | undefined): string | undefined => {
+    if (!vct || typeof vct !== 'string') return undefined;
+    const segment = extractVctSegment(vct);
+    if (!segment) return undefined;
+
+    const normalized = segment
+        .replace(/[-_.]+/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .trim();
+    const words = normalized.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return undefined;
+
+    if (words.length === 1 && words[0]!.length <= 4 && words[0] === words[0]!.toLowerCase()) {
+        return words[0]!.toUpperCase();
+    }
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+};
+
 const bytesToBase64Url = (bytes: Uint8Array): string => {
     let binary = '';
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
@@ -212,15 +303,25 @@ export const synthesizeSdJwtVc = async (
     };
     if (verificationMethod) proof.verificationMethod = verificationMethod;
 
+    const derivedType = deriveTypeFromVct(parsed.vct);
+    const derivedName = deriveNameFromVct(parsed.vct);
+    const typeArray: string[] = ['VerifiableCredential', 'SdJwtVcCredential'];
+    if (derivedType && derivedType !== 'SdJwtVcCredential') {
+        typeArray.push(derivedType);
+    }
+
     const vc: W3CVerifiableCredential = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
-        type: ['VerifiableCredential', 'SdJwtVcCredential'],
+        type: typeArray,
         issuer: parsed.issuer,
         validFrom: issuedAtIso,
         credentialSubject: subject,
         sdJwtVct: parsed.vct,
         proof,
     };
+    if (derivedName) {
+        (vc as Record<string, unknown>).name = derivedName;
+    }
 
     if (parsed.expiresAt) vc.validUntil = parsed.expiresAt.toISOString();
 

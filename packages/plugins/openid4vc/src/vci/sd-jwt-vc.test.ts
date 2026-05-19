@@ -1,6 +1,8 @@
 import {
     SD_JWT_VC_FORMAT,
     SD_JWT_VC_FORMAT_LEGACY,
+    deriveNameFromVct,
+    deriveTypeFromVct,
     extractSdJwtVct,
     isSdJwtFormat,
     synthesizeSdJwtVc,
@@ -76,7 +78,12 @@ describe('synthesizeSdJwtVc', () => {
 
         expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
         expect(result.jwt).toBe(FAKE_COMPACT);
-        expect(result.vc.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential']);
+        expect(result.vc.type).toEqual([
+            'VerifiableCredential',
+            'SdJwtVcCredential',
+            'TestCert',
+        ]);
+        expect((result.vc as { name?: unknown }).name).toBe('Test Cert');
         expect(result.vc.issuer).toBe('did:web:issuer.example.com');
         expect(result.vc.validFrom).toBe('2024-01-01T00:00:00.000Z');
         expect((result.vc.proof as { jwt: string }).jwt).toBe(FAKE_COMPACT);
@@ -236,7 +243,11 @@ describe('synthesizeSdJwtVc', () => {
         );
 
         expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT_LEGACY);
-        expect(result.vc.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential']);
+        expect(result.vc.type).toEqual([
+            'VerifiableCredential',
+            'SdJwtVcCredential',
+            'TestCert',
+        ]);
     });
 
     it('accepts credentials whose JOSE header omits typ (issuer didn\'t set it)', async () => {
@@ -436,5 +447,56 @@ describe('extractSdJwtVct', () => {
                 proof: { type: 'SdJwtCompactProof', jwt: '...' },
             } as unknown as Parameters<typeof extractSdJwtVct>[0])
         ).toBeUndefined();
+    });
+});
+
+describe('deriveTypeFromVct', () => {
+    it('extracts PascalCase from the last URL path segment', () => {
+        expect(
+            deriveTypeFromVct('http://localhost:5173/embedded/vct/playground-credential')
+        ).toBe('PlaygroundCredential');
+    });
+
+    it('uppercases short single-word lowercase segments as acronyms', () => {
+        expect(deriveTypeFromVct('https://www.eudi.example/pid')).toBe('PID');
+    });
+
+    it('skips numeric URN version tails and uses the prior segment', () => {
+        expect(deriveTypeFromVct('urn:eudi:pid:1')).toBe('PID');
+    });
+
+    it('preserves PascalCase plain-string vcts', () => {
+        expect(deriveTypeFromVct('OpenBadgeCredential')).toBe('OpenBadgeCredential');
+    });
+
+    it('handles already-multi-word URL segments', () => {
+        expect(
+            deriveTypeFromVct(
+                'https://issuer.example.com/credentials/UniversityDegreeCredential'
+            )
+        ).toBe('UniversityDegreeCredential');
+    });
+
+    it('returns undefined for empty / non-string input', () => {
+        expect(deriveTypeFromVct(undefined)).toBeUndefined();
+        expect(deriveTypeFromVct('')).toBeUndefined();
+        expect(deriveTypeFromVct('   ')).toBeUndefined();
+    });
+});
+
+describe('deriveNameFromVct', () => {
+    it('renders space-separated title-case from a URL vct', () => {
+        expect(
+            deriveNameFromVct('http://localhost:5173/embedded/vct/playground-credential')
+        ).toBe('Playground Credential');
+    });
+
+    it('keeps acronyms uppercase', () => {
+        expect(deriveNameFromVct('https://www.eudi.example/pid')).toBe('PID');
+    });
+
+    it('returns undefined when no meaningful segment can be derived', () => {
+        expect(deriveNameFromVct(undefined)).toBeUndefined();
+        expect(deriveNameFromVct('')).toBeUndefined();
     });
 });
