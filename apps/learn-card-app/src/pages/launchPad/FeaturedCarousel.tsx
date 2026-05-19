@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
@@ -33,21 +33,18 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     const scrollRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
-    // Filter out already-installed apps
-    const visibleApps = useMemo(
-        () => apps.filter(app => !installedAppIds.has(app.listing_id)),
-        [apps, installedAppIds]
-    );
+    // Show all apps, including installed ones (CTA flips to "Open" when installed)
+    const visibleApps = apps;
 
     if (visibleApps.length === 0) {
         return null;
     }
 
-    const handleOpenDetail = (listing: AppStoreListing) => {
+    const handleOpenDetail = (listing: AppStoreListing, isInstalled: boolean) => {
         newModal(
             <AppStoreDetailModal
                 listing={listing}
-                isInstalled={false}
+                isInstalled={isInstalled}
                 onInstallSuccess={onInstallSuccess}
             />,
             {},
@@ -87,11 +84,12 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                 {visibleApps.map((app, index) => {
                     const colorClass = CAROUSEL_COLORS[index % CAROUSEL_COLORS.length];
                     const isSingleApp = visibleApps.length === 1;
+                    const appIsInstalled = installedAppIds.has(app.listing_id);
 
                     return (
                         <button
                             key={app.listing_id}
-                            onClick={() => handleOpenDetail(app)}
+                            onClick={() => handleOpenDetail(app, appIsInstalled)}
                             className={`
                                 flex-shrink-0 h-[120px] rounded-2xl p-5
                                 ${isSingleApp ? 'w-full' : 'w-[280px]'}
@@ -127,22 +125,41 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                     </p>
 
                                     <div className="mt-2">
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
-                                            <svg
-                                                className="w-3 h-3"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                                                />
-                                            </svg>
-                                            Get App
-                                        </span>
+                                        {appIsInstalled ? (
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
+                                                <svg
+                                                    className="w-3 h-3"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                                Open
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
+                                                <svg
+                                                    className="w-3 h-3"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                                    />
+                                                </svg>
+                                                Get App
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
