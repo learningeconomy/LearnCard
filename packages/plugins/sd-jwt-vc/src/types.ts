@@ -4,6 +4,7 @@ import type { DidkitPluginMethods, ProofOptions } from '@learncard/didkit-plugin
 import type { VerifyExtension } from '@learncard/vc-plugin';
 
 import type { SdJwtDisplayViewModel } from './display';
+import type { PresentSdJwtVcOptions, SdJwtPresentation } from './present';
 
 export const SD_JWT_VC_FORMAT = 'dc+sd-jwt' as const;
 export const SD_JWT_VC_FORMAT_LEGACY = 'vc+sd-jwt' as const;
@@ -113,6 +114,11 @@ export type SdJwtVcPluginMethods = VerifyExtension & {
     categorizeSdJwtVct: (vct: string) => string;
 
     toSdJwtDisplayViewModel: (parsed: ParsedSdJwtVc) => SdJwtDisplayViewModel;
+
+    presentSdJwtVc: (
+        compact: string,
+        options?: PresentSdJwtVcOptions
+    ) => Promise<SdJwtPresentation>;
 };
 
 // TODO(LC-1796 Slice 3+): replace the second `any` with a concrete control-plane

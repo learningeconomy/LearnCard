@@ -2,6 +2,7 @@ import { parseSdJwtVc } from './parse';
 import { verifySdJwtVc } from './verify';
 import { categorizeSdJwt } from './categorize';
 import { toSdJwtDisplayViewModel } from './display';
+import { presentSdJwtVc } from './present';
 import { type SdJwtVcDependentLearnCard, type SdJwtVcPlugin } from './types';
 
 const SD_JWT_PROOF_TYPE = 'SdJwtCompactProof';
@@ -41,6 +42,8 @@ export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcP
         categorizeSdJwtVct: (_lc, vct: string) => categorizeSdJwt(vct),
 
         toSdJwtDisplayViewModel: (_lc, parsed) => toSdJwtDisplayViewModel(parsed),
+
+        presentSdJwtVc: async (_lc, compact, options) => presentSdJwtVc(compact, options),
 
         verifyCredential: async (_lc, credential, options) => {
             const proof = pickProof(credential);
