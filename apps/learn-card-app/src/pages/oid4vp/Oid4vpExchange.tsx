@@ -10,8 +10,6 @@ import {
     useIsLoggedIn,
     useWallet,
 } from 'learn-card-base';
-import { humanizeCredentialType } from 'learn-card-base/helpers/credentialHelpers';
-
 import {
     sanitizeCounterparty,
     useExchangeErrorReporting,
@@ -282,7 +280,10 @@ const Oid4vpExchange: React.FC = () => {
                                 }
                                 
                                 const vc = extractW3cVc(c.candidate.credential);
-                                const credentialName = vc?.name || humanizeCredentialType(parsed.vct || '') || parsed.vct;
+                                const credentialName =
+                                    typeof vc?.name === 'string' && vc.name.length > 0
+                                        ? vc.name
+                                        : undefined;
                                 const candidateId = (c.candidate as CandidateCredential).id;
                                 
                                 sharedClaimsBreakdown.push({

@@ -23,6 +23,50 @@ const humanizeClaimKey = (key: string) => {
     return key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ').replace(/^./, str => str.toUpperCase()).trim();
 };
 
+export const humanizeVct = (vct: string | undefined): string | undefined => {
+    if (!vct || typeof vct !== 'string') return undefined;
+
+    let segment: string | undefined;
+    try {
+        const url = new URL(vct);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+            const parts = url.pathname.split('/').filter(Boolean);
+            if (parts.length > 0) segment = parts[parts.length - 1]!;
+        }
+    } catch {
+        // Not a parseable URL — fall through to plain-string handling below.
+    }
+
+    if (segment === undefined) {
+        if (vct.includes(':')) {
+            const parts = vct.split(':').filter(Boolean);
+            const last = parts[parts.length - 1];
+            if (last && !/^\d+$/.test(last) && parts.length > 0) {
+                segment = last;
+            } else if (parts.length >= 2 && last && /^\d+$/.test(last)) {
+                segment = parts[parts.length - 2];
+            }
+        } else {
+            segment = vct;
+        }
+    }
+
+    if (!segment) return undefined;
+
+    const spaced = segment
+        .replace(/[-_.]+/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .trim();
+    if (!spaced) return undefined;
+
+    const words = spaced.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return undefined;
+    if (words.length === 1 && words[0]!.length <= 4 && words[0] === words[0]!.toLowerCase()) {
+        return words[0]!.toUpperCase();
+    }
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+};
+
 export interface RequestFinishedProps {
     /**
      * Optional URL the requesting app asked the wallet to deep-link to
@@ -214,7 +258,7 @@ const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }
                 className="w-full flex items-center justify-between p-4 bg-grayscale-10 hover:bg-grayscale-100 transition-colors focus:outline-none"
             >
                 <span className="text-sm font-semibold text-grayscale-900 truncate pr-4">
-                    {entry.credentialName || entry.vct || 'Credential'}
+                    {entry.credentialName || humanizeVct(entry.vct) || 'Credential'}
                 </span>
                 {isOpen ? (
                     <ChevronUp className="w-4 h-4 text-grayscale-500 shrink-0" />
