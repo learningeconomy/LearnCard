@@ -31,6 +31,7 @@
         "@web3auth/openlogin-adapter": "^8.12.4",
         "@web3auth/single-factor-auth": "^9.5.0",
         "@learncard/lca-api-plugin": "workspace:*",
+        "@learncard/render-method-plugin": "workspace:*",
         "async": "^3.2.6",
         "axios": "^0.31.0",
         "capacitor-plugin-safe-area": "^5.0.0",
