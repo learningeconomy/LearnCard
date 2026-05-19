@@ -1999,6 +1999,9 @@ importers:
       '@learncard/openid4vc-plugin':
         specifier: workspace:*
         version: link:../plugins/openid4vc
+      '@learncard/sd-jwt-vc-plugin':
+        specifier: workspace:*
+        version: link:../plugins/sd-jwt-vc
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -3142,6 +3145,12 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../didkit
+      '@learncard/vc-plugin':
+        specifier: workspace:^
+        version: link:../vc
+      '@sd-jwt/core':
+        specifier: ^0.19.0
+        version: 0.19.0
       '@sd-jwt/decode':
         specifier: ^0.19.0
         version: 0.19.0

@@ -1,6 +1,9 @@
 import type { Plugin, LearnCard } from '@learncard/core';
-import type { VerificationCheck } from '@learncard/types';
-import type { DidkitPluginMethods } from '@learncard/didkit-plugin';
+import type { VC, VerificationCheck } from '@learncard/types';
+import type { DidkitPluginMethods, ProofOptions } from '@learncard/didkit-plugin';
+import type { VerifyExtension } from '@learncard/vc-plugin';
+
+import type { SdJwtDisplayViewModel } from './display';
 
 export const SD_JWT_VC_FORMAT = 'dc+sd-jwt' as const;
 export const SD_JWT_VC_FORMAT_LEGACY = 'vc+sd-jwt' as const;
@@ -89,14 +92,15 @@ export class SdJwtVcError extends Error {
     }
 }
 
-export type SdJwtVcPluginDependentMethods = Pick<DidkitPluginMethods, 'resolveDid'>;
+export type SdJwtVcPluginDependentMethods = Pick<DidkitPluginMethods, 'resolveDid'> &
+    VerifyExtension;
 
 // TODO(LC-1796 Slice 3+): tighten the host LearnCard's plane constraint once we
 // start touching the `id` plane for KB-JWT signing. Slice 1's read path doesn't
 // need it, so `any` here is intentional but should not be permanent.
 export type SdJwtVcDependentLearnCard = LearnCard<any, 'id', SdJwtVcPluginDependentMethods>;
 
-export type SdJwtVcPluginMethods = {
+export type SdJwtVcPluginMethods = VerifyExtension & {
     parseSdJwtVc: (compact: string) => Promise<ParsedSdJwtVc>;
 
     verifySdJwtVc: (
@@ -105,6 +109,10 @@ export type SdJwtVcPluginMethods = {
     ) => Promise<VerificationCheck>;
 
     decodeSdJwtClaims: (compact: string) => Promise<Record<string, unknown>>;
+
+    categorizeSdJwtVct: (vct: string) => string;
+
+    toSdJwtDisplayViewModel: (parsed: ParsedSdJwtVc) => SdJwtDisplayViewModel;
 };
 
 // TODO(LC-1796 Slice 3+): replace the second `any` with a concrete control-plane

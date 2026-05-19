@@ -5,6 +5,7 @@ import {
     W3CVerifiableCredential,
     normalizeIssuedCredential,
 } from './decode';
+import { extractSdJwtVct, isSdJwtFormat, synthesizeSdJwtVc } from './sd-jwt-vc';
 import { AcceptedCredentialResult } from './types';
 import { VciError } from './errors';
 
@@ -115,10 +116,9 @@ export const storeAcceptedCredentials = async (
         const entry = accepted.credentials[i];
 
         try {
-            const normalized: NormalizedCredential = normalizeIssuedCredential(
-                entry.credential,
-                entry.format
-            );
+            const normalized: NormalizedCredential = isSdJwtFormat(entry.format)
+                ? await synthesizeSdJwtVc(entry.credential, entry.format, learnCard)
+                : normalizeIssuedCredential(entry.credential, entry.format);
 
             const uri = await safeUpload(upload, normalized.vc);
 
@@ -127,7 +127,7 @@ export const storeAcceptedCredentials = async (
             const record: IndexRecord = {
                 id: recordId,
                 uri,
-                category: resolveCategory(options.category, normalized.vc, i),
+                category: resolveCategory(options.category, normalized.vc, i, learnCard),
                 ...(resolveOptional(options.title, normalized.vc, i) && {
                     title: resolveOptional(options.title, normalized.vc, i) as string,
                 }),
@@ -170,11 +170,12 @@ export const storeAcceptedCredentials = async (
 const resolveCategory = (
     category: StoreAcceptedCredentialsOptions['category'],
     vc: W3CVerifiableCredential,
-    index: number
+    index: number,
+    learnCard: LearnCard<any, any, any>
 ): string => {
     if (typeof category === 'string') return category;
     if (typeof category === 'function') return category(vc, index);
-    return defaultCategoryFor(vc);
+    return defaultCategoryFor(vc, learnCard);
 };
 
 const resolveOptional = <T>(
@@ -191,8 +192,29 @@ const resolveOptional = <T>(
  * Simple heuristic mapping VC `type` entries to wallet categories. Kept
  * small and override-able; the host wallet app usually has richer mapping
  * that the caller can plug in via `options.category`.
+ *
+ * For SD-JWT-VC credentials (carrying an `sdJwtVct` extension field set by
+ * `synthesizeSdJwtVc`), delegates category resolution to the `sd-jwt-vc`
+ * plugin if it's installed — falls back to the W3C type heuristic otherwise.
  */
-const defaultCategoryFor = (vc: W3CVerifiableCredential): string => {
+const defaultCategoryFor = (
+    vc: W3CVerifiableCredential,
+    learnCard: LearnCard<any, any, any>
+): string => {
+    const sdJwtVct = extractSdJwtVct(vc);
+    if (sdJwtVct) {
+        const categorizer = (learnCard?.invoke as Record<string, unknown> | undefined)
+            ?.categorizeSdJwtVct;
+        if (typeof categorizer === 'function') {
+            try {
+                const result = (categorizer as (v: string) => string)(sdJwtVct);
+                if (typeof result === 'string' && result.length > 0) return result;
+            } catch {
+                // fall through to the W3C heuristic below
+            }
+        }
+    }
+
     const types = toTypeArray(vc.type);
 
     // ID documents first — so a credential with both Identity + Achievement
