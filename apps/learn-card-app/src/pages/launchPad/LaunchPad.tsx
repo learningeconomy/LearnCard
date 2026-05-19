@@ -31,6 +31,7 @@ import {
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
 import FeaturedCarousel from './FeaturedCarousel';
+import { Compass } from 'lucide-react';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
@@ -437,6 +438,72 @@ const LaunchPad: React.FC = () => {
                                             filterBy={filterBy}
                                         />
                                     )}
+
+                                    {/* Empty state — no apps in any section on this tab */}
+                                    {(() => {
+                                        const hasCarousel = (featuredCarouselApps?.length ?? 0) > 0;
+                                        const hasInstalled =
+                                            isMyApps && filteredInstalledApps.length > 0;
+                                        const hasSuggested = filteredCuratedApps.length > 0;
+                                        const hasBrowse =
+                                            (isCategory || isAll) &&
+                                            nonPromotedAvailableApps.length > 0;
+                                        const hasContract =
+                                            !!contractDetails &&
+                                            !hasConsented &&
+                                            tab === LaunchPadTabEnum.all;
+                                        const hasCustomApp = !!customAppFromQueryParams;
+
+                                        const isEmpty =
+                                            !hasCarousel &&
+                                            !hasInstalled &&
+                                            !hasSuggested &&
+                                            !hasBrowse &&
+                                            !hasContract &&
+                                            !hasCustomApp &&
+                                            !isLoadingBrowseApps &&
+                                            !isLoadingInstalledApps;
+
+                                        if (!isEmpty) return null;
+
+                                        const title = isMyApps
+                                            ? 'Your apps will live here'
+                                            : isAll
+                                              ? 'No apps available right now'
+                                              : `Nothing in ${tab} yet`;
+
+                                        const subtitle = isMyApps
+                                            ? 'Install something from the App Store to get started.'
+                                            : isAll
+                                              ? 'Check back later — new apps are added all the time.'
+                                              : 'Check back soon, or browse all apps.';
+
+                                        const showCta = !isAll;
+
+                                        return (
+                                            <div className="w-full flex flex-col items-center justify-center py-16 px-6 text-center">
+                                                <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mb-4">
+                                                    <Compass className="w-8 h-8 text-grayscale-400" />
+                                                </div>
+                                                <p className="text-base font-semibold text-grayscale-900 mb-1 font-poppins">
+                                                    {title}
+                                                </p>
+                                                <p className="text-sm text-grayscale-600 max-w-[280px] font-notoSans">
+                                                    {subtitle}
+                                                </p>
+                                                {showCta && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setTab(LaunchPadTabEnum.all)
+                                                        }
+                                                        className="mt-5 px-5 py-2 rounded-full bg-grayscale-900 text-white text-sm font-semibold font-poppins"
+                                                    >
+                                                        Browse all apps
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
 
                                     {filterBy === LaunchPadFilterOptionsEnum.allApps &&
                                         (isMyApps || isAll) && <LaunchPadBecomeAnApp />}
