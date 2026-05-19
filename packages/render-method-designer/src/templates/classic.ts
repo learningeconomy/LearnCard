@@ -156,7 +156,7 @@ export const classicTemplate: CredentialTemplate = {
             y: 438,
             w: 292,
             label: 'VALID FROM',
-            value: { kind: 'binding', path: 'validFrom' },
+            value: { kind: 'binding', path: 'validFrom', format: 'long' },
             labelColor: '$muted',
             valueColor: '$text',
             visibility: { kind: 'whenPresent', path: 'validFrom' },

@@ -121,6 +121,26 @@ Element types in Phase 2: `rect`, `text`, `image`, `field-row`, `divider`. All s
 
 See `src/ir/types.ts` for the full IR shape, `src/ir/schema.ts` for the Zod validators, and `src/ir/emit.ts` for the emitter.
 
+## Formatted bindings
+
+Mustache is intentionally logic-less, so `{{validFrom}}` renders the raw ISO string `2024-07-01T00:00:00Z`. The designer detects ISO dates and long identifiers (DIDs / URNs / URLs) in the sample VC automatically; when you select one in the binding picker, a **Format** dropdown appears with locale-aware options:
+
+| Field type | Format options |
+|---|---|
+| ISO 8601 date | `long` ("July 1, 2024"), `medium` ("Jul 1, 2024"), `short` ("07/01/2024"), `iso`, `year`, `month`, `day`, `weekday`, `relative` ("5 months ago"), `time`, `datetime` |
+| Long identifier (DID / URN / URL) | `short` ("did:key:z6Mki…tBz"), `long` (raw) |
+
+The emitter generates a 3-tier Mustache fallback so templates render correctly even on renderers without the convention:
+
+```
+{{#formattedValues.validFrom.long}}<text …>{{formattedValues.validFrom.long}}</text>{{/…}}
+{{^formattedValues.validFrom.long}}
+    {{#validFrom}}<text …>{{validFrom}}</text>{{/validFrom}}
+{{/…}}
+```
+
+A LearnCard wallet (with the `formattedValues` convention) renders "July 1, 2024". A wallet that doesn't know the convention falls through to the raw ISO. See [`@learncard/render-method-plugin` README](../plugins/render-method/README.md#the-formattedvalues-convention) for the full contract.
+
 ## Architecture
 
 ```

@@ -11,6 +11,7 @@ const stringValue = z.discriminatedUnion('kind', [
         kind: z.literal('binding'),
         path: z.string().min(1),
         fallback: z.string().optional(),
+        format: z.string().min(1).optional(),
     }),
 ]);
 

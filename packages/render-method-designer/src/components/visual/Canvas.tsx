@@ -40,6 +40,12 @@ import { SelectionOverlay, elementBounds, supportedResizeDirections } from './Se
 
 const resolveString = (sv: StringValue, data: RenderData): string => {
     if (sv.kind === 'static') return sv.value;
+    if (sv.format) {
+        const formatted = lookupPath(data, `formattedValues.${sv.path}.${sv.format}`);
+        if (formatted !== undefined && formatted !== null && formatted !== '') {
+            return String(formatted);
+        }
+    }
     const value = lookupPath(data, sv.path);
     if (value !== undefined && value !== null && value !== '') return String(value);
     return sv.fallback ?? '';

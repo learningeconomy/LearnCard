@@ -145,6 +145,7 @@ export const getRenderMethodPlugin = (
         findTemplateRenderMethod: (_lc, vc, suite) => findTemplateRenderMethod(vc, suite),
         findTemplateRenderMethods: (_lc, vc, suite) => findTemplateRenderMethods(vc, suite),
         getSvgMustacheRenderMethod: (_lc, vc) => getSvgMustacheRenderMethod(vc),
-        buildRenderData: (_lc, vc, renderProperty) => buildRenderData(vc, renderProperty),
+        buildRenderData: (_lc, vc, renderProperty, options) =>
+            buildRenderData(vc, renderProperty, options),
     },
 });

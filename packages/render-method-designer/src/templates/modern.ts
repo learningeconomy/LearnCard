@@ -206,7 +206,7 @@ export const modernTemplate: CredentialTemplate = {
             type: 'text',
             x: 320,
             y: 488,
-            content: { kind: 'binding', path: 'validFrom', fallback: '—' },
+            content: { kind: 'binding', path: 'validFrom', format: 'medium', fallback: '—' },
             font: 'heading',
             size: 12,
             weight: 500,

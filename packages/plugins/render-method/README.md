@@ -25,6 +25,37 @@ const lc = await baseLc.addPlugin(getRenderMethodPlugin(baseLc));
 | `attachRenderMethod` | `(vc, config?) => UnsignedVC` | Attaches a `TemplateRenderMethod` to the VC and injects the JSON-LD context. **Opt-in:** returns the VC unchanged when `config` is omitted. Merges with existing `renderMethod` entries. |
 | `buildTemplateRenderMethod` | `(config) => TemplateRenderMethod` | Builds a `TemplateRenderMethod` descriptor without mutating a VC. |
 
+### The `formattedValues` convention
+
+Mustache is logic-less, so the spec gives template authors no way to format dates or truncate DIDs. To fill that gap, `buildRenderData` adds a `formattedValues` mirror containing locale-aware variants of fields it detects as ISO 8601 timestamps or long identifiers (DIDs / URNs / URLs).
+
+```ts
+const data = lc.invoke.buildRenderData(vc);
+// {
+//   validFrom: '2024-07-01T00:00:00Z',
+//   formattedValues: {
+//     validFrom: {
+//       long: 'July 1, 2024',
+//       medium: 'Jul 1, 2024',
+//       short: '07/01/2024',
+//       iso: '2024-07-01',
+//       year: '2024', month: 'July', day: '1', weekday: 'Monday',
+//       relative: '5 months ago',
+//       time: '12:30 PM', datetime: 'Jul 1, 2024, 12:30 PM',
+//     },
+//   },
+//   issuer: { id: '…', name: '…' },
+// }
+```
+
+Templates reference these directly: `{{formattedValues.validFrom.long}}`.
+
+**Locale.** Defaults to `navigator.language` in the browser or `'en-US'` in Node. Override via the third argument: `lc.invoke.buildRenderData(vc, undefined, { locale: 'fr-FR' })`.
+
+**Opt out.** Pass `{ formattedValues: false }` if you want a stable, mirror-free context (useful for snapshot tests).
+
+**Interoperability.** This is a LearnCard convention, not a W3C standard — see `format-aliases.ts` for the full contract. Templates produced by `@learncard/render-method-designer` use a Mustache section-pair fallback (`{{#formattedValues.X.long}}…{{/…}}{{^formattedValues.X.long}}{{X}}{{/…}}`) so a Mustache renderer without the mirror falls back to the raw value rather than rendering empty. Wallets that want byte-identical output can import and call `buildFormattedValues` on their own data context.
+
 ### Read side
 
 Layered API — pick the level that fits your need:

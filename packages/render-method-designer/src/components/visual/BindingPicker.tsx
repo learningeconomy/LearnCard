@@ -1,6 +1,13 @@
 import React, { useMemo, useState } from 'react';
 
 import { walkVariables, type DiscoveredVariable } from '../../lib/walkVariables';
+import {
+    DATE_FORMAT_KEYS,
+    DATE_FORMAT_LABELS,
+    STRING_FORMAT_KEYS,
+    STRING_FORMAT_LABELS,
+    classifyFormattable,
+} from '../../lib/format-aliases';
 import type { StringValue } from '../../ir/types';
 import type { RenderData } from '../../types';
 
@@ -10,6 +17,22 @@ export interface BindingPickerProps {
     data: RenderData;
     label?: string;
 }
+
+/**
+ * Walk a dotted path through the render data to find the bound value. Used to determine
+ * the field's type so the format dropdown can show the right options (date vs identifier
+ * vs no formatting available).
+ */
+const lookupPath = (data: RenderData, path: string): unknown => {
+    if (!path) return undefined;
+    const parts = path.split('.');
+    let cur: unknown = data;
+    for (const part of parts) {
+        if (cur === null || cur === undefined || typeof cur !== 'object') return undefined;
+        cur = (cur as Record<string, unknown>)[part];
+    }
+    return cur;
+};
 
 export const BindingPicker: React.FC<BindingPickerProps> = ({ value, onChange, data, label }) => {
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -22,6 +45,17 @@ export const BindingPicker: React.FC<BindingPickerProps> = ({ value, onChange, d
         return variables.filter(v => v.path.toLowerCase().includes(q));
     }, [variables, filter]);
 
+    const boundValue = value.kind === 'binding' ? lookupPath(data, value.path) : undefined;
+    const fieldKind = classifyFormattable(boundValue);
+    const formatKeys: readonly string[] | null =
+        fieldKind === 'date' ? DATE_FORMAT_KEYS : fieldKind === 'identifier' ? STRING_FORMAT_KEYS : null;
+    const formatLabels =
+        fieldKind === 'date'
+            ? (DATE_FORMAT_LABELS as Record<string, string>)
+            : fieldKind === 'identifier'
+                ? (STRING_FORMAT_LABELS as Record<string, string>)
+                : null;
+
     const setKind = (kind: 'static' | 'binding') => {
         if (kind === 'static') {
             onChange({ kind: 'static', value: value.kind === 'static' ? value.value : '' });
@@ -30,6 +64,7 @@ export const BindingPicker: React.FC<BindingPickerProps> = ({ value, onChange, d
                 kind: 'binding',
                 path: value.kind === 'binding' ? value.path : '',
                 fallback: value.kind === 'binding' ? value.fallback : undefined,
+                format: value.kind === 'binding' ? value.format : undefined,
             });
         }
     };
@@ -213,6 +248,61 @@ export const BindingPicker: React.FC<BindingPickerProps> = ({ value, onChange, d
                             </div>
                         )}
                     </div>
+                    {value.kind === 'binding' && formatKeys && formatLabels && (
+                        <div style={{ marginTop: '6px' }}>
+                            <div
+                                style={{
+                                    fontSize: '10px',
+                                    color: '#6F7590',
+                                    marginBottom: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                }}
+                            >
+                                <span>Format</span>
+                                <span
+                                    style={{
+                                        padding: '1px 6px',
+                                        fontSize: '9px',
+                                        background: '#EFF0F5',
+                                        borderRadius: '4px',
+                                        color: '#52597A',
+                                        textTransform: 'capitalize',
+                                    }}
+                                >
+                                    {fieldKind}
+                                </span>
+                            </div>
+                            <select
+                                value={value.format ?? ''}
+                                onChange={e =>
+                                    onChange({
+                                        ...value,
+                                        format: e.target.value || undefined,
+                                    })
+                                }
+                                style={{
+                                    width: '100%',
+                                    padding: '6px 10px',
+                                    fontSize: '11px',
+                                    border: '1px solid #E2E3E9',
+                                    borderRadius: '8px',
+                                    outline: 'none',
+                                    color: '#18224E',
+                                    background: '#FFFFFF',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <option value="">Raw value (no formatting)</option>
+                                {formatKeys.map(k => (
+                                    <option key={k} value={k}>
+                                        {formatLabels[k]}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <input
                         type="text"
                         value={value.fallback ?? ''}

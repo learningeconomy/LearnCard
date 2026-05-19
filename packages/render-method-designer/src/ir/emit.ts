@@ -128,16 +128,47 @@ const emitRect = (el: RectElement, theme: Theme, defs: Map<string, string>): str
     return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}"${rx} fill="${fill}"${stroke}/>`;
 };
 
+/**
+ * Emit a `<text>` element wrapping the resolved binding. Three-tier fallback when a
+ * `format` is set on a binding:
+ *
+ *   1. Prefer `formattedValues.{path}.{format}` if present in the render data.
+ *   2. Else fall back to the raw `{{path}}`.
+ *   3. Else (only when an explicit `fallback` literal is provided) render the literal.
+ *
+ * Renderers that don't compute the `formattedValues` mirror (third-party Mustache
+ * implementations) will hit tier 2 — raw ISO date instead of "July 1, 2024", but the
+ * template still renders correctly. See `format-aliases.ts` in
+ * `@learncard/render-method-plugin` for the convention.
+ */
 const emitText = (el: TextElement, theme: Theme): string => {
     const attrs = textAttrs(el, theme);
     if (el.content.kind === 'static') {
         return `<text ${attrs}>${stringContent(el.content)}</text>`;
     }
-    const { path, fallback } = el.content;
-    const primary = `{{#${path}}}<text ${attrs}>{{${path}}}</text>{{/${path}}}`;
-    if (!fallback) return primary;
-    const fallbackMarkup = `{{^${path}}}<text ${attrs}>${escapeXml(fallback)}</text>{{/${path}}}`;
-    return `${primary}${fallbackMarkup}`;
+    return emitBoundString(el.content, attrs, 'text');
+};
+
+const emitBoundString = (
+    binding: { kind: 'binding'; path: string; fallback?: string; format?: string },
+    attrs: string,
+    wrapTag: 'text'
+): string => {
+    const { path, fallback, format } = binding;
+    const formattedPath = format ? `formattedValues.${path}.${format}` : null;
+
+    const rawTier = `{{#${path}}}<${wrapTag} ${attrs}>{{${path}}}</${wrapTag}>{{/${path}}}`;
+    const fallbackTier = fallback
+        ? `{{^${path}}}<${wrapTag} ${attrs}>${escapeXml(fallback)}</${wrapTag}>{{/${path}}}`
+        : '';
+
+    if (!formattedPath) {
+        return `${rawTier}${fallbackTier}`;
+    }
+
+    const formattedTier = `{{#${formattedPath}}}<${wrapTag} ${attrs}>{{${formattedPath}}}</${wrapTag}>{{/${formattedPath}}}`;
+    const formattedAbsentBranch = `{{^${formattedPath}}}${rawTier}${fallbackTier}{{/${formattedPath}}}`;
+    return `${formattedTier}${formattedAbsentBranch}`;
 };
 
 const emitImage = (el: ImageElement, defs: Map<string, string>): string => {
@@ -164,16 +195,10 @@ const emitFieldRow = (el: FieldRowElement, theme: Theme): string => {
     const labelMarkup = `<text x="${el.x}" y="${el.y}" font-family="${headingFont}" font-size="${labelSize}" font-weight="700" letter-spacing="0.8" fill="${labelColor}">${escapeXml(el.label)}</text>`;
 
     const valueAttrs = `x="${el.x + el.w}" y="${el.y}" font-family="${headingFont}" font-size="${valueSize}" font-weight="700" fill="${valueColor}" text-anchor="end"`;
-    let valueMarkup: string;
-    if (el.value.kind === 'static') {
-        valueMarkup = `<text ${valueAttrs}>${escapeXml(el.value.value)}</text>`;
-    } else {
-        const { path, fallback } = el.value;
-        valueMarkup = `{{#${path}}}<text ${valueAttrs}>{{${path}}}</text>{{/${path}}}`;
-        if (fallback) {
-            valueMarkup += `{{^${path}}}<text ${valueAttrs}>${escapeXml(fallback)}</text>{{/${path}}}`;
-        }
-    }
+    const valueMarkup =
+        el.value.kind === 'static'
+            ? `<text ${valueAttrs}>${escapeXml(el.value.value)}</text>`
+            : emitBoundString(el.value, valueAttrs, 'text');
     return `${labelMarkup}${valueMarkup}`;
 };
 

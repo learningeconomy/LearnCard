@@ -189,7 +189,7 @@ export const minimalTemplate: CredentialTemplate = {
             type: 'text',
             x: 36,
             y: 512,
-            content: { kind: 'binding', path: 'validFrom', fallback: '—' },
+            content: { kind: 'binding', path: 'validFrom', format: 'long', fallback: '—' },
             font: 'heading',
             size: 14,
             weight: 500,
