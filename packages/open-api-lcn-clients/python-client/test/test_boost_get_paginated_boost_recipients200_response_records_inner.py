@@ -35,78 +35,14 @@ class TestBoostGetPaginatedBoostRecipients200ResponseRecordsInner(unittest.TestC
         model = BoostGetPaginatedBoostRecipients200ResponseRecordsInner()
         if include_optional:
             return BoostGetPaginatedBoostRecipients200ResponseRecordsInner(
-                to = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
-                    profile_id = '012', 
-                    display_name = '', 
-                    short_bio = '', 
-                    bio = '', 
-                    did = '', 
-                    is_private = True, 
-                    email = '', 
-                    image = '', 
-                    hero_image = '', 
-                    website_link = '', 
-                    is_service_profile = True, 
-                    type = '', 
-                    notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                    display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
-                        background_color = '', 
-                        background_image = '', 
-                        fade_background_image = True, 
-                        repeat_background_image = True, 
-                        font_color = '', 
-                        accent_color = '', 
-                        accent_font_color = '', 
-                        id_background_image = '', 
-                        fade_id_background_image = True, 
-                        id_background_color = '', 
-                        repeat_id_background_image = True, ), 
-                    highlighted_credentials = [
-                        ''
-                        ], 
-                    role = '', 
-                    dob = '', 
-                    country = '', 
-                    approved = True, ),
+                to = None,
                 var_from = '',
                 received = '',
                 uri = ''
             )
         else:
             return BoostGetPaginatedBoostRecipients200ResponseRecordsInner(
-                to = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
-                    profile_id = '012', 
-                    display_name = '', 
-                    short_bio = '', 
-                    bio = '', 
-                    did = '', 
-                    is_private = True, 
-                    email = '', 
-                    image = '', 
-                    hero_image = '', 
-                    website_link = '', 
-                    is_service_profile = True, 
-                    type = '', 
-                    notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                    display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
-                        background_color = '', 
-                        background_image = '', 
-                        fade_background_image = True, 
-                        repeat_background_image = True, 
-                        font_color = '', 
-                        accent_color = '', 
-                        accent_font_color = '', 
-                        id_background_image = '', 
-                        fade_id_background_image = True, 
-                        id_background_color = '', 
-                        repeat_id_background_image = True, ), 
-                    highlighted_credentials = [
-                        ''
-                        ], 
-                    role = '', 
-                    dob = '', 
-                    country = '', 
-                    approved = True, ),
+                to = None,
                 var_from = '',
         )
         """

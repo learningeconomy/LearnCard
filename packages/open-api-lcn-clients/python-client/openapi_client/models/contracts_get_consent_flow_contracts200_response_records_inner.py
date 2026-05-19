@@ -19,10 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_consent_flow_contract200_response_contract import ContractsGetConsentFlowContract200ResponseContract
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
     """
@@ -42,12 +43,13 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
     updated_at: Optional[StrictStr] = Field(alias="updatedAt")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     auto_boosts: Optional[List[StrictStr]] = Field(default=None, alias="autoBoosts")
-    writers: Optional[List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]] = None
+    writers: Optional[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -59,8 +61,7 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -183,7 +184,7 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
             "updatedAt": obj.get("updatedAt"),
             "expiresAt": obj.get("expiresAt"),
             "autoBoosts": obj.get("autoBoosts"),
-            "writers": [BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
+            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

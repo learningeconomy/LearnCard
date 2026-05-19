@@ -70,6 +70,7 @@ class TestInboxClaimRequestCredential(unittest.TestCase):
                     ],
                 issuer = None,
                 credential_subject = None,
+                name = '',
                 proof = None,
         )
         """

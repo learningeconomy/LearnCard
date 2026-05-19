@@ -40,6 +40,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_allocate_credential_status(self) -> None:
+        """Test case for boost_allocate_credential_status
+
+        Allocate Bitstring credential status entries
+        """
+        pass
+
     def test_boost_attach_framework_to_boost(self) -> None:
         """Test case for boost_attach_framework_to_boost
 
@@ -201,6 +208,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_boost_skills(self) -> None:
+        """Test case for boost_get_boost_skills
+
+        Get aligned skills for a boost
+        """
+        pass
+
     def test_boost_get_boosts(self) -> None:
         """Test case for boost_get_boosts
 
@@ -292,6 +306,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_revoke_boost_recipient(self) -> None:
+        """Test case for boost_revoke_boost_recipient
+
+        Revoke a boost recipient
+        """
+        pass
+
     def test_boost_search_skills_available_for_boost(self) -> None:
         """Test case for boost_search_skills_available_for_boost
 
@@ -310,6 +331,20 @@ class TestBoostsApi(unittest.TestCase):
         """Test case for boost_send_boost_via_signing_authority
 
         Send a boost to a profile using a signing authority
+        """
+        pass
+
+    def test_boost_suspend_boost_recipient(self) -> None:
+        """Test case for boost_suspend_boost_recipient
+
+        Suspend a boost recipient
+        """
+        pass
+
+    def test_boost_unsuspend_boost_recipient(self) -> None:
+        """Test case for boost_unsuspend_boost_recipient
+
+        Unsuspend a boost recipient
         """
         pass
 

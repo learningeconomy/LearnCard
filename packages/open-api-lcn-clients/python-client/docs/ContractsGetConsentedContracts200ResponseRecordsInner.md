@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **terms** | [**ContractsGetConsentedContracts200ResponseRecordsInnerTerms**](ContractsGetConsentedContracts200ResponseRecordsInnerTerms.md) |  | 
 **contract** | [**ContractsGetConsentFlowContract200Response**](ContractsGetConsentFlowContract200Response.md) |  | 
 **uri** | **str** |  | 
-**consenter** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
+**consenter** | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |  | 
 **status** | **str** |  | 
 
 ## Example

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -10,6 +8,7 @@
 
     Do not edit the class manually.
 """  # noqa: E501
+
 
 import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
@@ -41,7 +40,7 @@ class UtilitiesApi:
     @validate_call
     def utilities_get_challenges(
         self,
-        amount: Optional[Annotated[int, Field(le=100, strict=True)]] = None,
+        amount: Optional[Annotated[int, Field(le=100, strict=True, gt=0)]] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -113,7 +112,7 @@ class UtilitiesApi:
     @validate_call
     def utilities_get_challenges_with_http_info(
         self,
-        amount: Optional[Annotated[int, Field(le=100, strict=True)]] = None,
+        amount: Optional[Annotated[int, Field(le=100, strict=True, gt=0)]] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -185,7 +184,7 @@ class UtilitiesApi:
     @validate_call
     def utilities_get_challenges_without_preload_content(
         self,
-        amount: Optional[Annotated[int, Field(le=100, strict=True)]] = None,
+        amount: Optional[Annotated[int, Field(le=100, strict=True, gt=0)]] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],

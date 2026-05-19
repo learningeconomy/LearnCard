@@ -42,7 +42,8 @@ class TestProfileManagerCreateChildProfileManagerRequest(unittest.TestCase):
                     bio = '', 
                     email = '', 
                     image = '', 
-                    hero_image = '', )
+                    hero_image = '', 
+                    manager_type = '', )
             )
         else:
             return ProfileManagerCreateChildProfileManagerRequest(
@@ -53,7 +54,8 @@ class TestProfileManagerCreateChildProfileManagerRequest(unittest.TestCase):
                     bio = '', 
                     email = '', 
                     image = '', 
-                    hero_image = '', ),
+                    hero_image = '', 
+                    manager_type = '', ),
         )
         """
 

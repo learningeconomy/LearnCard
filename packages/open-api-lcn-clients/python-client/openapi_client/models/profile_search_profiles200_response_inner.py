@@ -20,46 +20,39 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to_display import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToDisplay
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of1_display import BoostGetBoostRecipients200ResponseInnerToAnyOf1Display
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileSearchProfiles200ResponseInner(BaseModel):
     """
     ProfileSearchProfiles200ResponseInner
     """ # noqa: E501
+    connection_status: Optional[StrictStr] = Field(default=None, alias="connectionStatus")
     profile_id: Annotated[str, Field(min_length=3, strict=True, max_length=40)] = Field(description="Unique, URL-safe identifier for the profile.", alias="profileId")
     display_name: StrictStr = Field(description="Human-readable display name for the profile.", alias="displayName")
     short_bio: StrictStr = Field(description="Short bio for the profile.", alias="shortBio")
-    bio: StrictStr = Field(description="Longer bio for the profile.")
-    did: StrictStr = Field(description="Decentralized Identifier for the profile. (auto-assigned)")
-    is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
-    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
-    website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
-    is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
-    notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
-    display: Optional[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToDisplay] = None
-    highlighted_credentials: Optional[Annotated[List[StrictStr], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
+    is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
+    display: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf1Display] = None
+    bio: StrictStr = Field(description="Longer bio for the profile.")
+    website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
     role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
+    highlighted_credentials: Optional[Annotated[List[StrictStr], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
+    did: StrictStr = Field(description="Decentralized Identifier for the profile. (auto-assigned)")
+    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
+    is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
+    profile_visibility: Optional[StrictStr] = Field(default='public', description="Profile visibility: 'public', 'connections_only', or 'private'.", alias="profileVisibility")
+    show_email: Optional[StrictBool] = Field(default=False, description="Whether to show email to connections.", alias="showEmail")
+    allow_connection_requests: Optional[StrictStr] = Field(default='anyone', description="Who can send connection requests: 'anyone' or 'invite_only'.", alias="allowConnectionRequests")
+    notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
     dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
     country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
     approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
-    connection_status: Optional[StrictStr] = Field(default=None, alias="connectionStatus")
-    additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "did", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved", "connectionStatus"]
-
-    @field_validator('notifications_webhook')
-    def notifications_webhook_validate_regular_expression(cls, value):
-        """Validates the regular expression"""
-        if value is None:
-            return value
-
-        if not re.match(r"^http.*", value):
-            raise ValueError(r"must validate the regular expression /^http.*/")
-        return value
+    __properties: ClassVar[List[str]] = ["connectionStatus", "profileId", "displayName", "shortBio", "image", "heroImage", "type", "isServiceProfile", "display", "bio", "websiteLink", "role", "highlightedCredentials", "did", "email", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "notificationsWebhook", "dob", "country", "approved"]
 
     @field_validator('connection_status')
     def connection_status_validate_enum(cls, value):
@@ -71,8 +64,42 @@ class ProfileSearchProfiles200ResponseInner(BaseModel):
             raise ValueError("must be one of enum values ('CONNECTED', 'PENDING_REQUEST_SENT', 'PENDING_REQUEST_RECEIVED', 'NOT_CONNECTED')")
         return value
 
+    @field_validator('profile_visibility')
+    def profile_visibility_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['public', 'connections_only', 'private']):
+            raise ValueError("must be one of enum values ('public', 'connections_only', 'private')")
+        return value
+
+    @field_validator('allow_connection_requests')
+    def allow_connection_requests_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['anyone', 'invite_only']):
+            raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
+
+    @field_validator('notifications_webhook')
+    def notifications_webhook_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not isinstance(value, str):
+            value = str(value)
+
+        if not re.match(r"^http.*", value):
+            raise ValueError(r"must validate the regular expression /^http.*/")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -84,8 +111,7 @@ class ProfileSearchProfiles200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -101,10 +127,8 @@ class ProfileSearchProfiles200ResponseInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
-            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -115,11 +139,6 @@ class ProfileSearchProfiles200ResponseInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
         return _dict
 
     @classmethod
@@ -132,32 +151,30 @@ class ProfileSearchProfiles200ResponseInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "connectionStatus": obj.get("connectionStatus"),
             "profileId": obj.get("profileId"),
             "displayName": obj.get("displayName") if obj.get("displayName") is not None else '',
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
-            "bio": obj.get("bio") if obj.get("bio") is not None else '',
-            "did": obj.get("did"),
-            "isPrivate": obj.get("isPrivate"),
-            "email": obj.get("email"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
-            "websiteLink": obj.get("websiteLink"),
-            "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
             "type": obj.get("type"),
-            "notificationsWebhook": obj.get("notificationsWebhook"),
-            "display": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
-            "highlightedCredentials": obj.get("highlightedCredentials"),
+            "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
+            "display": BoostGetBoostRecipients200ResponseInnerToAnyOf1Display.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "bio": obj.get("bio") if obj.get("bio") is not None else '',
+            "websiteLink": obj.get("websiteLink"),
             "role": obj.get("role") if obj.get("role") is not None else '',
+            "highlightedCredentials": obj.get("highlightedCredentials"),
+            "did": obj.get("did"),
+            "email": obj.get("email"),
+            "isPrivate": obj.get("isPrivate"),
+            "profileVisibility": obj.get("profileVisibility") if obj.get("profileVisibility") is not None else 'public',
+            "showEmail": obj.get("showEmail") if obj.get("showEmail") is not None else False,
+            "allowConnectionRequests": obj.get("allowConnectionRequests") if obj.get("allowConnectionRequests") is not None else 'anyone',
+            "notificationsWebhook": obj.get("notificationsWebhook"),
             "dob": obj.get("dob") if obj.get("dob") is not None else '',
             "country": obj.get("country"),
-            "approved": obj.get("approved"),
-            "connectionStatus": obj.get("connectionStatus")
+            "approved": obj.get("approved")
         })
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
         return _obj
 
 

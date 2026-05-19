@@ -10,6 +10,7 @@ Method | HTTP request | Description
 [**skill_frameworks_create_managed**](SkillsApi.md#skill_frameworks_create_managed) | **POST** /skills/frameworks/custom | Create and manage a custom skill framework
 [**skill_frameworks_create_managed_batch**](SkillsApi.md#skill_frameworks_create_managed_batch) | **POST** /skills/frameworks/custom/batch | Create multiple custom skill frameworks
 [**skill_frameworks_delete**](SkillsApi.md#skill_frameworks_delete) | **DELETE** /skills/frameworks/{id} | Delete a managed skill framework
+[**skill_frameworks_get_all_available_frameworks**](SkillsApi.md#skill_frameworks_get_all_available_frameworks) | **POST** /skills/frameworks/available | List all available frameworks
 [**skill_frameworks_get_boosts_that_use_framework**](SkillsApi.md#skill_frameworks_get_boosts_that_use_framework) | **POST** /skills/frameworks/{id}/boosts | Get boosts that use a framework
 [**skill_frameworks_get_by_id**](SkillsApi.md#skill_frameworks_get_by_id) | **GET** /skills/frameworks/{id} | Get Skill Framework with skills
 [**skill_frameworks_list_framework_admins**](SkillsApi.md#skill_frameworks_list_framework_admins) | **GET** /skills/frameworks/{frameworkId}/admins | List framework admins
@@ -30,12 +31,13 @@ Method | HTTP request | Description
 [**skills_list_skill_tags**](SkillsApi.md#skills_list_skill_tags) | **GET** /skills/{id}/tags | List tags for a skill
 [**skills_remove_skill_tag**](SkillsApi.md#skills_remove_skill_tag) | **DELETE** /skills/{id}/tags/{slug} | Remove a tag from a skill
 [**skills_search_framework_skills**](SkillsApi.md#skills_search_framework_skills) | **POST** /skills/framework/search | Search skills in a framework
+[**skills_semantic_search_skills**](SkillsApi.md#skills_semantic_search_skills) | **POST** /skills/semantic-search | Semantic search skills
 [**skills_sync_framework_skills**](SkillsApi.md#skills_sync_framework_skills) | **POST** /skills/frameworks/{id}/sync | Sync Framework Skills
 [**skills_update**](SkillsApi.md#skills_update) | **PATCH** /skills/{id} | Update a skill
 
 
 # **skill_frameworks_add_framework_admin**
-> SkillFrameworksAddFrameworkAdmin200Response skill_frameworks_add_framework_admin(framework_id, skill_frameworks_add_framework_admin_request)
+> InboxApproveGuardianCredentialInApp200Response skill_frameworks_add_framework_admin(framework_id, skill_frameworks_add_framework_admin_request)
 
 Add framework admin
 
@@ -47,7 +49,7 @@ Adds another profile as a manager of the framework. Requires existing manager ac
 
 ```python
 import openapi_client
-from openapi_client.models.skill_frameworks_add_framework_admin200_response import SkillFrameworksAddFrameworkAdmin200Response
+from openapi_client.models.inbox_approve_guardian_credential_in_app200_response import InboxApproveGuardianCredentialInApp200Response
 from openapi_client.models.skill_frameworks_add_framework_admin_request import SkillFrameworksAddFrameworkAdminRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -96,7 +98,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**SkillFrameworksAddFrameworkAdmin200Response**](SkillFrameworksAddFrameworkAdmin200Response.md)
+[**InboxApproveGuardianCredentialInApp200Response**](InboxApproveGuardianCredentialInApp200Response.md)
 
 ### Authorization
 
@@ -536,6 +538,89 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **skill_frameworks_get_all_available_frameworks**
+> BoostGetBoostFrameworks200Response skill_frameworks_get_all_available_frameworks(skill_frameworks_get_all_available_frameworks_request)
+
+List all available frameworks
+
+Returns frameworks that the caller manages or frameworks marked public. Supports pagination and optional query filters.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_boost_frameworks200_response import BoostGetBoostFrameworks200Response
+from openapi_client.models.skill_frameworks_get_all_available_frameworks_request import SkillFrameworksGetAllAvailableFrameworksRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.SkillsApi(api_client)
+    skill_frameworks_get_all_available_frameworks_request = openapi_client.SkillFrameworksGetAllAvailableFrameworksRequest() # SkillFrameworksGetAllAvailableFrameworksRequest | 
+
+    try:
+        # List all available frameworks
+        api_response = api_instance.skill_frameworks_get_all_available_frameworks(skill_frameworks_get_all_available_frameworks_request)
+        print("The response of SkillsApi->skill_frameworks_get_all_available_frameworks:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling SkillsApi->skill_frameworks_get_all_available_frameworks: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **skill_frameworks_get_all_available_frameworks_request** | [**SkillFrameworksGetAllAvailableFrameworksRequest**](SkillFrameworksGetAllAvailableFrameworksRequest.md)|  | 
+
+### Return type
+
+[**BoostGetBoostFrameworks200Response**](BoostGetBoostFrameworks200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **skill_frameworks_get_boosts_that_use_framework**
 > BoostGetPaginatedBoosts200Response skill_frameworks_get_boosts_that_use_framework(id, skill_frameworks_get_boosts_that_use_framework_request)
 
@@ -711,7 +796,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **skill_frameworks_list_framework_admins**
-> List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] skill_frameworks_list_framework_admins(framework_id)
+> List[BoostGetBoostRecipients200ResponseInnerToAnyOf3] skill_frameworks_list_framework_admins(framework_id)
 
 List framework admins
 
@@ -723,7 +808,7 @@ Returns the profiles that manage the given framework. Requires manager access.
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -769,7 +854,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
+[**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)
 
 ### Authorization
 
@@ -2217,6 +2302,89 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BoostSearchSkillsAvailableForBoost200Response**](BoostSearchSkillsAvailableForBoost200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **skills_semantic_search_skills**
+> SkillsSemanticSearchSkills200Response skills_semantic_search_skills(skills_semantic_search_skills_request)
+
+Semantic search skills
+
+Returns skills ranked by semantic similarity to the provided text. Optionally filter by framework.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.skills_semantic_search_skills200_response import SkillsSemanticSearchSkills200Response
+from openapi_client.models.skills_semantic_search_skills_request import SkillsSemanticSearchSkillsRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.SkillsApi(api_client)
+    skills_semantic_search_skills_request = openapi_client.SkillsSemanticSearchSkillsRequest() # SkillsSemanticSearchSkillsRequest | 
+
+    try:
+        # Semantic search skills
+        api_response = api_instance.skills_semantic_search_skills(skills_semantic_search_skills_request)
+        print("The response of SkillsApi->skills_semantic_search_skills:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling SkillsApi->skills_semantic_search_skills: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **skills_semantic_search_skills_request** | [**SkillsSemanticSearchSkillsRequest**](SkillsSemanticSearchSkillsRequest.md)|  | 
+
+### Return type
+
+[**SkillsSemanticSearchSkills200Response**](SkillsSemanticSearchSkills200Response.md)
 
 ### Authorization
 
