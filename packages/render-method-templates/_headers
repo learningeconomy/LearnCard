@@ -1,0 +1,6 @@
+# Netlify _headers file for render-method-templates
+
+/**/*.svg
+  Content-Type: image/svg+xml
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=31536000, immutable
