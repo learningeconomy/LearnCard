@@ -1,5 +1,22 @@
 # learn-card-base
 
+## 0.1.34
+
+### Patch Changes
+
+-   [#1242](https://github.com/learningeconomy/LearnCard/pull/1242) [`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88) Thanks [@smurflo2](https://github.com/smurflo2)! - Better, prettier handling for issuer/issuee names when they're missing or dids
+
+-   [#1238](https://github.com/learningeconomy/LearnCard/pull/1238) [`180973146cacf9e69b312841ccbb40fa32423c30`](https://github.com/learningeconomy/LearnCard/commit/180973146cacf9e69b312841ccbb40fa32423c30) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add fallback resiliency strategies to OIDC exchanges
+
+-   [#1238](https://github.com/learningeconomy/LearnCard/pull/1238) [`180973146cacf9e69b312841ccbb40fa32423c30`](https://github.com/learningeconomy/LearnCard/commit/180973146cacf9e69b312841ccbb40fa32423c30) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add fallback resiliency strategies to OIDC exchanges
+
+-   Updated dependencies [[`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/types@5.16.0
+    -   @learncard/lca-api-plugin@1.2.10
+    -   @learncard/helpers@1.3.1
+    -   @learncard/ler-rs-plugin@0.1.10
+    -   @learncard/sss-key-manager@0.1.9
+
 ## 0.1.33
 
 ### Patch Changes
