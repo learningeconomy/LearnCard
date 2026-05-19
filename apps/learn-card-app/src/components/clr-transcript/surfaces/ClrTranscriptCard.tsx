@@ -25,11 +25,11 @@ const ClrTranscriptCard = ({ model, credential, onViewDetails }: Props) => {
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );
-        onViewDetails?.();
+        // onViewDetails?.();
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto">
             <ClrTranscriptHeader model={model} />
             <ClrTranscriptEvidenceList evidence={model.evidence} compact />
             <button

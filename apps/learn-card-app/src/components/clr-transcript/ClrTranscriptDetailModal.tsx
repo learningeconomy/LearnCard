@@ -16,7 +16,7 @@ const ClrTranscriptDetailModal = ({ model, options, credential }: Props) => {
     const verificationItems = useVerification(credential);
 
     return (
-        <div className="p-4 space-y-4 pb-10">
+        <div className="h-full overflow-y-auto p-4 space-y-4 pb-10">
             <ClrTranscriptFullPage model={model} options={options} />
             {verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />
