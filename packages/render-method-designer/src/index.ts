@@ -55,6 +55,18 @@ export {
 } from './ir/schema';
 export { emitSvgMustache } from './ir/emit';
 export { DEFAULT_THEME, resolveColor, resolveFont } from './ir/theme';
+export { parseSvgToTemplate, buildFallbackTemplate } from './ir/parse';
+export type { ImportResult, ImportOptions, ImportWarning } from './ir/parse';
+export {
+    clientPointToSvg,
+    snap,
+    snapPoint,
+    applyResize,
+    DEFAULT_GRID_STEP,
+    DRAG_THRESHOLD_PX,
+    RESIZE_CURSORS,
+} from './lib/coord';
+export type { ResizeDirection, DragState } from './lib/coord';
 
 export { STARTER_TEMPLATES, classicTemplate, modernTemplate, minimalTemplate } from './templates';
 export type { TemplateGalleryEntry } from './templates';

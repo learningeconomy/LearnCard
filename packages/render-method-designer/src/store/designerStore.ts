@@ -21,6 +21,11 @@ export interface DesignerState {
     template: CredentialTemplate;
     selectedElementId: string | null;
     history: { past: CredentialTemplate[]; future: CredentialTemplate[] };
+    /**
+     * True while an interaction (drag, resize) is in flight. Mutations during this window
+     * skip history snapshots so a multi-frame drag collapses to a single undo entry.
+     */
+    interacting: boolean;
 }
 
 export interface DesignerActions {
@@ -28,9 +33,16 @@ export interface DesignerActions {
     selectElement: (id: string | null) => void;
     updateElement: (id: string, update: (el: DesignerElement) => void) => void;
     updateTheme: (update: (theme: Theme) => void) => void;
+    addElement: (element: DesignerElement) => void;
+    reorderElements: (fromIndex: number, toIndex: number) => void;
     moveElement: (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => void;
     deleteElement: (id: string) => void;
     duplicateElement: (id: string) => void;
+    /** Begin an interaction. Snapshots the current template once, then suppresses snapshots
+     *  on subsequent updates until `endInteraction` is called. */
+    beginInteraction: () => void;
+    /** End an in-flight interaction. The next update snapshots as usual. */
+    endInteraction: () => void;
     undo: () => void;
     redo: () => void;
 }
@@ -47,14 +59,19 @@ const blankTemplate = (): CredentialTemplate => ({
     elements: [],
 });
 
-const snapshot = (state: DesignerState, next: CredentialTemplate): DesignerState => ({
-    ...state,
-    template: next,
-    history: {
-        past: [...state.history.past.slice(-(HISTORY_LIMIT - 1)), state.template],
-        future: [],
-    },
-});
+const snapshot = (state: DesignerState, next: CredentialTemplate): DesignerState => {
+    if (state.interacting) {
+        return { ...state, template: next };
+    }
+    return {
+        ...state,
+        template: next,
+        history: {
+            past: [...state.history.past.slice(-(HISTORY_LIMIT - 1)), state.template],
+            future: [],
+        },
+    };
+};
 
 const generateId = (prefix: string): string =>
     `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36).slice(-4)}`;
@@ -64,6 +81,7 @@ export const createDesignerStore = (initial?: CredentialTemplate) =>
         template: initial ?? blankTemplate(),
         selectedElementId: null,
         history: { past: [], future: [] },
+        interacting: false,
 
         setTemplate: template =>
             set(state => ({
@@ -89,6 +107,38 @@ export const createDesignerStore = (initial?: CredentialTemplate) =>
                 });
                 return snapshot(state, next);
             }),
+
+        addElement: element =>
+            set(state => {
+                const next = produce(state.template, draft => {
+                    draft.elements.push(element);
+                });
+                return {
+                    ...snapshot(state, next),
+                    selectedElementId: element.id,
+                };
+            }),
+
+        reorderElements: (fromIndex, toIndex) =>
+            set(state => {
+                if (
+                    fromIndex === toIndex ||
+                    fromIndex < 0 ||
+                    toIndex < 0 ||
+                    fromIndex >= state.template.elements.length ||
+                    toIndex >= state.template.elements.length
+                ) {
+                    return state;
+                }
+                const next = produce(state.template, draft => {
+                    const [el] = draft.elements.splice(fromIndex, 1);
+                    draft.elements.splice(toIndex, 0, el);
+                });
+                return snapshot(state, next);
+            }),
+
+        beginInteraction: () => set({ interacting: true }),
+        endInteraction: () => set({ interacting: false }),
 
         moveElement: (id, direction) =>
             set(state => {

@@ -75,14 +75,31 @@ interface RenderMethodDesignerProps {
 └──────────────────┴─────────────────────────────────┴────────────────────────┘
 ```
 
-- **Canvas** renders the IR directly as React-SVG (no Mustache parse on each keystroke). Click an element to select; transform handles will land in Phase 3.
-- **Layers** mirrors the IR tree. ↑/↓ buttons reorder z-index; ⧉ duplicates; ✕ deletes. Drag-to-reorder lands in Phase 3.
+- **Canvas** renders the IR directly as React-SVG. Click any element to select; drag to move; eight handles on the selection box resize the element. Snap-to-grid (4px default, configurable via `gridStep` and `snapToGrid` props on `Canvas`). All drag-and-resize interactions collapse to a single undo step.
+- **Layers** mirrors the IR tree, with drag-to-reorder via `@dnd-kit/sortable`. ⧉ duplicates; ✕ deletes. The library at the top of the panel adds new primitives (Text / Rect / Image / Field Row / Divider) at the canvas center.
 - **Properties** dispatches by element type: Text, Rect, Image, Field-Row, Divider. Each surfaces a binding picker driven by the active sample VC.
 - **Theme** exposes the 8-color palette + heading/body fonts. Theme tokens are referenced as `$primary` etc. on the IR; the emitter resolves them at save time.
 
 ## Code mode
 
 The code-first editor: CodeMirror XML + Mustache, sample-VC live preview, variable picker, validation toolbar. Use when the visual editor can't represent something you need (custom paths, masks, complex filters).
+
+## SVG import
+
+Click **Change template → Import SVG** to bring in an existing design. The parser handles the IR-compatible subset:
+
+| Supported | Behavior |
+|---|---|
+| `<rect>` | → `RectElement` (with stroke/rounded corners) |
+| `<text>` | → `TextElement`. If the content is exactly `{{path}}`, becomes a binding. |
+| `<image>` | → `ImageElement` (URL source; clip-path detection for rounded/circle) |
+| `<line>` (horizontal) | → `DividerElement` |
+| `<linearGradient>` | Applied when referenced via `url(#id)` on fills |
+| `<clipPath>` | Applied when referenced from `<image>` |
+
+Everything else (`<path>`, `<polygon>`, `<circle>`, `<ellipse>`, `<g transform>`, filters, masks, patterns, foreignObject, animations) is dropped with a warning. For arbitrary SVG (Figma/Illustrator exports usually use `<path>` for any non-rectangular shape), check **"Embed as background"** in the import dialog — the original SVG is preserved as a `data:image/svg+xml` URI inside a single `ImageElement` and you build on top of it.
+
+Round-trip is lossless for SVG that this package itself emitted. For arbitrary SVG, expect lossy conversion or use the fallback.
 
 ## Starter templates
 
@@ -142,7 +159,7 @@ For visual-mode support of new suites you'll also need a suite-aware emitter; Ph
 
 ## Roadmap
 
-**Phase 2 (this release)**:
+**Phase 2**:
 - ✅ IR + Zod schema + emitter
 - ✅ Visual editor: Canvas, LayersList, PropertiesPanel, ThemePanel
 - ✅ Binding picker driven by sample VCs
@@ -150,19 +167,20 @@ For visual-mode support of new suites you'll also need a suite-aware emitter; Ph
 - ✅ Visual ↔ Code mode toggle
 - ✅ Undo / redo
 
-**Phase 3 (planned)**:
-- Drag-and-drop element placement on canvas
-- Resize handles + snap-to-grid
-- Element library (add new elements without leaving the canvas)
-- Drag-reorder layers
+**Phase 3 (this release)**:
+- ✅ Canvas drag-to-move (pointer-based, click-vs-drag threshold, one undo step per drag)
+- ✅ 8-handle resize + snap-to-grid (configurable step, defaults to 4px)
+- ✅ Element library (click-to-add Text/Rect/Image/Field Row/Divider at canvas center)
+- ✅ Drag-reorder layers via `@dnd-kit/sortable`
+- ✅ SVG import (`<rect>`, `<text>`, `<image>`, `<line>`, gradients, clip-paths) with warning list and embed-as-background fallback for arbitrary input
+
+**Phase 4 (later, optional)**:
+- Multi-select + alignment tools
 - Block grammar for slot-typed composition
 - Custom asset upload (logos, signatures)
 - Expanded starter gallery (commissioned design pass)
-
-**Phase 4 (later, optional)**:
-- Free positioning, multi-select, alignment tools
-- Arbitrary SVG import with explicit lossy-conversion warning
 - Real font-metrics-aware text wrapping
+- Full SVG import (paths, polygons, transforms baked) via a real geometry engine
 
 ## Boundary
 

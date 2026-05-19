@@ -6,10 +6,16 @@ import type { CredentialTemplate } from '../../ir/types';
 export interface TemplateGalleryProps {
     onPick: (template: CredentialTemplate) => void;
     onClose: () => void;
+    onImportSvg?: () => void;
     extraTemplates?: TemplateGalleryEntry[];
 }
 
-export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onPick, onClose, extraTemplates = [] }) => {
+export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
+    onPick,
+    onClose,
+    onImportSvg,
+    extraTemplates = [],
+}) => {
     const all = [...STARTER_TEMPLATES, ...extraTemplates];
 
     return (
@@ -82,6 +88,64 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onPick, onClos
                         gap: '16px',
                     }}
                 >
+                    {onImportSvg && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onImportSvg();
+                                onClose();
+                            }}
+                            style={{
+                                background: '#FFFFFF',
+                                border: '2px dashed #C5C8D3',
+                                borderRadius: '16px',
+                                padding: '12px',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px',
+                            }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.borderColor = '#18224E';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.borderColor = '#C5C8D3';
+                            }}
+                        >
+                            <div
+                                style={{
+                                    aspectRatio: '360 / 560',
+                                    background: '#FBFBFC',
+                                    border: '1px solid #E2E3E9',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '36px',
+                                    color: '#A8ACBD',
+                                }}
+                            >
+                                ⤓
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#18224E' }}>
+                                    Import SVG
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: '11px',
+                                        color: '#6F7590',
+                                        marginTop: '2px',
+                                        lineHeight: 1.4,
+                                    }}
+                                >
+                                    Paste or upload an SVG. We parse the supported subset and warn
+                                    about the rest.
+                                </div>
+                            </div>
+                        </button>
+                    )}
                     {all.map(entry => (
                         <button
                             key={entry.id}

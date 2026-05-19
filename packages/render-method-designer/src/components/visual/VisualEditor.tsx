@@ -15,6 +15,7 @@ import { LayersList } from './LayersList';
 import { PropertiesPanel } from './PropertiesPanel';
 import { ThemePanel } from './ThemePanel';
 import { TemplateGallery } from './TemplateGallery';
+import { ImportSvgDialog } from './ImportSvgDialog';
 
 export interface VisualEditorProps {
     initialTemplate?: CredentialTemplate;
@@ -67,6 +68,7 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
         sampleVCs.length > 0 ? sampleVCs[0].id : null
     );
     const [showGallery, setShowGallery] = useState(false);
+    const [showImport, setShowImport] = useState(false);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -241,7 +243,15 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
                 <TemplateGallery
                     onPick={t => setTemplate(t)}
                     onClose={() => setShowGallery(false)}
+                    onImportSvg={() => setShowImport(true)}
                     extraTemplates={extraTemplates}
+                />
+            )}
+
+            {showImport && (
+                <ImportSvgDialog
+                    onImport={t => setTemplate(t)}
+                    onClose={() => setShowImport(false)}
                 />
             )}
         </div>

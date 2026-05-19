@@ -1,8 +1,23 @@
 import React from 'react';
+import { useStore } from 'zustand';
+import {
+    DndContext,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import type { DesignerStoreApi } from '../../store/designerStore';
 import type { DesignerElement, ElementType } from '../../ir/types';
-import { useStore } from 'zustand';
+import { ElementLibrary } from './ElementLibrary';
 
 const ELEMENT_LABELS: Record<ElementType, string> = {
     rect: 'Rectangle',
@@ -23,7 +38,9 @@ const ELEMENT_ICONS: Record<ElementType, string> = {
 const elementSummary = (el: DesignerElement): string => {
     switch (el.type) {
         case 'text':
-            return el.content.kind === 'static' ? `"${el.content.value}"` : `{{${el.content.path}}}`;
+            return el.content.kind === 'static'
+                ? `"${el.content.value}"`
+                : `{{${el.content.path}}}`;
         case 'image':
             return el.source.kind === 'url' ? 'URL image' : `{{${el.source.path}}}`;
         case 'field-row':
@@ -35,6 +52,135 @@ const elementSummary = (el: DesignerElement): string => {
     }
 };
 
+interface LayerRowProps {
+    element: DesignerElement;
+    isSelected: boolean;
+    onSelect: (id: string) => void;
+    onDuplicate: (id: string) => void;
+    onDelete: (id: string) => void;
+}
+
+const LayerRow: React.FC<LayerRowProps> = ({
+    element,
+    isSelected,
+    onSelect,
+    onDuplicate,
+    onDelete,
+}) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: element.id,
+    });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+    };
+
+    return (
+        <li ref={setNodeRef} style={style}>
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 6px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    background: isSelected ? '#EFF0F5' : 'transparent',
+                    border: isSelected ? '1px solid #C5C8D3' : '1px solid transparent',
+                    marginBottom: '2px',
+                }}
+                onClick={() => onSelect(element.id)}
+            >
+                <button
+                    type="button"
+                    title="Drag to reorder"
+                    {...attributes}
+                    {...listeners}
+                    style={{
+                        width: '16px',
+                        height: '16px',
+                        padding: 0,
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#A8ACBD',
+                        cursor: 'grab',
+                        fontSize: '13px',
+                        lineHeight: 1,
+                        flexShrink: 0,
+                    }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    ⋮⋮
+                </button>
+                <span
+                    style={{
+                        width: '18px',
+                        textAlign: 'center',
+                        fontSize: '13px',
+                        color: '#52597A',
+                        flexShrink: 0,
+                    }}
+                >
+                    {ELEMENT_ICONS[element.type]}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                        style={{
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#18224E',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {ELEMENT_LABELS[element.type]}
+                    </div>
+                    <div
+                        style={{
+                            fontSize: '10px',
+                            color: '#8B91A7',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            fontFamily:
+                                element.type === 'text' || element.type === 'image'
+                                    ? "'JetBrains Mono', monospace"
+                                    : 'inherit',
+                        }}
+                    >
+                        {elementSummary(element)}
+                    </div>
+                </div>
+                {isSelected && (
+                    <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                        <IconButton
+                            title="Duplicate"
+                            onClick={e => {
+                                e.stopPropagation();
+                                onDuplicate(element.id);
+                            }}
+                        >
+                            ⧉
+                        </IconButton>
+                        <IconButton
+                            title="Delete"
+                            onClick={e => {
+                                e.stopPropagation();
+                                onDelete(element.id);
+                            }}
+                        >
+                            ✕
+                        </IconButton>
+                    </div>
+                )}
+            </div>
+        </li>
+    );
+};
+
 export interface LayersListProps {
     store: DesignerStoreApi;
 }
@@ -43,9 +189,28 @@ export const LayersList: React.FC<LayersListProps> = ({ store }) => {
     const elements = useStore(store, s => s.template.elements);
     const selectedId = useStore(store, s => s.selectedElementId);
     const selectElement = useStore(store, s => s.selectElement);
-    const moveElement = useStore(store, s => s.moveElement);
+    const reorderElements = useStore(store, s => s.reorderElements);
     const deleteElement = useStore(store, s => s.deleteElement);
     const duplicateElement = useStore(store, s => s.duplicateElement);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    );
+
+    const displayOrder = [...elements].reverse();
+    const displayIds = displayOrder.map(e => e.id);
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const oldDisplayIndex = displayIds.indexOf(active.id as string);
+        const newDisplayIndex = displayIds.indexOf(over.id as string);
+        if (oldDisplayIndex < 0 || newDisplayIndex < 0) return;
+        const lastIdx = elements.length - 1;
+        const fromIrIdx = lastIdx - oldDisplayIndex;
+        const toIrIdx = lastIdx - newDisplayIndex;
+        reorderElements(fromIrIdx, toIrIdx);
+    };
 
     return (
         <div
@@ -60,11 +225,11 @@ export const LayersList: React.FC<LayersListProps> = ({ store }) => {
                 overflow: 'hidden',
             }}
         >
+            <ElementLibrary store={store} />
             <div
                 style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid #E2E3E9',
-                    fontSize: '11px',
+                    padding: '10px 12px 6px',
+                    fontSize: '10px',
                     fontWeight: 700,
                     letterSpacing: '0.8px',
                     color: '#8B91A7',
@@ -73,96 +238,36 @@ export const LayersList: React.FC<LayersListProps> = ({ store }) => {
             >
                 Layers
             </div>
-            <ul style={{ listStyle: 'none', margin: 0, padding: '6px', overflowY: 'auto', flex: 1 }}>
-                {[...elements].reverse().map(el => {
-                    const isSelected = el.id === selectedId;
-                    return (
-                        <li key={el.id}>
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => selectElement(el.id)}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        selectElement(el.id);
-                                    }
-                                }}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '6px 8px',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    background: isSelected ? '#EFF0F5' : 'transparent',
-                                    border: isSelected ? '1px solid #C5C8D3' : '1px solid transparent',
-                                    marginBottom: '2px',
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        width: '20px',
-                                        textAlign: 'center',
-                                        fontSize: '13px',
-                                        color: '#52597A',
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    {ELEMENT_ICONS[el.type]}
-                                </span>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div
-                                        style={{
-                                            fontSize: '12px',
-                                            fontWeight: 500,
-                                            color: '#18224E',
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                        }}
-                                    >
-                                        {ELEMENT_LABELS[el.type]}
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: '10px',
-                                            color: '#8B91A7',
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            fontFamily: el.type === 'text' || el.type === 'image' ? "'JetBrains Mono', monospace" : 'inherit',
-                                        }}
-                                    >
-                                        {elementSummary(el)}
-                                    </div>
-                                </div>
-                                {isSelected && (
-                                    <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-                                        <IconButton title="Bring forward" onClick={e => { e.stopPropagation(); moveElement(el.id, 'up'); }}>
-                                            ↑
-                                        </IconButton>
-                                        <IconButton title="Send backward" onClick={e => { e.stopPropagation(); moveElement(el.id, 'down'); }}>
-                                            ↓
-                                        </IconButton>
-                                        <IconButton title="Duplicate" onClick={e => { e.stopPropagation(); duplicateElement(el.id); }}>
-                                            ⧉
-                                        </IconButton>
-                                        <IconButton title="Delete" onClick={e => { e.stopPropagation(); deleteElement(el.id); }}>
-                                            ✕
-                                        </IconButton>
-                                    </div>
-                                )}
-                            </div>
-                        </li>
-                    );
-                })}
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '0 6px 6px' }}>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={displayIds} strategy={verticalListSortingStrategy}>
+                        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                            {displayOrder.map(el => (
+                                <LayerRow
+                                    key={el.id}
+                                    element={el}
+                                    isSelected={el.id === selectedId}
+                                    onSelect={selectElement}
+                                    onDuplicate={duplicateElement}
+                                    onDelete={deleteElement}
+                                />
+                            ))}
+                        </ul>
+                    </SortableContext>
+                </DndContext>
                 {elements.length === 0 && (
-                    <li style={{ padding: '12px', fontSize: '11px', color: '#8B91A7', textAlign: 'center' }}>
-                        No elements yet. Pick a starter template.
-                    </li>
+                    <div
+                        style={{
+                            padding: '12px',
+                            fontSize: '11px',
+                            color: '#8B91A7',
+                            textAlign: 'center',
+                        }}
+                    >
+                        No elements yet. Add one from the library above, or pick a starter template.
+                    </div>
                 )}
-            </ul>
+            </div>
         </div>
     );
 };
