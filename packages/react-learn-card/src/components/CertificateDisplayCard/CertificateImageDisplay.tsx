@@ -17,7 +17,11 @@ const CertificateImageDisplay: React.FC<CertificateImageDisplayProps> = ({
             className={`flex items-center justify-center w-[120px] h-[120px] rounded-full border-white border-solid border-4 bg-white z-50 ${className}`}
         >
             <div className="relative w-[75%] h-[75%] flex items-center justify-center rounded-full border-white border-solid border-4 overflow-hidden object-contain">
-                <img src={imageUrl} alt="certificate thumbnail" />
+                <img
+                    src={imageUrl}
+                    alt="certificate thumbnail"
+                    className="h-full w-full object-cover"
+                />
             </div>
 
             <CertificateRibbon className={`absolute z-[9999] ${ribbonColor} w-[120px] h-[120px]`} />
