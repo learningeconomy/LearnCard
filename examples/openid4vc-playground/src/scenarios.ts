@@ -10,7 +10,7 @@
  * without breaking the catalogue.
  */
 
-export type ProviderId = 'waltid' | 'eudi' | 'sphereon';
+export type ProviderId = 'embedded' | 'waltid' | 'eudi' | 'sphereon';
 
 export type ScenarioKind = 'vci' | 'vp';
 
@@ -35,6 +35,50 @@ export interface Scenario {
 }
 
 export const SCENARIOS: Scenario[] = [
+    /* --------------------- Embedded (no external deps) ---------------------- */
+    /*                                                                         */
+    /* These scenarios run entirely inside the playground's Vite dev server   */
+    /* — no Docker, no walt.id account, no DNS. Use them as the dev-loop      */
+    /* default for SD-JWT-VC work. The embedded engine deliberately does NOT  */
+    /* verify the wallet's proof-of-possession signature on issuance (it     */
+    /* would need a heavy DID resolver), so issuance is always granted; the  */
+    /* verification side (KB-JWT signature, sd_hash, nonce, vct) IS fully    */
+    /* enforced, which is what the engineer is testing.                       */
+
+    {
+        id: 'embedded-vci-sdjwt-cnf',
+        kind: 'vci',
+        name: 'SD-JWT-VC with cnf binding (issuance)',
+        description:
+            'Embedded issuer mints an SD-JWT-VC with selectively-disclosable claims (given_name, family_name, email, date_of_birth) plus a cnf.jwk derived from the wallet\u2019s proof JWT. Required for the matching verify scenario below \u2014 the wallet must hold this credential before testing presentation.',
+        exercises:
+            'Slice 2 OID4VCI receipt path + sd-jwt-vc plugin parse + storage. The cnf.jwk makes KB-JWT required for any future presentation.',
+        supportedProviders: ['embedded'],
+        note: 'After claiming, switch to the Verifier tab and launch the matching SD-JWT verify scenario.',
+    },
+    {
+        id: 'embedded-vp-sdjwt-pex',
+        kind: 'vp',
+        name: 'SD-JWT-VC presentation, PEX',
+        description:
+            'Embedded verifier requests the playground SD-JWT-VC via DIF PEX with format=dc+sd-jwt. Wallet should show the per-claim consent UI (Slice 3); after Share, the verifier validates the issuer signature, the KB-JWT, and reports which claims were released vs. hidden.',
+        exercises:
+            'Slice 3 selective disclosure + KB-JWT signing + per-claim consent UI + the openid4vc plugin\u2019s SD-JWT PEX passthrough.',
+        supportedProviders: ['embedded'],
+        note: 'Claim a credential via the matching issuance scenario first. Try unchecking a claim before Share \u2014 the verifier verdict will show it as hidden.',
+    },
+    {
+        id: 'embedded-vp-sdjwt-dcql',
+        kind: 'vp',
+        name: 'SD-JWT-VC presentation, DCQL',
+        description:
+            'Same as above but the verifier sends a DCQL query instead of a PEX presentation_definition. Tests the openid4vc plugin\u2019s SD-JWT DCQL passthrough path (the modern OID4VP 1.0 way of asking for credentials).',
+        exercises:
+            'Slice 3 DCQL routing for SD-JWT-VC + buildDcqlPresentations passthrough + DCQL vp_token object shape (no presentation_submission).',
+        supportedProviders: [],
+        note: 'Reserved \u2014 DCQL composition for SD-JWT is implemented in the openid4vc plugin but the embedded verifier currently only emits PEX. File a follow-up to enable.',
+    },
+
     /* ----------------------------- VCI scenarios ---------------------------- */
 
     {
@@ -232,6 +276,13 @@ export interface ProviderInfo {
 }
 
 export const PROVIDERS: ProviderInfo[] = [
+    {
+        id: 'embedded',
+        name: 'Embedded (no external deps)',
+        blurb:
+            'In-process issuer + verifier baked into the playground. Use for SD-JWT-VC dev-loop testing with zero infrastructure.',
+        enabled: true,
+    },
     {
         id: 'waltid',
         name: 'walt.id',
