@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy root workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
+COPY tools/capgo tools/capgo
 
 # Copy dependency manifests for better Docker caching
 COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/
