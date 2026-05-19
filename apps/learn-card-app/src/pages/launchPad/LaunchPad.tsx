@@ -338,8 +338,7 @@ const LaunchPad: React.FC = () => {
                                                     />
                                                 ))}
                                             </>
-                                            );
-                                        })()}
+                                        )}
                                     </IonList>
 
                                     {filteredInstalledApps.length === 0 &&
