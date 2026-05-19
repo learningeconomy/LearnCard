@@ -17,6 +17,7 @@
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/linked-claims-plugin": "workspace:*",
+        "@learncard/render-method-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

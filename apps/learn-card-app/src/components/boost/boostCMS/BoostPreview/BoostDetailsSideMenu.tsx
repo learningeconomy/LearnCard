@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import { IonFooter, IonPage } from '@ionic/react';
+import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
+import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
 import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
@@ -25,7 +27,7 @@ import CredentialVerificationDisplay, {
     getInfoFromCredential,
 } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { CredentialCategoryEnum, useModal, DisplayTypeEnum } from 'learn-card-base';
-import { VC, VerificationItem } from '@learncard/types';
+import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import moment from 'moment';
 
 type BoostDetailsSideMenuProps = {
@@ -39,6 +41,7 @@ type BoostDetailsSideMenuProps = {
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
+    renderMethodCredential?: VC | UnsignedVC;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -51,7 +54,9 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     hideEndorsementRequestCard,
     isEarnedBoost,
     isClrChildCredential = false,
+    renderMethodCredential,
 }) => {
+    const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -143,6 +148,13 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
+                        <BoostDisplayStyleSelector
+                            credential={renderMethodCredential}
+                            enableRenderMethod={enableRenderMethod}
+                        />
+                    )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
