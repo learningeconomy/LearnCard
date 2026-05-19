@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import type { AppStoreListing } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 import AppStoreDetailModal from './AppStoreDetailModal';
