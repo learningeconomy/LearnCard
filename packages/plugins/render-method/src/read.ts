@@ -121,12 +121,22 @@ export const getSvgMustacheRenderMethod = (
     vc: AnyCredential
 ): TemplateRenderMethod | null => findTemplateRenderMethod(vc, 'svg-mustache');
 
+/**
+ * Prototype-pollution guard. JSON Pointers come from credential data
+ * (untrusted), and these three keys are the canonical pollution vectors when
+ * a pointer is walked with bracket-indexing.
+ */
+const isUnsafeKey = (key: string): boolean =>
+    key === '__proto__' || key === 'constructor' || key === 'prototype';
+
 const resolvePointer = (obj: unknown, pointer: string): unknown => {
     if (!pointer || pointer === '/') return obj;
     const parts = pointer
         .replace(/^\//, '')
         .split('/')
         .map(p => p.replace(/~1/g, '/').replace(/~0/g, '~'));
+
+    if (parts.some(isUnsafeKey)) return undefined;
 
     let current: unknown = obj;
     for (const part of parts) {
@@ -151,6 +161,8 @@ const buildRenderDataFromPointers = (
             .replace(/^\//, '')
             .split('/')
             .map(p => p.replace(/~1/g, '/').replace(/~0/g, '~'));
+
+        if (parts.some(isUnsafeKey)) continue;
 
         let current = result;
         for (let i = 0; i < parts.length - 1; i++) {

@@ -491,6 +491,55 @@ describe('buildRenderData', () => {
     });
 });
 
+describe('buildRenderData — prototype-pollution defense', () => {
+    const proto = Object.prototype as Record<string, unknown>;
+
+    afterEach(() => {
+        delete proto.polluted;
+        delete proto.polluted2;
+        delete proto.polluted3;
+    });
+
+    it('rejects /__proto__/<key> pointers (does not pollute Object.prototype)', () => {
+        const maliciousVc = {
+            __proto__: { polluted: 'pwned' },
+            credentialSubject: { id: 'did:example:s' },
+        } as unknown as VC;
+
+        buildRenderData(maliciousVc, ['/__proto__/polluted']);
+        expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+        expect(proto.polluted).toBeUndefined();
+    });
+
+    it('rejects /constructor/prototype/<key> pointers', () => {
+        buildRenderData({ credentialSubject: {} } as unknown as VC, [
+            '/constructor/prototype/polluted2',
+        ]);
+        expect(({} as Record<string, unknown>).polluted2).toBeUndefined();
+        expect(proto.polluted2).toBeUndefined();
+    });
+
+    it('rejects pointers containing /prototype/ segments', () => {
+        buildRenderData({ credentialSubject: {} } as unknown as VC, [
+            '/credentialSubject/prototype/polluted3',
+        ]);
+        expect(({} as Record<string, unknown>).polluted3).toBeUndefined();
+        expect(proto.polluted3).toBeUndefined();
+    });
+
+    it('still processes safe pointers in the same call as a rejected one', () => {
+        const vc = {
+            credentialSubject: { id: 'did:example:s', name: 'Ada' },
+        } as unknown as VC;
+        const data = buildRenderData(vc, [
+            '/__proto__/polluted',
+            '/credentialSubject/name',
+        ]);
+        expect((data.credentialSubject as { name: string }).name).toBe('Ada');
+        expect(proto.polluted).toBeUndefined();
+    });
+});
+
 describe('findTemplateRenderMethod / findTemplateRenderMethods (string-based sugar)', () => {
     const htmlMustacheRm: TemplateRenderMethod = {
         type: 'TemplateRenderMethod',
