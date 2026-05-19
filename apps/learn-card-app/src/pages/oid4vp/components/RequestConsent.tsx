@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Lock, ShieldAlert } from 'lucide-react';
 
-import { BoostPageViewMode, VerifierHeader } from 'learn-card-base';
+import { BoostPageViewMode, VerifierHeader, useWallet } from 'learn-card-base';
 import {
     getDefaultCategoryForCredential,
     humanizeCredentialType,
@@ -12,17 +12,33 @@ import type {
     AuthorizationRequest,
     SelectionResult,
     DcqlSelectionResult,
+    SdJwtDiscloseFrame,
 } from '@learncard/openid4vc-plugin';
 
 import type { PooledCandidate } from '../candidatePool';
 
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
+interface ParsedSdJwtForConsent {
+    disclosureKeys?: string[];
+    claims?: Record<string, unknown>;
+}
+
+interface SdJwtAwareInvoke {
+    parseSdJwtVc?: (compact: string) => Promise<ParsedSdJwtForConsent>;
+}
+
+const humanizeClaimKey = (key: string) => {
+    return key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ').replace(/^./, str => str.toUpperCase()).trim();
+};
+
 /**
- * User\u2019s per-row pick. Keys are PEX descriptor ids or DCQL credential
- * query ids; values are indices into that row\u2019s `candidates` array.
+ * User’s per-row pick and per-claim choices.
  */
-export type ConsentPicks = Record<string, number>;
+export interface ConsentPicks {
+    row: Record<string, number>;
+    disclose: Record<string, SdJwtDiscloseFrame>;
+}
 
 export interface RequestConsentProps {
     request: AuthorizationRequest;
@@ -86,17 +102,103 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
      * out of the map; `Approve` is disabled in that case anyway.
      */
     const [picks, setPicks] = useState<ConsentPicks>(() => {
-        const initial: ConsentPicks = {};
+        const initial: ConsentPicks = { row: {}, disclose: {} };
         for (const row of rows) {
-            if (row.candidates.length > 0) initial[row.id] = 0;
+            if (row.candidates.length > 0) initial.row[row.id] = 0;
         }
         return initial;
     });
 
+    const { initWallet } = useWallet();
+    const [parsedSdJwts, setParsedSdJwts] = useState<Record<string, ParsedSdJwtForConsent>>({});
+    const [parsingSdJwts, setParsingSdJwts] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        const parseSdJwts = async () => {
+            const wallet = await initWallet();
+            const newParsing: Record<string, boolean> = {};
+
+            for (const row of rows) {
+                const pickedIndex = picks.row[row.id] ?? 0;
+                const candidate = row.candidates[pickedIndex]?.candidate;
+                if (!candidate) continue;
+
+                const compact = getSdJwtCompact(candidate.credential);
+                const cacheKey = `${row.id}::${candidate.id}`;
+                if (compact && !parsedSdJwts[cacheKey] && !parsingSdJwts[cacheKey]) {
+                    newParsing[cacheKey] = true;
+                }
+            }
+
+            if (Object.keys(newParsing).length > 0) {
+                setParsingSdJwts(prev => ({ ...prev, ...newParsing }));
+                
+                for (const cacheKey of Object.keys(newParsing)) {
+                    const [rowId, candidateId] = cacheKey.split('::');
+                    const row = rows.find(r => r.id === rowId);
+                    const candidate = row?.candidates.find(c => c.candidate.id === candidateId)?.candidate;
+                    if (!candidate) continue;
+
+                    const compact = getSdJwtCompact(candidate.credential);
+                    if (compact) {
+                        const invoke = wallet.invoke as unknown as SdJwtAwareInvoke;
+                        if (typeof invoke.parseSdJwtVc !== 'function') continue;
+                        try {
+                            const parsed = await invoke.parseSdJwtVc(compact);
+                            setParsedSdJwts(prev => ({ ...prev, [cacheKey]: parsed }));
+                            
+                            setPicks(prev => {
+                                if (prev.disclose[rowId]) return prev;
+                                const initialDisclose: Record<string, boolean> = {};
+                                parsed.disclosureKeys?.forEach((key: string) => {
+                                    initialDisclose[key] = true;
+                                });
+                                return {
+                                    ...prev,
+                                    disclose: {
+                                        ...prev.disclose,
+                                        [rowId]: initialDisclose
+                                    }
+                                };
+                            });
+                        } catch (e) {
+                            console.error('Failed to parse SD-JWT', e);
+                        }
+                    }
+                }
+
+                setParsingSdJwts(prev => {
+                    const next = { ...prev };
+                    for (const key of Object.keys(newParsing)) {
+                        delete next[key];
+                    }
+                    return next;
+                });
+            }
+        };
+        parseSdJwts();
+    }, [rows, picks.row, initWallet]);
+
     const allRowsHaveCandidate = rows.every((r) => r.candidates.length > 0);
 
     const handlePickChange = (rowId: string, index: number) => {
-        setPicks((prev) => ({ ...prev, [rowId]: index }));
+        setPicks((prev) => ({ ...prev, row: { ...prev.row, [rowId]: index } }));
+    };
+
+    const handleClaimChange = (rowId: string, claimKey: string, checked: boolean) => {
+        setPicks((prev) => {
+            const currentDisclose = prev.disclose[rowId] || {};
+            return {
+                ...prev,
+                disclose: {
+                    ...prev.disclose,
+                    [rowId]: {
+                        ...currentDisclose,
+                        [claimKey]: checked,
+                    },
+                },
+            };
+        });
     };
 
     return (
@@ -158,14 +260,24 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </p>
 
                         <ul className="space-y-2">
-                            {rows.map((row) => (
-                                <ConsentRow
-                                    key={row.id}
-                                    row={row}
-                                    pickedIndex={picks[row.id] ?? 0}
-                                    onPick={(idx) => handlePickChange(row.id, idx)}
-                                />
-                            ))}
+                            {rows.map((row) => {
+                                const pickedIndex = picks.row[row.id] ?? 0;
+                                const candidate = row.candidates[pickedIndex]?.candidate;
+                                const cacheKey = candidate ? `${row.id}::${candidate.id}` : '';
+                                return (
+                                    <ConsentRow
+                                        key={row.id}
+                                        row={row}
+                                        pickedIndex={pickedIndex}
+                                        onPick={(idx) => handlePickChange(row.id, idx)}
+                                        parsedSdJwt={parsedSdJwts[cacheKey]}
+                                        isParsingSdJwt={parsingSdJwts[cacheKey]}
+                                        discloseFrame={picks.disclose[row.id] as Record<string, boolean>}
+                                        onClaimChange={(key, checked) => handleClaimChange(row.id, key, checked)}
+                                        verifierName={subjectLabel}
+                                    />
+                                );
+                            })}
                         </ul>
                     </div>
 
@@ -209,9 +321,14 @@ interface ConsentRowProps {
     row: ConsentRowModel;
     pickedIndex: number;
     onPick: (index: number) => void;
+    parsedSdJwt?: ParsedSdJwtForConsent;
+    isParsingSdJwt?: boolean;
+    discloseFrame?: Record<string, boolean>;
+    onClaimChange?: (claimKey: string, checked: boolean) => void;
+    verifierName?: string;
 }
 
-const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => {
+const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parsedSdJwt, isParsingSdJwt, discloseFrame, onClaimChange, verifierName }) => {
     const hasCandidate = row.candidates.length > 0;
     const hasMultiple = row.candidates.length > 1;
 
@@ -296,6 +413,67 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick }) => 
                             );
                         })}
                     </div>
+                </div>
+            )}
+
+            {parsedSdJwt && parsedSdJwt.disclosureKeys?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-grayscale-200">
+                    <p className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wide">
+                        Claims to share
+                    </p>
+                    
+                    <ul className="space-y-3 mb-4">
+                        {parsedSdJwt.disclosureKeys.map((key: string) => {
+                            const val = parsedSdJwt.claims?.[key];
+                            const isChecked = discloseFrame?.[key] ?? true;
+                            return (
+                                <li key={key} className="flex items-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => onClaimChange?.(key, e.target.checked)}
+                                        className="mt-0.5 w-4 h-4 rounded border-grayscale-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-grayscale-900">
+                                            {humanizeClaimKey(key)}
+                                        </span>
+                                        <span className="text-xs text-grayscale-600">
+                                            {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                                        </span>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                        {Object.keys(parsedSdJwt.claims || {})
+                            .filter(k => !parsedSdJwt.disclosureKeys?.includes(k) && !['iss', 'vct', 'iat', 'exp', 'nbf', 'jti', 'sub', 'status', 'cnf', '_sd', '_sd_alg'].includes(k))
+                            .map(key => {
+                                const val = parsedSdJwt.claims[key];
+                                return (
+                                    <li key={key} className="flex items-start gap-3 opacity-70">
+                                        <div className="mt-0.5 w-4 h-4 flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-grayscale-400" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium text-grayscale-900">
+                                                {humanizeClaimKey(key)} <span className="text-xs font-normal text-grayscale-500">(Required)</span>
+                                            </span>
+                                            <span className="text-xs text-grayscale-600">
+                                                {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                                            </span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                    </ul>
+                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                        These details will be sent to {verifierName}. Other identifying info (issuer, type) is always included.
+                    </p>
+                </div>
+            )}
+            {isParsingSdJwt && (
+                <div className="mt-4 pt-4 border-t border-grayscale-200 flex justify-center">
+                    <span className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
                 </div>
             )}
         </li>
@@ -394,6 +572,25 @@ const stringField = (
 ): string | undefined => {
     const v = obj[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;
+};
+
+const getSdJwtCompact = (credential: unknown): string | undefined => {
+    if (typeof credential === 'string' && credential.includes('~')) {
+        return credential;
+    }
+    if (credential && typeof credential === 'object') {
+        const proofValue = (credential as { proof?: unknown }).proof;
+        const proof = Array.isArray(proofValue)
+            ? proofValue.find(p => p && typeof p === 'object')
+            : proofValue;
+        if (proof && typeof proof === 'object') {
+            const { type, jwt } = proof as { type?: unknown; jwt?: unknown };
+            if (type === 'SdJwtCompactProof' && typeof jwt === 'string') {
+                return jwt;
+            }
+        }
+    }
+    return undefined;
 };
 
 export default RequestConsent;

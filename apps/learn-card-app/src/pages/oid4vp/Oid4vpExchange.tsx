@@ -488,17 +488,18 @@ const extractW3cVc = (credential: unknown): VC | undefined => {
 const buildChosenList = (
     selection?: SelectionResult,
     dcqlSelection?: DcqlSelectionResult,
-    userPicks: ConsentPicks = {}
+    userPicks: ConsentPicks = { row: {}, disclose: {} }
 ): ChosenForPresentation[] => {
     if (selection) {
         const out: ChosenForPresentation[] = [];
         for (const d of selection.descriptors) {
-            const idx = userPicks[d.descriptorId] ?? 0;
+            const idx = userPicks.row[d.descriptorId] ?? 0;
             const chosen = d.candidates[idx] ?? d.candidates[0];
             if (!chosen) continue;
             out.push({
                 descriptorId: d.descriptorId,
                 candidate: chosen.candidate,
+                disclose: userPicks.disclose[d.descriptorId],
             });
         }
         return out;
@@ -507,12 +508,13 @@ const buildChosenList = (
     if (dcqlSelection) {
         const out: ChosenForPresentation[] = [];
         for (const [queryId, match] of Object.entries(dcqlSelection.matches)) {
-            const idx = userPicks[queryId] ?? 0;
+            const idx = userPicks.row[queryId] ?? 0;
             const chosen = match.candidates[idx] ?? match.candidates[0];
             if (!chosen) continue;
             out.push({
                 credentialQueryId: queryId,
                 candidate: chosen as unknown as CandidateCredential,
+                disclose: userPicks.disclose[queryId],
             });
         }
         return out;
