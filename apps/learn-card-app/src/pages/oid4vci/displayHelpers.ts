@@ -146,43 +146,7 @@ export const humanizeFormat = (format: string | undefined): string | undefined =
 /*                           issuer-avatar fallbacks                          */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Hostname extraction safe against malformed URLs. Returns `undefined`
- * when the URL can't be parsed so callers can skip rendering the
- * affected affordance instead of crashing.
- */
-export const extractDomain = (url: string | undefined): string | undefined => {
-    if (!url) return undefined;
-    try {
-        return new URL(url).host;
-    } catch {
-        return undefined;
-    }
-};
-
-/**
- * Return a Google s2 favicon URL for a given domain. Used as the
- * **second** fallback in the issuer-avatar chain (after metadata
- * `display.logo.uri`, before the gradient initials avatar).
- *
- * We deliberately use the s2 endpoint instead of the hosted
- * `/favicon.ico` because:
- *   1. It rasterizes regardless of the issuer's icon format
- *   2. It serves at a requested size (no scaling artifacts)
- *   3. It tolerates issuers that don't host a favicon at all (returns
- *      a neutral globe \u2014 same as our final fallback would do)
- *   4. It bypasses the cross-origin/CORB issues you hit reading
- *      `<link rel="icon">` from a third-party HTML response
- */
-export const faviconUrl = (
-    domain: string | undefined,
-    sizePx = 128
-): string | undefined => {
-    if (!domain) return undefined;
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(
-        domain
-    )}&sz=${sizePx}`;
-};
+export { extractDomain, faviconUrl, apexDomain, preferredFaviconUrl } from 'learn-card-base';
 
 /**
  * Deterministic two-color gradient + initials avatar fallback used

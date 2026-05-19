@@ -4,7 +4,7 @@ import { Award, ShieldCheck } from 'lucide-react';
 import {
     avatarGradient,
     extractDomain,
-    faviconUrl,
+    preferredFaviconUrl,
 } from '../displayHelpers';
 
 export interface CredentialPreviewClaim {
@@ -76,7 +76,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
     const domain = extractDomain(issuerUrl);
     const seed = domain ?? issuerUrl;
     const gradient = avatarGradient(seed);
-    const fallbackFavicon = faviconUrl(domain, 64);
+    const fallbackFavicon = preferredFaviconUrl(domain, 64);
 
     const displayedIssuerName =
         issuerName?.trim()

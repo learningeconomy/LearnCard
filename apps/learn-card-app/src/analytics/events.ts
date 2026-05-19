@@ -91,6 +91,46 @@ export const AnalyticsEvents = {
      */
     OPENID_EXCHANGE_ERROR_REPORTED: 'openid_exchange_error_reported',
 
+    /**
+     * One attempt of an OID4VC/VP exchange under the resilience
+     * orchestrator. Emits once per strategy attempt (success or
+     * failure). Joinable across attempts by `exchange_run_id`.
+     */
+    OPENID_RESILIENCE_ATTEMPT: 'openid_resilience_attempt',
+
+    /**
+     * Recovery decision the orchestrator made after a failed attempt.
+     * Joinable to the failed attempt by `exchange_run_id` +
+     * `attempt_number`.
+     */
+    OPENID_RESILIENCE_DECISION: 'openid_resilience_decision',
+
+    /**
+     * Final outcome of an exchange that went through the resilience
+     * orchestrator. Lets product see "% of exchanges that succeeded
+     * after fallback" and "% that surfaced error after exhaustion".
+     */
+    OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
+
+    /** 
+     * Fired when the resilience orchestrator gave up on an error
+     * whose classified `kind` suggested it might have been
+     * recoverable (wallet / request_invalid / unknown). Used to mine
+     * production for new signer-failure patterns: filter on
+     * `pattern_matched=false` in the dashboard to find shapes worth
+     * adding to STRUCTURED_SIGNER_FAILURES or SIGNER_FAILURE_PATTERNS.
+     * Payload omits raw message text (PII risk) — only a stable hash
+     * is included.
+     */
+    OPENID_RESILIENCE_UNRECOGNIZED_FAILURE: 'openid_resilience_unrecognized_failure',
+    /**
+     * Fired every time a claim-input string is routed (camera scan,
+     * paste field, image upload, clipboard auto-detect). Lets product
+     * answer "where do users actually claim from?" and "what fraction
+     * of pastes are unrecognized?".
+     */
+    CLAIM_INPUT_ROUTED: 'claim_input_routed',
+
     // LC-1644 perf bench (admin-only)
     BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
 
@@ -476,59 +516,106 @@ export interface AnalyticsEventPayloads {
         walletVersion?: string;
     };
 
-    // -- LC-1644 perf bench --------------------------------------------------
-
-    [AnalyticsEvents.BENCH_APPEVENT_RUN_TRIGGERED]: {
-        run_id: string;
-        iterations: number;
-        warmup: number;
-        listing_id: string;
-        recipient_profile_id: string;
-        run_label: string;
+    [AnalyticsEvents.OPENID_RESILIENCE_ATTEMPT]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        strategy_id: string;
+        strategy_axis: 'signer' | 'transport' | 'trust';
+        outcome: 'succeeded' | 'failed';
+        duration_ms: number;
+        error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        counterparty?: string;
     };
 
-    /**
-     * One iteration of the user-perceived sendCredential → claim flow.
-     *
-     * Phases (all milliseconds, undefined when phase not reached):
-     *  - request_to_response_ms: time from `learnCard.invoke.sendAppEvent` invocation
-     *    to the response promise resolving. Includes network RTT + brain-service total.
-     *    Joinable to backend `bench.appevent.iteration.total_ms` when both fire from
-     *    the bench panel (same `run_id`).
-     *  - response_to_modal_mount_ms: time from response received to `CredentialClaimModal`
-     *    `useEffect` first running. Captures React state propagation + lazy modal mount cost.
-     *  - modal_mount_to_credential_resolved_ms: time from modal mount to credential set in
-     *    state. Should be ~0 with Tasks 1+2 (`fast_path: true`); ~500–1500ms on the
-     *    URI-re-resolve fallback path.
-     *  - claim_phase_ms: time from "Accept" click to `claimed=true` rendered. Covers the
-     *    three-tRPC-call sequence (`addVCtoWallet`, `acceptCredential`,
-     *    `queryNotifications`, `updateNotificationMeta`).
-     *  - time_to_modal_interactive_ms: PERF METRIC. Time from `sendAppEvent` invocation
-     *    to credential rendered in the modal — the "how long does the user wait before
-     *    they can act?" number. Sum of request_to_response + response_to_modal_mount +
-     *    modal_mount_to_credential_resolved. Excludes user-think-time between modal
-     *    appearance and clicking Accept. This is the number to compare across A/B branches.
-     *  - total_e2e_ms: WALL CLOCK. End-to-end elapsed time from `sendAppEvent` invocation
-     *    to claim success state. INCLUDES the variable user-think-time between when the
-     *    modal becomes interactive and when the user clicks Accept. Useful for cohort/UX
-     *    analysis but NOT a perf metric — use `time_to_modal_interactive_ms` for that.
-     */
-    [AnalyticsEvents.FRONTEND_SENDCREDENTIAL_ITERATION]: {
-        run_id: string;
-        listing_id?: string;
-        event_type?: string;
-        outcome: 'claimed' | 'already_claimed' | 'modal_dismissed' | 'error';
-        fast_path?: boolean;
-        already_claimed?: boolean;
-        request_to_response_ms?: number;
-        response_to_modal_mount_ms?: number;
-        modal_mount_to_credential_resolved_ms?: number;
-        claim_phase_ms?: number;
-        time_to_modal_interactive_ms?: number;
-        total_e2e_ms?: number;
-        error_phase?: 'request' | 'modal_mount' | 'credential_resolve' | 'claim';
-        error_message?: string;
-        triggered_by_bench?: boolean;
+    [AnalyticsEvents.OPENID_RESILIENCE_DECISION]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        decision: 'retry_silent' | 'retry_with_prompt' | 'surface_error';
+        next_strategy_id?: string;
+        next_strategy_axis?: 'signer' | 'transport' | 'trust';
+        prompt_severity?: 'info' | 'warning';
+        backoff_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_OUTCOME]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        outcome:
+            | 'success_first_attempt'
+            | 'success_after_fallback'
+            | 'failure_user_cancelled'
+            | 'failure_exhausted';
+        total_attempts: number;
+        signers_tried: string[];
+        transport_retries: number;
+        trust_gaps_accepted: number;
+        final_error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        counterparty?: string;
+        total_duration_ms: number;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_UNRECOGNIZED_FAILURE]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        error_kind: 'wallet' | 'request_invalid' | 'unknown';
+        error_name?: string;
+        error_code?: string;
+        http_status?: number;
+        message_hash: string;
+        pattern_matched: boolean;
+        signers_tried: string[];
+        counterparty?: string;
+    };
+
+    [AnalyticsEvents.CLAIM_INPUT_ROUTED]: {
+        source: 'camera' | 'paste' | 'image_upload' | 'clipboard_auto';
+        parsed_kind:
+            | 'oid4vci'
+            | 'oid4vp'
+            | 'vc-api-custom-scheme'
+            | 'lcw-https'
+            | 'boost-claim'
+            | 'connection-request'
+            | 'raw-vc-candidate'
+            | 'interaction-url'
+            | 'unrecognized';
+        outcome:
+            | 'routed'
+            | 'open_contact'
+            | 'open_claim_boost'
+            | 'open_claim_vc'
+            | 'open_website'
+            | 'unrecognized';
+        unrecognized_reason?:
+            | 'empty'
+            | 'malformed_url'
+            | 'unknown_scheme'
+            | 'invalid_vc'
+            | 'unknown_format';
+        surface?:
+            | 'oid4vci'
+            | 'oid4vp'
+            | 'vc-api-custom-scheme'
+            | 'lcw-https'
+            | 'boost-claim'
+            | 'connection-request'
+            | 'raw-vc'
+            | 'interaction';
     };
 }
 

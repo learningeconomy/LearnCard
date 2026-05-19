@@ -97,6 +97,7 @@
         "pdf-lib": "^1.17.1",
         "posthog-js": "^1.333.0",
         "pretty-bytes": "^6.1.1",
+        "qr-scanner": "^1.4.2",
         "qrcode.react": "^4.2.0",
         "query-string": "^8.2.0",
         "react-code-input": "^3.10.1",
