@@ -19,9 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.inbox_claim200_response_inbox_credential_signing_authority import InboxClaim200ResponseInboxCredentialSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxClaim200ResponseInboxCredential(BaseModel):
     """
@@ -38,9 +40,14 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
+    integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     signing_authority: Optional[InboxClaim200ResponseInboxCredentialSigningAuthority] = Field(default=None, alias="signingAuthority")
+    guardian_email: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, alias="guardianEmail")
+    guardian_status: Optional[StrictStr] = Field(default=None, alias="guardianStatus")
+    guardian_approved_at: Optional[StrictStr] = Field(default=None, alias="guardianApprovedAt")
+    guardian_approved_by_did: Optional[StrictStr] = Field(default=None, alias="guardianApprovedByDid")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "signingAuthority"]
+    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "integrationId", "signingAuthority", "guardianEmail", "guardianStatus", "guardianApprovedAt", "guardianApprovedByDid"]
 
     @field_validator('current_status')
     def current_status_validate_enum(cls, value):
@@ -49,8 +56,32 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
             raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
+    @field_validator('guardian_email')
+    def guardian_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not isinstance(value, str):
+            value = str(value)
+
+        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
+
+    @field_validator('guardian_status')
+    def guardian_status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED']):
+            raise ValueError("must be one of enum values ('AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED')")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -62,8 +93,7 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -138,6 +168,21 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         if self.activity_id is None and "activity_id" in self.model_fields_set:
             _dict['activityId'] = None
 
+        # set to None if integration_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.integration_id is None and "integration_id" in self.model_fields_set:
+            _dict['integrationId'] = None
+
+        # set to None if guardian_approved_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.guardian_approved_at is None and "guardian_approved_at" in self.model_fields_set:
+            _dict['guardianApprovedAt'] = None
+
+        # set to None if guardian_approved_by_did (nullable) is None
+        # and model_fields_set contains the field
+        if self.guardian_approved_by_did is None and "guardian_approved_by_did" in self.model_fields_set:
+            _dict['guardianApprovedByDid'] = None
+
         return _dict
 
     @classmethod
@@ -161,7 +206,12 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
             "webhookUrl": obj.get("webhookUrl"),
             "boostUri": obj.get("boostUri"),
             "activityId": obj.get("activityId"),
-            "signingAuthority": InboxClaim200ResponseInboxCredentialSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
+            "integrationId": obj.get("integrationId"),
+            "signingAuthority": InboxClaim200ResponseInboxCredentialSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
+            "guardianEmail": obj.get("guardianEmail"),
+            "guardianStatus": obj.get("guardianStatus"),
+            "guardianApprovedAt": obj.get("guardianApprovedAt"),
+            "guardianApprovedByDid": obj.get("guardianApprovedByDid")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

@@ -40,6 +40,9 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                 short_bio = '',
                 bio = '',
                 is_private = True,
+                profile_visibility = 'public',
+                show_email = True,
+                allow_connection_requests = 'anyone',
                 email = '',
                 image = '',
                 hero_image = '',
@@ -64,7 +67,8 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                 role = '',
                 dob = '',
                 country = '',
-                approved = True
+                approved = True,
+                auth_token = ''
             )
         else:
             return ProfileCreateProfileRequest(

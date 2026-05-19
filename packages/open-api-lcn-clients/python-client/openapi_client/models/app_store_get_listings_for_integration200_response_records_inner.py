@@ -17,10 +17,13 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_submitter import AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
     """
@@ -43,9 +46,14 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
     privacy_policy_url: Optional[StrictStr] = None
     terms_url: Optional[StrictStr] = None
     hero_background_color: Optional[StrictStr] = None
+    min_age: Optional[Annotated[int, Field(le=18, strict=True, ge=0)]] = None
+    age_rating: Optional[StrictStr] = None
+    submitted_at: Optional[StrictStr] = None
+    contact_email: Optional[Annotated[str, Field(strict=True)]] = None
     highlights: Optional[List[StrictStr]] = None
     screenshots: Optional[List[StrictStr]] = None
-    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "highlights", "screenshots"]
+    submitter: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter] = None
+    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "submitted_at", "contact_email", "highlights", "screenshots", "submitter"]
 
     @field_validator('app_listing_status')
     def app_listing_status_validate_enum(cls, value):
@@ -71,8 +79,32 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
             raise ValueError("must be one of enum values ('FEATURED_CAROUSEL', 'CURATED_LIST', 'STANDARD', 'DEMOTED')")
         return value
 
+    @field_validator('age_rating')
+    def age_rating_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['4+', '9+', '12+', '17+']):
+            raise ValueError("must be one of enum values ('4+', '9+', '12+', '17+')")
+        return value
+
+    @field_validator('contact_email')
+    def contact_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not isinstance(value, str):
+            value = str(value)
+
+        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -84,8 +116,7 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -110,6 +141,9 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of submitter
+        if self.submitter:
+            _dict['submitter'] = self.submitter.to_dict()
         return _dict
 
     @classmethod
@@ -139,8 +173,13 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
             "privacy_policy_url": obj.get("privacy_policy_url"),
             "terms_url": obj.get("terms_url"),
             "hero_background_color": obj.get("hero_background_color"),
+            "min_age": obj.get("min_age"),
+            "age_rating": obj.get("age_rating"),
+            "submitted_at": obj.get("submitted_at"),
+            "contact_email": obj.get("contact_email"),
             "highlights": obj.get("highlights"),
-            "screenshots": obj.get("screenshots")
+            "screenshots": obj.get("screenshots"),
+            "submitter": AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.from_dict(obj["submitter"]) if obj.get("submitter") is not None else None
         })
         return _obj
 

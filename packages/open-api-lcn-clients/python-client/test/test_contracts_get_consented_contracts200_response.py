@@ -93,13 +93,16 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     personal = {
                                         'key' : 
                                         }, ), ), 
-                            owner = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                            owner = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                                 profile_id = '012', 
                                 display_name = '', 
                                 short_bio = '', 
                                 bio = '', 
                                 did = '', 
                                 is_private = True, 
+                                profile_visibility = 'public', 
+                                show_email = True, 
+                                allow_connection_requests = 'anyone', 
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
@@ -107,7 +110,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                 is_service_profile = True, 
                                 type = '', 
                                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                                display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                                     background_color = '', 
                                     background_image = '', 
                                     fade_background_image = True, 
@@ -142,13 +145,16 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                 ''
                                 ], 
                             writers = [
-                                openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                                openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                                     profile_id = '012', 
                                     display_name = '', 
                                     short_bio = '', 
                                     bio = '', 
                                     did = '', 
                                     is_private = True, 
+                                    profile_visibility = 'public', 
+                                    show_email = True, 
+                                    allow_connection_requests = 'anyone', 
                                     email = '', 
                                     image = '', 
                                     hero_image = '', 
@@ -225,13 +231,16 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     personal = {
                                         'key' : 
                                         }, ), ), 
-                            owner = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                            owner = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                                 profile_id = '012', 
                                 display_name = '', 
                                 short_bio = '', 
                                 bio = '', 
                                 did = '', 
                                 is_private = True, 
+                                profile_visibility = 'public', 
+                                show_email = True, 
+                                allow_connection_requests = 'anyone', 
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
@@ -239,7 +248,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                 is_service_profile = True, 
                                 type = '', 
                                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                                display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                                     background_color = '', 
                                     background_image = '', 
                                     fade_background_image = True, 
@@ -274,13 +283,16 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                 ''
                                 ], 
                             writers = [
-                                openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                                openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                                     profile_id = '012', 
                                     display_name = '', 
                                     short_bio = '', 
                                     bio = '', 
                                     did = '', 
                                     is_private = True, 
+                                    profile_visibility = 'public', 
+                                    show_email = True, 
+                                    allow_connection_requests = 'anyone', 
                                     email = '', 
                                     image = '', 
                                     hero_image = '', 

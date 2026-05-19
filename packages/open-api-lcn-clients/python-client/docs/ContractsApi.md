@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**contracts_consent_to_contract**](ContractsApi.md#contracts_consent_to_contract) | **POST** /consent-flow-contract/consent | Consent To Contract
 [**contracts_create_consent_flow_contract**](ContractsApi.md#contracts_create_consent_flow_contract) | **POST** /consent-flow-contract | Create Consent Flow Contract
 [**contracts_delete_consent_flow_contract**](ContractsApi.md#contracts_delete_consent_flow_contract) | **DELETE** /consent-flow-contract | Delete a Consent Flow Contract
+[**contracts_delete_credential_from_all_contracts**](ContractsApi.md#contracts_delete_credential_from_all_contracts) | **POST** /consent-flow-contract/consent/prune-deleted-uris | Delete credential references from all consent terms
 [**contracts_forward_contract_request_to_profile**](ContractsApi.md#contracts_forward_contract_request_to_profile) | **POST** /consent-flow-contracts/forward-request-to-profile | Forward a contract request
 [**contracts_get_all_contract_requests_for_profile**](ContractsApi.md#contracts_get_all_contract_requests_for_profile) | **GET** /consent-flow-contracts/all-requests-for-profile | Get all contract requests for a target profile
 [**contracts_get_all_credentials_for_terms**](ContractsApi.md#contracts_get_all_credentials_for_terms) | **POST** /consent-flow-contracts/credentials | Get all credentials written to any terms
@@ -21,6 +22,7 @@ Method | HTTP request | Description
 [**contracts_get_contract_sent_requests**](ContractsApi.md#contracts_get_contract_sent_requests) | **GET** /consent-flow-contracts/sent-requests | Get requests sent for a given contract
 [**contracts_get_credentials_for_contract**](ContractsApi.md#contracts_get_credentials_for_contract) | **POST** /consent-flow-contract/credentials | Get credentials issued via a contract
 [**contracts_get_request_status_for_profile**](ContractsApi.md#contracts_get_request_status_for_profile) | **GET** /consent-flow-contracts/request-status | Get request status for a specific profile under a contract
+[**contracts_get_shared_insights_requests_for_profile**](ContractsApi.md#contracts_get_shared_insights_requests_for_profile) | **GET** /consent-flow-contracts/shared-insights-requests-for-profile | Get profiles a user has shared insights with
 [**contracts_get_terms_transaction_history**](ContractsApi.md#contracts_get_terms_transaction_history) | **POST** /consent-flow-contract/consent/history | Gets Transaction History
 [**contracts_mark_contract_request_as_seen**](ContractsApi.md#contracts_mark_contract_request_as_seen) | **POST** /consent-flow-contracts/mark-request-as-seen | Marks a contract request as seen
 [**contracts_remove_auto_boosts_from_contract**](ContractsApi.md#contracts_remove_auto_boosts_from_contract) | **POST** /consent-flow-contracts/autoboosts/remove | Remove autoboosts from a contract
@@ -441,6 +443,89 @@ Name | Type | Description  | Notes
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
 **404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_delete_credential_from_all_contracts**
+> ContractsDeleteCredentialFromAllContracts200Response contracts_delete_credential_from_all_contracts(contracts_delete_credential_from_all_contracts_request)
+
+Delete credential references from all consent terms
+
+Removes deleted credential URIs from any live consent terms that still reference them
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_delete_credential_from_all_contracts200_response import ContractsDeleteCredentialFromAllContracts200Response
+from openapi_client.models.contracts_delete_credential_from_all_contracts_request import ContractsDeleteCredentialFromAllContractsRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_delete_credential_from_all_contracts_request = openapi_client.ContractsDeleteCredentialFromAllContractsRequest() # ContractsDeleteCredentialFromAllContractsRequest | 
+
+    try:
+        # Delete credential references from all consent terms
+        api_response = api_instance.contracts_delete_credential_from_all_contracts(contracts_delete_credential_from_all_contracts_request)
+        print("The response of ContractsApi->contracts_delete_credential_from_all_contracts:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_delete_credential_from_all_contracts: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contracts_delete_credential_from_all_contracts_request** | [**ContractsDeleteCredentialFromAllContractsRequest**](ContractsDeleteCredentialFromAllContractsRequest.md)|  | 
+
+### Return type
+
+[**ContractsDeleteCredentialFromAllContracts200Response**](ContractsDeleteCredentialFromAllContracts200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
 **500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1421,6 +1506,89 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ContractsGetRequestStatusForProfile200Response**](ContractsGetRequestStatusForProfile200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_get_shared_insights_requests_for_profile**
+> List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner] contracts_get_shared_insights_requests_for_profile(target_profile_id)
+
+Get profiles a user has shared insights with
+
+Gets profiles with REQUESTED_FOR relationships targeting the current user, including request status.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_get_shared_insights_requests_for_profile200_response_inner import ContractsGetSharedInsightsRequestsForProfile200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    target_profile_id = 'target_profile_id_example' # str | 
+
+    try:
+        # Get profiles a user has shared insights with
+        api_response = api_instance.contracts_get_shared_insights_requests_for_profile(target_profile_id)
+        print("The response of ContractsApi->contracts_get_shared_insights_requests_for_profile:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_get_shared_insights_requests_for_profile: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **target_profile_id** | **str**|  | 
+
+### Return type
+
+[**List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner]**](ContractsGetSharedInsightsRequestsForProfile200ResponseInner.md)
 
 ### Authorization
 

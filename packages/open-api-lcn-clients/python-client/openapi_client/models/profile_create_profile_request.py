@@ -23,6 +23,7 @@ from typing_extensions import Annotated
 from openapi_client.models.profile_create_profile_request_display import ProfileCreateProfileRequestDisplay
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileCreateProfileRequest(BaseModel):
     """
@@ -33,6 +34,9 @@ class ProfileCreateProfileRequest(BaseModel):
     short_bio: Optional[StrictStr] = Field(default='', description="Short bio for the profile.", alias="shortBio")
     bio: Optional[StrictStr] = Field(default='', description="Longer bio for the profile.")
     is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
+    profile_visibility: Optional[StrictStr] = Field(default='public', description="Profile visibility: 'public', 'connections_only', or 'private'.", alias="profileVisibility")
+    show_email: Optional[StrictBool] = Field(default=False, description="Whether to show email to connections.", alias="showEmail")
+    allow_connection_requests: Optional[StrictStr] = Field(default='anyone', description="Who can send connection requests: 'anyone' or 'invite_only'.", alias="allowConnectionRequests")
     email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
@@ -45,7 +49,28 @@ class ProfileCreateProfileRequest(BaseModel):
     dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
     country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
     approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "email", "image", "heroImage", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved"]
+    auth_token: Optional[StrictStr] = Field(default=None, alias="authToken")
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved", "authToken"]
+
+    @field_validator('profile_visibility')
+    def profile_visibility_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['public', 'connections_only', 'private']):
+            raise ValueError("must be one of enum values ('public', 'connections_only', 'private')")
+        return value
+
+    @field_validator('allow_connection_requests')
+    def allow_connection_requests_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['anyone', 'invite_only']):
+            raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
 
     @field_validator('notifications_webhook')
     def notifications_webhook_validate_regular_expression(cls, value):
@@ -53,12 +78,16 @@ class ProfileCreateProfileRequest(BaseModel):
         if value is None:
             return value
 
+        if not isinstance(value, str):
+            value = str(value)
+
         if not re.match(r"^http.*", value):
             raise ValueError(r"must validate the regular expression /^http.*/")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -70,8 +99,7 @@ class ProfileCreateProfileRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -99,6 +127,11 @@ class ProfileCreateProfileRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
+        # set to None if auth_token (nullable) is None
+        # and model_fields_set contains the field
+        if self.auth_token is None and "auth_token" in self.model_fields_set:
+            _dict['authToken'] = None
+
         return _dict
 
     @classmethod
@@ -116,6 +149,9 @@ class ProfileCreateProfileRequest(BaseModel):
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
             "bio": obj.get("bio") if obj.get("bio") is not None else '',
             "isPrivate": obj.get("isPrivate"),
+            "profileVisibility": obj.get("profileVisibility") if obj.get("profileVisibility") is not None else 'public',
+            "showEmail": obj.get("showEmail") if obj.get("showEmail") is not None else False,
+            "allowConnectionRequests": obj.get("allowConnectionRequests") if obj.get("allowConnectionRequests") is not None else 'anyone',
             "email": obj.get("email"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
@@ -127,7 +163,8 @@ class ProfileCreateProfileRequest(BaseModel):
             "role": obj.get("role") if obj.get("role") is not None else '',
             "dob": obj.get("dob") if obj.get("dob") is not None else '',
             "country": obj.get("country"),
-            "approved": obj.get("approved")
+            "approved": obj.get("approved"),
+            "authToken": obj.get("authToken")
         })
         return _obj
 
