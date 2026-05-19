@@ -100,7 +100,9 @@ export const didWebNetworkLearnCardFromSeed = async ({
         await getVerifyBoostPlugin(chapiLc, trustedBoostRegistry)
     );
 
-    const lcLc = await boostVerificationLc.addPlugin(getLearnCardPlugin(boostVerificationLc));
+    const sdJwtVcLc = await boostVerificationLc.addPlugin(getSdJwtVcPlugin(boostVerificationLc));
+
+    const lcLc = await sdJwtVcLc.addPlugin(getLearnCardPlugin(sdJwtVcLc));
 
     const didWebLc = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
 
@@ -108,7 +110,5 @@ export const didWebNetworkLearnCardFromSeed = async ({
         await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter, extraHeaders })
     );
 
-    const sdJwtVcLc = await networkLc.addPlugin(getSdJwtVcPlugin(networkLc));
-
-    return sdJwtVcLc.addPlugin(getOpenID4VCPlugin(sdJwtVcLc, openid4vc));
+    return networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
 };

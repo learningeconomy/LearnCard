@@ -82,8 +82,8 @@ export type LearnCardFromSeed = InitFunction<
             EthereumPlugin,
             VpqrPlugin,
             CHAPIPlugin,
-            LearnCardPlugin,
             SdJwtVcPlugin,
+            LearnCardPlugin,
             OpenID4VCPlugin
         ]
     >
@@ -114,9 +114,9 @@ export type NetworkLearnCardFromSeed = InitFunction<
             VpqrPlugin,
             CHAPIPlugin,
             VerifyBoostPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             LearnCardNetworkPlugin,
-            SdJwtVcPlugin,
             OpenID4VCPlugin
         ]
     >
@@ -167,9 +167,9 @@ export type DidWebLearnCardFromSeed = InitFunction<
             EthereumPlugin,
             VpqrPlugin,
             CHAPIPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             DidWebPlugin,
-            SdJwtVcPlugin,
             OpenID4VCPlugin
         ]
     >
@@ -201,10 +201,10 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             VpqrPlugin,
             CHAPIPlugin,
             VerifyBoostPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             DidWebPlugin,
             LearnCardNetworkPlugin,
-            SdJwtVcPlugin,
             OpenID4VCPlugin
         ]
     >
