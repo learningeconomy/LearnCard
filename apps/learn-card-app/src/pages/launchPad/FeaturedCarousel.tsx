@@ -126,20 +126,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
                                     <div className="mt-2">
                                         {appIsInstalled ? (
-                                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
-                                                <svg
-                                                    className="w-3 h-3"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M5 13l4 4L19 7"
-                                                    />
-                                                </svg>
+                                            <span className="inline-flex items-center px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
                                                 Open
                                             </span>
                                         ) : (
