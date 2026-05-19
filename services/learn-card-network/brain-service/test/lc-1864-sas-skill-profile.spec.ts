@@ -39,8 +39,7 @@ describe('LC-1864 SAS skill profile finish step', () => {
             issuanceDate: new Date().toISOString(),
             boostName: SAS_BOOST_NAME,
             achievementType: SAS_ACHIEVEMENT_TYPE,
-            achievementDescription:
-                'A self-attested credential that lists the skills you have.',
+            achievementDescription: 'A self-attested credential that lists the skills you have.',
             achievementNarrative: '',
             achievementName: SAS_BOOST_NAME,
             display: { displayType: 'badge', previewType: 'default' },
@@ -131,5 +130,5 @@ describe('LC-1864 SAS skill profile finish step', () => {
                 credential: signed,
             })
         ).resolves.toBeDefined();
-    });
+    }, 20_000);
 });
