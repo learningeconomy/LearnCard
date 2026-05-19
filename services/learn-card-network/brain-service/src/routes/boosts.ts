@@ -1453,13 +1453,8 @@ export const boostsRouter = t.router({
 
             const decodedUri = decodeURIComponent(uri);
             const { domain: uriDomain } = getUriParts(decodedUri, true);
-            // LC-1864: strip the `/trpc` suffix that constructUri appends to
-            // boost URIs. verifyCredentialIsDerivedFromBoost (called downstream
-            // from sendBoost) re-computes OBv3 alignments using `ctx.domain`,
-            // which is the bare domain. If we inject alignments with `/trpc`
-            // included, the alignment targetUrl values won't match the verifier's
-            // values and sendBoost throws "Credential does not match boost
-            // template."
+            // Match the bare domain verifyCredentialIsDerivedFromBoost uses, so
+            // injected alignment targetUrls equal the verifier's re-computed ones.
             const alignmentsDomain = uriDomain.replace(/\/trpc$/, '');
             const [boost, boostInstance] = await Promise.all([
                 getBoostByUriWithDefaultClaimPermissions(decodedUri),
