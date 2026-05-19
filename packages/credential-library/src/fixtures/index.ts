@@ -52,6 +52,7 @@ import { vcV2MembershipCredential } from './vc-v2/membership-credential';
 import { vcV2LicenseCredential } from './vc-v2/license-credential';
 
 import { clrGreatPlainsFull } from './clr/great-plains-full';
+import { clrWestbridgeFull } from './clr/westbridge-full';
 
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
@@ -108,6 +109,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     vcV2MembershipCredential,
     vcV2LicenseCredential,
     clrGreatPlainsFull,
+    clrWestbridgeFull,
 ];
 
 // Re-export individual fixtures for direct import
@@ -147,4 +149,5 @@ export {
     vcV2MembershipCredential,
     vcV2LicenseCredential,
     clrGreatPlainsFull,
+    clrWestbridgeFull,
 };
