@@ -39,7 +39,7 @@ import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievements
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
-import { getSvgMustacheRenderMethod } from '../../../helpers/renderMethod.helpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 type BoostClaimCardProps = {

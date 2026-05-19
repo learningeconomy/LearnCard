@@ -136,12 +136,14 @@ export type VC2Evidence = z.infer<typeof VC2EvidenceValidator>;
 
 export const TemplateRenderMethodValidator = z.object({
     type: z.literal('TemplateRenderMethod'),
-    renderSuite: z.literal('svg-mustache'), // TODO: Add other render suites
-    template: z.string(), // URI or data: URI for inline SVG
+    renderSuite: z.string(),
+    template: z.string(),
     renderProperty: z.array(z.string()).optional(),
-    outputPreference: z.object({
-        mediaType: z.literal('image/svg+xml'), // TODO: Add other media types
-    }).optional(),
+    outputPreference: z
+        .object({
+            mediaType: z.string(),
+        })
+        .optional(),
 });
 export type TemplateRenderMethod = z.infer<typeof TemplateRenderMethodValidator>;
 

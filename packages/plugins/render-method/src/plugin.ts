@@ -6,6 +6,15 @@ import {
     RenderMethodPlugin,
     RENDER_METHOD_CONTEXT,
 } from './types';
+import {
+    buildRenderData,
+    findRenderMethod,
+    findRenderMethods,
+    findTemplateRenderMethod,
+    findTemplateRenderMethods,
+    getRenderMethods,
+    getSvgMustacheRenderMethod,
+} from './read';
 
 /**
  * The default hosted SVG Mustache template, served from `packages/render-method-templates/`.
@@ -130,5 +139,12 @@ export const getRenderMethodPlugin = (
     methods: {
         attachRenderMethod: (_lc, vc, config) => attachRenderMethod(vc, config),
         buildTemplateRenderMethod: (_lc, config) => buildTemplateRenderMethod(config),
+        getRenderMethods: (_lc, vc) => getRenderMethods(vc),
+        findRenderMethod: (_lc, vc, predicate) => findRenderMethod(vc, predicate),
+        findRenderMethods: (_lc, vc, predicate) => findRenderMethods(vc, predicate),
+        findTemplateRenderMethod: (_lc, vc, suite) => findTemplateRenderMethod(vc, suite),
+        findTemplateRenderMethods: (_lc, vc, suite) => findTemplateRenderMethods(vc, suite),
+        getSvgMustacheRenderMethod: (_lc, vc) => getSvgMustacheRenderMethod(vc),
+        buildRenderData: (_lc, vc, renderProperty) => buildRenderData(vc, renderProperty),
     },
 });

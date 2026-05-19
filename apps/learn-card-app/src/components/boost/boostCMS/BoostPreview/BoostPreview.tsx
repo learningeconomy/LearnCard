@@ -28,7 +28,7 @@ import {
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { getSvgMustacheRenderMethod } from '../../../../helpers/renderMethod.helpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 export type IssueHistory = {

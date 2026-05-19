@@ -1,5 +1,5 @@
 import { Plugin, LearnCard } from '@learncard/core';
-import { UnsignedVC, TemplateRenderMethod } from '@learncard/types';
+import { UnsignedVC, VC, RenderMethod, TemplateRenderMethod } from '@learncard/types';
 
 /**
  * JSON-LD context for W3C `renderMethod`.
@@ -35,6 +35,8 @@ export type AttachRenderMethodConfig =
     | { templateId: string; templateValue?: never; renderProperty?: string[] }
     | { templateValue: string; templateId?: never; renderProperty?: string[] };
 
+type AnyCredential = VC | UnsignedVC;
+
 export type RenderMethodPluginMethods = {
     /**
      * Attaches a `TemplateRenderMethod` to an unsigned VC and injects the render-method JSON-LD
@@ -54,6 +56,52 @@ export type RenderMethodPluginMethods = {
      * @throws if `templateId` is not an http(s) URL, or if `templateValue` is empty.
      */
     buildTemplateRenderMethod: (config: AttachRenderMethodConfig) => TemplateRenderMethod;
+    /**
+     * Returns all `renderMethod` entries on a VC, normalizing single-object form to an array and
+     * unwrapping `CertifiedBoostCredential`. Entries are NOT validated — apply a type guard via
+     * `findRenderMethod` / `findRenderMethods` for selection.
+     */
+    getRenderMethods: (vc: AnyCredential) => RenderMethod[];
+    /**
+     * First `renderMethod` matching a type-guard predicate, or `null`. The predicate's narrowed
+     * type is returned, so callers using `isSvgMustacheRenderMethod` get back a
+     * `TemplateRenderMethod` (validated against the Zod schema).
+     */
+    findRenderMethod: <T extends RenderMethod = RenderMethod>(
+        vc: AnyCredential,
+        predicate: (rm: RenderMethod) => rm is T
+    ) => T | null;
+    /** Like `findRenderMethod`, but returns every matching entry. */
+    findRenderMethods: <T extends RenderMethod = RenderMethod>(
+        vc: AnyCredential,
+        predicate: (rm: RenderMethod) => rm is T
+    ) => T[];
+    /**
+     * First `TemplateRenderMethod` on a VC whose `renderSuite` matches the given suite name (or
+     * any of the names in an array — useful for capability negotiation). Returns the Zod-parsed
+     * shape, or `null` if no entry matches.
+     */
+    findTemplateRenderMethod: (
+        vc: AnyCredential,
+        suite: string | readonly string[]
+    ) => TemplateRenderMethod | null;
+    /** Like `findTemplateRenderMethod`, but returns every matching entry. */
+    findTemplateRenderMethods: (
+        vc: AnyCredential,
+        suite: string | readonly string[]
+    ) => TemplateRenderMethod[];
+    /**
+     * Convenience: the first svg-mustache `TemplateRenderMethod` on a VC, or `null`. Equivalent
+     * to `findTemplateRenderMethod(vc, 'svg-mustache')`.
+     */
+    getSvgMustacheRenderMethod: (vc: AnyCredential) => TemplateRenderMethod | null;
+    /**
+     * Portable Mustache render-data context for a VC. Spreads the credential at the top level and
+     * adds `vc`, `credential`, `credentialSubjects` aliases so templates authored against any
+     * common shape work uniformly. When `renderProperty` is provided (RFC 6901 JSON Pointers),
+     * those values are overlaid at their pointer paths.
+     */
+    buildRenderData: (vc: AnyCredential, renderProperty?: string[]) => Record<string, unknown>;
 };
 
 /**

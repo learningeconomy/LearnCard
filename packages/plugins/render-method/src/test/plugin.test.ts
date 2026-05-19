@@ -1,4 +1,4 @@
-import type { UnsignedVC, TemplateRenderMethod } from '@learncard/types';
+import type { UnsignedVC, VC, TemplateRenderMethod } from '@learncard/types';
 
 import {
     attachRenderMethod,
@@ -6,6 +6,17 @@ import {
     DEFAULT_TEMPLATE_ID,
     getRenderMethodPlugin,
 } from '../plugin';
+import {
+    buildRenderData,
+    findRenderMethod,
+    findRenderMethods,
+    findTemplateRenderMethod,
+    findTemplateRenderMethods,
+    getRenderMethods,
+    getSvgMustacheRenderMethod,
+    isSvgMustacheRenderMethod,
+    isTemplateRenderMethod,
+} from '../read';
 import { AttachRenderMethodConfig, RENDER_METHOD_CONTEXT } from '../types';
 
 const minimalVc: UnsignedVC = {
@@ -267,5 +278,326 @@ describe('DEFAULT_TEMPLATE_ID', () => {
     it('is accepted as a valid templateId', () => {
         const rm = buildTemplateRenderMethod({ templateId: DEFAULT_TEMPLATE_ID });
         expect(rm.template).toBe(DEFAULT_TEMPLATE_ID);
+    });
+});
+
+const validSvgMustacheRm: TemplateRenderMethod = {
+    type: 'TemplateRenderMethod',
+    renderSuite: 'svg-mustache',
+    template: 'https://example.com/t.svg',
+    outputPreference: { mediaType: 'image/svg+xml' },
+};
+
+describe('type guards', () => {
+    it('isTemplateRenderMethod accepts a valid TemplateRenderMethod', () => {
+        expect(isTemplateRenderMethod(validSvgMustacheRm)).toBe(true);
+    });
+
+    it('isTemplateRenderMethod rejects shapes missing required fields', () => {
+        expect(isTemplateRenderMethod({})).toBe(false);
+        expect(isTemplateRenderMethod({ type: 'TemplateRenderMethod' })).toBe(false);
+        expect(isTemplateRenderMethod(null)).toBe(false);
+        expect(isTemplateRenderMethod('not-an-object')).toBe(false);
+    });
+
+    it('isSvgMustacheRenderMethod accepts only svg-mustache TemplateRenderMethods', () => {
+        expect(isSvgMustacheRenderMethod(validSvgMustacheRm)).toBe(true);
+        expect(
+            isSvgMustacheRenderMethod({ ...validSvgMustacheRm, renderSuite: 'html-mustache' })
+        ).toBe(false);
+        expect(
+            isSvgMustacheRenderMethod({ ...validSvgMustacheRm, type: 'OtherRenderMethod' })
+        ).toBe(false);
+        expect(isSvgMustacheRenderMethod(null)).toBe(false);
+    });
+});
+
+describe('getRenderMethods', () => {
+    it('returns [] when the VC has no renderMethod', () => {
+        const vc = { '@context': [], type: ['VerifiableCredential'] } as unknown as VC;
+        expect(getRenderMethods(vc)).toEqual([]);
+    });
+
+    it('normalizes a single-object renderMethod to a one-element array', () => {
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        expect(getRenderMethods(vc)).toEqual([validSvgMustacheRm]);
+    });
+
+    it('returns the renderMethod array as-is for array-form VCs', () => {
+        const rmArr = [validSvgMustacheRm, { ...validSvgMustacheRm, template: 'https://b.svg' }];
+        const vc = { renderMethod: rmArr } as unknown as VC;
+        expect(getRenderMethods(vc)).toEqual(rmArr);
+    });
+
+    it('unwraps CertifiedBoostCredential to read renderMethod from inner boostCredential', () => {
+        const boostInner = { renderMethod: validSvgMustacheRm };
+        const wrapped = {
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: boostInner,
+        } as unknown as VC;
+        expect(getRenderMethods(wrapped)).toEqual([validSvgMustacheRm]);
+    });
+
+    it('does NOT validate entries — passes through raw shapes', () => {
+        const junk = { type: 'UnknownRenderMethod', foo: 'bar' };
+        const vc = { renderMethod: junk } as unknown as VC;
+        expect(getRenderMethods(vc)).toEqual([junk]);
+    });
+});
+
+describe('findRenderMethod / findRenderMethods', () => {
+    it('findRenderMethod returns the first match by predicate', () => {
+        const other = { type: 'OtherRenderMethod', renderSuite: 'png' };
+        const vc = {
+            renderMethod: [other, validSvgMustacheRm],
+        } as unknown as VC;
+        expect(findRenderMethod(vc, isSvgMustacheRenderMethod)).toEqual(validSvgMustacheRm);
+    });
+
+    it('findRenderMethod returns null when no entry matches', () => {
+        const vc = {
+            renderMethod: [{ type: 'OtherRenderMethod', renderSuite: 'png' }],
+        } as unknown as VC;
+        expect(findRenderMethod(vc, isSvgMustacheRenderMethod)).toBeNull();
+    });
+
+    it('findRenderMethods returns every match', () => {
+        const a = { ...validSvgMustacheRm, template: 'https://a.svg' };
+        const b = { ...validSvgMustacheRm, template: 'https://b.svg' };
+        const other = { type: 'OtherRenderMethod', renderSuite: 'png' };
+        const vc = { renderMethod: [a, other, b] } as unknown as VC;
+        expect(findRenderMethods(vc, isSvgMustacheRenderMethod)).toEqual([a, b]);
+    });
+
+    it('supports custom predicates for future render suites', () => {
+        const htmlMustache = {
+            type: 'TemplateRenderMethod',
+            renderSuite: 'html-mustache',
+            template: 'https://example.com/t.html',
+        };
+        const vc = { renderMethod: [validSvgMustacheRm, htmlMustache] } as unknown as VC;
+
+        const isHtmlMustache = (rm: unknown): rm is TemplateRenderMethod =>
+            typeof rm === 'object' &&
+            rm !== null &&
+            (rm as { renderSuite?: unknown }).renderSuite === 'html-mustache';
+
+        expect(findRenderMethod(vc, isHtmlMustache)).toEqual(htmlMustache);
+    });
+});
+
+describe('getSvgMustacheRenderMethod', () => {
+    it('returns the first svg-mustache entry', () => {
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        expect(getSvgMustacheRenderMethod(vc)).toEqual(validSvgMustacheRm);
+    });
+
+    it('returns null when no svg-mustache entry exists', () => {
+        const vc = {
+            renderMethod: [{ type: 'OtherRenderMethod', renderSuite: 'png' }],
+        } as unknown as VC;
+        expect(getSvgMustacheRenderMethod(vc)).toBeNull();
+    });
+
+    it('returns null when renderMethod is missing entirely', () => {
+        expect(getSvgMustacheRenderMethod({} as VC)).toBeNull();
+    });
+
+    it('skips invalid entries and finds the first VALID svg-mustache entry', () => {
+        const invalid = { type: 'TemplateRenderMethod', renderSuite: 'svg-mustache' };
+        const vc = { renderMethod: [invalid, validSvgMustacheRm] } as unknown as VC;
+        expect(getSvgMustacheRenderMethod(vc)).toEqual(validSvgMustacheRm);
+    });
+
+    it('unwraps CertifiedBoostCredential', () => {
+        const wrapped = {
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: { renderMethod: validSvgMustacheRm },
+        } as unknown as VC;
+        expect(getSvgMustacheRenderMethod(wrapped)).toEqual(validSvgMustacheRm);
+    });
+});
+
+describe('buildRenderData', () => {
+    const vc = {
+        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        type: ['VerifiableCredential'],
+        issuer: { id: 'did:example:issuer', name: 'Example College' },
+        validFrom: '2026-01-15T00:00:00Z',
+        credentialSubject: { id: 'did:example:subject', name: 'Ada Lovelace' },
+    } as unknown as VC;
+
+    it('spreads credential fields at the top level', () => {
+        const data = buildRenderData(vc);
+        expect(data.issuer).toEqual(vc.issuer);
+        expect(data.credentialSubject).toEqual(vc.credentialSubject);
+    });
+
+    it('adds vc and credential aliases pointing at the credential', () => {
+        const data = buildRenderData(vc);
+        expect(data.vc).toBe(data.credential);
+    });
+
+    it('wraps a single credentialSubject in credentialSubjects array', () => {
+        const data = buildRenderData(vc);
+        expect(Array.isArray(data.credentialSubjects)).toBe(true);
+        expect((data.credentialSubjects as unknown[])).toHaveLength(1);
+    });
+
+    it('keeps credentialSubjects as-is when already an array', () => {
+        const multi = {
+            ...vc,
+            credentialSubject: [{ name: 'A' }, { name: 'B' }],
+        } as unknown as VC;
+        const data = buildRenderData(multi);
+        expect((data.credentialSubjects as unknown[])).toHaveLength(2);
+    });
+
+    it('overlays renderProperty (RFC 6901 pointers) at their pointer paths', () => {
+        const data = buildRenderData(vc, ['/issuer/name', '/credentialSubject/name']);
+        expect((data.issuer as { name: string }).name).toBe('Example College');
+        expect((data.credentialSubject as { name: string }).name).toBe('Ada Lovelace');
+    });
+
+    it('handles RFC 6901 escapes (~1 -> /, ~0 -> ~)', () => {
+        const escaped = {
+            ...vc,
+            credentialSubject: {
+                'a/b': 'slash-value',
+                'a~b': 'tilde-value',
+            },
+        } as unknown as VC;
+        const data = buildRenderData(escaped, [
+            '/credentialSubject/a~1b',
+            '/credentialSubject/a~0b',
+        ]);
+        expect((data.credentialSubject as Record<string, string>)['a/b']).toBe('slash-value');
+        expect((data.credentialSubject as Record<string, string>)['a~b']).toBe('tilde-value');
+    });
+
+    it('skips pointers that resolve to undefined', () => {
+        const data = buildRenderData(vc, ['/credentialSubject/missing']);
+        expect((data.credentialSubject as Record<string, unknown>).missing).toBeUndefined();
+    });
+
+    it('does NOT unwrap CertifiedBoostCredential (caller chooses the layer)', () => {
+        const wrapped = {
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            issuer: { name: 'Wrapper Issuer' },
+            boostCredential: { issuer: { name: 'Inner Issuer' } },
+        } as unknown as VC;
+        const data = buildRenderData(wrapped);
+        expect((data.issuer as { name: string }).name).toBe('Wrapper Issuer');
+    });
+});
+
+describe('findTemplateRenderMethod / findTemplateRenderMethods (string-based sugar)', () => {
+    const htmlMustacheRm: TemplateRenderMethod = {
+        type: 'TemplateRenderMethod',
+        renderSuite: 'html-mustache',
+        template: 'https://example.com/t.html',
+    };
+
+    it('finds by a single suite string', () => {
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        expect(findTemplateRenderMethod(vc, 'svg-mustache')).toEqual(validSvgMustacheRm);
+    });
+
+    it('returns null when no entry matches the single suite', () => {
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        expect(findTemplateRenderMethod(vc, 'html-mustache')).toBeNull();
+    });
+
+    it('finds the first match across an array of suites (capability negotiation)', () => {
+        const vc = {
+            renderMethod: [
+                { type: 'OtherRenderMethod', renderSuite: 'png' },
+                htmlMustacheRm,
+                validSvgMustacheRm,
+            ],
+        } as unknown as VC;
+        expect(
+            findTemplateRenderMethod(vc, ['svg-mustache', 'html-mustache'])
+        ).toEqual(htmlMustacheRm);
+    });
+
+    it('returns null when none of the listed suites match', () => {
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        expect(findTemplateRenderMethod(vc, ['html-mustache', 'pdf'])).toBeNull();
+    });
+
+    it('findTemplateRenderMethods returns every entry matching a single suite', () => {
+        const second = { ...validSvgMustacheRm, template: 'https://b.svg' };
+        const vc = { renderMethod: [validSvgMustacheRm, second] } as unknown as VC;
+        expect(findTemplateRenderMethods(vc, 'svg-mustache')).toEqual([
+            validSvgMustacheRm,
+            second,
+        ]);
+    });
+
+    it('findTemplateRenderMethods returns every entry matching any of an array of suites', () => {
+        const vc = {
+            renderMethod: [validSvgMustacheRm, htmlMustacheRm],
+        } as unknown as VC;
+        expect(
+            findTemplateRenderMethods(vc, ['svg-mustache', 'html-mustache'])
+        ).toHaveLength(2);
+    });
+
+    it('returns the Zod-parsed shape (unknown keys stripped)', () => {
+        const withExtra = { ...validSvgMustacheRm, extraField: 'should-strip' };
+        const vc = { renderMethod: withExtra } as unknown as VC;
+        const found = findTemplateRenderMethod(vc, 'svg-mustache');
+        expect(found).toBeDefined();
+        expect((found as Record<string, unknown>).extraField).toBeUndefined();
+    });
+
+    it('unwraps CertifiedBoostCredential', () => {
+        const wrapped = {
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: { renderMethod: htmlMustacheRm },
+        } as unknown as VC;
+        expect(findTemplateRenderMethod(wrapped, 'html-mustache')).toEqual(htmlMustacheRm);
+    });
+});
+
+describe('plugin read-side methods', () => {
+    it('exposes the read-side API via wallet.invoke surface', () => {
+        const plugin = getRenderMethodPlugin({} as never);
+        expect(typeof plugin.methods.getRenderMethods).toBe('function');
+        expect(typeof plugin.methods.findRenderMethod).toBe('function');
+        expect(typeof plugin.methods.findRenderMethods).toBe('function');
+        expect(typeof plugin.methods.findTemplateRenderMethod).toBe('function');
+        expect(typeof plugin.methods.findTemplateRenderMethods).toBe('function');
+        expect(typeof plugin.methods.getSvgMustacheRenderMethod).toBe('function');
+        expect(typeof plugin.methods.buildRenderData).toBe('function');
+    });
+
+    it('plugin.methods.findRenderMethod accepts a predicate and narrows', () => {
+        const plugin = getRenderMethodPlugin({} as never);
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        const found = plugin.methods.findRenderMethod(
+            {} as never,
+            vc,
+            isSvgMustacheRenderMethod
+        );
+        expect(found).toEqual(validSvgMustacheRm);
+    });
+
+    it('plugin.methods.findTemplateRenderMethod accepts a single suite string', () => {
+        const plugin = getRenderMethodPlugin({} as never);
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        const found = plugin.methods.findTemplateRenderMethod({} as never, vc, 'svg-mustache');
+        expect(found).toEqual(validSvgMustacheRm);
+    });
+
+    it('plugin.methods.findTemplateRenderMethod accepts an array of suites', () => {
+        const plugin = getRenderMethodPlugin({} as never);
+        const vc = { renderMethod: validSvgMustacheRm } as unknown as VC;
+        const found = plugin.methods.findTemplateRenderMethod({} as never, vc, [
+            'html-mustache',
+            'svg-mustache',
+        ]);
+        expect(found).toEqual(validSvgMustacheRm);
     });
 });

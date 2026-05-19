@@ -4,7 +4,7 @@ import { checkmarkCircle, ellipseOutline } from 'ionicons/icons';
 
 import { VC, UnsignedVC } from '@learncard/types';
 import { BoostPreviewDisplayViewEnum, boostPreviewStore } from 'learn-card-base/stores/boostPreviewStore';
-import { getSvgMustacheRenderMethod } from '../../../../helpers/renderMethod.helpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 
 type BoostDisplayStyleSelectorProps = {
     credential: VC | UnsignedVC;

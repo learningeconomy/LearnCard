@@ -5,7 +5,7 @@
     "projectType": "library",
     "root": "packages/plugins/render-method",
     "tags": [],
-    "implicitDependencies": ["types", "core"],
+    "implicitDependencies": ["types", "core", "helpers"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
         "source": ["{projectRoot}/src/**/*"],

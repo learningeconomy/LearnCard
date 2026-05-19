@@ -21,7 +21,7 @@ import {
     ModalTypes,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
-import { getSvgMustacheRenderMethod } from '../../../../helpers/renderMethod.helpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 type IssueHistory = {

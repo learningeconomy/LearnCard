@@ -49,7 +49,7 @@ import {
     getDefaultCategoryForCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { getSvgMustacheRenderMethod } from '../../helpers/renderMethod.helpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
