@@ -39,7 +39,6 @@ import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/Crede
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
-
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
@@ -340,6 +339,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             displayType: displayType,
             isEarnedBoost: true,
             isClrChildCredential,
+            isClrCredential,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;

@@ -10,6 +10,11 @@ import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import {
+    normalizeClrTranscriptDisplayModel,
+    ClrTranscriptSurface,
+} from '../../../../helpers/clrRenderer.helpers';
 
 import { VC, VerificationItem } from '@learncard/types';
 import {
@@ -55,6 +60,7 @@ type NonBoostPreviewProps = {
     existingEndorsements?: VC[];
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
+    isClrCredential?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -85,6 +91,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     existingEndorsements,
     isEarnedBoost,
     isClrChildCredential = false,
+    isClrCredential = false,
 }) => {
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
@@ -173,9 +180,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
 
+    const bgColor = isClrCredential ? 'bg-grayscale-100' : '';
+
     return (
         <IonPage>
-            <div className="flex h-full">
+            <div className={`flex h-full ${bgColor}`}>
                 <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                     <div
                         className={`w-full px-2 flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
@@ -187,38 +196,52 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
                             }`}
                         >
-                            <VCDisplayCardWrapper2
-                                credential={credential}
-                                issueeOverride={issueeOverride}
-                                issuerOverride={issuerOverride}
-                                issueHistory={issueHistory}
-                                categoryType={categoryType}
-                                verificationItems={verifications}
-                                customThumbComponent={customThumbComponent}
-                                customBodyCardComponent={customBodyCardComponent}
-                                customFooterComponent={
-                                    isClrChildCredential ? (
-                                        <VerifiedChildCLRFooter />
-                                    ) : (
-                                        customFooterComponent
-                                    )
-                                }
-                                subjectDID={subjectDID}
-                                subjectImageComponent={subjectImageComponent}
-                                issuerImageComponent={issuerImageComponent}
-                                customDescription={customDescription}
-                                customCriteria={customCriteria}
-                                customIssueHistoryComponent={customIssueHistoryComponent}
-                                enableLightbox
-                                titleOverride={titleOverride}
-                                handleClose={isCertificate ? handleCloseModal : undefined}
-                                onDotsClick={onDotsClick}
-                                hideNavButtons
-                                // isFrontOverride={isFront}
-                                setIsFrontOverride={setIsFront}
-                                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                                customBodyContentSlot={endorsementBadge}
-                            />
+                            {isClrCredential || isClrChildCredential ? (
+                                <ClrTranscriptFullPage
+                                    model={normalizeClrTranscriptDisplayModel(
+                                        credential as unknown as Record<string, unknown>
+                                    )}
+                                    options={{
+                                        viewer: 'student',
+                                        surface: ClrTranscriptSurface.Full,
+                                    }}
+                                />
+                            ) : (
+                                <VCDisplayCardWrapper2
+                                    credential={credential}
+                                    issueeOverride={issueeOverride}
+                                    issuerOverride={issuerOverride}
+                                    issueHistory={issueHistory}
+                                    categoryType={categoryType}
+                                    verificationItems={verifications}
+                                    customThumbComponent={customThumbComponent}
+                                    customBodyCardComponent={customBodyCardComponent}
+                                    customFooterComponent={
+                                        isClrChildCredential ? (
+                                            <VerifiedChildCLRFooter />
+                                        ) : (
+                                            customFooterComponent
+                                        )
+                                    }
+                                    subjectDID={subjectDID}
+                                    subjectImageComponent={subjectImageComponent}
+                                    issuerImageComponent={issuerImageComponent}
+                                    customDescription={customDescription}
+                                    customCriteria={customCriteria}
+                                    customIssueHistoryComponent={customIssueHistoryComponent}
+                                    enableLightbox
+                                    titleOverride={titleOverride}
+                                    handleClose={isCertificate ? handleCloseModal : undefined}
+                                    onDotsClick={onDotsClick}
+                                    hideNavButtons
+                                    // isFrontOverride={isFront}
+                                    setIsFrontOverride={setIsFront}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
+                                    customBodyContentSlot={endorsementBadge}
+                                />
+                            )}
                         </section>
                     </div>
                 </section>
