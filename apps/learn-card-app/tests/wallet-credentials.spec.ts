@@ -10,7 +10,14 @@ import { mockDidKitWasmForContext } from './route.helpers';
 
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
-        await waitForAuthenticatedState(page);
+        // Pass profileId so LoginWithSeed actually calls createProfile for the
+        // test user. Without this the seed-login user has no network profile,
+        // useIsCurrentUserLCNUser returns false, and the LCN gate in
+        // SideMenu.handleBoost opens the OnboardingContainer modal instead of
+        // AddToLearnCardMenu — making `Boost Someone` unreachable. Previously
+        // this test only passed when consent-flow-race.spec.ts ran first and
+        // created the profile as a side effect; the dependency was implicit.
+        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
     });
 
     test('Issue credential to yourself', async ({ page }) => {
