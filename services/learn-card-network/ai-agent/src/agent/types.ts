@@ -1,0 +1,71 @@
+export type AgentMessageRole = 'system' | 'user' | 'assistant' | 'tool';
+
+export interface AgentToolCall {
+    id: string;
+    name: string;
+    arguments: Record<string, unknown>;
+}
+
+export interface AgentMessage {
+    role: AgentMessageRole;
+    content: string;
+    toolCallId?: string;
+    toolCalls?: AgentToolCall[];
+}
+
+export interface AgentToolContext {
+    runId: string;
+}
+
+export interface AgentSkillDefinition {
+    name: string;
+    description: string;
+    load: () => Promise<string>;
+    source?: string;
+}
+
+export interface AgentToolDefinition {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+    skill?: AgentSkillDefinition;
+    execute: (args: Record<string, unknown>, context: AgentToolContext) => Promise<unknown>;
+}
+
+export interface AgentProviderRequest {
+    model: string;
+    messages: AgentMessage[];
+    tools: AgentToolDefinition[];
+}
+
+export interface AgentProviderResponse {
+    message: AgentMessage;
+}
+
+export interface AgentProvider {
+    complete: (request: AgentProviderRequest) => Promise<AgentProviderResponse>;
+}
+
+export interface AgentToolRun {
+    id: string;
+    name: string;
+    arguments: Record<string, unknown>;
+    result?: unknown;
+    error?: string;
+}
+
+export interface AgentRunRequest {
+    model: string;
+    messages: AgentMessage[];
+    provider: AgentProvider;
+    tools: AgentToolDefinition[];
+    maxToolRounds?: number;
+    systemPrompt?: string;
+    contextPrompt?: string;
+}
+
+export interface AgentRunResult {
+    message: string;
+    messages: AgentMessage[];
+    toolRuns: AgentToolRun[];
+}
