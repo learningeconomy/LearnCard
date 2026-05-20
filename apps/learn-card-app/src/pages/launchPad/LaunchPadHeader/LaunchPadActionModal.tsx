@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
@@ -513,6 +515,33 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const roleIconSrc = roleIcons[activeRole];
     const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
+    // Counselor is hidden from the role picker on the launchpad — OnboardingRoles
+    // already filters it for the mobile bottom-sheet path, and we replicate that
+    // here for the desktop Menu so both surfaces show the same five roles.
+    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
+
+    // Pill button contents shared between the desktop MenuButton and the mobile
+    // trigger so the trigger looks identical across breakpoints.
+    const rolePillContents = (
+        <span className="p-[3px] pr-[8px] flex items-center justify-center gap-2">
+            <span
+                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                style={roleIconBgStyle}
+            >
+                <img
+                    src={roleIconSrc}
+                    alt={`${roleLabel} icon`}
+                    className="h-[20px] w-[20px] object-contain"
+                />
+            </span>
+            <span>{roleLabel}</span>
+            {!isChildProfile && <CaretDown className="ml-[2px]" />}
+        </span>
+    );
+    const rolePillClassName = `rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold ${
+        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
+    }`;
+
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
             'Add to LearnCard',
@@ -746,47 +775,85 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     </span>
                 </p>
                 <div className="w-full flex items-center justify-center pb-[12px]">
-                    <button
-                        type="button"
-                        disabled={isChildProfile}
-                        onClick={
-                            isChildProfile
-                                ? undefined
-                                : () =>
-                                      newModal(
-                                          <LaunchPadRoleSelector
-                                              role={activeRole}
-                                              setRole={handleRoleChange}
-                                          />,
-                                          {
-                                              sectionClassName:
-                                                  '!max-w-[600px] !mx-auto !max-h-[100%]',
-                                          },
-                                          {
-                                              mobile: ModalTypes.Freeform,
-                                              desktop: ModalTypes.Freeform,
-                                          }
-                                      )
-                        }
-                        className={`rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold ${
-                            isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
-                        }`}
-                    >
-                        <span className="p-[3px] pr-[8px] flex items-center justify-center gap-2">
-                            <span
-                                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
-                                style={roleIconBgStyle}
+                    {isChildProfile ? (
+                        // Child profiles are pinned to Learner — render the pill
+                        // as a non-interactive label.
+                        <button type="button" disabled className={rolePillClassName}>
+                            {rolePillContents}
+                        </button>
+                    ) : isDesktop ? (
+                        // Desktop: inline HeadlessUI Menu — true dropdown UI.
+                        <Menu as="div" className="relative inline-block">
+                            <MenuButton className={rolePillClassName}>
+                                {rolePillContents}
+                            </MenuButton>
+                            <MenuItems
+                                anchor="bottom"
+                                className="bg-white rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[8px] my-[6px] focus:outline-none z-[1000] min-w-[200px] flex flex-col gap-[4px]"
                             >
-                                <img
-                                    src={roleIconSrc}
-                                    alt={`${roleLabel} icon`}
-                                    className="h-[20px] w-[20px] object-contain"
-                                />
-                            </span>
-                            <span>{roleLabel}</span>
-                            {!isChildProfile && <CaretDown className="ml-[2px]" />}
-                        </span>
-                    </button>
+                                {visibleRoles.map(roleItem => {
+                                    const isSelected = roleItem.type === activeRole;
+                                    return (
+                                        <MenuItem key={roleItem.id}>
+                                            {({ focus }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRoleChange(roleItem.type)}
+                                                    className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 ${
+                                                        focus ? 'bg-grayscale-100' : ''
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                                                        style={{
+                                                            backgroundColor:
+                                                                iconBgColors[roleItem.type],
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={roleIcons[roleItem.type]}
+                                                            alt={`${roleItem.title} icon`}
+                                                            className="h-[20px] w-[20px] object-contain"
+                                                        />
+                                                    </span>
+                                                    <span className="flex-1 text-left">
+                                                        {roleItem.title}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
+                                                    )}
+                                                </button>
+                                            )}
+                                        </MenuItem>
+                                    );
+                                })}
+                            </MenuItems>
+                        </Menu>
+                    ) : (
+                        // Mobile/native: bottom-sheet modal, tap-to-pick.
+                        <button
+                            type="button"
+                            onClick={() =>
+                                newModal(
+                                    <LaunchPadRoleSelector
+                                        role={activeRole}
+                                        setRole={handleRoleChange}
+                                    />,
+                                    {
+                                        sectionClassName:
+                                            '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                    },
+                                    {
+                                        mobile: ModalTypes.BottomSheet,
+                                        desktop: ModalTypes.BottomSheet,
+                                    }
+                                )
+                            }
+                            className={rolePillClassName}
+                        >
+                            {rolePillContents}
+                        </button>
+                    )}
                 </div>
                 <h3
                     className={`text-[20px] font-poppins font-semibold ${
