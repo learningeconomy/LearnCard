@@ -64,7 +64,9 @@ const ClrTranscriptRendererDemo = () => {
             <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-grayscale-200 shrink-0">
                 <div className="flex items-center justify-between">
                     <h1 className="text-base font-semibold text-grayscale-900">CLR Renderer</h1>
-                    <span className="text-xs text-grayscale-400 font-mono">{currentModel.quality.level}</span>
+                    <span className="text-xs text-grayscale-400 font-mono">
+                        {currentModel.quality.level}
+                    </span>
                 </div>
 
                 {/* Popover dropdowns — left-aligned, auto width */}
@@ -168,7 +170,13 @@ const ClrTranscriptRendererDemo = () => {
 
                 {/* Surface tabs */}
                 <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
-                    {([ClrTranscriptSurface.Full, ClrTranscriptSurface.Card, ClrTranscriptSurface.Embed] as const).map(s => (
+                    {(
+                        [
+                            ClrTranscriptSurface.Full,
+                            ClrTranscriptSurface.Card,
+                            ClrTranscriptSurface.Embed,
+                        ] as const
+                    ).map(s => (
                         <button
                             key={s}
                             type="button"

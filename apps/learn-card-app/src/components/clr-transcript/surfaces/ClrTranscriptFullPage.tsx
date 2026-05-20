@@ -33,7 +33,7 @@ const ClrTranscriptFullPage = ({ model, options }: Props) => {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 ">
             {/* Warnings — admin only */}
             {adminMode && model.warnings.length > 0 && (
                 <ClrTranscriptWarningsPanel warnings={model.warnings} />
@@ -76,7 +76,9 @@ const ClrTranscriptFullPage = ({ model, options }: Props) => {
                 model.courses.length > 0 && (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between px-1">
-                            <p className="text-sm font-semibold text-grayscale-900">Course History</p>
+                            <p className="text-sm font-semibold text-grayscale-900">
+                                Course History
+                            </p>
                             <p className="text-xs text-grayscale-500">
                                 {model.summary.courseCount} course
                                 {model.summary.courseCount !== 1 ? 's' : ''}
@@ -100,9 +102,7 @@ const ClrTranscriptFullPage = ({ model, options }: Props) => {
             {selectedView === 'CredentialSummaryView' && <CredentialSummaryView model={model} />}
 
             {/* Evidence */}
-            {model.evidence.length > 0 && (
-                <ClrTranscriptEvidenceList evidence={model.evidence} />
-            )}
+            {model.evidence.length > 0 && <ClrTranscriptEvidenceList evidence={model.evidence} />}
 
             {/* Admin: verification detail footer */}
             {adminMode && (

@@ -1,5 +1,6 @@
 import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
 import ClrTranscriptWarningsPanel from '../ClrTranscriptWarningsPanel';
+import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import StructuredTranscriptView from './StructuredTranscriptView';
 import SparseAcademicRecordView from './SparseAcademicRecordView';
 
@@ -16,6 +17,7 @@ const VerifierInspectionView = ({ model }: Props) => {
             ) : (
                 <SparseAcademicRecordView model={model} showSource />
             )}
+            <ClrTranscriptEvidenceList evidence={model.evidence} />
             <div className="bg-white border border-grayscale-200 rounded-xl p-3">
                 <p className="text-xs text-grayscale-600">
                     Signed nested credentials: {model.verification.nestedCredentialSignedCount}

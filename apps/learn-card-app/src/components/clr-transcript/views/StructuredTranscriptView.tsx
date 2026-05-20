@@ -1,6 +1,5 @@
 import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
 import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
-import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
 
 type Props = {
@@ -124,7 +123,6 @@ const StructuredTranscriptView = ({ model, showSource = false }: Props) => {
                     );
                 })()}
             </div>
-            <ClrTranscriptEvidenceList evidence={model.evidence} />
         </div>
     );
 };
