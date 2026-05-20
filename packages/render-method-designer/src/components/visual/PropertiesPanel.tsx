@@ -17,6 +17,7 @@ import type {
 import type { RenderData } from '../../types';
 import { ColorInput } from './ColorInput';
 import { BindingPicker } from './BindingPicker';
+import { ImageBindingPicker } from './ImageBindingPicker';
 
 export interface PropertiesPanelProps {
     store: DesignerStoreApi;
@@ -375,7 +376,8 @@ const ImagePanel: React.FC<{
     el: ImageElement;
     patch: (p: Partial<ImageElement>) => void;
     theme: Theme;
-}> = ({ el, patch }) => (
+    data: RenderData;
+}> = ({ el, patch, data }) => (
     <>
         <Section title="Source">
             <SelectInput
@@ -397,10 +399,11 @@ const ImagePanel: React.FC<{
                     onChange={v => patch({ source: { kind: 'url', value: v } })}
                 />
             ) : (
-                <TextInput
+                <ImageBindingPicker
                     label="Field path"
-                    value={el.source.path}
+                    path={el.source.path}
                     onChange={path => patch({ source: { kind: 'binding', path } })}
+                    data={data}
                 />
             )}
         </Section>
@@ -696,7 +699,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ store, data })
 
             {element.type === 'text' && <TextPanel el={element} patch={patch} theme={theme} data={data} />}
             {element.type === 'rect' && <RectPanel el={element} patch={patch} theme={theme} />}
-            {element.type === 'image' && <ImagePanel el={element} patch={patch} theme={theme} />}
+            {element.type === 'image' && <ImagePanel el={element} patch={patch} theme={theme} data={data} />}
             {element.type === 'field-row' && <FieldRowPanel el={element} patch={patch} theme={theme} data={data} />}
             {element.type === 'divider' && <DividerPanel el={element} patch={patch} theme={theme} />}
             {element.type === 'path' && <PathPanel el={element} patch={patch} theme={theme} />}
