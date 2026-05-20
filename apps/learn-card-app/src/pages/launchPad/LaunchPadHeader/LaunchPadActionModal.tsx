@@ -461,24 +461,16 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
         setRole(newRole);
         setOptimisticRole(newRole);
+
+        // The wallet write is the only step whose failure means the role did
+        // NOT actually change. Roll back optimistic state + surface an error
+        // toast only if THIS step throws — cache-refresh failures below
+        // should not trigger a rollback (the server state already reflects
+        // the new role at that point).
         try {
             const wallet = await initWallet();
             await wallet?.invoke?.updateProfile({
                 role: newRole,
-            });
-            // useGetProfile has a 5-minute staleTime and wallet.invoke.updateProfile
-            // does not invalidate its cache — explicitly refetch so subsequent
-            // mounts of LaunchPadActionModal see the new role (otherwise the
-            // dropdown reverts to the stale cached value on next "+" open).
-            await refetchProfile();
-            const newRoleTitle =
-                LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
-            presentToast(`You're now a ${newRoleTitle}.`, {
-                title: 'Role updated',
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-                hasCheckmark: true,
-                autoDismiss: false,
             });
         } catch (e) {
             setOptimisticRole(null);
@@ -487,7 +479,30 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            return;
         }
+
+        // useGetProfile has a 5-minute staleTime and wallet.invoke.updateProfile
+        // does not invalidate its cache — explicitly refetch so subsequent
+        // mounts of LaunchPadActionModal see the new role (otherwise the
+        // dropdown reverts to the stale cached value on next "+" open). If the
+        // refetch itself fails (transient network blip, etc.) the role has
+        // still been updated on the server — don't roll back, don't alarm the
+        // user; the cache will re-sync on next reload or staleTime expiry.
+        try {
+            await refetchProfile();
+        } catch (e) {
+            console.error('Failed to refresh profile cache after role change', e);
+        }
+
+        const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
+        presentToast(`You're now a ${newRoleTitle}.`, {
+            title: 'Role updated',
+            type: ToastTypeEnum.Success,
+            hasDismissButton: true,
+            hasCheckmark: true,
+            autoDismiss: false,
+        });
     };
 
     useEffect(() => {
