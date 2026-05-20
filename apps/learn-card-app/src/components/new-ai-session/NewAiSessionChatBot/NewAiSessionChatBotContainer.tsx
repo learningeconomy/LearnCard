@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import LearnCardAiChatBot from '../LearnCardAiChatBot/LearnCardAiChatBot';
@@ -32,7 +32,7 @@ import { sessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, useProfileSnapshot } from '@analytics';
 
 export const NewAiSessionChatBotContainer: React.FC<{
     setActiveStep: (step: NewAiSessionStepEnum) => void;
@@ -59,6 +59,9 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const setChatBotQA = chatBotStore.set.setChatBotQA;
     const mode = chatBotStore.useTracked.mode();
     const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
 
     // const [visibleIndexes, setVisibleIndexes] = useState<number[]>([]);
     const visibleIndexes = chatBotStore.useTracked.visibleIndexes();
@@ -187,6 +190,10 @@ export const NewAiSessionChatBotContainer: React.FC<{
                 appType: 'internal',
                 appName: app?.name,
             });
+            track(AnalyticsEvents.ENGAGEMENT_SIGNAL, {
+                signal: 'ai_chat',
+                profileSnapshot: profileSnapshotRef.current,
+            });
             setStartInternalAiChatBot?.(true);
             return;
         }
@@ -195,6 +202,11 @@ export const NewAiSessionChatBotContainer: React.FC<{
             topic: topicAnswer,
             appType: 'external',
             appName: aiPassportApps.find(a => a.id === appAnswer)?.name,
+        });
+        track(AnalyticsEvents.ENGAGEMENT_SIGNAL, {
+            signal: 'ai_chat',
+            profileSnapshot: profileSnapshotRef.current,
+        });
         });
         setShowLoader(true);
 

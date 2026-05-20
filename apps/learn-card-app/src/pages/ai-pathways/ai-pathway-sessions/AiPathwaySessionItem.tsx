@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import LockSimple from 'learn-card-base/svgs/LockSimple';
+import { useAnalytics, AnalyticsEvents, useProfileSnapshot } from '@analytics';
 
 import 'swiper/css';
 
@@ -14,9 +15,19 @@ export const AiPathwaySessionsItem: React.FC<{
     pathwayUri: string | undefined;
 }> = ({ title, description, skills, topicUri, pathwayUri }) => {
     const history = useHistory();
+    const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
 
     const handleStart = (item: any) => {
         if (!item?.topicUri || !item?.pathwayUri) return;
+
+        // LC-1853: fire engagement_signal on pathway item click
+        track(AnalyticsEvents.ENGAGEMENT_SIGNAL, {
+            signal: 'ai_pathway',
+            profileSnapshot: profileSnapshotRef.current,
+        });
 
         history.push(
             `/chats?topicUri=${encodeURIComponent(item.topicUri)}&pathwayUri=${encodeURIComponent(
