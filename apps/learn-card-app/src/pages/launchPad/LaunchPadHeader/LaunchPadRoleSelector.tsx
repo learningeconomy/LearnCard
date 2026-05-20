@@ -25,16 +25,14 @@ const LaunchPadRoleSelector: React.FC<LaunchPadRoleSelectorProps> = ({ role, set
     };
 
     return (
-        <div className="w-full flex flex-col items-stretch p-4 gap-3">
-            <div className="rounded-[15px] bg-white px-[10px] py-[15px]">
-                <div className="w-full flex items-center justify-center mt-[4px] mb-[8px]">
-                    <span className="inline-flex items-center gap-2 px-[12px] py-[6px] text-[#2A2F55] text-sm font-poppins font-semibold">
-                        Select what best describes you!
-                    </span>
-                </div>
-
-                <OnboardingRoles role={role} setRole={handlePick} />
+        <div className="w-full flex flex-col px-2 py-4 gap-3">
+            <div className="w-full flex items-center justify-center mb-[4px]">
+                <span className="inline-flex items-center gap-2 px-[12px] py-[6px] text-[#2A2F55] text-sm font-poppins font-semibold">
+                    Select what best describes you!
+                </span>
             </div>
+
+            <OnboardingRoles role={role} setRole={handlePick} />
         </div>
     );
 };
