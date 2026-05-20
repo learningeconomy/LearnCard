@@ -1,14 +1,15 @@
 import React from 'react';
 
+import TrashBin from '../../svgs/TrashBin';
 import ShareBoostLink from './ShareBoostLink';
 import JsonPreviewModal from './JsonPreviewModal';
+import BracketsIcon from '../../svgs/BracketsIcon';
+import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
+
+import { ModalTypes, useModal, useConfirmation, useGetRecordForUri } from 'learn-card-base';
 
 import { VC, UnsignedVC } from '@learncard/types';
 import { BoostMenuType } from '../hooks/useBoostMenu';
-import { ModalTypes, useModal, useConfirmation, useGetRecordForUri } from 'learn-card-base';
-import TrashBin from '../../svgs/TrashBin';
-import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
-import BracketsIcon from '../../svgs/BracketsIcon';
 import { LCR } from 'learn-card-base/types/credential-records';
 
 type BoostOptionsMenuProps = {

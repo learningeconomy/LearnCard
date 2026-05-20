@@ -54,6 +54,7 @@ const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', ima
                 width="150"
                 height="150"
                 clipPath="url(#circleClip)"
+                preserveAspectRatio="xMidYMid slice"
             />
 
             <defs>

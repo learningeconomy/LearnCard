@@ -310,7 +310,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         };
 
         const earnedBoostModalProps = {
-            credential: cred,
+            credential,
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,

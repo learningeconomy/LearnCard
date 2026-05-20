@@ -9,12 +9,12 @@ import Line from '../svgs/Line';
 
 import {
     getInfoFromCredential,
-    getNameFromProfile,
     getImageFromProfile,
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
 import { isAppDidWeb } from '@learncard/helpers';
+import { resolveProfileDisplay } from '../../helpers/did-display.helpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -104,8 +104,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         borderColor = 'border-cyan-500';
     }
 
-    const issuerName = getNameFromProfile(issuer ?? '');
-    const issueeName = getNameFromProfile(issuee ?? '');
+    const issueeDisplay = resolveProfileDisplay(issuee, '');
+    const issuerDisplay = resolveProfileDisplay(issuer, 'Unknown');
+
+    const issueeName = issueeDisplay.displayName;
+    const issuerName = issuerDisplay.displayName;
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
@@ -181,6 +184,9 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         className={`flex justify-center items-center ${textDarkColor}`}
                         isIssuer={isSelfVerified}
                         userName={issueeName}
+                        avatarColor={issueeDisplay.avatarColor}
+                        avatarFingerprintColor={issueeDisplay.avatarFingerprintColor}
+                        avatarFallbackVariant={issueeDisplay.isDidValue ? 'fingerprint' : 'initial'}
                     />
                 )}
 
@@ -190,12 +196,26 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                             'Not yet awarded'
                         ) : (
                             <>
-                                Awarded{' '}
-                                {!hideAwardedTo && <>to {issueeName || <Line width="60" />}</>}
+                                {!hideAwardedTo &&
+                                    (issueeDisplay.isDidValue ? (
+                                        <span className="inline-flex items-baseline gap-1">
+                                            <span>
+                                                <span className="text-grayscale-900 font-semibold">
+                                                    Digital ID:
+                                                </span>{' '}
+                                                <span className="text-grayscale-600">
+                                                    {issueeName}
+                                                </span>
+                                            </span>
+                                        </span>
+                                    ) : (
+                                        // <>{issueeName || <Line width="60" />}</>
+                                        <>{issueeName}</>
+                                    ))}
                             </>
                         )}
                     </span>
-                    {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
+                    {!hideIssueDate && <span className="font-jacques">Awarded on {createdAt}</span>}
                 </div>
 
                 <div className="flex flex-col gap-[10px] items-center">
@@ -225,9 +245,18 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <span className="font-jacques text-[12px] text-grayscale-800">
                         Certified by
                     </span>
-                    <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
-                        {issuerName}
-                    </span>
+                    {issuerDisplay.isDidValue ? (
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                            <span className="font-[600]">
+                                {issuerDisplay.isDidValue ? 'Digital ID: ' : ''}
+                            </span>
+                            <span className="text-grayscale-600">{issuerName}</span>
+                        </span>
+                    ) : (
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                            {issuerName}
+                        </span>
+                    )}
 
                     <VerifierStateBadgeAndText
                         verifierState={verifierState}
@@ -255,7 +284,10 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer
-                    userName={issuerName}
+                    userName={issuerDisplay.isMissing ? '' : issuerName}
+                    avatarColor={issuerDisplay.avatarColor}
+                    avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
+                    avatarFallbackVariant={issuerDisplay.isDidValue ? 'fingerprint' : 'initial'}
                 />
             )}
 
