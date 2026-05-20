@@ -6,6 +6,7 @@ import { currentUserStore, getRandomBaseColor, getNotificationsEndpoint, useSQLi
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
 import { IonCol, IonInput } from '@ionic/react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { setPlatformPrivateKey } from 'learn-card-base/security/platformPrivateKeyStorage';
@@ -15,6 +16,7 @@ const LoginWithSeed: React.FC = () => {
     const location = useLocation();
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
+    const queryClient = useQueryClient();
     const [seed, setSeed] = useState('');
 
     const handleDemoLogin = async () => {
@@ -66,6 +68,16 @@ const LoginWithSeed: React.FC = () => {
                 } catch (err) {
                     console.log('createProfile::error (may already exist)', err);
                 }
+                // Mirror production createProfile callers (OnboardingNetworkForm,
+                // NewJoinNetworkPrompt, JoinNetworkPrompt) — wipe React Query
+                // caches so the next render of useGetProfile fetches fresh state
+                // for the new profile. Without this, useGetProfile can have
+                // already fired with a pre-createProfile wallet state and cached
+                // a null result; the 5-minute staleTime on the query (#1222)
+                // then pins that null and the LCN gate in SideMenu.handleBoost
+                // opens the OnboardingContainer modal instead of
+                // AddToLearnCardMenu when the user clicks `Add to LearnCard`.
+                await queryClient.resetQueries();
             }
 
             history.push('/wallet');
