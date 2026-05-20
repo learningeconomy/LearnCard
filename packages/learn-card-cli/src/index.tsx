@@ -14,6 +14,7 @@ import { program } from 'commander';
 import clipboard from 'clipboardy';
 
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
+import { getRenderMethodPlugin } from '@learncard/render-method-plugin';
 
 import { generateRandomSeed } from './random';
 
@@ -90,6 +91,11 @@ program
         // Add OpenBadge v2 wrapper plugin for backwards-compatible OBv2 -> VC wrapping
         globalThis.learnCard = await globalThis.learnCard.addPlugin(
             openBadgeV2Plugin(globalThis.learnCard)
+        );
+
+        // Add Render Method plugin for attaching W3C renderMethod to VCs
+        globalThis.learnCard = await globalThis.learnCard.addPlugin(
+            getRenderMethodPlugin(globalThis.learnCard)
         );
 
         globalThis.types = types;
