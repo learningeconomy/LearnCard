@@ -28,11 +28,16 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
             ? 'Ed25519Signature2020'
             : signingOptions.type ?? 'Ed25519Signature2020';
 
-        const options = {
+        const options: Partial<ProofOptions> = {
             proofPurpose: 'assertionMethod',
             type: proofType,
             ...signingOptions,
         };
+
+        // If type is DataIntegrityProof and no cryptosuite specified, default to eddsa-2022
+        if (proofType === 'DataIntegrityProof' && !options.cryptosuite) {
+            options.cryptosuite = 'eddsa-2022';
+        }
 
         if (!('verificationMethod' in options)) {
             const issuerDid =
@@ -47,6 +52,6 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
             kp,
         });
 
-        return initLearnCard.invoke.issueCredential(credential, options, kp);
+        return initLearnCard.invoke.issueCredential(credential, options as ProofOptions, kp);
     };
 };

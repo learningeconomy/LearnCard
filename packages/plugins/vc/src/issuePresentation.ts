@@ -28,12 +28,17 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
             ? 'Ed25519Signature2020'
             : signingOptions.type ?? 'Ed25519Signature2020';
 
-        const options = {
+        const options: Partial<ProofOptions> = {
             ...(signingOptions.proofFormat === 'jwt'
                 ? {}
                 : { proofPurpose: 'assertionMethod', type: proofType }),
             ...signingOptions,
         };
+
+        // If type is DataIntegrityProof and no cryptosuite specified, default to eddsa-2022
+        if (proofType === 'DataIntegrityProof' && !options.cryptosuite) {
+            options.cryptosuite = 'eddsa-2022';
+        }
 
         if (!('verificationMethod' in options)) {
             options.verificationMethod = await getDefaultVerificationMethod(
@@ -42,6 +47,6 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
             );
         }
 
-        return initLearnCard.invoke.issuePresentation(presentation, options, kp);
+        return initLearnCard.invoke.issuePresentation(presentation, options as ProofOptions, kp);
     };
 };
