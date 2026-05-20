@@ -6,5 +6,6 @@ export { AnalyticsEvents } from './events';
 export type { AnalyticsEventName, AnalyticsEventPayloads, EventPayload } from './events';
 export { ProfileBuildMethod } from './events';
 export type { ProfileSnapshot } from './events';
+export { useProfileSnapshot, ACCOUNT_CREATED_AT_KEY } from './useProfileSnapshot';
 
 export type { AnalyticsProvider, AnalyticsProviderName, PostHogConfig } from './types';
