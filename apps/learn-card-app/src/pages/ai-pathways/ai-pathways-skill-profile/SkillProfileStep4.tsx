@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RadioGroup, useVerifiableData } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
 export type SkillProfileJobSatisfactionData = {
     workLifeBalance: string | null;
@@ -34,6 +35,12 @@ const JOB_STABILITY_OPTIONS = [
 
 const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handleBack }) => {
     const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(4, () => {
+        const fields: string[] = [];
+        if (workLifeBalance) fields.push('workLifeBalance');
+        if (jobStability) fields.push('jobStability');
+        return fields;
+    });
     const [workLifeBalance, setWorkLifeBalance] = useState<string | null>(null);
     const [jobStability, setJobStability] = useState<string | null>(null);
 
@@ -57,6 +64,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             jobStability,
         });
         trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 

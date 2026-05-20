@@ -13,6 +13,7 @@ import { IonSpinner } from '@ionic/react';
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
 import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
 import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import { useSkillProfileStepFunnel, trackSkillProfileCompleted } from './useSkillProfileStepFunnel';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -33,6 +34,11 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     const profileSnapshot = useProfileSnapshot();
     const profileSnapshotRef = useRef(profileSnapshot);
     profileSnapshotRef.current = profileSnapshot;
+    const { markStepCompleted } = useSkillProfileStepFunnel(5, () => {
+        const fields: string[] = [];
+        if (selectedSkills.length > 0) fields.push('selectedSkills');
+        return fields;
+    });
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
@@ -88,6 +94,9 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                     msSinceSessionStart: now - sessionStart,
                 });
             }
+
+            markStepCompleted();
+            trackSkillProfileCompleted(track);
 
             handleNext();
         } catch (error: any) {
