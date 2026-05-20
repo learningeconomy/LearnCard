@@ -1,20 +1,18 @@
 import React from 'react';
 import numeral from 'numeral';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons/index';
 
-import {
-    CredentialCategoryEnum,
-    ModalTypes,
-    useModal,
-    useSemanticSearchSkills,
-} from 'learn-card-base';
+import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 import { getYearlyWages } from './ai-pathway-careers.helpers';
+import {
+    useGlobalSemanticSearchSkills,
+    useGlobalSkillFrameworks,
+} from '../../../helpers/globalSkillFrameworks.helpers';
 
 type SemanticSkillRecord = {
     id: string;
@@ -29,15 +27,15 @@ export const AiPathwayCareerItem: React.FC<{
 }> = ({ occupation, showDescription = false, variant = 'list' }) => {
     const { newModal } = useModal();
     const { getIconSet } = useTheme();
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId as string;
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
     const onetTitle = occupation?.OnetTitle?.trim() ?? '';
 
     const iconSet = getIconSet(IconSetEnum.sideMenu);
     const SkillDecoration = iconSet[CredentialCategoryEnum.skill] as React.ComponentType<{
         className?: string;
     }>;
-    const { data: semanticSkillsData } = useSemanticSearchSkills(onetTitle, frameworkId, {
+    const { data: semanticSkillsData } = useGlobalSemanticSearchSkills(onetTitle, frameworkIds, {
         limit: 4,
     });
     const matchingSkills = (semanticSkillsData?.records ?? []) as SemanticSkillRecord[];

@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { IonSkeletonText } from '@ionic/react';
 
-import { conditionalPluralize, useSemanticSearchSkills } from 'learn-card-base';
+import { conditionalPluralize } from 'learn-card-base';
 
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import {
+    useGlobalSemanticSearchSkills,
+    useGlobalSkillFrameworks,
+} from '../../helpers/globalSkillFrameworks.helpers';
 
 const SKILL_CHIP_GAP_PX = 5;
 const MIN_LAST_SKILL_WIDTH_PX = 100;
@@ -30,8 +33,8 @@ type GrowSkillsSkillChipsProps =
       };
 
 const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
     const searchQuery = 'searchQuery' in props ? props.searchQuery : undefined;
     const providedSkills = 'skills' in props ? props.skills : undefined;
     const layout = 'layout' in props ? props.layout ?? 'truncate' : 'truncate';
@@ -39,7 +42,7 @@ const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
     const isWrapLayout = layout === 'wrap';
 
     const { data: semanticSearchSkillsData, isLoading: semanticSearchSkillsLoading } =
-        useSemanticSearchSkills(searchQuery ?? '', frameworkId ?? '', {
+        useGlobalSemanticSearchSkills(searchQuery ?? '', frameworkIds, {
             limit: 25,
         });
 

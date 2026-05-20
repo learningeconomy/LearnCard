@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
-    useGetSelfAssignedSkillsBoost,
     useManageSelfAssignedSkillsBoost,
+    useGetSelfAssignedSkillsBoost,
     useGetBoostSkills,
     useToast,
     ToastTypeEnum,
@@ -19,13 +18,10 @@ type SkillProfileStep5Props = {
 };
 
 const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handleBack }) => {
-    const flags = useFlags();
     const { presentToast } = useToast();
 
     const [isUpdating, setIsUpdating] = useState(false);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
-
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
@@ -44,10 +40,13 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     useEffect(() => {
         if (sasBoostSkills) {
             setSelectedSkills(
-                sasBoostSkills.map((s: { id: string; proficiencyLevel: number }) => ({
-                    id: s.id,
-                    proficiency: s.proficiencyLevel,
-                }))
+                sasBoostSkills.map(
+                    (s: { id: string; frameworkId: string; proficiencyLevel: number }) => ({
+                        id: s.id,
+                        frameworkId: s.frameworkId,
+                        proficiency: s.proficiencyLevel,
+                    })
+                )
             );
         }
     }, [sasBoostSkills]);
@@ -59,7 +58,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
         try {
             await createOrUpdateSkills({
                 skills: selectedSkills.map(s => ({
-                    frameworkId: frameworkId,
+                    frameworkId: s.frameworkId,
                     id: s.id,
                     proficiencyLevel: s.proficiency,
                 })),
