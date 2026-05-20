@@ -6,9 +6,9 @@ import { findFixture, type CredentialFixture } from '@learncard/credential-libra
 import { WalletProvider, useWallet } from './context/WalletContext';
 import { Header } from './components/Header';
 import { AttachAndIssuePanel } from './components/AttachAndIssuePanel';
-import { getCuratedSamples } from './lib/sampleFixtures';
+import { getAllSamples } from './lib/sampleFixtures';
 
-const SAMPLES = getCuratedSamples();
+const SAMPLES = getAllSamples();
 
 const AppInner: React.FC = () => {
     const { status } = useWallet();
@@ -70,10 +70,10 @@ const AppInner: React.FC = () => {
                                     ? 'Connect a wallet first'
                                     : !savedTemplate
                                         ? 'Click Save in the designer first'
-                                        : 'Run the full plugin pipeline'
+                                        : 'Open developer actions: preview roundtrip, copy JSON, issue to self'
                             }
                         >
-                            Run pipeline →
+                            Developer actions →
                         </button>
                     </div>
                 </div>

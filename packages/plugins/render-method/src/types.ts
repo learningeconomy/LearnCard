@@ -102,8 +102,8 @@ export type RenderMethodPluginMethods = {
      * adds `vc`, `credential`, `credentialSubjects` aliases so templates authored against any
      * common shape work uniformly. When `renderProperty` is provided (RFC 6901 JSON Pointers),
      * those values are overlaid at their pointer paths. By default also includes a
-     * `formattedValues` mirror with locale-aware variants for ISO dates and long identifiers
-     * (DIDs/URNs/URLs); pass `{ formattedValues: false }` in `options` to opt out.
+     * `renderValues` mirror with semantic-resolution (`resolved`) and locale-aware
+     * formatting (`formatted`) variants; pass `{ renderValues: false }` in `options` to opt out.
      */
     buildRenderData: (
         vc: AnyCredential,

@@ -160,13 +160,19 @@ Mustache is intentionally logic-less, so `{{validFrom}}` renders the raw ISO str
 The emitter generates a 3-tier Mustache fallback so templates render correctly even on renderers without the convention:
 
 ```
-{{#formattedValues.validFrom.long}}<text …>{{formattedValues.validFrom.long}}</text>{{/…}}
-{{^formattedValues.validFrom.long}}
+{{#renderValues.validFrom.formatted.long}}<text …>{{renderValues.validFrom.formatted.long}}</text>{{/…}}
+{{^renderValues.validFrom.formatted.long}}
     {{#validFrom}}<text …>{{validFrom}}</text>{{/validFrom}}
 {{/…}}
 ```
 
-A LearnCard wallet (with the `formattedValues` convention) renders "July 1, 2024". A wallet that doesn't know the convention falls through to the raw ISO. See [`@learncard/render-method-plugin` README](../plugins/render-method/README.md#the-formattedvalues-convention) for the full contract.
+A LearnCard wallet (with the `renderValues` convention) renders "July 1, 2024". A wallet that doesn't know the convention falls through to the raw ISO. See [`@learncard/render-method-plugin` README](../plugins/render-method/README.md#the-rendervalues-convention) for the full contract.
+
+The same namespace also handles semantic resolution. For example, an image binding can prefer the canonical URL regardless of whether the source field was a string or an object:
+
+```mustache
+{{renderValues.credentialSubject.achievement.image.resolved}}
+```
 
 ## Text wrapping
 

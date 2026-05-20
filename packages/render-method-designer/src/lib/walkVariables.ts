@@ -1,5 +1,5 @@
 import type { RenderData, SampleCredential } from '../types';
-import { buildFormattedValues } from './format-aliases';
+import { buildRenderValues } from './format-aliases';
 
 /**
  * Reject keys that would walk into prototype chain. Mirrors the same guard used in
@@ -31,7 +31,7 @@ export const buildPreviewData = (credential: SampleCredential): RenderData => {
             : subject !== undefined && subject !== null
                 ? [subject]
                 : [],
-        formattedValues: buildFormattedValues(credentialRecord),
+        renderValues: buildRenderValues(credentialRecord),
     };
 };
 
@@ -97,7 +97,7 @@ export const walkVariables = (data: RenderData): DiscoveredVariable[] => {
 
     // Walk top-level keys, but skip the aliases produced by `buildPreviewData` — they would
     // dominate the picker with duplicates.
-    const SKIP_TOP_LEVEL = new Set(['vc', 'credential', 'credentialSubjects', 'formattedValues']);
+    const SKIP_TOP_LEVEL = new Set(['vc', 'credential', 'credentialSubjects', 'renderValues']);
     for (const key of Object.keys(data)) {
         if (isUnsafeKey(key)) continue;
         if (SKIP_TOP_LEVEL.has(key)) continue;

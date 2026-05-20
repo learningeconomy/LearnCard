@@ -209,11 +209,11 @@ const emitRect = (el: RectElement, theme: Theme, defs: Map<string, string>): str
  * Emit a `<text>` element wrapping the resolved binding. Three-tier fallback when a
  * `format` is set on a binding:
  *
- *   1. Prefer `formattedValues.{path}.{format}` if present in the render data.
+ *   1. Prefer `renderValues.{path}.formatted.{format}` if present in the render data.
  *   2. Else fall back to the raw `{{path}}`.
  *   3. Else (only when an explicit `fallback` literal is provided) render the literal.
  *
- * Renderers that don't compute the `formattedValues` mirror (third-party Mustache
+ * Renderers that don't compute the `renderValues` mirror (third-party Mustache
  * implementations) will hit tier 2 — raw ISO date instead of "July 1, 2024", but the
  * template still renders correctly. See `format-aliases.ts` in
  * `@learncard/render-method-plugin` for the convention.
@@ -231,7 +231,7 @@ const emitBoundText = (
     attrs: string
 ): string => {
     const { path, fallback, format } = el.content as { kind: 'binding'; path: string; fallback?: string; format?: string };
-    const formattedPath = format ? `formattedValues.${path}.${format}` : null;
+    const formattedPath = format ? `renderValues.${path}.formatted.${format}` : null;
 
     const rawTier = `{{#${path}}}<text ${attrs}>{{${path}}}</text>{{/${path}}}`;
     const fallbackTier = fallback
@@ -251,7 +251,7 @@ const emitBoundString = (
     wrapTag: 'text'
 ): string => {
     const { path, fallback, format } = binding;
-    const formattedPath = format ? `formattedValues.${path}.${format}` : null;
+    const formattedPath = format ? `renderValues.${path}.formatted.${format}` : null;
 
     const rawTier = `{{#${path}}}<${wrapTag} ${attrs}>{{${path}}}</${wrapTag}>{{/${path}}}`;
     const fallbackTier = fallback
@@ -277,7 +277,7 @@ const emitImage = (el: ImageElement, theme: Theme, defs: Map<string, string>): s
     const inner =
         el.source.kind === 'url'
             ? `<image ${baseAttrs} href="${escapeXml(el.source.value)}"/>`
-            : `{{#${el.source.path}}}<image ${baseAttrs} href="{{${el.source.path}}}"/>{{/${el.source.path}}}`;
+            : `{{#renderValues.${el.source.path}.resolved}}<image ${baseAttrs} href="{{renderValues.${el.source.path}.resolved}}"/>{{/renderValues.${el.source.path}.resolved}}{{^renderValues.${el.source.path}.resolved}}{{#${el.source.path}.id}}<image ${baseAttrs} href="{{${el.source.path}.id}}"/>{{/${el.source.path}.id}}{{^${el.source.path}.id}}{{#${el.source.path}}}<image ${baseAttrs} href="{{${el.source.path}}}"/>{{/${el.source.path}}}{{/${el.source.path}.id}}{{/renderValues.${el.source.path}.resolved}}`;
     return wrapWithShadow(inner, el.shadow, theme, defs);
 };
 

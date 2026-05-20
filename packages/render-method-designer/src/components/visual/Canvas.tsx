@@ -44,7 +44,7 @@ import { SelectionOverlay, elementBounds, supportedResizeDirections } from './Se
 const resolveString = (sv: StringValue, data: RenderData): string => {
     if (sv.kind === 'static') return sv.value;
     if (sv.format) {
-        const formatted = lookupPath(data, `formattedValues.${sv.path}.${sv.format}`);
+        const formatted = lookupPath(data, `renderValues.${sv.path}.formatted.${sv.format}`);
         if (formatted !== undefined && formatted !== null && formatted !== '') {
             return String(formatted);
         }
@@ -182,7 +182,9 @@ const ImageRender: React.FC<RenderProps<ImageElement>> = ({ el, theme, data }) =
     const href =
         el.source.kind === 'url'
             ? el.source.value
-            : (lookupPath(data, el.source.path) as string | undefined);
+            : ((lookupPath(data, `renderValues.${el.source.path}.resolved`) as string | undefined) ??
+                (lookupPath(data, `${el.source.path}.id`) as string | undefined) ??
+                (lookupPath(data, el.source.path) as string | undefined));
     const clipId = `canvas_clip_${el.id}`;
     const filter = shadowToCssFilter(el.shadow, theme);
     return (

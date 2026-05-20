@@ -46,7 +46,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setError(null);
         try {
             const { initLearnCard } = await import('@learncard/init');
-            const lc = await initLearnCard({ seed: inputSeed });
+            const { getRenderMethodPlugin } = await import('@learncard/render-method-plugin');
+
+            let lc = await initLearnCard({ seed: inputSeed, allowRemoteContexts: true });
+            lc = await lc.addPlugin(getRenderMethodPlugin(lc));
             const walletDid = lc.id.did();
             walletRef.current = lc;
             setWallet(lc);

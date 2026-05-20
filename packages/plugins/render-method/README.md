@@ -25,36 +25,46 @@ const lc = await baseLc.addPlugin(getRenderMethodPlugin(baseLc));
 | `attachRenderMethod` | `(vc, config?) => UnsignedVC` | Attaches a `TemplateRenderMethod` to the VC and injects the JSON-LD context. **Opt-in:** returns the VC unchanged when `config` is omitted. Merges with existing `renderMethod` entries. |
 | `buildTemplateRenderMethod` | `(config) => TemplateRenderMethod` | Builds a `TemplateRenderMethod` descriptor without mutating a VC. |
 
-### The `formattedValues` convention
+### The `renderValues` convention
 
-Mustache is logic-less, so the spec gives template authors no way to format dates or truncate DIDs. To fill that gap, `buildRenderData` adds a `formattedValues` mirror containing locale-aware variants of fields it detects as ISO 8601 timestamps or long identifiers (DIDs / URNs / URLs).
+Mustache is logic-less, so the spec gives template authors no way to format dates or normalize multi-shape fields like `image`. To fill that gap, `buildRenderData` adds a `renderValues` mirror containing both:
+
+- `formatted` variants for ISO dates / long identifiers
+- `resolved` variants for canonical scalar extraction (e.g. image object -> URL)
 
 ```ts
 const data = lc.invoke.buildRenderData(vc);
 // {
 //   validFrom: '2024-07-01T00:00:00Z',
-//   formattedValues: {
+//   renderValues: {
 //     validFrom: {
-//       long: 'July 1, 2024',
-//       medium: 'Jul 1, 2024',
-//       short: '07/01/2024',
-//       iso: '2024-07-01',
-//       year: '2024', month: 'July', day: '1', weekday: 'Monday',
-//       relative: '5 months ago',
-//       time: '12:30 PM', datetime: 'Jul 1, 2024, 12:30 PM',
+//       formatted: {
+//         long: 'July 1, 2024', medium: 'Jul 1, 2024', short: '07/01/2024',
+//         iso: '2024-07-01', year: '2024', month: 'July', day: '1',
+//         weekday: 'Monday', relative: '5 months ago', time: '12:30 PM',
+//         datetime: 'Jul 1, 2024, 12:30 PM',
+//       }
 //     },
+//     credentialSubject: {
+//       achievement: {
+//         image: { resolved: 'https://...' }
+//       }
+//     }
 //   },
 //   issuer: { id: '…', name: '…' },
 // }
 ```
 
-Templates reference these directly: `{{formattedValues.validFrom.long}}`.
+Templates reference these directly:
+
+- `{{renderValues.validFrom.formatted.long}}`
+- `{{renderValues.credentialSubject.achievement.image.resolved}}`
 
 **Locale.** Defaults to `navigator.language` in the browser or `'en-US'` in Node. Override via the third argument: `lc.invoke.buildRenderData(vc, undefined, { locale: 'fr-FR' })`.
 
-**Opt out.** Pass `{ formattedValues: false }` if you want a stable, mirror-free context (useful for snapshot tests).
+**Opt out.** Pass `{ renderValues: false }` if you want a stable, mirror-free context (useful for snapshot tests).
 
-**Interoperability.** This is a LearnCard convention, not a W3C standard — see `format-aliases.ts` for the full contract. Templates produced by `@learncard/render-method-designer` use a Mustache section-pair fallback (`{{#formattedValues.X.long}}…{{/…}}{{^formattedValues.X.long}}{{X}}{{/…}}`) so a Mustache renderer without the mirror falls back to the raw value rather than rendering empty. Wallets that want byte-identical output can import and call `buildFormattedValues` on their own data context.
+**Interoperability.** This is a LearnCard convention, not a W3C standard — see `format-aliases.ts` for the full contract. Templates produced by `@learncard/render-method-designer` use Mustache fallback patterns so a renderer without the mirror falls back to raw values rather than rendering empty. Wallets that want byte-identical output can import and call `buildRenderValues` on their own data context.
 
 ### Read side
 
@@ -68,7 +78,7 @@ Layered API — pick the level that fits your need:
 | `findRenderMethod` | `(vc, predicate) => T \| null` | Escape hatch: arbitrary predicate for non-template render methods. |
 | `findRenderMethods` | `(vc, predicate) => T[]` | Same, all matches. |
 | `getRenderMethods` | `(vc) => RenderMethod[]` | Raw access. Unwraps `CertifiedBoostCredential`, normalizes object↔array. No validation. |
-| `buildRenderData` | `(vc, renderProperty?) => Record<string, unknown>` | Portable Mustache context (adds `vc` / `credential` / `credentialSubjects` aliases). Optional RFC 6901 overlay. |
+| `buildRenderData` | `(vc, renderProperty?, options?) => Record<string, unknown>` | Portable Mustache context (adds `vc` / `credential` / `credentialSubjects` aliases + `renderValues`). Optional RFC 6901 overlay. |
 
 ### Type guards (composable selection)
 

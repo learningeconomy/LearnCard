@@ -7,7 +7,7 @@ import {
     TemplateRenderMethodValidator,
 } from '@learncard/types';
 
-import { buildFormattedValues, type FormatAliasesOptions } from './format-aliases';
+import { buildRenderValues, type RenderValuesOptions } from './format-aliases';
 
 type AnyCredential = VC | UnsignedVC;
 type JsonRecord = Record<string, unknown>;
@@ -194,25 +194,26 @@ const buildRenderDataFromPointers = (
  *     {{credential.credentialSubject.name}}                     // `credential` alias
  *     {{vc.issuer.name}}                                        // `vc` alias
  *     {{#credentialSubjects}}{{name}}{{/credentialSubjects}}    // section over array
- *     {{formattedValues.validFrom.long}}                        // formatted aliases
+ *     {{renderValues.validFrom.formatted.long}}                 // formatted aliases
  *
  * The top-level credential is the single source of truth; aliases keep older
  * templates working. When `renderProperty` (RFC 6901 JSON Pointers) is given,
  * those values are overlaid at their pointer paths in the resulting context.
  *
- * **`formattedValues`** is a structural mirror of the credential containing locale-aware
- * formatted variants for fields detected as ISO 8601 dates or long identifiers (DIDs,
- * URNs, URLs). See `format-aliases.ts` for the full contract. The mirror is added by
- * default; pass `{ formattedValues: false }` in options to opt out (e.g. for fixture
+ * **`renderValues`** is a structural mirror of the credential containing both
+ * semantic resolution (`resolved`) and locale-aware formatting (`formatted`).
+ * Dates/identifiers land under `.formatted`; image-object-vs-string normalization lands
+ * under `.resolved`. See `format-aliases.ts` for the full contract. The mirror is added by
+ * default; pass `{ renderValues: false }` in options to opt out (e.g. for fixture
  * snapshot tests where stable output is required).
  *
  * This function does NOT unwrap `CertifiedBoostCredential` — pass the layer
  * you want the template to bind to. `getRenderMethods` is the helper that
  * unwraps.
  */
-export interface BuildRenderDataOptions extends FormatAliasesOptions {
-    /** Disable the `formattedValues` mirror. Defaults to `true` (mirror included). */
-    formattedValues?: boolean;
+export interface BuildRenderDataOptions extends RenderValuesOptions {
+    /** Disable the `renderValues` mirror. Defaults to `true` (mirror included). */
+    renderValues?: boolean;
 }
 
 export const buildRenderData = (
@@ -230,8 +231,8 @@ export const buildRenderData = (
             : [credential.credentialSubject].filter(Boolean),
     };
 
-    if (options.formattedValues !== false) {
-        base.formattedValues = buildFormattedValues(credential, options);
+    if (options.renderValues !== false) {
+        base.renderValues = buildRenderValues(credential, options);
     }
 
     if (!renderProperty || renderProperty.length === 0) return base;

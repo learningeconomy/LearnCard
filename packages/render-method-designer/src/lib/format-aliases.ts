@@ -1,20 +1,12 @@
 /**
- * `formattedValues` mirror for the designer's preview pipeline.
+ * `renderValues` mirror for the designer's preview pipeline.
  *
- * This file is a deliberate duplicate of
- * `packages/plugins/render-method/src/format-aliases.ts`. Both produce byte-for-byte
- * identical `formattedValues` mirrors so the designer's Canvas preview and the
- * eventually-issued credential render identically.
- *
- * Why duplicate instead of import: the designer is meant to be embedded standalone in
- * third-party CMS apps that may not depend on `@learncard/render-method-plugin`. The
- * function is pure (no wallet, no React, no LearnCard runtime), so duplication is a
- * deliberate choice for dependency-surface minimization. The two files must be kept in
- * sync when format keys are added — see the plugin file's docstring for the canonical
- * contract.
+ * Deliberate duplicate of `packages/plugins/render-method/src/format-aliases.ts`. Both
+ * produce the same `renderValues` shape so the designer preview and the eventually-issued
+ * credential render identically.
  */
 
-export interface FormatAliasesOptions {
+export interface RenderValuesOptions {
     locale?: string;
     timeZone?: string;
     now?: Date;
@@ -53,6 +45,11 @@ const looksLikeLongIdentifier = (value: string): boolean => {
     return /^did:/.test(value) || /^urn:uuid:/.test(value) || /^https?:\/\//.test(value);
 };
 
+const isImageFieldKey = (key: string): boolean => key.toLowerCase() === 'image';
+
+const looksLikeImageObject = (value: Record<string, unknown>): value is { id: string } =>
+    typeof value.id === 'string' && value.id.length > 0 && (typeof value.type === 'string' || 'caption' in value);
+
 const ZERO_FORMATTED_DATE: FormattedDate = {
     long: '',
     medium: '',
@@ -67,10 +64,14 @@ const ZERO_FORMATTED_DATE: FormattedDate = {
     datetime: '',
 };
 
-const buildDateFormat = (iso: string, options: FormatAliasesOptions): FormattedDate => {
+const defaultLocale = (): string => {
+    if (typeof navigator !== 'undefined' && navigator.language) return navigator.language;
+    return 'en-US';
+};
+
+const buildDateFormat = (iso: string, options: RenderValuesOptions): FormattedDate => {
     const date = new Date(iso);
     if (!Number.isFinite(date.getTime())) return { ...ZERO_FORMATTED_DATE, long: iso };
-
     const locale = options.locale ?? defaultLocale();
     const timeZone = options.timeZone;
     const baseOpts = timeZone ? { timeZone } : {};
@@ -117,9 +118,7 @@ const buildRelative = (date: Date, now: Date, locale: string): string => {
     const diffDay = diffHour / 24;
     const diffMonth = diffDay / 30.44;
     const diffYear = diffDay / 365.25;
-
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-
     if (Math.abs(diffYear) >= 1) return rtf.format(Math.round(diffYear), 'year');
     if (Math.abs(diffMonth) >= 1) return rtf.format(Math.round(diffMonth), 'month');
     if (Math.abs(diffDay) >= 1) return rtf.format(Math.round(diffDay), 'day');
@@ -141,26 +140,39 @@ const buildStringFormat = (value: string): FormattedString => ({
 const isUnsafeKey = (key: string): boolean =>
     key === '__proto__' || key === 'constructor' || key === 'prototype';
 
-const defaultLocale = (): string => {
-    if (typeof navigator !== 'undefined' && navigator.language) return navigator.language;
-    return 'en-US';
+const resolveImageLike = (value: unknown): string | null => {
+    if (typeof value === 'string') return value;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const record = value as Record<string, unknown>;
+    return typeof record.id === 'string' ? record.id : null;
 };
 
-export const buildFormattedValues = (
+export const buildRenderValues = (
     data: Record<string, unknown>,
-    options: FormatAliasesOptions = {}
+    options: RenderValuesOptions = {}
 ): Record<string, unknown> => {
     const out: Record<string, unknown> = Object.create(null);
     for (const [key, value] of Object.entries(data)) {
         if (isUnsafeKey(key)) continue;
+
         if (typeof value === 'string') {
-            if (isIsoDate(value)) {
-                out[key] = buildDateFormat(value, options);
+            if (isImageFieldKey(key)) {
+                out[key] = { resolved: value };
+            } else if (isIsoDate(value)) {
+                out[key] = { formatted: buildDateFormat(value, options) };
             } else if (looksLikeLongIdentifier(value)) {
-                out[key] = buildStringFormat(value);
+                out[key] = { formatted: buildStringFormat(value) };
             }
-        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            const nested = buildFormattedValues(value as Record<string, unknown>, options);
+            continue;
+        }
+
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            if (isImageFieldKey(key) && looksLikeImageObject(value as Record<string, unknown>)) {
+                const nested = buildRenderValues(value as Record<string, unknown>, options);
+                out[key] = { resolved: (value as { id: string }).id, ...nested };
+                continue;
+            }
+            const nested = buildRenderValues(value as Record<string, unknown>, options);
             if (Object.keys(nested).length > 0) out[key] = nested;
         }
     }
@@ -168,42 +180,24 @@ export const buildFormattedValues = (
 };
 
 export const DATE_FORMAT_KEYS = [
-    'long',
-    'medium',
-    'short',
-    'iso',
-    'year',
-    'month',
-    'day',
-    'weekday',
-    'relative',
-    'time',
-    'datetime',
+    'long', 'medium', 'short', 'iso', 'year', 'month', 'day', 'weekday', 'relative', 'time', 'datetime',
 ] as const;
-
 export const STRING_FORMAT_KEYS = ['short', 'long'] as const;
-
 export type DateFormatKey = (typeof DATE_FORMAT_KEYS)[number];
 export type StringFormatKey = (typeof STRING_FORMAT_KEYS)[number];
 
-/**
- * Classify a value for the format picker. Returns `'date'` for ISO 8601 timestamps,
- * `'identifier'` for long DIDs/URNs/URLs, `null` otherwise. Used by the binding picker
- * to decide which format options to surface in the UI.
- */
-export const classifyFormattable = (
-    value: unknown
-): 'date' | 'identifier' | null => {
+export const classifyFormattable = (value: unknown): 'date' | 'identifier' | null => {
     if (typeof value !== 'string') return null;
     if (isIsoDate(value)) return 'date';
     if (looksLikeLongIdentifier(value)) return 'identifier';
     return null;
 };
 
-/**
- * Human-readable labels for date format keys. Used by the binding picker to show users
- * what each option produces (e.g. `'long'` → "July 1, 2024 (long)").
- */
+export const classifyResolvable = (key: string, value: unknown): 'image' | null => {
+    if (!isImageFieldKey(key)) return null;
+    return resolveImageLike(value) ? 'image' : null;
+};
+
 export const DATE_FORMAT_LABELS: Record<DateFormatKey, string> = {
     long: 'Long (July 1, 2024)',
     medium: 'Medium (Jul 1, 2024)',

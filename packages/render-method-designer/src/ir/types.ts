@@ -27,9 +27,9 @@ export type FontRef = 'heading' | 'body';
  * A string value: literal, or a binding to a credential field path.
  *
  * Bindings can optionally specify a `format` name (e.g. `'long'` for an ISO date). When
- * set, the emitter and Canvas renderer prefer `formattedValues.{path}.{format}` and fall
- * back to the raw `path` if the formatted mirror isn't present in the render data — see
- * the `formattedValues` convention in `@learncard/render-method-plugin/format-aliases`.
+ * set, the emitter and Canvas renderer prefer `renderValues.{path}.formatted.{format}` and
+ * fall back to the raw `path` if the render mirror isn't present in the render data — see
+ * the `renderValues` convention in `@learncard/render-method-plugin/format-aliases`.
  */
 export type StringValue =
     | { kind: 'static'; value: string }
