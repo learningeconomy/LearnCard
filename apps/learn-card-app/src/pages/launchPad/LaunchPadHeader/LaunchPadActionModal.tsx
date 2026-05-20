@@ -469,9 +469,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             // mounts of LaunchPadActionModal see the new role (otherwise the
             // dropdown reverts to the stale cached value on next "+" open).
             await refetchProfile();
-            presentToast('Role updated', {
+            const newRoleTitle =
+                LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
+            presentToast(`You're now a ${newRoleTitle}.`, {
+                title: 'Role updated',
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
+                hasCheckmark: true,
+                autoDismiss: false,
             });
         } catch (e) {
             setOptimisticRole(null);
