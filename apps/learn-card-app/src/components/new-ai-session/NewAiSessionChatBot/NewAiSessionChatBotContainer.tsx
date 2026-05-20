@@ -207,7 +207,6 @@ export const NewAiSessionChatBotContainer: React.FC<{
             signal: 'ai_chat',
             profileSnapshot: profileSnapshotRef.current,
         });
-        });
         setShowLoader(true);
 
         setTimeout(() => {
