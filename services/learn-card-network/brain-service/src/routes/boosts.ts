@@ -158,7 +158,7 @@ import {
     removeProfileAsBoostAdmin,
     removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
-import { getIdFromUri, getUriParts } from '@helpers/uri.helpers';
+import { getDomainFromUri, getIdFromUri, getUriParts } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import {
     EMPTY_PERMISSIONS,
@@ -1455,7 +1455,7 @@ export const boostsRouter = t.router({
             const { domain: uriDomain } = getUriParts(decodedUri, true);
             // Match the bare domain verifyCredentialIsDerivedFromBoost uses, so
             // injected alignment targetUrls equal the verifier's re-computed ones.
-            const alignmentsDomain = uriDomain.replace(/\/trpc$/, '');
+            const alignmentsDomain = getDomainFromUri(decodedUri);
             const [boost, boostInstance] = await Promise.all([
                 getBoostByUriWithDefaultClaimPermissions(decodedUri),
                 getBoostByUri(decodedUri),
