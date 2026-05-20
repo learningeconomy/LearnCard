@@ -325,7 +325,16 @@ export const synthesizeSdJwtVc = async (
 
     if (parsed.expiresAt) vc.validUntil = parsed.expiresAt.toISOString();
 
-    return { vc, rawFormat: format, jwt: credential };
+    const formatTag = format === SD_JWT_VC_FORMAT_LEGACY ? 'vc+sd-jwt' : 'dc+sd-jwt';
+
+    return {
+        vc,
+        rawFormat: format,
+        jwt: credential,
+        format: formatTag,
+        rawWireForm: credential,
+        semanticType: parsed.vct,
+    };
 };
 
 export const extractSdJwtVct = (vc: W3CVerifiableCredential): string | undefined => {

@@ -1,4 +1,5 @@
 import { decodeJwt, decodeProtectedHeader } from 'jose';
+import type { CredentialFormat } from '@learncard/types';
 
 import { VciError } from './errors';
 
@@ -11,11 +12,29 @@ import { VciError } from './errors';
  * - `rawFormat` — the format id the issuer returned it in (e.g. `jwt_vc_json`).
  * - `jwt` — original compact JWS, preserved only for jwt-based formats so
  *   downstream verification can re-check the signature without re-fetching.
+ *
+ * ADR-0001 Phase 1.5 format-tagged metadata (optional; populated by writers
+ * that support the format-discriminated storage model):
+ * - `format` — wire-format discriminator matching the values from
+ *   `@learncard/types.CredentialFormat`. Used by format-aware downstream
+ *   code (verify dispatch, matcher, serializer) instead of pattern-matching
+ *   `proof.type`.
+ * - `rawWireForm` — original on-the-wire representation. For SD-JWT-VC this
+ *   is the compact `<JWT>~<disclosures>~` string; for JWT-VC it's the
+ *   compact JWS; for W3C VCs the field stays undefined (`vc` IS the wire
+ *   form). Authoritative source of truth — the `vc` wrapper is a display
+ *   projection.
+ * - `semanticType` — fast filter hint without parsing. For SD-JWT-VC this
+ *   is the `vct` claim; for W3C VCs it would be the last non-VC type entry.
+ *   Populated for SD-JWT in Phase 1.5; W3C population is Phase 2.
  */
 export interface NormalizedCredential {
     vc: W3CVerifiableCredential;
     rawFormat: string;
     jwt?: string;
+    format?: CredentialFormat;
+    rawWireForm?: string;
+    semanticType?: string;
 }
 
 /**

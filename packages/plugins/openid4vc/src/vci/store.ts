@@ -15,7 +15,20 @@ import { VciError } from './errors';
  */
 export const DEFAULT_STORE_PLUGIN = 'LearnCloud';
 
-/** Shape of the record passed to `learnCard.index.<plugin>.add(record)`. */
+/**
+ * Shape of the record passed to `learnCard.index.<plugin>.add(record)`.
+ *
+ * Index records are intentionally LIGHTWEIGHT metadata pointing at a
+ * storage URI — the credential body itself lives on the store plane.
+ * ADR-0001 Phase 1.5 adds `format` and `semanticType` as queryable
+ * filter keys; the actual wire-form bytes still live in storage and
+ * are reached via `learnCard.read.get(record.uri)`.
+ *
+ * NOTE: do not add credential-body fields here. If you find yourself
+ * wanting `rawWireForm` or `compactSdJwt` on the index, that's a sign
+ * the storage plane needs to evolve to accept the native format
+ * (Phase 2 work — see the ADR).
+ */
 export interface IndexRecord {
     id: string;
     uri: string;
@@ -23,6 +36,15 @@ export interface IndexRecord {
     title?: string;
     imgUrl?: string;
     boostUri?: string;
+    /**
+     * ADR-0001 Phase 1.5 format-tagged metadata. Populated by
+     * format-aware writers (currently the SD-JWT-VC path); legacy W3C
+     * paths leave these fields undefined. Format-aware readers
+     * (Slice 3 matcher, Phase 2 display adapter) filter by these
+     * fields without needing to read the credential body from storage.
+     */
+    format?: import('@learncard/types').CredentialFormat;
+    semanticType?: string;
     /** Index record schema version, matches existing wallet writes. */
     __v: 1;
 }
@@ -134,6 +156,8 @@ export const storeAcceptedCredentials = async (
                 ...(resolveOptional(options.imgUrl, normalized.vc, i) && {
                     imgUrl: resolveOptional(options.imgUrl, normalized.vc, i) as string,
                 }),
+                ...(normalized.format && { format: normalized.format }),
+                ...(normalized.semanticType && { semanticType: normalized.semanticType }),
                 __v: 1,
             };
 

@@ -436,5 +436,46 @@ describe('storeAcceptedCredentials', () => {
                 fakeParsed.vct
             );
         });
+
+        it('persists ADR-0001 Phase 1.5 format-tagged metadata on the IndexRecord', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const addToIndex = jest.fn().mockResolvedValue(undefined);
+            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+
+            await storeAcceptedCredentials(learnCard, sdJwtAccepted(), { addToIndex });
+
+            expect(addToIndex).toHaveBeenCalledTimes(1);
+            const record = addToIndex.mock.calls[0][0];
+            expect(record.format).toBe('dc+sd-jwt');
+            expect(record.semanticType).toBe(fakeParsed.vct);
+        });
+
+        it('does NOT carry credential body data on the IndexRecord (rawWireForm lives in storage, not index)', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const addToIndex = jest.fn().mockResolvedValue(undefined);
+            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+
+            await storeAcceptedCredentials(learnCard, sdJwtAccepted(), { addToIndex });
+
+            const record = addToIndex.mock.calls[0][0];
+            expect(record.rawWireForm).toBeUndefined();
+            expect(record.compactSdJwt).toBeUndefined();
+            expect(record.jwt).toBeUndefined();
+        });
+
+        it('does NOT populate format-tagged fields on the IndexRecord for legacy W3C VCs', async () => {
+            const upload = jest.fn().mockResolvedValue('learn-cloud:w3c-vc');
+            const addToIndex = jest.fn().mockResolvedValue(undefined);
+            const learnCard = { store: {}, index: {} } as unknown as LearnCard<any, any, any>;
+
+            await storeAcceptedCredentials(learnCard, await baseAccepted(), {
+                upload,
+                addToIndex,
+            });
+
+            const record = addToIndex.mock.calls[0][0];
+            expect(record.format).toBeUndefined();
+            expect(record.semanticType).toBeUndefined();
+        });
     });
 });

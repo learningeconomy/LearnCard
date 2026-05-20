@@ -91,6 +91,26 @@ describe('synthesizeSdJwtVc', () => {
         expect((result.vc.proof as { verificationMethod: string }).verificationMethod).toBe(
             'did:web:issuer.example.com#key-1'
         );
+
+        expect(result.format).toBe('dc+sd-jwt');
+        expect(result.rawWireForm).toBe(FAKE_COMPACT);
+        expect(result.semanticType).toBe('https://example.com/credentials/test-cert');
+    });
+
+    it('tags SD-JWT credentials with format=vc+sd-jwt when the issuer used the legacy format string', async () => {
+        const parsed = makeParsed({
+            header: { alg: 'EdDSA', typ: 'vc+sd-jwt', kid: 'did:web:issuer.example.com#key-1' },
+        });
+        const learnCard = makeLearnCard(parsed);
+        const result = await synthesizeSdJwtVc(
+            FAKE_COMPACT,
+            SD_JWT_VC_FORMAT_LEGACY,
+            learnCard
+        );
+
+        expect(result.format).toBe('vc+sd-jwt');
+        expect(result.rawWireForm).toBe(FAKE_COMPACT);
+        expect(result.semanticType).toBe('https://example.com/credentials/test-cert');
     });
 
     it('exposes the SD-JWT vct as the sdJwtVct extension on the synthesized VC', async () => {
