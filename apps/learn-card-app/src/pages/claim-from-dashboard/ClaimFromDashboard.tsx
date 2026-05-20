@@ -145,6 +145,7 @@ const ClaimFromDashboard: React.FC = () => {
     const profileSnapshot = useProfileSnapshot();
     const profileSnapshotRef = useRef(profileSnapshot);
     profileSnapshotRef.current = profileSnapshot;
+    const flowStartedAt = useRef(Date.now());
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -285,6 +286,7 @@ const ClaimFromDashboard: React.FC = () => {
                     category: category,
                     boostType: achievementType,
                     method: 'Dashboard',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
                 });
 
                 const now = Date.now();

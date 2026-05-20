@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -112,6 +112,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
+    const flowStartedAt = useRef(Date.now());
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
@@ -354,6 +355,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
                         country: country ?? undefined,
+                        msSinceMethodStarted: Date.now() - flowStartedAt.current,
                     });
 
                     // Check for pending guardian approvals linked to this email (non-blocking)

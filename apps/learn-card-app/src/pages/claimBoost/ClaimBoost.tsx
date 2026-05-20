@@ -135,6 +135,7 @@ const ClaimBoost: React.FC<{
     const profileSnapshot = useProfileSnapshot();
     const profileSnapshotRef = useRef(profileSnapshot);
     profileSnapshotRef.current = profileSnapshot;
+    const flowStartedAt = useRef(Date.now());
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -230,6 +231,7 @@ const ClaimBoost: React.FC<{
                     boostType: category,
                     achievementType,
                     method: 'Claim Modal',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
                 });
 
                 const now = Date.now();

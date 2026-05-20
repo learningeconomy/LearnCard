@@ -103,6 +103,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const profileSnapshot = useProfileSnapshot();
     const profileSnapshotRef = useRef(profileSnapshot);
     profileSnapshotRef.current = profileSnapshot;
+    const flowStartedAt = useRef(Date.now());
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -181,6 +182,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     category: category,
                                     boostType: achievementType,
                                     method: 'Notification',
+                                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
                                 });
 
                                 const now = Date.now();

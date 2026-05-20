@@ -82,6 +82,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const profileSnapshot = useProfileSnapshot();
     const profileSnapshotRef = useRef(profileSnapshot);
     profileSnapshotRef.current = profileSnapshot;
+    const flowStartedAt = useRef(Date.now());
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -113,6 +114,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         category: category,
                         boostType: achievementType,
                         method: 'VC-API Request',
+                        msSinceMethodStarted: Date.now() - flowStartedAt.current,
                     });
 
                     const now = Date.now();

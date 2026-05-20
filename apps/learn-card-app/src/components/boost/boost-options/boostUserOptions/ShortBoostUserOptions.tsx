@@ -71,6 +71,7 @@ const ShortBoostUserOptions: React.FC<{
     const profileSnapshot = useProfileSnapshot();
     const profileSnapshotRef = useRef(profileSnapshot);
     profileSnapshotRef.current = profileSnapshot;
+    const flowStartedAt = useRef(Date.now());
 
     const firstPage =
         draftRecipients?.length && draftRecipients?.length > 0
@@ -111,6 +112,7 @@ const ShortBoostUserOptions: React.FC<{
             category: boost?.category,
             boostType: boost?.type,
             method: 'Managed Boost',
+            msSinceMethodStarted: Date.now() - flowStartedAt.current,
         });
 
         const now = Date.now();
@@ -142,6 +144,7 @@ const ShortBoostUserOptions: React.FC<{
             category: boost?.category,
             boostType: boost?.type,
             method: 'Managed Boost',
+            msSinceMethodStarted: Date.now() - flowStartedAt.current,
         });
 
         const attachmentsAnalytics = summarizeRecipientAttachments(state.issueTo);
