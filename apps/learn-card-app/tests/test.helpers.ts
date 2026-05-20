@@ -98,6 +98,28 @@ export const waitForAuthenticatedState = async (
         ? { path: pathOrOptions, seed: TEST_USER_SEED, profileId: undefined as string | undefined }
         : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? TEST_USER_SEED, profileId: pathOrOptions.profileId };
 
+    // Listen for the brain-service `profile.getProfile` tRPC call BEFORE we
+    // submit the login form. `useIsCurrentUserLCNUser` is backed by this query
+    // and the SideMenu's `Add to LearnCard` button is gated on its result via
+    // `useLCNGatedAction.gate()` — if a test clicks `Add to LearnCard` before
+    // the query resolves, the gate treats the user as not-yet-in-network and
+    // opens the OnboardingContainer modal ("Select what best describes you!")
+    // instead of `AddToLearnCardMenu`, so `Boost Someone` is never findable
+    // and the test times out. Waiting for at least one successful profile
+    // lookup here ensures the gate has stable state by the time the test
+    // interacts with the side menu.
+    //
+    // Tolerate the timeout — if the response was already cached and no fresh
+    // request fires, the gate has likely already settled anyway.
+    const profileFetchPromise = page
+        .waitForResponse(
+            response =>
+                /profile\.getProfile/.test(response.url()) &&
+                response.status() < 500,
+            { timeout }
+        )
+        .catch(() => undefined);
+
     // Login via seed - this creates a proper user with privateKey
     // If profileId is provided, the seed route will also create a network profile
     const seedUrl = options.profileId
@@ -111,6 +133,10 @@ export const waitForAuthenticatedState = async (
 
     // Wait for redirect to wallet (indicates successful login + profile creation)
     await page.waitForURL(/\/wallet/, { timeout });
+
+    // Wait for the LCN gate to settle (see note where profileFetchPromise is
+    // set up). Resolves on first profile.getProfile response or after timeout.
+    await profileFetchPromise;
 
     // If a different path was requested, navigate there
     if (options.path !== '/' && options.path !== '/wallet') {
