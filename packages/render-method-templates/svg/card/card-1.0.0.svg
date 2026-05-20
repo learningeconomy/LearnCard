@@ -1,0 +1,124 @@
+<svg width="360" height="560" viewBox="0 0 360 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="cardClip">
+      <rect x="12" y="12" width="336" height="536" rx="24"/>
+    </clipPath>
+    <clipPath id="imageClip">
+      <rect x="118" y="88" width="124" height="124" rx="28"/>
+    </clipPath>
+    <clipPath id="topValueClip">
+      <rect x="160" y="34" width="166" height="20"/>
+    </clipPath>
+    <clipPath id="titleClip">
+      <rect x="34" y="236" width="292" height="34"/>
+    </clipPath>
+    <clipPath id="subtitleClip">
+      <rect x="34" y="270" width="292" height="20"/>
+    </clipPath>
+    <clipPath id="descriptionClip">
+      <rect x="34" y="300" width="292" height="20"/>
+    </clipPath>
+    <clipPath id="rowValueClip">
+      <rect x="130" y="350" width="196" height="122"/>
+    </clipPath>
+    <linearGradient id="topGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#18224E"/>
+      <stop offset="100%" stop-color="#353E64"/>
+    </linearGradient>
+    <filter id="softShadow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#18224E" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="360" height="560" fill="transparent"/>
+  <rect x="12" y="12" width="336" height="536" rx="24" fill="#FFFFFF" filter="url(#softShadow)"/>
+
+  <g clip-path="url(#cardClip)">
+    <rect x="12" y="12" width="336" height="536" fill="#FFFFFF"/>
+    <rect x="12" y="12" width="336" height="152" fill="url(#topGradient)"/>
+
+    <text x="34" y="48" font-family="Poppins, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.6" fill="#FFFFFF">LEARNCARD</text>
+    <rect x="34" y="62" width="84" height="4" rx="2" fill="#5FBE88"/>
+
+    {{#credentialSubject.achievement.achievementType}}
+    <text x="326" y="48" text-anchor="end" clip-path="url(#topValueClip)" font-family="Poppins, Arial, sans-serif" font-size="11" font-weight="700" fill="#C5C8D3">{{credentialSubject.achievement.achievementType}}</text>
+    {{/credentialSubject.achievement.achievementType}}
+
+    <rect x="112" y="82" width="136" height="136" rx="34" fill="#FFFFFF"/>
+    <rect x="118" y="88" width="124" height="124" rx="28" fill="#EFF0F5"/>
+    {{#image}}
+    <image href="{{image}}" x="118" y="88" width="124" height="124" preserveAspectRatio="xMidYMid slice" clip-path="url(#imageClip)"/>
+    {{/image}}
+    {{^image}}
+    {{#credentialSubject.achievement.image}}
+    <image href="{{credentialSubject.achievement.image}}" x="118" y="88" width="124" height="124" preserveAspectRatio="xMidYMid slice" clip-path="url(#imageClip)"/>
+    {{/credentialSubject.achievement.image}}
+    {{/image}}
+
+    {{#name}}
+    <text x="180" y="258" text-anchor="middle" clip-path="url(#titleClip)" font-family="Poppins, Arial, sans-serif" font-size="24" font-weight="700" fill="#18224E">{{name}}</text>
+    {{/name}}
+    {{^name}}
+    {{#credentialSubject.achievement.name}}
+    <text x="180" y="258" text-anchor="middle" clip-path="url(#titleClip)" font-family="Poppins, Arial, sans-serif" font-size="24" font-weight="700" fill="#18224E">{{credentialSubject.achievement.name}}</text>
+    {{/credentialSubject.achievement.name}}
+    {{/name}}
+
+    {{#credentialSubject.achievement.achievementType}}
+    <text x="180" y="282" text-anchor="middle" clip-path="url(#subtitleClip)" font-family="Poppins, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="0.8" fill="#6F7590">{{credentialSubject.achievement.achievementType}}</text>
+    {{/credentialSubject.achievement.achievementType}}
+
+    {{#description}}
+    <text x="180" y="314" text-anchor="middle" clip-path="url(#descriptionClip)" font-family="Poppins, Arial, sans-serif" font-size="12" font-weight="500" fill="#52597A">{{description}}</text>
+    {{/description}}
+    {{^description}}
+    {{#credentialSubject.achievement.description}}
+    <text x="180" y="314" text-anchor="middle" clip-path="url(#descriptionClip)" font-family="Poppins, Arial, sans-serif" font-size="12" font-weight="500" fill="#52597A">{{credentialSubject.achievement.description}}</text>
+    {{/credentialSubject.achievement.description}}
+    {{/description}}
+
+    <line x1="34" y1="340" x2="326" y2="340" stroke="#E2E3E9"/>
+
+    <text x="34" y="370" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="0.8" fill="#8B91A7">SUBJECT</text>
+    <g clip-path="url(#rowValueClip)">
+      {{#credentialSubject.name}}
+      <text x="326" y="370" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="13" font-weight="700" fill="#18224E">{{credentialSubject.name}}</text>
+      {{/credentialSubject.name}}
+      {{^credentialSubject.name}}
+      <text x="326" y="370" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" fill="#18224E">{{credentialSubject.id}}</text>
+      {{/credentialSubject.name}}
+    </g>
+
+    <text x="34" y="404" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="0.8" fill="#8B91A7">ISSUER</text>
+    <g clip-path="url(#rowValueClip)">
+      {{#issuer.name}}
+      <text x="326" y="404" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="13" font-weight="700" fill="#18224E">{{issuer.name}}</text>
+      {{/issuer.name}}
+      {{^issuer.name}}
+      {{#issuer.id}}
+      <text x="326" y="404" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" fill="#18224E">{{issuer.id}}</text>
+      {{/issuer.id}}
+      {{^issuer.id}}
+      <text x="326" y="404" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" fill="#18224E">{{issuer}}</text>
+      {{/issuer.id}}
+      {{/issuer.name}}
+    </g>
+
+    {{#validFrom}}
+    <text x="34" y="438" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="0.8" fill="#8B91A7">VALID FROM</text>
+    <g clip-path="url(#rowValueClip)">
+      <text x="326" y="438" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" fill="#18224E">{{validFrom}}</text>
+    </g>
+    {{/validFrom}}
+
+    {{#validUntil}}
+    <text x="34" y="472" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="0.8" fill="#8B91A7">VALID UNTIL</text>
+    <g clip-path="url(#rowValueClip)">
+      <text x="326" y="472" text-anchor="end" font-family="Poppins, Arial, sans-serif" font-size="10" font-weight="700" fill="#18224E">{{validUntil}}</text>
+    </g>
+    {{/validUntil}}
+
+    <rect x="12" y="520" width="336" height="28" fill="#FBFBFC"/>
+    <text x="180" y="536" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-size="11" font-weight="700" fill="#52597A">Verifiable Credential</text>
+  </g>
+</svg>

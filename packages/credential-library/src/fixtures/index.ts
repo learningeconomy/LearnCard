@@ -8,6 +8,7 @@ import { vcV1WithStatus } from './vc-v1/with-status';
 import { vcV2Basic } from './vc-v2/basic';
 import { vcV2WithEvidence } from './vc-v2/with-evidence';
 import { vcV2MultipleSubjects } from './vc-v2/multiple-subjects';
+import { vcV2RenderMethodExample } from './render-method/render-method-example';
 
 // OBv3
 import { obv3MinimalBadge } from './obv3/minimal-badge';
@@ -66,6 +67,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     vcV2Basic,
     vcV2WithEvidence,
     vcV2MultipleSubjects,
+    vcV2RenderMethodExample,
 
     // OBv3
     obv3MinimalBadge,
@@ -117,6 +119,7 @@ export {
     vcV2Basic,
     vcV2WithEvidence,
     vcV2MultipleSubjects,
+    vcV2RenderMethodExample,
     obv3MinimalBadge,
     obv3FullBadge,
     obv3WithAlignment,
