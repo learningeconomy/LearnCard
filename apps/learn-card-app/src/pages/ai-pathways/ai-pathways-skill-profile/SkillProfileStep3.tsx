@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TextInput, RadioGroup, useVerifiableData } from 'learn-card-base';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 
 export type SkillProfileSalaryData = {
     salary: string;
@@ -22,6 +23,7 @@ const sanitizeSalaryInput = (value: string | null | undefined): string =>
     (value ?? '').replace(/-/g, '');
 
 const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handleBack }) => {
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
     const [salary, setSalary] = useState('');
     const [salaryType, setSalaryType] = useState<string>('per_year');
 
@@ -46,6 +48,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
             salary,
             salaryType: salaryType as 'per_year' | 'per_hour',
         });
+        trackProfileDataAdded();
         handleNext();
     };
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 
 export type SkillProfileGoalsData = {
     goals: string[];
@@ -52,6 +53,7 @@ const MONTHS_OPTIONS = [
 ];
 
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
     const [goalInput, setGoalInput] = useState('');
     const [goals, setGoals] = useState<string[]>([]);
     const [professionalTitle, setProfessionalTitle] = useState('');
@@ -115,6 +117,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 lifetimeExperience: { years, months },
             }),
         ]);
+        trackProfileDataAdded();
         handleNext();
     };
 

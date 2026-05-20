@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     useGetSelfAssignedSkillsBoost,
@@ -12,6 +12,7 @@ import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
 import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
+import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -28,6 +29,10 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
+    const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
@@ -68,6 +73,21 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
             presentToast('Skills saved successfully!', {
                 type: ToastTypeEnum.Success,
             });
+
+            // LC-1853: fire profile_item_added per skill added
+            const now = Date.now();
+            const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
+            const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+            for (let i = 0; i < selectedSkills.length; i++) {
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.SelfArticulation,
+                    itemType: 'skill',
+                    itemCount: 1,
+                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1 + i,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
+                });
+            }
 
             handleNext();
         } catch (error: any) {
