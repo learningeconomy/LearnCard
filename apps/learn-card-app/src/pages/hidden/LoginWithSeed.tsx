@@ -68,15 +68,9 @@ const LoginWithSeed: React.FC = () => {
                 } catch (err) {
                     console.log('createProfile::error (may already exist)', err);
                 }
-                // Mirror production createProfile callers (OnboardingNetworkForm,
-                // NewJoinNetworkPrompt, JoinNetworkPrompt) — wipe React Query
-                // caches so the next render of useGetProfile fetches fresh state
-                // for the new profile. Without this, useGetProfile can have
-                // already fired with a pre-createProfile wallet state and cached
-                // a null result; the 5-minute staleTime on the query (#1222)
-                // then pins that null and the LCN gate in SideMenu.handleBoost
-                // opens the OnboardingContainer modal instead of
-                // AddToLearnCardMenu when the user clicks `Add to LearnCard`.
+                // Match production createProfile callers — drop cached
+                // getProfile so useIsCurrentUserLCNUser refetches and the LCN
+                // gate sees the new profile instead of a pre-create null.
                 await queryClient.resetQueries();
             }
 
