@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
@@ -34,7 +34,7 @@ import {
     boostPreviewStore,
 } from 'learn-card-base';
 
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
@@ -132,6 +132,9 @@ const ClaimBoost: React.FC<{
     const { initWallet, addVCtoWallet } = useWallet();
     const [presentAlert, dismissAlert] = useIonAlert();
     const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -227,6 +230,18 @@ const ClaimBoost: React.FC<{
                     boostType: category,
                     achievementType,
                     method: 'Claim Modal',
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
+                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.ClaimLink,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { VC, VP } from '@learncard/types';
 import {
@@ -15,7 +15,7 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import X from 'learn-card-base/svgs/X';
 
 import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -79,6 +79,9 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const { presentToast } = useToast();
     const { storeAndAddVCToWallet } = useWallet();
     const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -110,6 +113,18 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         category: category,
                         boostType: achievementType,
                         method: 'VC-API Request',
+                    });
+
+                    const now = Date.now();
+                    const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
+                    const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                    track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                        method: ProfileBuildMethod.VcApiRequest,
+                        itemType: 'credential',
+                        itemCount: 1,
+                        totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                        msSinceAccountCreated: now - accountCreatedAt,
+                        msSinceSessionStart: now - sessionStart,
                     });
 
                     return storeAndAddVCToWallet(credential, { title: name }, 'LearnCloud', true);

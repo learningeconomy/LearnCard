@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -33,7 +33,7 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
 
 import {
     getAchievementType,
@@ -142,6 +142,9 @@ const ClaimFromDashboard: React.FC = () => {
     const [metadata, setMetadata] = useState<FromDashboardMetadata | undefined>();
 
     const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -282,6 +285,18 @@ const ClaimFromDashboard: React.FC = () => {
                     category: category,
                     boostType: achievementType,
                     method: 'Dashboard',
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
+                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.Dashboard,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 

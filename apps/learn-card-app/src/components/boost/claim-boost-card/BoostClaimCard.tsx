@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
@@ -11,7 +11,7 @@ const HourGlass = '/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -100,6 +100,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [credential]);
 
     const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -178,6 +181,18 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     category: category,
                                     boostType: achievementType,
                                     method: 'Notification',
+                                });
+
+                                const now = Date.now();
+                                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
+                                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                    method: ProfileBuildMethod.Notification,
+                                    itemType: 'credential',
+                                    itemCount: 1,
+                                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                                    msSinceAccountCreated: now - accountCreatedAt,
+                                    msSinceSessionStart: now - sessionStart,
                                 });
                             }
 
