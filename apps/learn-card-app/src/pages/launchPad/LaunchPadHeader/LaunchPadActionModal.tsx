@@ -433,7 +433,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const actionModalCardBgColor = themeColors?.defaults?.actionModalCardBgColor;
     const actionModalCardTextColor = themeColors?.defaults?.actionModalCardTextColor;
     const actionModalButtonBorderColor = themeColors?.defaults?.actionModalButtonBorderColor;
-    const { data: lcNetworkProfile } = useGetProfile();
+    const { data: lcNetworkProfile, refetch: refetchProfile } = useGetProfile();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: contractsData, refetch: refetchContracts } = useGetContracts();
     const { presentToast } = useToast();
@@ -463,6 +463,15 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             const wallet = await initWallet();
             await wallet?.invoke?.updateProfile({
                 role: newRole,
+            });
+            // useGetProfile has a 5-minute staleTime and wallet.invoke.updateProfile
+            // does not invalidate its cache — explicitly refetch so subsequent
+            // mounts of LaunchPadActionModal see the new role (otherwise the
+            // dropdown reverts to the stale cached value on next "+" open).
+            await refetchProfile();
+            presentToast('Role updated', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             setOptimisticRole(null);
