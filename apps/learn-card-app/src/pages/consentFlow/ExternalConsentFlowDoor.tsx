@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import queryString from 'query-string';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -34,7 +34,7 @@ import ConsentFlowError from './ConsentFlowError';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
 
 enum Step {
     landing,
@@ -56,6 +56,9 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
+    const profileSnapshot = useProfileSnapshot();
+    const profileSnapshotRef = useRef(profileSnapshot);
+    profileSnapshotRef.current = profileSnapshot;
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -290,6 +293,19 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                     contractName: contractDetails?.name,
                                     alreadyConsented: !!consentedContract,
                                 });
+
+                                const now = Date.now();
+                                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
+                                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                    method: ProfileBuildMethod.ConsentFlow,
+                                    itemType: 'credential',
+                                    itemCount: 1,
+                                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                                    msSinceAccountCreated: now - accountCreatedAt,
+                                    msSinceSessionStart: now - sessionStart,
+                                });
+
                                 setUserClickedContinue(true);
                             }}
                             className={`bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom ${
