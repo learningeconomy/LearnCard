@@ -4,9 +4,11 @@ import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
+import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import RenderMethodDisplay from '../../components/render-method/RenderMethodDisplay';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import ClaimBoostLoading from './ClaimBoostLoading';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
@@ -29,6 +31,7 @@ import {
     ModalTypes,
     useToast,
     ToastTypeEnum,
+    boostPreviewStore,
 } from 'learn-card-base';
 
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -44,7 +47,10 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
     getAchievementType,
     getDefaultCategoryForCredential,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
+import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
@@ -131,6 +137,7 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
+    const enableRenderMethod = useRenderMethodEnabled();
 
     const rawBoostUri = query.get('boostUri') || uri;
     const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
@@ -320,6 +327,13 @@ const ClaimBoost: React.FC<{
     if (boost) category = getDefaultCategoryForCredential(boost);
 
     const isFamily = category === CredentialCategoryEnum.family;
+    const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
+    const renderMethod =
+        enableRenderMethod && renderMethodSource
+            ? getSvgMustacheRenderMethod(renderMethodSource)
+            : null;
+    const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
+    const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
     let actionButtonText = 'Accept';
 
@@ -333,6 +347,14 @@ const ClaimBoost: React.FC<{
         actionButtonText = 'Accept';
         if (isFamily) actionButtonText = 'Join';
     }
+
+    useEffect(() => {
+        boostPreviewStore.set.updateSelectedDisplayView(
+            enableRenderMethod && renderMethod
+                ? BoostPreviewDisplayViewEnum.Issuer
+                : BoostPreviewDisplayViewEnum.Default
+        );
+    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -374,12 +396,37 @@ const ClaimBoost: React.FC<{
         backgroundStyles.backgroundColor = wallpaperBackgroundColor;
     }
 
+    const isIssuerViewSelected =
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+
+    const renderClaimCredentialDisplay = (credentialToDisplay: VC) => (
+        <VCDisplayCardWrapper2
+            useCurrentUserName
+            credential={credentialToDisplay}
+            customBodyCardComponent={credentialBodyOverride}
+            customFooterComponent={<div />}
+            checkProof={false}
+            // isFrontOverride={isFront}
+            setIsFrontOverride={setIsFront}
+            hideNavButtons
+            hideFrontFaceDetails={false}
+            claimStatusText={actionButtonText}
+            handleClaim={handleClaimBoost}
+        />
+    );
+    const boostCredentialWithId = boost
+        ? ({ ...((_boost ?? boost) as VC), boostId: boostUri } as VC)
+        : undefined;
+
     const openDetailsSideModal = () => {
         newModal(
             <BoostDetailsSideMenu
-                credential={{ ..._boost, boostId: boostUri }}
+                credential={boostCredentialWithId as VC}
                 categoryType={category}
                 verificationItems={vcVerifications}
+                renderMethodCredential={renderMethodSource as VC}
             />,
             {
                 className: '!bg-transparent',
@@ -434,37 +481,41 @@ const ClaimBoost: React.FC<{
 
                             {boost && !loading && !vc && (
                                 <div>
-                                    <VCDisplayCardWrapper2
-                                        useCurrentUserName
-                                        credential={{ ..._boost, boostId: boostUri }}
-                                        customBodyCardComponent={credentialBodyOverride}
-                                        customFooterComponent={<div />}
-                                        checkProof={false}
-                                        // isFrontOverride={isFront}
-                                        setIsFrontOverride={setIsFront}
-                                        hideNavButtons
-                                        hideFrontFaceDetails={false}
-                                        claimStatusText={actionButtonText}
-                                        handleClaim={handleClaimBoost}
-                                    />
+                                    {isIssuerViewSelected && renderMethod ? (
+                                        <RenderMethodDisplay
+                                            vc={displayCredential}
+                                            renderMethod={renderMethod}
+                                            fallback={
+                                                boostCredentialWithId
+                                                    ? renderClaimCredentialDisplay(
+                                                          boostCredentialWithId
+                                                      )
+                                                    : null
+                                            }
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        boostCredentialWithId
+                                            ? renderClaimCredentialDisplay(
+                                                  boostCredentialWithId
+                                              )
+                                            : null
+                                    )}
                                 </div>
                             )}
 
                             {vc && !loading && (
                                 <>
-                                    <VCDisplayCardWrapper2
-                                        useCurrentUserName
-                                        credential={vc}
-                                        customBodyCardComponent={credentialBodyOverride}
-                                        customFooterComponent={<div />}
-                                        checkProof={false}
-                                        // isFrontOverride={isFront}
-                                        setIsFrontOverride={setIsFront}
-                                        hideNavButtons
-                                        hideFrontFaceDetails={false}
-                                        claimStatusText={actionButtonText}
-                                        handleClaim={handleClaimBoost}
-                                    />
+                                    {isIssuerViewSelected && renderMethod ? (
+                                        <RenderMethodDisplay
+                                            vc={displayCredential}
+                                            renderMethod={renderMethod}
+                                            fallback={renderClaimCredentialDisplay(vc)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        renderClaimCredentialDisplay(vc)
+                                    )}
                                 </>
                             )}
                         </div>
@@ -486,6 +537,7 @@ const ClaimBoost: React.FC<{
                         verificationItems={vcVerifications}
                         credential={boost}
                         categoryType={category}
+                        renderMethodCredential={renderMethodSource as VC}
                     />
                 )}
             </div>
