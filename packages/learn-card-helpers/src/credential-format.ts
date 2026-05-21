@@ -16,7 +16,7 @@ import { isStoredCredentialEnvelope } from '@learncard/types';
  *    trusts it. This is the path new format-aware writers take.
  *
  * 2. **Inferred from shape** (legacy fallback): for records that
- *    pre-date ADR-0001 Phase 1, the projector inspects `record.vc` and
+ *    pre-date format-tagging, the projector inspects `record.vc` and
  *    infers the format. W3C VCs → `w3c-vc-2.0` / `w3c-vc-1.1` based
  *    on `@context`; transitional SD-JWT wrappers (which never shipped
  *    but exist on branch `lc-1796-3`) → `dc+sd-jwt` with the compact
@@ -27,9 +27,10 @@ import { isStoredCredentialEnvelope } from '@learncard/types';
  * `w3c-vc-1.1` with `data = record.vc` so legacy consumers keep
  * something they can read.
  *
- * This projector is the SAFETY NET that makes the ADR-0001 migration
- * non-breaking: writers can adopt format-tagging at their own pace;
- * readers using this projector see the right discriminator either way.
+ * This projector is the SAFETY NET that makes the format-tagging
+ * migration non-breaking: writers can adopt format-tagging at their
+ * own pace; readers using this projector see the right discriminator
+ * either way.
  */
 export const toStoredCredential = (record: CredentialRecord): StoredCredential => {
     if (record.format) {
@@ -111,11 +112,9 @@ const extractWireFormFromVc = (vc: unknown): string | undefined => {
  * so it can be projected onto the W3C-VC `type` array and `name` field.
  *
  * Returns `undefined` for vct values where no meaningful name can be
- * derived (numeric-only URN tails, empty string). Lifted from openid4vc's
- * sd-jwt-vc.ts into @learncard/helpers so both the receipt-time wrapper
- * synthesizer and the read-time display projector share one source of
- * truth — otherwise SD-JWT credentials display differently depending on
- * which code path constructed the wrapper.
+ * derived (numeric-only URN tails, empty string). Shared between the
+ * receipt-time wrapper synthesizer and the read-time display projector
+ * so SD-JWT credentials produce the same wrapper shape on both paths.
  */
 export const extractVctSegment = (vct: string): string | undefined => {
     let segment: string | undefined;
@@ -196,9 +195,7 @@ export const deriveNameFromVct = (vct: string | undefined): string | undefined =
 };
 
 /**
- * Read-path shim for ADR-0001 Phase 2B.
- *
- * When a storage plugin returns a `StoredCredentialEnvelope` (because we
+ * Read-path shim: when a storage plugin returns a `StoredCredentialEnvelope` (because we
  * wrote a native non-W3C format like SD-JWT-VC), legacy UI components
  * that read `.credentialSubject` / `.issuer` / `.proof` need a VC-shaped
  * object. This projector synthesizes a minimal display-only VC from the

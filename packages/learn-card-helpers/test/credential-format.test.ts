@@ -232,7 +232,7 @@ describe('toStoredCredential — never throws', () => {
     });
 });
 
-describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
+describe('StoredCredentialEnvelope', () => {
     describe('isStoredCredentialEnvelope', () => {
         it('returns true for a valid string envelope', () => {
             expect(
@@ -310,7 +310,7 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             expect(result.success).toBe(false);
         });
 
-        it('Phase 2B projector — applies vct-derived type AND name (backwards-compat parity with synthesizer)', () => {
+        it('applies vct-derived type AND name (backwards-compat parity with synthesizer)', () => {
             const compact = makeSdJwtCompact({
                 iss: 'did:web:ca.gov',
                 iat: 1700000000,
@@ -326,7 +326,7 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             expect((vc as Record<string, unknown>).name).toBe('Career Passport Test');
         });
 
-        it('Phase 2B projector — does NOT append derived type when it equals SdJwtVcCredential', () => {
+        it('does NOT append derived type when it equals SdJwtVcCredential', () => {
             const compact = makeSdJwtCompact({
                 iss: 'did:web:x',
                 iat: 1700000000,
@@ -336,7 +336,7 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             expect(vc!.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential']);
         });
 
-        it('Phase 2B projector — handles vct with no meaningful segment gracefully', () => {
+        it('handles vct with no meaningful segment gracefully', () => {
             const compact = makeSdJwtCompact({
                 iss: 'did:web:x',
                 iat: 1700000000,
@@ -347,7 +347,7 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             expect((vc as Record<string, unknown>).name).toBe('PID');
         });
 
-        it('Phase 2B projector — SD-JWT compact → display VC', () => {
+        it('SD-JWT compact → display VC', () => {
             const compact = makeSdJwtCompact({
                 iss: 'did:web:issuer.example.com',
                 iat: 1700000000,
@@ -374,14 +374,14 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             );
         });
 
-        it('Phase 2B projector — vc+sd-jwt legacy alias works identically', () => {
+        it('vc+sd-jwt legacy alias works identically', () => {
             const compact = makeSdJwtCompact({ iss: 'did:web:x', iat: 1700000000 });
             const vc = projectEnvelopeToDisplayVc({ format: 'vc+sd-jwt', data: compact });
             expect(vc).toBeDefined();
             expect(vc!.issuer).toBe('did:web:x');
         });
 
-        it('Phase 2B projector — JWT-VC compact extracts inner vc claim', () => {
+        it('JWT-VC compact extracts inner vc claim', () => {
             const compact = makeJwtVcCompact({
                 '@context': ['https://www.w3.org/2018/credentials/v1'],
                 type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -394,7 +394,7 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             expect(vc!.type).toContain('UniversityDegreeCredential');
         });
 
-        it('Phase 2B projector — mDoc returns undefined (no fake VC for binary)', () => {
+        it('mDoc returns undefined (no fake VC for binary)', () => {
             const result = projectEnvelopeToDisplayVc({
                 format: 'mso_mdoc',
                 data: 'base64url-cbor-bytes',
@@ -402,7 +402,7 @@ describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
             expect(result).toBeUndefined();
         });
 
-        it('Phase 2B projector — malformed SD-JWT compact returns undefined', () => {
+        it('malformed SD-JWT compact returns undefined', () => {
             const result = projectEnvelopeToDisplayVc({
                 format: 'dc+sd-jwt',
                 data: 'not-a-jws',

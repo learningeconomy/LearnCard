@@ -82,8 +82,6 @@ export * from './Utilities';
 
 // Export app install helpers
 export * from './app-install';
-
-// ADR-0001 Phase 1: format-tagged credential storage projector
 export * from './credential-format';
 
 /**

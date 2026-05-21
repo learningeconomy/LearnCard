@@ -21,14 +21,14 @@ export const DEFAULT_STORE_PLUGIN = 'LearnCloud';
  *
  * Index records are intentionally LIGHTWEIGHT metadata pointing at a
  * storage URI — the credential body itself lives on the store plane.
- * ADR-0001 Phase 1.5 adds `format` and `semanticType` as queryable
- * filter keys; the actual wire-form bytes still live in storage and
- * are reached via `learnCard.read.get(record.uri)`.
+ * The index carries `format` and `semanticType` as queryable filter
+ * keys; the actual wire-form bytes live on the storage plane and are
+ * reached via `learnCard.read.get(record.uri)`.
  *
- * NOTE: do not add credential-body fields here. If you find yourself
- * wanting `rawWireForm` or `compactSdJwt` on the index, that's a sign
- * the storage plane needs to evolve to accept the native format
- * (Phase 2 work — see the ADR).
+ * NOTE: do not add credential-body fields here. The storage plane
+ * holds bodies; the index holds metadata pointing at storage URIs.
+ * If you find yourself wanting `rawWireForm` or `compactSdJwt` on the
+ * index, the storage plane needs to evolve instead (see ADR-0001).
  */
 export interface IndexRecord {
     id: string;
@@ -38,11 +38,10 @@ export interface IndexRecord {
     imgUrl?: string;
     boostUri?: string;
     /**
-     * ADR-0001 Phase 1.5 format-tagged metadata. Populated by
-     * format-aware writers (currently the SD-JWT-VC path); legacy W3C
-     * paths leave these fields undefined. Format-aware readers
-     * (Slice 3 matcher, Phase 2 display adapter) filter by these
-     * fields without needing to read the credential body from storage.
+     * Format-tagged metadata. Populated by format-aware writers
+     * (currently the SD-JWT-VC path); legacy W3C paths leave these
+     * fields undefined. Format-aware readers filter by these fields
+     * without needing to read the credential body from storage.
      */
     format?: import('@learncard/types').CredentialFormat;
     semanticType?: string;

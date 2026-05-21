@@ -173,12 +173,17 @@ export const storageRouter = t.router({
         })
         .input(z.object({ uri: z.string(), challenge: z.string().optional() }))
         .output(
-            UnsignedVCValidator.or(VCValidator)
+            // StoredCredentialEnvelopeValidator FIRST because ConsentFlowContractValidator
+            // uses .prefault() on every field, so any object — including an envelope —
+            // would successfully parse as a contract with extras stripped. Envelope's
+            // `format` literal enum makes its parse strict, so non-envelopes fall through
+            // to the next validator correctly.
+            StoredCredentialEnvelopeValidator.or(UnsignedVCValidator)
+                .or(VCValidator)
                 .or(VPValidator)
                 .or(JWEValidator)
                 .or(ConsentFlowContractValidator)
                 .or(ConsentFlowTermsValidator)
-                .or(StoredCredentialEnvelopeValidator)
         )
         .query(async ({ input, ctx }) => {
             const { uri, challenge } = input;

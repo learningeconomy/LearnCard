@@ -4,10 +4,9 @@ import type { VC } from './vc';
 /**
  * Wire-format identifier for a credential at rest in the wallet.
  *
- * Introduced by ADR-0001 (format-tagged credential storage). Phase 1
- * adds this as OPTIONAL metadata on `CredentialRecord`; existing W3C
- * records continue to work without it. Format-aware code paths use
- * this value to dispatch on the correct wire-form representation.
+ * Optional metadata on `CredentialRecord`. Existing W3C records work
+ * without it. Format-aware code paths use this value to dispatch on
+ * the correct wire-form representation. See ADR-0001 for rationale.
  *
  * Values follow OID4VCI / OID4VP draft-16 conventions:
  *   - `w3c-vc-2.0`  — JSON-LD VC, VCDM 2.0 `@context`
@@ -30,9 +29,8 @@ export type CredentialFormat = z.infer<typeof CredentialFormatValidator>;
 /**
  * Storage-plane envelope for native (non-W3C) credential formats.
  *
- * Introduced by ADR-0001 Phase 2A. The storage plane's `upload`/`read`
- * type signatures used to be `VC | VP` only, which forced SD-JWT-VC
- * (Slice 2b) to synthesize a JSON-LD wrapper around the compact form
+ * The storage plane previously accepted only `VC | VP`, which forced
+ * SD-JWT-VC to synthesize a JSON-LD wrapper around the compact form
  * just to satisfy the type — even though the underlying transport
  * (LearnCloud tRPC) accepts any JSON-serializable value.
  *
@@ -110,17 +108,10 @@ export type StoredCredential =
 /**
  * Unified display projection for any credential format. Returned by
  * the `toDisplayViewModel(stored, learnCard)` adapter that lands in
- * Phase 2 of the ADR-0001 migration (per-format adapters: W3C, JWT-VC,
- * SD-JWT-VC, mDoc).
- *
  * UI components consume this shape regardless of underlying format,
  * so the same BoostEarnedCard / category view / search index works
  * across all credential types. The format-specific decoding logic
- * lives in the adapter, not the UI.
- *
- * Phase 1 ships this interface only; the adapter implementation lands
- * in Phase 2. UI code can start importing the type immediately so the
- * Phase 2 PRs are pure additions.
+ * lives in the per-format display adapter, not the UI.
  */
 export interface CredentialDisplayViewModel {
     /** Source format of the underlying credential. */

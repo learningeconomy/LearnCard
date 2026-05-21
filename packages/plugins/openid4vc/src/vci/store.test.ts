@@ -437,7 +437,7 @@ describe('storeAcceptedCredentials', () => {
             );
         });
 
-        it('ADR-0001 Phase 2B: uploads the storage envelope, NOT the W3C wrapper, for SD-JWT', async () => {
+        it('uploads the storage envelope, NOT the W3C wrapper, for SD-JWT', async () => {
             const parseFn = jest.fn().mockResolvedValue(fakeParsed);
             const upload = jest.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
             const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
@@ -455,7 +455,7 @@ describe('storeAcceptedCredentials', () => {
             expect((uploadArg as Record<string, unknown>).credentialSubject).toBeUndefined();
         });
 
-        it('ADR-0001 Phase 2B: SD-JWT legacy format `vc+sd-jwt` also uploads as envelope', async () => {
+        it('SD-JWT legacy format `vc+sd-jwt` also uploads as envelope', async () => {
             const legacyParsed = {
                 ...fakeParsed,
                 header: { ...fakeParsed.header, typ: 'vc+sd-jwt' },
@@ -471,7 +471,7 @@ describe('storeAcceptedCredentials', () => {
             expect((uploadArg as Record<string, unknown>).data).toBe(fakeParsed.rawSdJwt);
         });
 
-        it('ADR-0001 Phase 2B: legacy W3C VC path still uploads the VC object (no envelope wrap)', async () => {
+        it('legacy W3C VC path still uploads the VC object (no envelope wrap)', async () => {
             const upload = jest.fn().mockResolvedValue('learn-cloud:w3c-vc');
             const addToIndex = jest.fn().mockResolvedValue(undefined);
             const learnCard = { store: {}, index: {} } as unknown as LearnCard<any, any, any>;

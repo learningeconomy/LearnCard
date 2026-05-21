@@ -13,8 +13,8 @@ import { VciError } from './errors';
  * - `jwt` — original compact JWS, preserved only for jwt-based formats so
  *   downstream verification can re-check the signature without re-fetching.
  *
- * ADR-0001 Phase 1.5 format-tagged metadata (optional; populated by writers
- * that support the format-discriminated storage model):
+ * Format-tagged metadata (optional; populated by writers that support
+ * the format-discriminated storage model — see ADR-0001):
  * - `format` — wire-format discriminator matching the values from
  *   `@learncard/types.CredentialFormat`. Used by format-aware downstream
  *   code (verify dispatch, matcher, serializer) instead of pattern-matching
@@ -26,7 +26,6 @@ import { VciError } from './errors';
  *   projection.
  * - `semanticType` — fast filter hint without parsing. For SD-JWT-VC this
  *   is the `vct` claim; for W3C VCs it would be the last non-VC type entry.
- *   Populated for SD-JWT in Phase 1.5; W3C population is Phase 2.
  */
 export interface NormalizedCredential {
     vc: W3CVerifiableCredential;
