@@ -1,6 +1,6 @@
 {
     "name": "@learncard/sd-jwt-vc-plugin",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "SD-JWT-VC holder + verifier support for LearnCard. Implements RFC 9901 (SD-JWT) and draft-ietf-oauth-sd-jwt-vc.",
     "main": "./dist/index.js",
     "module": "./dist/sd-jwt-vc-plugin.esm.js",
