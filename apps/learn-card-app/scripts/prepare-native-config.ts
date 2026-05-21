@@ -590,69 +590,100 @@ if (nativeConfig) {
         }
     }
 
-    // Patch iOS Info.plist with tenant display name + Google/Firebase URL schemes
-    const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
-    const infoPlistTemplatePath = infoPlistPath + '.template';
+     const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
+     const infoPlistTemplatePath = infoPlistPath + '.template';
 
-    if (existsSync(infoPlistTemplatePath)) {
-        cpSync(infoPlistTemplatePath, infoPlistPath);
-    }
+     if (existsSync(infoPlistTemplatePath)) {
+         cpSync(infoPlistTemplatePath, infoPlistPath);
+     }
 
-    if (existsSync(infoPlistPath)) {
-        try {
-            let plist = readFileSync(infoPlistPath, 'utf-8');
-            const displayName = nativeConfig.displayName;
-            const bundleId = nativeConfig.bundleId;
+     if (existsSync(infoPlistPath)) {
+         try {
+             let plist = readFileSync(infoPlistPath, 'utf-8');
+             const displayName = nativeConfig.displayName;
+             const bundleId = nativeConfig.bundleId;
+             const customSchemes = nativeConfig.customSchemes ?? [];
 
-            plist = plist.replace(
-                /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
-                `$1${displayName}$2`,
-            );
+             plist = plist.replace(
+                 /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
+                 `$1${displayName}$2`,
+             );
 
-            // Replace bundle ID placeholders in custom URL scheme names
-            plist = plist.replace(/__BUNDLE_ID__/g, bundleId);
+             plist = plist.replace(/__BUNDLE_ID__/g, bundleId);
 
-            // Parse GoogleService-Info.plist for Google Sign-In / Firebase Auth URL schemes
-            const googleServicePath = resolve(APP_ROOT, 'ios/App/App/GoogleService-Info.plist');
+             const googleServicePath = resolve(APP_ROOT, 'ios/App/App/GoogleService-Info.plist');
 
-            if (existsSync(googleServicePath)) {
-                const googlePlist = readFileSync(googleServicePath, 'utf-8');
+             if (existsSync(googleServicePath)) {
+                 const googlePlist = readFileSync(googleServicePath, 'utf-8');
 
-                const extractPlistValue = (key: string): string | undefined => {
-                    const match = googlePlist.match(
-                        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`),
-                    );
-                    return match?.[1];
-                };
+                 const extractPlistValue = (key: string): string | undefined => {
+                     const match = googlePlist.match(
+                         new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`),
+                     );
+                     return match?.[1];
+                 };
 
-                const reversedClientId = extractPlistValue('REVERSED_CLIENT_ID');
-                const googleAppId = extractPlistValue('GOOGLE_APP_ID');
+                 const reversedClientId = extractPlistValue('REVERSED_CLIENT_ID');
+                 const googleAppId = extractPlistValue('GOOGLE_APP_ID');
 
-                if (reversedClientId) {
-                    plist = plist.replace('__REVERSED_CLIENT_ID__', reversedClientId);
-                    console.log(`   ✓ Patched Info.plist (REVERSED_CLIENT_ID → ${reversedClientId})`);
-                } else {
-                    console.warn('   ⚠️  REVERSED_CLIENT_ID not found in GoogleService-Info.plist');
-                }
+                 if (reversedClientId) {
+                     plist = plist.replace('__REVERSED_CLIENT_ID__', reversedClientId);
+                     console.log(`   ✓ Patched Info.plist (REVERSED_CLIENT_ID → ${reversedClientId})`);
+                 } else {
+                     console.warn('   ⚠️  REVERSED_CLIENT_ID not found in GoogleService-Info.plist');
+                 }
 
-                if (googleAppId) {
-                    // Convert GOOGLE_APP_ID "1:123:ios:abc" → Firebase URL scheme "app-1-123-ios-abc"
-                    const firebaseAppUrlScheme = `app-${googleAppId.replace(/:/g, '-')}`;
-                    plist = plist.replace('__FIREBASE_APP_URL_SCHEME__', firebaseAppUrlScheme);
-                    console.log(`   ✓ Patched Info.plist (Firebase URL scheme → ${firebaseAppUrlScheme})`);
-                } else {
-                    console.warn('   ⚠️  GOOGLE_APP_ID not found in GoogleService-Info.plist');
-                }
-            } else {
-                console.warn('   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced');
-            }
+                 if (googleAppId) {
+                     const firebaseAppUrlScheme = `app-${googleAppId.replace(/:/g, '-')}`;
+                     plist = plist.replace('__FIREBASE_APP_URL_SCHEME__', firebaseAppUrlScheme);
+                     console.log(`   ✓ Patched Info.plist (Firebase URL scheme → ${firebaseAppUrlScheme})`);
+                 } else {
+                     console.warn('   ⚠️  GOOGLE_APP_ID not found in GoogleService-Info.plist');
+                 }
+             } else {
+                 console.warn('   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced');
+             }
 
-            writeFileSync(infoPlistPath, plist, 'utf-8');
-            console.log(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
-        } catch (err) {
-            console.warn('   ⚠️  Failed to patch Info.plist:', err);
-        }
-    }
+             if (customSchemes.length > 0) {
+                 const cfbundleUrlTypesRegex = /(<key>CFBundleURLTypes<\/key>\s*<array>)([\s\S]*?)(<\/array>)/;
+                 const match = plist.match(cfbundleUrlTypesRegex);
+
+                 if (match) {
+                     const customSchemeEntries = customSchemes
+                         .map(scheme => {
+                             const schemeName = scheme.replace(/-/g, '_');
+                             return [
+                                 '\t\t<dict>',
+                                 '\t\t\t<key>CFBundleTypeRole</key>',
+                                 '\t\t\t<string>Editor</string>',
+                                 '\t\t\t<key>CFBundleURLName</key>',
+                                 `\t\t\t<string>com.learncard.app.${schemeName}</string>`,
+                                 '\t\t\t<key>CFBundleURLSchemes</key>',
+                                 '\t\t\t<array>',
+                                 `\t\t\t\t<string>${scheme}</string>`,
+                                 '\t\t\t</array>',
+                                 '\t\t</dict>',
+                             ].join('\n');
+                         })
+                         .join('\n');
+
+                     plist = plist.replace(
+                         cfbundleUrlTypesRegex,
+                         `$1${match[2]}\n${customSchemeEntries}\n\t$3`,
+                     );
+
+                     console.log(`   ✓ Patched Info.plist (custom schemes → [${customSchemes.join(', ')}])`);
+                 } else {
+                     console.warn('   ⚠️  CFBundleURLTypes not found in Info.plist — custom schemes not added');
+                 }
+             }
+
+             writeFileSync(infoPlistPath, plist, 'utf-8');
+             console.log(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
+         } catch (err) {
+             console.warn('   ⚠️  Failed to patch Info.plist:', err);
+         }
+     }
 
     // Patch Android build.gradle with tenant bundle ID
     const buildGradlePath = resolve(APP_ROOT, 'android/app/build.gradle');
