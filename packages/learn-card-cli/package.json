@@ -1,6 +1,6 @@
 {
     "name": "@learncard/cli",
-    "version": "3.3.176",
+    "version": "3.3.177",
     "description": "Command Line Interface for LearnCard",
     "main": "dist/index.js",
     "bin": "dist/index.js",
