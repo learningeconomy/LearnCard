@@ -14,10 +14,13 @@ import {
     VC,
     BitstringCredentialStatusEntry,
     BitstringCredentialStatusPurpose,
+    StoredCredentialEnvelope,
+    StoredCredentialEnvelopeValidator,
+    isStoredCredentialEnvelope,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
-import { getCredentialStatusArray, isVC2Format } from '@learncard/helpers';
+import { getCredentialStatusArray, isVC2Format, resolveStorageReadResult } from '@learncard/helpers';
 import Mustache from 'mustache';
 
 import {
@@ -26,6 +29,26 @@ import {
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
 } from './types';
+
+const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
+    const base64 =
+        typeof btoa === 'function'
+            ? btoa(binary)
+            : Buffer.from(binary, 'binary').toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const normalizeEnvelopeForTransport = <T>(
+    value: T
+): Exclude<T, StoredCredentialEnvelope> | StoredCredentialEnvelope => {
+    if (!isStoredCredentialEnvelope(value)) {
+        return value as Exclude<T, StoredCredentialEnvelope>;
+    }
+    if (typeof value.data === 'string') return value;
+    return { format: value.format, data: uint8ArrayToBase64Url(value.data) };
+};
 
 /* -------------------------------------------------------------------------- *
  * Boost template rendering helpers
@@ -524,7 +547,10 @@ export async function getLearnCardNetworkPlugin(
                         }
                     }
 
-                    return await VCValidator.or(VPValidator).parseAsync(result);
+                    const parsed = await VCValidator.or(VPValidator)
+                        .or(StoredCredentialEnvelopeValidator)
+                        .parseAsync(result);
+                    return resolveStorageReadResult(parsed);
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
@@ -535,7 +561,9 @@ export async function getLearnCardNetworkPlugin(
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.storage.store.mutate({ item: credential });
+                return client.storage.store.mutate({
+                    item: normalizeEnvelopeForTransport(credential),
+                });
             },
             uploadEncrypted: async (
                 _learnCard,
@@ -555,7 +583,10 @@ export async function getLearnCardNetworkPlugin(
                     );
                 }
 
-                const jwe = await _learnCard.invoke.createDagJwe(credential, recipientsList);
+                const jwe = await _learnCard.invoke.createDagJwe(
+                    normalizeEnvelopeForTransport(credential),
+                    recipientsList
+                );
 
                 return client.storage.store.mutate({ item: jwe });
             },

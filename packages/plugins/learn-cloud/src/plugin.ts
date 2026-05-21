@@ -1,14 +1,17 @@
 import { chunk } from 'lodash';
 import { getClient, LearnCloudClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
-import { isEncrypted } from '@learncard/helpers';
+import { isEncrypted, resolveStorageReadResult } from '@learncard/helpers';
 import {
     CredentialRecord,
     JWE,
     PaginatedEncryptedRecordsType,
     PaginatedEncryptedCredentialRecordsType,
+    StoredCredentialEnvelope,
+    StoredCredentialEnvelopeValidator,
     VCValidator,
     VPValidator,
+    isStoredCredentialEnvelope,
 } from '@learncard/types';
 
 import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
@@ -21,6 +24,26 @@ import {
 } from './helpers';
 
 export * from './types';
+
+const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
+    const base64 =
+        typeof btoa === 'function'
+            ? btoa(binary)
+            : Buffer.from(binary, 'binary').toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const normalizeEnvelopeForTransport = <T>(
+    value: T
+): Exclude<T, StoredCredentialEnvelope> | StoredCredentialEnvelope => {
+    if (!isStoredCredentialEnvelope(value)) {
+        return value as Exclude<T, StoredCredentialEnvelope>;
+    }
+    if (typeof value.data === 'string') return value;
+    return { format: value.format, data: uint8ArrayToBase64Url(value.data) };
+};
 
 const getLearnCloudClient = async (
     url: string,
@@ -361,7 +384,10 @@ export const getLearnCloudPlugin = async (
 
                         learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
-                        return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
+                        const parsed = await VCValidator.or(VPValidator)
+                            .or(StoredCredentialEnvelopeValidator)
+                            .parseAsync(decryptedResult);
+                        return resolveStorageReadResult(parsed);
                     } catch (error) {
                         _learnCard.debug?.(error);
                         return undefined;
@@ -377,7 +403,10 @@ export const getLearnCloudPlugin = async (
 
                     learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
-                    return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
+                    const parsed = await VCValidator.or(VPValidator)
+                        .or(StoredCredentialEnvelopeValidator)
+                        .parseAsync(decryptedResult);
+                    return resolveStorageReadResult(parsed);
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
@@ -388,7 +417,9 @@ export const getLearnCloudPlugin = async (
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.storage.store.mutate({ item: credential });
+                return client.storage.store.mutate({
+                    item: normalizeEnvelopeForTransport(credential),
+                });
             },
             uploadEncrypted: async (
                 _learnCard,
@@ -397,10 +428,10 @@ export const getLearnCloudPlugin = async (
             ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                const jwe = await _learnCard.invoke.createDagJwe(credential, [
-                    _learnCard.id.did(),
-                    ...recipients,
-                ]);
+                const jwe = await _learnCard.invoke.createDagJwe(
+                    normalizeEnvelopeForTransport(credential),
+                    [_learnCard.id.did(), ...recipients]
+                );
 
                 return client.storage.store.mutate({ item: jwe });
             },

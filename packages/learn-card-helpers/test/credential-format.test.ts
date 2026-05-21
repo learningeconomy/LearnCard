@@ -1,6 +1,33 @@
 import type { CredentialRecord } from '@learncard/types';
+import {
+    StoredCredentialEnvelopeValidator,
+    isStoredCredentialEnvelope,
+} from '@learncard/types';
 
-import { toStoredCredential } from '../src';
+import {
+    projectEnvelopeToDisplayVc,
+    resolveStorageReadResult,
+    toStoredCredential,
+} from '../src';
+
+const base64UrlEncode = (input: string): string => {
+    const b64 = Buffer.from(input, 'utf-8').toString('base64');
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const makeSdJwtCompact = (payload: Record<string, unknown>): string => {
+    const header = base64UrlEncode(JSON.stringify({ alg: 'EdDSA', typ: 'dc+sd-jwt' }));
+    const payloadB64 = base64UrlEncode(JSON.stringify(payload));
+    const sig = 'AAAA';
+    return `${header}.${payloadB64}.${sig}~`;
+};
+
+const makeJwtVcCompact = (vcClaim: Record<string, unknown>): string => {
+    const header = base64UrlEncode(JSON.stringify({ alg: 'EdDSA', typ: 'JWT' }));
+    const payloadB64 = base64UrlEncode(JSON.stringify({ vc: vcClaim }));
+    const sig = 'AAAA';
+    return `${header}.${payloadB64}.${sig}`;
+};
 
 const make = (extra: Partial<CredentialRecord>): CredentialRecord =>
     ({
@@ -202,5 +229,227 @@ describe('toStoredCredential — never throws', () => {
     it('handles empty-string vc gracefully', () => {
         const stored = toStoredCredential(make({ vc: '' as any }));
         expect(stored.format).toBe('w3c-vc-1.1');
+    });
+});
+
+describe('StoredCredentialEnvelope — Phase 2A type + typeguard', () => {
+    describe('isStoredCredentialEnvelope', () => {
+        it('returns true for a valid string envelope', () => {
+            expect(
+                isStoredCredentialEnvelope({ format: 'dc+sd-jwt', data: 'compact.jwt~' })
+            ).toBe(true);
+        });
+
+        it('returns true for a Uint8Array envelope (mDoc forward-compat)', () => {
+            expect(
+                isStoredCredentialEnvelope({
+                    format: 'mso_mdoc',
+                    data: new Uint8Array([1, 2, 3]),
+                })
+            ).toBe(true);
+        });
+
+        it('returns false for a W3C VC (the envelope must not collide with VC shape)', () => {
+            const vc = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                issuer: 'did:key:abc',
+                credentialSubject: { id: 'did:key:xyz' },
+            };
+            expect(isStoredCredentialEnvelope(vc)).toBe(false);
+        });
+
+        it('returns false for an unknown format string', () => {
+            expect(isStoredCredentialEnvelope({ format: 'unknown', data: 'x' })).toBe(false);
+        });
+
+        it('returns false for primitives, null, and undefined', () => {
+            expect(isStoredCredentialEnvelope(null)).toBe(false);
+            expect(isStoredCredentialEnvelope(undefined)).toBe(false);
+            expect(isStoredCredentialEnvelope('compact.jwt')).toBe(false);
+            expect(isStoredCredentialEnvelope(42)).toBe(false);
+        });
+
+        it('returns false when data is missing', () => {
+            expect(isStoredCredentialEnvelope({ format: 'dc+sd-jwt' })).toBe(false);
+        });
+
+        it('returns false when data is the wrong type', () => {
+            expect(isStoredCredentialEnvelope({ format: 'dc+sd-jwt', data: 42 })).toBe(false);
+            expect(isStoredCredentialEnvelope({ format: 'dc+sd-jwt', data: {} })).toBe(false);
+        });
+    });
+
+    describe('StoredCredentialEnvelopeValidator', () => {
+        it('parses a string envelope', () => {
+            const result = StoredCredentialEnvelopeValidator.safeParse({
+                format: 'vc+sd-jwt',
+                data: 'compact.jwt~',
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it('parses a Uint8Array envelope', () => {
+            const result = StoredCredentialEnvelopeValidator.safeParse({
+                format: 'mso_mdoc',
+                data: new Uint8Array([1, 2]),
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it('rejects unknown format', () => {
+            const result = StoredCredentialEnvelopeValidator.safeParse({
+                format: 'made-up',
+                data: 'x',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects when data is missing', () => {
+            const result = StoredCredentialEnvelopeValidator.safeParse({ format: 'dc+sd-jwt' });
+            expect(result.success).toBe(false);
+        });
+
+        it('Phase 2B projector — applies vct-derived type AND name (backwards-compat parity with synthesizer)', () => {
+            const compact = makeSdJwtCompact({
+                iss: 'did:web:ca.gov',
+                iat: 1700000000,
+                vct: 'https://ca.gov/credentials/career-passport-test',
+            });
+            const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
+            expect(vc).toBeDefined();
+            expect(vc!.type).toEqual([
+                'VerifiableCredential',
+                'SdJwtVcCredential',
+                'CareerPassportTest',
+            ]);
+            expect((vc as Record<string, unknown>).name).toBe('Career Passport Test');
+        });
+
+        it('Phase 2B projector — does NOT append derived type when it equals SdJwtVcCredential', () => {
+            const compact = makeSdJwtCompact({
+                iss: 'did:web:x',
+                iat: 1700000000,
+                vct: 'SdJwtVcCredential',
+            });
+            const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
+            expect(vc!.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential']);
+        });
+
+        it('Phase 2B projector — handles vct with no meaningful segment gracefully', () => {
+            const compact = makeSdJwtCompact({
+                iss: 'did:web:x',
+                iat: 1700000000,
+                vct: 'urn:eudi:pid:1',
+            });
+            const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
+            expect(vc!.type).toContain('PID');
+            expect((vc as Record<string, unknown>).name).toBe('PID');
+        });
+
+        it('Phase 2B projector — SD-JWT compact → display VC', () => {
+            const compact = makeSdJwtCompact({
+                iss: 'did:web:issuer.example.com',
+                iat: 1700000000,
+                exp: 1800000000,
+                vct: 'https://example.com/credentials/employment',
+                name: 'Alice',
+                role: 'Engineer',
+            });
+            const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
+            expect(vc).toBeDefined();
+            expect(vc!.issuer).toBe('did:web:issuer.example.com');
+            expect((vc!.credentialSubject as Record<string, unknown>).name).toBe('Alice');
+            expect((vc!.credentialSubject as Record<string, unknown>).role).toBe('Engineer');
+            expect((vc!.credentialSubject as Record<string, unknown>).iss).toBeUndefined();
+            expect((vc!.credentialSubject as Record<string, unknown>).vct).toBeUndefined();
+            const proof = vc!.proof as { type: string; jwt: string };
+            expect(proof.type).toBe('SdJwtCompactProof');
+            expect(proof.jwt).toBe(compact);
+            expect((vc as Record<string, unknown>).sdJwtVct).toBe(
+                'https://example.com/credentials/employment'
+            );
+            expect((vc as Record<string, unknown>).validUntil).toBe(
+                new Date(1800000000 * 1000).toISOString()
+            );
+        });
+
+        it('Phase 2B projector — vc+sd-jwt legacy alias works identically', () => {
+            const compact = makeSdJwtCompact({ iss: 'did:web:x', iat: 1700000000 });
+            const vc = projectEnvelopeToDisplayVc({ format: 'vc+sd-jwt', data: compact });
+            expect(vc).toBeDefined();
+            expect(vc!.issuer).toBe('did:web:x');
+        });
+
+        it('Phase 2B projector — JWT-VC compact extracts inner vc claim', () => {
+            const compact = makeJwtVcCompact({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                issuer: 'did:web:university.example',
+                credentialSubject: { degree: 'BS' },
+            });
+            const vc = projectEnvelopeToDisplayVc({ format: 'jwt-vc-json', data: compact });
+            expect(vc).toBeDefined();
+            expect(vc!.issuer).toBe('did:web:university.example');
+            expect(vc!.type).toContain('UniversityDegreeCredential');
+        });
+
+        it('Phase 2B projector — mDoc returns undefined (no fake VC for binary)', () => {
+            const result = projectEnvelopeToDisplayVc({
+                format: 'mso_mdoc',
+                data: 'base64url-cbor-bytes',
+            });
+            expect(result).toBeUndefined();
+        });
+
+        it('Phase 2B projector — malformed SD-JWT compact returns undefined', () => {
+            const result = projectEnvelopeToDisplayVc({
+                format: 'dc+sd-jwt',
+                data: 'not-a-jws',
+            });
+            expect(result).toBeUndefined();
+        });
+
+        it('resolveStorageReadResult — passes through non-envelope', () => {
+            const vc: Record<string, unknown> = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                issuer: 'did:web:x',
+                credentialSubject: { id: 'did:key:y' },
+            };
+            expect(resolveStorageReadResult(vc as Parameters<typeof resolveStorageReadResult>[0])).toBe(vc);
+        });
+
+        it('resolveStorageReadResult — passes through undefined', () => {
+            expect(resolveStorageReadResult(undefined)).toBeUndefined();
+        });
+
+        it('resolveStorageReadResult — projects SD-JWT envelope to display VC', () => {
+            const compact = makeSdJwtCompact({ iss: 'did:web:x', iat: 1700000000 });
+            const result = resolveStorageReadResult({ format: 'dc+sd-jwt', data: compact });
+            expect(result).toBeDefined();
+            expect((result as Record<string, unknown>).issuer).toBe('did:web:x');
+        });
+
+        it('resolveStorageReadResult — returns envelope as-is for mDoc (no fake VC)', () => {
+            const envelope = { format: 'mso_mdoc' as const, data: 'base64url-bytes' };
+            expect(resolveStorageReadResult(envelope)).toBe(envelope);
+        });
+
+        it('preserves unknown fields (passthrough) for forward-compat', () => {
+            const result = StoredCredentialEnvelopeValidator.safeParse({
+                format: 'dc+sd-jwt',
+                data: 'compact.jwt~',
+                metadata: { issuedBy: 'partner-x' },
+                version: 2,
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect((result.data as Record<string, unknown>).metadata).toEqual({
+                    issuedBy: 'partner-x',
+                });
+                expect((result.data as Record<string, unknown>).version).toBe(2);
+            }
+        });
     });
 });

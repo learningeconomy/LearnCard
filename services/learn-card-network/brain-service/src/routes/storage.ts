@@ -8,6 +8,7 @@ import {
     JWEValidator,
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
+    StoredCredentialEnvelopeValidator,
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -126,7 +127,10 @@ export const storageRouter = t.router({
         })
         .input(
             z.object({
-                item: UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator),
+                item: UnsignedVCValidator.or(VCValidator)
+                    .or(VPValidator)
+                    .or(JWEValidator)
+                    .or(StoredCredentialEnvelopeValidator),
                 type: z.enum(['credential', 'presentation']).optional(),
             })
         )
@@ -174,6 +178,7 @@ export const storageRouter = t.router({
                 .or(JWEValidator)
                 .or(ConsentFlowContractValidator)
                 .or(ConsentFlowTermsValidator)
+                .or(StoredCredentialEnvelopeValidator)
         )
         .query(async ({ input, ctx }) => {
             const { uri, challenge } = input;

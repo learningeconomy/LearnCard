@@ -1,4 +1,5 @@
 import { LearnCard } from '@learncard/core';
+import type { StoredCredentialEnvelope } from '@learncard/types';
 
 import {
     NormalizedCredential,
@@ -75,7 +76,9 @@ export interface StoreAcceptedCredentialsOptions {
      * (e.g. tests, SQLite, a custom in-memory mock). If supplied these take
      * precedence over the `storage` / `encrypt` defaults.
      */
-    upload?: (credential: W3CVerifiableCredential) => Promise<string>;
+    upload?: (
+        credential: W3CVerifiableCredential | StoredCredentialEnvelope
+    ) => Promise<string>;
     addToIndex?: (record: IndexRecord) => Promise<unknown>;
     /** Custom id generator. Defaults to crypto.randomUUID() with a fallback. */
     makeId?: () => string;
@@ -142,7 +145,20 @@ export const storeAcceptedCredentials = async (
                 ? await synthesizeSdJwtVc(entry.credential, entry.format, learnCard)
                 : normalizeIssuedCredential(entry.credential, entry.format);
 
-            const uri = await safeUpload(upload, normalized.vc);
+            // ADR-0001 Phase 2B: SD-JWT-VC writes the native compact via the
+            // storage envelope rather than the transitional W3C wrapper. The
+            // wrapper on `normalized.vc` is now read-time projection only —
+            // it's returned to the caller in `StoredCredentialEntry.vc` for
+            // backwards compatibility but never persisted.
+            const isSdJwt = isSdJwtFormat(entry.format) && normalized.rawWireForm;
+            const uploadBody: W3CVerifiableCredential | StoredCredentialEnvelope = isSdJwt
+                ? {
+                      format: normalized.format ?? 'dc+sd-jwt',
+                      data: normalized.rawWireForm!,
+                  }
+                : normalized.vc;
+
+            const uri = await safeUpload(upload, uploadBody);
 
             const recordId = makeId();
 
@@ -325,11 +341,14 @@ const resolveAddToIndex = (
     return record => plugin.add!(record);
 };
 
-const safeUpload = async (upload: UploadFn, vc: W3CVerifiableCredential): Promise<string> => {
+const safeUpload = async (
+    upload: UploadFn,
+    body: W3CVerifiableCredential | StoredCredentialEnvelope
+): Promise<string> => {
     let uri: string;
 
     try {
-        uri = await upload(vc);
+        uri = await upload(body);
     } catch (e) {
         throw new VciError(
             'store_failed',

@@ -28,6 +28,59 @@ export const CredentialFormatValidator = z.enum([
 export type CredentialFormat = z.infer<typeof CredentialFormatValidator>;
 
 /**
+ * Storage-plane envelope for native (non-W3C) credential formats.
+ *
+ * Introduced by ADR-0001 Phase 2A. The storage plane's `upload`/`read`
+ * type signatures used to be `VC | VP` only, which forced SD-JWT-VC
+ * (Slice 2b) to synthesize a JSON-LD wrapper around the compact form
+ * just to satisfy the type — even though the underlying transport
+ * (LearnCloud tRPC) accepts any JSON-serializable value.
+ *
+ * The envelope is the on-wire shape for any credential that is NOT a
+ * W3C VC/VP. Consumers identify the envelope by the presence of both
+ * `format` and `data` fields (use `isStoredCredentialEnvelope`).
+ *
+ * Per-format `data` conventions:
+ *   - `dc+sd-jwt` / `vc+sd-jwt`: the compact `<JWT>~<disclosures>~`
+ *     string (no KB-JWT — that is per-presentation).
+ *   - `jwt-vc-json`: the compact JWS string.
+ *   - `mso_mdoc`: base64url-encoded CBOR bytes (binary `Uint8Array`
+ *     is accepted at the type level; storage plugins MUST encode to
+ *     base64url at the JSON-transport boundary).
+ *
+ * W3C VCs continue to flow through `upload(vc: VC)` directly — they
+ * do not use the envelope. This keeps the legacy partner surface
+ * untouched.
+ */
+export const StoredCredentialEnvelopeValidator = z
+    .object({
+        format: CredentialFormatValidator,
+        data: z.union([z.string(), z.instanceof(Uint8Array)]),
+    })
+    .passthrough();
+export type StoredCredentialEnvelope = {
+    format: CredentialFormat;
+    data: string | Uint8Array;
+    [key: string]: unknown;
+};
+
+/**
+ * Runtime typeguard for the storage envelope shape. Storage plugins
+ * use this to branch in `upload`/`read.get` between the legacy W3C
+ * path and the envelope path. Performs a shallow structural check —
+ * does not validate `data` semantics for the chosen format.
+ */
+export const isStoredCredentialEnvelope = (
+    value: unknown
+): value is StoredCredentialEnvelope => {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as Record<string, unknown>;
+    if (typeof candidate.format !== 'string') return false;
+    if (!CredentialFormatValidator.safeParse(candidate.format).success) return false;
+    return typeof candidate.data === 'string' || candidate.data instanceof Uint8Array;
+};
+
+/**
  * Format-discriminated read view over a stored credential. Returned
  * by `toStoredCredential(record)` in `@learncard/helpers`.
  *

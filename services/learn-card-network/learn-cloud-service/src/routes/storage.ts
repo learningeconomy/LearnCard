@@ -1,6 +1,13 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { JWE, UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from '@learncard/types';
+import {
+    JWE,
+    UnsignedVCValidator,
+    VCValidator,
+    VPValidator,
+    JWEValidator,
+    StoredCredentialEnvelopeValidator,
+} from '@learncard/types';
 
 import { t, didAndChallengeRoute, openRoute } from '@routes';
 import { createCredential } from '@accesslayer/credential/create';
@@ -31,7 +38,12 @@ export const storageRouter = t.router({
             },
         })
         .input(
-            z.object({ item: UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator) })
+            z.object({
+                item: UnsignedVCValidator.or(VCValidator)
+                    .or(VPValidator)
+                    .or(JWEValidator)
+                    .or(StoredCredentialEnvelopeValidator),
+            })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {

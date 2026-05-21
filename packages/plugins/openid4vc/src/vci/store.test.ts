@@ -437,6 +437,56 @@ describe('storeAcceptedCredentials', () => {
             );
         });
 
+        it('ADR-0001 Phase 2B: uploads the storage envelope, NOT the W3C wrapper, for SD-JWT', async () => {
+            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const upload = jest.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
+            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+
+            await storeAcceptedCredentials(learnCard, sdJwtAccepted(), { upload });
+
+            expect(upload).toHaveBeenCalledTimes(1);
+            const uploadArg = upload.mock.calls[0][0];
+            expect(uploadArg).toEqual({
+                format: 'dc+sd-jwt',
+                data: fakeParsed.rawSdJwt,
+            });
+            expect((uploadArg as Record<string, unknown>)['@context']).toBeUndefined();
+            expect((uploadArg as Record<string, unknown>).proof).toBeUndefined();
+            expect((uploadArg as Record<string, unknown>).credentialSubject).toBeUndefined();
+        });
+
+        it('ADR-0001 Phase 2B: SD-JWT legacy format `vc+sd-jwt` also uploads as envelope', async () => {
+            const legacyParsed = {
+                ...fakeParsed,
+                header: { ...fakeParsed.header, typ: 'vc+sd-jwt' },
+            };
+            const parseFn = jest.fn().mockResolvedValue(legacyParsed);
+            const upload = jest.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
+            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+
+            await storeAcceptedCredentials(learnCard, sdJwtAccepted('vc+sd-jwt'), { upload });
+
+            const uploadArg = upload.mock.calls[0][0];
+            expect((uploadArg as Record<string, unknown>).format).toBe('vc+sd-jwt');
+            expect((uploadArg as Record<string, unknown>).data).toBe(fakeParsed.rawSdJwt);
+        });
+
+        it('ADR-0001 Phase 2B: legacy W3C VC path still uploads the VC object (no envelope wrap)', async () => {
+            const upload = jest.fn().mockResolvedValue('learn-cloud:w3c-vc');
+            const addToIndex = jest.fn().mockResolvedValue(undefined);
+            const learnCard = { store: {}, index: {} } as unknown as LearnCard<any, any, any>;
+
+            await storeAcceptedCredentials(learnCard, await baseAccepted(), {
+                upload,
+                addToIndex,
+            });
+
+            const uploadArg = upload.mock.calls[0][0];
+            expect((uploadArg as Record<string, unknown>)['@context']).toBeDefined();
+            expect((uploadArg as Record<string, unknown>).format).toBeUndefined();
+            expect((uploadArg as Record<string, unknown>).data).toBeUndefined();
+        });
+
         it('persists ADR-0001 Phase 1.5 format-tagged metadata on the IndexRecord', async () => {
             const parseFn = jest.fn().mockResolvedValue(fakeParsed);
             const addToIndex = jest.fn().mockResolvedValue(undefined);
