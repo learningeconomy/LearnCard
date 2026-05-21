@@ -72,6 +72,10 @@ jobs:
         name: Smoketest (${{ matrix.package-manager }} on Node ${{ matrix.node-version }})
         runs-on: ubuntu-latest
         timeout-minutes: 8
+        env:
+            # Yarn 4 defaults to PnP, but this workflow intentionally verifies
+            # node_modules-style consumers and checks the generated .bin link.
+            YARN_NODE_LINKER: node-modules
         strategy:
             fail-fast: false
             matrix:
@@ -227,12 +231,25 @@ jobs:
               if: always()
               working-directory: ${{ env.TESTDIR }}
               run: |
-                  echo "::group::Installed @learncard package versions"
-                  for pkg in @learncard/cli @learncard/init @learncard/partner-connect; do
-                      VER=$(node -e "console.log(require('${pkg}/package.json').version)" 2>/dev/null || echo "(not installed)")
-                      echo "  ${pkg}: ${VER}"
-                  done
-                  echo "::endgroup::"
+                  node <<'EOF'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  console.log('::group::Installed @learncard package versions');
+
+                  for (const pkg of ['@learncard/cli', '@learncard/init', '@learncard/partner-connect']) {
+                      const manifestPath = path.join(process.cwd(), 'node_modules', ...pkg.split('/'), 'package.json');
+
+                      try {
+                          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                          console.log(`  ${pkg}: ${manifest.version}`);
+                      } catch {
+                          console.log(`  ${pkg}: (not installed)`);
+                      }
+                  }
+
+                  console.log('::endgroup::');
+                  EOF
 
             - name: Cleanup test workspace
               if: always()
