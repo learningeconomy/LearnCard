@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 3.15.1
+
+### Patch Changes
+
+-   [#1248](https://github.com/learningeconomy/LearnCard/pull/1248) [`fca17b1105b01812db1bce659970a3d9bdb4b56e`](https://github.com/learningeconomy/LearnCard/commit/fca17b1105b01812db1bce659970a3d9bdb4b56e) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1864] sendBoost on aligned-skills boost throws 'Credential does not match boost template'
+
+-   Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/types@5.16.0
+    -   @learncard/core@9.4.19
+    -   @learncard/helpers@1.3.1
+    -   @learncard/did-web-plugin@1.1.19
+    -   @learncard/didkey-plugin@1.1.19
+    -   @learncard/didkit-plugin@1.8.10
+    -   @learncard/didkit-plugin-node@0.2.17
+    -   @learncard/encryption-plugin@1.1.19
+    -   @learncard/learn-card-plugin@1.2.19
+    -   @learncard/vc-plugin@1.4.15
+    -   @learncard/vc-templates-plugin@1.1.19
+    -   @learncard/crypto-plugin@1.1.19
+    -   @learncard/dynamic-loader-plugin@1.1.19
+    -   @learncard/expiration-plugin@1.2.19
+
 ## 3.15.0
 
 ### Minor Changes
