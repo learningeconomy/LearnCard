@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import LaunchPadAiSessionComingSoon from './LaunchPadAiSessionsComingSoon';
@@ -20,6 +21,7 @@ import { ColorSetEnum } from '../../../theme/colors';
 import { StyleSetEnum } from '../../../theme/styles';
 
 const LaunchPadHeaderLinks: React.FC = () => {
+    const { t } = useTranslation();
     const { launchPadQuickActions } = useFeatureConfig();
     const { getIconSet, getColorSet, getStyleSet, theme } = useTheme();
     const {
@@ -54,7 +56,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     <p
                         className={`text-${contacts.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px]`}
                     >
-                        Contacts
+                        {t('launchpad.header.contacts', 'Contacts')}
                     </p>
                 </Link>
 
@@ -67,7 +69,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         <p
                             className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
                         >
-                            AI Sessions
+                            {t('launchpad.header.aiSessions', 'AI Sessions')}
                         </p>
                     </Link>
                 ) : enableLaunchPadUpdates && !isAiEnabled ? (
@@ -75,8 +77,8 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         onClick={() => {
                             const msg =
                                 reason === 'disabled_minor'
-                                    ? 'AI features are not available for users under 18.'
-                                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                                    ? t('launchpad.aiDisabledMinor', 'AI features are not available for users under 18.')
+                                    : t('launchpad.aiDisabledPrivacy', 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.');
                             presentToast(msg, { type: ToastTypeEnum.Error });
                         }}
                         className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px] opacity-50"
@@ -85,7 +87,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         <p
                             className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
                         >
-                            AI Sessions
+                            {t('launchpad.header.aiSessions', 'AI Sessions')}
                         </p>
                     </button>
                 ) : (
@@ -101,7 +103,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         <p
                             className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
                         >
-                            AI Sessions
+                            {t('launchpad.header.aiSessions', 'AI Sessions')}
                         </p>
                     </button>
                 )}
@@ -119,7 +121,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     <p
                         className={`text-${alerts.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] pt-1`}
                     >
-                        Alerts
+                        {t('launchpad.header.alerts', 'Alerts')}
                     </p>
                 </Link>
             </div>

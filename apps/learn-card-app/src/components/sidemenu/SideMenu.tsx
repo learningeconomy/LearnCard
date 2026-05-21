@@ -18,8 +18,10 @@ import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
 import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
+import { useTranslation } from 'react-i18next';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import ThemeSelector from '../../theme/components/ThemeSelector';
+import LanguagePicker from './LanguagePicker';
 import AddToLearnCardMenu from '../add-to-learncard-menu/AddToLearnCardMenu';
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
@@ -44,6 +46,7 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
 }) => {
+    const { t } = useTranslation();
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.sideMenu);
     const resolvedAssets = useTenantBrandingAssets();
@@ -155,7 +158,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     onClick={handleBoost}
                                     className={`text-[17px] flex items-center justify-center font-semibold py-[5px] rounded-full w-full max-w-[90%] border-solid border-[2px] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
                                 >
-                                    Add to {brandingConfig.name}
+                                    {t('sidemenu.addTo', 'Add to {{brand}}', { brand: brandingConfig.name })}
                                     <GearPlusIcon className="ml-1 text-grayscale-800" />
                                 </IonMenuToggle>
                             </div>
@@ -178,6 +181,8 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                         </GenericErrorBoundary>
 
                         <ThemeSelector />
+
+                        <LanguagePicker />
 
                         <GenericErrorBoundary>
                             <SideMenuFooter version={version} />

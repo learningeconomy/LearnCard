@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -43,6 +44,7 @@ const ShareBoostsBundleModal = lazyWithRetry(
 );
 
 const WalletPage: React.FC = () => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -219,7 +221,7 @@ const WalletPage: React.FC = () => {
                                 <div className="flex justify-between items-center w-full">
                                     <div className="flex items-center gap-[10px] w-full">
                                         <h2 className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}>
-                                            Passport
+                                            {t('sidemenu.links.wallet', 'Wallet')}
                                         </h2>
 
                                         {/* 

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Shapes, WalletIcons } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
@@ -258,3 +259,26 @@ export const walletPageData: WalletPageItem[] = [
         },
     },
 ];
+
+const CATEGORY_KEY_MAP: Record<WalletCategoryTypes, string> = {
+    [WalletCategoryTypes.aiSessions]: 'wallet.categories.aiSessions',
+    [WalletCategoryTypes.aiPathways]: 'wallet.categories.aiPathways',
+    [WalletCategoryTypes.aiInsights]: 'wallet.categories.aiInsights',
+    [WalletCategoryTypes.skills]: 'wallet.categories.skills',
+    [WalletCategoryTypes.socialBadges]: 'wallet.categories.socialBadges',
+    [WalletCategoryTypes.achievements]: 'wallet.categories.achievements',
+    [WalletCategoryTypes.learningHistory]: 'wallet.categories.studies',
+    [WalletCategoryTypes.accomplishments]: 'wallet.categories.portfolio',
+    [WalletCategoryTypes.accommodations]: 'wallet.categories.assistance',
+    [WalletCategoryTypes.jobHistory]: 'wallet.categories.experiences',
+    [WalletCategoryTypes.families]: 'wallet.categories.families',
+    [WalletCategoryTypes.ids]: 'wallet.categories.ids',
+};
+
+export const useWalletCategories = (): WalletPageItem[] => {
+    const { t } = useTranslation();
+    return walletPageData.map(item => ({
+        ...item,
+        title: t(CATEGORY_KEY_MAP[item.subtype], item.title),
+    }));
+};

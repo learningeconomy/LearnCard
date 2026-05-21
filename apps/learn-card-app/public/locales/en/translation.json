@@ -1,0 +1,67 @@
+{
+    "sidemenu": {
+        "addTo": "Add to {{brand}}",
+        "footer": {
+            "poweredBy": "Powered by <0>Consent Flow</0>",
+            "ownYourData": "You own your own data.",
+            "connectionsEncrypted": "All connections are <0>encrypted.</0>",
+            "privacyPolicy": "Privacy Policy",
+            "termsOfService": "Terms of Service",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Close"
+        },
+        "links": {
+            "launchPad": "Apps",
+            "contacts": "Contacts",
+            "alerts": "Alerts",
+            "personalize": "Personalize",
+            "adminTools": "Admin Tools",
+            "wallet": "Wallet",
+            "aiTopics": "AI Sessions",
+            "aiInsights": "AI Insights",
+            "aiPathways": "AI Pathways",
+            "skills": "Skills",
+            "socialBadges": "Boosts",
+            "achievements": "Achievements",
+            "studies": "Studies",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Experiences",
+            "families": "Families",
+            "ids": "IDs",
+            "pathways": "Journeys"
+        }
+    },
+    "launchpad": {
+        "title": "Apps",
+        "header": {
+            "contacts": "Contacts",
+            "aiSessions": "AI Sessions",
+            "alerts": "Alerts"
+        },
+        "aiDisabledMinor": "AI features are not available for users under 18.",
+        "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "AI Sessions",
+            "aiPathways": "AI Pathways",
+            "aiInsights": "AI Insights",
+            "skills": "Skills",
+            "socialBadges": "Boosts",
+            "achievements": "Achievements",
+            "studies": "Studies",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Experiences",
+            "families": "Families",
+            "ids": "IDs"
+        }
+    },
+    "language": {
+        "english": "English",
+        "spanish": "Español",
+        "french": "Français",
+        "arabic": "العربية"
+    }
+}

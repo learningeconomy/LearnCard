@@ -1,4 +1,5 @@
 import './constants/sentry';
+import './i18n'; // side-effect init — must run before render for synchronous EN resources
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -8,6 +9,8 @@ import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk'
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './i18n';
 import App from './App';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -61,9 +64,11 @@ import * as Sentry from '@sentry/browser';
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
-                    <App />
-                </LDProvider>
+                <I18nextProvider i18n={i18n}>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </I18nextProvider>
             </TenantConfigProvider>
         );
     }

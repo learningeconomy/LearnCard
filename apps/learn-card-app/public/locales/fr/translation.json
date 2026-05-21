@@ -1,0 +1,67 @@
+{
+    "sidemenu": {
+        "addTo": "Ajouter à {{brand}}",
+        "footer": {
+            "poweredBy": "Propulsé par <0>Consent Flow</0>",
+            "ownYourData": "Vous possédez vos propres données.",
+            "connectionsEncrypted": "Toutes les connexions sont <0>chiffrées.</0>",
+            "privacyPolicy": "Politique de Confidentialité",
+            "termsOfService": "Conditions d'Utilisation",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Fermer"
+        },
+        "links": {
+            "launchPad": "Apps",
+            "contacts": "Contacts",
+            "alerts": "Alertes",
+            "personalize": "Personnaliser",
+            "adminTools": "Administration",
+            "wallet": "Portefeuille",
+            "aiTopics": "Sessions IA",
+            "aiInsights": "Aperçus IA",
+            "aiPathways": "Parcours IA",
+            "skills": "Compétences",
+            "socialBadges": "Badges",
+            "achievements": "Réalisations",
+            "studies": "Études",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Expériences",
+            "families": "Familles",
+            "ids": "Identifiants",
+            "pathways": "Parcours"
+        }
+    },
+    "launchpad": {
+        "title": "Apps",
+        "header": {
+            "contacts": "Contacts",
+            "aiSessions": "Sessions IA",
+            "alerts": "Alertes"
+        },
+        "aiDisabledMinor": "Les fonctionnalités IA ne sont pas disponibles pour les moins de 18 ans.",
+        "aiDisabledPrivacy": "Les fonctionnalités IA sont désactivées. Vous pouvez les activer dans Confidentialité et Données depuis votre profil."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "Sessions IA",
+            "aiPathways": "Parcours IA",
+            "aiInsights": "Aperçus IA",
+            "skills": "Compétences",
+            "socialBadges": "Badges",
+            "achievements": "Réalisations",
+            "studies": "Études",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Expériences",
+            "families": "Familles",
+            "ids": "Identifiants"
+        }
+    },
+    "language": {
+        "english": "English",
+        "spanish": "Español",
+        "french": "Français",
+        "arabic": "العربية"
+    }
+}

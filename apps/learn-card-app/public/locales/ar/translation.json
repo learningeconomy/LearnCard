@@ -1,0 +1,67 @@
+{
+    "sidemenu": {
+        "addTo": "إضافة إلى {{brand}}",
+        "footer": {
+            "poweredBy": "مُشغَّل بواسطة <0>Consent Flow</0>",
+            "ownYourData": "أنت تملك بياناتك.",
+            "connectionsEncrypted": "جميع الاتصالات <0>مُشفَّرة.</0>",
+            "privacyPolicy": "سياسة الخصوصية",
+            "termsOfService": "شروط الخدمة",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "إغلاق"
+        },
+        "links": {
+            "launchPad": "التطبيقات",
+            "contacts": "جهات الاتصال",
+            "alerts": "التنبيهات",
+            "personalize": "تخصيص",
+            "adminTools": "الإدارة",
+            "wallet": "المحفظة",
+            "aiTopics": "جلسات الذكاء الاصطناعي",
+            "aiInsights": "رؤى الذكاء الاصطناعي",
+            "aiPathways": "مسارات الذكاء الاصطناعي",
+            "skills": "المهارات",
+            "socialBadges": "الشارات",
+            "achievements": "الإنجازات",
+            "studies": "الدراسات",
+            "portfolio": "المحفظة",
+            "assistance": "المساعدة",
+            "experiences": "الخبرات",
+            "families": "العائلات",
+            "ids": "بطاقات الهوية",
+            "pathways": "رحلات"
+        }
+    },
+    "launchpad": {
+        "title": "التطبيقات",
+        "header": {
+            "contacts": "جهات الاتصال",
+            "aiSessions": "جلسات الذكاء الاصطناعي",
+            "alerts": "التنبيهات"
+        },
+        "aiDisabledMinor": "ميزات الذكاء الاصطناعي غير متاحة للمستخدمين تحت سن ١٨.",
+        "aiDisabledPrivacy": "ميزات الذكاء الاصطناعي مُعطَّلة حالياً. يمكنك تفعيلها من الخصوصية والبيانات في ملفك الشخصي."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "جلسات الذكاء الاصطناعي",
+            "aiPathways": "مسارات الذكاء الاصطناعي",
+            "aiInsights": "رؤى الذكاء الاصطناعي",
+            "skills": "المهارات",
+            "socialBadges": "الشارات",
+            "achievements": "الإنجازات",
+            "studies": "الدراسات",
+            "portfolio": "المحفظة",
+            "assistance": "المساعدة",
+            "experiences": "الخبرات",
+            "families": "العائلات",
+            "ids": "بطاقات الهوية"
+        }
+    },
+    "language": {
+        "english": "English",
+        "spanish": "Español",
+        "french": "Français",
+        "arabic": "العربية"
+    }
+}
