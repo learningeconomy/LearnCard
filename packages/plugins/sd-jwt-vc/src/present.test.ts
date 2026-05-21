@@ -46,6 +46,18 @@ const makeHolderKeypair = async () => {
     return { privateJwk, publicJwk };
 };
 
+const makeVerificationOk = () => jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] });
+
+const tamperIssuerSignature = (compact: string): string => {
+    const [jwt, ...rest] = compact.split('~');
+    const parts = jwt?.split('.') ?? [];
+    if (parts.length !== 3 || !parts[2]) throw new Error('Expected compact SD-JWT issuer JWS');
+    const sig = parts[2];
+    const last = sig[sig.length - 1] === 'A' ? 'B' : 'A';
+    const tamperedJwt = `${parts[0]}.${parts[1]}.${sig.slice(0, -1)}${last}`;
+    return [tamperedJwt, ...rest].join('~');
+};
+
 interface IssueCredentialOptions {
     holderPublicJwk?: JWK;
     payloadOverrides?: Record<string, unknown>;
@@ -54,8 +66,8 @@ interface IssueCredentialOptions {
 
 const issueCredential = async (
     options: IssueCredentialOptions = {}
-): Promise<{ compact: string }> => {
-    const { signer } = await makeIssuerSigner();
+): Promise<{ compact: string; issuerPublicJwk: JWK }> => {
+    const { signer, publicJwk } = await makeIssuerSigner();
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,
         hashAlg: 'sha-256',
@@ -87,7 +99,7 @@ const issueCredential = async (
         { header: { kid: ISSUER_KID, alg: 'EdDSA' } }
     );
 
-    return { compact };
+    return { compact, issuerPublicJwk: publicJwk as JWK };
 };
 
 describe('presentSdJwtVc', () => {
@@ -155,6 +167,8 @@ describe('presentSdJwtVc', () => {
                 audience: 'https://verifier.example.com',
                 nonce: 'replay-protection-nonce',
                 kbSigner,
+                activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                verify: makeVerificationOk(),
                 now: () => 1700000000,
             });
 
@@ -180,7 +194,12 @@ describe('presentSdJwtVc', () => {
             const kbSigner = await createEd25519KbSigner({ privateJwk: holder.privateJwk });
 
             await expect(
-                presentSdJwtVc(compact, { nonce: 'abc', kbSigner })
+                presentSdJwtVc(compact, {
+                    nonce: 'abc',
+                    kbSigner,
+                    activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                    verify: makeVerificationOk(),
+                })
             ).rejects.toMatchObject({
                 code: 'kb_jwt_invalid',
                 message: expect.stringContaining('audience is required'),
@@ -196,6 +215,8 @@ describe('presentSdJwtVc', () => {
                 presentSdJwtVc(compact, {
                     audience: 'https://verifier.example.com',
                     kbSigner,
+                    activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                    verify: makeVerificationOk(),
                 })
             ).rejects.toMatchObject({
                 code: 'kb_jwt_invalid',
@@ -211,6 +232,8 @@ describe('presentSdJwtVc', () => {
                 presentSdJwtVc(compact, {
                     audience: 'https://verifier.example.com',
                     nonce: 'abc',
+                    activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                    verify: makeVerificationOk(),
                 })
             ).rejects.toMatchObject({
                 code: 'kb_jwt_invalid',
@@ -231,6 +254,8 @@ describe('presentSdJwtVc', () => {
                 audience: 'https://verifier.example.com',
                 nonce: 'abc',
                 kbSigner,
+                activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                verify: makeVerificationOk(),
             });
 
             expect(result.disclosedKeys.sort()).toEqual(['email', 'given_name']);
@@ -256,6 +281,63 @@ describe('presentSdJwtVc', () => {
             await expect(presentSdJwtVc('')).rejects.toMatchObject({
                 code: 'invalid_compact_form',
             });
+        });
+
+        it('throws when the compact fails re-verification and does not invoke the kb signer', async () => {
+            const holder = await makeHolderKeypair();
+            const { compact } = await issueCredential({ holderPublicJwk: holder.publicJwk });
+            const kbSigner = jest.fn().mockResolvedValue('signature');
+            const tampered = tamperIssuerSignature(compact);
+
+            await expect(
+                presentSdJwtVc(tampered, {
+                    audience: 'https://verifier.example.com',
+                    nonce: 'abc',
+                    kbSigner,
+                    activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                    verify: jest.fn().mockResolvedValue({
+                        checks: ['parse'],
+                        warnings: [],
+                        errors: ['signature_invalid: detached signature mismatch'],
+                    }),
+                })
+            ).rejects.toMatchObject({ code: 'presentation_verification_failed' });
+
+            expect(kbSigner).not.toHaveBeenCalled();
+        });
+
+        it('throws key_binding_mismatch when cnf.jwk does not match the active holder key', async () => {
+            const holder = await makeHolderKeypair();
+            const otherHolder = await makeHolderKeypair();
+            const { compact } = await issueCredential({ holderPublicJwk: holder.publicJwk });
+            const kbSigner = await createEd25519KbSigner({ privateJwk: otherHolder.privateJwk });
+
+            await expect(
+                presentSdJwtVc(compact, {
+                    audience: 'https://verifier.example.com',
+                    nonce: 'abc',
+                    kbSigner,
+                    activeHolderPublicJwk: otherHolder.publicJwk as Record<string, unknown>,
+                    verify: makeVerificationOk(),
+                })
+            ).rejects.toMatchObject({ code: 'key_binding_mismatch' });
+        });
+
+        it('fails closed on unsupported cnf confirmation types', async () => {
+            const holder = await makeHolderKeypair();
+            const kbSigner = await createEd25519KbSigner({ privateJwk: holder.privateJwk });
+            const { compact } = await issueCredential({
+                payloadOverrides: { cnf: { kid: 'did:key:z6MkHolder#key-1' } },
+            });
+
+            await expect(
+                presentSdJwtVc(compact, {
+                    audience: 'https://verifier.example.com',
+                    nonce: 'abc',
+                    kbSigner,
+                    verify: makeVerificationOk(),
+                })
+            ).rejects.toMatchObject({ code: 'unsupported_cnf_confirmation_type' });
         });
     });
 });
@@ -293,17 +375,34 @@ describe('createEd25519KbSigner', () => {
 
 describe('plugin surface: presentSdJwtVc', () => {
     it('exposes presentSdJwtVc via the plugin methods table', async () => {
+        const { compact, issuerPublicJwk } = await issueCredential();
+
         const learnCard = {
+            id: {
+                keypair: jest.fn().mockReturnValue({
+                    kty: 'OKP',
+                    crv: 'Ed25519',
+                    x: 'holder-x',
+                    d: 'holder-d',
+                }),
+            },
             invoke: {
                 verifyCredential: jest.fn(),
-                resolveDid: jest.fn(),
+                resolveDid: jest.fn().mockResolvedValue({
+                    verificationMethod: [
+                        {
+                            id: `${ISSUER_DID}#key-1`,
+                            publicKeyJwk: issuerPublicJwk,
+                        },
+                    ],
+                    assertionMethod: [`${ISSUER_DID}#key-1`],
+                }),
             },
         } as never;
 
         const plugin = getSdJwtVcPlugin(learnCard);
         expect(typeof plugin.methods.presentSdJwtVc).toBe('function');
 
-        const { compact } = await issueCredential();
         const result = await plugin.methods.presentSdJwtVc(learnCard, compact);
 
         expect(result.compact).toBeDefined();

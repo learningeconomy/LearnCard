@@ -81,6 +81,9 @@ export type SdJwtVcErrorCode =
     | 'vct_mismatch'
     | 'status_check_failed'
     | 'kb_jwt_invalid'
+    | 'presentation_verification_failed'
+    | 'key_binding_mismatch'
+    | 'unsupported_cnf_confirmation_type'
     | 'internal_error';
 
 export class SdJwtVcError extends Error {

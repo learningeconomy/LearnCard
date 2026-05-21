@@ -12,6 +12,22 @@ interface ProofWithType {
     jwt?: unknown;
 }
 
+const getActiveHolderPublicJwk = (
+    learnCard: SdJwtVcDependentLearnCard
+): Record<string, unknown> | undefined => {
+    try {
+        const keypair = learnCard.id.keypair('ed25519');
+        if (!keypair || keypair.kty !== 'OKP' || keypair.crv !== 'Ed25519') return undefined;
+        return {
+            kty: keypair.kty,
+            crv: keypair.crv,
+            x: keypair.x,
+        };
+    } catch {
+        return undefined;
+    }
+};
+
 const pickProof = (credential: unknown): ProofWithType | undefined => {
     if (!credential || typeof credential !== 'object') return undefined;
     const proof = (credential as { proof?: unknown }).proof;
@@ -43,7 +59,12 @@ export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcP
 
         toSdJwtDisplayViewModel: (_lc, parsed) => toSdJwtDisplayViewModel(parsed),
 
-        presentSdJwtVc: async (_lc, compact, options) => presentSdJwtVc(compact, options),
+        presentSdJwtVc: async (_lc, compact, options) =>
+            presentSdJwtVc(compact, {
+                ...options,
+                verify: value => verifySdJwtVc(learnCard, value),
+                activeHolderPublicJwk: getActiveHolderPublicJwk(learnCard),
+            }),
 
         verifyCredential: async (_lc, credential, options) => {
             const proof = pickProof(credential);

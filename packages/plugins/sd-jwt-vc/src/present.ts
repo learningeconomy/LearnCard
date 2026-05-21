@@ -1,5 +1,6 @@
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import type { HashAlgorithm, PresentationFrame, Signer as SdJwtLibSigner } from '@sd-jwt/types';
+import type { VerificationCheck } from '@learncard/types';
 
 import { sha256Hasher } from './hasher';
 import { randomSalt } from './salt';
@@ -106,6 +107,21 @@ export interface PresentSdJwtVcOptions {
      * `Math.floor(Date.now() / 1000)`.
      */
     now?: () => number;
+
+    /**
+     * Optional re-verifier injected by the plugin surface. When
+     * provided, presentation fails closed unless the compact still
+     * passes issuer-signature + disclosure-integrity verification.
+     */
+    verify?: (compact: string) => Promise<VerificationCheck>;
+
+    /**
+     * Active holder public JWK injected by the host before signing.
+     * Required only for cnf.jwk-bound credentials so we can fail closed
+     * when the wallet's active signing key no longer matches the
+     * credential's bound holder key.
+     */
+    activeHolderPublicJwk?: Record<string, unknown>;
 }
 
 export interface SdJwtPresentation {
@@ -164,6 +180,60 @@ export const presentSdJwtVc = async (
             }`,
             { cause: e }
         );
+    }
+
+    if (typeof options.verify === 'function') {
+        const verification = await options.verify(compact);
+        const errors = Array.isArray(verification.errors) ? verification.errors : [];
+        if (errors.length > 0) {
+            throw new SdJwtVcError(
+                'presentation_verification_failed',
+                `Refusing to present an SD-JWT-VC that failed re-verification: ${errors.join('; ')}`
+            );
+        }
+    }
+
+    const cnf = parsed.rawPayload.cnf;
+    if (cnf !== undefined) {
+        if (!cnf || typeof cnf !== 'object') {
+            throw new SdJwtVcError(
+                'unsupported_cnf_confirmation_type',
+                'SD-JWT-VC cnf must be an object when present'
+            );
+        }
+        if (!('jwk' in cnf)) {
+            const confirmationTypes = Object.keys(cnf);
+            throw new SdJwtVcError(
+                'unsupported_cnf_confirmation_type',
+                `unsupported cnf confirmation type: ${confirmationTypes.join(', ') || 'unknown'}`
+            );
+        }
+    }
+
+    if (parsed.holderPublicKey && options.activeHolderPublicJwk) {
+        const expectedX =
+            typeof parsed.holderPublicKey.x === 'string' ? parsed.holderPublicKey.x : undefined;
+        const expectedKty = parsed.holderPublicKey.kty;
+        const expectedCrv = parsed.holderPublicKey.crv;
+        const activeHolderPublicJwk = options.activeHolderPublicJwk;
+        const activeX =
+            activeHolderPublicJwk && typeof activeHolderPublicJwk.x === 'string'
+                ? activeHolderPublicJwk.x
+                : undefined;
+
+        if (
+            expectedKty !== 'OKP' ||
+            expectedCrv !== 'Ed25519' ||
+            !expectedX ||
+            activeHolderPublicJwk.kty !== 'OKP' ||
+            activeHolderPublicJwk.crv !== 'Ed25519' ||
+            activeX !== expectedX
+        ) {
+            throw new SdJwtVcError(
+                'key_binding_mismatch',
+                'Active holder Ed25519 key does not match the credential\'s cnf.jwk binding'
+            );
+        }
     }
 
     const needsKeyBinding = Boolean(parsed.holderPublicKey);

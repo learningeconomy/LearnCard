@@ -24,6 +24,7 @@ import type {
     SelectionResult,
     SubmitPresentationResult,
 } from '@learncard/openid4vc-plugin';
+import { inferCredentialFormat } from '@learncard/openid4vc-plugin';
 
 import LoggedOutOid4vp from './LoggedOutOid4vp';
 import RequestLoading from './components/RequestLoading';
@@ -567,6 +568,17 @@ const buildChosenList = (
     dcqlSelection?: DcqlSelectionResult,
     userPicks: ConsentPicks = { row: {}, disclose: {} }
 ): ChosenForPresentation[] => {
+    const disclosureOrEmpty = (candidate: CandidateCredential, disclose: ConsentPicks['disclose'][string]) => {
+        const format = candidate.format ?? inferCredentialFormat(candidate.credential);
+        // Consent parsing is async in RequestConsent. If an SD-JWT row reaches this point
+        // without a populated frame, fail closed to an empty frame rather than allowing the
+        // downstream presenter to interpret `undefined` as "release every claim".
+        if (format === 'dc+sd-jwt' || format === 'vc+sd-jwt') {
+            return disclose ?? {};
+        }
+        return disclose;
+    };
+
     if (selection) {
         const out: ChosenForPresentation[] = [];
         for (const d of selection.descriptors) {
@@ -576,7 +588,7 @@ const buildChosenList = (
             out.push({
                 descriptorId: d.descriptorId,
                 candidate: chosen.candidate,
-                disclose: userPicks.disclose[d.descriptorId],
+                disclose: disclosureOrEmpty(chosen.candidate, userPicks.disclose[d.descriptorId]),
             });
         }
         return out;
@@ -591,7 +603,10 @@ const buildChosenList = (
             out.push({
                 credentialQueryId: queryId,
                 candidate: chosen as unknown as CandidateCredential,
-                disclose: userPicks.disclose[queryId],
+                disclose: disclosureOrEmpty(
+                    chosen as unknown as CandidateCredential,
+                    userPicks.disclose[queryId]
+                ),
             });
         }
         return out;

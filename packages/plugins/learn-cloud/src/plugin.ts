@@ -324,7 +324,14 @@ export const getLearnCloudPlugin = async (
                         try {
                             const decryptedResult = await _learnCard.invoke.decryptDagJwe(result);
 
-                            return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
+                            const parsed = await VCValidator.or(VPValidator)
+                                .or(StoredCredentialEnvelopeValidator)
+                                .parseAsync(decryptedResult);
+
+                            const resolved = resolveStorageReadResult(parsed);
+                            return resolved === undefined || isStoredCredentialEnvelope(resolved)
+                                ? null
+                                : resolved;
                         } catch (error) {
                             _learnCard.debug?.(error);
 

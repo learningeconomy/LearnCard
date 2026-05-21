@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Lock, ShieldAlert, Check } from 'lucide-react';
 
-import { BoostPageViewMode, VerifierHeader, useWallet } from 'learn-card-base';
+import { BoostPageViewMode, ToastTypeEnum, VerifierHeader, useToast, useWallet } from 'learn-card-base';
 import {
     getDefaultCategoryForCredential,
     humanizeCredentialType,
@@ -26,6 +26,13 @@ interface ParsedSdJwtForConsent {
 
 interface SdJwtAwareInvoke {
     parseSdJwtVc?: (compact: string) => Promise<ParsedSdJwtForConsent>;
+}
+
+interface SdJwtConsentStatus {
+    isSdJwt: boolean;
+    cacheKey?: string;
+    isReady: boolean;
+    isParsing: boolean;
 }
 
 const humanizeClaimKey = (key: string) => {
@@ -110,6 +117,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     });
 
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
     const [parsedSdJwts, setParsedSdJwts] = useState<Record<string, ParsedSdJwtForConsent>>({});
     const [parsingSdJwts, setParsingSdJwts] = useState<Record<string, boolean>>({});
 
@@ -162,7 +170,10 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                 };
                             });
                         } catch (e) {
-                            console.error('Failed to parse SD-JWT', e);
+                            presentToast('Couldn’t read one credential’s shareable claims.', {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            });
                         }
                     }
                 }
@@ -177,9 +188,40 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
             }
         };
         parseSdJwts();
-    }, [rows, picks.row, initWallet]);
+    }, [rows, picks.row, initWallet, presentToast]);
+
+    const sdJwtStatuses = useMemo<Record<string, SdJwtConsentStatus>>(() => {
+        return Object.fromEntries(
+            rows.map(row => {
+                const pickedIndex = picks.row[row.id] ?? 0;
+                const candidate = row.candidates[pickedIndex]?.candidate;
+                const compact = candidate ? getSdJwtCompact(candidate.credential) : undefined;
+                if (!candidate || !compact) {
+                    return [row.id, { isSdJwt: false, isReady: true, isParsing: false }];
+                }
+
+                const cacheKey = `${row.id}::${candidate.id}`;
+                const parsed = parsedSdJwts[cacheKey];
+                const discloseFrame = picks.disclose[row.id];
+                const isParsing = Boolean(parsingSdJwts[cacheKey]);
+                const isReady = Boolean(parsed && discloseFrame && !isParsing);
+
+                return [
+                    row.id,
+                    {
+                        isSdJwt: true,
+                        cacheKey,
+                        isReady,
+                        isParsing,
+                    },
+                ];
+            })
+        );
+    }, [rows, picks.row, picks.disclose, parsedSdJwts, parsingSdJwts]);
 
     const allRowsHaveCandidate = rows.every((r) => r.candidates.length > 0);
+    const pendingSdJwtRows = Object.values(sdJwtStatuses).filter(status => status.isSdJwt && !status.isReady).length;
+    const canShare = allRowsHaveCandidate && pendingSdJwtRows === 0;
 
     const handlePickChange = (rowId: string, index: number) => {
         setPicks((prev) => ({ ...prev, row: { ...prev.row, [rowId]: index } }));
@@ -263,7 +305,8 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             {rows.map((row) => {
                                 const pickedIndex = picks.row[row.id] ?? 0;
                                 const candidate = row.candidates[pickedIndex]?.candidate;
-                                const cacheKey = candidate ? `${row.id}::${candidate.id}` : '';
+                                const status = sdJwtStatuses[row.id];
+                                const cacheKey = status?.cacheKey ?? '';
                                 return (
                                     <ConsentRow
                                         key={row.id}
@@ -271,8 +314,8 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                         pickedIndex={pickedIndex}
                                         onPick={(idx) => handlePickChange(row.id, idx)}
                                         parsedSdJwt={parsedSdJwts[cacheKey]}
-                                        isParsingSdJwt={parsingSdJwts[cacheKey]}
-                                        discloseFrame={picks.disclose[row.id] as Record<string, boolean>}
+                                        isParsingSdJwt={status?.isParsing}
+                                        discloseFrame={picks.disclose[row.id] as Record<string, boolean> | undefined}
                                         onClaimChange={(key, checked) => handleClaimChange(row.id, key, checked)}
                                         verifierName={subjectLabel}
                                     />
@@ -291,13 +334,22 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </div>
                     )}
 
+                    {pendingSdJwtRows > 0 && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
+                            <span className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mt-0.5 shrink-0" />
+                            <span className="text-xs text-emerald-800 leading-relaxed">
+                                Loading claims to share…
+                            </span>
+                        </div>
+                    )}
+
                     <div className="space-y-3 pt-1">
                         <button
                             onClick={() => onApprove(picks)}
-                            disabled={!allRowsHaveCandidate}
+                            disabled={!canShare}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            Share
+                            {pendingSdJwtRows > 0 ? 'Loading claims…' : 'Share'}
                         </button>
 
                         <button
@@ -347,7 +399,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parse
             </div>
 
             {!hasCandidate && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-amber-50 border border-amber-100">
                     <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
                     <p className="text-xs text-amber-700 leading-relaxed">
                         {row.reason ?? 'No matching credential in your wallet'}

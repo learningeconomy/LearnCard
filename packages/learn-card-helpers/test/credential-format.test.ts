@@ -1,4 +1,4 @@
-import type { CredentialRecord } from '@learncard/types';
+import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import {
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
@@ -7,8 +7,25 @@ import {
 import {
     projectEnvelopeToDisplayVc,
     resolveStorageReadResult,
+    synthesizeDidJwk,
     toStoredCredential,
 } from '../src';
+import { parseSdJwtVc } from '../../plugins/sd-jwt-vc/src/parse';
+import { sha256Hasher } from '../../plugins/sd-jwt-vc/src/hasher';
+import { randomSalt } from '../../plugins/sd-jwt-vc/src/salt';
+
+const { webcrypto } = require('node:crypto');
+const { TextEncoder, TextDecoder } = require('node:util');
+
+if (!globalThis.crypto) {
+    Object.assign(globalThis, { crypto: webcrypto });
+}
+if (!globalThis.TextEncoder) {
+    Object.assign(globalThis, { TextEncoder });
+}
+if (!globalThis.TextDecoder) {
+    Object.assign(globalThis, { TextDecoder });
+}
 
 const base64UrlEncode = (input: string): string => {
     const b64 = Buffer.from(input, 'utf-8').toString('base64');
@@ -29,18 +46,114 @@ const makeJwtVcCompact = (vcClaim: Record<string, unknown>): string => {
     return `${header}.${payloadB64}.${sig}`;
 };
 
-const make = (extra: Partial<CredentialRecord>): CredentialRecord =>
+const decodeBase64UrlJson = (segment: string): [string, string, unknown] => {
+    const normalized = segment.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf-8')) as [string, string, unknown];
+};
+
+const decodeBase64UrlObject = (segment: string): Record<string, unknown> => {
+    const normalized = segment.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf-8')) as Record<string, unknown>;
+};
+
+const makeIssuerSigner = async () => {
+    const cryptoModule = require('node:crypto');
+    const { privateKey, publicKey } = cryptoModule.generateKeyPairSync('ed25519');
+    const publicJwk = publicKey.export({ format: 'jwk' }) as Record<string, unknown>;
+
+    const signer = async (data: string): Promise<string> => {
+        return cryptoModule.sign(null, Buffer.from(data, 'utf-8'), privateKey).toString('base64url');
+    };
+
+    return { signer, publicJwk };
+};
+
+const issueRealSdJwtCompact = async (): Promise<{
+    compact: string;
+    holderPublicJwk: Record<string, unknown>;
+}> => {
+    const cryptoModule = require('node:crypto');
+    const { signer } = await makeIssuerSigner();
+    const holderKeypair = cryptoModule.generateKeyPairSync('ed25519');
+    const holderPublicJwk = holderKeypair.publicKey.export({
+        format: 'jwk',
+    }) as Record<string, unknown>;
+    const instance = new SDJwtVcInstance({
+        hasher: sha256Hasher,
+        hashAlg: 'sha-256',
+        saltGenerator: randomSalt,
+        signer,
+        signAlg: 'EdDSA',
+    });
+
+    const compact = await instance.issue(
+        {
+            iss: 'did:web:issuer.example.com',
+            iat: 1_700_000_000,
+            nbf: 1_700_000_000,
+            exp: 1_800_000_000,
+            vct: 'https://example.com/credentials/employment',
+            given_name: 'Ada',
+            email: 'ada@example.com',
+            dob: '1815-12-10',
+            cnf: { jwk: holderPublicJwk },
+        },
+        { _sd: ['given_name', 'email', 'dob'] },
+        { header: { kid: '#issuer-key-1', alg: 'EdDSA', typ: 'dc+sd-jwt' } }
+    );
+
+    return { compact, holderPublicJwk };
+};
+
+const makeSdJwtSynthesisLearnCard = () =>
     ({
-        id: 'test-id',
-        uri: 'lc:test',
-        ...extra,
-    }) as CredentialRecord;
+        invoke: {
+            parseSdJwtVc,
+            verifySdJwtVc: jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] }),
+        },
+}) as never;
+
+type TestCredentialRecord = {
+    id: string;
+    uri: string;
+    format?: string;
+    rawWireForm?: string;
+    vc?: unknown;
+    [key: string]: unknown;
+};
+
+type TestVc = {
+    '@context'?: unknown;
+    type?: unknown;
+    issuer?: unknown;
+    credentialSubject?: unknown;
+    validFrom?: string;
+    proof?: unknown;
+    [key: string]: unknown;
+};
+
+const make = (extra: Partial<TestCredentialRecord> = {}): TestCredentialRecord => ({
+    id: 'test-id',
+    uri: 'lc:test',
+    ...extra,
+});
+
+const makeVc = (overrides: Record<string, unknown> = {}): TestVc =>
+    ({
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential'],
+        issuer: 'did:web:issuer',
+        credentialSubject: {},
+        ...overrides,
+    });
 
 describe('toStoredCredential — explicit format', () => {
     it('honors `format: dc+sd-jwt` with explicit rawWireForm', () => {
         const compact = 'header.payload.signature~Wyx~';
         const stored = toStoredCredential(
-            make({ format: 'dc+sd-jwt', rawWireForm: compact, vc: undefined as any })
+            make({ format: 'dc+sd-jwt', rawWireForm: compact, vc: undefined })
         );
         expect(stored.format).toBe('dc+sd-jwt');
         if (stored.format === 'dc+sd-jwt') {
@@ -51,7 +164,7 @@ describe('toStoredCredential — explicit format', () => {
     it('honors `format: vc+sd-jwt` with explicit rawWireForm', () => {
         const compact = 'header.payload.signature~Wyx~';
         const stored = toStoredCredential(
-            make({ format: 'vc+sd-jwt', rawWireForm: compact, vc: undefined as any })
+            make({ format: 'vc+sd-jwt', rawWireForm: compact, vc: undefined })
         );
         expect(stored.format).toBe('vc+sd-jwt');
     });
@@ -59,7 +172,7 @@ describe('toStoredCredential — explicit format', () => {
     it('honors `format: jwt-vc-json` with explicit rawWireForm', () => {
         const jws = 'header.payload.signature';
         const stored = toStoredCredential(
-            make({ format: 'jwt-vc-json', rawWireForm: jws, vc: undefined as any })
+            make({ format: 'jwt-vc-json', rawWireForm: jws, vc: undefined })
         );
         expect(stored.format).toBe('jwt-vc-json');
         if (stored.format === 'jwt-vc-json') {
@@ -70,18 +183,17 @@ describe('toStoredCredential — explicit format', () => {
     it('honors `format: mso_mdoc` with base64 rawWireForm', () => {
         const base64Cbor = 'pmZ2ZXJzaW9uYzEuMA==';
         const stored = toStoredCredential(
-            make({ format: 'mso_mdoc', rawWireForm: base64Cbor, vc: undefined as any })
+            make({ format: 'mso_mdoc', rawWireForm: base64Cbor, vc: undefined })
         );
         expect(stored.format).toBe('mso_mdoc');
     });
 
     it('uses record.vc for w3c-vc-2.0 format', () => {
-        const vc = {
+        const vc = makeVc({
             '@context': ['https://www.w3.org/ns/credentials/v2'],
             type: ['VerifiableCredential', 'TestCredential'],
-            issuer: 'did:web:issuer',
             credentialSubject: { name: 'Alice' },
-        } as any;
+        });
         const stored = toStoredCredential(make({ format: 'w3c-vc-2.0', vc }));
         expect(stored.format).toBe('w3c-vc-2.0');
         if (stored.format === 'w3c-vc-2.0') {
@@ -91,10 +203,10 @@ describe('toStoredCredential — explicit format', () => {
 
     it('extracts wire form from proof.jwt when rawWireForm is absent for SD-JWT format', () => {
         const compact = 'header.payload.sig~';
-        const wrapper = {
+        const wrapper: Record<string, unknown> = {
             type: ['VerifiableCredential', 'SdJwtVcCredential'],
             proof: { type: 'SdJwtCompactProof', jwt: compact },
-        } as any;
+        };
         const stored = toStoredCredential(make({ format: 'dc+sd-jwt', vc: wrapper }));
         expect(stored.format).toBe('dc+sd-jwt');
         if (stored.format === 'dc+sd-jwt') {
@@ -105,32 +217,23 @@ describe('toStoredCredential — explicit format', () => {
 
 describe('toStoredCredential — inferred from shape (legacy records)', () => {
     it('infers w3c-vc-2.0 from VCDM 2.0 @context', () => {
-        const vc = {
+        const vc = makeVc({
             '@context': ['https://www.w3.org/ns/credentials/v2'],
-            type: ['VerifiableCredential'],
-            issuer: 'did:web:issuer',
-            credentialSubject: {},
             proof: { type: 'Ed25519Signature2020' },
-        } as any;
+        });
         const stored = toStoredCredential(make({ vc }));
         expect(stored.format).toBe('w3c-vc-2.0');
     });
 
     it('infers w3c-vc-1.1 from VCDM 1.1 @context', () => {
-        const vc = {
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
-            type: ['VerifiableCredential'],
-            issuer: 'did:web:issuer',
-            credentialSubject: {},
-            proof: { type: 'Ed25519Signature2020' },
-        } as any;
+        const vc = makeVc({ proof: { type: 'Ed25519Signature2020' } });
         const stored = toStoredCredential(make({ vc }));
         expect(stored.format).toBe('w3c-vc-1.1');
     });
 
     it('infers dc+sd-jwt from a bare SD-JWT compact string', () => {
         const compact = 'eyJh.eyJp.sig~Wyx~';
-        const stored = toStoredCredential(make({ vc: compact as any }));
+        const stored = toStoredCredential(make({ vc: compact }));
         expect(stored.format).toBe('dc+sd-jwt');
         if (stored.format === 'dc+sd-jwt') {
             expect(stored.data).toBe(compact);
@@ -139,7 +242,7 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
 
     it('infers jwt-vc-json from a bare JWT compact string', () => {
         const compact = 'eyJh.eyJp.sig';
-        const stored = toStoredCredential(make({ vc: compact as any }));
+        const stored = toStoredCredential(make({ vc: compact }));
         expect(stored.format).toBe('jwt-vc-json');
         if (stored.format === 'jwt-vc-json') {
             expect(stored.data).toBe(compact);
@@ -148,11 +251,11 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
 
     it('infers dc+sd-jwt from a transitional wrapper with SdJwtCompactProof', () => {
         const compact = 'header.payload.sig~';
-        const wrapper = {
+        const wrapper: Record<string, unknown> = {
             '@context': ['https://www.w3.org/ns/credentials/v2'],
             type: ['VerifiableCredential', 'SdJwtVcCredential'],
             proof: { type: 'SdJwtCompactProof', jwt: compact },
-        } as any;
+        };
         const stored = toStoredCredential(make({ vc: wrapper }));
         expect(stored.format).toBe('dc+sd-jwt');
         if (stored.format === 'dc+sd-jwt') {
@@ -162,11 +265,11 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
 
     it('infers jwt-vc-json from a legacy LDP-around-JWT envelope', () => {
         const compact = 'header.payload.sig';
-        const envelope = {
+        const envelope: Record<string, unknown> = {
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiableCredential'],
             proof: { type: 'JwtProof2020', jwt: compact },
-        } as any;
+        };
         const stored = toStoredCredential(make({ vc: envelope }));
         expect(stored.format).toBe('jwt-vc-json');
         if (stored.format === 'jwt-vc-json') {
@@ -176,16 +279,16 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
 
     it('handles an array-valued proof on the wrapper', () => {
         const compact = 'header.payload.sig~';
-        const wrapper = {
+        const wrapper: Record<string, unknown> = {
             type: ['VerifiableCredential', 'SdJwtVcCredential'],
             proof: [{ type: 'SdJwtCompactProof', jwt: compact }],
-        } as any;
+        };
         const stored = toStoredCredential(make({ vc: wrapper }));
         expect(stored.format).toBe('dc+sd-jwt');
     });
 
     it('falls back to w3c-vc-1.1 for an object with no recognizable shape', () => {
-        const opaque = { foo: 'bar' } as any;
+        const opaque: Record<string, unknown> = { foo: 'bar' };
         const stored = toStoredCredential(make({ vc: opaque }));
         expect(stored.format).toBe('w3c-vc-1.1');
         if (stored.format === 'w3c-vc-1.1') {
@@ -196,10 +299,7 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
 
 describe('toStoredCredential — explicit format takes precedence over shape', () => {
     it('honors `format: w3c-vc-2.0` even when @context says v1', () => {
-        const vc = {
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
-            type: ['VerifiableCredential'],
-        } as any;
+        const vc = makeVc();
         const stored = toStoredCredential(make({ format: 'w3c-vc-2.0', vc }));
         expect(stored.format).toBe('w3c-vc-2.0');
     });
@@ -209,7 +309,7 @@ describe('toStoredCredential — explicit format takes precedence over shape', (
         // nor extractable proof.jwt would be malformed; we degrade
         // gracefully to shape inference rather than crashing.
         const stored = toStoredCredential(
-            make({ format: 'dc+sd-jwt', vc: { '@context': ['https://www.w3.org/ns/credentials/v2'] } as any })
+            make({ format: 'dc+sd-jwt', vc: { '@context': ['https://www.w3.org/ns/credentials/v2'] } })
         );
         expect(stored.format).toBe('w3c-vc-2.0');
     });
@@ -217,17 +317,17 @@ describe('toStoredCredential — explicit format takes precedence over shape', (
 
 describe('toStoredCredential — never throws', () => {
     it('handles undefined vc gracefully', () => {
-        const stored = toStoredCredential(make({ vc: undefined as any }));
+        const stored = toStoredCredential(make({ vc: undefined }));
         expect(stored.format).toBe('w3c-vc-1.1');
     });
 
     it('handles null vc gracefully', () => {
-        const stored = toStoredCredential(make({ vc: null as any }));
+        const stored = toStoredCredential(make({ vc: null }));
         expect(stored.format).toBe('w3c-vc-1.1');
     });
 
     it('handles empty-string vc gracefully', () => {
-        const stored = toStoredCredential(make({ vc: '' as any }));
+        const stored = toStoredCredential(make({ vc: '' }));
         expect(stored.format).toBe('w3c-vc-1.1');
     });
 });
@@ -378,6 +478,77 @@ describe('StoredCredentialEnvelope', () => {
             );
         });
 
+        it('uses a deterministic nbf fallback when iat is missing', () => {
+            const compact = makeSdJwtCompact({
+                iss: 'did:web:issuer.example.com',
+                nbf: 1700000000,
+                vct: 'https://example.com/credentials/employment',
+            });
+
+            const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
+
+            expect(vc?.validFrom).toBe(new Date(1700000000 * 1000).toISOString());
+        });
+
+        it('matches the write-time SD-JWT wrapper projection for a real compact credential', async () => {
+            const { compact, holderPublicJwk } = await issueRealSdJwtCompact();
+            const learnCard = makeSdJwtSynthesisLearnCard();
+            jest.resetModules();
+            jest.doMock('@learncard/helpers', () => require('../src'));
+            const { synthesizeSdJwtVc } = require('../../plugins/openid4vc/src/vci/sd-jwt-vc');
+
+            const wrapperA = await synthesizeSdJwtVc(compact, 'dc+sd-jwt', learnCard);
+            const wrapperB = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
+
+            expect(wrapperB).toBeDefined();
+            expect(wrapperA.vc.credentialSubject).toEqual(wrapperB?.credentialSubject);
+            expect(wrapperA.vc.type).toEqual(wrapperB?.type);
+            expect(wrapperA.vc.issuer).toBe(wrapperB?.issuer);
+            expect(wrapperA.vc.validFrom).toBe(wrapperB?.validFrom);
+            expect((wrapperA.vc as Record<string, unknown>).sdJwtVct).toBe(
+                (wrapperB as Record<string, unknown>).sdJwtVct
+            );
+            expect((wrapperA.vc as Record<string, unknown>).name).toBe(
+                (wrapperB as Record<string, unknown>).name
+            );
+            expect((wrapperA.vc as Record<string, unknown>).validUntil).toBe(
+                (wrapperB as Record<string, unknown>).validUntil
+            );
+            expect((wrapperB?.credentialSubject as Record<string, unknown>).id).toBe(
+                synthesizeDidJwk(holderPublicJwk)
+            );
+            expect(wrapperA.vc.proof).toEqual(wrapperB?.proof);
+            jest.dontMock('@learncard/helpers');
+        });
+
+        it('does not project a tampered disclosure into the credential subject', async () => {
+            const { compact } = await issueRealSdJwtCompact();
+            const parts = compact.split('~');
+            const disclosureIndex = parts.findIndex(segment => {
+                if (!segment) return false;
+                try {
+                    const decoded = decodeBase64UrlJson(segment);
+                    return decoded[1] === 'email';
+                } catch {
+                    return false;
+                }
+            });
+            expect(disclosureIndex).toBeGreaterThan(0);
+
+            const [salt, key] = decodeBase64UrlJson(parts[disclosureIndex]!);
+            const tamperedDisclosure = base64UrlEncode(
+                JSON.stringify([salt, key, 'mallory@example.com'])
+            );
+            const tamperedParts = [...parts];
+            tamperedParts[disclosureIndex] = tamperedDisclosure;
+            const tamperedCompact = tamperedParts.join('~');
+
+            const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: tamperedCompact });
+
+            expect((vc?.credentialSubject as Record<string, unknown>).email).toBeUndefined();
+            expect((vc?.credentialSubject as Record<string, unknown>).given_name).toBeDefined();
+        });
+
         it('vc+sd-jwt legacy alias works identically', () => {
             const compact = makeSdJwtCompact({ iss: 'did:web:x', iat: 1700000000 });
             const vc = projectEnvelopeToDisplayVc({ format: 'vc+sd-jwt', data: compact });
@@ -421,7 +592,7 @@ describe('StoredCredentialEnvelope', () => {
                 issuer: 'did:web:x',
                 credentialSubject: { id: 'did:key:y' },
             };
-            expect(resolveStorageReadResult(vc as Parameters<typeof resolveStorageReadResult>[0])).toBe(vc);
+            expect(resolveStorageReadResult(vc as never)).toBe(vc);
         });
 
         it('resolveStorageReadResult — passes through undefined', () => {

@@ -26,9 +26,13 @@ interface ParsedSdJwtVcLike {
     hasKeyBinding: boolean;
 }
 
-// Keep in sync with @learncard/sd-jwt-vc-plugin's display.ts SD_JWT_METADATA_CLAIMS.
-// Duplication is deliberate: openid4vc does NOT hard-import sd-jwt-vc (runtime
-// feature-detect only) so the two packages can be installed independently.
+// vct derivation lives in @learncard/helpers (lifted in ADR-0001 Phase 2B)
+// so the receipt-time wrapper synthesizer and the read-time display projector
+// share one source of truth. Re-exported here so existing openid4vc consumers
+// (and the matcher's format-aware paths) keep their import shape.
+export const deriveTypeFromVct = deriveTypeFromVctImpl;
+export const deriveNameFromVct = deriveNameFromVctImpl;
+
 const SD_JWT_RESERVED_CLAIMS = new Set([
     'iss',
     'iat',
@@ -44,18 +48,20 @@ const SD_JWT_RESERVED_CLAIMS = new Set([
 ]);
 
 const PRIVATE_JWK_FIELDS = new Set(['d', 'dp', 'dq', 'p', 'q', 'qi', 'oth', 'k']);
-
-// vct derivation lives in @learncard/helpers (lifted in ADR-0001 Phase 2B)
-// so the receipt-time wrapper synthesizer and the read-time display projector
-// share one source of truth. Re-exported here so existing openid4vc consumers
-// (and the matcher's format-aware paths) keep their import shape.
-export const deriveTypeFromVct = deriveTypeFromVctImpl;
-export const deriveNameFromVct = deriveNameFromVctImpl;
+const SD_JWT_FALLBACK_ISSUED_AT_ISO = '1970-01-01T00:00:00.000Z';
 
 const bytesToBase64Url = (bytes: Uint8Array): string => {
     let binary = '';
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const stripReservedClaims = (claims: Record<string, unknown>): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(claims)) {
+        if (!SD_JWT_RESERVED_CLAIMS.has(key)) out[key] = value;
+    }
+    return out;
 };
 
 const synthesizeDidJwk = (jwk: Record<string, unknown>): string | undefined => {
@@ -65,31 +71,19 @@ const synthesizeDidJwk = (jwk: Record<string, unknown>): string | undefined => {
         if (!PRIVATE_JWK_FIELDS.has(key)) publicOnly[key] = value;
     }
     try {
-        // RFC 8785 JCS canonicalization for the JWK before base64url encoding —
-        // required by the did:jwk spec so the same key material produces the same
-        // did:jwk regardless of JWK property insertion order across implementations.
-        // For standard JWKs (EC / OKP / RSA), all field values are ASCII strings
-        // (base64url / enum), so top-level lexicographic key sort + JSON.stringify
-        // is equivalent to full JCS. If a JWK gains nested-object extension members,
-        // this needs a recursive canonicalizer.
         const sortedKeys = Object.keys(publicOnly).sort();
         const canonical: Record<string, unknown> = {};
-        for (const k of sortedKeys) canonical[k] = publicOnly[k];
-        const json = JSON.stringify(canonical);
-        const b64 = bytesToBase64Url(new TextEncoder().encode(json));
-        return `did:jwk:${b64}`;
+        for (const key of sortedKeys) canonical[key] = publicOnly[key];
+        return `did:jwk:${bytesToBase64Url(new TextEncoder().encode(JSON.stringify(canonical)))}`;
     } catch {
         return undefined;
     }
 };
 
-const stripReservedClaims = (claims: Record<string, unknown>): Record<string, unknown> => {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(claims)) {
-        if (!SD_JWT_RESERVED_CLAIMS.has(k)) out[k] = v;
-    }
-    return out;
-};
+const deriveIssuedAtIso = (parsed: ParsedSdJwtVcLike): string =>
+    parsed.issuedAt?.toISOString() ??
+    parsed.notBefore?.toISOString() ??
+    SD_JWT_FALLBACK_ISSUED_AT_ISO;
 
 const callPluginParse = async (
     learnCard: LearnCard<any, any, any>,
@@ -190,7 +184,7 @@ export const synthesizeSdJwtVc = async (
         }
     }
 
-    const issuedAtIso = parsed.issuedAt?.toISOString() ?? new Date().toISOString();
+    const issuedAtIso = deriveIssuedAtIso(parsed);
 
     const issuerIsDid = parsed.issuer.startsWith('did:');
     const kid = parsed.header?.kid;

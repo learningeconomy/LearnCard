@@ -1,3 +1,5 @@
+import { sha256 } from '@noble/hashes/sha2';
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode';
 import type {
     CredentialRecord,
     StoredCredential,
@@ -5,6 +7,34 @@ import type {
     VC,
 } from '@learncard/types';
 import { isStoredCredentialEnvelope } from '@learncard/types';
+
+const SD_JWT_RESERVED_CLAIMS = new Set([
+    'iss',
+    'iat',
+    'exp',
+    'nbf',
+    'sub',
+    'vct',
+    'cnf',
+    '_sd_alg',
+    '_sd',
+    '...',
+    'status',
+]);
+
+const SD_JWT_FALLBACK_ISSUED_AT_ISO = '1970-01-01T00:00:00.000Z';
+
+const SUPPORTED_SD_JWT_HASH_ALGS = new Set(['sha-256', 'SHA-256', 'sha256']);
+
+const sha256HasherSync = (data: string | ArrayBuffer, alg: string): Uint8Array => {
+    if (!SUPPORTED_SD_JWT_HASH_ALGS.has(alg)) {
+        throw new Error(`Unsupported hash algorithm: "${alg}". Only sha-256 is supported.`);
+    }
+
+    const bytes =
+        typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
+    return sha256(bytes);
+};
 
 /**
  * Project a `CredentialRecord` into a format-discriminated read view.
@@ -194,6 +224,72 @@ export const deriveNameFromVct = (vct: string | undefined): string | undefined =
     return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 };
 
+export const stripSdJwtReservedClaims = (
+    claims: Record<string, unknown>
+): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(claims)) {
+        if (!SD_JWT_RESERVED_CLAIMS.has(key)) out[key] = value;
+    }
+    return out;
+};
+
+const PRIVATE_JWK_FIELDS = new Set(['d', 'dp', 'dq', 'p', 'q', 'qi', 'oth', 'k']);
+
+const bytesToBase64Url = (bytes: Uint8Array): string => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+    const base64 =
+        typeof btoa === 'function'
+            ? btoa(binary)
+            : Buffer.from(binary, 'binary').toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+export const synthesizeDidJwk = (jwk: Record<string, unknown>): string | undefined => {
+    if (typeof jwk.kty !== 'string') return undefined;
+
+    const publicOnly: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(jwk)) {
+        if (!PRIVATE_JWK_FIELDS.has(key)) publicOnly[key] = value;
+    }
+
+    try {
+        const sortedKeys = Object.keys(publicOnly).sort();
+        const canonical: Record<string, unknown> = {};
+        for (const key of sortedKeys) canonical[key] = publicOnly[key];
+        return `did:jwk:${bytesToBase64Url(new TextEncoder().encode(JSON.stringify(canonical)))}`;
+    } catch {
+        return undefined;
+    }
+};
+
+export const deriveSdJwtIssuedAtIso = (options: {
+    issuedAt?: Date;
+    notBefore?: Date;
+    iat?: number;
+    nbf?: number;
+}): string => {
+    if (options.issuedAt) return options.issuedAt.toISOString();
+    if (options.notBefore) return options.notBefore.toISOString();
+    if (typeof options.iat === 'number') return new Date(options.iat * 1000).toISOString();
+    if (typeof options.nbf === 'number') return new Date(options.nbf * 1000).toISOString();
+    return SD_JWT_FALLBACK_ISSUED_AT_ISO;
+};
+
+const deriveVerificationMethodFromIssuer = (options: {
+    issuer: string;
+    headerKid?: unknown;
+}): string | undefined => {
+    if (!options.issuer.startsWith('did:') || typeof options.headerKid !== 'string') {
+        return undefined;
+    }
+
+    return options.headerKid.startsWith('#')
+        ? `${options.issuer}${options.headerKid}`
+        : options.headerKid;
+};
+
 /**
  * Read-path shim: when a storage plugin returns a `StoredCredentialEnvelope` (because we
  * wrote a native non-W3C format like SD-JWT-VC), legacy UI components
@@ -264,33 +360,43 @@ const base64UrlDecodeToString = (b64url: string): string => {
 };
 
 const projectSdJwtCompactToVc = (compact: string): VC | undefined => {
-    const payload = decodeJwsPayload(compact);
-    if (!payload) return undefined;
+    let decoded;
+    try {
+        decoded = decodeSdJwtSync(compact, sha256HasherSync);
+    } catch {
+        return undefined;
+    }
+
+    const payload = decoded.jwt?.payload;
+    if (!payload || typeof payload !== 'object') return undefined;
 
     const issuer = typeof payload.iss === 'string' ? payload.iss : 'unknown';
-    const issuedAtSec = typeof payload.iat === 'number' ? payload.iat : undefined;
+    const issuedAtIso = deriveSdJwtIssuedAtIso({
+        iat: typeof payload.iat === 'number' ? payload.iat : undefined,
+        nbf: typeof payload.nbf === 'number' ? payload.nbf : undefined,
+    });
     const expiresAtSec = typeof payload.exp === 'number' ? payload.exp : undefined;
-    const issuedAtIso = issuedAtSec
-        ? new Date(issuedAtSec * 1000).toISOString()
-        : new Date().toISOString();
 
-    const reserved = new Set([
-        'iss',
-        'iat',
-        'exp',
-        'nbf',
-        'sub',
-        'vct',
-        'cnf',
-        '_sd_alg',
-        '_sd',
-        '...',
-        'status',
-    ]);
-    const credentialSubject: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(payload)) {
-        if (!reserved.has(k)) credentialSubject[k] = v;
+    let reconstructedClaims = payload as Record<string, unknown>;
+    try {
+        reconstructedClaims = getClaimsSync<Record<string, unknown>>(
+            payload as Record<string, unknown>,
+            decoded.disclosures ?? [],
+            sha256HasherSync
+        );
+    } catch {
+        // Fail closed on disclosures: keep only issuer-payload claims. A disclosure
+        // whose digest doesn't match MUST NOT appear in the projected subject.
     }
+
+    const credentialSubject: Record<string, unknown> = stripSdJwtReservedClaims(reconstructedClaims);
+    const cnf = payload.cnf;
+    const holderPublicKey =
+        cnf && typeof cnf === 'object' && 'jwk' in cnf && cnf.jwk && typeof cnf.jwk === 'object'
+            ? (cnf.jwk as Record<string, unknown>)
+            : undefined;
+    const holderDid = holderPublicKey ? synthesizeDidJwk(holderPublicKey) : undefined;
+    if (holderDid) credentialSubject.id = holderDid;
 
     const vct = typeof payload.vct === 'string' ? payload.vct : undefined;
 
@@ -299,19 +405,26 @@ const projectSdJwtCompactToVc = (compact: string): VC | undefined => {
     const typeArray = ['VerifiableCredential', 'SdJwtVcCredential'];
     if (derivedType && derivedType !== 'SdJwtVcCredential') typeArray.push(derivedType);
 
+    const verificationMethod = deriveVerificationMethodFromIssuer({
+        issuer,
+        headerKid: decoded.jwt?.header?.kid,
+    });
+
+    const proof: Record<string, unknown> = {
+        type: 'SdJwtCompactProof',
+        created: issuedAtIso,
+        proofPurpose: 'assertionMethod',
+        jwt: compact,
+    };
+    if (verificationMethod) proof.verificationMethod = verificationMethod;
+
     const vc: VC = {
         '@context': ['https://www.w3.org/ns/credentials/v2' as string],
         type: typeArray,
         issuer,
         validFrom: issuedAtIso,
         credentialSubject,
-        proof: {
-            type: 'SdJwtCompactProof',
-            created: issuedAtIso,
-            proofPurpose: 'assertionMethod',
-            verificationMethod: typeof issuer === 'string' ? issuer : 'unknown',
-            jwt: compact,
-        },
+        proof,
     };
 
     if (vct) (vc as Record<string, unknown>).sdJwtVct = vct;
