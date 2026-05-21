@@ -96,9 +96,10 @@ export class SdJwtVcError extends Error {
 export type SdJwtVcPluginDependentMethods = Pick<DidkitPluginMethods, 'resolveDid'> &
     VerifyExtension;
 
-// TODO(LC-1796 Slice 3+): tighten the host LearnCard's plane constraint once we
-// start touching the `id` plane for KB-JWT signing. Slice 1's read path doesn't
-// need it, so `any` here is intentional but should not be permanent.
+// Host LearnCard must expose the `id` plane (used for KB-JWT signing in
+// `presentSdJwtVc`). The first generic is `any` — the planes-provided shape
+// of the host is intentionally wide so this plugin composes with any LearnCard
+// stack that includes `id`.
 export type SdJwtVcDependentLearnCard = LearnCard<any, 'id', SdJwtVcPluginDependentMethods>;
 
 export type SdJwtVcPluginMethods = VerifyExtension & {
@@ -121,9 +122,9 @@ export type SdJwtVcPluginMethods = VerifyExtension & {
     ) => Promise<SdJwtPresentation>;
 };
 
-// TODO(LC-1796 Slice 3+): replace the second `any` with a concrete control-plane
-// list once we wire the plugin into apps. Tracking parity with the other format
-// plugins (vc, open-badge-v2) which still use `any` for the planes generic.
+// Planes generic is `any` to match the convention used by the other format
+// plugins (vc, open-badge-v2, expiration). Format plugins don't introduce new
+// planes — they extend `verifyCredential` and add format-specific invoke methods.
 export type SdJwtVcPlugin = Plugin<
     'SDJwtVc',
     any,

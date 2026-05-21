@@ -50,7 +50,7 @@ export const storageRouter = t.router({
             const { item } = input;
 
             const jwe: JWE = isEncrypted(item)
-                ? (item as any)
+                ? item
                 : await encryptObject(item, ctx.domain, [ctx.user.did]);
 
             const id = await createCredential(jwe, ctx.user.did);
