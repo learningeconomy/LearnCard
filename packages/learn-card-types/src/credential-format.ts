@@ -42,18 +42,24 @@ export type CredentialFormat = z.infer<typeof CredentialFormatValidator>;
  *   - `dc+sd-jwt` / `vc+sd-jwt`: the compact `<JWT>~<disclosures>~`
  *     string (no KB-JWT — that is per-presentation).
  *   - `jwt-vc-json`: the compact JWS string.
- *   - `mso_mdoc`: base64url-encoded CBOR bytes (binary `Uint8Array`
- *     is accepted at the type level; storage plugins MUST encode to
- *     base64url at the JSON-transport boundary).
+ *   - `mso_mdoc`: base64url-encoded CBOR bytes. The TypeScript type
+ *     allows `Uint8Array` for in-memory ergonomics; storage plugins
+ *     MUST convert to a base64url string at the transport boundary.
+ *     The Zod validator (used at the wire layer) is string-only.
  *
  * W3C VCs continue to flow through `upload(vc: VC)` directly — they
  * do not use the envelope. This keeps the legacy partner surface
  * untouched.
  */
+// Wire validator: data is `string` only because JSON transport (tRPC, OpenAPI)
+// cannot carry Uint8Array natively. Storage plugins encode binary `Uint8Array`
+// data to base64url BEFORE the validator runs at the transport boundary.
+// The TypeScript type below is intentionally wider (`string | Uint8Array`) to
+// preserve in-memory ergonomics for plugins doing the conversion.
 export const StoredCredentialEnvelopeValidator = z
     .object({
         format: CredentialFormatValidator,
-        data: z.union([z.string(), z.instanceof(Uint8Array)]),
+        data: z.string(),
     })
     .passthrough();
 export type StoredCredentialEnvelope = {

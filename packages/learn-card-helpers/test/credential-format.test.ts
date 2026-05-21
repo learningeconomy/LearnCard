@@ -289,12 +289,16 @@ describe('StoredCredentialEnvelope', () => {
             expect(result.success).toBe(true);
         });
 
-        it('parses a Uint8Array envelope', () => {
+        it('rejects a Uint8Array data field (wire validator is string-only)', () => {
+            // The TypeScript type allows `data: string | Uint8Array` for
+            // in-memory ergonomics, but the wire validator is intentionally
+            // narrower so OpenAPI generation can describe the schema. Plugins
+            // convert binary to base64url before transport.
             const result = StoredCredentialEnvelopeValidator.safeParse({
                 format: 'mso_mdoc',
                 data: new Uint8Array([1, 2]),
             });
-            expect(result.success).toBe(true);
+            expect(result.success).toBe(false);
         });
 
         it('rejects unknown format', () => {

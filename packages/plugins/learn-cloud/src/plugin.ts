@@ -35,14 +35,16 @@ const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
+type WireEnvelope = StoredCredentialEnvelope & { data: string };
+
 const normalizeEnvelopeForTransport = <T>(
     value: T
-): Exclude<T, StoredCredentialEnvelope> | StoredCredentialEnvelope => {
+): Exclude<T, StoredCredentialEnvelope> | WireEnvelope => {
     if (!isStoredCredentialEnvelope(value)) {
         return value as Exclude<T, StoredCredentialEnvelope>;
     }
-    if (typeof value.data === 'string') return value;
-    return { format: value.format, data: uint8ArrayToBase64Url(value.data) };
+    if (typeof value.data === 'string') return value as WireEnvelope;
+    return { ...value, data: uint8ArrayToBase64Url(value.data) };
 };
 
 const getLearnCloudClient = async (
