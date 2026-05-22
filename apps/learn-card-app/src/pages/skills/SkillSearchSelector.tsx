@@ -31,6 +31,9 @@ import type { ApiSkillNode } from '../../helpers/skillFramework.helpers';
 
 type SemanticSkillRecord = ApiSkillNode & { score?: number };
 
+const MAX_SEARCH_LENGTH = 100;
+const SEARCH_DEBOUNCE_MS = 350;
+
 type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
@@ -67,6 +70,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
     const [internalSearchInput, setInternalSearchInput] = useState(initialSearchQuery || '');
+    const [debouncedSearchInput, setDebouncedSearchInput] = useState(initialSearchQuery || '');
     const selectedSkillsSwiperRef = useRef<any>(null);
     const [selectedSkillsAtBeginning, setSelectedSkillsAtBeginning] = useState(true);
     const [selectedSkillsAtEnd, setSelectedSkillsAtEnd] = useState(false);
@@ -79,24 +83,37 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     );
 
     const isControlledSearch = searchQuery !== undefined;
-    const searchInput = isControlledSearch ? searchQuery : internalSearchInput;
+    const searchInput = (isControlledSearch ? searchQuery : internalSearchInput ?? '').slice(
+        0,
+        MAX_SEARCH_LENGTH
+    );
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setDebouncedSearchInput(searchInput);
+        }, SEARCH_DEBOUNCE_MS);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchInput]);
 
     const { data: semanticSearchSkillsData, isLoading: semanticLoading } =
-        useGlobalSemanticSearchSkills(searchInput ?? '', frameworkIds, { limit: 25 });
+        useGlobalSemanticSearchSkills(debouncedSearchInput ?? '', frameworkIds, { limit: 25 });
 
     const setSearchInput = (nextSearchQuery: string) => {
+        const nextValue = nextSearchQuery.slice(0, MAX_SEARCH_LENGTH);
+
         if (isControlledSearch) {
-            onSearchQueryChange?.(nextSearchQuery);
+            onSearchQueryChange?.(nextValue);
             return;
         }
 
-        setInternalSearchInput(nextSearchQuery);
+        setInternalSearchInput(nextValue);
     };
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
-    const hasSearchQuery = Boolean(searchInput?.trim());
+    const hasSearchQuery = Boolean(debouncedSearchInput?.trim());
     const hasGlobalFrameworks = globalSkillFrameworks.length > 0;
 
     const selectedSkillKey = (frameworkId: string, skillId: string) => `${frameworkId}::${skillId}`;
@@ -272,7 +289,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     const totalSemanticSearchResults = semanticSearchSkillsData?.records?.length ?? 0;
     const showSkillSuggestionPrompt =
         showSuggestSkill &&
-        !!searchInput?.trim() &&
+        !!debouncedSearchInput?.trim() &&
         !semanticLoading &&
         totalSemanticSearchResults === 0;
 
@@ -293,6 +310,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 type="text"
                                 value={searchInput}
                                 placeholder={'Search by skill, goal, or job...'}
+                                maxlength={MAX_SEARCH_LENGTH}
                                 onIonInput={e => setSearchInput(e.detail.value ?? '')}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
                             />
