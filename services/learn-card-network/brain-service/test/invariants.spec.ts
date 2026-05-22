@@ -79,4 +79,25 @@ describe('E2EE hardening invariants', () => {
 
         expect(matches).toEqual([]);
     });
+
+    it('sendBoost encrypts credentials for encrypted-only boosts before storing', () => {
+        const boostHelpersPath = path.join(SRC_ROOT, 'helpers', 'boost.helpers.ts');
+        const boostHelpersContents = fs.readFileSync(boostHelpersPath, 'utf8');
+
+        const encryptedOnlyBranchIndex = boostHelpersContents.indexOf(
+            "boost.dataValues.storage === 'encrypted-only'"
+        );
+        const createDagJweCallIndex = boostHelpersContents.indexOf(
+            'credentialToPersist = await learnCard.invoke.createDagJwe'
+        );
+        const storeCredentialCallIndex = boostHelpersContents.indexOf(
+            'storeCredential(credentialToPersist)'
+        );
+
+        expect(encryptedOnlyBranchIndex).toBeGreaterThan(-1);
+        expect(createDagJweCallIndex).toBeGreaterThan(-1);
+        expect(storeCredentialCallIndex).toBeGreaterThan(-1);
+        expect(createDagJweCallIndex).toBeGreaterThan(encryptedOnlyBranchIndex);
+        expect(createDagJweCallIndex).toBeLessThan(storeCredentialCallIndex);
+    });
 });

@@ -168,6 +168,19 @@ export const createReceivedCredentialRelationship = async (
         .run();
 };
 
+export const createSupersessionRelationship = async (
+    oldCredentialId: string,
+    newCredentialId: string
+): Promise<void> => {
+    await Credential.relateTo({
+        alias: 'supersedes',
+        where: {
+            source: { id: newCredentialId },
+            target: { id: oldCredentialId },
+        },
+    });
+};
+
 export const setDefaultClaimedRole = async (
     profile: ProfileType,
     credential: CredentialInstance

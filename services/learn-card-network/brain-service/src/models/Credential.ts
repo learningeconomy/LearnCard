@@ -16,6 +16,7 @@ export type CredentialRelationships = {
         CredentialReceivedProps,
         CredentialReceivedProps
     >;
+    supersedes: ModelRelatedNodesI<typeof Credential, CredentialInstance>;
     instanceOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     issuedViaTransaction: ModelRelatedNodesI<
         typeof ConsentFlowTransaction,
@@ -33,6 +34,9 @@ export const Credential = ModelFactory<CredentialType, CredentialRelationships>(
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
             credential: { type: 'string', required: true },
+        },
+        relationships: {
+            supersedes: { model: 'self', direction: 'out', name: 'SUPERSEDES' },
         },
         primaryKeyField: 'id',
     },

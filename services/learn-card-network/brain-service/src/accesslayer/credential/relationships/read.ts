@@ -1,4 +1,5 @@
 import { inflateObject } from '@helpers/objects.helpers';
+import { neogma } from '@instance';
 import {
     CredentialInstance,
     Profile,
@@ -17,6 +18,29 @@ import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helper
 import { CredentialType } from 'types/credential';
 import { BoostType } from 'types/boost';
 import { DbContractType, DbTermsType, DbTransactionType } from 'types/consentflowcontract';
+
+export const getSupersessionChain = async (credentialId: string): Promise<string[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (anchor:Credential {id: $credentialId})
+         OPTIONAL MATCH pathToOldest = (anchor)-[:SUPERSEDES*0..]->(oldest:Credential)
+         WHERE NOT (oldest)-[:SUPERSEDES]->(:Credential)
+         WITH oldest, length(pathToOldest) AS oldestDepth
+         ORDER BY oldestDepth DESC
+         LIMIT 1
+         MATCH chain = (newest:Credential)-[:SUPERSEDES*0..]->(oldest)
+         WHERE NOT (:Credential)-[:SUPERSEDES]->(newest)
+         RETURN [node IN reverse(nodes(chain)) | node.id] AS chain
+         ORDER BY length(chain) DESC
+         LIMIT 1`,
+        { credentialId }
+    );
+
+    const chain = result.records[0]?.get('chain');
+
+    if (!Array.isArray(chain)) return [];
+
+    return chain.filter((id): id is string => typeof id === 'string');
+};
 
 export const getCredentialSentToProfile = async (
     id: string,
