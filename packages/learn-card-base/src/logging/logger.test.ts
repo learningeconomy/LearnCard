@@ -30,7 +30,8 @@ function makeMockTransport(): SentryTransport & {
 
 beforeEach(() => {
     configureSentryTransport(null);
-    configureLoggerContext({ bugReportsEnabled: true, tenantId: undefined });
+    // Pass null (not undefined) to actually clear tenantId between tests
+    configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
     vi.restoreAllMocks();
 });
 
@@ -39,7 +40,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('PII scrubbing', () => {
-    it('redacts known PII field names', () => {
+    it('scrubs known PII field names', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
 
@@ -69,7 +70,7 @@ describe('PII scrubbing', () => {
         expect(extra.safeField).toBe('visible');
     });
 
-    it('redacts bearer token strings in values', () => {
+    it('scrubs bearer token strings in values', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
 
@@ -89,7 +90,6 @@ describe('PII scrubbing', () => {
         const call = transport.calls.find(c => c.method === 'captureMessage');
         const extra = call!.args[3] as Record<string, unknown>;
         expect(extra.email).toBe('user@example.com');
-        // allowPii itself should not appear in extra
         expect('allowPii' in extra).toBe(false);
     });
 });
@@ -170,6 +170,90 @@ describe('scope prefixing', () => {
         const call = transport.calls.find(c => c.method === 'captureMessage');
         expect(call!.args[2]).toMatchObject({ tenantId: 'acme' });
     });
+
+    it('clears tenantId when passed null', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        configureLoggerContext({ tenantId: 'acme' });
+        configureLoggerContext({ tenantId: null });
+
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        logger.warn('test');
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[2] as Record<string, string>).tenantId).toBeUndefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Primitives and arrays
+// ---------------------------------------------------------------------------
+
+describe('primitives and arrays', () => {
+    it('logs a boolean directly to console', () => {
+        const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+        const log = useLogger('feature');
+        log.info('isEnabled::', false);
+
+        expect(spy).toHaveBeenCalledWith('[feature]', 'isEnabled::', false);
+    });
+
+    it('logs a number directly to console', () => {
+        const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+        const log = useLogger('feature');
+        log.info('count::', 42);
+
+        expect(spy).toHaveBeenCalledWith('[feature]', 'count::', 42);
+    });
+
+    it('logs a string directly to console (not wrapped as Error)', () => {
+        const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+        const log = useLogger('feature');
+        log.info('status::', 'active');
+
+        expect(spy).toHaveBeenCalledWith('[feature]', 'status::', 'active');
+    });
+
+    it('logs an array directly to console', () => {
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const log = useLogger('feature');
+        log.warn('items::', [1, 2, 3]);
+
+        expect(spy).toHaveBeenCalledWith('[feature]', 'items::', [1, 2, 3]);
+    });
+
+    it('sends primitive as { value } in Sentry breadcrumb (info)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.info('flag::', true);
+
+        expect(transport.calls[0].method).toBe('addBreadcrumb');
+        const data = (transport.calls[0].args[0] as { data: Record<string, unknown> }).data;
+        expect(data.value).toBe(true);
+    });
+
+    it('sends primitive as { value } in Sentry captureMessage (warn)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        logger.warn('flag::', false);
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[3] as Record<string, unknown>).value).toBe(false);
+    });
+
+    it('sends primitive as { value } in Sentry captureMessage (error, no Error object)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('count::', 99);
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[3] as Record<string, unknown>).value).toBe(99);
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -202,9 +286,7 @@ describe('dev vs prod transport', () => {
         logger.info('user navigated', { page: 'home' });
 
         expect(transport.calls[0].method).toBe('addBreadcrumb');
-        expect((transport.calls[0].args[0] as { message: string }).message).toBe(
-            'user navigated'
-        );
+        expect((transport.calls[0].args[0] as { message: string }).message).toBe('user navigated');
     });
 
     it('info reaches console in dev (no transport)', () => {
@@ -240,7 +322,7 @@ describe('dev vs prod transport', () => {
         expect(call!.args[0]).toBe(err);
     });
 
-    it('error without Error calls captureMessage', () => {
+    it('error without Error object calls captureMessage', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
 
