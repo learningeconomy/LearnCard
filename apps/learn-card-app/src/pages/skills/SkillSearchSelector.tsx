@@ -23,6 +23,7 @@ import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './skillTypes';
 import type { SelectedSkill } from './skillTypes';
 import SkillSearchFrameworkSection from './SkillSearchFrameworkSection';
+import useDebounce from '../../hooks/useDebounce';
 import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,
@@ -88,13 +89,17 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         MAX_SEARCH_LENGTH
     );
 
-    useEffect(() => {
-        const timeoutId = window.setTimeout(() => {
-            setDebouncedSearchInput(searchInput);
-        }, SEARCH_DEBOUNCE_MS);
+    const updateDebouncedSearchInput = useDebounce(() => {
+        setDebouncedSearchInput(searchInput);
+    }, SEARCH_DEBOUNCE_MS);
 
-        return () => window.clearTimeout(timeoutId);
-    }, [searchInput]);
+    useEffect(() => {
+        updateDebouncedSearchInput();
+
+        return () => {
+            updateDebouncedSearchInput.cancel?.();
+        };
+    }, [searchInput, updateDebouncedSearchInput]);
 
     const { data: semanticSearchSkillsData, isLoading: semanticLoading } =
         useGlobalSemanticSearchSkills(debouncedSearchInput ?? '', frameworkIds, { limit: 25 });
