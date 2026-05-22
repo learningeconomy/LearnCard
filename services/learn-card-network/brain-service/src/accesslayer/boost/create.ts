@@ -22,7 +22,7 @@ export const createBoost = async (
 
     const role = await getCreatorRole(); // Ensure creator role exists
 
-    const { status = BoostStatus.enum.LIVE } = metadata;
+    const { status = BoostStatus.enum.LIVE, encryptedFields, ...metadataWithoutEncryptedFields } = metadata;
 
     const timestamp = new Date().toISOString();
 
@@ -35,7 +35,8 @@ export const createBoost = async (
                     getDidWeb(domain, creator.profileId)
                 ),
                 status,
-                ...((flattenObject as any)(metadata) as any),
+                ...((flattenObject as any)(metadataWithoutEncryptedFields) as any),
+                ...(encryptedFields ? { encryptedFields } : {}),
             },
             profileId: creator.profileId,
             roleId: role.id,
@@ -76,7 +77,7 @@ export const createBoostForListing = async (
 ): Promise<BoostInstance> => {
     const id = uuid();
 
-    const { status = BoostStatus.enum.LIVE } = metadata;
+    const { status = BoostStatus.enum.LIVE, encryptedFields, ...metadataWithoutEncryptedFields } = metadata;
 
     const timestamp = new Date().toISOString();
 
@@ -91,7 +92,8 @@ export const createBoostForListing = async (
                 id,
                 boost: convertCredentialToBoostTemplateJSON(credential, issuerDid),
                 status,
-                ...((flattenObject as any)(metadata) as any),
+                ...((flattenObject as any)(metadataWithoutEncryptedFields) as any),
+                ...(encryptedFields ? { encryptedFields } : {}),
             },
             listingId: listing.listing_id,
             date: timestamp,

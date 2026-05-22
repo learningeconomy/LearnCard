@@ -6,11 +6,16 @@ import { BoostType } from 'types/boost';
 export const updateBoost = async (boost: BoostInstance, updates: Partial<BoostType>) => {
     const currentMeta = (inflateObject as any)(boost.getDataValues() as any).meta;
     const newMeta = { ...(currentMeta || {}), ...(updates.meta || {}) };
+    const { encryptedFields, ...updatesWithoutEncryptedFields } = updates;
 
     const newUpdates = (flattenObject as any)({
-        ...updates,
+        ...updatesWithoutEncryptedFields,
         ...(currentMeta && { meta: newMeta }),
     });
+
+    if (typeof encryptedFields !== 'undefined') {
+        newUpdates.encryptedFields = encryptedFields;
+    }
 
     const result = await new QueryBuilder(new BindParam({ params: newUpdates }))
         .match({ model: Boost, where: { id: boost.id }, identifier: 'boost' })

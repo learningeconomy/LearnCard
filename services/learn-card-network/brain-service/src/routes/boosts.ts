@@ -38,10 +38,16 @@ import {
     shouldAutoAppendTemplateEvidence,
 } from '@helpers/template.helpers';
 import {
+    decryptField,
+    encryptField,
+    getFieldEncryptionKey,
+} from '@helpers/field-encryption.helpers';
+import {
     logCredentialSent,
     logCredentialClaimed,
     logCredentialFailed,
 } from '@helpers/activity.helpers';
+import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -188,6 +194,49 @@ import {
     allocateStatusListEntry,
     appendBitstringStatusListEntries,
 } from '@helpers/status-list.helpers';
+
+const getEncryptedFieldPaths = (encryptedFields?: string[]): string[] => {
+    return Array.isArray(encryptedFields) ? encryptedFields.filter(Boolean) : [];
+};
+
+const transformBoostFieldsForStorage = (boostData: Record<string, any>): Record<string, any> => {
+    const key = getFieldEncryptionKey();
+    const encryptedFields = getEncryptedFieldPaths(boostData.encryptedFields as string[] | undefined);
+
+    if (!key || encryptedFields.length === 0) {
+        return boostData;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const flattenedBoostData: Record<string, unknown> = flattenObject(boostData as Record<string, unknown>) as Record<string, unknown>;
+
+    for (const fieldPath of encryptedFields) {
+        if (typeof flattenedBoostData[fieldPath] === 'undefined') continue;
+
+        flattenedBoostData[fieldPath] = encryptField(JSON.stringify(flattenedBoostData[fieldPath]), key);
+    }
+
+    return inflateObject(flattenedBoostData as any) as Record<string, any>;
+};
+
+const transformBoostFieldsForRead = (boostData: Record<string, any>): Record<string, any> => {
+    const key = getFieldEncryptionKey();
+    const encryptedFields = getEncryptedFieldPaths(boostData.encryptedFields as string[] | undefined);
+
+    if (!key || encryptedFields.length === 0) {
+        return boostData;
+    }
+
+    const flattenedBoostData: Record<string, unknown> = flattenObject(boostData as Record<string, unknown>) as Record<string, unknown>;
+
+    for (const fieldPath of encryptedFields) {
+        if (typeof flattenedBoostData[fieldPath] !== 'string') continue;
+
+        flattenedBoostData[fieldPath] = JSON.parse(decryptField(flattenedBoostData[fieldPath] as string, key));
+    }
+
+    return inflateObject(flattenedBoostData as any) as Record<string, any>;
+};
 
 /**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
@@ -1299,6 +1348,7 @@ export const boostsRouter = t.router({
             ConsumerBoostValidator.partial()
                 .omit({ uri: true, claimPermissions: true, defaultPermissions: true })
                 .extend({
+                    encryptedFields: z.array(z.string()).optional(),
                     credential: VCValidator.or(UnsignedVCValidator),
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
                     defaultPermissions: BoostPermissionsValidator.partial().optional(),
@@ -1318,8 +1368,9 @@ export const boostsRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
             const { credential, claimPermissions, defaultPermissions, skills, ...metadata } = input;
+            const storageReadyMetadata = transformBoostFieldsForStorage(metadata);
 
-            const boost = await createBoost(credential, profile, metadata, ctx.domain);
+            const boost = await createBoost(credential, profile, storageReadyMetadata, ctx.domain);
 
             if (Array.isArray(skills) && skills.length > 0) {
                 await addAlignedSkillsToBoost(boost, skills);
@@ -1359,6 +1410,7 @@ export const boostsRouter = t.router({
                 boost: ConsumerBoostValidator.partial()
                     .omit({ uri: true, claimPermissions: true, defaultPermissions: true })
                     .extend({
+                        encryptedFields: z.array(z.string()).optional(),
                         credential: VCValidator.or(UnsignedVCValidator),
                         claimPermissions: BoostPermissionsValidator.partial().optional(),
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
@@ -1401,7 +1453,14 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const childBoost = await createBoost(credential, profile, metadata, ctx.domain);
+            const storageReadyMetadata = transformBoostFieldsForStorage(metadata);
+
+            const childBoost = await createBoost(
+                credential,
+                profile,
+                storageReadyMetadata,
+                ctx.domain
+            );
 
             await setBoostAsParent(parentBoost, childBoost);
 
@@ -1468,7 +1527,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { id, boost: _boost, ...remaining } = boost;
+            const readableBoost = transformBoostFieldsForRead(boost);
+            const { id, boost: _boost, ...remaining } = readableBoost;
             const parsedBoost = JSON.parse(_boost);
             await injectObv3AlignmentsIntoCredentialForBoost(
                 parsedBoost,
@@ -2667,7 +2727,16 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates, skills } = input;
-            const { name, type, category, status, credential, meta, defaultPermissions } = updates;
+            const {
+                name,
+                type,
+                category,
+                status,
+                credential,
+                meta,
+                defaultPermissions,
+                encryptedFields,
+            } = updates;
 
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
@@ -2682,14 +2751,61 @@ export const boostsRouter = t.router({
             }
 
             const actualUpdates: Partial<BoostType> = {};
+            const boostData = inflateObject(boost.getDataValues() as Record<string, any>) as BoostType;
+            const currentReadableBoost = transformBoostFieldsForRead(boostData);
+            const nextReadableBoost = {
+                ...currentReadableBoost,
+                ...updates,
+                meta: meta ? { ...(currentReadableBoost.meta ?? {}), ...meta } : currentReadableBoost.meta,
+                encryptedFields: encryptedFields ?? currentReadableBoost.encryptedFields,
+            } as BoostType;
+            const storageReadyBoost = transformBoostFieldsForStorage(nextReadableBoost);
+            const previousEncryptedFields = new Set(getEncryptedFieldPaths(boostData.encryptedFields));
+            const nextEncryptedFields = new Set(getEncryptedFieldPaths(storageReadyBoost.encryptedFields));
+            const encryptedMetaChanged =
+                encryptedFields !== undefined &&
+                [...new Set([...previousEncryptedFields, ...nextEncryptedFields])].some(
+                    fieldPath => fieldPath === 'meta' || fieldPath.startsWith('meta.')
+                );
 
-            if (meta) actualUpdates.meta = meta;
+            if (meta || encryptedMetaChanged) actualUpdates.meta = storageReadyBoost.meta;
 
             if (isEditableBoost(boost)) {
-                if (name) actualUpdates.name = name;
-                if (category) actualUpdates.category = category;
-                if (type) actualUpdates.type = type;
-                if (status) actualUpdates.status = status;
+                if (
+                    typeof storageReadyBoost.name !== 'undefined' &&
+                    (typeof name !== 'undefined' ||
+                        previousEncryptedFields.has('name') ||
+                        nextEncryptedFields.has('name'))
+                ) {
+                    actualUpdates.name = storageReadyBoost.name;
+                }
+                if (
+                    typeof storageReadyBoost.category !== 'undefined' &&
+                    (typeof category !== 'undefined' ||
+                        previousEncryptedFields.has('category') ||
+                        nextEncryptedFields.has('category'))
+                ) {
+                    actualUpdates.category = storageReadyBoost.category;
+                }
+                if (
+                    typeof storageReadyBoost.type !== 'undefined' &&
+                    (typeof type !== 'undefined' ||
+                        previousEncryptedFields.has('type') ||
+                        nextEncryptedFields.has('type'))
+                ) {
+                    actualUpdates.type = storageReadyBoost.type;
+                }
+                if (
+                    typeof storageReadyBoost.status !== 'undefined' &&
+                    (typeof status !== 'undefined' ||
+                        previousEncryptedFields.has('status') ||
+                        nextEncryptedFields.has('status'))
+                ) {
+                    actualUpdates.status = storageReadyBoost.status;
+                }
+                if (typeof encryptedFields !== 'undefined') {
+                    actualUpdates.encryptedFields = storageReadyBoost.encryptedFields;
+                }
                 if (credential) {
                     // First normalize existing alignments in the credential
                     // (converts type: 'Alignment' to type: ['Alignment'] and constructs targetUrl)
@@ -2702,7 +2818,7 @@ export const boostsRouter = t.router({
                         getDidWeb(ctx.domain, profile.profileId)
                     );
                 }
-            } else if (!meta && !defaultPermissions) {
+            } else if (typeof actualUpdates.meta === 'undefined' && !defaultPermissions) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:

@@ -20,6 +20,7 @@ export const BoostValidator = _BoostValidator
         id: z.string(),
         boost: z.string(),
         storage: z.enum(['plaintext', 'encrypted-only']).default('plaintext').optional(),
+        encryptedFields: z.array(z.string()).optional(),
     });
 export type BoostType = z.infer<typeof BoostValidator>;
 
