@@ -1,6 +1,9 @@
 export const shouldEncryptForBoost = (boostTemplate: Record<string, unknown>): boolean =>
     boostTemplate.storage === 'encrypted-only';
 
+export const getJweRecipients = (userDid: string, recoveryKeyDid?: string): string[] =>
+    recoveryKeyDid ? [userDid, recoveryKeyDid] : [userDid];
+
 export const encryptCredentialForBoost = async (
     credential: Record<string, unknown>,
     recipientDids: string[],
@@ -16,8 +19,12 @@ export const prepareCredentialForStorage = async (
     boostTemplate: Record<string, unknown>,
     recipientDids: string[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    learnCard: any
+    learnCard: any,
+    recoveryKeyDid?: string
 ): Promise<Record<string, unknown>> => {
     if (!shouldEncryptForBoost(boostTemplate)) return credential;
-    return encryptCredentialForBoost(credential, recipientDids, learnCard);
+    const recipients = recoveryKeyDid
+        ? [...new Set([...recipientDids, recoveryKeyDid])]
+        : recipientDids;
+    return encryptCredentialForBoost(credential, recipients, learnCard);
 };
