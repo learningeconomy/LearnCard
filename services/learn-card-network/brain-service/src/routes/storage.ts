@@ -20,99 +20,16 @@ import { getCredentialById } from '@accesslayer/credential/read';
 import { getPresentationById } from '@accesslayer/presentation/read';
 import { getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
-import { getBoostById, getBoostByUri } from '@accesslayer/boost/read';
+import { getBoostById } from '@accesslayer/boost/read';
 import { canProfileViewBoost } from '@accesslayer/boost/relationships/read';
 import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
 import { isClaimLinkAlreadySetForBoost } from '@cache/claim-links';
 import { getContractById } from '@accesslayer/consentflowcontract/read';
 import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
-import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { BoostStatus } from 'types/boost';
-
-const isBoostCredential = (item: unknown): item is Record<string, unknown> =>
-    !!item &&
-    typeof item === 'object' &&
-    !Array.isArray(item) &&
-    Array.isArray((item as Record<string, unknown>).type) &&
-    ((item as Record<string, unknown>).type as string[])?.includes('BoostCredential');
-
-const getSubjects = (credential: Record<string, unknown>): Record<string, unknown>[] => {
-    const subject = credential.credentialSubject;
-    if (!subject) return [];
-    if (Array.isArray(subject)) return subject as Record<string, unknown>[];
-    return [subject as Record<string, unknown>];
-};
-
-const subjectHasAlignments = (subject: Record<string, unknown>): boolean => {
-    const achievement = subject.achievement as Record<string, unknown> | undefined;
-    if (Array.isArray(achievement?.alignment) && (achievement.alignment as unknown[]).length > 0)
-        return true;
-    if (Array.isArray(subject.alignment) && (subject.alignment as unknown[]).length > 0)
-        return true;
-    return false;
-};
-
-const credentialHasAlignments = (credential: Record<string, unknown>): boolean =>
-    getSubjects(credential).some(subjectHasAlignments);
 
 const isDraftOrProvisionalBoost = (status?: string): boolean =>
     status === BoostStatus.enum.DRAFT || status === BoostStatus.enum.PROVISIONAL;
-
-const getBoostUriFromCredential = (credential: Record<string, unknown>): string | undefined => {
-    const boostId = credential.boostId;
-    return typeof boostId === 'string' && boostId.length > 0 ? boostId : undefined;
-};
-
-type BoostInstanceLike = {
-    id: string;
-    boost: string;
-    name?: string;
-    status?: 'DRAFT' | 'PROVISIONAL' | 'LIVE';
-    type?: string;
-    category?: string;
-    autoConnectRecipients?: boolean;
-    defaultPermissions?: {
-        canShare?: boolean;
-        canRevoke?: boolean;
-        canDelete?: boolean;
-    };
-    allowAnyoneToCreateChildren?: boolean;
-    createdAt?: string;
-    updatedAt?: string;
-};
-
-const ensureAlignmentsForBoostCredential = async (
-    credential: Record<string, unknown>,
-    domain: string,
-    options: { boostInstance?: BoostInstanceLike; boostUri?: string }
-): Promise<boolean> => {
-    if (!isBoostCredential(credential)) return false;
-    if (credentialHasAlignments(credential)) return false;
-
-    const { boostInstance: providedInstance, boostUri: providedUri } = options;
-
-    if (providedInstance) {
-        await injectObv3AlignmentsIntoCredentialForBoost(
-            credential as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[0],
-            providedInstance as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[1],
-            domain
-        );
-        return true;
-    }
-
-    const boostUri = providedUri ?? getBoostUriFromCredential(credential);
-    if (!boostUri) return false;
-
-    const instance = await getBoostByUri(boostUri);
-    if (!instance) return false;
-
-    await injectObv3AlignmentsIntoCredentialForBoost(
-        credential as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[0],
-        instance as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[1],
-        domain
-    );
-    return true;
-};
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -218,38 +135,6 @@ export const storageRouter = t.router({
             const cachedResponse = await getCachedStorageByUri(uri);
 
             if (cachedResponse) {
-                let mutated = false;
-
-                if (
-                    type === 'credential' &&
-                    cachedResponse &&
-                    typeof cachedResponse === 'object' &&
-                    !Array.isArray(cachedResponse)
-                ) {
-                    mutated = await ensureAlignmentsForBoostCredential(
-                        cachedResponse,
-                        localDomain,
-                        {}
-                    );
-                }
-
-                if (
-                    type === 'boost' &&
-                    cachedResponse &&
-                    typeof cachedResponse === 'object' &&
-                    !Array.isArray(cachedResponse) &&
-                    isBoostCredential(cachedResponse) &&
-                    !credentialHasAlignments(cachedResponse)
-                ) {
-                    const boostInstance = await getBoostById(id);
-                    if (boostInstance) {
-                        mutated =
-                            (await ensureAlignmentsForBoostCredential(cachedResponse, localDomain, {
-                                boostInstance,
-                            })) || mutated;
-                    }
-                }
-
                 if (type === 'boost') {
                     const boostInstance = await getBoostById(id);
                     if (!boostInstance) {
@@ -288,12 +173,6 @@ export const storageRouter = t.router({
                     }
                 }
 
-                if (mutated)
-                    await setStorageForUri(
-                        uri,
-                        cachedResponse as Parameters<typeof setStorageForUri>[1]
-                    );
-
                 return cachedResponse;
             }
 
@@ -305,8 +184,6 @@ export const storageRouter = t.router({
                 }
 
                 const credential = JSON.parse(instance.credential);
-
-                await ensureAlignmentsForBoostCredential(credential, localDomain, {});
 
                 await setStorageForUri(uri, credential);
 
@@ -364,12 +241,6 @@ export const storageRouter = t.router({
                 }
 
                 const boost = JSON.parse(instance.boost);
-
-                if (isBoostCredential(boost)) {
-                    await ensureAlignmentsForBoostCredential(boost, localDomain, {
-                        boostInstance: instance,
-                    });
-                }
 
                 await setStorageForUri(uri, boost);
 
