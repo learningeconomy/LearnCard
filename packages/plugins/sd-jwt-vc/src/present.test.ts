@@ -58,6 +58,19 @@ const tamperIssuerSignature = (compact: string): string => {
     return [tamperedJwt, ...rest].join('~');
 };
 
+const buildMinimalCompactWithSdAlg = (sdAlg: string): string => {
+    const b64 = (obj: unknown) =>
+        Buffer.from(JSON.stringify(obj)).toString('base64url');
+    const header = b64({ alg: 'EdDSA', typ: 'dc+sd-jwt', kid: ISSUER_KID });
+    const payload = b64({
+        iss: ISSUER_DID,
+        iat: 1700000000,
+        vct: 'https://example.com/credentials/test-cert',
+        _sd_alg: sdAlg,
+    });
+    return `${header}.${payload}.fakesig~`;
+};
+
 interface IssueCredentialOptions {
     holderPublicJwk?: JWK;
     payloadOverrides?: Record<string, unknown>;
@@ -206,6 +219,25 @@ describe('presentSdJwtVc', () => {
             });
         });
 
+        it('throws kb_jwt_invalid when audience is an empty string', async () => {
+            const holder = await makeHolderKeypair();
+            const { compact } = await issueCredential({ holderPublicJwk: holder.publicJwk });
+            const kbSigner = await createEd25519KbSigner({ privateJwk: holder.privateJwk });
+
+            await expect(
+                presentSdJwtVc(compact, {
+                    audience: '',
+                    nonce: 'abc',
+                    kbSigner,
+                    activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                    verify: makeVerificationOk(),
+                })
+            ).rejects.toMatchObject({
+                code: 'kb_jwt_invalid',
+                message: expect.stringContaining('audience is required'),
+            });
+        });
+
         it('throws kb_jwt_invalid when nonce is missing', async () => {
             const holder = await makeHolderKeypair();
             const { compact } = await issueCredential({ holderPublicJwk: holder.publicJwk });
@@ -214,6 +246,25 @@ describe('presentSdJwtVc', () => {
             await expect(
                 presentSdJwtVc(compact, {
                     audience: 'https://verifier.example.com',
+                    kbSigner,
+                    activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
+                    verify: makeVerificationOk(),
+                })
+            ).rejects.toMatchObject({
+                code: 'kb_jwt_invalid',
+                message: expect.stringContaining('nonce is required'),
+            });
+        });
+
+        it('throws kb_jwt_invalid when nonce is an empty string', async () => {
+            const holder = await makeHolderKeypair();
+            const { compact } = await issueCredential({ holderPublicJwk: holder.publicJwk });
+            const kbSigner = await createEd25519KbSigner({ privateJwk: holder.privateJwk });
+
+            await expect(
+                presentSdJwtVc(compact, {
+                    audience: 'https://verifier.example.com',
+                    nonce: '',
                     kbSigner,
                     activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
                     verify: makeVerificationOk(),
@@ -338,6 +389,15 @@ describe('presentSdJwtVc', () => {
                     verify: makeVerificationOk(),
                 })
             ).rejects.toMatchObject({ code: 'unsupported_cnf_confirmation_type' });
+        });
+
+        it('throws unsupported_sd_alg when credential carries an unsupported _sd_alg value', async () => {
+            const compact = buildMinimalCompactWithSdAlg('sha-512');
+
+            await expect(presentSdJwtVc(compact)).rejects.toMatchObject({
+                code: 'unsupported_sd_alg',
+                message: expect.stringContaining('sha-512'),
+            });
         });
     });
 });

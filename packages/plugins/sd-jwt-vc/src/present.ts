@@ -150,6 +150,15 @@ export interface SdJwtPresentation {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Allowlisted `_sd_alg` values (RFC 9901 §4.2.4).
+ *
+ * Only `sha-256` is supported today because that is the only digest
+ * algorithm `sha256Hasher` implements. Extend this set (and swap in a
+ * multi-alg hasher) when sha-384 / sha-512 support lands.
+ */
+const SUPPORTED_SD_ALGS = new Set<string>(['sha-256']);
+
+/**
  * Build a holder-bound, selectively-disclosing SD-JWT-VC presentation.
  *
  * Throws `SdJwtVcError` (typed `code` field) on:
@@ -157,6 +166,8 @@ export interface SdJwtPresentation {
  * - `kb_jwt_invalid` — the credential has `cnf` but the caller didn't
  *   supply `audience`, `nonce`, or `kbSigner`, or the underlying
  *   @sd-jwt/sd-jwt-vc library rejected the KB-JWT.
+ * - `unsupported_sd_alg` — the credential's `_sd_alg` is not in the
+ *   {@link SUPPORTED_SD_ALGS} allowlist.
  *
  * Pure: no network, no LearnCard plane access. Caller is responsible
  * for resolving the holder's keypair upstream.
@@ -262,14 +273,17 @@ export const presentSdJwtVc = async (
     const kbSignAlg = options.kbSignAlg ?? 'EdDSA';
     const now = options.now ? options.now() : Math.floor(Date.now() / 1000);
 
-    // The credential's `_sd_alg` (if present, RFC 9901 §4.2.4) pins
-    // the digest algorithm the issuer used. Reuse it for KB-JWT
-    // `sd_hash` so the verifier computes matching hashes. Default to
-    // sha-256 (the only alg our hasher supports today).
-    const hashAlg: HashAlgorithm =
-        typeof parsed.rawPayload._sd_alg === 'string'
-            ? (parsed.rawPayload._sd_alg as HashAlgorithm)
-            : 'sha-256';
+    const rawSdAlg =
+        typeof parsed.rawPayload._sd_alg === 'string' ? parsed.rawPayload._sd_alg : 'sha-256';
+
+    if (!SUPPORTED_SD_ALGS.has(rawSdAlg)) {
+        throw new SdJwtVcError(
+            'unsupported_sd_alg',
+            `Unsupported _sd_alg "${rawSdAlg}": this wallet only supports ${[...SUPPORTED_SD_ALGS].join(', ')}`
+        );
+    }
+
+    const hashAlg = rawSdAlg as HashAlgorithm;
 
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,

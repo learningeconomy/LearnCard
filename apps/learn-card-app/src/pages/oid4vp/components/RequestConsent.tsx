@@ -22,6 +22,9 @@ import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/Boo
 interface ParsedSdJwtForConsent {
     disclosureKeys?: string[];
     claims?: Record<string, unknown>;
+    issuer?: string;
+    vct?: string;
+    expiresAt?: Date;
 }
 
 interface SdJwtAwareInvoke {
@@ -37,6 +40,20 @@ interface SdJwtConsentStatus {
 
 const humanizeClaimKey = (key: string) => {
     return key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ').replace(/^./, str => str.toUpperCase()).trim();
+};
+
+const formatIssuer = (iss: string): string => {
+    if (!iss) return '';
+    if (iss.startsWith('did:')) {
+        const parts = iss.split(':');
+        if (parts[1] === 'web') return parts.slice(2).join('.');
+        return iss.length > 20 ? `${iss.slice(0, 12)}\u2026${iss.slice(-6)}` : iss;
+    }
+    try {
+        return new URL(iss).hostname;
+    } catch {
+        return iss.length > 30 ? `${iss.slice(0, 27)}\u2026` : iss;
+    }
 };
 
 /**
@@ -122,8 +139,12 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     const [parsingSdJwts, setParsingSdJwts] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
+        let cancelled = false;
+
         const parseSdJwts = async () => {
             const wallet = await initWallet();
+            if (cancelled) return;
+
             const newParsing: Record<string, boolean> = {};
 
             for (const row of rows) {
@@ -139,9 +160,11 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
             }
 
             if (Object.keys(newParsing).length > 0) {
-                setParsingSdJwts(prev => ({ ...prev, ...newParsing }));
-                
+                if (!cancelled) setParsingSdJwts(prev => ({ ...prev, ...newParsing }));
+
                 for (const cacheKey of Object.keys(newParsing)) {
+                    if (cancelled) break;
+
                     const [rowId, candidateId] = cacheKey.split('::');
                     const row = rows.find(r => r.id === rowId);
                     const candidate = row?.candidates.find(c => c.candidate.id === candidateId)?.candidate;
@@ -153,8 +176,10 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         if (typeof invoke.parseSdJwtVc !== 'function') continue;
                         try {
                             const parsed = await invoke.parseSdJwtVc(compact);
+                            if (cancelled) continue;
+
                             setParsedSdJwts(prev => ({ ...prev, [cacheKey]: parsed }));
-                            
+
                             setPicks(prev => {
                                 if (prev.disclose[rowId]) return prev;
                                 const initialDisclose: Record<string, boolean> = {};
@@ -170,24 +195,30 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                 };
                             });
                         } catch (e) {
-                            presentToast('Couldn’t read one credential’s shareable claims.', {
-                                type: ToastTypeEnum.Error,
-                                hasDismissButton: true,
-                            });
+                            if (!cancelled) {
+                                presentToast('Couldn\u2019t read one credential\u2019s shareable claims.', {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
+                            }
                         }
                     }
                 }
 
-                setParsingSdJwts(prev => {
-                    const next = { ...prev };
-                    for (const key of Object.keys(newParsing)) {
-                        delete next[key];
-                    }
-                    return next;
-                });
+                if (!cancelled) {
+                    setParsingSdJwts(prev => {
+                        const next = { ...prev };
+                        for (const key of Object.keys(newParsing)) {
+                            delete next[key];
+                        }
+                        return next;
+                    });
+                }
             }
         };
+
         parseSdJwts();
+        return () => { cancelled = true; };
     }, [rows, picks.row, initWallet, presentToast]);
 
     const sdJwtStatuses = useMemo<Record<string, SdJwtConsentStatus>>(() => {
@@ -366,6 +397,29 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
 };
 
 // -----------------------------------------------------------------
+// Required-claim read-only row (always-shared JWT claims)
+// -----------------------------------------------------------------
+
+const RequiredClaimRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+    <li className="flex items-start gap-3 p-2 rounded-xl">
+        <div className="mt-0.5 shrink-0">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center bg-grayscale-100">
+                <Lock className="w-3 h-3 text-grayscale-500" strokeWidth={2.5} />
+            </div>
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-grayscale-900 truncate">{label}</span>
+                <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-grayscale-100 text-xs text-grayscale-500 leading-none">
+                    Always shared
+                </span>
+            </div>
+            <span className="text-xs text-grayscale-500 truncate mt-0.5">{value}</span>
+        </div>
+    </li>
+);
+
+// -----------------------------------------------------------------
 // Row component
 // -----------------------------------------------------------------
 
@@ -468,49 +522,78 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parse
                 </div>
             )}
 
-            {parsedSdJwt && (parsedSdJwt.disclosureKeys?.length ?? 0) > 0 && (
+            {parsedSdJwt && (
+                (parsedSdJwt.disclosureKeys?.length ?? 0) > 0 ||
+                parsedSdJwt.issuer ||
+                parsedSdJwt.vct
+            ) && (
                 <div className="mt-4 pt-4 border-t border-grayscale-200">
                     <p className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wide">
                         What you'll share
                     </p>
-                    <p className="text-xs text-grayscale-500 leading-relaxed mb-3">
-                        Uncheck anything you don't want to share with {verifierName}.
-                    </p>
-                    
-                    <ul className="space-y-1 mb-4">
-                        {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
-                            const val = parsedSdJwt.claims?.[key];
-                            const isChecked = discloseFrame?.[key] ?? true;
-                            return (
-                                <li key={key}>
-                                    <label className="flex items-start gap-3 p-2 rounded-xl hover:bg-grayscale-10 cursor-pointer transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={isChecked}
-                                            onChange={(e) => onClaimChange?.(key, e.target.checked)}
-                                            className="sr-only"
-                                        />
-                                        <div className="mt-0.5 shrink-0">
-                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isChecked ? 'bg-emerald-100 text-emerald-600' : 'bg-grayscale-200 text-transparent'}`}>
-                                                <Check className="w-3 h-3" strokeWidth={3} />
-                                            </div>
-                                        </div>
-                                        <div className={`flex flex-col min-w-0 transition-opacity ${isChecked ? 'opacity-100' : 'opacity-50'}`}>
-                                            <span className="text-sm font-medium text-grayscale-900 truncate">
-                                                {humanizeClaimKey(key)}
-                                            </span>
-                                            <span className="text-xs text-grayscale-500 truncate">
-                                                {isChecked ? (typeof val === 'object' ? JSON.stringify(val) : String(val)) : 'hidden'}
-                                            </span>
-                                        </div>
-                                    </label>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                    <p className="text-xs text-grayscale-500 leading-relaxed">
-                        Issuer name and credential type are always shared.
-                    </p>
+
+                    {(parsedSdJwt.issuer || parsedSdJwt.vct || parsedSdJwt.expiresAt) && (
+                        <ul className="space-y-1 mb-3">
+                            {parsedSdJwt.issuer && (
+                                <RequiredClaimRow
+                                    label="Issuer"
+                                    value={formatIssuer(parsedSdJwt.issuer)}
+                                />
+                            )}
+                            {parsedSdJwt.vct && (
+                                <RequiredClaimRow
+                                    label="Credential type"
+                                    value={parsedSdJwt.vct}
+                                />
+                            )}
+                            {parsedSdJwt.expiresAt && (
+                                <RequiredClaimRow
+                                    label="Expires"
+                                    value={parsedSdJwt.expiresAt.toLocaleDateString()}
+                                />
+                            )}
+                        </ul>
+                    )}
+
+                    {(parsedSdJwt.disclosureKeys?.length ?? 0) > 0 && (
+                        <>
+                            <p className="text-xs text-grayscale-500 leading-relaxed mb-3">
+                                Uncheck anything you don&apos;t want to share with {verifierName}.
+                            </p>
+
+                            <ul className="space-y-1">
+                                {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
+                                    const val = parsedSdJwt.claims?.[key];
+                                    const isChecked = discloseFrame?.[key] ?? true;
+                                    return (
+                                        <li key={key}>
+                                            <label className="flex items-start gap-3 p-2 rounded-xl hover:bg-grayscale-10 cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={(e) => onClaimChange?.(key, e.target.checked)}
+                                                    className="sr-only"
+                                                />
+                                                <div className="mt-0.5 shrink-0">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isChecked ? 'bg-emerald-100 text-emerald-600' : 'bg-grayscale-200 text-transparent'}`}>
+                                                        <Check className="w-3 h-3" strokeWidth={3} />
+                                                    </div>
+                                                </div>
+                                                <div className={`flex flex-col min-w-0 transition-opacity ${isChecked ? 'opacity-100' : 'opacity-50'}`}>
+                                                    <span className="text-sm font-medium text-grayscale-900 truncate">
+                                                        {humanizeClaimKey(key)}
+                                                    </span>
+                                                    <span className="text-xs text-grayscale-500 truncate">
+                                                        {isChecked ? (typeof val === 'object' ? JSON.stringify(val) : String(val)) : 'hidden'}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </>
+                    )}
                 </div>
             )}
             {isParsingSdJwt && (

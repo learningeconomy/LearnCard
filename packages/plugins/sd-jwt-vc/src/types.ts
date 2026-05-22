@@ -68,6 +68,7 @@ export type SdJwtVcErrorCode =
     | 'missing_vct'
     | 'missing_alg'
     | 'unsupported_alg'
+    | 'unsupported_sd_alg'
     | 'invalid_disclosure'
     | 'disclosure_hash_mismatch'
     | 'issuer_resolution_failed'
