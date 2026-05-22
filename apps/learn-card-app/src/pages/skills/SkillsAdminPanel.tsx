@@ -84,9 +84,6 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
                                     framework={framework}
                                     buttonClassName="flex gap-[10px] p-[10px] bg-white rounded-[15px] shadow-bottom-2-4 items-center text-left"
                                     onClick={() => {
-                                        console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                                        console.log('framework:', framework);
-
                                         newModal(
                                             <BrowseFrameworkPage
                                                 frameworkInfo={framework}

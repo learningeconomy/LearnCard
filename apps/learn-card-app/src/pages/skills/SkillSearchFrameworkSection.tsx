@@ -207,7 +207,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
                         disabled={isSavingSkills}
                         className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <CompetencyIcon icon={skill.icon!} />
+                        <CompetencyIcon icon={skill.icon} />
                         <span className="text-grayscale-900 font-poppins text-[17px] line-clamp-2 text-left">
                             {skill?.targetName}
                         </span>
