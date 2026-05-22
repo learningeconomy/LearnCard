@@ -5,7 +5,6 @@ import {
     DIDAuthModal,
     VCClaimModalController,
     useIsLoggedIn,
-    lcRoutes as tabRoutes,
     lazyWithRetry,
     ChunkBoundary,
 } from 'learn-card-base';
@@ -16,6 +15,7 @@ import * as Sentry from '@sentry/react';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
+const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
 const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
@@ -233,6 +233,7 @@ export const Routes: React.FC = () => {
                             path="/share-creds/:uri/:seed"
                             component={ViewCredsBundle}
                         />
+                        <PrivateRoute exact path="/dashboard" component={DashboardPage} />
                         <PrivateRoute exact path="/home" component={WalletPage} />
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
                         <PrivateRoute exact path="/passport" component={WalletPage} />
@@ -414,7 +415,7 @@ export const Routes: React.FC = () => {
                             path="/"
                             render={() =>
                                 isLoggedIn ? (
-                                    <Redirect to={tabRoutes.tab1} />
+                                    <Redirect to="/dashboard" />
                                 ) : (
                                     <Redirect to="/login" />
                                 )
@@ -454,6 +455,7 @@ const AI_GATED_PATHS = new Set([
  * not worth eagerly downloading for end users.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    '/dashboard': () => DashboardPage.preload(),
     // Wallet (Passport) — same chunk for all three aliases.
     '/passport': () => WalletPage.preload(),
     '/wallet': () => WalletPage.preload(),

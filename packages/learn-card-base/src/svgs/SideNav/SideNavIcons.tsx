@@ -18,6 +18,7 @@ import PortfolioTwoTonedIcon from './PortfolioTwoTonedIcon';
 import AssistanceTwoTonedIcon from './AssistanceTwoTonedIcon';
 import FamiliesTwoTonedIcon from './FamiliesTwoTonedIcon';
 import CompassTwoTonedIcon from './CompassTwoTonedIcon';
+import DashboardTwoTonedIcon from './DashboardTwoTonedIcon';
 
 export const SideNavIcons = {
     // primary links
@@ -42,4 +43,5 @@ export const SideNavIcons = {
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
     CompassTwoTonedIcon,
+    DashboardTwoTonedIcon,
 };

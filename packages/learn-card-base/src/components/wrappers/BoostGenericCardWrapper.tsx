@@ -45,6 +45,8 @@ type BoostGenericCardWrapperProps = {
     uri?: string;
     indicatorColor?: string;
     unknownVerifierTitle?: string;
+    relativeDate?: boolean;
+    compact?: boolean;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -78,6 +80,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     uri,
     indicatorColor,
     unknownVerifierTitle,
+    relativeDate,
+    compact,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -96,6 +100,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 indicatorColor={indicatorColor}
                 uri={uri}
                 unknownVerifierTitle={unknownVerifierTitle}
+                relativeDate={relativeDate}
+                compact={compact}
             />
         );
     }

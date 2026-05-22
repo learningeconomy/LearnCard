@@ -20,6 +20,7 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
  * Themes can override to reorder, rename, or remove specific categories.
  */
 export const DEFAULT_SIDE_MENU_SECONDARY_LINKS: SideMenuLink[] = [
+    { id: SideMenuLinksEnum.dashboard, label: 'Dashboard', path: '/dashboard' },
     { id: SideMenuLinksEnum.wallet, label: 'Passport', path: '/passport' },
     { id: SideMenuLinksEnum.aiTopics, label: 'AI Sessions', path: '/ai/topics' },
     { id: SideMenuLinksEnum.aiInsights, label: 'AI Insights', path: '/ai/insights' },

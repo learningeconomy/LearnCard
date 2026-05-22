@@ -85,6 +85,7 @@ const {
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
     CompassTwoTonedIcon,
+    DashboardTwoTonedIcon,
 } = ColorfulSideNavIcons;
 
 const {
@@ -267,6 +268,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // `Compass` is still used as a hero mark on the onboard
             // sub-header and AI session plan.
             pathways: CompassTwoTonedIcon,
+            dashboard: DashboardTwoTonedIcon,
         },
 
         navbar: {
@@ -326,6 +328,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // variant when the feature graduates out of flag-only
             // rollout.
             pathways: CompassTwoTonedIcon,
+            dashboard: DashboardTwoTonedIcon,
         },
 
         navbar: {
