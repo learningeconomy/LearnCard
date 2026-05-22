@@ -45,7 +45,9 @@ import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyId
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
-import { Modals } from 'learn-card-base';
+import { Modals, useLogger } from 'learn-card-base';
+
+const log = useLogger('app-router');
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
@@ -364,7 +366,7 @@ const AppRouter: React.FC = () => {
                         queryClient,
                     });
                 } catch (error) {
-                    console.error('Backfill consent error (non-blocking):', error);
+                    log.error('Backfill consent error (non-blocking)', error);
                 }
             }
         };
