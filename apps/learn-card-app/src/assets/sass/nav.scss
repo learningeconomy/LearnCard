@@ -45,8 +45,13 @@ ion-tab-bar {
 .mobile-nav-notification-button {
     position: absolute;
     right: 20px;
-    top: 49%;
-    transform: translateY(-50%);
+    // Bar has pb-[15px]; flex siblings center within content area (above the
+    // padding), so absolute centering at 50% appears below them. The bell
+    // icon also runs slightly taller (40px) than Apps' rocket, so the offset
+    // here is larger than the hamburger's to keep visual alignment.
+    // Paired with translateY(-45%) (instead of -50%) and mt-0 on the label.
+    top: calc(50% - 11px);
+    transform: translateY(-45%);
     z-index: 9999;
     background: none;
 
@@ -61,7 +66,8 @@ ion-tab-bar {
 .mobile-nav-hamburger-button {
     background: none;
     position: absolute;
-    top: 50%;
+    // Same bar-padding offset as .mobile-nav-notification-button.
+    top: calc(50% - 7px);
     left: 20px;
     transform: translateY(-50%);
     height: 35px;
