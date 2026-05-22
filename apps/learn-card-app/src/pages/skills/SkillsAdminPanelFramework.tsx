@@ -1,4 +1,5 @@
 import React from 'react';
+import { useGetSkillFrameworkById } from 'learn-card-base';
 
 import FrameworkImage from '../SkillFrameworks/FrameworkImage';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -18,11 +19,19 @@ const SkillsAdminPanelFramework: React.FC<SkillsAdminPanelFrameworkProps> = ({
     buttonClassName,
     onClick,
 }) => {
-    const sourceURI = 'sourceURI' in framework ? framework.sourceURI : undefined;
+    const { data: frameworkData } = useGetSkillFrameworkById(
+        framework.id,
+        undefined,
+        !framework.image
+    );
+
+    const sourceURI =
+        'sourceURI' in framework ? framework.sourceURI : frameworkData?.framework?.sourceURI;
+    const image = framework.image ?? frameworkData?.framework?.image;
 
     return (
         <button className={buttonClassName} onClick={onClick}>
-            <FrameworkImage image={framework.image} />
+            <FrameworkImage image={image} />
 
             <div className="flex flex-col items-start">
                 <span className="font-poppins text-[14px] font-[600] leading-[130%] line-clamp-1 text-grayscale-900">
