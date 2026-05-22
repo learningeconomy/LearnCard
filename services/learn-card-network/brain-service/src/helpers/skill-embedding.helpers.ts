@@ -26,8 +26,8 @@ const embeddingsResponseValidator = z.array(embeddingResponseValidator);
 const getEmbeddingBatchSize = (): number => {
     const raw = Number(
         process.env.SKILL_EMBEDDING_BATCH_SIZE ??
-        process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
-        25
+            process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
+            25
     );
     return Math.min(Math.max(raw, 1), 100);
 };

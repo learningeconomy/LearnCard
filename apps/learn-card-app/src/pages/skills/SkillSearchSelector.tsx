@@ -160,19 +160,34 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         );
     };
 
-    const handleAddSkillToSelection = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
-        const frameworkId = skill.targetFramework ?? frameworkIds[0] ?? '';
+    const handleAddSkillToSelection = (
+        skill: SkillFrameworkNode,
+        proficiencyLevel: SkillLevel,
+        frameworkIdFromParent?: string
+    ) => {
+        const frameworkId =
+            frameworkIdFromParent ?? skill.frameworkId ?? skill.targetFramework ?? '';
 
         if (!frameworkId) {
             return;
         }
 
+        const normalizedSkill: SkillFrameworkNode = {
+            ...skill,
+            frameworkId,
+            targetFramework: skill.targetFramework ?? frameworkId,
+        };
+
         if (onAddSkill) {
-            onAddSkill(skill, proficiencyLevel);
+            onAddSkill(normalizedSkill, proficiencyLevel);
             return;
         }
 
-        handleToggleSelect(frameworkId, skill.id!, proficiencyLevel);
+        if (!skill.id) {
+            return;
+        }
+
+        handleToggleSelect(frameworkId, skill.id, proficiencyLevel);
     };
 
     const handleEditSkillInSelection = (

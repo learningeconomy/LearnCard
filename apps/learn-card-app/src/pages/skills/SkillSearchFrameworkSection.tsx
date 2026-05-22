@@ -137,13 +137,33 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
     const openAddSkillModal = (skill: SkillFrameworkNode) => {
         const modalFrameworkId = skill.targetFramework ?? framework.frameworkId;
 
+        const normalizeSkillForFramework = (
+            skillToNormalize: SkillFrameworkNode,
+            explicitFrameworkId?: string
+        ): SkillFrameworkNode => ({
+            ...skillToNormalize,
+            frameworkId: explicitFrameworkId ?? modalFrameworkId,
+            targetFramework:
+                skillToNormalize.targetFramework ?? explicitFrameworkId ?? modalFrameworkId,
+        });
+
         newModal(
             <AddSkillModal
                 frameworkId={modalFrameworkId}
                 skill={skill}
-                handleAdd={onAddSkill}
+                handleAdd={(nextSkill, proficiencyLevel, relatedFrameworkId) =>
+                    onAddSkill(
+                        normalizeSkillForFramework(nextSkill, relatedFrameworkId),
+                        proficiencyLevel
+                    )
+                }
                 selectedSkills={selectedSkills}
-                handleAddRelatedSkill={onAddSkill}
+                handleAddRelatedSkill={(nextSkill, proficiencyLevel, relatedFrameworkId) =>
+                    onAddSkill(
+                        normalizeSkillForFramework(nextSkill, relatedFrameworkId),
+                        proficiencyLevel
+                    )
+                }
                 handleEditRelatedSkill={(skillId, proficiencyLevel) =>
                     onEditSkill(modalFrameworkId, skillId, proficiencyLevel)
                 }
