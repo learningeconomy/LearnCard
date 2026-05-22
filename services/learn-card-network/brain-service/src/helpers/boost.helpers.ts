@@ -8,7 +8,7 @@ import {
     LCNNotificationTypeEnumValidator,
     ContactMethodQueryType,
 } from '@learncard/types';
-import { isVC2Format } from '@learncard/helpers';
+import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import {
     CredentialIssuer,
@@ -46,6 +46,7 @@ import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 import { computeBoostTemplateHash } from './boost-hash.helpers';
+import { getLearnCard } from './learnCard.helpers';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -324,8 +325,16 @@ export const sendBoost = async ({
             let boostUri: string | undefined;
             const fromProfile = getIssuerOwnerProfile(from);
 
+            let credentialToPersist = credential;
+
+            // PHASE 3.4: encrypt-before-persist for encrypted-only boosts
+            if (boost.dataValues.storage === 'encrypted-only' && !isEncrypted(credentialToPersist)) {
+                const learnCard = await getLearnCard();
+                credentialToPersist = await learnCard.invoke.createDagJwe(credentialToPersist, [to.did]);
+            }
+
             const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
+                storeCredential(credentialToPersist)
             );
 
             const tasks = [

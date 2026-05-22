@@ -8,17 +8,24 @@ const STORAGE_TTL = 60 * 60 * 24;
 
 export const getStorageCacheKey = (uri: string): string => `storage:${uri}`;
 
+export const getStorageContentHashCacheKey = (hash: string): string => `storage:hash:${hash}`;
+
 export const getStorageContentHashKey = (content: unknown): string =>
-    `storage:hash:${createHash('sha256').update(JSON.stringify(content)).digest('hex')}`;
+    getStorageContentHashCacheKey(
+        createHash('sha256').update(JSON.stringify(content)).digest('hex')
+    );
 
 export const getCachedStorageByUri = async (
     uri: string
 ): Promise<
     UnsignedVC | VC | VP | JWE | ConsentFlowContract | ConsentFlowTerms | null | undefined
 > => {
-    const result = await cache.get(getStorageCacheKey(uri), true, STORAGE_TTL);
+    const cacheKey = uri.startsWith('storage:hash:') ? uri : getStorageCacheKey(uri);
+    const result = await cache.get(cacheKey, true, STORAGE_TTL);
 
     if (!result) return undefined;
+
+    if (uri.startsWith('storage:hash:')) return JSON.parse(result);
 
     const parsedResult = JSON.parse(result);
     const contentHashResult = await cache.get(

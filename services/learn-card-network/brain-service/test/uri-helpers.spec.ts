@@ -10,12 +10,15 @@ vi.mock('@accesslayer/skill/read', () => ({ getSkillByFrameworkAndId: vi.fn() })
 vi.mock('@helpers/learnCard.helpers', () => ({ getLearnCard: vi.fn() }));
 
 import {
+    constructContentAddressedUri,
     escapeColonsInDomain,
     constructUri,
+    getHashFromContentAddressedUri,
     getUriParts,
     getIdFromUri,
     getDomainFromUri,
     getSkillCompoundFromUri,
+    isContentAddressedUri,
 } from '@helpers/uri.helpers';
 
 // ─── Domain permutations ────────────────────────────────────────────────────
@@ -64,6 +67,23 @@ describe('escapeColonsInDomain', () => {
     it('handles URIs with already-encoded %3A (no double encoding)', () => {
         const uri = 'lc:network:pr-99.preview.learncard.ai%3Abrain/trpc:boost:abc123';
         expect(escapeColonsInDomain(uri)).toBe(uri);
+    });
+});
+
+describe('content-addressed URIs', () => {
+    it('detects lc:cred URIs', () => {
+        expect(isContentAddressedUri('lc:cred:abc123')).toBe(true);
+        expect(isContentAddressedUri('lc:network:network.learncard.com/trpc:credential:abc123')).toBe(
+            false
+        );
+    });
+
+    it('extracts the hash from an lc:cred URI', () => {
+        expect(getHashFromContentAddressedUri('lc:cred:abc123')).toBe('abc123');
+    });
+
+    it('constructs lc:cred URIs', () => {
+        expect(constructContentAddressedUri('abc123')).toBe('lc:cred:abc123');
     });
 });
 

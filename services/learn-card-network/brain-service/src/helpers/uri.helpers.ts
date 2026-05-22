@@ -28,6 +28,25 @@ export type URIParts = {
     method: string;
 };
 
+const CONTENT_ADDRESSED_URI_PREFIX = 'lc:cred:';
+
+export const isContentAddressedUri = (uri: string): boolean =>
+    uri.startsWith(CONTENT_ADDRESSED_URI_PREFIX);
+
+export const getHashFromContentAddressedUri = (uri: string): string => {
+    if (!isContentAddressedUri(uri)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'URI is not an lc:cred URI',
+        });
+    }
+
+    return uri.slice(CONTENT_ADDRESSED_URI_PREFIX.length);
+};
+
+export const constructContentAddressedUri = (hash: string): string =>
+    `${CONTENT_ADDRESSED_URI_PREFIX}${hash}`;
+
 // Encode colons within the domain portion of a URI so they don't conflict
 // with the colon-delimited lc:method:domain/trpc:type:id format.
 // Handles preview domains with path prefixes (e.g. domain:brain/trpc).

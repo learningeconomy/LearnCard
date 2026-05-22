@@ -50,6 +50,7 @@ export type Context = {
     };
     contactMethod?: ContactMethodType;
     domain: string;
+    ip?: string;
     tenant: ResolvedTenant;
     _guardianApprovalToken?: string;
 };
@@ -92,6 +93,13 @@ export const createContext = async (
             : domainName.replace(/:/g, '%3A');
 
     const domain = process.env.DOMAIN_NAME || _domain;
+    const ip =
+        ('requestContext' in event ? event.requestContext.http?.sourceIp : undefined) ||
+        ('get' in event.headers
+            ? (event.headers as Map<string, string>).get('x-forwarded-for')?.split(',')[0]?.trim()
+            : (event.headers as Record<string, string | undefined>)['x-forwarded-for']
+                  ?.split(',')[0]
+                  ?.trim());
 
     // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
     const rawHeaders = 'event' in options
@@ -124,6 +132,7 @@ export const createContext = async (
                     return {
                         user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
                         domain,
+                        ip,
                         tenant,
                     };
 
@@ -141,6 +150,7 @@ export const createContext = async (
                         return {
                             contactMethod,
                             domain,
+                            ip,
                             tenant,
                         };
                     }
@@ -161,12 +171,18 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain, tenant, _guardianApprovalToken };
+                return {
+                    user: { did, isChallengeValid, scope },
+                    domain,
+                    ip,
+                    tenant,
+                    _guardianApprovalToken,
+                };
             }
         }
     }
 
-    return { domain, tenant, _guardianApprovalToken };
+    return { domain, ip, tenant, _guardianApprovalToken };
 };
 
 export const openRoute = t.procedure
