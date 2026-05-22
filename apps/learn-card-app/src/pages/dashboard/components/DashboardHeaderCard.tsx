@@ -37,6 +37,8 @@ type DashboardHeaderCardProps = {
     experience?: ExperienceDuration;
     skills?: SkillPill[];
     onSkillPillClick?: () => void;
+    onAvatarClick?: () => void;
+    topRightAction?: React.ReactNode;
 };
 
 const getInitials = (name: string): string => {
@@ -129,6 +131,8 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     experience,
     skills,
     onSkillPillClick,
+    onAvatarClick,
+    topRightAction,
 }) => {
     const initials = getInitials(displayName);
     const firstName = getFirstName(displayName);
@@ -158,9 +162,32 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
             )}
 
             <div className="relative p-5">
+                {topRightAction && (
+                    <div className="absolute top-3 right-3 z-10">{topRightAction}</div>
+                )}
+
                 <div className="flex items-start gap-4">
                     <div className="shrink-0">
-                        {profileImage ? (
+                        {onAvatarClick ? (
+                            <button
+                                type="button"
+                                onClick={onAvatarClick}
+                                aria-label="Open your LearnCard"
+                                className="rounded-full active:scale-[0.97] transition-transform"
+                            >
+                                {profileImage ? (
+                                    <img
+                                        src={profileImage}
+                                        alt={displayName || 'Profile'}
+                                        className="w-[72px] h-[72px] rounded-full object-cover border-2 border-white shadow-soft-bottom"
+                                    />
+                                ) : (
+                                    <div className="w-[72px] h-[72px] rounded-full bg-grayscale-100 border-2 border-white shadow-soft-bottom flex items-center justify-center text-grayscale-700 font-semibold text-[22px]">
+                                        {initials}
+                                    </div>
+                                )}
+                            </button>
+                        ) : profileImage ? (
                             <img
                                 src={profileImage}
                                 alt={displayName || 'Profile'}

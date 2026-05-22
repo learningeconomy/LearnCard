@@ -24,7 +24,11 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
-import MainHeader from '../../components/main-header/MainHeader';
+import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
+import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
+import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
+import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { useModal, ModalTypes } from 'learn-card-base';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -58,6 +62,10 @@ const DashboardPage: React.FC = () => {
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
     const pathwaysEnabled = usePathwaysEnabled();
     const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
+    const { newModal: openHeaderModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
 
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -137,6 +145,20 @@ const DashboardPage: React.FC = () => {
 
     const { data: receivedConnectionRequests = [] } = useGetConnectionsRequests();
     const { data: connections = [] } = useGetConnections();
+
+    const openMyLearnCard = () => {
+        openHeaderModal(<MyLearnCardModal branding={BrandingEnum.learncard} />);
+    };
+    const openQrScanner = () => {
+        openHeaderModal(
+            <QrCodeUserCardModal
+                branding={BrandingEnum.learncard}
+                history={history}
+                connections={connections ?? []}
+                qrOnly
+            />,
+        );
+    };
 
     const pathways = pathwayStore.use.pathways();
     const activePathwayId = pathwayStore.use.activePathwayId();
@@ -298,7 +320,7 @@ const DashboardPage: React.FC = () => {
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <IonContent fullscreen color="grayscale-100">
-                    <MainHeader showBackButton={false} hidePlusBtn />
+
                     <div className="flex justify-center w-full font-poppins">
                         <div className="w-full max-w-[680px] flex flex-col gap-5 px-4 pt-4 pb-[100px]">
                             <GenericErrorBoundary>
@@ -318,6 +340,17 @@ const DashboardPage: React.FC = () => {
                                     experience={skillProfileData?.lifetimeExperience ?? null}
                                     skills={headerSkillPills}
                                     onSkillPillClick={() => history.push('/skills')}
+                                    onAvatarClick={openMyLearnCard}
+                                    topRightAction={
+                                        <button
+                                            type="button"
+                                            onClick={openQrScanner}
+                                            aria-label="Open QR scanner"
+                                            className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95"
+                                        >
+                                            <QRCodeScanner version="2" />
+                                        </button>
+                                    }
                                 />
                             </GenericErrorBoundary>
                             <GenericErrorBoundary>
