@@ -41,9 +41,9 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
         if (sasBoostSkills) {
             setSelectedSkills(
                 sasBoostSkills.map(
-                    (s: { id: string; frameworkId: string; proficiencyLevel: number }) => ({
+                    (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
                         id: s.id,
-                        frameworkId: s.frameworkId,
+                        frameworkId: s.frameworkId ?? globalSkillFrameworks[0]?.frameworkId ?? "",
                         proficiency: s.proficiencyLevel,
                     })
                 )
