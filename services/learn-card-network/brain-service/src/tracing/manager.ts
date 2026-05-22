@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { AsyncLocalStorage } from 'async_hooks';
 
 import type { TracingProvider, SpanContext, SpanResult, SpanStatus } from './types';
+import { sanitizeTraceData } from '../helpers/redact.helpers';
 
 /**
  * Request-scoped trace context stored in AsyncLocalStorage.
@@ -58,7 +59,7 @@ export class TracingManager {
             op,
             name,
             startTime: Date.now(),
-            data,
+            data: data ? (sanitizeTraceData(data) as Record<string, unknown>) : undefined,
         };
 
         store.spanStack.push(context);

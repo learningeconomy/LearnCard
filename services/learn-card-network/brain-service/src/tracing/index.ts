@@ -2,6 +2,7 @@ import { TracingManager } from './manager';
 import { ConsoleTracingProvider } from './providers/console.provider';
 import { SentryTracingProvider } from './providers/sentry.provider';
 import { JsonTracingProvider } from './providers/json.provider';
+import { sanitizeTraceData } from '../helpers/redact.helpers';
 
 const manager = new TracingManager();
 
@@ -26,6 +27,8 @@ export const trace = <T>(
 ): Promise<T> => {
     return manager.trace(op, name, fn, data);
 };
+
+export { sanitizeTraceData };
 
 /**
  * Trace a database operation.

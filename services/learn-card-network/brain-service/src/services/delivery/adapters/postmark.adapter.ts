@@ -5,6 +5,81 @@ import type { TemplateId, TemplateDataMap } from '@learncard/email-templates';
 
 import { DeliveryService, Notification } from '../delivery.service';
 
+// ---------------------------------------------------------------------------
+// Security: credential field scrubbing
+// ---------------------------------------------------------------------------
+
+/**
+ * Fields that must never be forwarded to an email provider.
+ *
+ * Templates are only allowed to render allow-listed display fields
+ * (e.g. `credential.name`, `credential.type`). Raw cryptographic or
+ * subject-data fields must be stripped before the model reaches either
+ * the local renderer or the Postmark fallback API.
+ */
+const CREDENTIAL_SENSITIVE_KEYS = new Set([
+    'credentialSubject',
+    'proof',
+    'evidence',
+    'verifiableCredential',
+    'verifiablePresentation',
+    'presentation',
+    '@context',
+]);
+
+/**
+ * Allow-listed top-level keys on a `credential` object that templates may
+ * render. Any key not in this set is stripped.
+ */
+const CREDENTIAL_ALLOWED_KEYS = new Set(['name', 'type', 'achievementName', 'boostName']);
+
+/**
+ * Scrub a single `credential`-shaped value so only allow-listed display
+ * fields remain. Returns a new object; never mutates the input.
+ */
+const scrubCredentialObject = (credential: Record<string, unknown>): Record<string, unknown> => {
+    const scrubbed: Record<string, unknown> = {};
+
+    for (const key of CREDENTIAL_ALLOWED_KEYS) {
+        if (key in credential) {
+            scrubbed[key] = credential[key];
+        }
+    }
+
+    return scrubbed;
+};
+
+/**
+ * Walk a template model and strip sensitive credential fields.
+ *
+ * - If a top-level key is `credential` and its value is an object, only
+ *   allow-listed display fields are kept.
+ * - Any key in `CREDENTIAL_SENSITIVE_KEYS` at the top level is removed.
+ *
+ * This is a defence-in-depth guard: even if a caller accidentally passes a
+ * full VC object, sensitive cryptographic data will not reach Postmark.
+ */
+const scrubTemplateModel = (model: Record<string, any>): Record<string, any> => {
+    const scrubbed: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(model)) {
+        // Strip top-level sensitive keys entirely
+        if (CREDENTIAL_SENSITIVE_KEYS.has(key)) {
+            continue;
+        }
+
+        // For the `credential` key, keep only allow-listed display fields
+        if (key === 'credential' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+            scrubbed[key] = scrubCredentialObject(value as Record<string, unknown>);
+            continue;
+        }
+
+        scrubbed[key] = value;
+    }
+
+    return scrubbed;
+};
+
 /**
  * Build a Postmark-compatible "From" header from a brand name and a raw
  * address value. The raw value may be:
@@ -70,7 +145,7 @@ export class PostmarkAdapter implements DeliveryService {
 
                 const templateData = this.mapTemplateModel(
                     localTemplateId,
-                    notification.templateModel,
+                    scrubTemplateModel(notification.templateModel),
                 );
 
                 rendered = await renderEmail(
@@ -112,7 +187,7 @@ export class PostmarkAdapter implements DeliveryService {
                 From: from,
                 To: notification.contactMethod.value,
                 TemplateAlias: notification.templateId,
-                TemplateModel: notification.templateModel,
+                TemplateModel: scrubTemplateModel(notification.templateModel),
                 MessageStream: notification.messageStream,
             });
         } catch (error) {

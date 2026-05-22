@@ -948,6 +948,18 @@ export const contractsRouter = t.router({
             }
 
             let redirectUrl: string | undefined;
+            // ============================================================================
+            // SERVER-TRUSTED EXCEPTION — E2EE hardening plan Phase 1.7
+            // This SmartResume flow is a documented server-mediated partner read. The
+            // brain-service resolves the shared credential URIs, reads plaintext
+            // credential contents server-side, and forwards those credentials to the
+            // SmartResume API on the user's behalf.
+            //
+            // This is intentionally preserved as a temporary exception to the broader
+            // end-to-end encryption hardening work. Do not expand this pattern to other
+            // partners or routes.
+            // SUNSET: [DATE TBD] — migrate to client-mediated sharing
+            // ============================================================================
             // SmartResume handling
             const isSmartResume =
                 contractUri === process.env.SMART_RESUME_CONTRACT_URI ||

@@ -614,7 +614,7 @@ export const canProfileViewBoost = async (
 
     const defaultRoleResult = await defaultRoleQuery.run();
     const defaultRole = defaultRoleResult.records[0]?.get('defaultRole');
-    const canView = defaultRole?.properties?.canView ?? true; // Default to true for legacy boosts
+    const canView = defaultRole?.properties?.canView ?? false; // Default to false unless explicitly public
 
     if (canView === true) {
         return true;

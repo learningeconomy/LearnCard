@@ -202,6 +202,7 @@ export * from './helpers/fetchHelpers';
 export * from './helpers/dateHelpers';
 export * from './helpers/pushNotificationHelpers';
 export * from './helpers/boostCustomTypeHelpers';
+export * from './helpers/boostVerification';
 export * from './helpers/stringHelpers';
 export * from './helpers/vcModal.helpers';
 export * from './helpers/searchHelpers';

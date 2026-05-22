@@ -27,6 +27,7 @@ import { isClaimLinkAlreadySetForBoost } from '@cache/claim-links';
 import { getContractById } from '@accesslayer/consentflowcontract/read';
 import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
+import { BoostStatus } from 'types/boost';
 
 const isBoostCredential = (item: unknown): item is Record<string, unknown> =>
     !!item &&
@@ -53,6 +54,9 @@ const subjectHasAlignments = (subject: Record<string, unknown>): boolean => {
 
 const credentialHasAlignments = (credential: Record<string, unknown>): boolean =>
     getSubjects(credential).some(subjectHasAlignments);
+
+const isDraftOrProvisionalBoost = (status?: string): boolean =>
+    status === BoostStatus.enum.DRAFT || status === BoostStatus.enum.PROVISIONAL;
 
 const getBoostUriFromCredential = (credential: Record<string, unknown>): string | undefined => {
     const boostId = credential.boostId;
@@ -252,6 +256,13 @@ export const storageRouter = t.router({
                         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                     }
 
+                    if (!ctx.user && isDraftOrProvisionalBoost(boostInstance.status)) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Boost is not publicly accessible.',
+                        });
+                    }
+
                     const profile = await resolveProfileFromContextDid(ctx.user?.did, localDomain);
                     const canView = Boolean(
                         profile && (await canProfileViewBoost(profile, boostInstance))
@@ -321,6 +332,13 @@ export const storageRouter = t.router({
 
                 if (!instance) {
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+                }
+
+                if (!ctx.user && isDraftOrProvisionalBoost(instance.status)) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Boost is not publicly accessible.',
+                    });
                 }
 
                 const profile = await resolveProfileFromContextDid(ctx.user?.did, localDomain);

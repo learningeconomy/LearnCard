@@ -301,7 +301,6 @@ export const issueToInbox = async (
                     boost,
                     credential: finalCredential,
                     domain: ctx.domain,
-                    skipCertification: true,
                     activityId,
                     integrationId,
                 });

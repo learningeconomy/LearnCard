@@ -58,7 +58,7 @@ A **Boost** is a superpowered VC. It follows OBv3 and W3C standards but adds:
 
 * **Display metadata**: Control how credentials appear in wallets
 * **Governance rules**: Enforce who can issue what
-* **Network validation**: Confirm issuance rules were followed
+* **Network validation**: Verify credentials were derived from specific templates via `boostId`
 * **Attachments**: Include files, PDFs, or resources
 
 Think of Boosts as **VC+**—fully standards-compliant but better for real-world apps.

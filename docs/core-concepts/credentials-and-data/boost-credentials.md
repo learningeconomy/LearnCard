@@ -27,7 +27,7 @@ Boosts solve several common challenges when working with credentials:
 
 1. **Display Control**: Customize how credentials appear in wallets and viewers
 2. **Governance**: Define and enforce rules about who can issue what credentials
-3. **Network Validation**: Get network-level verification that a credential was issued following proper procedures
+3. **Network Validation**: Verify that a credential was derived from a specific template using its `boostId`
 4. **Extended Functionality**: Support for additional features like BoostIDs for identity verification
 
 ```mermaid
@@ -644,27 +644,27 @@ Special type for creating digital IDs with custom styling:
 }
 ```
 
-### Network Certification
+### Client-Side Derivation Verification
 
-When a Boost is issued through the LearnCard Network, it gets wrapped in a CertifiedBoostCredential:
+Credentials issued from a Boost contain a `boostId` field that links them directly to the Boost template. This allows clients to verify that a credential was derived from a specific Boost without requiring a network-level wrapper.
 
 ```javascript
 {
-  type: ["VerifiableCredential", "CertifiedBoostCredential"],
-  issuer: "did:web:network.learncard.com",
-  boostCredential: {
-    // Your original boost here
-  },
+  type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
+  // ... standard fields
   boostId: "lc:network:example.com/boost:123"
 }
 ```
 
-This wrapper:
+To verify that a credential was derived from a specific Boost, clients can check that the `boostId` field matches the expected Boost URI:
 
-* Validates the issuer's authority to send the boost
-* Provides a unique network identifier
-* Adds a network-level signature
-* Maintains the original peer-to-peer signatures
+```typescript
+const isDerivedFromBoost = credential.boostId === expectedBoostUri;
+```
+
+{% hint style="info" %}
+**Note on Certification**: The LearnCard Network no longer issues "Certified Boost" wrapper credentials. Instead, it embeds the `boostId` directly into the issued credential, enabling simpler and more direct client-side verification.
+{% endhint %}
 
 ### Further Resources
 

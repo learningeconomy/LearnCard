@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { TracingManager } from '../src/tracing/manager';
+import { sanitizeTraceData } from '../src/tracing';
 import type { TracingProvider, SpanContext, SpanResult } from '../src/tracing/types';
 
 describe('TracingManager', () => {
@@ -96,6 +97,53 @@ describe('TracingManager', () => {
             expect(startSpanCalls[0]!.data).toEqual({
                 userId: '123',
                 action: 'test',
+            });
+        });
+
+        it('should scrub credential-shaped metadata before storing span context', async () => {
+            const credentialSubjectData = {
+                userId: '123',
+                credentialSubject: {
+                    name: 'Alice',
+                },
+            };
+
+            await manager.trace('test', 'credential-subject', async () => 'result', credentialSubjectData);
+
+            expect(startSpanCalls[0]!.data).toEqual({
+                userId: '123',
+                credentialSubject: '[REDACTED]',
+            });
+
+            const vcShapeData = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                issuer: 'did:web:example.com',
+            };
+
+            await manager.trace('test', 'vc-shape', async () => 'result', vcShapeData);
+
+            expect(startSpanCalls[1]!.data).toBe('[REDACTED]');
+
+            const safeData = {
+                userId: '456',
+                action: 'safe',
+            };
+
+            await manager.trace('test', 'safe', async () => 'result', safeData);
+
+            expect(startSpanCalls[2]!.data).toEqual(safeData);
+        });
+
+        it('should sanitize trace data helper directly', () => {
+            expect(
+                sanitizeTraceData({
+                    credential: { '@context': ['x'], type: ['y'] },
+                    nested: [{ proof: { jwt: 'secret' } }],
+                })
+            ).toEqual({
+                credential: '[REDACTED]',
+                nested: [{ proof: '[REDACTED]' }],
             });
         });
 

@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/serverless';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-to-openapi';
 import type { TRPCError } from '@trpc/server';
+import { scrubSensitiveCredentials } from './redact.helpers';
 
 /**
  * Error codes that are expected/non-critical and should not be sent to Sentry.
@@ -66,7 +67,24 @@ export const sentryBeforeSend: NonNullable<Sentry.AWSLambda.NodeOptions['beforeS
         }
     }
 
-    return event;
+    const scrubbedExtra = scrubSensitiveCredentials(event.extra);
+    const scrubbedContexts = scrubSensitiveCredentials(event.contexts);
+    const scrubbedBreadcrumbs = scrubSensitiveCredentials(event.breadcrumbs);
+
+    if (
+        scrubbedExtra === event.extra &&
+        scrubbedContexts === event.contexts &&
+        scrubbedBreadcrumbs === event.breadcrumbs
+    ) {
+        return event;
+    }
+
+    return {
+        ...event,
+        extra: scrubbedExtra as typeof event.extra,
+        contexts: scrubbedContexts as typeof event.contexts,
+        breadcrumbs: scrubbedBreadcrumbs as typeof event.breadcrumbs,
+    };
 };
 
 /**
