@@ -36,6 +36,26 @@ const getEmbeddingCacheKey = (text: string): string => {
     return `skill-embedding:query:${googleModel}:${digest}`;
 };
 
+export const getCachedEmbeddingForText = async (text: string): Promise<number[] | null> => {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return null;
+    }
+
+    try {
+        const cachedEmbedding = await cache.get(getEmbeddingCacheKey(normalizedText));
+        if (!cachedEmbedding) {
+            return null;
+        }
+
+        const parsed = embeddingResponseValidator.parse(JSON.parse(cachedEmbedding));
+        return parsed.values;
+    } catch (error) {
+        console.warn('Failed to read cached skill embedding', error);
+        return null;
+    }
+};
+
 const getEmbeddingBatchSize = (): number => {
     const raw = Number(
         process.env.SKILL_EMBEDDING_BATCH_SIZE ??
@@ -76,16 +96,9 @@ export const generateEmbeddingForText = async (text: string): Promise<number[]> 
         return [];
     }
 
-    const cacheKey = getEmbeddingCacheKey(normalizedText);
-
-    try {
-        const cachedEmbedding = await cache.get(cacheKey);
-        if (cachedEmbedding) {
-            const parsed = embeddingResponseValidator.parse(JSON.parse(cachedEmbedding));
-            return parsed.values;
-        }
-    } catch (error) {
-        console.warn('Failed to read cached skill embedding', error);
+    const cachedEmbedding = await getCachedEmbeddingForText(normalizedText);
+    if (cachedEmbedding) {
+        return cachedEmbedding;
     }
 
     const embeddings = await generateEmbeddingsForTexts([normalizedText]);
@@ -93,6 +106,7 @@ export const generateEmbeddingForText = async (text: string): Promise<number[]> 
     if (!embedding) throw new Error('No embedding returned from Google API');
 
     try {
+        const cacheKey = getEmbeddingCacheKey(normalizedText);
         await cache.set(
             cacheKey,
             JSON.stringify({ values: embedding }),
