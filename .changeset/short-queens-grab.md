@@ -2,4 +2,4 @@
 "learn-card-app": patch
 ---
 
-fix: CapGo Drift
+[LC-1802] App Store tabs

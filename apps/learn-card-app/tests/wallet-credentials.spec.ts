@@ -10,7 +10,9 @@ import { mockDidKitWasmForContext } from './route.helpers';
 
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
-        await waitForAuthenticatedState(page);
+        // Create a network profile so the LCN gate lets `Add to LearnCard`
+        // open AddToLearnCardMenu instead of OnboardingContainer.
+        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
     });
 
     test('Issue credential to yourself', async ({ page }) => {

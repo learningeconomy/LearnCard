@@ -98,6 +98,18 @@ export const waitForAuthenticatedState = async (
         ? { path: pathOrOptions, seed: TEST_USER_SEED, profileId: undefined as string | undefined }
         : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? TEST_USER_SEED, profileId: pathOrOptions.profileId };
 
+    // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
+    // opens the menu rather than the OnboardingContainer. Tolerate timeout
+    // for cache-hit paths where no fresh request fires.
+    const profileFetchPromise = page
+        .waitForResponse(
+            response =>
+                /profile\.getProfile/.test(response.url()) &&
+                response.status() < 500,
+            { timeout }
+        )
+        .catch(() => undefined);
+
     // Login via seed - this creates a proper user with privateKey
     // If profileId is provided, the seed route will also create a network profile
     const seedUrl = options.profileId
@@ -111,6 +123,8 @@ export const waitForAuthenticatedState = async (
 
     // Wait for redirect to wallet (indicates successful login + profile creation)
     await page.waitForURL(/\/wallet/, { timeout });
+
+    await profileFetchPromise;
 
     // If a different path was requested, navigate there
     if (options.path !== '/' && options.path !== '/wallet') {
