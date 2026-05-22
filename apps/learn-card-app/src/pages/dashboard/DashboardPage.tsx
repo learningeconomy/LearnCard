@@ -7,12 +7,21 @@ import {
     CredentialCategoryEnum,
     useAllContractRequestsForProfile,
     useCurrentUser,
+    useGetBoostSkills,
     useGetCredentialList,
     useGetConnections,
     useGetConnectionsRequests,
     useGetCurrentLCNUser,
+    useGetResolvedCredential,
+    useGetSelfAssignedSkillsBoost,
     useGetUnreadUserNotifications,
+    useVerifiableData,
 } from 'learn-card-base';
+import {
+    getCredentialName,
+    getIssuerName,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import MainHeader from '../../components/main-header/MainHeader';
@@ -25,6 +34,10 @@ import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
+import {
+    SKILL_PROFILE_PROFILE_KEY,
+    type SkillProfileProfileData,
+} from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 
 import DashboardHeaderCard from './components/DashboardHeaderCard';
 import CurrentGoalCard from './components/CurrentGoalCard';
@@ -62,11 +75,29 @@ const DashboardPage: React.FC = () => {
         () => idCredentials?.pages?.[0]?.records?.[0],
         [idCredentials]
     );
+    const { data: primaryIdVc } = useGetResolvedCredential(primaryId?.uri);
+    const unwrappedPrimaryIdVc = useMemo(
+        () => (primaryIdVc ? unwrapBoostCredential(primaryIdVc) : undefined),
+        [primaryIdVc],
+    );
 
     const { data: skillCredentials } = useGetCredentialList(CredentialCategoryEnum.skill);
     const skillsCount = useMemo(
         () => skillCredentials?.pages?.flatMap(p => p?.records ?? []).length ?? 0,
         [skillCredentials],
+    );
+
+    const { data: skillProfileData } = useVerifiableData<SkillProfileProfileData>(
+        SKILL_PROFILE_PROFILE_KEY,
+    );
+    const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
+    const { data: selfAssignedSkills } = useGetBoostSkills(selfAssignedSkillsBoost?.uri);
+    const headerSkillPills = useMemo(
+        () =>
+            (selfAssignedSkills ?? [])
+                .filter(s => s?.statement?.trim())
+                .map(s => ({ id: s.id, label: s.statement.trim() })),
+        [selfAssignedSkills],
     );
 
     const { data: unreadNotificationsData } = useGetUnreadUserNotifications();
@@ -129,13 +160,33 @@ const DashboardPage: React.FC = () => {
         return map;
     }, [theme]);
 
-    const affiliation = primaryId
-        ? {
-              role: primaryId.title ?? categoryLabels[primaryId.category] ?? 'Member',
-              from: primaryId.from,
-              issuedAt: primaryId.date,
-          }
-        : null;
+    const affiliation = useMemo(() => {
+        if (!primaryId) return null;
+
+        const resolvedName = unwrappedPrimaryIdVc
+            ? getCredentialName(unwrappedPrimaryIdVc)
+            : undefined;
+        const resolvedIssuer = unwrappedPrimaryIdVc
+            ? getIssuerName(unwrappedPrimaryIdVc)
+            : undefined;
+
+        const metaTitle = primaryId.title?.trim();
+        const looksGeneric = !metaTitle || /^(id|ids|identity|membership)$/i.test(metaTitle);
+
+        const role =
+            (!looksGeneric && metaTitle) ||
+            resolvedName?.trim() ||
+            categoryLabels[primaryId.category] ||
+            'Member';
+
+        const from = primaryId.from?.trim() || resolvedIssuer?.trim() || undefined;
+
+        return {
+            role,
+            from,
+            issuedAt: primaryId.date,
+        };
+    }, [primaryId, unwrappedPrimaryIdVc, categoryLabels]);
 
     const goalSummary = useMemo(() => {
         if (!activePathway) return null;
@@ -263,6 +314,10 @@ const DashboardPage: React.FC = () => {
                                         skills: skillsCount,
                                         contacts: connections.length,
                                     }}
+                                    professionalTitle={skillProfileData?.professionalTitle}
+                                    experience={skillProfileData?.lifetimeExperience ?? null}
+                                    skills={headerSkillPills}
+                                    onSkillPillClick={() => history.push('/skills')}
                                 />
                             </GenericErrorBoundary>
                             <GenericErrorBoundary>

@@ -15,6 +15,16 @@ type HeaderStats = {
     contacts: number;
 };
 
+type ExperienceDuration = {
+    years?: number | null;
+    months?: number | null;
+} | null;
+
+type SkillPill = {
+    id: string;
+    label: string;
+};
+
 type DashboardHeaderCardProps = {
     displayName: string;
     profileImage: string;
@@ -23,6 +33,10 @@ type DashboardHeaderCardProps = {
     shortBio?: string;
     affiliation: Affiliation;
     stats?: HeaderStats;
+    professionalTitle?: string;
+    experience?: ExperienceDuration;
+    skills?: SkillPill[];
+    onSkillPillClick?: () => void;
 };
 
 const getInitials = (name: string): string => {
@@ -49,14 +63,18 @@ const capitalize = (value: string): string => {
 type SubtitleParts = {
     primary: string;
     secondary?: string;
-    primaryStyle: 'text' | 'pill';
+    primaryStyle: 'text' | 'pill' | 'professionalTitle';
 };
 
 const resolveSubtitle = (
     affiliation: Affiliation,
     profileRole?: string,
     shortBio?: string,
+    professionalTitle?: string,
 ): SubtitleParts => {
+    const title = professionalTitle?.trim();
+    if (title) return { primary: title, primaryStyle: 'professionalTitle' };
+
     if (affiliation) {
         const primary = affiliation.from
             ? `${affiliation.role} · ${affiliation.from}`
@@ -69,6 +87,19 @@ const resolveSubtitle = (
     if (role) return { primary: capitalize(role), primaryStyle: 'pill' };
     if (bio) return { primary: bio, primaryStyle: 'text' };
     return { primary: 'New to LearnCard', primaryStyle: 'text' };
+};
+
+const formatExperience = (experience?: ExperienceDuration): string | null => {
+    if (!experience) return null;
+    const years = experience.years ?? 0;
+    const months = experience.months ?? 0;
+    if (years > 0) {
+        return `${years} ${years === 1 ? 'yr' : 'yrs'} experience`;
+    }
+    if (months > 0) {
+        return `${months} ${months === 1 ? 'month' : 'months'} experience`;
+    }
+    return null;
 };
 
 const buildStatsLine = (stats?: HeaderStats): string | null => {
@@ -84,6 +115,8 @@ const buildStatsLine = (stats?: HeaderStats): string | null => {
     return parts.join(' · ');
 };
 
+const MAX_SKILL_PILLS = 3;
+
 const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     displayName,
     profileImage,
@@ -92,13 +125,22 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     shortBio,
     affiliation,
     stats,
+    professionalTitle,
+    experience,
+    skills,
+    onSkillPillClick,
 }) => {
     const initials = getInitials(displayName);
     const firstName = getFirstName(displayName);
     const greeting = getTimeOfDayGreeting();
     const issuedAtLabel = formatIssuedAt(affiliation?.issuedAt);
-    const subtitle = resolveSubtitle(affiliation, profileRole, shortBio);
-    const statsLine = !affiliation ? buildStatsLine(stats) : null;
+    const subtitle = resolveSubtitle(affiliation, profileRole, shortBio, professionalTitle);
+    const experienceLine = formatExperience(experience);
+    const isProfessionalSubtitle = subtitle.primaryStyle === 'professionalTitle';
+    const statsLine =
+        !affiliation && !experienceLine && !isProfessionalSubtitle ? buildStatsLine(stats) : null;
+    const visibleSkills = (skills ?? []).slice(0, MAX_SKILL_PILLS);
+    const overflowSkillCount = (skills?.length ?? 0) - visibleSkills.length;
 
     return (
         <section className="relative bg-white rounded-[20px] shadow-soft-bottom border border-grayscale-200 animate-fade-in-up overflow-hidden">
@@ -139,6 +181,10 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             <span className="inline-flex mt-1.5 px-2.5 py-1 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium">
                                 {subtitle.primary}
                             </span>
+                        ) : subtitle.primaryStyle === 'professionalTitle' ? (
+                            <p className="mt-1 text-sm font-semibold text-grayscale-800 leading-relaxed truncate">
+                                {subtitle.primary}
+                            </p>
                         ) : (
                             <p className="mt-1 text-sm text-grayscale-600 leading-relaxed truncate">
                                 {subtitle.primary}
@@ -147,6 +193,11 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                         {subtitle.secondary && (
                             <p className="mt-1 text-xs text-grayscale-500 leading-relaxed truncate">
                                 {subtitle.secondary}
+                            </p>
+                        )}
+                        {experienceLine && (
+                            <p className="mt-0.5 text-xs text-grayscale-500 truncate">
+                                {experienceLine}
                             </p>
                         )}
                         {statsLine && (
@@ -161,6 +212,30 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                         )}
                     </div>
                 </div>
+
+                {visibleSkills.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                        {visibleSkills.map(skill => (
+                            <button
+                                key={skill.id}
+                                type="button"
+                                onClick={onSkillPillClick}
+                                className="px-2.5 py-1 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors text-xs font-medium text-grayscale-700 max-w-[140px] truncate"
+                            >
+                                {skill.label}
+                            </button>
+                        ))}
+                        {overflowSkillCount > 0 && (
+                            <button
+                                type="button"
+                                onClick={onSkillPillClick}
+                                className="px-2.5 py-1 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors text-xs font-medium text-grayscale-500"
+                            >
+                                +{overflowSkillCount} more
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </section>
     );
