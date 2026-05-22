@@ -420,7 +420,7 @@ export const issueClaimLinkBoost = async (
     to: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType
 ): Promise<string> => {
-    const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
+    let boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
     const boostURI = getBoostUri(boostId, domain);
     const fromProfile = getIssuerOwnerProfile(from);
@@ -451,6 +451,16 @@ export const issueClaimLinkBoost = async (
         domain,
         false
     );
+
+    /**
+     * ZEROIZE (best-effort): after signing, we no longer need this local plaintext
+     * boost credential reference. Nulling the reference can shorten the lifetime of
+     * this particular handle, but Node.js/V8 does not guarantee true zeroization of
+     * objects or strings already allocated in memory.
+     */
+    // ZEROIZE: null out boostCredential reference after use
+    boostCredential = null as never;
+
     // TODO: encrypt vc?
 
     // const lcnDid = await client.utilities.getDid.query();
@@ -517,51 +527,63 @@ export const prepareCredentialFromBoost = async (
     }
 
     const boostTemplate = parseRenderedTemplate<Record<string, unknown>>(boostJsonString);
-    const credential = boostTemplate as UnsignedVC;
+    let boostCredential = boostTemplate as UnsignedVC;
 
-    (credential as Record<string, unknown>).boostTemplateHash = computeBoostTemplateHash(
+    (boostCredential as Record<string, unknown>).boostTemplateHash = computeBoostTemplateHash(
         boostTemplate
     );
 
-    appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
+    appendTemplateEvidenceToCredential(boostCredential, mergedTemplateData, allowAutoAppendEvidence);
 
     // Set issuance date based on VC version
     const now = new Date().toISOString();
-    if (isVC2Format(credential)) {
-        credential.validFrom = now;
+    if (isVC2Format(boostCredential)) {
+        boostCredential.validFrom = now;
     } else {
-        credential.issuanceDate = now;
+        boostCredential.issuanceDate = now;
     }
 
     // Set issuer if provided
     if (issuerDid) {
-        credential.issuer = issuerDid;
+        boostCredential.issuer = issuerDid;
     }
 
     // Set recipient DID in credentialSubject if provided
     if (recipientDid) {
-        if (Array.isArray(credential.credentialSubject)) {
-            credential.credentialSubject = credential.credentialSubject.map(subject => ({
+        if (Array.isArray(boostCredential.credentialSubject)) {
+            boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
                 ...subject,
                 id: recipientDid,
             }));
         } else {
-            credential.credentialSubject = {
-                ...(credential.credentialSubject || {}),
+            boostCredential.credentialSubject = {
+                ...(boostCredential.credentialSubject || {}),
                 id: recipientDid,
             };
         }
     }
 
     // Embed boostId for BoostCredential types
-    if (credential?.type?.includes('BoostCredential')) {
-        (credential as Record<string, unknown>).boostId = boostUri;
+    if (boostCredential?.type?.includes('BoostCredential')) {
+        (boostCredential as Record<string, unknown>).boostId = boostUri;
     }
 
     // Inject OBv3 alignments
-    await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
-    return credential;
+    const preparedCredential = boostCredential;
+
+    /**
+     * ZEROIZE (best-effort): downstream callers still receive the unsigned plaintext
+     * credential so they can sign/encrypt it, but we do not need to keep an extra
+     * local reference alive inside this helper. Nulling the local reference reduces
+     * the exposure window for this stack frame only; Node.js/V8 does not guarantee
+     * immediate collection or memory wiping for objects and strings.
+     */
+    // ZEROIZE: null out boostCredential reference after use
+    boostCredential = null as never;
+
+    return preparedCredential;
 };
 
 /**
