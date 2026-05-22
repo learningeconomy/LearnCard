@@ -424,7 +424,7 @@ const projectSdJwtCompactToVc = (compact: string): VC | undefined => {
         issuer,
         validFrom: issuedAtIso,
         credentialSubject,
-        proof,
+        proof: proof as VC['proof'],
     };
 
     if (vct) (vc as Record<string, unknown>).sdJwtVct = vct;
