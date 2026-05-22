@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import cache from '@cache';
 import { t, profileRoute } from '@routes';
 import { getSkillsProvider, getSkillsProviderForFramework } from '@services/skills-provider';
 import {
@@ -52,6 +53,10 @@ import {
     formatFramework,
 } from '@helpers/skill-tree';
 import { createSkillTree } from './skill-inputs';
+
+const SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN = Number(
+    process.env.SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN ?? 40
+);
 
 const stripParent = <T extends Record<string, any>>(skill: T): Omit<T, 'parentId'> => {
     const { parentId: _unusedParent, ...rest } = skill as T & { parentId?: string };
@@ -213,8 +218,27 @@ export const skillsRouter = t.router({
         })
         .input(SkillSemanticSearchInputValidator)
         .output(SkillSemanticSearchResultValidator)
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
             const { text, frameworkId, limit } = input;
+
+            const rateLimitKey = `skill-semantic-search-rate:${profileId}`;
+            const rateCount = await cache.incr(rateLimitKey, 60);
+
+            if (rateCount === undefined) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Rate limiting service unavailable',
+                });
+            }
+
+            if (rateCount > SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN) {
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    message: `Rate limit exceeded: max ${SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN} semantic searches per minute`,
+                });
+            }
+
             let embedding: number[];
             try {
                 embedding = await generateEmbeddingForText(text);
