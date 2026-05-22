@@ -686,7 +686,7 @@ const AuthSessionManager: React.FC<{
             return vpJwt;
         } catch (e) {
             log.error('[signDidAuthVp] error', e);
-            throw e;
+            throw e instanceof Error ? e : new Error(String(e));
         }
     }, []);
 

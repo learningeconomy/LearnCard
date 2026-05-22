@@ -121,7 +121,7 @@ const persister = createAsyncStoragePersister({
                 try {
                     return localforage.setItem(key, value);
                 } catch (fallbackError) {
-                    log.error('Fallback cache error', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
+                    log.error('Fallback cache error', fallbackError);
                 }
             }
         },
