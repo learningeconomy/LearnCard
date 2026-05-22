@@ -16,7 +16,11 @@ export type BoostStatusEnum = LCNBoostStatusEnum;
 
 export const BoostValidator = _BoostValidator
     .omit({ uri: true, claimPermissions: true })
-    .extend({ id: z.string(), boost: z.string() });
+    .extend({
+        id: z.string(),
+        boost: z.string(),
+        storage: z.enum(['plaintext', 'encrypted-only']).default('plaintext').optional(),
+    });
 export type BoostType = z.infer<typeof BoostValidator>;
 
 export const BoostWithClaimPermissionsValidator = BoostValidator.extend({

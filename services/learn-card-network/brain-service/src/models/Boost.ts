@@ -53,6 +53,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
             autoConnectRecipients: { type: 'boolean', required: false },
             boost: { type: 'string', required: true },
             status: { type: 'string', enum: BoostStatus.options, required: false },
+            storage: { type: 'string', required: false },
             allowAnyoneToCreateChildren: { type: 'boolean', required: false },
         },
         primaryKeyField: 'id',

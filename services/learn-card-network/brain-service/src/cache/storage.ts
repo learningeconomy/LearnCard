@@ -2,6 +2,8 @@ import cache from '@cache';
 import { UnsignedVC, VC, VP, JWE, ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
 import { createHash } from 'crypto';
 
+export type { StoredCredential } from 'types/credential';
+
 const STORAGE_TTL = 60 * 60 * 24;
 
 export const getStorageCacheKey = (uri: string): string => `storage:${uri}`;

@@ -1,7 +1,15 @@
 import { JWE } from '@learncard/types';
+import { isEncrypted } from '@learncard/helpers';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, Credential, Presentation } from '@models';
+import { Profile, Credential, Presentation, Boost } from '@models';
 import { minimalContract, minimalTerms } from './helpers/contract';
+import { createBoost } from '../src/accesslayer/boost/create';
+import { getProfileByProfileId } from '../src/accesslayer/profile/read';
+import { getBoostUri } from '../src/helpers/boost.helpers';
+
+const isBoostCredential = (vc: { type?: string[]; boostCredential?: unknown }): boolean => {
+    return Boolean(vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential);
+};
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -24,12 +32,14 @@ describe('Storage', () => {
         beforeEach(async () => {
             await Credential.delete({ detach: true, where: {} });
             await Presentation.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
         });
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Presentation.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to store a credential/presentationl', async () => {
@@ -76,6 +86,53 @@ describe('Storage', () => {
                 userA.clients.fullAuth.storage.store({ item: encryptedVp, type: 'presentation' })
             ).resolves.not.toThrow();
         });
+
+        it('should reject plaintext storage for encrypted-only boosts', async () => {
+            const profile = await getProfileByProfileId('userA');
+
+            if (!profile) throw new Error('Profile not found');
+
+            const template = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const boost = await createBoost(
+                template,
+                profile,
+                { storage: 'encrypted-only' },
+                'localhost%3A3000'
+            );
+            const plaintextCredential = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did()) as {
+                boostId?: string;
+            };
+            plaintextCredential.boostId = getBoostUri(boost.id, 'localhost%3A3000');
+            const encryptedVc = await userA.learnCard.invoke.createDagJwe(plaintextCredential, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
+
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: plaintextCredential })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message:
+                    'This boost requires encrypted storage. Please encrypt the credential before storing.',
+            });
+
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: encryptedVc })
+            ).resolves.not.toThrow();
+        });
+
+        it('should treat JWE payloads as encrypted and not boost credentials', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                userA.learnCard.invoke.getTestVc(userB.learnCard.id.did())
+            );
+            const jwePayload = await userA.learnCard.invoke.createDagJwe(vc, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
+
+            expect(isEncrypted(jwePayload)).toBe(true);
+            expect(isBoostCredential(jwePayload as unknown as { type?: string[]; boostCredential?: unknown })).toBe(false);
+        });
     });
 
     describe('resolve', () => {
@@ -89,12 +146,14 @@ describe('Storage', () => {
         beforeEach(async () => {
             await Credential.delete({ detach: true, where: {} });
             await Presentation.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
         });
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Presentation.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
         });
 
         it('should not require full auth to get a credential', async () => {

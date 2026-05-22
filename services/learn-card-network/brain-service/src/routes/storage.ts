@@ -18,7 +18,7 @@ import { storePresentation } from '@accesslayer/presentation/create';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialById } from '@accesslayer/credential/read';
 import { getPresentationById } from '@accesslayer/presentation/read';
-import { getUriParts } from '@helpers/uri.helpers';
+import { getIdFromUri, getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById } from '@accesslayer/boost/read';
 import { canProfileViewBoost } from '@accesslayer/boost/relationships/read';
@@ -54,6 +54,7 @@ export const storageRouter = t.router({
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { item, type } = input;
+            const isJwe = JWEValidator.safeParse(item).success;
 
             const isVP = type === 'presentation' || (await VPValidator.spa(item)).success;
 
@@ -65,6 +66,20 @@ export const storageRouter = t.router({
                 await setStorageForUri(uri, item);
 
                 return uri;
+            }
+
+            const boostUri = !isJwe && typeof item === 'object' && item && 'boostId' in item ? item.boostId : undefined;
+
+            if (typeof boostUri === 'string') {
+                const boost = await getBoostById(getIdFromUri(boostUri));
+
+                if (boost?.storage === 'encrypted-only') {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message:
+                            'This boost requires encrypted storage. Please encrypt the credential before storing.',
+                    });
+                }
             }
 
             const instance = await storeCredential(item as UnsignedVC | VC | JWE);
