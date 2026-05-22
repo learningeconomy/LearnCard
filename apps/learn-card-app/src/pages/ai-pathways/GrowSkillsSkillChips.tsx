@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { IonSkeletonText } from '@ionic/react';
 
 import { conditionalPluralize } from 'learn-card-base';
@@ -34,7 +34,10 @@ type GrowSkillsSkillChipsProps =
 
 const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
     const globalSkillFrameworks = useGlobalSkillFrameworks();
-    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
+    const frameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
     const searchQuery = 'searchQuery' in props ? props.searchQuery : undefined;
     const providedSkills = 'skills' in props ? props.skills : undefined;
     const layout = 'layout' in props ? props.layout ?? 'truncate' : 'truncate';

@@ -100,12 +100,9 @@ export const useGlobalSemanticSearchSkills = (
     });
 
     const isLoading = queryResults.some(query => query.isLoading);
+    let data: SemanticSearchResult | undefined;
 
-    const data = useMemo<SemanticSearchResult | undefined>(() => {
-        if (!trimmedText || frameworkIds.length === 0) {
-            return undefined;
-        }
-
+    if (trimmedText && frameworkIds.length > 0) {
         const recordsById = new Map<string, SemanticSearchSkillRecord>();
 
         queryResults.forEach((queryResult, index) => {
@@ -128,12 +125,12 @@ export const useGlobalSemanticSearchSkills = (
             });
         });
 
-        return {
+        data = {
             records: [...recordsById.values()].sort(
                 (left, right) => (right.score ?? 0) - (left.score ?? 0)
             ),
         };
-    }, [frameworkIds, queryResults, shouldExcludeTiers, trimmedText]);
+    }
 
     return {
         data,

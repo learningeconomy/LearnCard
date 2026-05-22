@@ -46,6 +46,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
     onRemoveSkill,
 }) => {
     const { newModal } = useModal();
+    const frameworkIds = useMemo(() => [framework.frameworkId], [framework.frameworkId]);
 
     const trimmedSearchInput = searchInput.trim();
     const hasSearchQuery = Boolean(trimmedSearchInput);
@@ -72,9 +73,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
     );
 
     const { data: semanticResultsApiData, isLoading: semanticLoading } =
-        useGlobalSemanticSearchSkills(trimmedSearchInput, [framework.frameworkId], {
-            limit: 25,
-        });
+        useGlobalSemanticSearchSkills(trimmedSearchInput, frameworkIds, { limit: 25 });
 
     const frameworkSkills = useMemo(() => {
         const records =

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import numeral from 'numeral';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
@@ -28,7 +28,10 @@ export const AiPathwayCareerItem: React.FC<{
     const { newModal } = useModal();
     const { getIconSet } = useTheme();
     const globalSkillFrameworks = useGlobalSkillFrameworks();
-    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
+    const frameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
     const onetTitle = occupation?.OnetTitle?.trim() ?? '';
 
     const iconSet = getIconSet(IconSetEnum.sideMenu);
