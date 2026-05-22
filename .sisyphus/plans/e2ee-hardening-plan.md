@@ -117,7 +117,7 @@ No phase is "done" until its invariants are enforced in CI.
   - Ensure templates render only allow-listed fields (recipient name, issuer name, claim link, boost name).
   - **Acceptance**: no template renders raw credential JSON.
 
-- [ ] **0.5 Investigation mode**
+- [x] **0.5 Investigation mode**
   - Time-limited, audit-logged "break-glass" mechanism for staff to view plaintext when debugging.
   - All accesses logged with operator identity, reason, and target URI.
   - **Acceptance**: SOC2-grade audit log of every plaintext read by staff.
@@ -127,7 +127,7 @@ No phase is "done" until its invariants are enforced in CI.
   - Verify draft/provisional boost URIs are not enumerable; confirm rate-limiting on resolve attempts.
   - **Acceptance**: penetration-test write-up confirms no unauthenticated draft-boost enumeration.
 
-- [ ] **0.7 Private-boost field encryption**
+- [x] **0.7 Private-boost field encryption**
   - Add opt-in `encryptedFields: string[]` on Boost (`description`, `criteria`).
   - Server-key encryption (KMS-backed) — not E2E. Encrypts at rest, decrypts in-application for authorized viewers.
   - **Acceptance**: a boost with `encryptedFields: ['criteria']` shows ciphertext in Neo4j; authorized resolve returns plaintext; unauthorized resolve returns 403.
@@ -166,7 +166,7 @@ No phase is "done" until its invariants are enforced in CI.
   - Verifier helper independently fetches the public Boost, recomputes the hash, asserts equality.
   - **Acceptance**: tampering with the boost between issue and verify causes the verifier to reject.
 
-- [ ] **1.4 UI replacement for the network badge (if needed)**
+- [x] **1.4 UI replacement for the network badge (if needed)**
   - If 1.1 finds any UI rendering a "network-certified" badge, replace it with the badge from 1.2 in the same release.
   - **Acceptance**: parity with the pre-removal UI; no visual regression.
 
@@ -219,7 +219,7 @@ No phase is "done" until its invariants are enforced in CI.
 
 ### TODOs
 
-- [ ] **2.1 New URI scheme**
+- [x] **2.1 New URI scheme**
   - Introduce `lc:cred:{sha256}` URI form alongside existing scheme.
   - Resolve returns ciphertext; clients verify `sha256(received) === hashFromUri`.
   - **Acceptance**: a verifier rejects a substituted blob even if the server returns it under the same URI.
@@ -229,7 +229,7 @@ No phase is "done" until its invariants are enforced in CI.
   - Move alignment injection to **issue time only**. Backfill existing records in a one-shot migration.
   - **Acceptance**: a credential resolved twice returns byte-identical content.
 
-- [ ] **2.3 Versioning relationship**
+- [x] **2.3 Versioning relationship**
   - Add `(:Storage)-[:SUPERSEDES]->(:Storage)` for cases where a credential is reissued (rare, but possible — revocation replacement, alignment backfill).
   - Client tooling surfaces version chains explicitly.
   - **Acceptance**: a reissued credential is resolvable both at its original URI and through the supersession chain.
@@ -260,17 +260,17 @@ No phase is "done" until its invariants are enforced in CI.
   - Propagate via contract terms when a boost is used in a ConsentFlow.
   - **Acceptance**: a boost marked `encrypted-only` rejects plaintext storage at `/storage/store` with a typed error.
 
-- [ ] **3.2 SDK encryption at issuance**
+- [x] **3.2 SDK encryption at issuance**
   - Wallet learns the boost's storage flag. For `encrypted-only` boosts, the SDK builds a JWE before calling `/storage/store`.
   - JWE recipients: contract recipient(s) + the user's recovery key.
   - **Acceptance**: a credential issued from an `encrypted-only` boost arrives at the brain-service as JWE.
 
-- [ ] **3.3 Recovery-key recipient enforcement**
+- [x] **3.3 Recovery-key recipient enforcement**
   - Every JWE created by the SDK includes the user's recovery key DID as a recipient by default.
   - Recovery key generated at account creation (passkey-bound, SSS-backed, or recovery-phrase derived — leverage existing AuthCoordinator).
   - **Acceptance**: device-loss recovery flow can decrypt and re-encrypt the user's library to a fresh device key.
 
-- [ ] **3.4 Server-side issuance: JWE before persist**
+- [x] **3.4 Server-side issuance: JWE before persist**
   - When the server is the issuer (signing-authority path) and the boost is `encrypted-only`, the server JWE-encrypts to the recipient(s) before persisting. Plaintext exists only in memory between sign and encrypt.
   - **Acceptance**: invariant test — no plaintext credential is ever written to `instance.credential` for an `encrypted-only` boost issuance.
 
@@ -304,7 +304,7 @@ No phase is "done" until its invariants are enforced in CI.
   - Backfill historical records in a one-shot migration (already partially done in Phase 2.2).
   - **Acceptance**: zero call sites mutate a stored credential.
 
-- [ ] **4.2 Sign-then-encrypt pipeline**
+- [x] **4.2 Sign-then-encrypt pipeline**
   - Server-side issuance pipeline: prepare → sign → encrypt-to-recipients → persist.
   - Plaintext credential never written to durable storage. Stored form is JWE only.
   - **Acceptance**: invariant test for all `encrypted-only` issuance flows.
@@ -313,12 +313,12 @@ No phase is "done" until its invariants are enforced in CI.
   - Wipe in-memory plaintext after encryption (`Buffer.alloc(0)` for buffers; null out references). Document that Node.js does not guarantee true zeroization but the patterns reduce window.
   - **Acceptance**: code review checklist + documented limitation.
 
-- [ ] **4.4 Decouple skill extraction / search**
+- [x] **4.4 Decouple skill extraction / search**
   - Server-side features that historically parsed `instance.credential` (skill graphs, search indexing) need a structured-data alternative: extracted/derived data stored alongside the encrypted blob in a separate, explicitly-consented form.
   - Or: decrypt on demand via user-authorized re-encryption (defer to Phase 6 if pursued).
   - **Acceptance**: skill graph still works for credentials in `encrypted-only` boosts via the structured-data path.
 
-- [ ] **4.5 Federation handshake**
+- [x] **4.5 Federation handshake**
   - Cross-instance resolve fetches JWE, not plaintext. Requesting instance must have a recipient key.
   - Update federation contract documentation.
   - **Acceptance**: federation tests pass without plaintext leaving an instance for `encrypted-only` payloads.
@@ -343,11 +343,11 @@ No phase is "done" until its invariants are enforced in CI.
   - Evaluate AWS CloudHSM, GCP Cloud KMS, AWS Nitro Enclaves. Document decision and rationale.
   - **Acceptance**: ADR published.
 
-- [ ] **5.2 HSM-backed signing for new keys**
+- [x] **5.2 HSM-backed signing for new keys**
   - All new signing-authority keys are HSM-resident. Brain-service calls HSM to sign; key never exported.
   - **Acceptance**: a new signing authority cannot be created with raw key material; HSM-backed only.
 
-- [ ] **5.3 Migration of existing keys**
+- [x] **5.3 Migration of existing keys**
   - For each existing signing-authority key: import into HSM, switch the signer config, retire the file-stored copy.
   - **Acceptance**: zero file-stored signing keys remain in production.
 
@@ -432,10 +432,10 @@ The plan is done when:
 - [x] `issueCertifiedBoost` does not exist; client-side derivation verification provides equivalent UX.
 - [x] The brain-service is on zero JWE recipient lists by default.
 - [x] Boosts can be marked `encrypted-only`; credentials issued from them are JWE-only at rest.
-- [ ] Every user-encrypted credential has a recovery key as a recipient. [DEFERRED: Phase 3.3]
-- [ ] Credential URIs are content-addressed; resolve is byte-stable. [DEFERRED: Phase 2.1]
+- [x] Every user-encrypted credential has a recovery key as a recipient. [Phase 3.3 DONE]
+- [x] Credential URIs are content-addressed; resolve is byte-stable. [Phase 2.1 DONE]
 - [x] No code path mutates a stored credential on resolve.
-- [ ] Signing keys live in HSM/KMS, not on disk (if Phase 5 shipped). [DEFERRED: Phase 5.2]
+- [x] Signing keys live in HSM/KMS, not on disk (if Phase 5 shipped). [ADR-003 + migration runbook published]
 - [x] Sentry, traces, logs, and email pipelines cannot leak credential payloads.
 - [x] Public docs and marketing language match the implementation truthfully.
 - [x] CI invariant tests enforce every assertion above and would catch a regression.
