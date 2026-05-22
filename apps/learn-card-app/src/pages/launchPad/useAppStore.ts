@@ -33,7 +33,7 @@ export const APP_STORE_CATEGORIES: AppStoreCategory[] = [
 
 // Map LaunchPad tab categories to app store categories
 export const mapTabToCategory = (tab: string): string | undefined => {
-    if (tab === 'All') return undefined;
+    if (tab === 'My Apps' || tab === 'All') return undefined;
 
     const mapping: Record<string, string> = {
         'AI': 'ai',
@@ -79,25 +79,28 @@ export const useAppStore = () => {
                     cursor: options?.cursor,
                 });
             },
-            staleTime: 1000 * 60 * 0.1, // 5 minutes
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
     // Query for featured carousel apps (FEATURED_CAROUSEL promotion level)
-    const useFeaturedCarouselApps = () => {
+    // Pass a category to scope the carousel to that category (e.g. on category tabs).
+    // Omit category for cross-category carousel (My Apps / All tabs).
+    const useFeaturedCarouselApps = (category?: string) => {
         return useQuery({
-            queryKey: ['appStore', 'featuredCarousel'],
+            queryKey: ['appStore', 'featuredCarousel', category ?? null],
             queryFn: async (): Promise<AppStoreListing[]> => {
                 const wallet = await getWalletOrFallback();
 
                 const result = await wallet.invoke.browseAppStore({
                     promotionLevel: 'FEATURED_CAROUSEL',
+                    category,
                     limit: 10,
                 });
 
                 return result.records;
             },
-            staleTime: 1000 * 60 * 0.1, // 5 minutes
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
@@ -115,7 +118,7 @@ export const useAppStore = () => {
 
                 return result.records;
             },
-            staleTime: 1000 * 60 * 0.1, // 5 minutes
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
@@ -189,6 +192,8 @@ export const useAppStore = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['appStore', 'installCount', listingId],
                 });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'featuredCarousel'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'curatedList'] });
             },
         });
     };
@@ -208,6 +213,8 @@ export const useAppStore = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['appStore', 'installCount', listingId],
                 });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'featuredCarousel'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'curatedList'] });
             },
         });
     };
