@@ -281,12 +281,6 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 />
             </div>
 
-            {/* {isUpdating && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
-                    <IonSpinner color="dark" name="crescent" />
-                </div>
-            )} */}
-
             <section className="flex-1 min-h-0 pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
                 <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
                     <div className="flex flex-col gap-[10px] relative">

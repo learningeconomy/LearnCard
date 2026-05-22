@@ -99,27 +99,6 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
             convertApiSkillNodeToSkillTreeNode(record as ApiSkillNode)
         ) ?? [];
 
-    const frameworkSkillIdsToLog = useMemo(() => {
-        const skillIds = [
-            ...defaultSkillIds,
-            ...boostSkillIds,
-            ...frameworkSkills.map(skill => skill.id),
-            ...stableExtraSkillNodes.map(skill => skill.id),
-            ...semanticSkills.map(skill => skill.id),
-        ];
-
-        return [...new Set(skillIds)].slice(0, 10);
-    }, [boostSkillIds, defaultSkillIds, frameworkSkills, semanticSkills, stableExtraSkillNodes]);
-
-    useEffect(() => {
-        if (frameworkSkillIdsToLog.length === 0) return;
-
-        // console.log(
-        //     `[SkillSearchFrameworkSection] ${framework.name} skill ids:`,
-        //     frameworkSkillIdsToLog
-        // );
-    }, [framework.name, frameworkSkillIdsToLog]);
-
     const suggestedSkills = hasSearchQuery
         ? semanticSkills
         : [...stableExtraSkillNodes, ...frameworkSkills];
