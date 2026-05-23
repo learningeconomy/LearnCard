@@ -9,6 +9,7 @@ import {
     LaunchPadAppListItem,
     useWallet,
     useUpdateTerms,
+    useCurrentUser,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
@@ -22,7 +23,11 @@ import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsTe
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 
 import { curriedStateSlice } from '@learncard/helpers';
-import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
+import {
+    getPersonalEntry,
+    getPrivacyAndDataInfo,
+    isSupportedPersonalField,
+} from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
 type ConsentFlowPrivacyAndDataProps = {
@@ -56,6 +61,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const { presentToast } = useToast();
     const brandingConfig = useBrandingConfig();
     const { guardedAction } = useGuardianGate();
+    const currentUser = useCurrentUser();
 
     // Use passed termsUri/ownerDid if provided (e.g., from ManageDataSharingModal)
     // Otherwise fall back to useConsentFlow lookup
@@ -139,7 +145,19 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const updateSlice = curriedStateSlice(setTerms);
 
-    const updateRead = curriedStateSlice(updateSlice('read'));
+    const handleToggleAnonymize = () => {
+        const nextAnonymize = !terms.read.anonymize;
+
+        updateSlice('read', oldRead => {
+            oldRead.anonymize = nextAnonymize;
+
+            Object.keys(contractDetails.contract.read.personal ?? {}).forEach(key => {
+                if (oldRead.personal[key] && isSupportedPersonalField(key)) {
+                    oldRead.personal[key] = getPersonalEntry(key, currentUser, nextAnonymize);
+                }
+            });
+        });
+    };
 
     const updateWrite = curriedStateSlice(updateSlice('write'));
     const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
@@ -290,7 +308,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     mode="ios"
                                     className="[--background:white]"
                                     color="emerald-700"
-                                    onClick={() => updateRead('anonymize', !terms.read.anonymize)}
+                                    onClick={handleToggleAnonymize}
                                     checked={terms.read.anonymize}
                                 />
                             </div>
@@ -351,8 +369,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     Turning on{' '}
                                     <span className="font-[600] font-notoSans">Allow All</span> will
                                     let the app issue credentials and add them to your{' '}
-                                    {brandingConfig?.name}. If turned off, you can selectively choose
-                                    which wallet categories that the app can add to.
+                                    {brandingConfig?.name}. If turned off, you can selectively
+                                    choose which wallet categories that the app can add to.
                                 </p>
                             </div>
 
