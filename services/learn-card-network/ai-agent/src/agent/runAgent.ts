@@ -30,14 +30,15 @@ export const runAgent = async ({
     messages,
     provider,
     tools,
+    skills = [],
     maxToolRounds = 3,
     systemPrompt = DEFAULT_SYSTEM_PROMPT,
     contextPrompt,
 }: AgentRunRequest): Promise<AgentRunResult> => {
     const runId = crypto.randomUUID();
-    const agentTools = withSkillTools(tools);
+    const agentTools = withSkillTools(tools, skills);
     const toolsByName = new Map(agentTools.map(tool => [tool.name, tool]));
-    const skillSystemPrompt = getSkillSystemPrompt(tools);
+    const skillSystemPrompt = getSkillSystemPrompt(tools, skills);
     const conversation: AgentMessage[] = [
         {
             role: 'system',
@@ -59,6 +60,7 @@ export const runAgent = async ({
 
         if (toolCalls.length === 0) {
             return {
+                runId,
                 message: response.message.content,
                 messages: conversation,
                 toolRuns,

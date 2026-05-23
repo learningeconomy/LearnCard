@@ -22,6 +22,10 @@ export interface AgentSkillDefinition {
     description: string;
     load: () => Promise<string>;
     source?: string;
+    kind?: string;
+    dynamic?: boolean;
+    onList?: (context: AgentToolContext) => Promise<void>;
+    onRead?: (context: AgentToolContext) => Promise<void>;
 }
 
 export interface AgentToolDefinition {
@@ -59,12 +63,14 @@ export interface AgentRunRequest {
     messages: AgentMessage[];
     provider: AgentProvider;
     tools: AgentToolDefinition[];
+    skills?: AgentSkillDefinition[];
     maxToolRounds?: number;
     systemPrompt?: string;
     contextPrompt?: string;
 }
 
 export interface AgentRunResult {
+    runId: string;
     message: string;
     messages: AgentMessage[];
     toolRuns: AgentToolRun[];

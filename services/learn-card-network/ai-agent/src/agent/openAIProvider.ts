@@ -91,12 +91,17 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
 
     return {
         complete: async ({ model, messages, tools }: AgentProviderRequest) => {
-            const completion = await client.chat.completions.create({
+            const request: Record<string, unknown> = {
                 model,
                 messages: messages.map(toOpenAIMessage) as never,
-                tools: tools.map(toOpenAITool) as never,
-                tool_choice: 'auto',
-            });
+            };
+
+            if (tools.length > 0) {
+                request.tools = tools.map(toOpenAITool) as never;
+                request.tool_choice = 'auto';
+            }
+
+            const completion = await client.chat.completions.create(request as never);
 
             const message = completion.choices[0]?.message;
 

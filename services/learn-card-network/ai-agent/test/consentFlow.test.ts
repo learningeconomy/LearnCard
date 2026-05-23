@@ -14,6 +14,9 @@ const testConfig: ServiceConfig = {
     consentFlowDataMaxPages: 10,
     consentFlowCredentialReadLimit: 50,
     mongoDbName: 'test-ai-agent',
+    selfImprovementEnabled: true,
+    retroModel: 'retro-model',
+    retroMaxTraceChars: 24_000,
 };
 
 describe('createConsentFlowRuntime', () => {

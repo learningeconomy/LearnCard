@@ -10,6 +10,16 @@ import type { AgentProvider, AgentToolDefinition } from './agent/types';
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
 import { createMongoRuntime, type MongoRuntime } from './mongo';
+import {
+    createSelfImprovementRuntime,
+    toStoredInputMessages,
+    type SelfImprovementRuntime,
+} from './selfImprovement';
+import {
+    USER_DOC_KINDS,
+    USER_DOC_SENSITIVITIES,
+    USER_DOC_SOURCE_TYPES,
+} from './selfImprovement/userDocs';
 import { createConsentedUserDataTool } from './tools/consentedUserData';
 import { createTools } from './tools';
 
@@ -24,12 +34,56 @@ const RunRequestValidator = z.object({
     consentFlowContractUri: z.string().optional(),
 });
 
+const OptionalExpiresAtValidator = z.preprocess(
+    value => (value === null ? undefined : value),
+    z.string().trim().min(1).optional()
+);
+
+const DebugMemoryRequestValidator = z.discriminatedUnion('action', [
+    z.object({
+        action: z.literal('create'),
+        name: z.string().optional(),
+        kind: z.enum(USER_DOC_KINDS),
+        description: z.string().min(1),
+        content: z.string().min(1),
+        status: z.enum(['active', 'proposed']).optional(),
+        sourceType: z.enum(USER_DOC_SOURCE_TYPES).optional(),
+        confidence: z.number().min(0).max(1).optional(),
+        sensitivity: z.enum(USER_DOC_SENSITIVITIES).optional(),
+        expiresAt: OptionalExpiresAtValidator,
+        requiresApproval: z.boolean().optional(),
+    }),
+    z.object({
+        action: z.literal('update'),
+        name: z.string().min(1),
+        kind: z.enum(USER_DOC_KINDS).optional(),
+        description: z.string().min(1).optional(),
+        content: z.string().min(1),
+        status: z.enum(['active', 'proposed', 'archived']).optional(),
+        sourceType: z.enum(USER_DOC_SOURCE_TYPES).optional(),
+        confidence: z.number().min(0).max(1).optional(),
+        sensitivity: z.enum(USER_DOC_SENSITIVITIES).optional(),
+        expiresAt: z.union([z.string(), z.null()]).optional(),
+        requiresApproval: z.boolean().optional(),
+    }),
+    z.object({
+        action: z.literal('approve'),
+        name: z.string().min(1),
+    }),
+    z.object({
+        action: z.literal('archive'),
+        name: z.string().min(1),
+        reason: z.string().optional(),
+    }),
+]);
+
 export interface CreateServerOptions {
     config: ServiceConfig;
     provider?: AgentProvider;
     tools?: AgentToolDefinition[];
     consentFlowRuntime?: ConsentFlowRuntime;
     mongoRuntime?: MongoRuntime;
+    selfImprovementRuntime?: SelfImprovementRuntime;
     publicDir?: string;
 }
 
@@ -39,6 +93,7 @@ export interface RunChatOptions {
     provider: AgentProvider;
     tools: AgentToolDefinition[];
     consentFlowRuntime?: ConsentFlowRuntime;
+    selfImprovementRuntime?: SelfImprovementRuntime;
 }
 
 export interface RunChatResult {
@@ -46,10 +101,12 @@ export interface RunChatResult {
     payload:
         | {
               message: string;
+              runId: string;
               messages: Array<{ role: 'user' | 'assistant'; content: string }>;
               toolRuns: unknown[];
           }
         | { error: string };
+    afterResponse?: () => Promise<void>;
 }
 
 const OPENAI_API_KEY_REQUIRED_ERROR = 'OPENAI_API_KEY must be set to run the AI agent.';
@@ -68,7 +125,11 @@ const createProvider = (config: ServiceConfig): AgentProvider => {
 
 const getPublicDir = (): string => path.join(process.cwd(), 'public');
 
-const getRunContextPrompt = (did: string, contractUri?: string): string =>
+const getRunContextPrompt = (
+    did: string,
+    contractUri?: string,
+    memoryManifestPrompt?: string
+): string =>
     [
         `The current user DID is ${did}.`,
         contractUri
@@ -76,7 +137,10 @@ const getRunContextPrompt = (did: string, contractUri?: string): string =>
             : 'Use the configured ConsentFlow contract for consented user data.',
         'A background request for this user data has already started.',
         'Call getConsentedUserData only when the user request would benefit from consented profile, credential, or personal data.',
-    ].join('\n');
+        memoryManifestPrompt,
+    ]
+        .filter(Boolean)
+        .join('\n');
 
 export const runChatRequest = async ({
     body,
@@ -84,6 +148,7 @@ export const runChatRequest = async ({
     provider,
     tools,
     consentFlowRuntime,
+    selfImprovementRuntime,
 }: RunChatOptions): Promise<RunChatResult> => {
     const parsed = RunRequestValidator.safeParse(body);
 
@@ -101,7 +166,30 @@ export const runChatRequest = async ({
         const consentFlowContractUri = parsed.data.consentFlowContractUri?.trim();
         const agentTools = [...tools];
         const runtime = consentFlowRuntime ?? createConsentFlowRuntime(config);
+        const requestSkills = await (async () => {
+            try {
+                return (await selfImprovementRuntime?.loadRequestSkills(did)) ?? [];
+            } catch {
+                return [];
+            }
+        })();
+        const memoryTools = await (async () => {
+            try {
+                return (await selfImprovementRuntime?.loadRequestTools(did)) ?? [];
+            } catch {
+                return [];
+            }
+        })();
+        const memoryManifestPrompt = await (async () => {
+            try {
+                return await selfImprovementRuntime?.getMemoryManifestPrompt(did);
+            } catch {
+                return undefined;
+            }
+        })();
         let contextPrompt: string | undefined;
+
+        agentTools.push(...memoryTools);
 
         if (did) {
             const dataPromise = runtime.loadConsentedUserData({
@@ -111,7 +199,11 @@ export const runChatRequest = async ({
             dataPromise.catch(() => undefined);
 
             agentTools.push(createConsentedUserDataTool({ did, dataPromise }));
-            contextPrompt = getRunContextPrompt(did, consentFlowContractUri || undefined);
+            contextPrompt = getRunContextPrompt(
+                did,
+                consentFlowContractUri || undefined,
+                memoryManifestPrompt
+            );
         }
 
         const result = await runAgent({
@@ -119,6 +211,7 @@ export const runChatRequest = async ({
             messages: parsed.data.messages,
             provider,
             tools: agentTools,
+            skills: requestSkills,
             maxToolRounds: config.maxToolRounds,
             contextPrompt,
         });
@@ -127,8 +220,17 @@ export const runChatRequest = async ({
             status: 200,
             payload: {
                 message: result.message,
+                runId: result.runId,
                 messages: [...parsed.data.messages, { role: 'assistant', content: result.message }],
                 toolRuns: result.toolRuns,
+            },
+            afterResponse: async () => {
+                await selfImprovementRuntime?.runAfterResponse({
+                    ownerDid: did,
+                    model: config.model,
+                    inputMessages: toStoredInputMessages(parsed.data.messages),
+                    result,
+                });
             },
         };
     } catch (error) {
@@ -147,6 +249,7 @@ export const createServer = ({
     tools,
     consentFlowRuntime,
     mongoRuntime,
+    selfImprovementRuntime,
     publicDir = getPublicDir(),
 }: CreateServerOptions): express.Express => {
     const app = express();
@@ -154,6 +257,12 @@ export const createServer = ({
     const providerConfigured = Boolean(provider || config.openAIApiKey);
     const consentRuntime = consentFlowRuntime ?? createConsentFlowRuntime(config);
     const mongo = mongoRuntime ?? createMongoRuntime(config);
+    const selfImprovement =
+        selfImprovementRuntime ??
+        createSelfImprovementRuntime({
+            config,
+            mongoRuntime: mongo,
+        });
     const agentTools =
         tools ??
         createTools({
@@ -179,6 +288,11 @@ export const createServer = ({
                 autoCreateDevelopmentContract:
                     !config.consentFlowContractUri && !isProdNetworkUrl(config.networkUrl),
                 appUrl: config.consentFlowAppUrl,
+            },
+            selfImprovement: {
+                enabled: config.selfImprovementEnabled,
+                retroModel: config.retroModel,
+                retroMaxTraceChars: config.retroMaxTraceChars,
             },
             tools: agentTools.map(tool => tool.name),
         });
@@ -218,9 +332,110 @@ export const createServer = ({
             provider: agentProvider,
             tools: agentTools,
             consentFlowRuntime: consentRuntime,
+            selfImprovementRuntime: selfImprovement,
         });
 
         res.status(result.status).json(result.payload);
+        void result.afterResponse?.().catch(() => undefined);
+    });
+
+    app.get('/api/debug/users/:did/docs', async (req, res) => {
+        res.json({
+            ok: true,
+            docs: await selfImprovement.getDocsForDebug(req.params.did),
+        });
+    });
+
+    app.get('/api/debug/users/:did/memory', async (req, res) => {
+        const manifest = await selfImprovement.getMemoryManifestForDebug(req.params.did);
+
+        res.json({
+            ok: true,
+            manifest,
+            docs: await selfImprovement.getDocsForDebug(req.params.did),
+        });
+    });
+
+    app.post('/api/debug/users/:did/memory', async (req, res) => {
+        const parsed = DebugMemoryRequestValidator.safeParse(req.body);
+
+        if (!parsed.success) {
+            res.status(400).json({ ok: false, error: 'Invalid memory debug request.' });
+            return;
+        }
+
+        try {
+            const ownerDid = req.params.did;
+            const { action } = parsed.data;
+            const doc =
+                action === 'create'
+                    ? await selfImprovement.createDebugDoc({
+                          ownerDid,
+                          name:
+                              parsed.data.name ??
+                              parsed.data.description
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9._-]+/g, '-')
+                                  .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '')
+                                  .slice(0, 48),
+                          kind: parsed.data.kind,
+                          description: parsed.data.description,
+                          content: parsed.data.content,
+                          status: parsed.data.status,
+                          sourceType: parsed.data.sourceType,
+                          confidence: parsed.data.confidence,
+                          sensitivity: parsed.data.sensitivity,
+                          expiresAt: parsed.data.expiresAt,
+                          requiresApproval: parsed.data.requiresApproval,
+                      })
+                    : action === 'update'
+                    ? await selfImprovement.updateDebugDoc({
+                          ownerDid,
+                          name: parsed.data.name,
+                          kind: parsed.data.kind,
+                          description: parsed.data.description,
+                          content: parsed.data.content,
+                          status: parsed.data.status,
+                          sourceType: parsed.data.sourceType,
+                          confidence: parsed.data.confidence,
+                          sensitivity: parsed.data.sensitivity,
+                          expiresAt: parsed.data.expiresAt,
+                          requiresApproval: parsed.data.requiresApproval,
+                      })
+                    : action === 'approve'
+                    ? await selfImprovement.approveDebugDoc(ownerDid, parsed.data.name)
+                    : await selfImprovement.archiveDebugDoc({
+                          ownerDid,
+                          name: parsed.data.name,
+                          reason: parsed.data.reason,
+                          provenance: { reason: parsed.data.reason },
+                      });
+
+            res.json({
+                ok: true,
+                doc,
+                manifest: await selfImprovement.getMemoryManifestForDebug(ownerDid),
+            });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not update debug memory.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
+
+    app.get('/api/debug/runs/:runId', async (req, res) => {
+        const run = await selfImprovement.getRunForDebug(req.params.runId);
+
+        if (!run) {
+            res.status(404).json({ ok: false, error: 'Run trace not found.' });
+            return;
+        }
+
+        res.json({
+            ok: true,
+            ...run,
+        });
     });
 
     app.get('*', (_req, res) => {
