@@ -42,10 +42,31 @@ describe('createConsentFlowRuntime', () => {
 
                     return 'did:web:localhost%3A4000:users:ai-agent';
                 },
-                createContract: async (input: { name: string }) => {
+                createContract: async (input: {
+                    name: string;
+                    contract: {
+                        read: {
+                            credentials: {
+                                categories: Record<
+                                    string,
+                                    { required: boolean; defaultEnabled: boolean }
+                                >;
+                            };
+                        };
+                    };
+                }) => {
                     calls.push('createContract');
                     expect(profile).toBeTruthy();
                     expect(input.name).toBe('LearnCard AI Agent Development Contract');
+                    expect(input.contract.read.credentials.categories).toEqual({
+                        'Social Badge': { required: false, defaultEnabled: true },
+                        Achievement: { required: false, defaultEnabled: true },
+                        'Learning History': { required: false, defaultEnabled: true },
+                        Accomplishment: { required: false, defaultEnabled: true },
+                        Accommodation: { required: false, defaultEnabled: true },
+                        'Work History': { required: false, defaultEnabled: true },
+                        ID: { required: false, defaultEnabled: true },
+                    });
 
                     return 'lc:network:localhost%3A4000/trpc:contract:agent';
                 },

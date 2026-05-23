@@ -82,7 +82,12 @@ const DEFAULT_DEVELOPMENT_CONTRACT = {
             },
             credentials: {
                 categories: {
+                    'Social Badge': { required: false, defaultEnabled: true },
                     Achievement: { required: false, defaultEnabled: true },
+                    'Learning History': { required: false, defaultEnabled: true },
+                    Accomplishment: { required: false, defaultEnabled: true },
+                    Accommodation: { required: false, defaultEnabled: true },
+                    'Work History': { required: false, defaultEnabled: true },
                     ID: { required: false, defaultEnabled: true },
                 },
             },
