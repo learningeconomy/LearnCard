@@ -8,6 +8,11 @@ import {
     type AgentLearnCardConfig,
     type AgentNetworkWallet,
 } from '../../helpers/learnCard.helpers';
+import {
+    getLearnCardWalletMethodMetadata,
+    type LearnCardWalletMethodArgument,
+    type LearnCardWalletMethodExample,
+} from './methodMetadata';
 
 export interface LearnCardWalletToolConfig extends AgentLearnCardConfig {
     getWallet?: () => Promise<AgentNetworkWallet>;
@@ -32,6 +37,13 @@ interface FunctionInspection {
     parameters: string[];
     parametersInferred: boolean;
     signature: string;
+    description?: string;
+    argumentDetails?: LearnCardWalletMethodArgument[];
+    returns?: string;
+    preconditions?: string[];
+    notes?: string[];
+    examples?: LearnCardWalletMethodExample[];
+    metadataSource?: string;
     sourcePreview?: string;
 }
 
@@ -39,6 +51,33 @@ const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 const DEFAULT_INSPECT_LIMIT = 50;
 const MAX_INSPECT_LIMIT = 200;
 const SOURCE_PREVIEW_LIMIT = 500;
+const MAX_ERROR_STRING_LENGTH = 1_000;
+const MAX_ERROR_DEPTH = 4;
+const MAX_ERROR_ARRAY_ITEMS = 8;
+const MAX_ERROR_OBJECT_KEYS = 20;
+const REDACTED_VALUE = '[redacted]';
+const SENSITIVE_KEY_PATTERN =
+    /(?:api[-_]?key|authorization|bearer|mnemonic|password|private|refresh[-_]?token|secret|seed|token)/i;
+const ARG_SUMMARY_SCALAR_KEYS = new Set([
+    'boostUri',
+    'category',
+    'did',
+    'email',
+    'encrypt',
+    'endpoint',
+    'id',
+    'name',
+    'phone',
+    'profileId',
+    'recipient',
+    'skipNotification',
+    'status',
+    'suppressDelivery',
+    'templateUri',
+    'type',
+    'uri',
+    'value',
+]);
 
 const learnCardWalletParameters = {
     type: 'object',
@@ -85,12 +124,14 @@ description: Use the configured LearnCard wallet through one freeform tool.
 
 # LearnCard Wallet
 
-Use the learnCardWallet tool with operation "inspect" to discover wallet planes and operation "call" to invoke a method by dot path.
+Use the learnCardWallet tool with operation "inspect" to discover wallet planes and operation "call" to invoke a method by dot path. Inspect exact functions before writes; common LearnCard Network methods include TypeScript-derived argument metadata. Failed calls return a bounded diagnostic payload with method, argsSummary, underlyingError, knownUsage, and failureHints.
 
 Examples:
 - Inspect root: {"operation":"inspect","path":""}
+- Inspect sendBoost: {"operation":"inspect","path":"invoke.sendBoost"}
 - Get this wallet DID: {"operation":"call","path":"id.did","args":[]}
 - Get a profile: {"operation":"call","path":"invoke.getProfile","args":["profileId"]}
+- Send a Boost: {"operation":"call","path":"invoke.sendBoost","args":["profileId","lc:network:.../trpc:boost:..."]}
 `;
 
 const parseWalletPath = (walletPath: string): string[] => {
@@ -226,11 +267,22 @@ const getFunctionInspection = (
     const parameterText = extractParameterText(source);
     const parsedParameters =
         parameterText !== undefined ? splitParameters(parameterText) : undefined;
-    const parameters =
-        parsedParameters && parsedParameters.length > 0
-            ? parsedParameters
-            : Array.from({ length: value.length }, (_value, index) => `arg${index + 1}`);
-    const name = value.name || fallbackName || '(anonymous)';
+    const fallbackParameters = Array.from(
+        { length: value.length },
+        (_value, index) => `arg${index + 1}`
+    );
+    const sourceParameters =
+        parsedParameters && parsedParameters.length > 0 ? parsedParameters : fallbackParameters;
+    const sourceParametersAreGeneric = sourceParameters.every(
+        (parameter, index) => parameter === `arg${index + 1}`
+    );
+    const metadata = getLearnCardWalletMethodMetadata(walletPath);
+    const useMetadata = Boolean(metadata && sourceParametersAreGeneric);
+    const parameters = useMetadata && metadata ? metadata.parameters : sourceParameters;
+    const name =
+        useMetadata && metadata
+            ? (parseWalletPath(walletPath).at(-1) ?? fallbackName)
+            : value.name || fallbackName || '(anonymous)';
     const asyncFunction = source.trim().startsWith('async ');
 
     return {
@@ -239,10 +291,170 @@ const getFunctionInspection = (
         arity: value.length,
         async: asyncFunction,
         parameters,
-        parametersInferred: parsedParameters === undefined,
-        signature: `${asyncFunction ? 'async ' : ''}${name}(${parameters.join(', ')})`,
+        parametersInferred: parsedParameters === undefined || sourceParametersAreGeneric,
+        signature:
+            useMetadata && metadata
+                ? metadata.signature
+                : `${asyncFunction ? 'async ' : ''}${name}(${parameters.join(', ')})`,
+        ...(metadata
+            ? {
+                  description: metadata.description,
+                  argumentDetails: metadata.arguments,
+                  returns: metadata.returns,
+                  ...(metadata.preconditions ? { preconditions: metadata.preconditions } : {}),
+                  ...(metadata.notes ? { notes: metadata.notes } : {}),
+                  ...(metadata.examples ? { examples: metadata.examples } : {}),
+                  metadataSource: metadata.metadataSource,
+              }
+            : {}),
         ...(includeSource ? { sourcePreview: source.slice(0, SOURCE_PREVIEW_LIMIT) } : {}),
     };
+};
+
+const truncateString = (value: string, maxLength = MAX_ERROR_STRING_LENGTH): string =>
+    value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const sanitizeDiagnosticValue = (
+    value: unknown,
+    depth = 0,
+    seen: WeakSet<object> = new WeakSet(),
+    keyName = ''
+): unknown => {
+    if (SENSITIVE_KEY_PATTERN.test(keyName)) return REDACTED_VALUE;
+    if (typeof value === 'string') return truncateString(value);
+    if (typeof value === 'number' || typeof value === 'boolean' || value === null) return value;
+    if (typeof value === 'bigint') return value.toString();
+    if (typeof value === 'undefined') return 'undefined';
+    if (typeof value === 'function') return '[function]';
+    if (typeof value !== 'object') return String(value);
+    if (seen.has(value)) return '[circular]';
+    if (depth >= MAX_ERROR_DEPTH) return `[${Array.isArray(value) ? 'array' : 'object'}]`;
+
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+        return {
+            type: 'array',
+            length: value.length,
+            items: value
+                .slice(0, MAX_ERROR_ARRAY_ITEMS)
+                .map(item => sanitizeDiagnosticValue(item, depth + 1, seen)),
+            ...(value.length > MAX_ERROR_ARRAY_ITEMS ? { truncated: true } : {}),
+        };
+    }
+
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).slice(0, MAX_ERROR_OBJECT_KEYS);
+    const result: Record<string, unknown> = {};
+
+    for (const key of keys) {
+        result[key] = sanitizeDiagnosticValue(record[key], depth + 1, seen, key);
+    }
+
+    if (Object.keys(record).length > MAX_ERROR_OBJECT_KEYS) {
+        result.truncatedKeys = Object.keys(record).length - MAX_ERROR_OBJECT_KEYS;
+    }
+
+    return result;
+};
+
+const serializeWalletError = (error: unknown, seen: WeakSet<object> = new WeakSet()): unknown => {
+    if (error instanceof Error) {
+        if (seen.has(error)) return '[circular-error]';
+
+        seen.add(error);
+
+        const errorRecord = error as Error & Record<string, unknown>;
+        const serialized: Record<string, unknown> = {
+            name: error.name,
+            message: truncateString(error.message || 'Wallet method call failed.'),
+        };
+        const propertyNames = Object.getOwnPropertyNames(error).filter(
+            propertyName => !['name', 'message', 'stack', 'cause'].includes(propertyName)
+        );
+
+        for (const propertyName of propertyNames) {
+            serialized[propertyName] = sanitizeDiagnosticValue(
+                errorRecord[propertyName],
+                0,
+                seen,
+                propertyName
+            );
+        }
+
+        if (errorRecord.cause !== undefined) {
+            serialized.cause = serializeWalletError(errorRecord.cause, seen);
+        }
+
+        if (error.stack) {
+            serialized.stackPreview = error.stack
+                .split('\n')
+                .slice(0, 5)
+                .map(line => truncateString(line.trim(), 300));
+        }
+
+        return serialized;
+    }
+
+    return sanitizeDiagnosticValue(error, 0, seen);
+};
+
+const summarizeCallArg = (value: unknown, keyName = ''): unknown => {
+    if (SENSITIVE_KEY_PATTERN.test(keyName)) return REDACTED_VALUE;
+    if (typeof value === 'string') return truncateString(value, 240);
+    if (typeof value === 'number' || typeof value === 'boolean' || value === null) return value;
+    if (typeof value === 'undefined') return 'undefined';
+    if (Array.isArray(value)) {
+        return {
+            type: 'array',
+            length: value.length,
+            items: value.slice(0, 4).map(item => summarizeCallArg(item)),
+            ...(value.length > 4 ? { truncated: true } : {}),
+        };
+    }
+
+    if (!isRecord(value)) return `[${typeof value}]`;
+
+    const keys = Object.keys(value);
+    const fields = Object.fromEntries(
+        keys
+            .filter(key => ARG_SUMMARY_SCALAR_KEYS.has(key))
+            .map(key => [key, summarizeCallArg(value[key], key)])
+    );
+
+    return {
+        type: 'object',
+        keys: keys.slice(0, 12),
+        keyCount: keys.length,
+        ...(Object.keys(fields).length > 0 ? { fields } : {}),
+        ...(keys.length > 12 ? { truncatedKeys: keys.length - 12 } : {}),
+    };
+};
+
+const createWalletCallFailureMessage = (
+    walletPath: string,
+    callArgs: unknown[],
+    error: unknown
+): string => {
+    const metadata = getLearnCardWalletMethodMetadata(walletPath);
+    const payload = {
+        error: 'Wallet method call failed',
+        method: walletPath,
+        argsSummary: callArgs.map(arg => summarizeCallArg(arg)),
+        underlyingError: serializeWalletError(error),
+        ...(metadata
+            ? {
+                  knownUsage: metadata.signature,
+                  ...(metadata.failureHints ? { failureHints: metadata.failureHints } : {}),
+                  metadataSource: metadata.metadataSource,
+              }
+            : {}),
+    };
+
+    return JSON.stringify(payload, null, 2);
 };
 
 const matchesQuery = (query: string | undefined, values: string[]): boolean => {
@@ -432,7 +644,14 @@ export const createLearnCardWalletTool = (
             throw new Error(`Wallet path is not callable: ${walletPath}`);
         }
 
-        const result = await value.apply(parent, getCallArgs(args));
+        const callArgs = getCallArgs(args);
+        let result: unknown;
+
+        try {
+            result = await value.apply(parent, callArgs);
+        } catch (error) {
+            throw new Error(createWalletCallFailureMessage(walletPath, callArgs, error));
+        }
 
         return {
             path: walletPath,

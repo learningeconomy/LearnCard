@@ -95,6 +95,142 @@ describe('createLearnCardWalletTool', () => {
         });
     });
 
+    it('adds known SDK metadata for native-bound LearnCard methods', async () => {
+        const sendBoost = (async function sendBoost(_profileId: string, _boostUri: string) {
+            return 'lc:credential:sent';
+        }).bind(undefined);
+        const tool = createLearnCardWalletTool({
+            getWallet: async () =>
+                ({
+                    invoke: {
+                        sendBoost,
+                    },
+                } as any),
+        });
+
+        await expect(
+            tool.execute(
+                { operation: 'inspect', path: 'invoke.sendBoost' },
+                { runId: 'test-run' }
+            )
+        ).resolves.toMatchObject({
+            path: 'invoke.sendBoost',
+            kind: 'function',
+            function: {
+                name: 'sendBoost',
+                path: 'invoke.sendBoost',
+                parameters: ['profileId', 'boostUri', 'options?'],
+                parametersInferred: true,
+                signature: 'sendBoost(profileId, boostUri, options?)',
+                description: expect.stringContaining('recipient-specific credential'),
+                argumentDetails: [
+                    expect.objectContaining({
+                        name: 'profileId',
+                        type: 'string',
+                    }),
+                    expect.objectContaining({
+                        name: 'boostUri',
+                        type: 'string',
+                    }),
+                    expect.objectContaining({
+                        name: 'options',
+                    }),
+                ],
+                notes: expect.arrayContaining([
+                    expect.stringContaining('rewrites credentialSubject.id'),
+                ]),
+                metadataSource: expect.stringContaining('learn-card-network'),
+            },
+        });
+    });
+
+    it('adds structured diagnostics and usage hints to known SDK call failures', async () => {
+        const sendBoost = (function sendBoost(_profileId: string, _boostUri: string) {
+            throw Object.assign(new Error('Wallet method call failed.'), {
+                code: 'FORBIDDEN',
+                seed: 'top-secret-seed',
+                cause: Object.assign(new Error('Target profile cannot receive this Boost'), {
+                    statusCode: 403,
+                    data: {
+                        reason: 'missing-issue-permission',
+                    },
+                }),
+            });
+        }).bind(undefined);
+        const tool = createLearnCardWalletTool({
+            getWallet: async () =>
+                ({
+                    invoke: {
+                        sendBoost,
+                    },
+                } as any),
+        });
+
+        await expect(
+            tool.execute(
+                {
+                    operation: 'call',
+                    path: 'invoke.sendBoost',
+                    args: [
+                        'taylor',
+                        'lc:network:localhost%3A4000/trpc:boost:example',
+                        { encrypt: true, skipNotification: true },
+                    ],
+                },
+                { runId: 'test-run' }
+            )
+        ).rejects.toThrow('"knownUsage": "sendBoost(profileId, boostUri, options?)"');
+
+        try {
+            await tool.execute(
+                {
+                    operation: 'call',
+                    path: 'invoke.sendBoost',
+                    args: [
+                        'taylor',
+                        'lc:network:localhost%3A4000/trpc:boost:example',
+                        { encrypt: true, skipNotification: true },
+                    ],
+                },
+                { runId: 'test-run' }
+            );
+        } catch (error) {
+            const payload = JSON.parse((error as Error).message);
+
+            expect(payload).toMatchObject({
+                error: 'Wallet method call failed',
+                method: 'invoke.sendBoost',
+                argsSummary: [
+                    'taylor',
+                    'lc:network:localhost%3A4000/trpc:boost:example',
+                    {
+                        type: 'object',
+                        fields: {
+                            encrypt: true,
+                            skipNotification: true,
+                        },
+                    },
+                ],
+                underlyingError: {
+                    name: 'Error',
+                    message: 'Wallet method call failed.',
+                    code: 'FORBIDDEN',
+                    seed: '[redacted]',
+                    cause: {
+                        name: 'Error',
+                        message: 'Target profile cannot receive this Boost',
+                        statusCode: 403,
+                        data: {
+                            reason: 'missing-issue-permission',
+                        },
+                    },
+                },
+                knownUsage: 'sendBoost(profileId, boostUri, options?)',
+            });
+            expect(JSON.stringify(payload)).not.toContain('top-secret-seed');
+        }
+    });
+
     it('calls a nested wallet method with positional arguments', async () => {
         const requestedProfileIds: string[] = [];
         const tool = createLearnCardWalletTool({
