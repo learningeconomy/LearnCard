@@ -20,18 +20,13 @@ export const getOrCreateSharedUriForWallet = async (
         >(queryKey);
 
     for (const record of cache?.pages.flatMap(page => page.records) ?? []) {
-        const alreadyShared =
-            record.sharedUris && Object.keys(record.sharedUris).includes(contractOwnerDid);
-
-        // Something with this logic is causing a bunch of duplicate shared uris
-        //   So sacrificing perfomance for now in order to avoid this bug
-        // in cache and already shared
-        if (alreadyShared) {
-            return record.sharedUris?.[contractOwnerDid].at(-1)!;
-        }
-
         // it was already in react query cache, but not shared
         if (record.uri === credUri) {
+            const existingSharedUris = record.sharedUris?.[contractOwnerDid];
+            if (existingSharedUris?.length > 0) {
+                return existingSharedUris.at(-1)!;
+            }
+
             const vc = await wallet.read.get(credUri);
             if (!vc) return false;
 
@@ -84,6 +79,11 @@ export const getOrCreateSharedUriForWallet = async (
             );
 
             return newUri;
+        }
+
+        const existingSharedUris = record.sharedUris?.[contractOwnerDid];
+        if (existingSharedUris?.includes(credUri)) {
+            return existingSharedUris.at(-1)!;
         }
     }
 
@@ -170,20 +170,24 @@ export const getTermsWithSharedUrisForWallet = async (
     await Promise.all(
         categories.map(async category => {
             const credUris = terms.terms.read.credentials.categories[category].shared;
-            const newCredUris = (
-                await Promise.all(
-                    credUris?.map(
-                        async credUri =>
-                            await getOrCreateSharedUriForWallet(
-                                wallet,
-                                contractOwnerDid,
-                                queryClient,
-                                credUri,
-                                category
-                            )
-                    ) ?? []
-                )
-            ).filter(c => c !== false);
+            const newCredUris = [
+                ...new Set(
+                    (
+                        await Promise.all(
+                            credUris?.map(
+                                async credUri =>
+                                    await getOrCreateSharedUriForWallet(
+                                        wallet,
+                                        contractOwnerDid,
+                                        queryClient,
+                                        credUri,
+                                        category
+                                    )
+                            ) ?? []
+                        )
+                    ).filter((uri): uri is string => uri !== false)
+                ),
+            ];
 
             terms.terms.read.credentials.categories[category].shared = newCredUris;
         })
