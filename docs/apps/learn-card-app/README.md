@@ -75,8 +75,8 @@ flowchart LR
 
 1. User opens the Skills Hub from their wallet
 2. Taps the **+** button to add skills
-3. Searches by skill name or occupation, or browses suggested skills
-4. Selects one or more skills from the framework
+3. Searches by skill name or occupation, or browses suggested skills across the available frameworks
+4. Selects one or more skills from a framework
 5. Sets a proficiency level for each skill:
     - **Hidden** — Do not display proficiency status
     - **Novice** — Just starting and needs guidance
