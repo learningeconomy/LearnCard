@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n';
-import { useTheme } from '../../theme/hooks/useTheme';
+import { useModal, ModalTypes } from 'learn-card-base';
 
+import CaretDown from 'learn-card-base/svgs/CaretDown';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
+
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n';
+
+/**
+ * Native names for every supported language, shown in their own script.
+ * Add a row here when adding a new language to SUPPORTED_LANGUAGES.
+ *
+ * For scale: this list is rendered as a vertical scrollable list inside a
+ * modal, so adding ~15 languages works without UX changes. Beyond that,
+ * consider adding a search/filter input to the modal.
+ */
 const LANGUAGE_NATIVE_NAMES: Record<SupportedLanguage, string> = {
     en: 'English',
     es: 'Español',
@@ -10,43 +22,91 @@ const LANGUAGE_NATIVE_NAMES: Record<SupportedLanguage, string> = {
     ar: 'العربية',
 };
 
-const LanguagePicker: React.FC = () => {
+/**
+ * Body of the language-selector modal. Renders each supported language as
+ * a row; current language is highlighted with a checkmark.
+ */
+const LanguageSelectorModal: React.FC<{ currentLang: SupportedLanguage }> = ({ currentLang }) => {
     const { t, i18n } = useTranslation();
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-    const [isUpdating, setIsUpdating] = useState(false);
+    const { closeModal } = useModal();
 
-    const handleChange = async (lang: SupportedLanguage) => {
-        setIsUpdating(true);
-        await i18n.changeLanguage(lang);
-        setIsUpdating(false);
+    const handlePick = async (lang: SupportedLanguage) => {
+        if (lang !== currentLang) {
+            await i18n.changeLanguage(lang);
+        }
+        closeModal();
     };
 
-    const currentLang = i18n.language as SupportedLanguage;
-
     return (
-        <div className="w-full px-4 mt-4">
-            <div className="w-full flex items-center justify-center bg-grayscale-100 rounded-[16px] p-[2px]">
+        <div className="w-full flex flex-col px-4 py-2 gap-2">
+            <h3 className="text-center font-poppins font-semibold text-[18px] text-grayscale-900 mb-1">
+                {t('language.select', 'Select language')}
+            </h3>
+            <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
                 {SUPPORTED_LANGUAGES.map(lang => {
-                    const selected = currentLang === lang;
+                    const selected = lang === currentLang;
                     return (
                         <button
                             key={lang}
-                            onClick={() => handleChange(lang)}
-                            disabled={isUpdating}
+                            type="button"
+                            onClick={() => handlePick(lang)}
                             aria-pressed={selected}
-                            className={`flex-1 py-2.5 px-1 text-xs font-medium font-poppins rounded-full transition-colors
-                                ${
-                                    selected
-                                        ? `bg-grayscale-900 text-white`
-                                        : `text-grayscale-600 hover:text-grayscale-900`
-                                }`}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-[12px] transition-colors text-left ${
+                                selected ? 'bg-grayscale-100' : 'hover:bg-grayscale-50'
+                            }`}
                         >
-                            {LANGUAGE_NATIVE_NAMES[lang]}
+                            <span className="text-grayscale-900 font-poppins text-[15px]">
+                                {LANGUAGE_NATIVE_NAMES[lang]}
+                            </span>
+                            {selected && (
+                                <Checkmark className="w-5 h-5 text-emerald-500 shrink-0" />
+                            )}
                         </button>
                     );
                 })}
             </div>
+        </div>
+    );
+};
+
+/**
+ * Side-menu language trigger. Shows the current language plus a caret;
+ * tapping opens a modal that lists every supported language.
+ *
+ * Scales to many more languages than the previous inline-buttons design,
+ * which capped out around 4-5 entries before overflowing the sidebar.
+ */
+const LanguagePicker: React.FC = () => {
+    const { i18n } = useTranslation();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
+
+    const currentLang = i18n.language as SupportedLanguage;
+    const currentLabel = LANGUAGE_NATIVE_NAMES[currentLang] ?? LANGUAGE_NATIVE_NAMES.en;
+
+    const openLanguageModal = () => {
+        newModal(
+            <LanguageSelectorModal currentLang={currentLang} />,
+            { sectionClassName: '!max-w-[420px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
+
+    return (
+        <div className="w-full px-4 mt-4">
+            <button
+                type="button"
+                onClick={openLanguageModal}
+                className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-[16px] shadow-soft-bottom"
+                aria-label={currentLabel}
+            >
+                <span className="text-grayscale-900 font-poppins text-[15px] font-medium">
+                    {currentLabel}
+                </span>
+                <CaretDown className="w-4 h-4 text-grayscale-600 shrink-0" />
+            </button>
         </div>
     );
 };

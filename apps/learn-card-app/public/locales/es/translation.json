@@ -115,6 +115,7 @@
         }
     },
     "language": {
+        "select": "Seleccionar idioma",
         "english": "English",
         "spanish": "Español",
         "german": "Deutsch",
