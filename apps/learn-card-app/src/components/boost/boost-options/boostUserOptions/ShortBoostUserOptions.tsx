@@ -10,7 +10,14 @@ import AddUser from '../../../svgs/AddUser';
 
 import { BoostUserTypeEnum } from '../boostOptions';
 
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import useBoost from '../../../boost/hooks/useBoost';
 import {
     useModal,
@@ -68,9 +75,7 @@ const ShortBoostUserOptions: React.FC<{
     const sectionPortal = document.getElementById('section-cancel-portal');
 
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
 
     const firstPage =
@@ -105,6 +110,8 @@ const ShortBoostUserOptions: React.FC<{
         if (!profileId) return;
 
         setIssueLoading(true);
+        // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+        capture();
 
         presentBoostIssueLoadingModal();
         await handleSubmitExistingBoostSelf(profileId, boostUri, boost?.status);
@@ -116,13 +123,13 @@ const ShortBoostUserOptions: React.FC<{
         });
 
         const now = Date.now();
-        const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-        const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+        const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+        const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
         track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
             method: ProfileBuildMethod.SelfIssue,
             itemType: 'credential',
             itemCount: 1,
-            totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+            totalItemsAfter: snapshotRef.current.credentialCount + 1,
             msSinceAccountCreated: now - accountCreatedAt,
             msSinceSessionStart: now - sessionStart,
         });

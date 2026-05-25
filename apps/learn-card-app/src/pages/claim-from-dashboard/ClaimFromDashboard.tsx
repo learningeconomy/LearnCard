@@ -33,7 +33,14 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 import {
     getAchievementType,
@@ -142,9 +149,7 @@ const ClaimFromDashboard: React.FC = () => {
     const [metadata, setMetadata] = useState<FromDashboardMetadata | undefined>();
 
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
 
     const queryClient = useQueryClient();
@@ -275,6 +280,8 @@ const ClaimFromDashboard: React.FC = () => {
         try {
             if (!credential) return;
             setClaimingCredential(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             await storeAndAddVCToWallet(credential, { title: name });
 
@@ -290,13 +297,13 @@ const ClaimFromDashboard: React.FC = () => {
                 });
 
                 const now = Date.now();
-                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                     method: ProfileBuildMethod.Dashboard,
                     itemType: 'credential',
                     itemCount: 1,
-                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
                     msSinceAccountCreated: now - accountCreatedAt,
                     msSinceSessionStart: now - sessionStart,
                 });

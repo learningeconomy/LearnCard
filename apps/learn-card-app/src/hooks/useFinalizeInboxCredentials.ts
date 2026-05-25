@@ -11,7 +11,14 @@ import {
 import type { VC, LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
 import { captureException } from '@sentry/react';
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 // Finalize cache settings
 const FINALIZE_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
@@ -49,9 +56,7 @@ export const useFinalizeInboxCredentials = () => {
 
     const inFlightRef = useRef(false);
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const storedCountAtStartRef = useRef(0);
 
     useEffect(() => {
@@ -91,7 +96,9 @@ export const useFinalizeInboxCredentials = () => {
                 // mark syncing
                 walletStore.set.setIsSyncing(WalletSyncState.Syncing);
 
-                storedCountAtStartRef.current = profileSnapshotRef.current.credentialCount;
+                // LC-1853: freeze pre-mutation snapshot now that we know we have credentials to store.
+                capture();
+                storedCountAtStartRef.current = snapshotRef.current.credentialCount;
 
                 let storedCount = 0;
 
@@ -119,8 +126,8 @@ export const useFinalizeInboxCredentials = () => {
                         // LC-1853: fire profile_item_added for each auto-accepted credential
                         try {
                             const now = Date.now();
-                            const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-                            const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                            const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                            const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
                             track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                                 method: ProfileBuildMethod.ReceivedBoost,
                                 itemType: 'credential',

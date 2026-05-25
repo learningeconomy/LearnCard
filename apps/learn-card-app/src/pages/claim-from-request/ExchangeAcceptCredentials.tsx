@@ -15,7 +15,14 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import X from 'learn-card-base/svgs/X';
 
 import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -79,9 +86,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const { presentToast } = useToast();
     const { storeAndAddVCToWallet } = useWallet();
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
 
     const handleClaim = async () => {
@@ -93,6 +98,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             return;
         }
         setClaiming(true);
+        // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+        capture();
 
         try {
             // Capture the stored credential URIs so we can publish
@@ -105,7 +112,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             // acceptance calls `storeAndAddVCToWallet` directly, so
             // we do the publish inline here.
             const storeResults = await Promise.all(
-                selectedCredentials.map(credential => {
+                selectedCredentials.map((credential, i) => {
                     const name = credential.name || 'Credential';
                     const category = getDefaultCategoryForCredential(credential);
                     const achievementType = getAchievementType(credential);
@@ -118,13 +125,14 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     });
 
                     const now = Date.now();
-                    const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-                    const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                    const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                    const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
                     track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                         method: ProfileBuildMethod.VcApiRequest,
                         itemType: 'credential',
                         itemCount: 1,
-                        totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                        // LC-1853: increment per credential within this batch.
+                        totalItemsAfter: snapshotRef.current.credentialCount + 1 + i,
                         msSinceAccountCreated: now - accountCreatedAt,
                         msSinceSessionStart: now - sessionStart,
                     });

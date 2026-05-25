@@ -19,6 +19,16 @@ export const useSkillProfileStepFunnel = (
     const stepStartedAt = useRef(Date.now());
     const completedRef = useRef(false);
 
+    // LC-1853 (review #5): `track` identity changes once at boot when the
+    // analytics provider swaps from Noop → PostHog. If we depended on
+    // `[step, track]` here, that transition would re-run the effect,
+    // firing a spurious STEP_ABANDONED for the active step. Route
+    // `track` through a ref instead so the started/abandoned pair are
+    // tied strictly to mount/unmount (and explicit step changes — though
+    // each SkillProfileStep N component receives a hard-coded step).
+    const trackRef = useRef(track);
+    trackRef.current = track;
+
     // Fire STEP_STARTED on mount
     useEffect(() => {
         // Store first-step timestamp for overall duration
@@ -27,19 +37,19 @@ export const useSkillProfileStepFunnel = (
         }
 
         stepStartedAt.current = Date.now();
-        track(AnalyticsEvents.SKILL_PROFILE_STEP_STARTED, { step });
+        trackRef.current(AnalyticsEvents.SKILL_PROFILE_STEP_STARTED, { step });
 
         return () => {
             // Fire ABANDONED on unmount if step was not completed
             if (!completedRef.current) {
                 const durationMs = Date.now() - stepStartedAt.current;
-                track(AnalyticsEvents.SKILL_PROFILE_ABANDONED, {
+                trackRef.current(AnalyticsEvents.SKILL_PROFILE_ABANDONED, {
                     step,
                     stepDurationMs: durationMs,
                 });
             }
         };
-    }, [step, track]);
+    }, [step]);
 
     const markStepCompleted = useCallback(() => {
         if (completedRef.current) return;
@@ -48,12 +58,12 @@ export const useSkillProfileStepFunnel = (
         const durationMs = Date.now() - stepStartedAt.current;
         const fieldsCompleted = getFieldsCompleted();
 
-        track(AnalyticsEvents.SKILL_PROFILE_STEP_COMPLETED, {
+        trackRef.current(AnalyticsEvents.SKILL_PROFILE_STEP_COMPLETED, {
             step,
             stepDurationMs: durationMs,
             fieldsCompleted,
         });
-    }, [step, track, getFieldsCompleted]);
+    }, [step, getFieldsCompleted]);
 
     return { markStepCompleted };
 };

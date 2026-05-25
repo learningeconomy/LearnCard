@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     useManageSelfAssignedSkillsBoost,
     useGetSelfAssignedSkillsBoost,
@@ -11,7 +11,14 @@ import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
 import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import { useSkillProfileStepFunnel, trackSkillProfileCompleted } from './useSkillProfileStepFunnel';
 
 type SkillProfileStep5Props = {
@@ -27,9 +34,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const { markStepCompleted } = useSkillProfileStepFunnel(5, () => {
         const fields: string[] = [];
         if (selectedSkills.length > 0) fields.push('selectedSkills');
@@ -66,6 +71,14 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
     const handleFinish = async () => {
         setIsUpdating(true);
+        // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+        capture();
+        // LC-1853 (review): only fire PROFILE_ITEM_ADDED for skills NEWLY added in
+        // this session. Re-saving an unchanged list (or removing skills) shouldn't
+        // inflate the analytics — `totalItemsAfter` represents items now in the
+        // profile that weren't there before this mutation.
+        const existingIds = new Set((sasBoostSkills ?? []).map((s: { id: string }) => s.id));
+        const newlyAddedSkills = selectedSkills.filter(s => !existingIds.has(s.id));
         try {
             await createOrUpdateSkills({
                 skills: selectedSkills.map(s => ({
@@ -79,16 +92,18 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 type: ToastTypeEnum.Success,
             });
 
-            // LC-1853: fire profile_item_added per skill added
+            // LC-1853 (review): fire profile_item_added per *newly added* skill,
+            // using skillsCount (not credentialCount) so totalItemsAfter matches
+            // the itemType.
             const now = Date.now();
-            const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-            const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
-            for (let i = 0; i < selectedSkills.length; i++) {
+            const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+            const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+            for (let i = 0; i < newlyAddedSkills.length; i++) {
                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                     method: ProfileBuildMethod.SelfArticulation,
                     itemType: 'skill',
                     itemCount: 1,
-                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1 + i,
+                    totalItemsAfter: snapshotRef.current.skillsCount + 1 + i,
                     msSinceAccountCreated: now - accountCreatedAt,
                     msSinceSessionStart: now - sessionStart,
                 });

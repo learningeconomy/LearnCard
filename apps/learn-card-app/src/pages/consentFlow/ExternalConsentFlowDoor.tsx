@@ -34,7 +34,14 @@ import ConsentFlowError from './ConsentFlowError';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 enum Step {
     landing,
@@ -56,9 +63,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -294,17 +299,41 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                     alreadyConsented: !!consentedContract,
                                 });
 
-                                const now = Date.now();
-                                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-                                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
-                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
-                                    method: ProfileBuildMethod.ConsentFlow,
-                                    itemType: 'credential',
-                                    itemCount: 1,
-                                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
-                                    msSinceAccountCreated: now - accountCreatedAt,
-                                    msSinceSessionStart: now - sessionStart,
-                                });
+                                // LC-1853 (review #2): only fire PROFILE_ITEM_ADDED when
+                                // (a) this is a NEW consent (alreadyConsented → skip; the
+                                // user is just re-entering), AND (b) the contract has a
+                                // `frontDoorBoostUri` indicating a credential will be
+                                // delivered immediately as part of this acceptance.
+                                // Without (b), any credentials that arrive later through
+                                // data-source sync will be caught by
+                                // useFinalizeInboxCredentials and attributed to
+                                // ReceivedBoost — firing here would be a phantom item.
+                                const isNewConsent = !consentedContract;
+                                const hasFrontDoorBoost = !!contractDetails?.frontDoorBoostUri;
+                                if (isNewConsent && hasFrontDoorBoost) {
+                                    // Freeze the pre-mutation snapshot. The credential
+                                    // delivery actually happens in CredFrontDoor (next
+                                    // step) which is wired through the standard claim
+                                    // pipeline; this event records the consent-flow
+                                    // attribution at the moment the user accepts.
+                                    capture();
+                                    const now = Date.now();
+                                    const sessionStart = Number(
+                                        localStorage.getItem(SESSION_START_KEY) ?? now
+                                    );
+                                    const accountCreatedAt = Number(
+                                        localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                    );
+                                    track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                        method: ProfileBuildMethod.ConsentFlow,
+                                        itemType: 'credential',
+                                        itemCount: 1,
+                                        totalItemsAfter:
+                                            snapshotRef.current.credentialCount + 1,
+                                        msSinceAccountCreated: now - accountCreatedAt,
+                                        msSinceSessionStart: now - sessionStart,
+                                    });
+                                }
 
                                 setUserClickedContinue(true);
                             }}

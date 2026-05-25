@@ -34,7 +34,14 @@ import {
     boostPreviewStore,
 } from 'learn-card-base';
 
-import { useAnalytics, AnalyticsEvents, ProfileBuildMethod, useProfileSnapshot } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
@@ -132,9 +139,7 @@ const ClaimBoost: React.FC<{
     const { initWallet, addVCtoWallet } = useWallet();
     const [presentAlert, dismissAlert] = useIonAlert();
     const { track } = useAnalytics();
-    const profileSnapshot = useProfileSnapshot();
-    const profileSnapshotRef = useRef(profileSnapshot);
-    profileSnapshotRef.current = profileSnapshot;
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
@@ -219,6 +224,8 @@ const ClaimBoost: React.FC<{
 
         try {
             setIsClaimLoading(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(boostUri, challenge);
             await addVCtoWallet({ uri: claimedBoostUri });
@@ -235,13 +242,13 @@ const ClaimBoost: React.FC<{
                 });
 
                 const now = Date.now();
-                const sessionStart = Number(localStorage.getItem('lc_session_start_ms') ?? now);
-                const accountCreatedAt = Number(localStorage.getItem('lc_account_created_at_ms') ?? now);
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                     method: ProfileBuildMethod.ClaimLink,
                     itemType: 'credential',
                     itemCount: 1,
-                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
                     msSinceAccountCreated: now - accountCreatedAt,
                     msSinceSessionStart: now - sessionStart,
                 });
