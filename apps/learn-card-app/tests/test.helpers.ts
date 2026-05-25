@@ -45,9 +45,13 @@ export const openAddToLearnCardMenu = async (page: Page) => {
 
     // Desktop opens LaunchPadActionModal first; click its inner tile to reach
     // AddToLearnCardMenu. Mobile skips this step.
-    const actionModalHeading = page.getByRole('heading', { name: 'What would you like to do?' });
-    if (await locatorExists(actionModalHeading, 2_000)) {
-        await page.getByRole('button', { name: 'Add to LearnCard' }).nth(1).click({ timeout: 30_000 });
+    const launcherModal = page.getByRole('complementary').filter({
+        has: page.getByRole('heading', { name: 'What would you like to do?' }),
+    });
+    if (await locatorExists(launcherModal, 2_000)) {
+        await launcherModal
+            .getByRole('button', { name: 'Add to LearnCard' })
+            .click({ timeout: 30_000 });
     }
 };
 
