@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createHash } from 'crypto';
 import { GoogleGenAI } from '@google/genai';
 import cache from '@cache';
 
@@ -23,11 +24,43 @@ const embeddingResponseValidator = z.object({
 
 const embeddingsResponseValidator = z.array(embeddingResponseValidator);
 
+const getEmbeddingCacheTtlSeconds = (): number => {
+    const raw = Number(process.env.SKILL_EMBEDDING_CACHE_TTL_SECONDS ?? 60 * 60 * 24);
+    return Math.min(Math.max(raw, 60), 60 * 60 * 24 * 7);
+};
+
+const getEmbeddingCacheKey = (text: string): string => {
+    const normalizedText = text.trim();
+    const digest = createHash('sha256').update(normalizedText).digest('hex');
+
+    return `skill-embedding:query:${googleModel}:${digest}`;
+};
+
+export const getCachedEmbeddingForText = async (text: string): Promise<number[] | null> => {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return null;
+    }
+
+    try {
+        const cachedEmbedding = await cache.get(getEmbeddingCacheKey(normalizedText));
+        if (!cachedEmbedding) {
+            return null;
+        }
+
+        const parsed = embeddingResponseValidator.parse(JSON.parse(cachedEmbedding));
+        return parsed.values;
+    } catch (error) {
+        console.warn('Failed to read cached skill embedding', error);
+        return null;
+    }
+};
+
 const getEmbeddingBatchSize = (): number => {
     const raw = Number(
         process.env.SKILL_EMBEDDING_BATCH_SIZE ??
-        process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
-        25
+            process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
+            25
     );
     return Math.min(Math.max(raw, 1), 100);
 };
@@ -58,9 +91,31 @@ export const buildSkillEmbeddingText = (skill: SkillEmbeddingTarget): string => 
 };
 
 export const generateEmbeddingForText = async (text: string): Promise<number[]> => {
-    const embeddings = await generateEmbeddingsForTexts([text]);
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return [];
+    }
+
+    const cachedEmbedding = await getCachedEmbeddingForText(normalizedText);
+    if (cachedEmbedding) {
+        return cachedEmbedding;
+    }
+
+    const embeddings = await generateEmbeddingsForTexts([normalizedText]);
     const embedding = embeddings[0];
     if (!embedding) throw new Error('No embedding returned from Google API');
+
+    try {
+        const cacheKey = getEmbeddingCacheKey(normalizedText);
+        await cache.set(
+            cacheKey,
+            JSON.stringify({ values: embedding }),
+            getEmbeddingCacheTtlSeconds()
+        );
+    } catch (error) {
+        console.warn('Failed to cache skill embedding', error);
+    }
+
     return embedding;
 };
 

@@ -73,9 +73,29 @@ const SkillCard: React.FC<SkillCardProps> = ({
                 key={skillId}
                 frameworkId={frameworkId}
                 skill={convertApiSkillNodeToSkillTreeNode(skillData)}
-                handleAdd={(sk, level) => handleAddSkill(sk, level)}
+                handleAdd={(sk, level, relatedFrameworkId) =>
+                    handleAddSkill(
+                        {
+                            ...sk,
+                            frameworkId: relatedFrameworkId ?? frameworkId,
+                            targetFramework:
+                                sk.targetFramework ?? relatedFrameworkId ?? frameworkId,
+                        },
+                        level
+                    )
+                }
                 selectedSkills={selectedSkills}
-                handleAddRelatedSkill={handleAddSkill}
+                handleAddRelatedSkill={(sk, level, relatedFrameworkId) =>
+                    handleAddSkill?.(
+                        {
+                            ...sk,
+                            frameworkId: relatedFrameworkId ?? frameworkId,
+                            targetFramework:
+                                sk.targetFramework ?? relatedFrameworkId ?? frameworkId,
+                        },
+                        level
+                    )
+                }
                 handleEditRelatedSkill={handleEditSkill}
                 handleRemoveRelatedSkill={handleRemoveSkill}
                 previousSkills={updatedPreviousSkills}
@@ -95,7 +115,17 @@ const SkillCard: React.FC<SkillCardProps> = ({
                 handleDelete={handleRemoveSkill ? () => handleRemoveSkill(skillId) : undefined}
                 initialProficiencyLevel={proficiencyLevel}
                 selectedSkills={selectedSkills}
-                handleAddRelatedSkill={handleAddSkill}
+                handleAddRelatedSkill={(sk, level, relatedFrameworkId) =>
+                    handleAddSkill(
+                        {
+                            ...sk,
+                            frameworkId: relatedFrameworkId ?? frameworkId,
+                            targetFramework:
+                                sk.targetFramework ?? relatedFrameworkId ?? frameworkId,
+                        },
+                        level
+                    )
+                }
                 handleEditRelatedSkill={handleEditSkill}
                 handleRemoveRelatedSkill={handleRemoveSkill}
                 previousSkills={updatedPreviousSkills}

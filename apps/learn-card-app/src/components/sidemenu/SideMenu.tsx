@@ -23,6 +23,7 @@ import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import ThemeSelector from '../../theme/components/ThemeSelector';
 import LanguagePicker from './LanguagePicker';
 import AddToLearnCardMenu from '../add-to-learncard-menu/AddToLearnCardMenu';
+import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
 } from '../new-ai-session/NewAiSessionButton/NewAiSessionButton';
@@ -108,14 +109,32 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         const { prompted } = await gate();
         if (prompted) return;
 
+        if (isMobile) {
+            // Mobile: existing "Add to LearnCard" menu in a Cancel modal.
+            newModal(
+                <AddToLearnCardMenu />,
+                {
+                    sectionClassName: '!max-w-[500px]',
+                },
+                {
+                    desktop: ModalTypes.Cancel,
+                    mobile: ModalTypes.Cancel,
+                }
+            );
+            return;
+        }
+
+        // Desktop: open the launchpad action modal instead — same Freeform modal
+        // configuration used by the launchpad greeting card's quick-action button.
         newModal(
-            <AddToLearnCardMenu />,
+            <LaunchPadActionModal />,
             {
-                sectionClassName: '!max-w-[500px]',
+                className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                sectionClassName: '!max-w-[500px] disable-scrollbars',
             },
             {
-                desktop: ModalTypes.Cancel,
-                mobile: ModalTypes.Cancel,
+                desktop: ModalTypes.Freeform,
+                mobile: ModalTypes.Freeform,
             }
         );
     };
