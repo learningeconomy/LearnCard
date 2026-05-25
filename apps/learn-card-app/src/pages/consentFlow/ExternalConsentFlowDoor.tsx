@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import queryString from 'query-string';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
