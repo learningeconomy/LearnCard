@@ -76,10 +76,18 @@ Why Paraglide sidesteps the Lingui-on-SWC problem:
 - **Tree-shaking.** Unused messages eliminated by Vite. Reported ~70% bundle-size reduction vs i18next.
 - **Compile-time flash-of-key prevention** for the active locale (same property Lingui v5 macros had).
 
-Three open questions before we'd switch:
-1. **Runtime language switching × tree-shaking** — does `setLocale('de')` async-fetch a per-locale chunk (preserves tree-shaking benefit) or bundle all locales in main (less compelling as language count grows)? Docs are vague; needs a real test.
-2. **Capacitor + Vite + SWC + Paraglide** combination — no documented public reports. Needs validation.
+Architectural facts confirmed via follow-up research ([opral/paraglide-js#22](https://github.com/opral/paraglide-js/issues/22), [#222](https://github.com/opral/paraglide-js/issues/222), maintainer benchmark guidance):
+
+- **Paraglide v2 produces a single bundle with all locales inlined into each compiled message function** (effectively a switch over the active locale). Per-locale code-splitting is explicitly closed as "not planned." The "experimental middleware locale splitting" mode is SSR-only — not a fit for our pure SPA + Capacitor.
+- **`setLocale()` is therefore synchronous** — just a global locale state flip; no async chunk fetch.
+- **Tree-shaking eliminates unused MESSAGES, not unused locales.** So 300 used messages × 4 locales = ~1200 inlined strings + ~2KB runtime. Marketing's "~70% reduction" comes from scenarios with many DEFINED-but-UNUSED messages — for a tightly-written app like ours, the bundle-size win is more modest.
+
+Remaining open questions that the rollout spike still needs to answer:
+
+1. **Honest bundle-size delta** for OUR specific case (4 locales, ~300 strings, runtime switching). Could still be a meaningful win vs i18next's "all namespaces, all strings always" model — needs measurement.
+2. **Capacitor + Vite + SWC + Paraglide** combination — single bundle output simplifies the Live Updates story (no per-locale chunks to manage), but the combination is undocumented in public reports. Needs validation.
 3. **Translator-service interop** — Paraglide's native format is Inlang's own messageFormat. Crowdin/Lokalise need a JSON adapter; works but adds a pipeline step.
+4. **TypeScript strictness in practice** — does renaming a source key cause `tsc` to flag every consumer call site cleanly?
 
 Why we did NOT switch mid-POC:
 - What we shipped works; flash-of-key is solved by the three mitigations
