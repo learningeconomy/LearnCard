@@ -85,9 +85,10 @@ Architectural facts confirmed via follow-up research ([opral/paraglide-js#22](ht
 Remaining open questions that the rollout spike still needs to answer:
 
 1. **Honest bundle-size delta** for OUR specific case (4 locales, ~300 strings, runtime switching). Could still be a meaningful win vs i18next's "all namespaces, all strings always" model — needs measurement.
-2. **Capacitor + Vite + SWC + Paraglide** combination — single bundle output simplifies the Live Updates story (no per-locale chunks to manage), but the combination is undocumented in public reports. Needs validation.
-3. **Translator-service interop** — Paraglide's native format is Inlang's own messageFormat. Crowdin/Lokalise need a JSON adapter; works but adds a pipeline step.
-4. **TypeScript strictness in practice** — does renaming a source key cause `tsc` to flag every consumer call site cleanly?
+2. **Scaling projection at 10/15/20 locales** — Paraglide's single-bundle architecture means every user pays for every locale. Maintainers themselves flag 10 languages as the threshold where the multilingual payload starts dominating tree-shaking benefits. Rough estimate for our case (~300 messages × ~40 chars): 4 locales ≈ 12–18 KB gzipped, 10 ≈ 30–45 KB, 20 ≈ 50–80 KB. The rollout spike includes a fixture-duplication check (copy EN into 6/11/16 fake locales, rebuild, measure) so ADR-002 has a real curve, not estimates. If LearnCard's 2-year language ceiling pushes toward 15+, the calculus inverts and **react-i18next + lazy-load** becomes the better fit (~43 KB total regardless of locale count).
+3. **Capacitor + Vite + SWC + Paraglide** combination — single bundle output simplifies the Live Updates story (no per-locale chunks to manage), but the combination is undocumented in public reports. Needs validation.
+4. **Translator-service interop** — Paraglide's native format is Inlang's own messageFormat. Crowdin/Lokalise need a JSON adapter; works but adds a pipeline step.
+5. **TypeScript strictness in practice** — does renaming a source key cause `tsc` to flag every consumer call site cleanly?
 
 Why we did NOT switch mid-POC:
 - What we shipped works; flash-of-key is solved by the three mitigations
