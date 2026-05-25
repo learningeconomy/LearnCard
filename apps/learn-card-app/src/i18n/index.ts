@@ -4,7 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpBackend from 'i18next-http-backend';
 import enResource from '../../public/locales/en/translation.json'; // synchronous EN
 
-export const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'ar'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'ar'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 // Soft-RTL mode: keep layout LTR for all languages; only the <html lang>

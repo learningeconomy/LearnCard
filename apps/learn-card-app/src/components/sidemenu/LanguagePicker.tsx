@@ -6,7 +6,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 const LANGUAGE_NATIVE_NAMES: Record<SupportedLanguage, string> = {
     en: 'English',
     es: 'Español',
-    fr: 'Français',
+    de: 'Deutsch',
     ar: 'العربية',
 };
 

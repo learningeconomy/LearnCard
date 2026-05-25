@@ -103,10 +103,20 @@
             "ids": "الهويات"
         }
     },
+    "theme": {
+        "title": "اختر مظهرك",
+        "subtitleColorfulFormal": "بدّل بين تجربتنا المميزة الملوّنة وأسلوب كلاسيكي رسمي.",
+        "subtitleGeneric": "اختر أسلوبك المرئي المفضل.",
+        "names": {
+            "colorful": "ملوّن",
+            "formal": "رسمي",
+            "vetpass": "VetPass"
+        }
+    },
     "language": {
         "english": "English",
         "spanish": "Español",
-        "french": "Français",
+        "german": "Deutsch",
         "arabic": "العربية"
     }
 }

@@ -103,10 +103,20 @@
             "ids": "IDs"
         }
     },
+    "theme": {
+        "title": "Choose Your Theme",
+        "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
+        "subtitleGeneric": "Choose your preferred visual style.",
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        }
+    },
     "language": {
         "english": "English",
         "spanish": "Español",
-        "french": "Français",
+        "german": "Deutsch",
         "arabic": "العربية"
     }
 }

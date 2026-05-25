@@ -101,7 +101,7 @@
 
     "i18n": {
         "defaultLanguage": "en",
-        "supportedLanguages": ["en", "es", "fr", "ar"]
+        "supportedLanguages": ["en", "es", "de", "ar"]
     },
 
     "native": {

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useTranslation } from 'react-i18next';
 
 import { getAllowedThemes, isThemeSwitchingEnabled } from '../store/themeStore';
 
@@ -23,6 +24,7 @@ export enum themeSelectorViewMode {
 export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const { theme } = useTheme();
 
@@ -94,11 +96,11 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         <div className="w-full px-4">
             <div className="w-full flex bg-white flex-col items-center justify-start py-4 rounded-[16px] gap-2">
                 <div className="w-full px-4 flex flex-col gap-2">
-                    <h4 className="w-full text-grayscale-900 text-[17px]">Choose Your Theme</h4>
+                    <h4 className="w-full text-grayscale-900 text-[17px]">{t('theme.title', 'Choose Your Theme')}</h4>
                     <p className="w-full text-grayscale-600 text-xs">
                         {allowedThemeIds.includes('colorful') && allowedThemeIds.includes('formal')
-                            ? 'Switch between our signature, colorful experience and a classic, formal style.'
-                            : 'Choose your preferred visual style.'}
+                            ? t('theme.subtitleColorfulFormal', 'Switch between our signature, colorful experience and a classic, formal style.')
+                            : t('theme.subtitleGeneric', 'Choose your preferred visual style.')}
                     </p>
                 </div>
 
@@ -130,7 +132,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                             className="w-[30px] h-[30px] object-contain"
                                         />
                                     )}
-                                    <span className="ml-1">{btn.label}</span>
+                                    <span className="ml-1">{t(`theme.names.${btn.theme}`, btn.label)}</span>
                                 </button>
                             );
                         })}

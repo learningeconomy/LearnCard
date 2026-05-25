@@ -103,10 +103,20 @@
             "ids": "Identificaciones"
         }
     },
+    "theme": {
+        "title": "Elige Tu Tema",
+        "subtitleColorfulFormal": "Alterna entre nuestra experiencia colorida característica y un estilo clásico y formal.",
+        "subtitleGeneric": "Elige tu estilo visual preferido.",
+        "names": {
+            "colorful": "Colorido",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        }
+    },
     "language": {
         "english": "English",
         "spanish": "Español",
-        "french": "Français",
+        "german": "Deutsch",
         "arabic": "العربية"
     }
 }

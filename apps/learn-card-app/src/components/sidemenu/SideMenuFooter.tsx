@@ -26,16 +26,19 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
     return (
         <div className="px-2 bg-transparent h-18 flex-none order-1 self-stretch flex-grow-0 text-white text-xs font-normal font-poppins mt-6 leading-snug m-4 mb-8">
             <p className="text-grayscale-600 text-xs font-notoSans">
-                <Trans i18nKey="sidemenu.footer.poweredBy" defaults="Powered by <0>Consent Flow</0>">
-                    Powered by <span className="font-semibold">Consent Flow</span>
-                </Trans>
+                <Trans
+                    i18nKey="sidemenu.footer.poweredBy"
+                    defaults="Powered by <0>Consent Flow</0>"
+                    components={[<span className="font-semibold" key="cf" />]}
+                />
                 <br />
                 {t('sidemenu.footer.ownYourData', 'You own your own data.')}
                 <br />
-                <Trans i18nKey="sidemenu.footer.connectionsEncrypted" defaults="All connections are <0>encrypted.</0>">
-                    All connections are{' '}
-                    <span className={`font-bold text-${primaryColor}`}>encrypted.</span>
-                </Trans>
+                <Trans
+                    i18nKey="sidemenu.footer.connectionsEncrypted"
+                    defaults="All connections are <0>encrypted.</0>"
+                    components={[<span className={`font-bold text-${primaryColor}`} key="enc" />]}
+                />
             </p>
 
             <p className="mt-4">

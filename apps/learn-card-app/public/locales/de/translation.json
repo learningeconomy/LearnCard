@@ -1,0 +1,122 @@
+{
+    "sidemenu": {
+        "addTo": "Zu {{brand}} hinzufügen",
+        "footer": {
+            "poweredBy": "Bereitgestellt von <0>Consent Flow</0>",
+            "ownYourData": "Deine Daten gehören dir.",
+            "connectionsEncrypted": "Alle Verbindungen sind <0>verschlüsselt.</0>",
+            "privacyPolicy": "Datenschutzerklärung",
+            "termsOfService": "Nutzungsbedingungen",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Schließen"
+        },
+        "links": {
+            "launchPad": "Apps",
+            "contacts": "Kontakte",
+            "alerts": "Benachrichtigungen",
+            "personalize": "Personalisieren",
+            "adminTools": "Admin-Tools",
+            "wallet": "Wallet",
+            "passport": "Pass",
+            "aiTopics": "KI-Sitzungen",
+            "aiInsights": "KI-Einblicke",
+            "aiPathways": "KI-Pfade",
+            "skills": "Fähigkeiten",
+            "socialBadges": "Abzeichen",
+            "achievements": "Erfolge",
+            "studies": "Studien",
+            "portfolio": "Portfolio",
+            "assistance": "Unterstützung",
+            "experiences": "Erfahrungen",
+            "families": "Familien",
+            "ids": "Identifikationen",
+            "pathways": "Reisen"
+        }
+    },
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "Erstelle meine {{brand}}",
+            "progress": "{{percent}}% optimiert",
+            "processing": "Dokumente werden verarbeitet…",
+            "stepsCompleted": "<0>{{completed}}</0> von <1>{{total}}</1> Schritten abgeschlossen",
+            "pendingReview": "{{count}} Nachweis(e) zur Überprüfung bereit"
+        },
+        "resumeBuilder": {
+            "title": "Lebenslauf-Editor",
+            "subtitle": "Erstelle deinen Lebenslauf mit {{brand}}-Nachweisen.",
+            "yourResume": "Dein Lebenslauf",
+            "buildYourResume": "Lebenslauf erstellen",
+            "updatedToday": "Aktualisiert <0>heute</0>",
+            "tagline": "Hebe dich mit einem maßgeschneiderten Lebenslauf ab"
+        },
+        "explore": "Entdecken"
+    },
+    "launchpad": {
+        "title": "Apps",
+        "header": {
+            "contacts": "Kontakte",
+            "aiSessions": "KI-Sitzungen",
+            "alerts": "Benachrichtigungen"
+        },
+        "tabs": {
+            "myApps": "Meine Apps",
+            "ai": "KI",
+            "learning": "Lernen",
+            "games": "Spiele",
+            "tools": "Werkzeuge",
+            "employment": "Beschäftigung",
+            "credentials": "Nachweise",
+            "other": "Sonstiges",
+            "plugins": "Plugins",
+            "all": "Alle"
+        },
+        "sections": {
+            "suggestedApps": "Vorgeschlagene Apps",
+            "installedApps": "Installierte Apps",
+            "allApps": "Alle Apps",
+            "allCategory": "Alle: {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "Deine Apps werden hier zu finden sein",
+            "noAppsAvailable": "Derzeit keine Apps verfügbar",
+            "nothingInCategory": "Noch nichts in {{category}}",
+            "installSomething": "Installiere etwas aus dem App Store, um loszulegen.",
+            "checkBackLater": "Schau später nochmal vorbei — neue Apps werden ständig hinzugefügt.",
+            "checkBackSoon": "Komm bald wieder vorbei oder durchstöbere alle Apps."
+        },
+        "aiDisabledMinor": "KI-Funktionen sind für Nutzer unter 18 nicht verfügbar.",
+        "aiDisabledPrivacy": "KI-Funktionen sind derzeit deaktiviert. Du kannst sie unter Privatsphäre und Daten in deinem Profil aktivieren."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "KI-Sitzungen",
+            "aiPathways": "KI-Pfade",
+            "aiInsights": "KI-Einblicke",
+            "skills": "Fähigkeiten",
+            "socialBadges": "Abzeichen",
+            "achievements": "Erfolge",
+            "studies": "Studien",
+            "portfolio": "Portfolio",
+            "assistance": "Unterstützung",
+            "experiences": "Erfahrungen",
+            "families": "Familien",
+            "ids": "Identifikationen"
+        }
+    },
+    "theme": {
+        "title": "Wähle Dein Theme",
+        "subtitleColorfulFormal": "Wechsle zwischen unserem charakteristischen, bunten Erlebnis und einem klassischen, formellen Stil.",
+        "subtitleGeneric": "Wähle deinen bevorzugten visuellen Stil.",
+        "names": {
+            "colorful": "Bunt",
+            "formal": "Formell",
+            "vetpass": "VetPass"
+        }
+    },
+    "language": {
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية"
+    }
+}
