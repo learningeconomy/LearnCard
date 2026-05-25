@@ -1,6 +1,7 @@
 {
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
+        "newAiSession": "جلسة ذكاء اصطناعي جديدة",
         "footer": {
             "poweredBy": "مُشغَّل بواسطة <0>Consent Flow</0>",
             "ownYourData": "أنت تملك بياناتك الخاصة.",

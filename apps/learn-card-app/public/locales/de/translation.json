@@ -1,6 +1,7 @@
 {
     "sidemenu": {
         "addTo": "Zu {{brand}} hinzufügen",
+        "newAiSession": "Neue KI-Sitzung",
         "footer": {
             "poweredBy": "Bereitgestellt von <0>Consent Flow</0>",
             "ownYourData": "Deine Daten gehören dir.",

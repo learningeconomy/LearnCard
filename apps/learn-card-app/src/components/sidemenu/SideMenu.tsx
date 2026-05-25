@@ -175,10 +175,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     role="button"
                                     autoHide={false}
                                     onClick={handleBoost}
-                                    className={`text-[17px] flex items-center justify-center font-semibold py-[5px] rounded-full w-full max-w-[90%] border-solid border-[2px] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
+                                    className={`text-[17px] flex items-center justify-center text-center leading-tight font-semibold py-[8px] px-[12px] rounded-full w-full max-w-[90%] border-solid border-[2px] min-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
                                 >
                                     {t('sidemenu.addTo', 'Add to {{brand}}', { brand: brandingConfig.name })}
-                                    <GearPlusIcon className="ml-1 text-grayscale-800" />
+                                    <GearPlusIcon className="ml-1 shrink-0 text-grayscale-800" />
                                 </IonMenuToggle>
                             </div>
                         </div>
