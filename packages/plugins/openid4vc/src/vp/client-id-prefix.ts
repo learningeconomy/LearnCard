@@ -145,6 +145,21 @@ export const deriveClientIdPrefix = (
         return { prefix: 'pre-registered', value: '', inferred: true };
     }
 
+    // Path 0 — OID4VP 1.0 inline-prefix form for DIDs. Strip eagerly
+    // (before legacy-scheme handling) because `decentralized_identifier:`
+    // is unambiguous: the suffix MUST be a DID URI per OID4VP 1.0 §5.9.
+    // Stripping first also keeps the equality-check semantics simple
+    // for the JAR verifier — `deriveClientIdPrefix(urlClientId).value`
+    // always returns the bare DID, matching what the signed JWS
+    // payload's `client_id` carries.
+    if (clientId.startsWith('decentralized_identifier:')) {
+        return {
+            prefix: 'did',
+            value: clientId.slice('decentralized_identifier:'.length),
+            inferred: false,
+        };
+    }
+
     // Path 1 — legacy `client_id_scheme` parameter (draft 22 wire form).
     // We accept any of the known prefixes verbatim. Unknown legacy
     // schemes degrade to `pre-registered` (the JAR verifier will then
@@ -167,13 +182,16 @@ export const deriveClientIdPrefix = (
     //
     //   - `pre-registered` has no explicit form (it's the *default*
     //     when no prefix is detected).
-    //   - `did` has no explicit form either; the DID URI itself
-    //     (`did:method:identifier`) IS the encoding, handled below
-    //     in path 4.
+    //   - `did` has an implicit form via the DID URI itself
+    //     (`did:method:identifier`, handled below in path 4) AND a
+    //     legacy explicit form `decentralized_identifier:<did>` that
+    //     some verifiers (OpenCred, EUDI) emit. We strip the legacy
+    //     prefix and route to the `did` branch so downstream
+    //     verification keys off a single normalized prefix.
     //   - `https` has no explicit form; the URL syntax `https://...`
     //     is the encoding (path 3).
     //
-    // Skipping `did` here is what lets `did:web:foo.com` route
+    // Skipping bare `did` here is what lets `did:web:foo.com` route
     // correctly through the implicit-DID path rather than getting
     // (mis)stripped to `web:foo.com`.
     const explicitPrefixes: readonly ClientIdPrefix[] = [

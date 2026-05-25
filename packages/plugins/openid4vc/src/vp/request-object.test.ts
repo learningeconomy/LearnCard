@@ -182,6 +182,31 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
         ).rejects.toMatchObject({ code: 'client_id_mismatch' });
     });
 
+    it('accepts decentralized_identifier:<did> urlClientId paired with bare did in JWS (OID4VP 1.0 §5.9)', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, baseClaims(key));
+
+        const result = await verifyAndDecodeRequestObject({
+            inlineJwt: jws,
+            urlClientId: `decentralized_identifier:${key.did}`,
+        });
+
+        expect(result.client_id).toBe(key.did);
+        expect(result.client_id_scheme).toBe('did');
+    });
+
+    it('still rejects when decentralized_identifier:<did> wraps a different DID', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, baseClaims(key));
+
+        await expect(
+            verifyAndDecodeRequestObject({
+                inlineJwt: jws,
+                urlClientId: 'decentralized_identifier:did:jwk:something-else',
+            })
+        ).rejects.toMatchObject({ code: 'client_id_mismatch' });
+    });
+
     it('rejects when kid header is missing', async () => {
         const key = await makeVerifierKey();
 

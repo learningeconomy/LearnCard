@@ -415,3 +415,114 @@ describe('buildPresentation — id generation', () => {
         );
     });
 });
+
+describe('buildPresentation — VP @context derivation', () => {
+    const degreeV2: Record<string, unknown> = {
+        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: 'did:web:university.example',
+        validFrom: '2024-01-01T00:00:00Z',
+        credentialSubject: { id: 'did:jwk:holder' },
+        proof: { type: 'Ed25519Signature2020' },
+    };
+
+    const obv3V2: Record<string, unknown> = {
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: { id: 'did:web:issuer' },
+        validFrom: '2024-01-01T00:00:00Z',
+        credentialSubject: {
+            id: 'did:jwk:holder',
+            type: ['AchievementSubject'],
+            achievement: { id: 'urn:uuid:ach', type: ['Achievement'] },
+        },
+    };
+
+    const pdLdp: PresentationDefinition = {
+        id: 'pd-ctx',
+        format: { ldp_vp: { proof_type: ['Ed25519Signature2020'] } },
+        input_descriptors: [degreeDescriptor],
+    };
+
+    it('uses VCDM v1 context when all inner VCs are v1 (preserves prior behaviour)', () => {
+        const result = buildPresentation({
+            pd: pdLdp,
+            chosen: [{ descriptorId: 'degree', candidate: { credential: degreeLdp } }],
+            holder: HOLDER,
+        });
+
+        expect(result.unsignedVp['@context']).toEqual([
+            'https://www.w3.org/2018/credentials/v1',
+        ]);
+    });
+
+    it('uses VCDM v2 context when the inner VC carries v2 @context', () => {
+        const result = buildPresentation({
+            pd: pdLdp,
+            chosen: [{ descriptorId: 'degree', candidate: { credential: degreeV2 } }],
+            holder: HOLDER,
+        });
+
+        expect(result.unsignedVp['@context']).toEqual([
+            'https://www.w3.org/ns/credentials/v2',
+        ]);
+    });
+
+    it('uses VCDM v2 context for OBv3 fixtures (regression — `Protected term redefinition`)', () => {
+        const result = buildPresentation({
+            pd: pdLdp,
+            chosen: [
+                { descriptorId: 'degree', candidate: { credential: obv3V2, format: 'ldp_vc' } },
+            ],
+            holder: HOLDER,
+        });
+
+        expect(result.unsignedVp['@context']).toEqual([
+            'https://www.w3.org/ns/credentials/v2',
+        ]);
+    });
+
+    it('uses v2 when ANY inner VC is v2 (mixed v1+v2)', () => {
+        const pdMulti: PresentationDefinition = {
+            id: 'pd-mixed',
+            format: { ldp_vp: { proof_type: ['Ed25519Signature2020'] } },
+            input_descriptors: [degreeDescriptor, licenseDescriptor],
+        };
+
+        const result = buildPresentation({
+            pd: pdMulti,
+            chosen: [
+                { descriptorId: 'degree', candidate: { credential: degreeLdp } },
+                { descriptorId: 'license', candidate: { credential: degreeV2 } },
+            ],
+            holder: HOLDER,
+        });
+
+        expect(result.unsignedVp['@context']).toEqual([
+            'https://www.w3.org/ns/credentials/v2',
+        ]);
+    });
+
+    it('falls back to v1 for JWT-VC strings (opaque, can\'t be context-inspected)', () => {
+        const pdJwt: PresentationDefinition = {
+            id: 'pd-jwt-only',
+            format: { jwt_vp_json: { alg: ['EdDSA'] } },
+            input_descriptors: [degreeDescriptor],
+        };
+
+        const result = buildPresentation({
+            pd: pdJwt,
+            chosen: [
+                { descriptorId: 'degree', candidate: { credential: degreeJwt, format: 'jwt_vc_json' } },
+            ],
+            holder: HOLDER,
+        });
+
+        expect(result.unsignedVp['@context']).toEqual([
+            'https://www.w3.org/2018/credentials/v1',
+        ]);
+    });
+});

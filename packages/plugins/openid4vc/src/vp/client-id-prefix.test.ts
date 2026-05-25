@@ -61,6 +61,39 @@ describe('deriveClientIdPrefix — explicit prefix form (OID4VP 1.0)', () => {
         });
     });
 
+    it('strips decentralized_identifier: prefix and routes to did', () => {
+        const result = deriveClientIdPrefix(
+            'decentralized_identifier:did:web:verifier.example.com'
+        );
+        expect(result).toEqual({
+            prefix: 'did',
+            value: 'did:web:verifier.example.com',
+            inferred: false,
+        });
+    });
+
+    it('strips decentralized_identifier: prefix on a did:web with embedded port', () => {
+        const result = deriveClientIdPrefix(
+            'decentralized_identifier:did:web:localhost%3A22080'
+        );
+        expect(result).toEqual({
+            prefix: 'did',
+            value: 'did:web:localhost%3A22080',
+            inferred: false,
+        });
+    });
+
+    it('strips decentralized_identifier: prefix on a did:jwk', () => {
+        const result = deriveClientIdPrefix(
+            'decentralized_identifier:did:jwk:eyJhbGc'
+        );
+        expect(result).toEqual({
+            prefix: 'did',
+            value: 'did:jwk:eyJhbGc',
+            inferred: false,
+        });
+    });
+
     it('does NOT strip a pre-registered: pseudo-prefix (spec has no explicit form)', () => {
         // OID4VP 1.0 §5.10 reserves `pre-registered` as the default
         // when no prefix is present. There is no explicit
