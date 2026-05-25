@@ -11,6 +11,7 @@ import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
 import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
+import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
 import {
     useAnalytics,
     AnalyticsEvents,
@@ -35,6 +36,12 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
+    // LC-1784 fix: this file references `globalSkillFrameworks[0]?.frameworkId`
+    // below (for the default-framework fallback when an existing skill has no
+    // frameworkId on it), but the original LC-1784 PR forgot to import + call
+    // the hook. Restoring the call so the fallback resolves to a real
+    // frameworkId instead of `undefined.frameworkId` at runtime.
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
     const { markStepCompleted } = useSkillProfileStepFunnel(5, () => {
         const fields: string[] = [];
         if (selectedSkills.length > 0) fields.push('selectedSkills');
