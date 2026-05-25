@@ -49,6 +49,7 @@ export enum SideMenuLinksEnum {
 
     // secondary links
     wallet = 'wallet',
+    passport = 'passport',
     aiTopics = CredentialCategoryEnum.aiTopic,
     aiInsights = CredentialCategoryEnum.aiInsight,
     aiPathways = CredentialCategoryEnum.aiPathway,
@@ -69,6 +70,27 @@ export enum SideMenuLinksEnum {
     // the legacy `aiPathways` link still owns the "Pathways" label.
     pathways = 'pathways',
 }
+
+/**
+ * Returns the stable i18n lookup key for a given side-menu link.
+ *
+ * Most enum members have a value that equals their key (e.g. `contacts =
+ * 'contacts'`), but the wallet-category members alias to CredentialCategoryEnum
+ * values like `'AI Topic'` or `'Social Badge'`. The i18n JSON resources are
+ * keyed by the enum *key name* (`'aiTopics'`, `'socialBadges'`) for
+ * cleanliness, so callers reverse-lookup the enum to find the right key.
+ *
+ * Example: getSideMenuTranslationKey('AI Topic')  -> 'aiTopics'
+ *          getSideMenuTranslationKey('launchPad') -> 'launchPad'
+ *          getSideMenuTranslationKey('unknown')   -> 'unknown' (passthrough)
+ */
+export const getSideMenuTranslationKey = (linkId: string | undefined): string => {
+    if (!linkId) return '';
+    const entry = (Object.entries(SideMenuLinksEnum) as [string, string][]).find(
+        ([_k, v]) => v === linkId
+    );
+    return entry ? entry[0] : linkId;
+};
 
 export type SideMenuLinks = {
     id: number;

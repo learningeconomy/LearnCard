@@ -6,7 +6,13 @@ import enResource from '../../public/locales/en/translation.json'; // synchronou
 
 export const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'ar'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
-export const RTL_LANGUAGES = new Set<SupportedLanguage>(['ar']);
+
+// Soft-RTL mode: keep layout LTR for all languages; only the <html lang>
+// attribute changes. The browser's Unicode bidirectional algorithm renders
+// Arabic letters in their correct direction within text nodes automatically,
+// without flipping the entire app layout. Set to a non-empty set (e.g.
+// new Set(['ar'])) to opt back into full layout flip.
+export const RTL_LANGUAGES = new Set<SupportedLanguage>();
 
 void i18next
     .use(HttpBackend) // for lazy-loading ES/FR/AR only

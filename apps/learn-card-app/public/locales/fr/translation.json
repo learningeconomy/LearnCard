@@ -17,6 +17,7 @@
             "personalize": "Personnaliser",
             "adminTools": "Administration",
             "wallet": "Portefeuille",
+            "passport": "Passeport",
             "aiTopics": "Sessions IA",
             "aiInsights": "Aperçus IA",
             "aiPathways": "Parcours IA",
@@ -32,12 +33,56 @@
             "pathways": "Parcours"
         }
     },
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "Construis Mon {{brand}}",
+            "progress": "{{percent}}% optimisé",
+            "processing": "Traitement des documents…",
+            "stepsCompleted": "<0>{{completed}}</0> étapes sur <1>{{total}}</1> terminées",
+            "pendingReview": "{{count}} titre(s) à examiner"
+        },
+        "resumeBuilder": {
+            "title": "Créateur de CV",
+            "subtitle": "Créez votre CV avec les titres {{brand}}.",
+            "yourResume": "Votre CV",
+            "buildYourResume": "Créer Votre CV",
+            "updatedToday": "Mis à jour <0>aujourd'hui</0>",
+            "tagline": "Démarquez-vous avec un CV personnalisé"
+        },
+        "explore": "Explorer"
+    },
     "launchpad": {
         "title": "Apps",
         "header": {
             "contacts": "Contacts",
             "aiSessions": "Sessions IA",
             "alerts": "Alertes"
+        },
+        "tabs": {
+            "myApps": "Mes apps",
+            "ai": "IA",
+            "learning": "Apprentissage",
+            "games": "Jeux",
+            "tools": "Outils",
+            "employment": "Emploi",
+            "credentials": "Titres",
+            "other": "Autres",
+            "plugins": "Plugins",
+            "all": "Toutes"
+        },
+        "sections": {
+            "suggestedApps": "Apps suggérées",
+            "installedApps": "Apps installées",
+            "allApps": "Toutes les apps",
+            "allCategory": "Toutes : {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "Vos apps apparaîtront ici",
+            "noAppsAvailable": "Aucune app disponible pour le moment",
+            "nothingInCategory": "Rien dans {{category}} pour l'instant",
+            "installSomething": "Installez quelque chose depuis l'App Store pour commencer.",
+            "checkBackLater": "Repassez plus tard — de nouvelles apps sont ajoutées régulièrement.",
+            "checkBackSoon": "Revenez bientôt, ou parcourez toutes les apps."
         },
         "aiDisabledMinor": "Les fonctionnalités IA ne sont pas disponibles pour les moins de 18 ans.",
         "aiDisabledPrivacy": "Les fonctionnalités IA sont désactivées. Vous pouvez les activer dans Confidentialité et Données depuis votre profil."

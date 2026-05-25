@@ -3,8 +3,8 @@
         "addTo": "إضافة إلى {{brand}}",
         "footer": {
             "poweredBy": "مُشغَّل بواسطة <0>Consent Flow</0>",
-            "ownYourData": "أنت تملك بياناتك.",
-            "connectionsEncrypted": "جميع الاتصالات <0>مُشفَّرة.</0>",
+            "ownYourData": "أنت تملك بياناتك الخاصة.",
+            "connectionsEncrypted": "جميع الاتصالات <0>مشفّرة.</0>",
             "privacyPolicy": "سياسة الخصوصية",
             "termsOfService": "شروط الخدمة",
             "copyright": "© {{year}} Learning Economy",
@@ -15,8 +15,9 @@
             "contacts": "جهات الاتصال",
             "alerts": "التنبيهات",
             "personalize": "تخصيص",
-            "adminTools": "الإدارة",
+            "adminTools": "أدوات الإدارة",
             "wallet": "المحفظة",
+            "passport": "جواز السفر",
             "aiTopics": "جلسات الذكاء الاصطناعي",
             "aiInsights": "رؤى الذكاء الاصطناعي",
             "aiPathways": "مسارات الذكاء الاصطناعي",
@@ -24,13 +25,31 @@
             "socialBadges": "الشارات",
             "achievements": "الإنجازات",
             "studies": "الدراسات",
-            "portfolio": "المحفظة",
+            "portfolio": "ملف الأعمال",
             "assistance": "المساعدة",
             "experiences": "الخبرات",
             "families": "العائلات",
-            "ids": "بطاقات الهوية",
-            "pathways": "رحلات"
+            "ids": "الهويات",
+            "pathways": "الرحلات"
         }
+    },
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "ابنِ {{brand}} الخاص بي",
+            "progress": "تم تحسين {{percent}}٪",
+            "processing": "جارٍ معالجة المستندات…",
+            "stepsCompleted": "اكتملت <0>{{completed}}</0> من أصل <1>{{total}}</1> خطوات",
+            "pendingReview": "{{count}} من بيانات الاعتماد جاهزة للمراجعة"
+        },
+        "resumeBuilder": {
+            "title": "منشئ السيرة الذاتية",
+            "subtitle": "أنشئ سيرتك الذاتية باستخدام بيانات اعتماد {{brand}}.",
+            "yourResume": "سيرتك الذاتية",
+            "buildYourResume": "أنشئ سيرتك الذاتية",
+            "updatedToday": "تم التحديث <0>اليوم</0>",
+            "tagline": "تميّز بسيرة ذاتية مخصصة"
+        },
+        "explore": "استكشف"
     },
     "launchpad": {
         "title": "التطبيقات",
@@ -39,8 +58,34 @@
             "aiSessions": "جلسات الذكاء الاصطناعي",
             "alerts": "التنبيهات"
         },
-        "aiDisabledMinor": "ميزات الذكاء الاصطناعي غير متاحة للمستخدمين تحت سن ١٨.",
-        "aiDisabledPrivacy": "ميزات الذكاء الاصطناعي مُعطَّلة حالياً. يمكنك تفعيلها من الخصوصية والبيانات في ملفك الشخصي."
+        "tabs": {
+            "myApps": "تطبيقاتي",
+            "ai": "الذكاء الاصطناعي",
+            "learning": "التعلم",
+            "games": "الألعاب",
+            "tools": "الأدوات",
+            "employment": "التوظيف",
+            "credentials": "بيانات الاعتماد",
+            "other": "أخرى",
+            "plugins": "الإضافات",
+            "all": "الكل"
+        },
+        "sections": {
+            "suggestedApps": "التطبيقات المقترحة",
+            "installedApps": "التطبيقات المثبتة",
+            "allApps": "جميع التطبيقات",
+            "allCategory": "الكل: {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "ستظهر تطبيقاتك هنا",
+            "noAppsAvailable": "لا توجد تطبيقات متاحة حالياً",
+            "nothingInCategory": "لا يوجد شيء في {{category}} بعد",
+            "installSomething": "ثبّت شيئاً من متجر التطبيقات للبدء.",
+            "checkBackLater": "عد لاحقاً — تتم إضافة تطبيقات جديدة بانتظام.",
+            "checkBackSoon": "عد قريباً، أو تصفح جميع التطبيقات."
+        },
+        "aiDisabledMinor": "ميزات الذكاء الاصطناعي غير متاحة للمستخدمين دون سن 18.",
+        "aiDisabledPrivacy": "ميزات الذكاء الاصطناعي معطلة حالياً. يمكنك تفعيلها من قسم الخصوصية والبيانات في ملفك الشخصي."
     },
     "wallet": {
         "categories": {
@@ -51,11 +96,11 @@
             "socialBadges": "الشارات",
             "achievements": "الإنجازات",
             "studies": "الدراسات",
-            "portfolio": "المحفظة",
+            "portfolio": "ملف الأعمال",
             "assistance": "المساعدة",
             "experiences": "الخبرات",
             "families": "العائلات",
-            "ids": "بطاقات الهوية"
+            "ids": "الهويات"
         }
     },
     "language": {

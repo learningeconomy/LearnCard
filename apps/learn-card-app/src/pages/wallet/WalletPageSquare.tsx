@@ -1,5 +1,6 @@
 import React from 'react';
 import numeral from 'numeral';
+import { useTranslation } from 'react-i18next';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
@@ -26,6 +27,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
     showNewItemIndicator,
     loading,
 }) => {
+    const { t } = useTranslation();
     const { categoryId: categoryType } = walletPageItem;
     const { getThemedCategory, getStyleSet, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
@@ -48,7 +50,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
         categoryType === CredentialCategoryEnum.aiInsight ||
         categoryType === CredentialCategoryEnum.aiPathway
     ) {
-        metaData = <p className="text-white font-poppins font-semibold text-base">Explore</p>;
+        metaData = <p className="text-white font-poppins font-semibold text-base">{t('passport.explore', 'Explore')}</p>;
         metaDataContainerStyles = 'w-[80px]';
     }
 

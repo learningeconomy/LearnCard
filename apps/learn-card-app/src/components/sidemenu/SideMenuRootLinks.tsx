@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { currentUserStore, useGetUnreadUserNotifications } from 'learn-card-base';
-import { SideMenuLinksEnum } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
+import { SideMenuLinksEnum, getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
@@ -108,7 +108,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                {t(`sidemenu.links.${link.id}`, link.label)}
+                {t(`sidemenu.links.${getSideMenuTranslationKey(link.id)}`, link.label)}
             </PreloadingLink>
         );
 
@@ -120,7 +120,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                    {t(`sidemenu.links.${link.id}`, link.label)}
+                    {t(`sidemenu.links.${getSideMenuTranslationKey(link.id)}`, link.label)}
                 </button>
             );
         }
@@ -145,7 +145,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                         )}
                     </div>
 
-                    {t(`sidemenu.links.${link.id}`, link.label)}
+                    {t(`sidemenu.links.${getSideMenuTranslationKey(link.id)}`, link.label)}
                 </PreloadingLink>
             );
         }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useTranslation, Trans } from 'react-i18next';
 
 import SlimCaretRight from '../svgs/SlimCaretRight';
 import ResumeBuilderIcon from '../../assets/images/resume-builder-icon.png';
@@ -15,6 +16,7 @@ export const ResumeBuilderController: React.FC<{
     className?: string;
     mode?: ResumeBuilderControllerMode;
 }> = ({ className = '', mode = 'default' }) => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
@@ -52,10 +54,10 @@ export const ResumeBuilderController: React.FC<{
                 </div>
 
                 <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                    Resume Builder
+                    {t('passport.resumeBuilder.title', 'Resume Builder')}
                 </h5>
                 <p className={`mt-1 text-[13px] leading-[125%] font-poppins text-center line-clamp-2 ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
-                    Build your resume with {brandingConfig.name} credentials.
+                    {t('passport.resumeBuilder.subtitle', 'Build your resume with {{brand}} credentials.', { brand: brandingConfig.name })}
                 </p>
             </div>
         );
@@ -83,15 +85,19 @@ export const ResumeBuilderController: React.FC<{
                 </div>
                 <div className="flex flex-col">
                     <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                        {resumeExists ? 'Your Resume' : 'Build Your Resume'}
+                        {resumeExists
+                            ? t('passport.resumeBuilder.yourResume', 'Your Resume')
+                            : t('passport.resumeBuilder.buildYourResume', 'Build Your Resume')}
                     </h5>
                     <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                         {resumeExists ? (
-                            <span>
-                                Updated <span className="font-semibold">today</span>
-                            </span>
+                            <Trans
+                                i18nKey="passport.resumeBuilder.updatedToday"
+                                defaults="Updated <0>today</0>"
+                                components={[<span className="font-semibold" key="today" />]}
+                            />
                         ) : (
-                            'Stand out with a tailored resume'
+                            t('passport.resumeBuilder.tagline', 'Stand out with a tailored resume')
                         )}
                     </p>
                 </div>

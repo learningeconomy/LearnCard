@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useTranslation, Trans } from 'react-i18next';
 
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
@@ -23,6 +24,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     className = '',
     mode = 'default',
 }) => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const { newModal } = useModal();
     const { completedItems } = useGetCheckListStatus();
@@ -88,16 +90,16 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
 
                 <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                    Build My {brandingConfig.name}
+                    {t('passport.buildMyLearnCard.title', 'Build My {{brand}}', { brand: brandingConfig.name })}
                 </h5>
 
                 {isParsing ? (
                     <p className={`mt-2 text-[13px] leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
-                        Processing documents...
+                        {t('passport.buildMyLearnCard.processing', 'Processing documents…')}
                     </p>
                 ) : hasPendingReview ? (
                     <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
-                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                        {t('passport.buildMyLearnCard.pendingReview', '{{count}} credential(s) ready for review', { count: pendingReviewCount })}
                     </p>
                 ) : (
                     <div className="mt-3">
@@ -108,7 +110,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             />
                         </div>
                         <p className={`mt-2 text-xs leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-600'}`}>
-                            {optimizedPercent}% optimized
+                            {t('passport.buildMyLearnCard.progress', '{{percent}}% optimized', { percent: optimizedPercent })}
                         </p>
                     </div>
                 )}
@@ -137,21 +139,24 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col">
                     <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                        Build My {brandingConfig.name}
+                        {t('passport.buildMyLearnCard.title', 'Build My {{brand}}', { brand: brandingConfig.name })}
                     </h5>
                     {isParsing ? (
                         <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                            Processing documents...
+                            {t('passport.buildMyLearnCard.processing', 'Processing documents…')}
                         </p>
                     ) : hasPendingReview ? (
                         <p className="text-[14px] text-amber-600 font-poppins font-semibold">
-                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                            {t('passport.buildMyLearnCard.pendingReview', '{{count}} credential(s) ready for review', { count: pendingReviewCount })}
                         </p>
                     ) : (
                         <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                            <span className="font-semibold">{completedItems}</span> of{' '}
-                            <span className="font-semibold">{checklistItems.length}</span> Steps
-                            Completed
+                            <Trans
+                                i18nKey="passport.buildMyLearnCard.stepsCompleted"
+                                values={{ completed: completedItems, total: checklistItems.length }}
+                                defaults="<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed"
+                                components={[<span className="font-semibold" key="completed" />, <span className="font-semibold" key="total" />]}
+                            />
                         </p>
                     )}
                 </div>

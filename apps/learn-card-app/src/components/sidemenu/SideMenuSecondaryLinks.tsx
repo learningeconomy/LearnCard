@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import PreloadingLink from '../generic/PreloadingLink';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -14,6 +15,7 @@ import {
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
+import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { chatBotStore } from '../../stores/chatBotStore';
 
@@ -26,6 +28,7 @@ const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
     setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }> = ({ activeTab, setActiveTab }) => {
+    const { t } = useTranslation();
     const { theme, getIconSet, getColorSet } = useTheme();
     const iconSet = getIconSet(IconSetEnum.sideMenu);
     const colors = getColorSet(ColorSetEnum.sideMenu);
@@ -92,8 +95,9 @@ const SideMenuSecondaryLinks: React.FC<{
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    const passportLabel = t('sidemenu.links.passport', 'Passport');
+    let walletText = passportLabel;
+    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? passportLabel;
 
     let walletTextStyles = '';
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
@@ -149,20 +153,20 @@ const SideMenuSecondaryLinks: React.FC<{
                     e.preventDefault();
                     const msg =
                         reason === 'disabled_minor'
-                            ? 'AI features are not available for users under 18.'
-                            : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                            ? t('launchpad.aiDisabledMinor', 'AI features are not available for users under 18.')
+                            : t('launchpad.aiDisabledPrivacy', 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.');
                     presentToast(msg, { type: ToastTypeEnum.Error });
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
             >
-                {renderIcon()} {link.label}
+                {renderIcon()} {t(`sidemenu.links.${getSideMenuTranslationKey(link.id)}`, link.label)}
             </button>
         ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
-                {renderIcon()} {link.label}
+                {renderIcon()} {t(`sidemenu.links.${getSideMenuTranslationKey(link.id)}`, link.label)}
             </PreloadingLink>
         );
 

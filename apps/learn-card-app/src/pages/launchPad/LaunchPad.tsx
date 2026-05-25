@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
@@ -18,7 +19,7 @@ import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
 import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
-import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
+import LaunchPadAppTabs, { LaunchPadTabEnum, getTabTranslationKey } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -34,6 +35,7 @@ import FeaturedCarousel from './FeaturedCarousel';
 import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
 const LaunchPad: React.FC = () => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
@@ -377,7 +379,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Installed Apps
+                                                    {t('launchpad.sections.installedApps', 'Installed Apps')}
                                                 </p>
                                             </div>
                                             {filteredInstalledApps.map(app => (
@@ -396,7 +398,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Suggested Apps
+                                                    {t('launchpad.sections.suggestedApps', 'Suggested Apps')}
                                                 </p>
                                             </div>
                                             {filteredCuratedApps.map(app => (
@@ -418,7 +420,11 @@ const LaunchPad: React.FC = () => {
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                        {isAll
+                                                            ? t('launchpad.sections.allApps', 'All Apps')
+                                                            : t('launchpad.sections.allCategory', 'All {{category}}', {
+                                                                  category: t(`launchpad.tabs.${getTabTranslationKey(tab)}`, tab),
+                                                              })}
                                                     </p>
                                                 </div>
                                                 {nonPromotedAvailableApps.map(app => (
@@ -476,17 +482,18 @@ const LaunchPad: React.FC = () => {
 
                                         if (!isEmpty) return null;
 
+                                        const tabLabel = t(`launchpad.tabs.${getTabTranslationKey(tab)}`, tab);
                                         const title = isMyApps
-                                            ? 'Your apps will live here'
+                                            ? t('launchpad.emptyStates.noInstalledApps', 'Your apps will live here')
                                             : isAll
-                                              ? 'No apps available right now'
-                                              : `Nothing in ${tab} yet`;
+                                              ? t('launchpad.emptyStates.noAppsAvailable', 'No apps available right now')
+                                              : t('launchpad.emptyStates.nothingInCategory', 'Nothing in {{category}} yet', { category: tabLabel });
 
                                         const subtitle = isMyApps
-                                            ? 'Install something from the App Store to get started.'
+                                            ? t('launchpad.emptyStates.installSomething', 'Install something from the App Store to get started.')
                                             : isAll
-                                              ? 'Check back later — new apps are added all the time.'
-                                              : 'Check back soon, or browse all apps.';
+                                              ? t('launchpad.emptyStates.checkBackLater', 'Check back later — new apps are added all the time.')
+                                              : t('launchpad.emptyStates.checkBackSoon', 'Check back soon, or browse all apps.');
 
                                         const showCta = !isAll;
 

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
@@ -18,12 +19,25 @@ export enum LaunchPadTabEnum {
     all = 'All',
 }
 
+/**
+ * Returns the i18n key for a given tab. Same reverse-enum-key trick as
+ * getSideMenuTranslationKey() — the enum value is a display string like
+ * "My Apps", so we look up the matching key ("myApps") for translation lookup.
+ */
+export const getTabTranslationKey = (tabValue: LaunchPadTabEnum): string => {
+    const entry = (Object.entries(LaunchPadTabEnum) as [string, string][]).find(
+        ([_k, v]) => v === tabValue
+    );
+    return entry ? entry[0] : String(tabValue);
+};
+
 type LaunchPadAppTabsProps = {
     tab: LaunchPadTabEnum;
     setTab: React.Dispatch<React.SetStateAction<LaunchPadTabEnum>>;
 };
 
 const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const { getColorSet, getStyleSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
@@ -59,7 +73,7 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
                                 : 'border-transparent text-grayscale-600 xs:text-[12px]'
                         }`}
                     >
-                        {option}
+                        {t(`launchpad.tabs.${getTabTranslationKey(option)}`, option)}
                     </button>
                 );
             })}
