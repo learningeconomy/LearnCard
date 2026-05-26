@@ -22,16 +22,22 @@ import UnderageModalContent from './onboardingNetworkForm/components/UnderageMod
 import EUParentalConsentModalContent from './onboardingNetworkForm/components/EUParentalConsentModalContent';
 import USConsentNoticeModalContent from './onboardingNetworkForm/components/USConsentNoticeModalContent';
 
-const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
+type OnboardingContainerProps = {
+    onSuccess?: () => void;
+    initialStep?: OnboardingStepsEnum;
+};
+
+const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, initialStep }) => {
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey } = useAppAuth();
     const { handleLogout } = useLogout();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
 
     const [step, setStep] = useState<OnboardingStepsEnum>(
-        coordinatorState.status === 'needs_setup'
-            ? OnboardingStepsEnum.ageGate
-            : OnboardingStepsEnum.selectRole
+        initialStep ??
+            (coordinatorState.status === 'needs_setup'
+                ? OnboardingStepsEnum.ageGate
+                : OnboardingStepsEnum.selectRole)
     );
 
     const [ageGateError, setAgeGateError] = useState<string | null>(null);
@@ -62,6 +68,12 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
             setStep(OnboardingStepsEnum.ageGate);
         }
     }, [coordinatorState.status]);
+
+    useEffect(() => {
+        if (initialStep) {
+            setStep(initialStep);
+        }
+    }, [initialStep]);
 
     useEffect(() => {
         // Set flag so AppListingPage's auto-trigger waits until onboarding closes

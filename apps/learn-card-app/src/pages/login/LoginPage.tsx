@@ -42,6 +42,7 @@ import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
 import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
+import { OnboardingStepsEnum } from '../../components/onboarding/onboarding.helpers';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
@@ -98,28 +99,33 @@ export const LoginContent: React.FC = () => {
         }
     }, [generatePinUpdateToken]);
 
+    const openOnboardingModal = useCallback(
+        (initialStep?: OnboardingStepsEnum) => {
+            newModal(
+                <OnboardingContainer initialStep={initialStep} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [coordinatorState.status, currentUser, isLoggedIn, newModal]
+    );
+
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
     const handlePromptOnboarding = useCallback(async () => {
         if (coordinatorState.status === 'needs_setup') {
-            newModal(
-                <OnboardingContainer />,
-                {},
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
+            openOnboardingModal(OnboardingStepsEnum.ageGate);
             return;
         }
 
         if (!(currentUser && isLoggedIn && currentUser?.privateKey)) return;
+
         try {
             const wallet = await initWallet(currentUser.privateKey);
             const profile = await wallet?.invoke?.getProfile();
+
             if (!profile) {
-                newModal(
-                    <OnboardingContainer />,
-                    {},
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                );
+                openOnboardingModal(OnboardingStepsEnum.ageGate);
             } else if (profile?.approved === false) {
                 // Re-prompt EU Parental Consent if user was previously marked unapproved
                 newModal(
@@ -139,14 +145,10 @@ export const LoginContent: React.FC = () => {
         } catch (e) {
             console.error('///error handlePromptOnboarding', e);
         }
-    }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, newModal]);
+    }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, openOnboardingModal]);
 
     const didRedirectRef = useRef(false);
     const didOpenOnboardingRef = useRef(false);
-
-    useEffect(() => {
-        console.debug('[LoginPage] coordinatorState.status changed:', coordinatorState.status);
-    }, [coordinatorState.status]);
 
     useEffect(() => {
         if (coordinatorState.status !== 'needs_setup') {

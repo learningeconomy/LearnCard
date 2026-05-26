@@ -1,8 +1,12 @@
 import React, { useMemo } from 'react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
+import { useDeviceTypeByWidth } from 'learn-card-base';
 
+import DatePickerInput from '../date-picker/DatePickerInput';
 import CountrySelectorModal from './onboardingNetworkForm/components/CountrySelectorModal';
+import LocationIcon from '../svgs/LocationIcon';
 import countries from '../../constants/countries.json';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
@@ -27,11 +31,21 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
     onContinue,
 }) => {
     const { newModal, closeModal } = useModal();
+    const { isDesktop } = useDeviceTypeByWidth();
+    const canContinue = Boolean(dob && country);
 
     const countryLabel = useMemo(() => {
         if (!country) return 'Country of residence';
         return COUNTRIES[country] ?? country;
     }, [country]);
+
+    const age = useMemo(() => {
+        if (!dob) return null;
+
+        const parsedAge = calculateAge(dob);
+
+        return Number.isNaN(parsedAge) ? null : parsedAge;
+    }, [dob]);
 
     const handlePickCountry = () => {
         newModal(
@@ -75,27 +89,29 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
                 )}
 
                 <div className="space-y-4">
-                    <div className="space-y-1.5">
-                        <label className="block text-xs font-medium text-grayscale-700">Date of birth</label>
-                        <input
-                            type="date"
-                            value={dob}
-                            onChange={e => onDobChange(e.target.value)}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    <div className="flex flex-col items-center justify-center w-full mt-2">
+                        <DatePickerInput
+                            value={dob || ''}
+                            onChange={onDobChange}
+                            isMobile={!isDesktop}
+                            label="Date of Birth"
                         />
+
+                        {age !== null && (
+                            <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
+                                Age: {age}
+                            </p>
+                        )}
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="block text-xs font-medium text-grayscale-700">Country</label>
+                    <div className="flex flex-col items-center justify-center w-full mt-2">
                         <button
-                            type="button"
+                            className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] pr-[10px] py-[5px] tracking-wider text-base"
                             onClick={handlePickCountry}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-left text-sm text-grayscale-900 bg-white hover:bg-grayscale-10 transition-colors flex items-center justify-between"
+                            type="button"
                         >
-                            <span className={country ? 'text-grayscale-900' : 'text-grayscale-400'}>
-                                {countryLabel}
-                            </span>
-                            <span className="text-grayscale-400">▾</span>
+                            {country ? countryLabel : 'Country of Residence'}
+                            <LocationIcon className="w-[44px] text-grayscale-700" />
                         </button>
                     </div>
                 </div>
@@ -106,8 +122,8 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
                     <button
                         type="button"
                         onClick={onContinue}
-                        disabled={isLoading}
-                        className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom flex items-center justify-center min-h-[46px] disabled:opacity-60"
+                        disabled={isLoading || !canContinue}
+                        className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom flex items-center justify-center min-h-[46px] disabled:opacity-60 disabled:bg-grayscale-200 disabled:text-grayscale-500 disabled:shadow-none disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Checking...' : 'Continue'}
                     </button>
