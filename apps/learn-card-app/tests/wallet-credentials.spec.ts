@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import {
     issueCredentialToSelf,
+    openAddToLearnCardMenu,
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
 } from './test.helpers';
@@ -69,7 +70,7 @@ test.describe('Wallet Credentials', () => {
         // (waitForAuthenticatedState already lands on /wallet)
 
         // User 1: Create a credential and send to user 2
-        await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+        await openAddToLearnCardMenu(page);
         await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
 
         // Select the first available template
