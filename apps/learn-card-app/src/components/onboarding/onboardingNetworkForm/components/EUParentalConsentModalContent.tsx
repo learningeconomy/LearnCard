@@ -11,6 +11,7 @@ export type EUParentalConsentModalContentProps = {
     dob?: string | null | undefined;
     country?: string | undefined;
     onClose: () => void;
+    onComplete?: () => void;
 };
 
 const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps> = ({
@@ -18,6 +19,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
     dob,
     country,
     onClose,
+    onComplete,
 }) => {
     const { initWallet } = useWallet();
 
@@ -132,7 +134,10 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                     ) : (
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={() => {
+                                onComplete?.();
+                                onClose();
+                            }}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
                             Done

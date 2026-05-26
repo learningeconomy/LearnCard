@@ -11,6 +11,7 @@ export type UnderageModalContentProps = {
     isLoggingOut: boolean;
     schoolCodes?: string[];
     onBypass: (code: string) => void;
+    familyInviteUrl?: string;
 };
 
 const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
@@ -19,11 +20,13 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
     isLoggingOut,
     schoolCodes = [],
     onBypass,
+    familyInviteUrl,
 }) => {
     const [view, setView] = React.useState<'adult' | 'school'>('adult');
     const [code, setCode] = React.useState('');
     const [error, setError] = React.useState('');
     const [isValidating, setIsValidating] = React.useState(false);
+    const [copied, setCopied] = React.useState(false);
 
     const handleVerifyCode = () => {
         if (!code) return;
@@ -62,6 +65,30 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                         ? 'To join without a parent account, please enter the special code provided by your school.'
                         : "You'll need a parent or guardian to add you to a family account before you can join."}
                 </p>
+
+                {!isSchoolView && familyInviteUrl && (
+                    <div className="mt-5 p-4 rounded-[20px] bg-grayscale-10 border border-grayscale-200 flex flex-col items-center gap-3">
+                        <p className="text-sm text-grayscale-700 leading-relaxed">
+                            Share this link with your parent so they can finish setting up the
+                            family.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                try {
+                                    await navigator.clipboard.writeText(familyInviteUrl);
+                                    setCopied(true);
+                                    window.setTimeout(() => setCopied(false), 2000);
+                                } catch {
+                                    setCopied(false);
+                                }
+                            }}
+                            className="w-full max-w-[320px] py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            {copied ? 'Link copied' : 'Copy family link'}
+                        </button>
+                    </div>
+                )}
 
                 {!isSchoolView ? (
                     schoolCodes.length > 0 && (

@@ -1,28 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+import { ModalTypes, useModal } from 'learn-card-base';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
+import { getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 
 import OnboardingRoles from './onboardingRoles/OnboardingRoles';
 import OnboardingFooter from './onboardingFooter/OnboardingFooter';
 import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import OnboardingNetworkForm from './onboardingNetworkForm/OnboardingNetworkForm';
+import OnboardingAgeGate from './OnboardingAgeGate';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useModal } from 'learn-card-base';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import useLogout from '../../hooks/useLogout';
+
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
+import { isEUCountry, requiresEUParentalConsent } from './onboardingNetworkForm/helpers/gdpr';
+import UnderageModalContent from './onboardingNetworkForm/components/UnderageModalContent';
+import EUParentalConsentModalContent from './onboardingNetworkForm/components/EUParentalConsentModalContent';
+import USConsentNoticeModalContent from './onboardingNetworkForm/components/USConsentNoticeModalContent';
 
 const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
-    const { closeModal } = useModal();
+    const { newModal, closeModal } = useModal();
+    const { state: coordinatorState, setupNewKey } = useAppAuth();
+    const { handleLogout } = useLogout();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
 
-    const [step, setStep] = useState<OnboardingStepsEnum>(OnboardingStepsEnum.selectRole);
+    const [step, setStep] = useState<OnboardingStepsEnum>(
+        coordinatorState.status === 'needs_setup'
+            ? OnboardingStepsEnum.ageGate
+            : OnboardingStepsEnum.selectRole
+    );
+
+    const [ageGateError, setAgeGateError] = useState<string | null>(null);
+    const [isPreparingKey, setIsPreparingKey] = useState(false);
+    const didPrepareNewKeyRef = useRef(false);
 
     const currentUser = useCurrentUser();
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<
+        React.ComponentProps<typeof OnboardingNetworkForm>['formData']
+    >({
         name: currentUser?.name ?? '',
         dob: '',
-        country: undefined as string | undefined,
+        country: undefined,
         photo: currentUser?.profileImage ?? '',
         usMinorConsent: false,
+        euParentalConsentRequested: false,
         profileId: '',
     });
 
@@ -33,13 +58,23 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
     } | null>(null);
 
     useEffect(() => {
+        if (coordinatorState.status === 'needs_setup' && !didPrepareNewKeyRef.current) {
+            setStep(OnboardingStepsEnum.ageGate);
+        }
+    }, [coordinatorState.status]);
+
+    useEffect(() => {
         // Set flag so AppListingPage's auto-trigger waits until onboarding closes
         redirectStore.set.isOnboardingOpen(true);
 
         // Claim installIntent — must happen after setting isOnboardingOpen
         const intent = redirectStore.get.installIntent();
         if (intent?.listingId) {
-            setPendingInstall({ listingId: intent.listingId, appName: intent.appName, appIcon: intent.appIcon });
+            setPendingInstall({
+                listingId: intent.listingId,
+                appName: intent.appName,
+                appIcon: intent.appIcon,
+            });
             redirectStore.set.installIntent(null);
         }
 
@@ -51,6 +86,201 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
     const updateFormData = (updates: Partial<typeof formData>) => {
         setFormData(prev => ({ ...prev, ...updates }));
     };
+
+    const updateFormDataForChild: React.ComponentProps<
+        typeof OnboardingNetworkForm
+    >['updateFormData'] = updates => {
+        updateFormData(updates as Partial<typeof formData>);
+    };
+
+    const deriveDidFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
+        const lc = await getSigningLearnCard(privateKey);
+        return lc?.id.did() || '';
+    }, []);
+
+    const prepareNewUserKey = useCallback(async (): Promise<boolean> => {
+        if (coordinatorState.status !== 'needs_setup' || didPrepareNewKeyRef.current) {
+            return true;
+        }
+
+        setIsPreparingKey(true);
+
+        try {
+            const privateKey = await generateEd25519PrivateKey();
+            const did = await deriveDidFromPrivateKey(privateKey);
+
+            if (!did) {
+                throw new Error('Failed to derive account identity');
+            }
+
+            await setupNewKey(privateKey, did);
+            didPrepareNewKeyRef.current = true;
+            return true;
+        } catch (e) {
+            setAgeGateError('Something went wrong. Please try again.');
+            console.error('Failed to prepare new user key:', e);
+            return false;
+        } finally {
+            setIsPreparingKey(false);
+        }
+    }, [coordinatorState.status, deriveDidFromPrivateKey, setupNewKey]);
+
+    const routeChildToParentFlow = useCallback(() => {
+        closeModal();
+        handleLogout({
+            overrideRedirectUrl:
+                '/login?underageFamily=1&redirectTo=%2Ffamilies%3FcreateFamily%3Dtrue',
+        });
+    }, [closeModal, handleLogout]);
+
+    const presentUnderageModal = useCallback(() => {
+        const onBypass = (_code: string) => {
+            closeModal();
+            setAgeGateError(null);
+            setStep(OnboardingStepsEnum.selectRole);
+        };
+
+        const familyInviteUrl = `${
+            window.location.origin
+        }/login?underageFamily=1&redirectTo=${encodeURIComponent('/families?createFamily=true')}`;
+
+        newModal(
+            <UnderageModalContent
+                onBack={closeModal}
+                onAdult={routeChildToParentFlow}
+                isLoggingOut={false}
+                schoolCodes={[]}
+                onBypass={onBypass}
+                familyInviteUrl={familyInviteUrl}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none p-[20px] !mx-auto',
+            },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [closeModal, newModal, routeChildToParentFlow]);
+
+    const presentUSConsentNoticeModal = useCallback(() => {
+        newModal(
+            <USConsentNoticeModalContent
+                onBack={closeModal}
+                onContinue={async () => {
+                    updateFormData({ usMinorConsent: true });
+                    closeModal();
+                    if (await prepareNewUserKey()) {
+                        setStep(OnboardingStepsEnum.selectRole);
+                    }
+                }}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+            },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [closeModal, newModal, prepareNewUserKey]);
+
+    const presentEUParentalConsentModal = useCallback(() => {
+        newModal(
+            <EUParentalConsentModalContent
+                name={formData.name}
+                dob={formData.dob}
+                country={formData.country}
+                onClose={closeModal}
+                onComplete={async () => {
+                    updateFormData({ euParentalConsentRequested: true });
+                    closeModal();
+                    if (await prepareNewUserKey()) {
+                        setStep(OnboardingStepsEnum.selectRole);
+                    }
+                }}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+            },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [closeModal, formData.country, formData.dob, formData.name, newModal, prepareNewUserKey]);
+
+    const handleAgeGateContinue = useCallback(async () => {
+        const { dob, country } = formData;
+
+        if (!dob) {
+            setAgeGateError('Date of birth is required.');
+            return;
+        }
+
+        if (!country) {
+            setAgeGateError('Country is required.');
+            return;
+        }
+
+        const age = calculateAge(dob);
+
+        if (Number.isNaN(age)) {
+            setAgeGateError('Please enter a valid date of birth.');
+            return;
+        }
+
+        setAgeGateError(null);
+
+        if (age < 13) {
+            presentUnderageModal();
+            return;
+        }
+
+        if (age >= 13 && age <= 17) {
+            if (isEUCountry(country) && requiresEUParentalConsent(country, age)) {
+                presentEUParentalConsentModal();
+                return;
+            }
+
+            if (!isEUCountry(country)) {
+                presentUSConsentNoticeModal();
+                return;
+            }
+        }
+
+        if (await prepareNewUserKey()) {
+            setStep(OnboardingStepsEnum.selectRole);
+        }
+    }, [
+        formData,
+        prepareNewUserKey,
+        presentEUParentalConsentModal,
+        presentUnderageModal,
+        presentUSConsentNoticeModal,
+    ]);
+
+    if (step === OnboardingStepsEnum.ageGate) {
+        return (
+            <OnboardingAgeGate
+                dob={formData.dob ?? ''}
+                country={formData.country}
+                error={ageGateError}
+                isLoading={isPreparingKey}
+                onDobChange={dob => {
+                    setAgeGateError(null);
+                    updateFormData({
+                        dob,
+                        usMinorConsent: false,
+                        euParentalConsentRequested: false,
+                    });
+                }}
+                onCountryChange={country => {
+                    setAgeGateError(null);
+                    updateFormData({
+                        country,
+                        usMinorConsent: false,
+                        euParentalConsentRequested: false,
+                    });
+                }}
+                onContinue={handleAgeGateContinue}
+            />
+        );
+    }
 
     if (step === OnboardingStepsEnum.joinNetwork) {
         return (

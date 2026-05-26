@@ -861,6 +861,7 @@ const AuthSessionManager: React.FC<{
     useAuthCoordinatorAutoSetup(coordinator, {
         generatePrivateKey: generateEd25519PrivateKey,
         didFromPrivateKey,
+        autoSetupNeedsSetup: false,
 
         onReady: (_privateKey, did) => {
             emitAuthSuccess(

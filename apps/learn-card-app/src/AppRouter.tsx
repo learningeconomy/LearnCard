@@ -71,10 +71,11 @@ const AppRouter: React.FC = () => {
     // Stable states where it's safe to render <Routes>:
     //   - walletReady                              → fully booted (show app)
     //   - state.status === 'idle'                  → genuinely logged out (show /login)
+    //   - state.status === 'needs_setup'           → login page can open onboarding
     //   - state.status === 'needs_recovery'        → coordinator overlays recovery modal
     //   - state.status === 'error'                 → coordinator overlays error UI
     // Everything else (`authenticating`, `authenticated`, `checking_key_status`,
-    // `needs_setup`, `needs_migration`, `deriving_key`, and the brief
+    // `needs_migration`, `deriving_key`, and the brief
     // `ready`-without-wallet window) is a transition we bridge with the loader.
     const initLoading = !(
         walletReady ||

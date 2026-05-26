@@ -61,7 +61,7 @@ import USConsentNoticeModalContent from './components/USConsentNoticeModalConten
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import GuardianLinkedModal from '../GuardianLinkedModal';
-import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
+import { StateValidator, ProfileIDStateValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
@@ -89,6 +89,7 @@ type OnboardingNetworkFormProps = {
         country: string | undefined;
         photo: string | null | undefined;
         usMinorConsent: boolean;
+        euParentalConsentRequested: boolean;
         profileId: string | null | undefined;
     };
     updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
@@ -125,7 +126,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    const { name, dob, country, photo, usMinorConsent, profileId } = formData;
+    const { name, dob, country, photo, usMinorConsent, euParentalConsentRequested, profileId } =
+        formData;
 
     const handleNameChange = (value: string) => {
         updateFormData({ name: value ?? '' });
@@ -218,9 +220,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const validate = () => {
+    const validate = (nameRequired: boolean) => {
         const parsedData = StateValidator.safeParse({
-            name: name,
+            name: nameRequired ? name : name || 'Apple User',
             dob: dob,
             country: country ?? '',
         });
@@ -345,10 +347,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             preferencesInitialized = true;
                         })
                         .catch(err => {
-                            console.error(
-                                'Failed to initialize preferences (non-blocking):',
-                                err
-                            );
+                            console.error('Failed to initialize preferences (non-blocking):', err);
                         });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
@@ -357,9 +356,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     });
 
                     // Check for pending guardian approvals linked to this email (non-blocking)
-                    let claimedChildren: Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }> = [];
+                    let claimedChildren: Array<{
+                        childProfileId: string;
+                        childDisplayName: string;
+                        managerId: string | null;
+                    }> = [];
                     try {
-                        claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
+                        claimedChildren = (await wallet.invoke.claimPendingGuardianLinks?.()) ?? [];
                     } catch (err) {
                         console.error('claimPendingGuardianLinks failed (non-blocking):', err);
                     }
@@ -507,9 +510,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     };
 
     const presentUnderageModal = () => {
+        const familyInviteUrl = `${
+            window.location.origin
+        }/login?underageFamily=1&redirectTo=${encodeURIComponent('/families?createFamily=true')}`;
+
         const onBypass = (_code: string) => {
             closeModal();
-            handleUpdateUser({ bypassAgeCheck: true });
+            handleUpdateUser();
         };
         const onAdult = () => {
             // Present intermediate confirmation modal before logging out
@@ -604,6 +611,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 isLoggingOut={isLoggingOut}
                 schoolCodes={schoolCodes}
                 onBypass={onBypass}
+                familyInviteUrl={familyInviteUrl}
             />,
             {
                 sectionClassName:
@@ -651,164 +659,64 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         );
     };
 
-    const handleUpdateUser = async (options?: {
-        skipUsConsentCheck?: boolean;
-        bypassAgeCheck?: boolean;
-    }) => {
+    const handleUpdateUser = async (options?: { skipUsConsentCheck?: boolean }) => {
         const typeOfLogin = authStore.get.typeOfLogin();
-        console.log('//handleUpdateUser');
+        const nameRequired = typeOfLogin !== SocialLoginTypes.apple;
 
-        // ! APPLE HOT FIX
-        if (typeOfLogin === SocialLoginTypes.apple) {
-            // Show modal if under 13 before running Zod, to ensure UX triggers
-            const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13 && !options?.bypassAgeCheck) {
-                presentUnderageModal();
+        if (!validate(nameRequired)) {
+            return;
+        }
+
+        const age = dob ? calculateAge(dob) : Number.NaN;
+        const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
+
+        // The age gate should intercept under-13 users before they reach this form.
+        // Keep teen-consent fallbacks here for existing users and older flows.
+        if (isTeen && country) {
+            if (requiresEUParentalConsent(country, age) && !euParentalConsentRequested) {
+                presentEUParentalConsentModal();
                 return;
             }
 
-            // Validate DOB even if name is not required per Apple guidelines
-            const dobCheck = DobValidator.safeParse({ dob });
-            if (!dobCheck.success) {
-                setErrors(dobCheck.error.flatten().fieldErrors);
+            if (!isEUCountry(country) && !usMinorConsent && !options?.skipUsConsentCheck) {
+                presentUSConsentNoticeModal();
                 return;
             }
+        }
 
-            // Require country selection for compliance
-            if (!country) {
-                setErrors(prev => ({ ...prev, country: [' Country is required.'] }));
-                return;
-            }
+        setIsLoading(true);
 
-            // Teen consent flows (age 13-17)
-            const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
-            if (isTeen && country) {
-                if (requiresEUParentalConsent(country, age)) {
-                    try {
-                        setIsLoading(true);
-                        const success = await ensureProfileApprovedFalse();
-                        if (success) closeModal();
-                        else
-                            presentToast(
-                                'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
-                                {
-                                    type: ToastTypeEnum.Error,
-                                    hasDismissButton: true,
-                                }
-                            );
-                    } catch (e) {
-                        console.log('ensureProfileApprovedFalse::error', e);
-                    } finally {
-                        setIsLoading(false);
-                    }
-                    presentEUParentalConsentModal();
-                    return;
-                }
+        try {
+            const resolvedName = nameRequired ? name ?? '' : name ?? currentUser?.name ?? '';
+            const resolvedPhoto = photo ?? currentUser?.profileImage ?? '';
 
-                // For all non-EU countries, require consent notice
-                if (!isEUCountry(country)) {
-                    if (!usMinorConsent && !options?.skipUsConsentCheck) {
-                        presentUSConsentNoticeModal();
-                        return;
-                    }
+            if (authToken === 'dummy') {
+                currentUserStore.set.currentUser({
+                    ...currentUser,
+                    name: resolvedName,
+                    profileImage: resolvedPhoto,
+                });
+            } else {
+                try {
+                    await updateProfile(auth()?.currentUser, {
+                        displayName: resolvedName,
+                        photoURL: resolvedPhoto,
+                    });
+                } catch (e) {
+                    presentLogoutErrorModal();
+                    setProfileIdError(`There was a firebase error: ${e?.toString?.()}`);
                 }
             }
 
-            // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
-                displayName: name ?? '',
-                photoURL: photo ?? '',
-            });
+            await handleLCNetworkProfileUpdate();
 
             handleStorageUpdate();
 
-            // update LC network profile
-            await handleLCNetworkProfileUpdate();
-
             setIsLoading(false);
             handleCloseModal();
-            // ! APPLE HOT FIX
-        } else {
-            const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13 && !options?.bypassAgeCheck) {
-                presentUnderageModal();
-                return;
-            }
-
-            if (validate()) {
-                // Teen consent flows (age 13-17)
-                const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
-                if (isTeen && country) {
-                    if (requiresEUParentalConsent(country, age)) {
-                        try {
-                            setIsLoading(true);
-                            const success = await ensureProfileApprovedFalse();
-                            if (success) closeModal();
-                            else
-                                presentToast(
-                                    'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
-                                    {
-                                        type: ToastTypeEnum.Error,
-                                        hasDismissButton: true,
-                                    }
-                                );
-                        } catch (e) {
-                            console.log('ensureProfileApprovedFalse::error', e);
-                        } finally {
-                            setIsLoading(false);
-                        }
-                        presentEUParentalConsentModal();
-                        return;
-                    }
-
-                    // For all non-EU countries, require consent notice
-                    if (!isEUCountry(country)) {
-                        if (!usMinorConsent && !options?.skipUsConsentCheck) {
-                            presentUSConsentNoticeModal();
-                            return;
-                        }
-                    }
-                }
-
-                setIsLoading(true);
-                try {
-                    if (authToken === 'dummy') {
-                        currentUserStore.set.currentUser({
-                            ...currentUser,
-                            name: name ?? currentUser?.name ?? '',
-                            profileImage: photo ?? currentUser?.profileImage ?? '',
-                        });
-
-                        // update LC network profile
-                        await handleLCNetworkProfileUpdate();
-
-                        setIsLoading(false);
-                        // handleCloseModal();
-                    } else {
-                        // update firebase profile
-                        try {
-                            await updateProfile(auth()?.currentUser, {
-                                displayName: name,
-                                photoURL: photo,
-                            });
-                        } catch (e) {
-                            presentLogoutErrorModal();
-                            setProfileIdError(`There was a firebase error: ${e?.toString?.()}`);
-                        }
-                        // update LC network profile
-                        await handleLCNetworkProfileUpdate();
-
-                        // update sqlite + context store
-                        handleStorageUpdate();
-
-                        setIsLoading(false);
-                        // handleCloseModal();
-                    }
-                } catch (error) {
-                    setIsLoading(false);
-                    console.log('updateProfile::error', error);
-                }
-            }
+        } catch (error) {
+            setIsLoading(false);
+            console.log('updateProfile::error', error);
         }
     };
 

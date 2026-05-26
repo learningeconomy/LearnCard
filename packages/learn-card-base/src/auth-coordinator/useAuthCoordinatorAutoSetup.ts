@@ -1,12 +1,12 @@
 /**
  * useAuthCoordinatorAutoSetup
- * 
+ *
  * Watches the AuthCoordinator state and automatically handles:
  * - needs_setup: generates a new Ed25519 key, derives DID, calls setupNewKey
  * - needs_migration: uses the provided web3AuthKey, derives DID, calls migrate
- * 
+ *
  * For needs_recovery, the hook exposes state so the UI can show a recovery modal.
- * 
+ *
  * This hook should be used ONCE in the app-level AuthCoordinatorProvider wrapper.
  */
 
@@ -29,6 +29,9 @@ export interface AutoSetupConfig {
 
     /** Whether to enable auto-setup (default: true) */
     enabled?: boolean;
+
+    /** Whether `needs_setup` should auto-generate a new key (default: true) */
+    autoSetupNeedsSetup?: boolean;
 }
 
 export const useAuthCoordinatorAutoSetup = (
@@ -49,10 +52,17 @@ export const useAuthCoordinatorAutoSetup = (
     actionsRef.current = { setupNewKey, migrate };
 
     const enabled = config.enabled ?? true;
+    const autoSetupNeedsSetup = config.autoSetupNeedsSetup ?? true;
 
     // Auto-handle needs_setup
     useEffect(() => {
-        if (!enabled || state.status !== 'needs_setup' || handlingRef.current) return;
+        if (
+            !enabled ||
+            !autoSetupNeedsSetup ||
+            state.status !== 'needs_setup' ||
+            handlingRef.current
+        )
+            return;
 
         handlingRef.current = true;
 
@@ -77,12 +87,13 @@ export const useAuthCoordinatorAutoSetup = (
         };
 
         handleSetup();
-    }, [state.status, enabled]);
+    }, [state.status, enabled, autoSetupNeedsSetup]);
 
     // Auto-handle needs_migration (when migrationData contains a key to migrate)
-    const migrationKey = state.status === 'needs_migration'
-        ? (state.migrationData?.web3AuthKey as string | undefined)
-        : undefined;
+    const migrationKey =
+        state.status === 'needs_migration'
+            ? (state.migrationData?.web3AuthKey as string | undefined)
+            : undefined;
 
     useEffect(() => {
         if (!enabled || state.status !== 'needs_migration' || handlingRef.current) return;

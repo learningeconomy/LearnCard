@@ -16,6 +16,7 @@ export const OnboardingFooter: React.FC<{
     showBackButton?: boolean;
     showCloseButton?: boolean;
     overrideSkip?: () => void;
+    showSkipButton?: boolean;
     disabled?: boolean;
 }> = ({
     step = OnboardingStepsEnum,
@@ -27,6 +28,7 @@ export const OnboardingFooter: React.FC<{
     showBackButton = false,
     showCloseButton = false,
     overrideSkip,
+    showSkipButton = true,
     disabled,
 }) => {
     const { closeModal } = useModal();
@@ -94,12 +96,14 @@ export const OnboardingFooter: React.FC<{
                             </button>
                         </div>
 
-                        <button
-                            className="text-grayscale-500 my-4 font-poppins text-base"
-                            onClick={overrideSkip ? overrideSkip : closeModal}
-                        >
-                            Skip For Now
-                        </button>
+                        {showSkipButton && (
+                            <button
+                                className="text-grayscale-500 my-4 font-poppins text-base"
+                                onClick={overrideSkip ? overrideSkip : closeModal}
+                            >
+                                Skip For Now
+                            </button>
+                        )}
                     </div>
                 </div>
             </IonToolbar>

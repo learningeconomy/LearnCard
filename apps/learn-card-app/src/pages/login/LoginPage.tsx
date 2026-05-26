@@ -54,10 +54,12 @@ import EndorsementSuccessfullRequestModal from '../../components/boost-endorseme
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
+    const { state: coordinatorState } = useAppAuth();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
     const { appleLogin, googleLogin } = useFirebase();
@@ -99,6 +101,15 @@ export const LoginContent: React.FC = () => {
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
     const handlePromptOnboarding = useCallback(async () => {
+        if (coordinatorState.status === 'needs_setup') {
+            newModal(
+                <OnboardingContainer />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+            return;
+        }
+
         if (!(currentUser && isLoggedIn && currentUser?.privateKey)) return;
         try {
             const wallet = await initWallet(currentUser.privateKey);
@@ -128,13 +139,33 @@ export const LoginContent: React.FC = () => {
         } catch (e) {
             console.error('///error handlePromptOnboarding', e);
         }
-    }, [currentUser, isLoggedIn, initWallet, newModal]);
+    }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, newModal]);
 
     const didRedirectRef = useRef(false);
+    const didOpenOnboardingRef = useRef(false);
+
+    useEffect(() => {
+        console.debug('[LoginPage] coordinatorState.status changed:', coordinatorState.status);
+    }, [coordinatorState.status]);
+
+    useEffect(() => {
+        if (coordinatorState.status !== 'needs_setup') {
+            didOpenOnboardingRef.current = false;
+        }
+    }, [coordinatorState.status]);
 
     useEffect(() => {
         if (didRedirectRef.current) return;
-        if (!currentUser && !isLoggedIn) return;
+        if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
+
+        if (coordinatorState.status === 'needs_setup') {
+            if (didOpenOnboardingRef.current) return;
+
+            didOpenOnboardingRef.current = true;
+            didRedirectRef.current = false;
+            void handlePromptOnboarding();
+            return;
+        }
 
         didRedirectRef.current = true;
 
@@ -180,6 +211,7 @@ export const LoginContent: React.FC = () => {
     }, [
         currentUser,
         isLoggedIn,
+        coordinatorState.status,
         history,
         query,
         handleGeneratePinUpdateToken,
@@ -195,6 +227,10 @@ export const LoginContent: React.FC = () => {
             return () => clearTimeout(timer); // Add cleanup
         }
     }, [showConfirmation]);
+
+    const isNewUserSetup = coordinatorState.status === 'needs_setup';
+    const isReturningUser =
+        coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
     // custom logins associated with the app
     const extraSocialLogins = useMemo(
@@ -328,6 +364,28 @@ export const LoginContent: React.FC = () => {
                 </IonRow>
             ) : (
                 <>
+                    <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <div
+                            className={`w-full p-3 rounded-[20px] border ${
+                                isNewUserSetup
+                                    ? 'bg-emerald-50 border-emerald-100'
+                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
+                            }`}
+                        >
+                            <p
+                                className={`text-sm font-medium ${
+                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
+                                }`}
+                            >
+                                {isNewUserSetup
+                                    ? 'Create your account in a few quick steps.'
+                                    : isReturningUser
+                                    ? 'Welcome back — sign in to continue.'
+                                    : 'Sign in or create your account.'}
+                            </p>
+                        </div>
+                    </IonRow>
+
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
