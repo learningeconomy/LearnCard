@@ -23,6 +23,7 @@ import {
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
+    getLogger,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
@@ -84,6 +85,8 @@ type UserProfileUpdateFormProps = {
     children?: any;
 };
 
+const log = getLogger('UserProfileUpdateForm');
+
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     title = 'My Account',
     handleCloseModal,
@@ -108,6 +111,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const safeArea = useSafeArea();
     const brandingConfig = useBrandingConfig();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
+
+    console.log('currentUser', currentUser);
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
