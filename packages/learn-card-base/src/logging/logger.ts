@@ -4,7 +4,7 @@
 
 // Keys containing these substrings (case-insensitive) are treated as PII,
 // catching common variants: userEmail, phoneNumber, firstName, accessToken, etc.
-const PII_SUBSTRINGS = ['email', 'phone', 'name', 'seed', 'password', 'privatekey', 'accesstoken', 'idtoken', 'token'];
+const PII_SUBSTRINGS = ['email', 'phone', 'name', 'seed', 'password', 'privatekey', 'accesstoken', 'idtoken'];
 // Short/ambiguous keywords matched exactly (case-insensitive) to avoid false positives.
 const PII_EXACT_LC = new Set(['did']);
 const BEARER_RE = /^bearer /i;
