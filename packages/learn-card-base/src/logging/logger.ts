@@ -2,32 +2,47 @@
 // PII scrubbing
 // ---------------------------------------------------------------------------
 
-const PII_FIELDS = [
-    'email',
-    'phone',
-    'name',
-    'did',
-    'seed',
-    'privateKey',
-    'accessToken',
-    'idToken',
-];
+// Keys containing these substrings (case-insensitive) are treated as PII,
+// catching common variants: userEmail, phoneNumber, firstName, accessToken, etc.
+const PII_SUBSTRINGS = ['email', 'phone', 'name', 'seed', 'password', 'privatekey', 'accesstoken', 'idtoken', 'token'];
+// Short/ambiguous keywords matched exactly (case-insensitive) to avoid false positives.
+const PII_EXACT_LC = new Set(['did']);
 const BEARER_RE = /^bearer /i;
 
-// Replaces PII values with '[scrubbed]'. Two triggers:
-//   1. Key name is in PII_FIELDS (e.g. "email", "did")
+const isPiiKey = (key: string): boolean => {
+    const lc = key.toLowerCase();
+    return PII_EXACT_LC.has(lc) || PII_SUBSTRINGS.some(sub => lc.includes(sub));
+};
+
+// Recursively replaces PII values with '[scrubbed]'. Three triggers:
+//   1. Key name matches a PII pattern (isPiiKey)
 //   2. String value starts with "Bearer " (leaked auth header)
+//   3. Nested object/array contains either of the above
+// Uses a seen-set to guard against circular references and a depth cap of 10.
 // Pass allowPii: true in meta to skip scrubbing for internal debug calls.
+const scrubValue = (value: unknown, depth: number, seen: Set<object>): unknown => {
+    if (depth > 10) return value;
+    if (Array.isArray(value)) {
+        if (seen.has(value)) return '[circular]';
+        seen.add(value);
+        return value.map(item => scrubValue(item, depth + 1, seen));
+    }
+    if (typeof value === 'object' && value !== null && !(value instanceof Error)) {
+        if (seen.has(value)) return '[circular]';
+        seen.add(value);
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(([k, v]) => {
+                if (isPiiKey(k) || (typeof v === 'string' && BEARER_RE.test(v))) return [k, '[scrubbed]'];
+                return [k, scrubValue(v, depth + 1, seen)];
+            })
+        );
+    }
+    return value;
+};
+
 const scrub = (meta: Record<string, unknown>, allowPii = false): Record<string, unknown> => {
     if (allowPii) return meta;
-    return Object.fromEntries(
-        Object.entries(meta).map(([key, value]) => {
-            const isPii =
-                PII_FIELDS.includes(key) || (typeof value === 'string' && BEARER_RE.test(value));
-
-            return [key, isPii ? '[scrubbed]' : value];
-        })
-    );
+    return scrubValue(meta, 0, new Set()) as Record<string, unknown>;
 };
 
 // ---------------------------------------------------------------------------
@@ -176,8 +191,8 @@ const createLogger = (scope?: string): Logger => {
 
     return {
         debug(msg, metaOrError?, meta?) {
-            // Dropped when Sentry transport is active (production)
-            if (sentryActive()) return;
+            // Dropped in production (transport active + non-dev environment) to avoid noise.
+            if (sentryActive() && process.env.NODE_ENV === 'production') return;
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
             if (err) console.debug(prefix, msg, err, extra);
             else if (primitive !== undefined) console.debug(prefix, msg, primitive);
@@ -257,12 +272,11 @@ export const logger = createLogger();
  * Returns a logger whose messages are prefixed with `[scope]`.
  * Stable across renders since createLogger is pure and lightweight.
  *
- * Despite the `use` prefix this is NOT a React hook — it is a plain factory
- * and may be called at module level or inside components alike.
+ * May be called at module level or inside components alike.
  *
  * @example
  * Module-level (outside any component)
- * const log = useLogger('auth-coordinator');
+ * const log = getLogger('auth-coordinator');
  *
  * log.debug('wallet ready');
  * → console.debug('[auth-coordinator]', 'wallet ready', {})   (dev only)
@@ -274,12 +288,12 @@ export const logger = createLogger();
  * log.warn('token expiring soon', { expiresIn: 60 });
  * → console.warn('[auth-coordinator]', 'token expiring soon', { expiresIn: 60 })
  * → Sentry captureMessage('token expiring soon', 'warning', { scope: 'auth-coordinator' }, { expiresIn: 60 })
-
+ *
  * log.error('sign-in failed', error);
  * → console.error('[auth-coordinator]', 'sign-in failed', Error('...'), {})
  * → Sentry captureException(error, { scope: 'auth-coordinator' })
  *
- * PII fields are automatically scrubbed from meta objects
+ * PII fields are automatically scrubbed from meta objects (including nested)
  * log.error('lookup failed', { email: 'user@example.com', code: 404 });
  * → Sentry extra: { email: '[scrubbed]', code: 404 }
  *
@@ -296,4 +310,7 @@ export const logger = createLogger();
  * log.warn('debug identity', { email: 'user@example.com', allowPii: true });
  * → Sentry extra: { email: 'user@example.com' }   // allowPii itself is stripped
  */
-export const useLogger = (scope: string): Logger => createLogger(scope);
+export const getLogger = (scope: string): Logger => createLogger(scope);
+
+/** @deprecated Use getLogger instead — avoids react-hooks/rules-of-hooks false positives at module level. */
+export const useLogger = getLogger;

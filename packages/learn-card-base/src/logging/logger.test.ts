@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import {
     logger,
     configureSentryTransport,
     configureLoggerContext,
-    useLogger,
+    getLogger,
     type SentryTransport,
 } from './logger';
 
@@ -33,6 +33,11 @@ beforeEach(() => {
     // Pass null (not undefined) to actually clear tenantId between tests
     configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
     vi.restoreAllMocks();
+});
+
+afterAll(() => {
+    configureSentryTransport(null);
+    configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
 });
 
 // ---------------------------------------------------------------------------
@@ -92,6 +97,47 @@ describe('PII scrubbing', () => {
         expect(extra.email).toBe('user@example.com');
         expect('allowPii' in extra).toBe(false);
     });
+
+    it('scrubs PII nested inside an object', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('lookup failed', { user: { email: 'user@example.com', code: 404 } });
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        const extra = call!.args[3] as Record<string, { email: unknown; code: unknown }>;
+        expect(extra.user.email).toBe('[scrubbed]');
+        expect(extra.user.code).toBe(404);
+    });
+
+    it('scrubs PII nested inside an array of objects', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('batch failed', { items: [{ accessToken: 'tok-1' }, { accessToken: 'tok-2' }] });
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        const extra = call!.args[3] as Record<string, { accessToken: unknown }[]>;
+        expect(extra.items[0].accessToken).toBe('[scrubbed]');
+        expect(extra.items[1].accessToken).toBe('[scrubbed]');
+    });
+
+    it('scrubs PII variant key names (userEmail, phoneNumber, firstName)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('variant keys', { userEmail: 'a@b.com', phoneNumber: '555', firstName: 'Bob', code: 1 });
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        const extra = call!.args[3] as Record<string, unknown>;
+        expect(extra.userEmail).toBe('[scrubbed]');
+        expect(extra.phoneNumber).toBe('[scrubbed]');
+        expect(extra.firstName).toBe('[scrubbed]');
+        expect(extra.code).toBe(1);
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -139,9 +185,9 @@ describe('privacy gate', () => {
 // ---------------------------------------------------------------------------
 
 describe('scope prefixing', () => {
-    it('useLogger prefixes console output with [scope]', () => {
+    it('getLogger prefixes console output with [scope]', () => {
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const log = useLogger('wallet/claim');
+        const log = getLogger('wallet/claim');
         log.warn('something happened');
 
         expect(spy).toHaveBeenCalledWith('[wallet/claim]', 'something happened', {});
@@ -151,7 +197,7 @@ describe('scope prefixing', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
 
-        const log = useLogger('credential/issue');
+        const log = getLogger('credential/issue');
         vi.spyOn(console, 'error').mockImplementation(() => {});
         log.error('failed');
 
@@ -192,7 +238,7 @@ describe('scope prefixing', () => {
 describe('primitives and arrays', () => {
     it('logs a boolean directly to console', () => {
         const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
-        const log = useLogger('feature');
+        const log = getLogger('feature');
         log.info('isEnabled::', false);
 
         expect(spy).toHaveBeenCalledWith('[feature]', 'isEnabled::', false);
@@ -200,7 +246,7 @@ describe('primitives and arrays', () => {
 
     it('logs a number directly to console', () => {
         const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
-        const log = useLogger('feature');
+        const log = getLogger('feature');
         log.info('count::', 42);
 
         expect(spy).toHaveBeenCalledWith('[feature]', 'count::', 42);
@@ -208,7 +254,7 @@ describe('primitives and arrays', () => {
 
     it('logs a string directly to console (not wrapped as Error)', () => {
         const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
-        const log = useLogger('feature');
+        const log = getLogger('feature');
         log.info('status::', 'active');
 
         expect(spy).toHaveBeenCalledWith('[feature]', 'status::', 'active');
@@ -216,7 +262,7 @@ describe('primitives and arrays', () => {
 
     it('logs an array directly to console', () => {
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const log = useLogger('feature');
+        const log = getLogger('feature');
         log.warn('items::', [1, 2, 3]);
 
         expect(spy).toHaveBeenCalledWith('[feature]', 'items::', [1, 2, 3]);
@@ -261,15 +307,16 @@ describe('primitives and arrays', () => {
 // ---------------------------------------------------------------------------
 
 describe('dev vs prod transport', () => {
-    it('debug is dropped when Sentry transport is active', () => {
+    it('debug reaches console in non-production even when Sentry transport is active', () => {
+        // NODE_ENV is 'test' in Vitest, not 'production', so debug is not dropped.
         const transport = makeMockTransport();
         configureSentryTransport(transport);
 
         const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
         logger.debug('verbose detail');
 
-        expect(spy).not.toHaveBeenCalled();
-        expect(transport.calls).toHaveLength(0);
+        expect(spy).toHaveBeenCalledOnce();
+        expect(transport.calls).toHaveLength(0); // debug never goes to Sentry
     });
 
     it('debug reaches console when no transport is registered', () => {
