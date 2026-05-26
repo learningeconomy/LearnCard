@@ -43,7 +43,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
-    useLogger,
+    getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
@@ -88,7 +88,7 @@ import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
-const log = useLogger('scouts/auth-coordinator');
+const log = getLogger('scouts/auth-coordinator');
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches device share then renders the approver modal
@@ -582,7 +582,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             return vpJwt;
         } catch (e) {
             log.error('[ScoutPass][signDidAuthVp] error', e);
-            throw e;
+            throw e instanceof Error ? e : new Error(String(e));
         }
     }, []);
 

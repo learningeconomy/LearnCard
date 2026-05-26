@@ -16,11 +16,8 @@ import {
     useSQLiteInitWeb,
     sqliteStore,
     ensureReactQueryTableExists,
-    useLogger,
+    getLogger,
 } from 'learn-card-base';
-
-const log = useLogger('cache');
-
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
@@ -50,6 +47,8 @@ import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+
+const log = getLogger('cache');
 
 const history = createBrowserHistory();
 
@@ -121,7 +120,7 @@ const persister = createAsyncStoragePersister({
                 try {
                     return localforage.setItem(key, value);
                 } catch (fallbackError) {
-                    log.error('Fallback cache error', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
+                    log.error('Fallback cache error', fallbackError);
                 }
             }
         },
@@ -154,7 +153,7 @@ const persister = createAsyncStoragePersister({
                 try {
                     await localforage.removeItem(key);
                 } catch (fallbackError) {
-                    log.error('Fallback cache removal error', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
+                    log.error('Fallback cache removal error', fallbackError);
                 }
             }
         },

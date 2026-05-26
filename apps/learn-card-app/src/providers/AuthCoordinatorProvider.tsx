@@ -53,7 +53,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
-    useLogger,
+    getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
@@ -119,7 +119,7 @@ import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
-const log = useLogger('auth-coordinator');
+const log = getLogger('auth-coordinator');
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches the device share then renders the approver modal

@@ -9,9 +9,9 @@ import {
     type ParseClaimInputConfig,
 } from '../../hooks/parseClaimInput';
 import { resolveTenantParseConfig } from '../../hooks/resolveTenantParseConfig';
-import { useLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
 
-const log = useLogger('app-url-listener');
+const log = getLogger('app-url-listener');
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();

@@ -2,9 +2,9 @@ import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { PluginListenerHandle } from '@capacitor/core';
-import { useLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
 
-const log = useLogger('scouts/app-url-listener');
+const log = getLogger('scouts/app-url-listener');
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();

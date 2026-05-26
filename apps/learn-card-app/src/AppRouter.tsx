@@ -45,15 +45,15 @@ import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyId
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
-import { Modals, useLogger } from 'learn-card-base';
-
-const log = useLogger('app-router');
+import { Modals, getLogger } from 'learn-card-base';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
+
+const log = getLogger('app-router');
 
 export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 

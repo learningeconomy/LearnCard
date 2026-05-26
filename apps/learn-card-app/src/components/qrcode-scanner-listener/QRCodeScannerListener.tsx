@@ -8,15 +8,14 @@ import AddContactView, {
 } from '../../pages/addressBook/addContactView/AddContactView';
 import { IonModal, IonContent, IonPage, IonSpinner } from '@ionic/react';
 
-import { useToast, ToastTypeEnum, useLogger } from 'learn-card-base';
-
-const log = useLogger('qr-scanner');
-
+import { useToast, ToastTypeEnum, getLogger } from 'learn-card-base';
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { VC } from '@learncard/types';
 import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
+
+const log = getLogger('qr-scanner');
 
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
