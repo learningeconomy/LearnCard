@@ -2,10 +2,21 @@
 // PII scrubbing
 // ---------------------------------------------------------------------------
 
-// Keys containing these substrings (case-insensitive) are treated as PII,
-// catching common variants: userEmail, phoneNumber, firstName, accessToken, etc.
-const PII_SUBSTRINGS = ['email', 'phone', 'name', 'seed', 'password', 'privatekey', 'accesstoken', 'idtoken', 'token'];
-// Short/ambiguous keywords matched exactly (case-insensitive) to avoid false positives.
+// Keys are checked case-insensitively as substrings, catching common variants:
+//   email → userEmail, emailAddress   phone → phoneNumber, mobilePhone
+//   name  → firstName, lastName       token → accessToken, bearerToken, authToken
+const PII_SUBSTRINGS = [
+    'email',
+    'phone',
+    'name',
+    'seed',
+    'password',
+    'privatekey',
+    'accesstoken',
+    'idtoken',
+    'token',
+];
+// 'did' is too short for safe substring matching (would match "additional", "edited"), so exact only.
 const PII_EXACT_LC = new Set(['did']);
 const BEARER_RE = /^bearer /i;
 
@@ -32,7 +43,8 @@ const scrubValue = (value: unknown, depth: number, seen: Set<object>): unknown =
         seen.add(value);
         return Object.fromEntries(
             Object.entries(value as Record<string, unknown>).map(([k, v]) => {
-                if (isPiiKey(k) || (typeof v === 'string' && BEARER_RE.test(v))) return [k, '[scrubbed]'];
+                if (isPiiKey(k) || (typeof v === 'string' && BEARER_RE.test(v)))
+                    return [k, '[scrubbed]'];
                 return [k, scrubValue(v, depth + 1, seen)];
             })
         );
@@ -311,6 +323,3 @@ export const logger = createLogger();
  * → Sentry extra: { email: 'user@example.com' }   // allowPii itself is stripped
  */
 export const getLogger = (scope: string): Logger => createLogger(scope);
-
-/** @deprecated Use getLogger instead — avoids react-hooks/rules-of-hooks false positives at module level. */
-export const useLogger = getLogger;

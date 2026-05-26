@@ -1250,15 +1250,15 @@ GDPR/COPPA-compliant privacy controls based on user age and country. Minors have
 
 ## Logging
 
-Central logger lives at `packages/learn-card-base/src/logging/logger.ts`, exported from `learn-card-base`.
+Central logger lives at `packages/learn-card-base/src/logging/logger.ts`, exported from `learn-card-base`. Full reference: `packages/learn-card-base/src/logging/README.md`.
 
 ### API
 
 ```ts
-import { logger, useLogger } from 'learn-card-base';
+import { logger, getLogger } from 'learn-card-base';
 
-// Module-level or top of a file (not a React hook — safe outside components)
-const log = useLogger('my-feature');
+// Module-level or top of a file
+const log = getLogger('my-feature');
 
 // Object meta
 log.info('user.navigated', { page: 'home' });
@@ -1281,9 +1281,9 @@ logger.withContext(scope => scope.setTag('flow', 'oid4vci'));
 
 ### Levels
 
-| Level | Dev | Prod (Sentry active) |
-|-------|-----|----------------------|
-| `debug` | `console.debug` | **dropped** |
+| Level | Dev / staging | Production (`NODE_ENV === 'production'`) |
+|-------|---------------|------------------------------------------|
+| `debug` | `console.debug` | **dropped** — silent in prod, visible in staging |
 | `info` | `console.info` | Sentry breadcrumb |
 | `warn` | `console.warn` | `console.warn` + Sentry captureMessage |
 | `error` | `console.error` | `console.error` + Sentry captureException / captureMessage |
@@ -1316,7 +1316,7 @@ After `Sentry.init()`, call `configureSentryTransport(adapter)` — both `learn-
 
 ### PII scrubbing
 
-These field names are scrubbed to `[scrubbed]` by default: `email`, `phone`, `name`, `did`, `seed`, `privateKey`, `accessToken`, `idToken`. Any string value matching `/^bearer /i` is also scrubbed. Pass `{ allowPii: true }` in the meta object to bypass (strips the flag before forwarding to Sentry).
+Field names are matched **case-insensitively as substrings**, so variants are caught automatically (`userEmail`, `phoneNumber`, `firstName`, `accessToken`, etc.). Scrubbing is **recursive** — nested objects and arrays are walked. Keywords matched: `email`, `phone`, `name`, `seed`, `password`, `privatekey`, `accesstoken`, `idtoken`, `token`. `did` is matched exactly (too short for safe substring). Any string value starting with `Bearer ` is also scrubbed. Pass `{ allowPii: true }` in the meta object to bypass (flag is stripped before forwarding to Sentry).
 
 ### ESLint
 

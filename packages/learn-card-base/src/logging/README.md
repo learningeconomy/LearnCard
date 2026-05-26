@@ -5,9 +5,9 @@ Central logger for all LearnCard apps. Provides structured, PII-safe logging wit
 ## Quick start
 
 ```ts
-import { useLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
 
-const log = useLogger('my-feature');
+const log = getLogger('my-feature');
 
 log.debug('wallet ready');
 log.info('profile loaded', { profileId: '123' });
@@ -15,18 +15,16 @@ log.warn('cache miss', { key });
 log.error('sign-in failed', err);
 ```
 
-> `useLogger` is **not** a React hook — it is a plain factory and is safe to call at module level, outside any component.
-
 ---
 
 ## API
 
-### `useLogger(scope: string): Logger`
+### `getLogger(scope: string): Logger`
 
 Returns a logger that prefixes every console output with `[scope]` and attaches a `scope` tag to every Sentry event.
 
 ```ts
-const log = useLogger('auth-coordinator');
+const log = getLogger('auth-coordinator');
 ```
 
 ### `logger`
@@ -43,14 +41,14 @@ logger.info('app boot');
 
 ## Log levels
 
-| Method | Dev (no transport) | Prod (Sentry active) |
-|---|---|---|
-| `log.debug(msg, ...)` | `console.debug` | **dropped** — never reaches Sentry |
-| `log.info(msg, ...)` | `console.info` | Sentry breadcrumb (timeline context) |
-| `log.warn(msg, ...)` | `console.warn` | `console.warn` + Sentry `captureMessage` |
+| Method                | Dev / staging   | Production (`NODE_ENV === 'production'`)                        |
+| --------------------- | --------------- | --------------------------------------------------------------- |
+| `log.debug(msg, ...)` | `console.debug` | **dropped** — never reaches Sentry or console                   |
+| `log.info(msg, ...)`  | `console.info`  | Sentry breadcrumb (timeline context)                            |
+| `log.warn(msg, ...)`  | `console.warn`  | `console.warn` + Sentry `captureMessage`                        |
 | `log.error(msg, ...)` | `console.error` | `console.error` + Sentry `captureException` or `captureMessage` |
 
-> `debug` is intentionally silenced in production. Use `info` if you need the event to appear in Sentry's breadcrumb trail.
+> `debug` is silenced only in production builds (`NODE_ENV === 'production'`). Staging builds with a Sentry transport configured still show debug output in devtools. Use `info` if you need the event to appear in Sentry's breadcrumb trail.
 
 ---
 
@@ -58,13 +56,13 @@ logger.info('app boot');
 
 The second argument is flexible — pass whatever you have without wrapping:
 
-| What you pass | Console output | Sentry |
-|---|---|---|
-| `Error` object | logged directly | `captureException(err)` |
-| Plain object `{ key: value }` | logged directly | attached as `extra` |
-| Primitive — `boolean`, `number`, `string` | logged directly | wrapped as `{ value: x }` |
-| Array | logged directly | wrapped as `{ value: [...] }` |
-| Nothing | empty `{}` | no extra |
+| What you pass                             | Console output  | Sentry                        |
+| ----------------------------------------- | --------------- | ----------------------------- |
+| `Error` object                            | logged directly | `captureException(err)`       |
+| Plain object `{ key: value }`             | logged directly | attached as `extra`           |
+| Primitive — `boolean`, `number`, `string` | logged directly | wrapped as `{ value: x }`     |
+| Array                                     | logged directly | wrapped as `{ value: [...] }` |
+| Nothing                                   | empty `{}`      | no extra                      |
 
 ### Examples
 
@@ -80,15 +78,15 @@ log.error('sign-in failed', err, { userId, provider: 'firebase' });
 
 // Primitives — no object wrapper needed
 const isEnabled = false;
-log.info('feature flag', isEnabled);    // ✓ logs false directly
-log.info('retry count', 3);             // ✓ logs 3 directly
-log.info('active flags', ['a', 'b']);   // ✓ logs array directly
+log.info('feature flag', isEnabled); // ✓ logs false directly
+log.info('retry count', 3); // ✓ logs 3 directly
+log.info('active flags', ['a', 'b']); // ✓ logs array directly
 
 // Raw catch block value — logger coerces it internally
 try {
     await riskyOperation();
 } catch (e) {
-    log.error('operation failed', e);   // ✓ pass e directly, no wrapping needed
+    log.error('operation failed', e); // ✓ pass e directly, no wrapping needed
 }
 ```
 
@@ -96,25 +94,35 @@ try {
 
 ## PII scrubbing
 
-The following field names are **automatically scrubbed** to `[scrubbed]` before reaching Sentry:
+Field names are matched **case-insensitively as substrings**, so common variants are caught automatically:
 
-| Field |
-|---|
-| `email` |
-| `phone` |
-| `name` |
-| `did` |
-| `seed` |
-| `privateKey` |
-| `accessToken` |
-| `idToken` |
+| Keyword matched | Examples scrubbed                                          |
+| --------------- | ---------------------------------------------------------- |
+| `email`         | `email`, `userEmail`, `emailAddress`, `contactEmail`       |
+| `phone`         | `phone`, `phoneNumber`, `mobilePhone`                      |
+| `name`          | `name`, `firstName`, `lastName`, `displayName`, `fullName` |
+| `did`           | `did` (exact match only — too short for safe substring)    |
+| `seed`          | `seed`                                                     |
+| `password`      | `password`, `hashedPassword`                               |
+| `privatekey`    | `privateKey`, `privatekey`                                 |
+| `accesstoken`   | `accessToken`, `accesstoken`                               |
+| `idtoken`       | `idToken`, `idtoken`                                       |
+| `token`         | `token`, `bearerToken`, `authToken`, `refreshToken`        |
 
-Any string **value** matching `/^bearer /i` (leaked auth header) is also scrubbed.
+Scrubbing is **recursive** — nested objects and arrays are walked automatically, with a depth cap of 10 and cycle detection. Any string **value** starting with `Bearer ` (case-insensitive) is also scrubbed regardless of key name.
 
 ```ts
-// email is scrubbed automatically
+// Top-level field
 log.error('lookup failed', { email: 'user@example.com', code: 404 });
 // Sentry extra → { email: '[scrubbed]', code: 404 }
+
+// Nested field — also scrubbed
+log.error('lookup failed', { user: { email: 'user@example.com' }, code: 404 });
+// Sentry extra → { user: { email: '[scrubbed]' }, code: 404 }
+
+// Variant key name — also scrubbed
+log.error('lookup failed', { userEmail: 'user@example.com', code: 404 });
+// Sentry extra → { userEmail: '[scrubbed]', code: 404 }
 
 // Bypass scrubbing for internal debug tooling only
 log.warn('debug identity', { email: 'user@example.com', allowPii: true });
@@ -162,13 +170,13 @@ configureSentryTransport({
 
 ## Do / Don't
 
-| Do | Don't |
-|---|---|
-| `log.error('wallet.init.failed', err)` | `console.error('wallet init failed', err)` in app src |
-| `log.info('isEnabled', isEnabled)` | `log.info('isEnabled', { isEnabled })` — primitives work directly |
-| `log.error('failed', e)` in catch blocks | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
-| `log.warn('...', { key })` | `Sentry.captureException(err)` directly |
-| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag |
+| Do                                         | Don't                                                                                     |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `log.error('wallet.init.failed', err)`     | `console.error('wallet init failed', err)` in app src                                     |
+| `log.info('isEnabled', isEnabled)`         | `log.info('isEnabled', { isEnabled })` — primitives work directly                         |
+| `log.error('failed', e)` in catch blocks   | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
+| `log.warn('...', { key })`                 | `Sentry.captureException(err)` directly                                                   |
+| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag                                                       |
 
 ---
 
