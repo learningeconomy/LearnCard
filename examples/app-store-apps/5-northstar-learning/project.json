@@ -1,0 +1,29 @@
+{
+  "name": "@learncard/app-store-demo-northstar-learning",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "examples/app-store-apps/5-northstar-learning/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "examples/app-store-apps/5-northstar-learning"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "examples/app-store-apps/5-northstar-learning"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run preview",
+        "cwd": "examples/app-store-apps/5-northstar-learning"
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import {
     issueCredentialToSelf,
+    openAddToLearnCardMenu,
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
 } from './test.helpers';
@@ -10,7 +11,9 @@ import { mockDidKitWasmForContext } from './route.helpers';
 
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
-        await waitForAuthenticatedState(page);
+        // Create a network profile so the LCN gate lets `Add to LearnCard`
+        // open AddToLearnCardMenu instead of OnboardingContainer.
+        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
     });
 
     test('Issue credential to yourself', async ({ page }) => {
@@ -67,7 +70,7 @@ test.describe('Wallet Credentials', () => {
         // (waitForAuthenticatedState already lands on /wallet)
 
         // User 1: Create a credential and send to user 2
-        await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+        await openAddToLearnCardMenu(page);
         await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
 
         // Select the first available template

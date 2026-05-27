@@ -9,6 +9,8 @@ import {
     lazyWithRetry,
     ChunkBoundary,
 } from 'learn-card-base';
+
+import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -52,6 +54,7 @@ const VerifySharedResume = lazyWithRetry(
     () => import('./pages/resume-builder/VerifySharedResume')
 );
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
+const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -91,6 +94,8 @@ const ClaimFromDashboard = lazyWithRetry(
     () => import('./pages/claim-from-dashboard/ClaimFromDashboard')
 );
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
+const Oid4vciExchange = lazyWithRetry(() => import('./pages/oid4vci/Oid4vciExchange'));
+const Oid4vpExchange = lazyWithRetry(() => import('./pages/oid4vp/Oid4vpExchange'));
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
@@ -190,6 +195,10 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
+    // Pathways v2 visibility — see `usePathwaysEnabled` for the
+    // tenant + LaunchDarkly layering. Same hook is used by the side
+    // menu so the route and the nav link can't drift.
+    const pathwaysEnabled = usePathwaysEnabled();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -276,6 +285,16 @@ export const Routes: React.FC = () => {
                             path="/ai/pathways/discovery"
                             component={AiPathwaysDiscovery}
                         />
+                        {/*
+                         * Pathways v2 — greenfield alongside the existing
+                         * /ai/pathways feature. Gated by `usePathwaysEnabled`
+                         * (tenant `features.pathways` AND LaunchDarkly
+                         * `enableJourneys`, both default off). See
+                         * pages/pathways/docs/architecture.md.
+                         */}
+                        {pathwaysEnabled && (
+                            <PrivateRoute path="/pathways" component={PathwaysShell} />
+                        )}
                         <PrivateRoute
                             exact
                             path="/learninghistory"
@@ -363,6 +382,8 @@ export const Routes: React.FC = () => {
                         />
                         <SentryRoute path="/interactions/*" component={InteractionsPage} />
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
+                        <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
+                        <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
 
                         <SentryRoute
                             exact

@@ -16,14 +16,29 @@ import {
     useSQLiteInitWeb,
     sqliteStore,
     ensureReactQueryTableExists,
+    getLogger,
 } from 'learn-card-base';
-
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
+import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
+
+// Install `window.__pathwaysDev` at the app-root level rather than
+// waiting for the /pathways shell to mount. The dev-panel inspector
+// expects these globals to be available on any route (including the
+// `/claim/...` landing surface, the app-store, credential detail,
+// etc.) so developers can run `__pathwaysDev.inspectPathway()` /
+// `listDispatches()` to debug pathway-progress dispatches without
+// first having to navigate to /pathways.
+//
+// The installer is idempotent + guarded by `import.meta.env.DEV`,
+// so this is a no-op in production builds. See
+// `src/pages/pathways/dev/pathwaysDevGlobals.ts`.
+installPathwaysDevGlobals();
 
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
@@ -32,6 +47,8 @@ import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+
+const log = getLogger('cache');
 
 const history = createBrowserHistory();
 
@@ -66,7 +83,7 @@ const persister = createAsyncStoragePersister({
 
                 return result.values![0].cache;
             } catch (error) {
-                console.error('Error getting from cache', { key, error });
+                log.error('Error getting from cache', error, { key });
                 // Fallback to localforage on error
                 return localforage.getItem(key);
             }
@@ -98,12 +115,12 @@ const persister = createAsyncStoragePersister({
                     await db.close();
                 }
             } catch (error) {
-                console.error('Error setting in cache', { key, value, error });
+                log.error('Error setting in cache', error, { key });
                 // Fallback to localforage on error
                 try {
                     return localforage.setItem(key, value);
                 } catch (fallbackError) {
-                    console.error('Fallback cache error', fallbackError);
+                    log.error('Fallback cache error', fallbackError);
                 }
             }
         },
@@ -131,12 +148,12 @@ const persister = createAsyncStoragePersister({
                     await db.close();
                 }
             } catch (error) {
-                console.error('Error removing from cache', { key, error });
+                log.error('Error removing from cache', error, { key });
                 // Fallback to localforage on error
                 try {
                     await localforage.removeItem(key);
                 } catch (fallbackError) {
-                    console.error('Fallback cache removal error', fallbackError);
+                    log.error('Fallback cache removal error', fallbackError);
                 }
             }
         },
@@ -176,6 +193,12 @@ const FullApp: React.FC = () => {
                                         <AppUrlListener />
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
+                                        {/* Subscribes the pathway-progress reactor to
+                                            the wallet event bus. Placed alongside the
+                                            other app-level listeners so every claim
+                                            and session-end event — wherever it's
+                                            published — flows through one reactor. */}
+                                        <PathwayProgressReactorMount />
                                         <AppRouter />
                                         <QRCodeScannerListener />
 

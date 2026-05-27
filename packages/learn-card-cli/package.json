@@ -1,7 +1,7 @@
 {
     "name": "@learncard/cli",
-    "version": "3.3.173",
-    "description": "Test out learn card!",
+    "version": "3.3.177",
+    "description": "Command Line Interface for LearnCard",
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
@@ -17,6 +17,7 @@
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/linked-claims-plugin": "workspace:*",
+        "@learncard/render-method-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

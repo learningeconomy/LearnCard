@@ -3,7 +3,9 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
+import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
 import Lottie from 'react-lottie-player';
 const HourGlass = '/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
@@ -20,6 +22,7 @@ import {
     useWallet,
     ModalTypes,
     useDeviceTypeByWidth,
+    boostPreviewStore,
 } from 'learn-card-base';
 import { LCNNotification, VC, VP, VerificationItem } from '@learncard/types';
 import {
@@ -30,11 +33,14 @@ import {
     isClrCredential,
     getClrLinkedCredentials,
     getClrLinkedCredentialCounts,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
+import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -105,12 +111,16 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
+    const enableRenderMethod = useRenderMethodEnabled();
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
+    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+    const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
+    const displayCredential = unwrapBoostCredential(credential as VC) as VC;
 
     const _isClr = isClrCredential(credential);
     const linkedCredentialCount = _isClr ? getClrLinkedCredentialCounts(credential) : 0;
@@ -237,6 +247,14 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     useEffect(() => {
+        boostPreviewStore.set.updateSelectedDisplayView(
+            enableRenderMethod && renderMethod
+                ? BoostPreviewDisplayViewEnum.Issuer
+                : BoostPreviewDisplayViewEnum.Default
+        );
+    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
+
+    useEffect(() => {
         if (!isFront) {
             setIsFront(!isFront);
             if (isMobile) {
@@ -244,6 +262,39 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             }
         }
     }, [isFront]);
+
+    const isIssuerViewSelected =
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+
+    const credentialDisplay = (
+        <VCDisplayCardWrapper2
+            credential={credential}
+            hideNavButtons
+            // isFrontOverride={isFront}
+            setIsFrontOverride={setIsFront}
+            onMediaClick={handleImageClick}
+            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+            bottomButton={
+                isID ? (
+                    <button
+                        onClick={e => {
+                            e.stopPropagation();
+                            handleBoostCredential();
+                        }}
+                        className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
+                        disabled={disableClaimButton}
+                    >
+                        {claimStatusText}
+                    </button>
+                ) : undefined
+            }
+            hideFrontFaceDetails={false}
+            claimStatusText={claimStatusText}
+            handleClaim={handleBoostCredential}
+        />
+    );
 
     const openDetailsSideModal = () => {
         if (vcVerifications.length === 0) {
@@ -256,6 +307,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 verificationItems={vcVerifications}
                 hideEndorsementRequestCard={hideEndorsementRequestCard}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                renderMethodCredential={credential as VC}
             />,
             {
                 className: '!bg-transparent',
@@ -301,33 +353,18 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }`}
                         >
                             {credential && !selectedImage && (
-                                <VCDisplayCardWrapper2
-                                    credential={credential}
-                                    hideNavButtons
-                                    // isFrontOverride={isFront}
-                                    setIsFrontOverride={setIsFront}
-                                    onMediaClick={handleImageClick}
-                                    customLinkedCredentialsComponent={
-                                        customLinkedCredentialsComponent
-                                    }
-                                    bottomButton={
-                                        isID ? (
-                                            <button
-                                                onClick={e => {
-                                                    e.stopPropagation();
-                                                    handleBoostCredential();
-                                                }}
-                                                className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
-                                                disabled={disableClaimButton}
-                                            >
-                                                {claimStatusText}
-                                            </button>
-                                        ) : undefined
-                                    }
-                                    hideFrontFaceDetails={false}
-                                    claimStatusText={claimStatusText}
-                                    handleClaim={handleBoostCredential}
-                                />
+                                <>
+                                    {isIssuerViewSelected && renderMethod ? (
+                                        <RenderMethodDisplay
+                                            vc={displayCredential}
+                                            renderMethod={renderMethod}
+                                            fallback={credentialDisplay}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        credentialDisplay
+                                    )}
+                                </>
                             )}
                             {selectedImage && (
                                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -376,6 +413,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         verificationItems={vcVerifications}
                         hideEndorsementRequestCard={hideEndorsementRequestCard}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                        renderMethodCredential={credential as VC}
                     />
                 )}
             </div>

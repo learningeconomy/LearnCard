@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
 
@@ -44,7 +45,7 @@ import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyId
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
-import { Modals } from 'learn-card-base';
+import { Modals, getLogger } from 'learn-card-base';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
@@ -52,15 +53,65 @@ import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerif
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 
+const log = getLogger('app-router');
+
 export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 
 const AppRouter: React.FC = () => {
-    const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
+    const { state: coordinatorState, walletReady } = useAppAuth();
 
-    // The coordinator detects Firebase auth changes via firebaseAuthStore and
-    // handles the full lifecycle (authenticating → deriving_key → ready).
-    // Once walletReady is true, we always show the app regardless of other signals.
-    const initLoading = walletReady ? false : coordinatorLoading;
+    // Initial-load gate: when true, render the loader instead of <Routes>.
+    //
+    // We MUST keep the loader up during every transitional auth state. Otherwise,
+    // there is a race window between `coordinator.state.status === 'ready'`
+    // (private key derived) and the separate `useEffect` in AuthCoordinatorProvider
+    // that constructs the BespokeLearnCard wallet. During that ~100-300ms gap,
+    // unmounting the loader causes <Routes> to mount, see `useIsLoggedIn() === false`
+    // (currentUserStore not yet populated), and redirect to /login — flashing the
+    // LoginPage on cold start before the wallet finishes initializing.
+    //
+    // Stable states where it's safe to render <Routes>:
+    //   - walletReady                              → fully booted (show app)
+    //   - state.status === 'idle'                  → genuinely logged out (show /login)
+    //   - state.status === 'needs_recovery'        → coordinator overlays recovery modal
+    //   - state.status === 'error'                 → coordinator overlays error UI
+    // Everything else (`authenticating`, `authenticated`, `checking_key_status`,
+    // `needs_setup`, `needs_migration`, `deriving_key`, and the brief
+    // `ready`-without-wallet window) is a transition we bridge with the loader.
+    const initLoading = !(
+        walletReady ||
+        coordinatorState.status === 'idle' ||
+        coordinatorState.status === 'needs_recovery' ||
+        coordinatorState.status === 'error'
+    );
+
+    // Native splash bridge. The Capacitor splash is configured with
+    // launchAutoHide=false so it stays visible during the entire JS bootstrap
+    // (chunk loading, LaunchDarkly init, AuthCoordinator init, wallet derive).
+    // We hide it manually once we know what to render so the user sees a single
+    // smooth fade from native splash → final screen, not a stack of JS loaders.
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+        const ready =
+            walletReady ||
+            coordinatorState.status === 'idle' ||
+            coordinatorState.status === 'needs_recovery' ||
+            coordinatorState.status === 'error';
+        if (ready) {
+            SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
+        }
+    }, [walletReady, coordinatorState.status]);
+
+    // Safety net: never let the native splash stay up longer than 8s even if
+    // auth initialization hangs. After this, the user sees whatever the app
+    // is currently rendering (likely the in-app loader or login).
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+        const t = setTimeout(() => {
+            SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
+        }, 8000);
+        return () => clearTimeout(t);
+    }, []);
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
     const history = useHistory();
     const location = useLocation();
@@ -315,7 +366,7 @@ const AppRouter: React.FC = () => {
                         queryClient,
                     });
                 } catch (error) {
-                    console.error('Backfill consent error (non-blocking):', error);
+                    log.error('Backfill consent error (non-blocking)', error);
                 }
             }
         };

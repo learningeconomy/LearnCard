@@ -185,6 +185,12 @@ export {
 
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentials/queries';
+export * from './helpers/openid4vcErrors';
+export * from './helpers/faviconHelpers';
+export * from './oid4vc-resilience';
+export * from './components/openid4vc/ExchangeErrorDisplay';
+export * from './components/openid4vc/IssuerHeader';
+export * from './components/openid4vc/VerifierHeader';
 export * from './helpers/web3AuthHelpers';
 export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
@@ -260,3 +266,5 @@ export * from './svgs/navbar/navbarIcons';
 export * from './svgs/navbar/formal/navbarFormalIcons';
 export * from './svgs/ScoutsLogo';
 export * from './svgs/ScoutLogoAndText';
+export * from './svgs/Compass';
+export * from './logging/logger';

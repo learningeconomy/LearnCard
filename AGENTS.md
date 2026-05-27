@@ -47,6 +47,11 @@ The apps define a custom color palette in their `tailwind.config.js`. **Never us
 | `emerald-50`–`emerald-900` | — | Success states, positive actions, focus rings |
 | `amber-50`–`amber-900` | — | Warnings, caution callouts |
 | `red-50`–`red-700` | — | Errors, destructive states |
+| `indigo-50`–`indigo-700` | — | **Navigation / route-swap accents only** — scoped to Pathways v2 wayfinding (Map "Navigate mode", route-swap proposal cards, What-If scenario selection). Do **not** use elsewhere. |
+
+#### Indigo scope (Pathways v2)
+
+Indigo is the **only non-grayscale neutral** permitted alongside emerald / amber / red, and only in the contexts above. The intent is to give learners a stable visual signal that "this is route-shape change, not structural edit" — emerald already means "positive / committed", and reusing it for route swaps muddies that signal. Files where this is currently load-bearing: `apps/learn-card-app/src/pages/pathways/proposals/ProposalCard.tsx`, `proposals/RouteDiffSummary.tsx`, `map/MapMode.tsx`, `what-if/WhatIfMode.tsx`. New indigo usage outside Pathways v2 should be flagged in review.
 
 ### Typography
 
@@ -1242,3 +1247,77 @@ GDPR/COPPA-compliant privacy controls based on user age and country. Minors have
 -   Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
 -   Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
 -   See CLAUDE.md for full architectural details
+
+## Logging
+
+Central logger lives at `packages/learn-card-base/src/logging/logger.ts`, exported from `learn-card-base`. Full reference: `packages/learn-card-base/src/logging/README.md`.
+
+### API
+
+```ts
+import { logger, getLogger } from 'learn-card-base';
+
+// Module-level or top of a file
+const log = getLogger('my-feature');
+
+// Object meta
+log.info('user.navigated', { page: 'home' });
+log.warn('cache.miss', { key });
+log.error('wallet.init.failed', err, { userId });
+
+// Primitives and arrays — no wrapper needed
+log.info('isEnabled::', isEnabled);   // boolean
+log.info('retryCount::', 3);          // number
+log.info('flags::', [true, false]);   // array
+
+// Error from a catch block — pass e directly, logger handles it
+try { ... } catch (e) { log.error('unexpected', e); }
+
+// No scope
+logger.debug('verbose detail');
+logger.breadcrumb({ category: 'auth', message: 'token refreshed' });
+logger.withContext(scope => scope.setTag('flow', 'oid4vci'));
+```
+
+### Levels
+
+| Level | Dev / staging | Production (`NODE_ENV === 'production'`) |
+|-------|---------------|------------------------------------------|
+| `debug` | `console.debug` | **dropped** — silent in prod, visible in staging |
+| `info` | `console.info` | Sentry breadcrumb |
+| `warn` | `console.warn` | `console.warn` + Sentry captureMessage |
+| `error` | `console.error` | `console.error` + Sentry captureException / captureMessage |
+
+### Second argument rules
+
+| What you pass | Console output | Sentry |
+|---|---|---|
+| `Error` object | logged directly | `captureException` |
+| Plain object `{ key }` | logged directly | attached as `extra` |
+| Primitive / array | logged directly | wrapped as `{ value: x }` |
+| Nothing | empty object `{}` | no extra |
+
+When passing both an error and extra context: `log.error('msg', err, { userId })`.
+
+### Setup (apps)
+
+After `Sentry.init()`, call `configureSentryTransport(adapter)` — both `learn-card-app` and `scouts` do this in their `constants/sentry.ts`. `useSentryIdentify` calls `configureLoggerContext({ bugReportsEnabled })` automatically when preferences change, so the privacy gate is always in sync. `captureConsoleIntegration` has been removed from both apps — the logger is now the only path to Sentry.
+
+### Do / Don't
+
+| Do | Don't |
+|----|-------|
+| `log.error('wallet.init.failed', err)` | `console.error('wallet init failed', err)` in app src |
+| `log.warn('cache.miss', { key })` | `Sentry.captureException(err)` directly |
+| `log.debug('verbose detail')` | Leave spam `console.log` in production-facing paths |
+| `log.info('isEnabled::', isEnabled)` | `log.info('isEnabled::', { isEnabled })` — primitives work directly |
+| Pass raw catch values: `log.error('msg', e)` | Wrap manually: `e instanceof Error ? e : new Error(String(e))` |
+| `{ allowPii: true }` only for internal debug tooling | Log PII fields without the flag |
+
+### PII scrubbing
+
+Field names are matched **case-insensitively as substrings**, so variants are caught automatically (`userEmail`, `phoneNumber`, `firstName`, `accessToken`, etc.). Scrubbing is **recursive** — nested objects and arrays are walked. Keywords matched: `email`, `phone`, `name`, `seed`, `password`, `privatekey`, `accesstoken`, `idtoken`, `token`. `did` is matched exactly (too short for safe substring). Any string value starting with `Bearer ` is also scrubbed. Pass `{ allowPii: true }` in the meta object to bypass (flag is stripped before forwarding to Sentry).
+
+### ESLint
+
+`no-console: 'warn'` is enabled for `apps/learn-card-app/src/**` and `apps/scouts/src/**` via the root `.eslintrc.js` overrides block. Remaining call sites surface as warnings until migrated.

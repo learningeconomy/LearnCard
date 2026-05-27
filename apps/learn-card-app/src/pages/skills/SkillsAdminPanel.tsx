@@ -1,7 +1,7 @@
 import React from 'react';
 
-import Plus from 'learn-card-base/svgs/Plus';
 import Pencil from '../../components/svgs/Pencil';
+import Plus from '../../components/svgs/Plus';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import CreateFrameworkModal from '../SkillFrameworks/CreateFrameworkModal';
 import SkillsAdminPanelFramework from './SkillsAdminPanelFramework';
@@ -14,13 +14,15 @@ import {
     conditionalPluralize,
     useListMySkillFrameworks,
 } from 'learn-card-base';
+import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 
 type SkillsAdminPanelProps = {};
 
 const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
     const { newModal, closeModal } = useModal();
 
-    const { data: frameworks = [], isLoading: isLoadingFrameworks } = useListMySkillFrameworks();
+    const { data: frameworks = [] as ApiFrameworkInfo[], isLoading: isLoadingFrameworks } =
+        useListMySkillFrameworks();
 
     const frameworksExist = frameworks?.length > 0;
 
@@ -76,10 +78,9 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
 
                     {frameworksExist && (
                         <div className="flex flex-col gap-[15px] border-t-[1px] border-violet-300 border-solid pt-[15px]">
-                            {/* @ts-ignore */}
-                            {frameworks?.map((framework, index) => (
+                            {frameworks.map((framework: ApiFrameworkInfo) => (
                                 <SkillsAdminPanelFramework
-                                    key={index}
+                                    key={framework.id}
                                     framework={framework}
                                     buttonClassName="flex gap-[10px] p-[10px] bg-white rounded-[15px] shadow-bottom-2-4 items-center text-left"
                                     onClick={() => {
