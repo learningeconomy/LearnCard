@@ -23,6 +23,7 @@ import {
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
+    getLogger,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
@@ -83,6 +84,8 @@ type UserProfileUpdateFormProps = {
     handleChapiInfo: () => void;
     children?: any;
 };
+
+const log = getLogger('UserProfileUpdateForm');
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     title = 'My Account',
