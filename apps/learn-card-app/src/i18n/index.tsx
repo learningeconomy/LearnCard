@@ -31,8 +31,10 @@ export type MessagePart =
 export const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'ar'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
-// Soft-RTL mode: keep layout LTR for all languages; only <html lang> changes.
-export const RTL_LANGUAGES = new Set<SupportedLanguage>();
+// Full RTL mode for Arabic: flips <html dir="rtl"> so the layout mirrors.
+// Set back to `new Set<SupportedLanguage>()` to revert to soft-RTL
+// (Unicode bidi handles Arabic text but layout stays LTR).
+export const RTL_LANGUAGES = new Set<SupportedLanguage>(['ar']);
 
 // ── React locale context ───────────────────────────────────────────────
 
