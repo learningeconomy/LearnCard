@@ -754,7 +754,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         </span>
                         {!isNetworkUser && !isNetworkUserLoading && (
                             <button
-                                onClick={handlePresentJoinNetworkModal}
+                                onClick={() => {
+                                    void handlePresentJoinNetworkModal();
+                                }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
                                 Complete Profile
@@ -795,9 +797,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         {!hideLogout && (
                             <button
-                                onClick={() =>
-                                    handleLogout({ overrideRedirectUrl: '/login' })
-                                }
+                                onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}
                             >

@@ -33,13 +33,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     const { handleLogout } = useLogout();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
 
-    const [step, setStep] = useState<OnboardingStepsEnum>(
-        initialStep ??
-            (coordinatorState.status === 'needs_setup'
-                ? OnboardingStepsEnum.ageGate
-                : OnboardingStepsEnum.selectRole)
-    );
-
     const [ageGateError, setAgeGateError] = useState<string | null>(null);
     const [isPreparingKey, setIsPreparingKey] = useState(false);
     const didPrepareNewKeyRef = useRef(false);
@@ -57,6 +50,14 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
         profileId: '',
     });
 
+    const shouldStartAtAgeGate = !formData.dob || !formData.country;
+
+    const [step, setStep] = useState<OnboardingStepsEnum>(
+        shouldStartAtAgeGate || coordinatorState.status === 'needs_setup'
+            ? OnboardingStepsEnum.ageGate
+            : initialStep ?? OnboardingStepsEnum.selectRole
+    );
+
     const [pendingInstall, setPendingInstall] = useState<{
         listingId: string;
         appName: string;
@@ -68,12 +69,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             setStep(OnboardingStepsEnum.ageGate);
         }
     }, [coordinatorState.status]);
-
-    useEffect(() => {
-        if (initialStep) {
-            setStep(initialStep);
-        }
-    }, [initialStep]);
 
     useEffect(() => {
         // Set flag so AppListingPage's auto-trigger waits until onboarding closes

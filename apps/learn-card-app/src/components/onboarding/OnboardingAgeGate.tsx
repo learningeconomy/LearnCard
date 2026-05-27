@@ -5,6 +5,7 @@ import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import DatePickerInput from '../date-picker/DatePickerInput';
+import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import CountrySelectorModal from './onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../svgs/LocationIcon';
 import countries from '../../constants/countries.json';
@@ -69,18 +70,7 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
     return (
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
-                    <p className="text-sm text-emerald-800 font-medium leading-relaxed">
-                        Tell us your birthday and country so we can set up the right account path.
-                    </p>
-                </div>
-
-                <h1 className="text-xl font-semibold text-grayscale-900 mb-2 font-poppins">
-                    Before we continue
-                </h1>
-                <p className="text-sm text-grayscale-600 leading-relaxed mb-6 font-poppins">
-                    We use this to check age rules and consent requirements.
-                </p>
+                <OnboardingHeader text="We ask for your age and country to make sure we comply with privacy laws and keep you safe" />
 
                 {error && (
                     <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl">
@@ -88,7 +78,7 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
                     </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-4 mt-8">
                     <div className="flex flex-col items-center justify-center w-full mt-2">
                         <DatePickerInput
                             value={dob || ''}
