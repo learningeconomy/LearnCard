@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.90.12
+
+### Patch Changes
+
+-   [#1261](https://github.com/learningeconomy/LearnCard/pull/1261) [`57d7724515a064256037827dffc3e79b72b9186f`](https://github.com/learningeconomy/LearnCard/commit/57d7724515a064256037827dffc3e79b72b9186f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1844 - Central Logging System (LCA/ScoutPass)
+
 ## 1.90.11
 
 ### Patch Changes
