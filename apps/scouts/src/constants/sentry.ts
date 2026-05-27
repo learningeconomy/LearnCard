@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
+import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
 
 export type UseSentryIdentifyOptions = {
     debug?: boolean;
@@ -33,14 +34,34 @@ export const initSentry = () => {
                 maskAllText: false,
                 blockAllMedia: true,
             }),
-            Sentry.captureConsoleIntegration({
-                levels: ['error'],
-            }),
+            // captureConsoleIntegration removed: logger is now the only path to Sentry,
+            // ensuring PII scrubbing and bugReportsEnabled gate are always applied.
         ],
         // Performance Monitoring
-        tracesSampleRate: 0.5, // Capture 50% of transactions
-        replaysSessionSampleRate: 0.1, // Replay 10% of all sessions
-        replaysOnErrorSampleRate: 1.0, // Replay 100% of error sessions
+        tracesSampleRate: 0.5,
+        replaysSessionSampleRate: 0.1,
+        replaysOnErrorSampleRate: 1.0,
+    });
+
+    if (!isSentryEnabled) return;
+
+    // Wire the injectable transport so learn-card-base logger forwards to Sentry
+    configureSentryTransport({
+        captureException: (err, tags, extra) =>
+            Sentry.withScope(scope => {
+                if (tags) Object.entries(tags).forEach(([k, v]) => scope.setTag(k, v));
+                if (extra) Object.entries(extra).forEach(([k, v]) => scope.setExtra(k, v));
+                Sentry.captureException(err);
+            }),
+        captureMessage: (msg, level, tags, extra) =>
+            Sentry.withScope(scope => {
+                if (tags) Object.entries(tags).forEach(([k, v]) => scope.setTag(k, v));
+                if (extra) Object.entries(extra).forEach(([k, v]) => scope.setExtra(k, v));
+                Sentry.captureMessage(msg, level);
+            }),
+        addBreadcrumb: opts => Sentry.addBreadcrumb(opts),
+        withScope: fn =>
+            Sentry.withScope(scope => fn({ setTag: scope.setTag.bind(scope), setExtra: scope.setExtra.bind(scope) })),
     });
 };
 
@@ -53,6 +74,9 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const { getDID } = useWallet();
 
     useEffect(() => {
+        // Scouts has no per-user bugReportsEnabled pref; default enabled in prod
+        configureLoggerContext({ bugReportsEnabled: !!isSentryEnabled });
+
         if (isSentryEnabled) {
             if (currentUser) {
                 if (options.debug) console.debug('Identify user! 🎸', currentUser);
@@ -60,8 +84,6 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                     .then(did => {
                         const user = {
                             id: did,
-                            // username: currentUser?.name, // TODO: Hash name
-                            // email: sha256(currentUser?.email),
                         };
                         if (options.debug) console.debug('🔍 Sentry User Context Identified', user);
 

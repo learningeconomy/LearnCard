@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -33,7 +33,14 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 import {
     getAchievementType,
@@ -142,6 +149,8 @@ const ClaimFromDashboard: React.FC = () => {
     const [metadata, setMetadata] = useState<FromDashboardMetadata | undefined>();
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -271,6 +280,8 @@ const ClaimFromDashboard: React.FC = () => {
         try {
             if (!credential) return;
             setClaimingCredential(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             await storeAndAddVCToWallet(credential, { title: name });
 
@@ -282,6 +293,19 @@ const ClaimFromDashboard: React.FC = () => {
                     category: category,
                     boostType: achievementType,
                     method: 'Dashboard',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.Dashboard,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 
