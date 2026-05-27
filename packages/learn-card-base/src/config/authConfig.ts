@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('auth-config');
 /**
  * Auth Configuration
  *
@@ -176,11 +178,11 @@ const readEnv = (suffix: string, legacySuffix?: string): string | undefined => {
  * @example
  * ```ts
  * const config = getAuthConfig();
- * console.log(config.authProvider);   // 'firebase'
- * console.log(config.keyDerivation);  // 'sss'
+ * log.debug(config.authProvider);   // 'firebase'
+ * log.debug(config.keyDerivation);  // 'sss'
  *
  * const sss = getSSSConfig();
- * console.log(sss.serverUrl);         // 'http://localhost:5100/api'
+ * log.debug(sss.serverUrl);         // 'http://localhost:5100/api'
  * ```
  */
 export const getAuthConfig = (): AuthConfig => {

@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('resolve-tenant-config');
 /**
  * Tenant Config Resolution
  *
@@ -260,7 +262,7 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
         const message = err instanceof Error ? err.message : String(err);
         const url = endpoint ?? '/__tenant-config';
 
-        console.warn(`[TenantConfig] fetchFreshConfig failed (${url}): ${message}`);
+        log.warn(`[TenantConfig] fetchFreshConfig failed (${url}): ${message}`);
 
         onEvent?.('config:fetch_error', `Fetch error: ${message}`, { url, error: message });
 

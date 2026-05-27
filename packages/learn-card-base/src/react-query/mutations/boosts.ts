@@ -36,6 +36,8 @@ import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('boosts');
 
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
@@ -267,7 +269,7 @@ export const useCreateBoost = () => {
             //         unsignedCredential.credentialSubject.achievement.alignment = alignments;
             //     }
             // } catch (e) {
-            //     console.warn('Failed to set alignments on unsignedCredential', e);
+            //     log.warn('Failed to set alignments on unsignedCredential', e);
             // }
 
             /// CREATE BOOST
@@ -536,11 +538,11 @@ export const useManageSelfAssignedSkillsBoost = () => {
             skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }) => {
             if (isLoadingSasBoost || isLoadingSasCred) {
-                console.log('Loading self-assigned skills boost/credential... please try again.');
+                log.debug('Loading self-assigned skills boost/credential... please try again.');
                 return { boostUri: undefined };
             }
             if (!profile) {
-                console.log('No profile found, please try again.');
+                log.debug('No profile found, please try again.');
                 return { boostUri: undefined };
             }
 
@@ -586,7 +588,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                     try {
                         await deleteCredentialRecord(record);
                     } catch (e) {
-                        console.warn('Failed to delete credential record:', e);
+                        log.warn('Failed to delete credential record:', e);
                     }
                 }
             }

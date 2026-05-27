@@ -19,6 +19,9 @@ import {
 import { IssuerHeader, IssuerHeaderProps } from './IssuerHeader';
 import { VerifierHeader, VerifierHeaderProps } from './VerifierHeader';
 
+import { getLogger } from '../../logging/logger';
+const log = getLogger('exchange-error-display');
+
 export interface ExchangeErrorDisplayProps {
     /**
      * The raw error caught from the OpenID4VC plugin (or any other shape).
@@ -86,11 +89,14 @@ export interface ExchangeErrorDisplayProps {
  * we're protecting the user). Painting them red would teach users to
  * distrust LearnCard for behaving correctly.
  */
-const KIND_THEME: Record<ExchangeErrorKind, {
-    headerClass: string;
-    Icon: React.ComponentType<{ className?: string }>;
-    subtitle: string;
-}> = {
+const KIND_THEME: Record<
+    ExchangeErrorKind,
+    {
+        headerClass: string;
+        Icon: React.ComponentType<{ className?: string }>;
+        subtitle: string;
+    }
+> = {
     format_gap: {
         headerClass: 'bg-gradient-to-r from-indigo-500 to-violet-600',
         Icon: Sparkles,
@@ -178,7 +184,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
             // "thanks" state. (We can add a retry affordance later if
             // we observe drops in practice.)
             // eslint-disable-next-line no-console
-            console.error('[ExchangeErrorDisplay] onReport threw', reportError);
+            log.error('[ExchangeErrorDisplay] onReport threw', reportError);
         }
         setReportState('sent');
     };

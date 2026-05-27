@@ -4,6 +4,8 @@ import { CredentialRecord, Boost } from '@learncard/types';
 import { useResolveBoosts } from 'learn-card-base/react-query/queries/queries';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
+import { getLogger } from '../logging/logger';
+const log = getLogger('search-helpers');
 //  Client side search filtering of react query cache
 // use for "Earned Boosts"
 //  Takes an array of react query paginated records, eg useGetCredentialList
@@ -46,7 +48,7 @@ export const searchCredentialsFromCache = (records: QueryRecords, searchInput?: 
 
     if (escapedSearchString) {
         const pattern = new RegExp(`${escapedSearchString}`, 'gi');
-        // console.log('///resolved cachedCreds', cachedCreds);
+        // log.debug('///resolved cachedCreds', cachedCreds);
         results = cachedCreds?.filter(cred => {
             // Matching cases:
             // matches 'normal boosts' eg boosts you make in LCA or Scouts
@@ -58,9 +60,9 @@ export const searchCredentialsFromCache = (records: QueryRecords, searchInput?: 
 
             return false;
         });
-        // console.log('Filtered Credentials:', results);
+        // log.debug('Filtered Credentials:', results);
     } else {
-        // console.log('Search string is empty; returning all cachedCreds.');
+        // log.debug('Search string is empty; returning all cachedCreds.');
         results = cachedCreds;
     }
 
@@ -83,20 +85,20 @@ export const searchManagedBoostsFromCache = (
         records?.pages?.flatMap(page => page?.records?.map(record => record.uri))
     );
 
-    // console.log('///cachedBoosts', cachedCreds);
+    // log.debug('///cachedBoosts', cachedCreds);
     const escapedSearchString = escapeRegExp(searchString);
 
     if (escapedSearchString) {
         const pattern = new RegExp(`${escapedSearchString}`, 'gi');
-        // console.log('///resolved cachedCreds', cachedCreds);
+        // log.debug('///resolved cachedCreds', cachedCreds);
         results = cachedCreds?.filter(cred => {
             if (cred?.data?.name?.match(pattern)) return true;
 
             return false;
         });
-        // console.log('Filtered Credentials:', results);
+        // log.debug('Filtered Credentials:', results);
     } else {
-        // console.log('Search string is empty; returning all cachedCreds.');
+        // log.debug('Search string is empty; returning all cachedCreds.');
         results = cachedCreds;
     }
 

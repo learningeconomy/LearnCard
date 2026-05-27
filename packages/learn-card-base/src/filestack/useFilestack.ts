@@ -4,6 +4,8 @@ import { Capacitor } from '@capacitor/core';
 import { client, UploadOptions } from './ReactFileStackClient';
 
 import useResizePhoto from './useResizePhoto';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-filestack');
 
 const API_KEY = 'A7RsW3VzfSNO2TCsFJ6Eiz';
 
@@ -65,7 +67,7 @@ export const useFilestack: UseFileStack = ({
 
             return await resizePhoto(file);
         } catch (e) {
-            console.log('filestack::getFileToUpload::error', e);
+            log.debug('filestack::getFileToUpload::error', e);
             setError(e);
             return false;
         }
@@ -80,7 +82,7 @@ export const useFilestack: UseFileStack = ({
                     resolve(res.url); // return the url if you await singleImageUpload
                 })
                 .catch(e => {
-                    console.log('filestack::singleImageUpload::error', e);
+                    log.debug('filestack::singleImageUpload::error', e);
                     setError(e);
                     reject(e);
                 })
@@ -139,7 +141,7 @@ export const useFilestack: UseFileStack = ({
 
             await singleImageUpload(fileToUpload);
         } catch (e) {
-            console.log('filestack::handleCapacitorCamera::error', e);
+            log.debug('filestack::handleCapacitorCamera::error', e);
             setError(e);
             setIsLoading(false);
         }
@@ -174,7 +176,7 @@ export const useFilestack: UseFileStack = ({
                 .multiupload(fileToUpload, options)
                 .then((res: UploadRes) => onUpload(res.url, fileToUpload, res))
                 .catch(e => {
-                    console.log('filestack::uploadFile::error', e);
+                    log.debug('filestack::uploadFile::error', e);
                     setError(e);
                 })
                 .finally(() => setIsLoading(false));
@@ -218,7 +220,7 @@ export const useFilestack: UseFileStack = ({
             // Call the singleImageUpload function with the created File
             return await singleImageUpload(file);
         } catch (error) {
-            console.log('filestack::uploadImageFromUrl::error', error);
+            log.debug('filestack::uploadImageFromUrl::error', error);
             return null;
         }
     };

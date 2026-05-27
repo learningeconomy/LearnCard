@@ -1,6 +1,8 @@
 import React from 'react';
 
 import { isStaleChunkError, guardedChunkReload } from '../../helpers/lazyWithRetry';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('index');
 
 type ErrorBoundaryProps = {
     children: React.ReactNode;
@@ -20,7 +22,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasErro
 
     componentDidCatch(error: any, errorInfo: any) {
         // You can also log the error to an error reporting service
-        console.error({ error, errorInfo });
+        log.error({ error, errorInfo });
     }
 
     render() {
