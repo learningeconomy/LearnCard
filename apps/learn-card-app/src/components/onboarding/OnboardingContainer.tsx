@@ -152,10 +152,13 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     }, [closeModal, handleLogout]);
 
     const presentUnderageModal = useCallback(() => {
-        const onBypass = (_code: string) => {
+        const onBypass = async (_code: string) => {
             closeModal();
             setAgeGateError(null);
-            setStep(OnboardingStepsEnum.selectRole);
+
+            if (await prepareNewUserKey()) {
+                setStep(OnboardingStepsEnum.selectRole);
+            }
         };
 
         const familyInviteUrl = `${
@@ -177,7 +180,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    }, [closeModal, newModal, routeChildToParentFlow]);
+    }, [closeModal, newModal, prepareNewUserKey, routeChildToParentFlow]);
 
     const presentUSConsentNoticeModal = useCallback(() => {
         newModal(

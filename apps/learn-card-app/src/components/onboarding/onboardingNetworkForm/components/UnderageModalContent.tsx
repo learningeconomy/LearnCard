@@ -37,7 +37,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
 
         setTimeout(() => {
             if (schoolCodes.includes(code.trim().toUpperCase())) {
-                onBypass(code.trim().toUpperCase());
+                void onBypass(code.trim().toUpperCase());
             } else {
                 setError('Invalid school code. Please try again.');
             }
