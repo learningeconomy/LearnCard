@@ -859,7 +859,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 )}
                             </div>
 
-                            <div className="flex flex-col items-center justify-center w-full mt-2">
+                            {/* <div className="flex flex-col items-center justify-center w-full mt-2">
                                 <DatePickerInput
                                     value={dob || ''}
                                     onChange={handleDobChange}
@@ -922,7 +922,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     We ask for your age and country to make sure we comply with
                                     privacy laws and keep you safe.
                                 </p>
-                            </div>
+                            </div> */}
                         </IonRow>
 
                         {networkToggle && !lcNetworkProfile && (
