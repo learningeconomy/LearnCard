@@ -31,13 +31,21 @@ enum AddSkillTabEnum {
 type AddSkillModalProps = {
     frameworkId: string;
     skill: SkillFrameworkNode;
-    handleAdd?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleAdd?: (
+        skill: SkillFrameworkNode,
+        proficiencyLevel: SkillLevel,
+        frameworkId?: string
+    ) => void;
     isEdit?: boolean;
     handleEditProficiency?: (proficiencyLevel: SkillLevel) => void;
     handleDelete?: () => void;
     initialProficiencyLevel?: SkillLevel;
     selectedSkills?: SelectedSkill[];
-    handleAddRelatedSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleAddRelatedSkill?: (
+        skill: SkillFrameworkNode,
+        proficiencyLevel: SkillLevel,
+        frameworkId?: string
+    ) => void;
     handleEditRelatedSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
     handleRemoveRelatedSkill?: (skillId: string) => void;
     previousSkills?: PreviousSkillInfo[];
@@ -356,7 +364,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                     {!isEdit && (
                         <button
                             onClick={() => {
-                                handleAdd?.(skill, proficiencyLevel);
+                                handleAdd?.(skill, proficiencyLevel, frameworkId);
                                 closeModal();
                             }}
                             className="px-[15px] py-[7px] bg-indigo-600 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"

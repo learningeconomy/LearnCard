@@ -293,8 +293,8 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
 
                 <div className="right-side flex justify-between w-full">
                     <div className="flex flex-col items-start justify-center text-left flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <p className="text-grayscale-900 font-medium line-clamp-1">
+                        <div className="flex items-center gap-1.5 min-w-0 w-full">
+                            <p className="text-grayscale-900 font-medium line-clamp-1 min-w-0">
                                 {listing.display_name}
                             </p>
                             {listing.age_rating && (
