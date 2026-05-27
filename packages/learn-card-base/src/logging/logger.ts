@@ -57,6 +57,48 @@ const scrub = (meta: Record<string, unknown>, allowPii = false): Record<string, 
     return scrubValue(meta, 0, new Set()) as Record<string, unknown>;
 };
 
+// Parse flexible arguments (like console.log) to extract message, error, metadata, and primitives.
+// Intelligently handles any combination: log.error(error), log.error('msg'), log.error('msg', error, {meta})
+const parseAllArgs = (
+    arg1?: unknown,
+    arg2?: unknown,
+    arg3?: unknown
+): { message: string; metaOrError?: unknown; meta?: Meta } => {
+    const args = [arg1, arg2, arg3].filter(a => a !== undefined);
+    let message = '';
+    let metaOrError: unknown;
+    let meta: Meta | undefined;
+
+    for (const arg of args) {
+        // Error: extract as error
+        if (arg instanceof Error) {
+            if (!message) message = arg.message;
+            if (metaOrError === undefined) metaOrError = arg;
+            else if (meta === undefined) meta = arg as unknown as Meta;
+        }
+        // String: use as message if we don't have one
+        else if (typeof arg === 'string') {
+            if (!message) message = arg;
+            // If we already have a message, treat this string as meta
+            else if (metaOrError === undefined) metaOrError = arg;
+            else if (meta === undefined) meta = arg as unknown as Meta;
+        }
+        // Object (not array, not error): treat as metadata
+        else if (isMeta(arg)) {
+            if (metaOrError === undefined) metaOrError = arg;
+            else if (meta === undefined) meta = arg;
+            else if (!message) message = String(arg);
+        }
+        // Primitive or array: can be message or meta
+        else {
+            if (metaOrError === undefined) metaOrError = arg;
+            else if (meta === undefined) meta = arg as unknown as Meta;
+        }
+    }
+
+    return { message, metaOrError, meta };
+};
+
 // ---------------------------------------------------------------------------
 // Injectable Sentry transport — avoids adding @sentry/react as a dep here.
 // The host app (learn-card-app, scouts) calls configureSentryTransport() once
@@ -180,10 +222,10 @@ const buildTags = (scope?: string): Record<string, string> => {
 // ---------------------------------------------------------------------------
 
 export interface Logger {
-    debug(msg: string, metaOrError?: unknown, meta?: Meta): void;
-    info(msg: string, metaOrError?: unknown, meta?: Meta): void;
-    warn(msg: string, metaOrError?: unknown, meta?: Meta): void;
-    error(msg: string, metaOrError?: unknown, meta?: Meta): void;
+    debug(arg1?: unknown, arg2?: unknown, arg3?: unknown): void;
+    info(arg1?: unknown, arg2?: unknown, arg3?: unknown): void;
+    warn(arg1?: unknown, arg2?: unknown, arg3?: unknown): void;
+    error(arg1?: unknown, arg2?: unknown, arg3?: unknown): void;
     breadcrumb(opts: {
         category: string;
         message: string;
@@ -203,21 +245,26 @@ const createLogger = (scope?: string): Logger => {
     const tags = () => buildTags(scope);
 
     return {
-        debug(msg, metaOrError?, meta?) {
+        debug(arg1, arg2, arg3) {
             // Dropped in production (transport active + non-dev environment) to avoid noise.
             if (sentryActive() && process.env.NODE_ENV === 'production') return;
+            const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
-            if (err) console.debug(prefix, msg, err, extra);
-            else if (primitive !== undefined) console.debug(prefix, msg, primitive);
-            else console.debug(prefix, msg, extra);
+            if (err && message) console.debug(prefix, message, err, extra);
+            else if (err) console.debug(prefix, err, extra);
+            else if (primitive !== undefined && message) console.debug(prefix, message, primitive);
+            else if (primitive !== undefined) console.debug(prefix, primitive);
+            else if (message) console.debug(prefix, message, extra);
+            else console.debug(prefix, extra);
         },
 
-        info(msg, metaOrError?, meta?) {
+        info(arg1, arg2, arg3) {
+            const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
             if (sentryActive()) {
                 _transport!.addBreadcrumb({
                     category: scope,
-                    message: msg,
+                    message: message || 'info',
                     data: {
                         ...(primitive !== undefined ? { value: primitive } : extra),
                         ...(err ? { error: String(err) } : {}),
@@ -225,21 +272,28 @@ const createLogger = (scope?: string): Logger => {
                     level: 'info',
                 });
             } else {
-                if (err) console.info(prefix, msg, err, extra);
-                else if (primitive !== undefined) console.info(prefix, msg, primitive);
-                else console.info(prefix, msg, extra);
+                if (err && message) console.info(prefix, message, err, extra);
+                else if (err) console.info(prefix, err, extra);
+                else if (primitive !== undefined && message) console.info(prefix, message, primitive);
+                else if (primitive !== undefined) console.info(prefix, primitive);
+                else if (message) console.info(prefix, message, extra);
+                else console.info(prefix, extra);
             }
         },
 
-        warn(msg, metaOrError?, meta?) {
+        warn(arg1, arg2, arg3) {
+            const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
             // Always log to console so devs see warnings in both envs
-            if (err) console.warn(prefix, msg, err, extra);
-            else if (primitive !== undefined) console.warn(prefix, msg, primitive);
-            else console.warn(prefix, msg, extra);
+            if (err && message) console.warn(prefix, message, err, extra);
+            else if (err) console.warn(prefix, err, extra);
+            else if (primitive !== undefined && message) console.warn(prefix, message, primitive);
+            else if (primitive !== undefined) console.warn(prefix, primitive);
+            else if (message) console.warn(prefix, message, extra);
+            else console.warn(prefix, extra);
             if (sentryActive()) {
                 _transport!.captureMessage(
-                    msg,
+                    message || 'warning',
                     'warning',
                     tags(),
                     primitive !== undefined ? { value: primitive } : extra
@@ -247,16 +301,20 @@ const createLogger = (scope?: string): Logger => {
             }
         },
 
-        error(msg, metaOrError?, meta?) {
+        error(arg1, arg2, arg3) {
+            const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
-            if (err) console.error(prefix, msg, err, extra);
-            else if (primitive !== undefined) console.error(prefix, msg, primitive);
-            else console.error(prefix, msg, extra);
+            if (err && message) console.error(prefix, message, err, extra);
+            else if (err) console.error(prefix, err, extra);
+            else if (primitive !== undefined && message) console.error(prefix, message, primitive);
+            else if (primitive !== undefined) console.error(prefix, primitive);
+            else if (message) console.error(prefix, message, extra);
+            else console.error(prefix, extra);
             if (sentryActive()) {
                 if (err) _transport!.captureException(err, tags(), extra);
                 else
                     _transport!.captureMessage(
-                        msg,
+                        message || 'error',
                         'error',
                         tags(),
                         primitive !== undefined ? { value: primitive } : extra

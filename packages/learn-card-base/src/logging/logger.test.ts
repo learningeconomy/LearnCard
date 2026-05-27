@@ -381,3 +381,164 @@ describe('dev vs prod transport', () => {
         expect(call!.args[1]).toBe('error');
     });
 });
+
+// ---------------------------------------------------------------------------
+// Error as first argument
+// ---------------------------------------------------------------------------
+
+describe('flexible arguments (like console.log)', () => {
+    it('log.error(error) uses error.message as the message', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const err = new Error('something broke');
+
+        logger.error(err);
+
+        expect(spy).toHaveBeenCalledWith('', 'something broke', err, {});
+    });
+
+    it('log.error(error) calls captureException with the error', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        const err = new Error('exploded');
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error(err);
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        expect(call).toBeDefined();
+        expect(call!.args[0]).toBe(err);
+    });
+
+    it('log.error(error, meta) forwards meta as extra to Sentry', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        const err = new Error('boom');
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error(err, { userId: '123' });
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        expect(call).toBeDefined();
+        expect(call!.args[2]).toMatchObject({ userId: '123' });
+    });
+
+    it('log.error(message) works with just a message string', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('just a message');
+
+        expect(spy).toHaveBeenCalledWith('', 'just a message', {});
+    });
+
+    it('log.error(primitive) logs a primitive value without a message', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error(42);
+
+        expect(spy).toHaveBeenCalledWith('', 42);
+    });
+
+    it('log.error(array) logs an array without a message', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const arr = [1, 2, 3];
+        logger.error(arr);
+
+        expect(spy).toHaveBeenCalledWith('', arr);
+    });
+
+    it('log.error(object) logs an object as metadata without explicit message', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const obj = { userId: '123' };
+        logger.error(obj);
+
+        expect(spy).toHaveBeenCalledWith('', obj);
+    });
+
+    it('log.error(message, primitive) outputs both message and primitive', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('count:', 42);
+
+        expect(spy).toHaveBeenCalledWith('', 'count:', 42);
+    });
+
+    it('log.error(message, array) outputs message and array', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const arr = [1, 2, 3];
+        logger.error('items:', arr);
+
+        expect(spy).toHaveBeenCalledWith('', 'items:', arr);
+    });
+
+    it('log.error(error, primitive) outputs error and primitive', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const err = new Error('failed');
+        logger.error(err, 42);
+
+        expect(spy).toHaveBeenCalledWith('', 'failed', err, {});
+    });
+
+    it('log.info(error) uses error.message and creates breadcrumb', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        const err = new Error('warning: low disk space');
+        logger.info(err);
+
+        const call = transport.calls.find(c => c.method === 'addBreadcrumb');
+        expect(call).toBeDefined();
+        expect((call!.args[0] as { message: string }).message).toBe('warning: low disk space');
+        expect((call!.args[0] as { data?: { error?: string } }).data?.error).toBe('Error: warning: low disk space');
+    });
+
+    it('log.warn(error) uses error.message for captureMessage', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        const err = new Error('deprecated API used');
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        logger.warn(err);
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect(call).toBeDefined();
+        expect(call!.args[0]).toBe('deprecated API used');
+        expect(call!.args[1]).toBe('warning');
+    });
+
+    it('log.debug(error) uses error.message', () => {
+        const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+        const err = new Error('internal state: x=5');
+
+        logger.debug(err);
+
+        expect(spy).toHaveBeenCalledWith('', 'internal state: x=5', err, {});
+    });
+
+    it('getLogger(scope).error(error) includes scope prefix', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const log = getLogger('wallet');
+        const err = new Error('load failed');
+
+        log.error(err);
+
+        expect(spy).toHaveBeenCalledWith('[wallet]', 'load failed', err, {});
+    });
+
+    it('getLogger(scope).error(primitive) includes scope prefix even without message', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const log = getLogger('wallet');
+        log.error(99);
+
+        expect(spy).toHaveBeenCalledWith('[wallet]', 99);
+    });
+
+    it('getLogger(scope).error(error) includes scope in Sentry tags', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        const log = getLogger('auth');
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const err = new Error('auth failure');
+        log.error(err);
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        expect(call!.args[1]).toMatchObject({ scope: 'auth' });
+    });
+});

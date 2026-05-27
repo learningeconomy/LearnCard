@@ -12,7 +12,10 @@ const log = getLogger('my-feature');
 log.debug('wallet ready');
 log.info('profile loaded', { profileId: '123' });
 log.warn('cache miss', { key });
-log.error('sign-in failed', err);
+log.error(err);  // just the error — uses error.message
+log.error('sign-in failed', err);  // message + error
+log.info(isEnabled);  // just a value
+log.info('feature', isEnabled, { userId: '123' });  // any combination
 ```
 
 ---
@@ -52,42 +55,55 @@ logger.info('app boot');
 
 ---
 
-## Second argument
+## Flexible arguments (like `console.log`)
 
-The second argument is flexible — pass whatever you have without wrapping:
+All methods accept up to **3 flexible arguments**. The logger intelligently parses **any combination** of errors, messages, objects, primitives, and arrays:
 
-| What you pass                             | Console output  | Sentry                        |
-| ----------------------------------------- | --------------- | ----------------------------- |
-| `Error` object                            | logged directly | `captureException(err)`       |
-| Plain object `{ key: value }`             | logged directly | attached as `extra`           |
-| Primitive — `boolean`, `number`, `string` | logged directly | wrapped as `{ value: x }`     |
-| Array                                     | logged directly | wrapped as `{ value: [...] }` |
-| Nothing                                   | empty `{}`      | no extra                      |
+| Argument type | Handling |
+| --- | --- |
+| **Error** object | Extracted and sent to `captureException` (if Sentry active); message derived from `error.message` |
+| **String** | Used as the log message |
+| **Plain object** `{ key: value }` | Treated as metadata, attached to Sentry as `extra` |
+| **Primitive** — `boolean`, `number`, `string`, `bigint` | Logged as-is to console; wrapped as `{ value: x }` for Sentry |
+| **Array** | Logged as-is to console; wrapped as `{ value: [...] }` for Sentry |
 
 ### Examples
 
 ```ts
-// Error object
-log.error('wallet init failed', err);
+// Just a message
+log.debug('wallet ready');
 
-// Plain object (structured context)
-log.warn('slow request', { ms: 450, endpoint: '/trpc/getProfile' });
-
-// Error + extra context together
-log.error('sign-in failed', err, { userId, provider: 'firebase' });
-
-// Primitives — no object wrapper needed
-const isEnabled = false;
-log.info('feature flag', isEnabled); // ✓ logs false directly
-log.info('retry count', 3); // ✓ logs 3 directly
-log.info('active flags', ['a', 'b']); // ✓ logs array directly
-
-// Raw catch block value — logger coerces it internally
+// Just an error (uses error.message as the log message)
 try {
     await riskyOperation();
 } catch (e) {
-    log.error('operation failed', e); // ✓ pass e directly, no wrapping needed
+    log.error(e);  // ✓ uses e.message; sends captureException
 }
+
+// Just a primitive — no wrapping needed
+const isEnabled = false;
+log.info(isEnabled);  // ✓ outputs false directly
+log.info(42);  // ✓ outputs 42 directly
+log.info(['a', 'b']);  // ✓ outputs array directly
+
+// Just an object
+log.debug({ userId: '123', code: 404 });
+
+// Message + error
+log.error('wallet init failed', err);  // ✓ message + captured exception
+
+// Message + metadata (object)
+log.warn('slow request', { ms: 450, endpoint: '/trpc/getProfile' });
+
+// Error + metadata
+log.error(err, { userId: '123', provider: 'firebase' });
+
+// Message + primitive
+log.info('retryCount', 3);
+log.info('flags', [true, false]);
+
+// All three: message, error, metadata
+log.error('sign-in failed', err, { userId, provider: 'firebase' });
 ```
 
 ---
@@ -170,13 +186,13 @@ configureSentryTransport({
 
 ## Do / Don't
 
-| Do                                         | Don't                                                                                     |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `log.error('wallet.init.failed', err)`     | `console.error('wallet init failed', err)` in app src                                     |
-| `log.info('isEnabled', isEnabled)`         | `log.info('isEnabled', { isEnabled })` — primitives work directly                         |
-| `log.error('failed', e)` in catch blocks   | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
-| `log.warn('...', { key })`                 | `Sentry.captureException(err)` directly                                                   |
-| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag                                                       |
+| Do | Don't |
+| --- | --- |
+| `log.error(err)` or `log.error('msg', err)` | `console.error('wallet init failed', err)` in app src |
+| `log.info(isEnabled)` | `log.info('isEnabled', { isEnabled })` — primitives work directly |
+| In catch: `log.error(e)` or `log.error('context', e)` | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
+| `log.warn('...', { key })` | `Sentry.captureException(err)` directly |
+| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag |
 
 ---
 
