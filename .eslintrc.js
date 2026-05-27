@@ -40,7 +40,7 @@ module.exports = {
         '@typescript-eslint/no-shadow': 'warn',
         'max-len': 'off',
         'comma-dangle': 'off',
-        'no-console': 'off',
+        'no-console': 'off', // overridden per-app below
         'function-paren-newline': 'off',
         'implicit-arrow-linebreak': 'off',
         'arrow-body-style': 'off',
@@ -63,4 +63,13 @@ module.exports = {
         'import/no-extraneous-dependencies': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
     },
+    overrides: [
+        {
+            // Warn on direct console.* usage in app source — use logger from learn-card-base instead
+            files: ['apps/learn-card-app/src/**/*.{ts,tsx}', 'apps/scouts/src/**/*.{ts,tsx}'],
+            rules: {
+                'no-console': 'warn',
+            },
+        },
+    ],
 };

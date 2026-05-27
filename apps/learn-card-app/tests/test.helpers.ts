@@ -36,14 +36,33 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
 };
 
 /**
+ * Clicks the side-menu's "Add to LearnCard" and drills through the desktop
+ * LaunchPadActionModal intermediate (#1243) if it appears, leaving the
+ * AddToLearnCardMenu open with `Boost Someone` ready to click.
+ */
+export const openAddToLearnCardMenu = async (page: Page) => {
+    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+
+    // Desktop opens LaunchPadActionModal first; click its inner tile to reach
+    // AddToLearnCardMenu. Mobile skips this step.
+    const launcherModal = page.getByRole('complementary').filter({
+        has: page.getByRole('heading', { name: 'What would you like to do?' }),
+    });
+    if (await locatorExists(launcherModal, 2_000)) {
+        await launcherModal
+            .getByRole('button', { name: 'Add to LearnCard' })
+            .click({ timeout: 30_000 });
+    }
+};
+
+/**
  * Issues a credential to the current user via the UI.
  *
  * Flow: Add to LearnCard → Boost Someone → pick template → fill form →
  *       Next → Publish & Issue → Plus → Boost Myself → Save
  */
 export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
-    // Open the "Add to LearnCard" menu
-    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+    await openAddToLearnCardMenu(page);
 
     // Select "Boost Someone"
     await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
