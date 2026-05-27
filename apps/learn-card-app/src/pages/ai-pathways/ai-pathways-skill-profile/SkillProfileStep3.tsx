@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TextInput, RadioGroup, useVerifiableData } from 'learn-card-base';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
 export type SkillProfileSalaryData = {
     salary: string;
@@ -22,6 +24,13 @@ const sanitizeSalaryInput = (value: string | null | undefined): string =>
     (value ?? '').replace(/-/g, '');
 
 const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handleBack }) => {
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(3, () => {
+        const fields: string[] = [];
+        if (salary) fields.push('salary');
+        if (salaryType) fields.push('salaryType');
+        return fields;
+    });
     const [salary, setSalary] = useState('');
     const [salaryType, setSalaryType] = useState<string>('per_year');
 
@@ -46,6 +55,8 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
             salary,
             salaryType: salaryType as 'per_year' | 'per_hour',
         });
+        trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 
