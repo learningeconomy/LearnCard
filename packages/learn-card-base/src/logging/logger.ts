@@ -157,7 +157,8 @@ const parseMeta = (
         raw = meta ?? {};
     }
 
-    const { allowPii, ...rest } = raw as Meta;
+    const { allowPii: allowPiiFromRaw, ...rest } = raw as Meta;
+    const allowPii = allowPiiFromRaw ?? (meta as Meta | undefined)?.allowPii;
     return [err, scrub(rest, allowPii), primitive];
 };
 
