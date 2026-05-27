@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
-import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
+import { calculateAge, isFutureDate } from 'learn-card-base/helpers/dateHelpers';
 import { getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 
@@ -232,6 +232,11 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
 
         if (!country) {
             setAgeGateError('Country is required.');
+            return;
+        }
+
+        if (isFutureDate(dob)) {
+            setAgeGateError('Date of birth cannot be in the future.');
             return;
         }
 
