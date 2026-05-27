@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('resolve-tenant-config');
+
 /**
  * resolve-tenant-config.ts
  *
@@ -74,13 +77,20 @@ const green = (s: string): string => `\x1b[32m${s}\x1b[0m`;
 const cyan = (s: string): string => `\x1b[36m${s}\x1b[0m`;
 const yellow = (s: string): string => `\x1b[33m${s}\x1b[0m`;
 
-console.log('');
-console.log(bold(`🔍 Resolving config: ${tenant}${stage ? ` (${stage})` : ' (production)'}`));
-console.log('');
+log.info('');
+log.info(bold(`🔍 Resolving config: ${tenant}${stage ? ` (${stage})` : ' (production)'}`));
+log.info('');
 
 // Layer 1: defaults
-console.log(`  ${green('1.')} ${dim('tenantDefaults.ts')} ${dim('— packages/learn-card-base/src/config/tenantDefaults.ts')}`);
-let merged: Record<string, unknown> = DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>;
+log.info(
+    `  ${green('1.')} ${dim('tenantDefaults.ts')} ${dim(
+        '— packages/learn-card-base/src/config/tenantDefaults.ts'
+    )}`
+);
+let merged: Record<string, unknown> = DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<
+    string,
+    unknown
+>;
 
 // Layer 2: config.json
 const configPath = resolve(APP_ROOT, 'environments', tenant, 'config.json');
@@ -89,9 +99,13 @@ if (existsSync(configPath)) {
     const overrides = JSON.parse(readFileSync(configPath, 'utf-8'));
 
     merged = deepMerge(merged, overrides);
-    console.log(`  ${green('2.')} ${cyan(`environments/${tenant}/config.json`)} ${dim('— tenant overrides')}`);
+    log.info(
+        `  ${green('2.')} ${cyan(`environments/${tenant}/config.json`)} ${dim(
+            '— tenant overrides'
+        )}`
+    );
 } else {
-    console.log(`  ${yellow('2.')} ${dim(`environments/${tenant}/config.json — not found, skipped`)}`);
+    log.info(`  ${yellow('2.')} ${dim(`environments/${tenant}/config.json — not found, skipped`)}`);
 }
 
 // Layer 3: config.<stage>.json
@@ -102,12 +116,20 @@ if (stage) {
         const stageOverrides = JSON.parse(readFileSync(stagePath, 'utf-8'));
 
         merged = deepMerge(merged, stageOverrides);
-        console.log(`  ${green('3.')} ${cyan(`environments/${tenant}/config.${stage}.json`)} ${dim('— stage overlay')}`);
+        log.info(
+            `  ${green('3.')} ${cyan(`environments/${tenant}/config.${stage}.json`)} ${dim(
+                '— stage overlay'
+            )}`
+        );
     } else {
-        console.log(`  ${yellow('3.')} ${dim(`environments/${tenant}/config.${stage}.json — not found, skipped`)}`);
+        log.info(
+            `  ${yellow('3.')} ${dim(
+                `environments/${tenant}/config.${stage}.json — not found, skipped`
+            )}`
+        );
     }
 } else {
-    console.log(`  ${dim('3.')} ${dim('No stage overlay (production)')}`);
+    log.info(`  ${dim('3.')} ${dim('No stage overlay (production)')}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -116,15 +138,15 @@ if (stage) {
 
 const validation = tenantConfigSchema.safeParse(merged);
 
-console.log('');
+log.info('');
 
 if (validation.success) {
-    console.log(green('✅ Schema validation passed'));
+    log.info(green('✅ Schema validation passed'));
 } else {
-    console.log(yellow('⚠️  Schema validation issues:'));
+    log.info(yellow('⚠️  Schema validation issues:'));
 
     for (const issue of validation.error.issues) {
-        console.log(`   ${issue.path.join('.')}: ${issue.message}`);
+        log.info(`   ${issue.path.join('.')}: ${issue.message}`);
     }
 }
 
@@ -137,8 +159,8 @@ const output = { ...merged };
 delete output['_defaults'];
 delete output['_comment'];
 
-console.log('');
-console.log(bold('Final merged config:'));
-console.log('');
-console.log(JSON.stringify(output, null, 2));
-console.log('');
+log.info('');
+log.info(bold('Final merged config:'));
+log.info('');
+log.info(JSON.stringify(output, null, 2));
+log.info('');

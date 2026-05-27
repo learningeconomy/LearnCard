@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-tenant');
+
 /**
  * create-tenant.ts — Interactive tenant scaffolding tool.
  *
@@ -54,7 +57,10 @@ const askYesNo = async (question: string, defaultYes = true): Promise<boolean> =
 };
 
 const slugify = (s: string): string =>
-    s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    s
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
 
 const bold = (s: string): string => `\x1b[1m${s}\x1b[0m`;
 const green = (s: string): string => `\x1b[32m${s}\x1b[0m`;
@@ -67,9 +73,9 @@ const yellow = (s: string): string => `\x1b[33m${s}\x1b[0m`;
 // ---------------------------------------------------------------------------
 
 const main = async () => {
-    console.log('');
-    console.log(bold('🏗  LearnCard Tenant Creator'));
-    console.log(dim('   Create a new tenant environment in a few easy steps.\n'));
+    log.info('');
+    log.info(bold('🏗  LearnCard Tenant Creator'));
+    log.info(dim('   Create a new tenant environment in a few easy steps.\n'));
 
     // ── Step 1: Tenant ID ───────────────────────────────────────────────
     const cliId = process.argv.find(a => a.startsWith('--id='))?.split('=')[1];
@@ -77,9 +83,9 @@ const main = async () => {
     let tenantId = cliId || '';
 
     if (!tenantId) {
-        console.log(cyan('Step 1/6') + ' — Choose a tenant ID');
-        console.log(dim('   This becomes the directory name and internal identifier.'));
-        console.log(dim('   Use lowercase letters, numbers, and hyphens only.\n'));
+        log.info(cyan('Step 1/6') + ' — Choose a tenant ID');
+        log.info(dim('   This becomes the directory name and internal identifier.'));
+        log.info(dim('   Use lowercase letters, numbers, and hyphens only.\n'));
 
         tenantId = await ask('Tenant ID (e.g. "scoutpass", "vetpass")');
     }
@@ -87,71 +93,76 @@ const main = async () => {
     tenantId = slugify(tenantId);
 
     if (!tenantId) {
-        console.error('\n❌ Tenant ID is required.');
+        log.error('\n❌ Tenant ID is required.');
         process.exit(1);
     }
 
     const tenantDir = join(ENVIRONMENTS_DIR, tenantId);
 
     if (existsSync(tenantDir)) {
-        console.error(`\n❌ Tenant "${tenantId}" already exists at ${tenantDir}`);
+        log.error(`\n❌ Tenant "${tenantId}" already exists at ${tenantDir}`);
         process.exit(1);
     }
 
-    console.log(green(`   ✓ Tenant ID: ${bold(tenantId)}\n`));
+    log.info(green(`   ✓ Tenant ID: ${bold(tenantId)}\n`));
 
     // ── Step 2: Display name ────────────────────────────────────────────
-    console.log(cyan('Step 2/6') + ' — App branding');
-    console.log(dim('   How should this app appear to users?\n'));
+    log.info(cyan('Step 2/6') + ' — App branding');
+    log.info(dim('   How should this app appear to users?\n'));
 
-    const displayName = await ask('Display name (e.g. "ScoutPass", "VetPass")', tenantId.charAt(0).toUpperCase() + tenantId.slice(1));
+    const displayName = await ask(
+        'Display name (e.g. "ScoutPass", "VetPass")',
+        tenantId.charAt(0).toUpperCase() + tenantId.slice(1)
+    );
     const shortName = await ask('Short name (for mobile home screen)', displayName.slice(0, 12));
 
-    console.log(green(`   ✓ "${bold(displayName)}" (${shortName})\n`));
+    log.info(green(`   ✓ "${bold(displayName)}" (${shortName})\n`));
 
     // ── Step 3: Domain ──────────────────────────────────────────────────
-    console.log(cyan('Step 3/6') + ' — Domain configuration');
-    console.log(dim('   The production hostname and local dev domain.\n'));
+    log.info(cyan('Step 3/6') + ' — Domain configuration');
+    log.info(dim('   The production hostname and local dev domain.\n'));
 
     const domain = await ask('Production domain (e.g. "scoutpass.org")', `${tenantId}.app`);
     const devDomain = await ask('Local dev domain', 'localhost:3000');
 
-    console.log(green(`   ✓ ${domain} ${dim(`(dev: ${devDomain})`)}\n`));
+    log.info(green(`   ✓ ${domain} ${dim(`(dev: ${devDomain})`)}\n`));
 
     // ── Step 4: Theme ───────────────────────────────────────────────────
-    console.log(cyan('Step 4/6') + ' — Theme');
-    console.log(dim('   Which visual theme should this tenant use?\n'));
+    log.info(cyan('Step 4/6') + ' — Theme');
+    log.info(dim('   Which visual theme should this tenant use?\n'));
 
     const existingThemes = existsSync(THEME_SCHEMAS_DIR)
-        ? require('fs').readdirSync(THEME_SCHEMAS_DIR).filter((d: string) =>
-            require('fs').statSync(join(THEME_SCHEMAS_DIR, d)).isDirectory()
-        ) as string[]
+        ? (require('fs')
+              .readdirSync(THEME_SCHEMAS_DIR)
+              .filter((d: string) =>
+                  require('fs').statSync(join(THEME_SCHEMAS_DIR, d)).isDirectory()
+              ) as string[])
         : [];
 
     if (existingThemes.length > 0) {
-        console.log(dim(`   Available themes: ${existingThemes.join(', ')}`));
+        log.info(dim(`   Available themes: ${existingThemes.join(', ')}`));
     }
 
     const defaultTheme = await ask('Default theme', 'formal');
     const themeSwitching = await askYesNo('Enable theme switching?', false);
     const createCustomTheme = await askYesNo('Create a custom theme for this tenant?', false);
 
-    console.log(green(`   ✓ Theme: ${bold(defaultTheme)}${themeSwitching ? '' : ' (locked)'}\n`));
+    log.info(green(`   ✓ Theme: ${bold(defaultTheme)}${themeSwitching ? '' : ' (locked)'}\n`));
 
     // ── Step 5: Features ────────────────────────────────────────────────
-    console.log(cyan('Step 5/6') + ' — Feature flags');
-    console.log(dim('   Toggle major features on/off for this tenant.\n'));
+    log.info(cyan('Step 5/6') + ' — Feature flags');
+    log.info(dim('   Toggle major features on/off for this tenant.\n'));
 
     const aiFeatures = await askYesNo('Enable AI features?', true);
     const appStore = await askYesNo('Enable App Store?', true);
     const analytics = await askYesNo('Enable analytics?', false);
     const introSlides = await askYesNo('Show intro slides on first launch?', true);
 
-    console.log(green('   ✓ Features configured\n'));
+    log.info(green('   ✓ Features configured\n'));
 
     // ── Step 6: Native app (optional) ───────────────────────────────────
-    console.log(cyan('Step 6/6') + ' — Native app settings ' + dim('(optional)'));
-    console.log(dim('   Skip this if you only need a web deployment.\n'));
+    log.info(cyan('Step 6/6') + ' — Native app settings ' + dim('(optional)'));
+    log.info(dim('   Skip this if you only need a web deployment.\n'));
 
     const configureNative = await askYesNo('Configure native app (iOS/Android)?', false);
 
@@ -163,7 +174,7 @@ const main = async () => {
         nativeDisplayName = await ask('Native display name', displayName);
     }
 
-    console.log('');
+    log.info('');
 
     // ── Build config.json ───────────────────────────────────────────────
 
@@ -232,8 +243,8 @@ const main = async () => {
 
     // ── Create directory structure ──────────────────────────────────────
 
-    console.log(bold('Creating tenant files...'));
-    console.log('');
+    log.info(bold('Creating tenant files...'));
+    log.info('');
 
     const dirs = [
         tenantDir,
@@ -254,7 +265,7 @@ const main = async () => {
 
     writeFileSync(configPath, JSON.stringify(config, null, 4) + '\n');
 
-    console.log(`   ${green('✓')} ${dim('environments/' + tenantId + '/')}config.json`);
+    log.info(`   ${green('✓')} ${dim('environments/' + tenantId + '/')}config.json`);
 
     // Write placeholder Capacitor config
     const capConfig = {
@@ -266,10 +277,10 @@ const main = async () => {
 
     writeFileSync(
         join(tenantDir, 'assets', 'config', 'capacitor.config.json'),
-        JSON.stringify(capConfig, null, 4) + '\n',
+        JSON.stringify(capConfig, null, 4) + '\n'
     );
 
-    console.log(`   ${green('✓')} ${dim('assets/config/')}capacitor.config.json`);
+    log.info(`   ${green('✓')} ${dim('assets/config/')}capacitor.config.json`);
 
     // Write placeholder manifest
     const manifest = {
@@ -284,15 +295,15 @@ const main = async () => {
 
     writeFileSync(
         join(tenantDir, 'assets', 'config', 'manifest.json'),
-        JSON.stringify(manifest, null, 4) + '\n',
+        JSON.stringify(manifest, null, 4) + '\n'
     );
 
     writeFileSync(
         join(tenantDir, 'assets', 'config', 'manifest.webmanifest'),
-        JSON.stringify(manifest, null, 4) + '\n',
+        JSON.stringify(manifest, null, 4) + '\n'
     );
 
-    console.log(`   ${green('✓')} ${dim('assets/config/')}manifest.json + manifest.webmanifest`);
+    log.info(`   ${green('✓')} ${dim('assets/config/')}manifest.json + manifest.webmanifest`);
 
     // ── Update tenant registry ──────────────────────────────────────────
 
@@ -307,10 +318,16 @@ const main = async () => {
 
             writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 4) + '\n');
 
-            console.log(`   ${green('✓')} ${dim('environments/')}tenant-registry.json ${dim('(added ' + domain + ')')}`);
+            log.info(
+                `   ${green('✓')} ${dim('environments/')}tenant-registry.json ${dim(
+                    '(added ' + domain + ')'
+                )}`
+            );
         }
     } catch {
-        console.log(`   ${yellow('⚠')} Could not update tenant-registry.json — add ${domain} manually`);
+        log.info(
+            `   ${yellow('⚠')} Could not update tenant-registry.json — add ${domain} manually`
+        );
     }
 
     // ── Create custom theme (optional) ──────────────────────────────────
@@ -370,12 +387,13 @@ const main = async () => {
             },
         };
 
-        writeFileSync(
-            join(themeDir, 'theme.json'),
-            JSON.stringify(themeJson, null, 4) + '\n',
-        );
+        writeFileSync(join(themeDir, 'theme.json'), JSON.stringify(themeJson, null, 4) + '\n');
 
-        console.log(`   ${green('✓')} ${dim('src/theme/schemas/' + tenantId + '/')}theme.json ${dim('(extends formal)')}`);
+        log.info(
+            `   ${green('✓')} ${dim('src/theme/schemas/' + tenantId + '/')}theme.json ${dim(
+                '(extends formal)'
+            )}`
+        );
 
         // Copy placeholder assets from formal if they exist
         const formalAssetsDir = join(THEME_SCHEMAS_DIR, 'formal', 'assets');
@@ -394,45 +412,47 @@ const main = async () => {
                 }
             }
 
-            console.log(`   ${green('✓')} ${dim('Copied theme assets from formal/')}`);
+            log.info(`   ${green('✓')} ${dim('Copied theme assets from formal/')}`);
         }
     }
 
     // ── Summary ─────────────────────────────────────────────────────────
 
-    console.log('');
-    console.log(green(bold('✅ Tenant created successfully!')));
-    console.log('');
-    console.log(bold('Next steps:'));
-    console.log('');
-    console.log(`  1. ${bold('Fill in TODO values')} in config.json:`);
-    console.log(`     ${dim(configPath)}`);
-    console.log(`     Look for ${yellow('TODO_*')} placeholders (Firebase keys, LaunchDarkly, Userflow)`);
-    console.log('');
-    console.log(`  2. ${bold('Add branding assets')} to the assets/branding/ directory:`);
-    console.log(`     ${dim('• app-icon.png       — App icon (1024×1024)')}`);
-    console.log(`     ${dim('• brand-mark.png     — Brand mark / logo')}`);
-    console.log(`     ${dim('• text-logo.svg      — Text logo (SVG)')}`);
-    console.log(`     ${dim('• desktop-login-bg.png — Desktop login background')}`);
-    console.log('');
-    console.log(`  3. ${bold('Validate')} your config:`);
-    console.log(`     ${cyan('npx tsx scripts/validate-tenant-configs.ts')}`);
-    console.log('');
-    console.log(`  4. ${bold('Start dev server')} with your tenant:`);
-    console.log(`     ${cyan(`TENANT=${tenantId} pnpm docker-start:tenant`)}`);
-    console.log('');
+    log.info('');
+    log.info(green(bold('✅ Tenant created successfully!')));
+    log.info('');
+    log.info(bold('Next steps:'));
+    log.info('');
+    log.info(`  1. ${bold('Fill in TODO values')} in config.json:`);
+    log.info(`     ${dim(configPath)}`);
+    log.info(
+        `     Look for ${yellow('TODO_*')} placeholders (Firebase keys, LaunchDarkly, Userflow)`
+    );
+    log.info('');
+    log.info(`  2. ${bold('Add branding assets')} to the assets/branding/ directory:`);
+    log.info(`     ${dim('• app-icon.png       — App icon (1024×1024)')}`);
+    log.info(`     ${dim('• brand-mark.png     — Brand mark / logo')}`);
+    log.info(`     ${dim('• text-logo.svg      — Text logo (SVG)')}`);
+    log.info(`     ${dim('• desktop-login-bg.png — Desktop login background')}`);
+    log.info('');
+    log.info(`  3. ${bold('Validate')} your config:`);
+    log.info(`     ${cyan('npx tsx scripts/validate-tenant-configs.ts')}`);
+    log.info('');
+    log.info(`  4. ${bold('Start dev server')} with your tenant:`);
+    log.info(`     ${cyan(`TENANT=${tenantId} pnpm docker-start:tenant`)}`);
+    log.info('');
 
     if (createCustomTheme) {
-        console.log(`  5. ${bold('Customize your theme')} colors and styles:`);
-        console.log(`     ${dim(`src/theme/schemas/${tenantId}/theme.json`)}`);
-        console.log(`     ${cyan('npx tsx scripts/validate-theme-schemas.ts')}`);
-        console.log('');
+        log.info(`  5. ${bold('Customize your theme')} colors and styles:`);
+        log.info(`     ${dim(`src/theme/schemas/${tenantId}/theme.json`)}`);
+        log.info(`     ${cyan('npx tsx scripts/validate-theme-schemas.ts')}`);
+        log.info('');
     }
 
     rl.close();
 };
 
 main().catch(err => {
-    console.error('\n❌ Unexpected error:', err);
+    log.error('\n❌ Unexpected error:', err);
     process.exit(1);
 });

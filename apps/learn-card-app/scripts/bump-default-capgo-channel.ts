@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('bump-default-capgo-channel');
+
 /**
  * bump-default-capgo-channel.ts
  *
@@ -57,7 +60,7 @@ const readDefaultChannel = (): ChannelMatch => {
     const match = re.exec(content);
 
     if (!match || match.index === undefined) {
-        console.error(red(`❌ Could not find "defaultChannel" in ${CONFIG_PATH}`));
+        log.error(red(`❌ Could not find "defaultChannel" in ${CONFIG_PATH}`));
         process.exit(1);
     }
 
@@ -78,7 +81,10 @@ const writeDefaultChannel = (current: ChannelMatch, newChannel: string): void =>
 
 const compareSemver = (a: string, b: string): number => {
     const parse = (v: string): number[] =>
-        v.split('-')[0].split('.').map(p => Number.parseInt(p, 10));
+        v
+            .split('-')[0]
+            .split('.')
+            .map(p => Number.parseInt(p, 10));
 
     const aParts = parse(a);
     const bParts = parse(b);
@@ -106,16 +112,18 @@ const main = async (): Promise<void> => {
     const explicit = process.argv.slice(2).find(a => !a.startsWith('-'));
     const current = readDefaultChannel();
 
-    console.log('');
-    console.log(bold('🚦 Capgo channel bump'));
-    console.log('');
-    console.log(`  Current ${cyan('defaultChannel')}: ${cyan(current.channel)}`);
-    console.log(dim(`  File: ${CONFIG_PATH}`));
-    console.log('');
-    console.log(yellow('  ⚠️  Bumping the channel fragments installed binaries off OTA updates.'));
-    console.log(yellow('     Only bump for backwards-INcompatible native changes (new / removed plugins,'));
-    console.log(yellow('     native source edits, plugin major-version upgrades).'));
-    console.log('');
+    log.info('');
+    log.info(bold('🚦 Capgo channel bump'));
+    log.info('');
+    log.info(`  Current ${cyan('defaultChannel')}: ${cyan(current.channel)}`);
+    log.info(dim(`  File: ${CONFIG_PATH}`));
+    log.info('');
+    log.info(yellow('  ⚠️  Bumping the channel fragments installed binaries off OTA updates.'));
+    log.info(
+        yellow('     Only bump for backwards-INcompatible native changes (new / removed plugins,')
+    );
+    log.info(yellow('     native source edits, plugin major-version upgrades).'));
+    log.info('');
 
     let next: string;
 
@@ -138,44 +146,48 @@ const main = async (): Promise<void> => {
     }
 
     if (!next) {
-        console.error(red('❌ No channel value provided.'));
+        log.error(red('❌ No channel value provided.'));
         process.exit(1);
     }
 
     if (!VERSION_RE.test(next)) {
-        console.error(red(`❌ "${next}" is not a valid version (expected e.g. 1.0.7).`));
+        log.error(red(`❌ "${next}" is not a valid version (expected e.g. 1.0.7).`));
         process.exit(1);
     }
 
     if (next === current.channel) {
-        console.log(yellow(`⚠️  "${next}" matches the current channel — nothing to do.`));
+        log.info(yellow(`⚠️  "${next}" matches the current channel — nothing to do.`));
         process.exit(0);
     }
 
     if (compareSemver(next, current.channel) <= 0) {
-        console.error(red(`❌ "${next}" is not greater than the current channel "${current.channel}".`));
-        console.error(red('   Refusing to downgrade. Capgo channels must move forward.'));
+        log.error(
+            red(`❌ "${next}" is not greater than the current channel "${current.channel}".`)
+        );
+        log.error(red('   Refusing to downgrade. Capgo channels must move forward.'));
         process.exit(1);
     }
 
     writeDefaultChannel(current, next);
 
-    console.log('');
-    console.log(green(`✅ Bumped defaultChannel: ${current.channel} → ${next}`));
-    console.log('');
-    console.log(bold('  Next steps:'));
-    console.log(`  ${dim('1.')} Stage:   ${cyan('git add apps/learn-card-app/capacitor.config.ts')}`);
-    console.log(
-        `  ${dim('2.')} Commit:  ${cyan(`git commit -m "chore(capgo): bump default channel to ${next}"`)}`,
+    log.info('');
+    log.info(green(`✅ Bumped defaultChannel: ${current.channel} → ${next}`));
+    log.info('');
+    log.info(bold('  Next steps:'));
+    log.info(`  ${dim('1.')} Stage:   ${cyan('git add apps/learn-card-app/capacitor.config.ts')}`);
+    log.info(
+        `  ${dim('2.')} Commit:  ${cyan(
+            `git commit -m "chore(capgo): bump default channel to ${next}"`
+        )}`
     );
-    console.log(`  ${dim('3.')} Push & open / update your PR.`);
-    console.log('');
-    console.log(dim('  CI will upload OTA bundles to the new channel; the next native binary'));
-    console.log(dim(`  release in the App / Play stores will pick up channel ${next}.`));
-    console.log('');
+    log.info(`  ${dim('3.')} Push & open / update your PR.`);
+    log.info('');
+    log.info(dim('  CI will upload OTA bundles to the new channel; the next native binary'));
+    log.info(dim(`  release in the App / Play stores will pick up channel ${next}.`));
+    log.info('');
 };
 
 main().catch(err => {
-    console.error(red('Unexpected error:'), err);
+    log.error(red('Unexpected error:'), err);
     process.exit(1);
 });

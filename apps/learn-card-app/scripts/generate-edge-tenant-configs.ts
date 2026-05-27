@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('generate-edge-tenant-configs');
+
 /**
  * generate-edge-tenant-configs.ts
  *
@@ -42,7 +45,13 @@ const APP_ROOT = resolve(__dirname, '..');
 
 const ENVIRONMENTS_DIR = join(APP_ROOT, 'environments');
 const REGISTRY_PATH = join(ENVIRONMENTS_DIR, 'tenant-registry.json');
-const OUTPUT_PATH = join(APP_ROOT, 'netlify', 'edge-functions', 'shared', 'resolved-tenant-configs.generated.json');
+const OUTPUT_PATH = join(
+    APP_ROOT,
+    'netlify',
+    'edge-functions',
+    'shared',
+    'resolved-tenant-configs.generated.json'
+);
 
 // ---------------------------------------------------------------------------
 // Discover tenants and their configs
@@ -68,7 +77,7 @@ function discoverTenants(): Record<string, TenantConfigBundle> {
         const baseConfigPath = join(entryPath, 'config.json');
 
         if (!existsSync(baseConfigPath)) {
-            console.warn(`⚠ Skipping ${tenantId}: no config.json found`);
+            log.warn(`⚠ Skipping ${tenantId}: no config.json found`);
             continue;
         }
 
@@ -91,7 +100,9 @@ function discoverTenants(): Record<string, TenantConfigBundle> {
         tenants[tenantId] = { base, stages };
 
         const stageNames = Object.keys(stages);
-        console.log(`  ✓ ${tenantId}: base + ${stageNames.length} stage(s) [${stageNames.join(', ')}]`);
+        log.info(
+            `  ✓ ${tenantId}: base + ${stageNames.length} stage(s) [${stageNames.join(', ')}]`
+        );
     }
 
     return tenants;
@@ -101,10 +112,10 @@ function discoverTenants(): Record<string, TenantConfigBundle> {
 // Main
 // ---------------------------------------------------------------------------
 
-console.log('Generating edge tenant configs...\n');
+log.info('Generating edge tenant configs...\n');
 
 if (!existsSync(REGISTRY_PATH)) {
-    console.error(`✗ tenant-registry.json not found at ${REGISTRY_PATH}`);
+    log.error(`✗ tenant-registry.json not found at ${REGISTRY_PATH}`);
     process.exit(1);
 }
 
@@ -120,5 +131,10 @@ const output = {
 
 writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2) + '\n', 'utf-8');
 
-console.log(`\n✓ Written to ${OUTPUT_PATH}`);
-console.log(`  ${Object.keys(tenants).length} tenant(s), ${Object.values(tenants).reduce((sum, t) => sum + Object.keys(t.stages).length, 0)} total stage config(s)`);
+log.info(`\n✓ Written to ${OUTPUT_PATH}`);
+log.info(
+    `  ${Object.keys(tenants).length} tenant(s), ${Object.values(tenants).reduce(
+        (sum, t) => sum + Object.keys(t.stages).length,
+        0
+    )} total stage config(s)`
+);

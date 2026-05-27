@@ -74,6 +74,9 @@ type FamilyCMSProps = {
     editBoostUri?: string;
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('family-cms');
+
 export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     credential,
     editorMode = FamilyCMSEditorModeEnum.create,
@@ -238,7 +241,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             return uris;
         } catch (e) {
             setIsLoading(false);
-            console.error('handleIssueBoost::error', e);
+            log.error('handleIssueBoost::error', e);
         }
     };
 
@@ -261,7 +264,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                 );
             }
         } catch (e) {
-            console.error('handleAddAdmins::error', e);
+            log.error('handleAddAdmins::error', e);
         }
     };
 
@@ -370,7 +373,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                 );
             }
         } catch (e) {
-            console.error('handleCreateChildrenProfiles', e);
+            log.error('handleCreateChildrenProfiles', e);
         }
     };
 
@@ -424,7 +427,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                     },
                 });
             } catch (e) {
-                console.error('Family claim hook::error', e);
+                log.error('Family claim hook::error', e);
             }
 
             if (editorMode === FamilyCMSEditorModeEnum.create && !hasPin) {
@@ -474,7 +477,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             return;
         } catch (e) {
             setIsPublishLoading(false);
-            console.error('handlePublishBoost::error', e);
+            log.error('handlePublishBoost::error', e);
             presentToast(`Error issuing boost`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -501,7 +504,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             return;
         } catch (e) {
             setIsPublishLoading(false);
-            console.error('handlePublishBoost::error', e);
+            log.error('handlePublishBoost::error', e);
             presentToast(`Error updating boost`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

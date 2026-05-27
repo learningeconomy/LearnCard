@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('generate-tenant-assets');
 /**
  * generate-tenant-assets.ts
  *
@@ -635,12 +637,12 @@ const generateDesktopBg = async (
  */
 const copyOverride = (srcPath: string, destPath: string, label: string): boolean => {
     if (!fs.existsSync(srcPath)) {
-        console.warn(`  ⚠  ${label} file not found: ${srcPath}`);
+        log.warn(`  ⚠  ${label} file not found: ${srcPath}`);
         return false;
     }
 
     fs.cpSync(srcPath, destPath);
-    console.log(`  🎨 Copied ${path.basename(destPath)} (${label})`);
+    log.info(`  🎨 Copied ${path.basename(destPath)} (${label})`);
     return true;
 };
 
@@ -654,11 +656,11 @@ const generateBrandingAssets = async (
     ensureDir(brandingDir);
 
     // ── 1. App icon (icon + bg color, square) ────────────────────────────
-    console.log(`  🎨 app-icon.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE})...`);
+    log.info(`  🎨 app-icon.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE})...`);
     await generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'app-icon.png'));
 
     // ── 2. Brand mark — dark icon for light backgrounds ──────────────────
-    console.log(`  🎨 brand-mark.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE}) — icon for light backgrounds...`);
+    log.info(`  🎨 brand-mark.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE}) — icon for light backgrounds...`);
     await generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'brand-mark.png'));
 
     // ── 3. Brand mark light — light/white icon for dark backgrounds ──────
@@ -670,7 +672,7 @@ const generateBrandingAssets = async (
         // so it shows up on dark surfaces. Uses white bg for the square variant.
         const whiteBg: RGB = { r: 255, g: 255, b: 255 };
         await generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, whiteBg, path.join(brandingDir, 'brand-mark-light.png'));
-        console.log(`  🎨 Auto-generated brand-mark-light.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE}, white bg)`);
+        log.info(`  🎨 Auto-generated brand-mark-light.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE}, white bg)`);
     }
 
     // ── 4. Text logo — wordmark for dark backgrounds (white/light text) ──
@@ -680,7 +682,7 @@ const generateBrandingAssets = async (
     } else {
         const svg = generateTextLogoSvg(options.tenantDisplayName, 'white');
         fs.writeFileSync(path.join(brandingDir, 'text-logo.svg'), svg, 'utf-8');
-        console.log(`  🎨 Auto-generated text-logo.svg ("${options.tenantDisplayName.toUpperCase()}", fill=white)`);
+        log.info(`  🎨 Auto-generated text-logo.svg ("${options.tenantDisplayName.toUpperCase()}", fill=white)`);
     }
 
     // ── 5. Text logo dark — wordmark for light backgrounds (dark text) ───
@@ -690,7 +692,7 @@ const generateBrandingAssets = async (
     } else {
         const darkSvg = generateTextLogoSvg(options.tenantDisplayName, TEXT_LOGO_DARK_FILL);
         fs.writeFileSync(path.join(brandingDir, 'text-logo-dark.svg'), darkSvg, 'utf-8');
-        console.log(`  🎨 Auto-generated text-logo-dark.svg ("${options.tenantDisplayName.toUpperCase()}", fill=${TEXT_LOGO_DARK_FILL})`);
+        log.info(`  🎨 Auto-generated text-logo-dark.svg ("${options.tenantDisplayName.toUpperCase()}", fill=${TEXT_LOGO_DARK_FILL})`);
     }
 
     // ── 6. Full lockup — combined icon + wordmark for light backgrounds ──
@@ -698,7 +700,7 @@ const generateBrandingAssets = async (
         const ext = path.extname(options.fullLogoPath);
         copyOverride(options.fullLogoPath, path.join(brandingDir, `full-logo${ext}`), '--full-logo');
     } else {
-        console.log('  🎨 Skipping full-logo (no --full-logo provided — app composes icon + wordmark at runtime)');
+        log.info('  🎨 Skipping full-logo (no --full-logo provided — app composes icon + wordmark at runtime)');
     }
 
     // ── 7. Full lockup dark — combined for dark backgrounds ──────────────
@@ -706,7 +708,7 @@ const generateBrandingAssets = async (
         const ext = path.extname(options.fullLogoDarkPath);
         copyOverride(options.fullLogoDarkPath, path.join(brandingDir, `full-logo-dark${ext}`), '--full-logo-light');
     } else {
-        console.log('  🎨 Skipping full-logo-dark (no --full-logo-light provided)');
+        log.info('  🎨 Skipping full-logo-dark (no --full-logo-light provided)');
     }
 
     // ── 8. Desktop login background ──────────────────────────────────────
@@ -715,7 +717,7 @@ const generateBrandingAssets = async (
         copyOverride(options.desktopBgPath, path.join(brandingDir, `desktop-login-bg${ext}`), '--desktop-bg');
     } else {
         await generateDesktopBg(bgColor, DESKTOP_BG_WIDTH, DESKTOP_BG_HEIGHT, path.join(brandingDir, 'desktop-login-bg.png'), 'primary');
-        console.log(`  🎨 Auto-generated desktop-login-bg.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient)`);
+        log.info(`  🎨 Auto-generated desktop-login-bg.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient)`);
     }
 
     // ── 9. Desktop login background alt ──────────────────────────────────
@@ -724,7 +726,7 @@ const generateBrandingAssets = async (
         copyOverride(options.desktopBgAltPath, path.join(brandingDir, `desktop-login-bg-alt${ext}`), '--desktop-bg-alt');
     } else {
         await generateDesktopBg(bgColor, DESKTOP_BG_WIDTH, DESKTOP_BG_HEIGHT, path.join(brandingDir, 'desktop-login-bg-alt.png'), 'alt');
-        console.log(`  🎨 Auto-generated desktop-login-bg-alt.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient variant)`);
+        log.info(`  🎨 Auto-generated desktop-login-bg-alt.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient variant)`);
     }
 };
 
@@ -883,11 +885,11 @@ const generateIosAssets = async (
     const iosDir = path.join(outDir, 'ios');
     ensureDir(iosDir);
 
-    console.log('  📱 iOS App Icon (1024×1024)...');
+    log.info('  📱 iOS App Icon (1024×1024)...');
     await generateSquareIcon(logoBuffer, 1024, bgColor, path.join(iosDir, 'AppIcon.png'));
 
     if (!skipSplash) {
-        console.log('  📱 iOS Splash Screens (2732×2732 × 3)...');
+        log.info('  📱 iOS Splash Screens (2732×2732 × 3)...');
 
         const splashBuffer = await generateSplashImage(logoBuffer, 2732, 2732, splashColor);
 
@@ -905,7 +907,7 @@ const generateAndroidIcons = async (
 ): Promise<void> => {
     const androidDir = path.join(outDir, 'android');
 
-    console.log('  🤖 Android Adaptive + Legacy + Round Icons...');
+    log.info('  🤖 Android Adaptive + Legacy + Round Icons...');
 
     for (const { name, scale } of ANDROID_DENSITIES) {
         const mipmapDir = path.join(androidDir, `mipmap-${name}`);
@@ -921,7 +923,7 @@ const generateAndroidIcons = async (
         ]);
     }
 
-    console.log('  🤖 Android Background XMLs...');
+    log.info('  🤖 Android Background XMLs...');
     generateAndroidBackgroundXml(bgHex, androidDir);
 };
 
@@ -931,7 +933,7 @@ const generateAndroidNotificationIcons = async (
 ): Promise<void> => {
     const androidDir = path.join(outDir, 'android');
 
-    console.log('  🔔 Android Notification Icons (white silhouette)...');
+    log.info('  🔔 Android Notification Icons (white silhouette)...');
 
     // Density-qualified ic_stat_name + ic_action_name
     for (const { name, scale } of ANDROID_DENSITIES) {
@@ -963,7 +965,7 @@ const generateAndroidSplashScreens = async (
 ): Promise<void> => {
     const androidDir = path.join(outDir, 'android');
 
-    console.log('  🤖 Android Splash Screens (9-patch)...');
+    log.info('  🤖 Android Splash Screens (9-patch)...');
 
     for (const [density, dims] of Object.entries(ANDROID_SPLASH_SIZES)) {
         // Default density-qualified drawable (no orientation)
@@ -1008,7 +1010,7 @@ const generateWebAssets = async (
     const webDir = path.join(outDir, 'web');
     ensureDir(webDir);
 
-    console.log('  🌐 Web Favicon (64×64) + PWA Icons (192, 512) + Apple Touch Icon (180)...');
+    log.info('  🌐 Web Favicon (64×64) + PWA Icons (192, 512) + Apple Touch Icon (180)...');
 
     await Promise.all([
         generateSquareIcon(logoBuffer, 64, bgColor, path.join(webDir, 'favicon.png')),
@@ -1026,7 +1028,7 @@ const main = async (): Promise<void> => {
     const args = process.argv.slice(2);
 
     if (args.length < 2) {
-        console.log(`
+        log.info(`
 Usage:
   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
 
@@ -1127,7 +1129,7 @@ Example:
 
     if (!tenantDisplayName) {
         tenantDisplayName = tenant.charAt(0).toUpperCase() + tenant.slice(1);
-        console.log(`  ℹ️  No --name or branding.name found — using "${tenantDisplayName}" for text logo.`);
+        log.info(`  ℹ️  No --name or branding.name found — using "${tenantDisplayName}" for text logo.`);
     }
 
     const splashBg = splashBgHex ?? bgHex;
@@ -1136,7 +1138,7 @@ Example:
 
     // Validate logo file
     if (!fs.existsSync(logoPath)) {
-        console.error(`Logo file not found: ${logoPath}`);
+        log.error(`Logo file not found: ${logoPath}`);
         process.exit(1);
     }
 
@@ -1144,12 +1146,12 @@ Example:
     const logoMeta = await sharp(logoBuffer).metadata();
 
     if (!logoMeta.width || !logoMeta.height) {
-        console.error('Could not read logo dimensions.');
+        log.error('Could not read logo dimensions.');
         process.exit(1);
     }
 
     if (logoMeta.width < 1024 || logoMeta.height < 1024) {
-        console.warn(
+        log.warn(
             `⚠  Logo is ${logoMeta.width}×${logoMeta.height}. ` +
             `Recommended minimum is 1024×1024 for best quality.`
         );
@@ -1174,12 +1176,12 @@ Example:
     // Preview
     const mode = fillOnly ? 'fill-missing' : 'full';
 
-    console.log(`\n🎨 Asset generation for "${tenant}" (${mode} mode)\n`);
-    console.log(`  Logo:       ${logoPath} (${logoMeta.width}×${logoMeta.height})`);
-    console.log(`  Name:       ${tenantDisplayName}`);
-    console.log(`  Icon BG:    ${bgHex}`);
-    console.log(`  Splash BG:  ${splashBg}`);
-    console.log(`  Output:     ${outDir}\n`);
+    log.info(`\n🎨 Asset generation for "${tenant}" (${mode} mode)\n`);
+    log.info(`  Logo:       ${logoPath} (${logoMeta.width}×${logoMeta.height})`);
+    log.info(`  Name:       ${tenantDisplayName}`);
+    log.info(`  Icon BG:    ${bgHex}`);
+    log.info(`  Splash BG:  ${splashBg}`);
+    log.info(`  Output:     ${outDir}\n`);
 
     if (fillOnly) {
         // Show what's missing vs existing per category
@@ -1194,32 +1196,32 @@ Example:
             totalExisting += existing.length;
 
             if (missing.length > 0) {
-                console.log(`  📦 ${category.description}`);
-                console.log(`     Will generate: ${missing.length} file(s)`);
+                log.info(`  📦 ${category.description}`);
+                log.info(`     Will generate: ${missing.length} file(s)`);
 
                 // Show first few files as examples
                 const preview = missing.slice(0, 3);
 
                 for (const f of preview) {
-                    console.log(`       + ${f}`);
+                    log.info(`       + ${f}`);
                 }
 
                 if (missing.length > 3) {
-                    console.log(`       ... and ${missing.length - 3} more`);
+                    log.info(`       ... and ${missing.length - 3} more`);
                 }
 
-                console.log('');
+                log.info('');
             } else {
-                console.log(`  ✅ ${category.description} — all ${existing.length} file(s) exist, skipping`);
+                log.info(`  ✅ ${category.description} — all ${existing.length} file(s) exist, skipping`);
             }
         }
 
         if (totalMissing === 0) {
-            console.log('\n  All assets already exist! Nothing to generate.\n');
+            log.info('\n  All assets already exist! Nothing to generate.\n');
             process.exit(0);
         }
 
-        console.log(`\n  Summary: ${totalMissing} missing, ${totalExisting} existing (will skip)\n`);
+        log.info(`\n  Summary: ${totalMissing} missing, ${totalExisting} existing (will skip)\n`);
     } else {
         // Full mode — show what will be regenerated
         for (const category of manifest) {
@@ -1228,14 +1230,14 @@ Example:
                 ? `${category.files.length} file(s) (${existing.length} will be overwritten)`
                 : `${category.files.length} file(s)`;
 
-            console.log(`  📦 ${category.description} — ${label}`);
+            log.info(`  📦 ${category.description} — ${label}`);
         }
 
         if (configFileCount > 0) {
-            console.log(`\n  🔒 config/ directory (${configFileCount} file(s)) — will be preserved`);
+            log.info(`\n  🔒 config/ directory (${configFileCount} file(s)) — will be preserved`);
         }
 
-        console.log(`\n  Total: ${allFiles.length} file(s) to generate, ${existingFiles.length} existing will be overwritten\n`);
+        log.info(`\n  Total: ${allFiles.length} file(s) to generate, ${existingFiles.length} existing will be overwritten\n`);
     }
 
     // Confirmation
@@ -1243,7 +1245,7 @@ Example:
         const proceed = await askConfirmation('  Proceed? (Y/n): ');
 
         if (!proceed) {
-            console.log('\n  Cancelled.\n');
+            log.info('\n  Cancelled.\n');
             process.exit(0);
         }
     }
@@ -1264,7 +1266,7 @@ Example:
         return category.files.some(f => !fs.existsSync(path.join(outDir, f)));
     };
 
-    console.log('');
+    log.info('');
 
     // Generate asset categories (skip categories with no missing files in fill mode)
     if (shouldGenerate('ios')) {
@@ -1303,14 +1305,14 @@ Example:
     // Summary
     const fileCount = countFiles(outDir) - configFileCount;
 
-    console.log(`\n✅ Generated ${fileCount} asset files in:\n   ${outDir}\n`);
-    console.log('Next steps:');
-    console.log(`  1. Review the generated assets in environments/${tenant}/assets/`);
-    console.log(`  2. Run:  npx tsx scripts/prepare-native-config.ts ${tenant}`);
-    console.log('     This copies config + assets into the Capacitor project.\n');
+    log.info(`\n✅ Generated ${fileCount} asset files in:\n   ${outDir}\n`);
+    log.info('Next steps:');
+    log.info(`  1. Review the generated assets in environments/${tenant}/assets/`);
+    log.info(`  2. Run:  npx tsx scripts/prepare-native-config.ts ${tenant}`);
+    log.info('     This copies config + assets into the Capacitor project.\n');
 };
 
 main().catch((err) => {
-    console.error('\n❌ Asset generation failed:', err);
+    log.error('\n❌ Asset generation failed:', err);
     process.exit(1);
 });

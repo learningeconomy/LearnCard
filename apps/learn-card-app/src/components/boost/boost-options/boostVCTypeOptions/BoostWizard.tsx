@@ -25,6 +25,9 @@ import AiSessionLoader from '../../../new-ai-session/AiSessionLoader';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-wizard');
+
 interface GeneratedDetails {
     title: string;
     description: string;
@@ -128,7 +131,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                     //         `A 100% rounded badge in lower resolution for ${title} in the category of ${category} because ${narrative}`
                     //     );
                     // } catch (error) {
-                    //     console.error('Error generating image:', error);
+                    //     log.error('Error generating image:', error);
                     //     return '';
                     // }
                 })(),
@@ -139,7 +142,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                     //         `A very basic, low resolution texture to provide a background image to the badge.`
                     //     );
                     // } catch (error) {
-                    //     console.error('Error generating background:', error);
+                    //     log.error('Error generating background:', error);
                     //     return '';
                     // }
                 })(),
@@ -149,7 +152,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                             `Please return an array of skills based on ${description}`
                         );
                     } catch (error) {
-                        console.error('Error generating skills:', error);
+                        log.error('Error generating skills:', error);
                         return [];
                     }
                 })(),
@@ -176,7 +179,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 backgroundImageUrl: generatedBackgroundUrl,
             };
         } catch (error) {
-            console.error('Error in generateBoostDetails:', error);
+            log.error('Error in generateBoostDetails:', error);
             throw new Error('Failed to generate boost details. Please try again.');
         }
     };
@@ -210,7 +213,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 return;
             }
         } catch (error) {
-            console.error('Error generating boost details:', error);
+            log.error('Error generating boost details:', error);
             setErrorMessage('An unexpected error occurred. Please try again.');
         } finally {
             setLoader(false);
@@ -239,7 +242,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
             await addVCtoWallet({ uri: issuedVcUri });
         } catch (error) {
-            console.log('error', error);
+            log.info('error', error);
         }
 
         closeAllModals();
