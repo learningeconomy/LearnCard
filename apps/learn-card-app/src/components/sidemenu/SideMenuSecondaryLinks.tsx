@@ -159,14 +159,14 @@ const SideMenuSecondaryLinks: React.FC<{
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
             >
-                {renderIcon()} {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
+                {renderIcon()} {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
             </button>
         ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
-                {renderIcon()} {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
+                {renderIcon()} {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
             </PreloadingLink>
         );
 

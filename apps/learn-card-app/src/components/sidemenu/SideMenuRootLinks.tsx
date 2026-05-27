@@ -108,7 +108,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
+                {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
             </PreloadingLink>
         );
 
@@ -120,7 +120,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                    {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
+                    {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
                 </button>
             );
         }
@@ -145,7 +145,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                         )}
                     </div>
 
-                    {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
+                    {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
                 </PreloadingLink>
             );
         }
