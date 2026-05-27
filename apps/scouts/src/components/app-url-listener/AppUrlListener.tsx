@@ -2,6 +2,9 @@ import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { PluginListenerHandle } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+
+const log = getLogger('scouts/app-url-listener');
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
@@ -33,7 +36,7 @@ export const AppUrlListener: React.FC = () => {
                     }
                 }
             } catch (error) {
-                console.error('Error processing deep link:', error);
+                log.error('Error processing deep link', error);
             }
         };
 
