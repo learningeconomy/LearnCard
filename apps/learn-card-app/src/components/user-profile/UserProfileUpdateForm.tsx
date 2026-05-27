@@ -112,8 +112,6 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const brandingConfig = useBrandingConfig();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
-    console.log('currentUser', currentUser);
-
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
     const [email, setEmail] = useState<string | null | undefined>(currentUser?.email ?? '');
