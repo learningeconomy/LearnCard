@@ -4,6 +4,8 @@ import { initLearnCard } from '@learncard/init';
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
 import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('vpr-did-auth');
 
 const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -18,7 +20,7 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
 
         // TODO: Move this logic into LearnCard - LearnCard should handle DID-Auth presentation flow.
@@ -51,7 +53,7 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
         event.respondWith(Promise.resolve(null));
     };

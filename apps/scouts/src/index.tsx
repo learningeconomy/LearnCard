@@ -11,6 +11,8 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import * as Sentry from '@sentry/browser';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('index');
 
 (window as any).Buffer = Buffer;
 

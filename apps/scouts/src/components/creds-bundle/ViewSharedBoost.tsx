@@ -35,6 +35,8 @@ import { getBespokeLearnCard, getUserHandleFromDid } from 'learn-card-base/helpe
 import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/troop.helpers';
 import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('view-shared-boost');
 
 const websiteLink = 'https://pass.scout.org/login';
 
@@ -96,7 +98,7 @@ const ViewSharedBoost: React.FC = () => {
 
             setVerificationItems(verifications);
 
-            console.log('verifications', verifications);
+            log.debug('verifications', verifications);
 
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
@@ -129,7 +131,7 @@ const ViewSharedBoost: React.FC = () => {
                         text: 'Cancel',
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.debug('Cancel clicked');
                         },
                     },
                 ],

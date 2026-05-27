@@ -24,6 +24,8 @@ import {
     useVerifyLoginVerificationCode,
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('email-form');
 
 const StateValidator = z.object({
     email: z.string().regex(EMAIL_REGEX, `Missing or Invalid Email`),
@@ -147,7 +149,7 @@ const EmailForm: React.FC = () => {
             // ! hotFix: hard refresh on login, otherwise sidememu does not display
             window.location.href = '/campfire';
         } catch (e) {
-            console.log('///login error');
+            log.debug('///login error');
         }
     };
 
@@ -169,7 +171,7 @@ const EmailForm: React.FC = () => {
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendSignInLink error', e);
+                            log.debug('///sendSignInLink error', e);
                         }
                     } else {
                         try {
@@ -180,7 +182,7 @@ const EmailForm: React.FC = () => {
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendLoginVerificationCode error', e);
+                            log.debug('///sendLoginVerificationCode error', e);
                         }
                     }
 
@@ -221,7 +223,7 @@ const EmailForm: React.FC = () => {
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
-            console.log('///sendLoginVerificationCode error', e);
+            log.debug('///sendLoginVerificationCode error', e);
         }
     };
 

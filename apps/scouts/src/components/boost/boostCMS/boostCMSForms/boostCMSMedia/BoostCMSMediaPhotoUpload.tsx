@@ -9,6 +9,8 @@ import { Updater } from 'use-immer';
 import { produce } from 'immer';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('boost-cms-media-photo-upload');
 
 type ThumbListItemProps = {
     photoUrl: string;
@@ -129,7 +131,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                 />
             </div>
             {/* {state?.photos && state.photos?.map(photo => {
-                return <ThumbListItem  photoUrl={photo.url} handleDelete={()=>console.log('///delete item')}/>
+                return <ThumbListItem  photoUrl={photo.url} handleDelete={()=>log.debug('///delete item')}/>
             })} */}
             {!imageUploadLoading ? (
                 <button

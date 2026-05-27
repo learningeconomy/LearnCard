@@ -15,6 +15,8 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 import { useAddCredentialToWallet } from '../../boost/mutations';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('notifications-list');
 
 export const NotificationItem: React.FC<{
     notification: NotificationProps;
@@ -61,7 +63,7 @@ export const NotificationItem: React.FC<{
                 }
             );
         } catch (err: any) {
-            console.log('acceptCredential::error', err?.message);
+            log.debug('acceptCredential::error', err?.message);
         }
     };
 

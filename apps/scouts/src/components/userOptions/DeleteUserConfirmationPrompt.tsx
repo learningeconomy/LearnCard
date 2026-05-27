@@ -12,6 +12,8 @@ import confirmationStore from 'learn-card-base/stores/confirmationStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 import DeleteAccountModal from './DeleteAccountModal';
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('delete-user-confirmation-prompt');
 
 const DeleteUserConfirmationPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -44,7 +46,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     setLcNetworkProfile(profile);
                 }
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.debug('getLCNeworkProfile::err', err);
             }
         };
 

@@ -15,6 +15,8 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('recovery-setup-modal');
 
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
@@ -114,7 +116,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setSuccess('Passkey recovery is set up!');
             setShowUpdateForm(false);
         } catch (e) {
-            console.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
+            log.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -129,7 +131,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const phrase = await onGeneratePhrase();
             setRecoveryPhrase(phrase);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -168,7 +170,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const fileJson = await onSetupBackup(backupPassword);
             setBackupFileJson(fileJson);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -197,7 +199,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                 setBackupDownloaded(true);
             } catch (e) {
-                console.error('[RecoverySetupModal] Native file download failed:', e);
+                log.error('[RecoverySetupModal] Native file download failed:', e);
                 setError('Could not save the file. Please try again.');
             }
         } else {
@@ -238,7 +240,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await onAddRecoveryEmail(emailInput);
             setEmailCodeSent(true);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -259,7 +261,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setEmailVerified(true);
             setEmailMasked(maskedEmail);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Incorrect code. Please try again.');
         } finally {
             setLoading(false);
@@ -277,7 +279,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setSuccess('Recovery key sent to your email!');
             setShowUpdateForm(false);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);

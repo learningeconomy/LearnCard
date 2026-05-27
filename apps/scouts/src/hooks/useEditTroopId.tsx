@@ -22,6 +22,8 @@ import {
 import { getRoleFromCred } from '../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../stores/troopPageStore';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('use-edit-troop-id');
 
 export const useEditTroopId = (credential: VC, uri?: string) => {
     const { newModal, closeModal } = useModal({
@@ -83,7 +85,7 @@ export const useEditTroopId = (credential: VC, uri?: string) => {
 
             closeModal();
         } catch (e) {
-            console.error('handleEditBoostID::error', e);
+            log.error('handleEditBoostID::error', e);
             presentToast(`Error editing boost ID`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

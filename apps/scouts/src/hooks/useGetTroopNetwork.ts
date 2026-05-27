@@ -3,6 +3,8 @@ import { getScoutsRole } from '../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('use-get-troop-network');
 
 interface NetworkRecord {
     type: string;
@@ -53,14 +55,14 @@ export const useGetTroopNetwork = ({
 
     if (process.env.NODE_ENV !== 'test') {
         try {
-            console.log('useGetTroopNetwork::params', {
+            log.debug('useGetTroopNetwork::params', {
                 uri,
                 role,
                 generationsUp,
                 shouldFetchParents,
             });
             if (parentBoosts) {
-                console.log('useGetTroopNetwork::parents', {
+                log.debug('useGetTroopNetwork::parents', {
                     count: parentBoosts?.records?.length ?? 0,
                     records: parentBoosts?.records?.map(r => ({
                         type: r?.type,
@@ -70,7 +72,7 @@ export const useGetTroopNetwork = ({
                 });
             }
         } catch (e) {
-            console.log('useGetTroopNetwork::log_error', e);
+            log.debug('useGetTroopNetwork::log_error', e);
         }
     }
 
@@ -95,7 +97,7 @@ export const useGetTroopNetwork = ({
 
     if (network) {
         if (process.env.NODE_ENV !== 'test') {
-            console.log('useGetTroopNetwork::selectedNetwork', {
+            log.debug('useGetTroopNetwork::selectedNetwork', {
                 type: network?.type,
                 name: network?.name,
                 meta: network?.meta,
@@ -112,7 +114,7 @@ export const useGetTroopNetwork = ({
     }
 
     if (process.env.NODE_ENV !== 'test') {
-        console.log('useGetTroopNetwork::noNetworkFound', {
+        log.debug('useGetTroopNetwork::noNetworkFound', {
             role,
             recordsCount: parentBoosts?.records?.length ?? 0,
         });
@@ -125,7 +127,7 @@ export const useTroopNetwork = (props: UseGetTroopNetworkProps): UseGetTroopNetw
     const result = useGetTroopNetwork(props);
 
     if (result.error) {
-        console.error('Error fetching troop network:', result.error);
+        log.error('Error fetching troop network:', result.error);
     }
 
     return result;

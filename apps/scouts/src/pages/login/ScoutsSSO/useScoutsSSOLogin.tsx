@@ -8,6 +8,8 @@ import {
     setProxy,
 } from './scouts-sso.helpers';
 import { useWallet } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('use-scouts-sso-login');
 
 // !! Using CapacitorHttp to bypass CORS and leverage native networking capabilities. for (IOS/Android) !!
 // !! CapacitorHttp falls back to using fetch for making requests. for (WEB) !!
@@ -24,7 +26,7 @@ export const useScoutsSSOLogin = () => {
             const response = await wallet.invoke.authenticateWithScoutsSSO(username, password);
             return response;
         } catch (error) {
-            console.error('Error during login:', error);
+            log.error('Error during login:', error);
             throw new Error(error as string);
         }
     };
@@ -55,7 +57,7 @@ export const useScoutsSSOLogin = () => {
 
             return userInfo as ScoutSSOUserInfo;
         } catch (error) {
-            console.error('Error fetching user info:', error);
+            log.error('Error fetching user info:', error);
             throw new Error(error as string);
         }
     };

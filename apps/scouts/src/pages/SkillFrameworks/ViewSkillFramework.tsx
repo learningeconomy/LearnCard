@@ -6,6 +6,8 @@ import X from 'learn-card-base/svgs/X';
 import Pencil from 'apps/scouts/src/components/svgs/Pencil';
 import { ThreeDotVertical } from '@learncard/react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('view-skill-framework');
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -15,9 +17,6 @@ type ViewSkillFrameworkProps = {
 
 const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) => {
     const { closeModal } = useModal();
-
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    console.log(framework);
 
     // Local editable copy to support in-place editing in Sheet mode
     const [data, setData] = useState<SkillFramework>(framework);

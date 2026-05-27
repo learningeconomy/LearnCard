@@ -15,6 +15,8 @@ import { defaultIDCardImage, defaultIssuerThumbnail } from './boost-options/boos
 import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
 import { BoostCMSAlignment } from './boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from './boost-options/boostOptions';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('boost-helpers');
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
     const fallbackName = isCustomBoostType(state.basicInfo.achievementType ?? '')
@@ -262,7 +264,7 @@ export const createBoost = async (
             unsignedCredential.credentialSubject.achievement.alignment = alignments;
         }
     } catch (e) {
-        console.warn('Failed to set alignments on unsignedCredential', e);
+        log.warn('Failed to set alignments on unsignedCredential', e);
     }
 
     // the returned template credential doesn't seem to respect the input fields....
@@ -374,7 +376,7 @@ export const updateBoost = async (
         // @ts-ignore
         updatedCredential.credentialSubject.achievement.alignment = alignments;
     } catch (e) {
-        console.warn('Failed to set nested alignments on updatedCredential', e);
+        log.warn('Failed to set nested alignments on updatedCredential', e);
     }
 
     const updatedBoost = await wallet?.invoke?.updateBoost(boostUri, {

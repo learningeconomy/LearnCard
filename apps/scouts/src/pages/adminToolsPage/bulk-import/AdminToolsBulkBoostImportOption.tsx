@@ -36,6 +36,8 @@ import { LCNBoostStatusEnum } from '../../../components/boost/boost';
 import { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
 import { getFileInfo } from '../../../hooks/useUploadFile';
 import { boostCategoryOptions } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('admin-tools-bulk-boost-import-option');
 
 export enum ImageStatus {
     validUrl = 'valid-url',
@@ -292,7 +294,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error('Error extracting ZIP file:', error);
+            log.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
                 type: ToastTypeEnum.Error,
             });
@@ -353,7 +355,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                                     50 + Math.floor((completedUploads / totalUploads) * 100 * 0.5)
                                 ); // Last 50% is Filestack upload
                             } catch (error) {
-                                console.error(`Failed to upload image ${filename}:`, error);
+                                log.error(`Failed to upload image ${filename}:`, error);
                                 newRowMap.set(key, {
                                     originalValue: info.originalValue,
                                     status: ImageStatus.missing,
@@ -523,7 +525,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 type: ToastTypeEnum.Success,
             });
         } catch (e) {
-            console.error('Failed to bulk import boosts: ', e?.message);
+            log.error('Failed to bulk import boosts: ', e?.message);
 
             presentToast(`Bulk boost import failed! ${e?.message}`, {
                 duration: 5000,

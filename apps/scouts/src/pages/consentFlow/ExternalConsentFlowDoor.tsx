@@ -28,6 +28,8 @@ import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('external-consent-flow-door');
 
 enum Step {
     landing,
@@ -81,7 +83,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                 try {
                     await FirebaseAuthentication?.signOut?.();
                 } catch (e) {
-                    console.log('firebase::signout::error', e);
+                    log.debug('firebase::signout::error', e);
                 }
             }
 

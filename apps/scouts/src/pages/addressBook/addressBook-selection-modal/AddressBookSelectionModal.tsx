@@ -7,6 +7,8 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, useWallet, useGetConnections } from 'learn-card-base';
 import TroopButton from './TroopButton';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('address-book-selection-modal');
 
 type AddressBookSelectionModalProps = {
     onGroupSelect: (groupId: string, boostId?: string) => void;
@@ -74,7 +76,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                     setTroopCounts(countsMap);
                 }
             } catch (err) {
-                console.error('Failed to fetch troop counts', err);
+                log.error('Failed to fetch troop counts', err);
             } finally {
                 if (!cancelled) setLoadingCounts(false);
             }

@@ -14,6 +14,8 @@ import {
 
 import { useAddCredentialToWallet } from '../mutations';
 import { LCNBoostStatusEnum } from '../boost';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('use-boost');
 
 // oxlint-disable-next-line no-unused-vars
 const useBoost = (history: RouteComponentProps['history']) => {
@@ -31,8 +33,8 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 const uris = await Promise.all(
                     issueTo.map(async issuee => {
                         const otherProfileId = issuee?.profileId;
-                        console.log('boostUri', boostUri);
-                        console.log('boost', await wallet.invoke.getBoost(boostUri));
+                        log.debug('boostUri', boostUri);
+                        log.debug('boost', await wallet.invoke.getBoost(boostUri));
                         const issuedVc = await addBoostSomeone(wallet, otherProfileId, boostUri);
 
                         return issuedVc;
@@ -46,7 +48,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 });
             }
         } catch (e) {
-            console.log('error', e);
+            log.debug('error', e);
             setIsLoading(false);
             presentToast(`Error issuing boost`, {
                 type: ToastTypeEnum.Error,
@@ -78,7 +80,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 await boostSomeoneElse(issueTo, wallet, boostUri);
             }
         } catch (e) {
-            console.log('error', e);
+            log.debug('error', e);
             setIsLoading(false);
             presentToast(`Error issuing boost`, {
                 type: ToastTypeEnum.Error,
@@ -99,7 +101,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 hasDismissButton: true,
             });
         } catch (e) {
-            console.log('error', e);
+            log.debug('error', e);
             setIsLoading(false);
             presentToast(`Error issuing boost`, {
                 type: ToastTypeEnum.Error,
@@ -130,7 +132,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 await boostSelf(wallet, profileId, boostUri);
             }
         } catch (e) {
-            console.log('error', e);
+            log.debug('error', e);
             setIsLoading(false);
             presentToast(`Error issuing boost`, {
                 type: ToastTypeEnum.Error,

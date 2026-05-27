@@ -6,6 +6,8 @@ import CopyStack from '../../svgs/CopyStack';
 import X from 'learn-card-base/svgs/X';
 
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('view-json-modal');
 
 type ViewJsonModalProps = {
     boost: VC;
@@ -21,19 +23,19 @@ const ViewJsonModal: React.FC<ViewJsonModalProps> = ({ boost }) => {
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(jsonPrettyPrint);
-                console.log('Copied using navigator.clipboard');
+                log.debug('Copied using navigator.clipboard');
             } else {
                 await Clipboard.write({
                     string: jsonPrettyPrint,
                 });
-                console.log('Copied using Capacitor Clipboard');
+                log.debug('Copied using Capacitor Clipboard');
             }
             presentToast('JSON copied to clipboard', {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
+            log.error('Failed to copy to clipboard:', err);
             presentToast('Unable to copy JSON to clipboard', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

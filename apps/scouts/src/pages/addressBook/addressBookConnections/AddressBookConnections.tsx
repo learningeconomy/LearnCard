@@ -22,6 +22,8 @@ import { useGetBoostParents } from 'learn-card-base';
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import Lottie from 'react-lottie-player';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('address-book-connections');
 
 const AddressBookConnections: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -193,7 +195,7 @@ const AddressBookConnections: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.debug('blockProfile::error', err);
             presentToast(err?.message || 'An error occurred, unable to block user', {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,

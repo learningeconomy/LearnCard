@@ -34,6 +34,8 @@ import AllContactsIcon from '../../components/svgs/AllContactsIcon';
 import Lottie from 'react-lottie-player';
 import Pulpo from '../../assets/lotties/cuteopulpo.json';
 import MainHeader from '../../components/main-header/MainHeader';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('address-book');
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
     switch (url) {
@@ -113,7 +115,7 @@ const AddressBook: React.FC = () => {
                     }
                 );
             } catch (err: any) {
-                console.log('blockProfile::error', err);
+                log.debug('blockProfile::error', err);
                 presentToast(err?.message || 'An error occurred, unable to block user', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,

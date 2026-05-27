@@ -13,6 +13,8 @@ import { IonPage, IonContent } from '@ionic/react';
 import CredentialStorageFooter from './CredentialStorageFooter';
 import LoadingPage from '../loadingPage/LoadingPage';
 import { useAddCredentialToWallet } from '../../components/boost/mutations';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('credential-storage');
 
 export const getCredentialFromVp = (vp: VP): VC => {
     const vcField = vp.verifiableCredential;
@@ -32,7 +34,7 @@ const CredentialStorage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (!currentUser?.privateKey) {
-                console.warn('🤔 Current user still loading...');
+                log.warn('🤔 Current user still loading...');
                 return;
             }
 
@@ -69,7 +71,7 @@ const CredentialStorage: React.FC = () => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
 
         event.respondWith(
@@ -86,7 +88,7 @@ const CredentialStorage: React.FC = () => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
         event.respondWith(Promise.resolve(null));
     };

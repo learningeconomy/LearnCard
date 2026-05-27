@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // oxlint-disable-next-line no-unused-vars
 import { SkillFrameworkType } from '@learncard/types';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('edit-framework-modal');
 
 type EditFrameworkModalProps = {
     frameworkId: string;
@@ -62,7 +64,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
             closeModal();
         },
         onError: error => {
-            console.error('Failed to update framework:', error);
+            log.error('Failed to update framework:', error);
             alert('Failed to update framework. Please try again.');
         },
     });

@@ -32,6 +32,8 @@ import ErrorLogout from './ErrorLogout';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('new-join-network-prompt');
 
 const StateValidator = z.object({
     name: z
@@ -207,7 +209,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     setIsCreateLoading(false);
                 }
             } catch (err: any) {
-                console.log('createProfile::error', err);
+                log.debug('createProfile::error', err);
                 setError(err?.toString?.() || '');
                 setIsLoading(false);
                 setIsCreateLoading(false);
@@ -287,7 +289,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.debug('updateProfile::error', error);
                 }
             }
         }

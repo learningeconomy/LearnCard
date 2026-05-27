@@ -1,4 +1,6 @@
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('use-firebase-analytics');
 
 export const useFirebaseAnalytics = () => {
     const setUserId = async (userDid: string) => {
@@ -23,7 +25,7 @@ export const useFirebaseAnalytics = () => {
                 params,
             });
         } catch (error) {
-            console.log('logAnalyticsEvent::error', error);
+            log.debug('logAnalyticsEvent::error', error);
         }
     };
 

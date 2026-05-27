@@ -6,6 +6,8 @@ import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
 import LoginLoadingPage from '../login/LoginPageLoader/LoginLoader';
 
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('loading-page');
 import {
     useWallet,
     usePathQuery,
@@ -94,7 +96,7 @@ export const LoadingPage2: React.FC = React.memo(() => {
                     redirectStore.set.authRedirect(null);
                     chapiStore.set.isChapiInteraction(null);
                 } catch (e) {
-                    console.error(e);
+                    log.error(e);
                 }
                 history.push(redirectTo);
             } else if (lcnRedirectTo) {

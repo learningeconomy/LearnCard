@@ -25,6 +25,8 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowEditAccess from './ConsentFlowEditAccess';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('consent-flow-sync-card');
 
 export type ConsentFlowWriteAccessType = {
     [BoostCategoryOptionsEnum.socialBadge]: boolean;
@@ -261,7 +263,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                                 history.push(redirectUrl);
                                             }
                                         } catch (e) {
-                                            console.error('Redirect failed:', e);
+                                            log.error('Redirect failed:', e);
                                         }
                                     }}
                                 >

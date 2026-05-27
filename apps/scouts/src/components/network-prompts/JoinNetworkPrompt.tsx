@@ -36,6 +36,8 @@ import {
 } from '../network-settings/networkSettings.helpers';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('join-network-prompt');
 
 const StateValidator = z.object({
     profileId: z
@@ -162,7 +164,7 @@ export const JoinNetworkPrompt: React.FC<{
                     }
                 }
             } catch (err: any) {
-                console.log('createProfile::error', err);
+                log.debug('createProfile::error', err);
                 setError(err?.message);
                 setLoading(false);
             }

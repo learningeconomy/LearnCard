@@ -42,6 +42,8 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../hooks/useHighlightedCredentials';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('claim-boost');
 
 const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {
     const isLoggedIn = useIsLoggedIn();
@@ -190,7 +192,7 @@ export const ClaimBoostModal: React.FC<{
 
             setBoost(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -270,7 +272,7 @@ export const ClaimBoostModal: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 

@@ -49,6 +49,8 @@ import { UserCMSAppearance } from '../scoutsID-CMS/scouts-cms.helpers';
 import { LCNProfile } from '@learncard/types';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('my-scouts-modal');
 
 type MyScoutsModalProps = {
     branding: BrandingEnum;
@@ -235,7 +237,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
             caretText: '',
             onClick: async () => {
                 if (!currentUser?.privateKey) {
-                    console.error('No private key available');
+                    log.error('No private key available');
                     return;
                 }
 

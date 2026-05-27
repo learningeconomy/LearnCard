@@ -5,6 +5,8 @@ import {
 } from '../../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { BoostCategoryOptionsEnum, constructCustomBoostType } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('bulk-import.helpers');
 
 /* Take an input like
  *    ['Stem - Engineering', 'Durable - Adaptability - Flexibility', 'Durable - Adaptability - Problem Solving', 'Durable - Lifelong Learning - Critical Thinking']
@@ -100,7 +102,7 @@ export const mapCategoryToBoostEnum = (csvCategory: string) => {
         case 'ID':
             return BoostCategoryOptionsEnum.id;
         default:
-            console.error(`Unexpected Badge Category: ${csvCategory}. Defaulting to achievement.`);
+            log.error(`Unexpected Badge Category: ${csvCategory}. Defaulting to achievement.`);
             return BoostCategoryOptionsEnum.achievement;
     }
 };

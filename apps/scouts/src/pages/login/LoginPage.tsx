@@ -37,6 +37,8 @@ import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {
     const flags = useFlags();
@@ -97,7 +99,7 @@ const LoginPage: React.FC = () => {
                     redirectStore.set.authRedirect(null);
                     chapiStore.set.isChapiInteraction(null);
                 } catch (e) {
-                    console.error(e);
+                    log.error(e);
                 }
                 history.push(redirectTo);
             } else if (lcnRedirectTo) {

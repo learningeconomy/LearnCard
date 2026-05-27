@@ -83,6 +83,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<{
     category?: BoostCategoryOptionsEnum;
@@ -416,7 +418,7 @@ const BoostCMS: React.FC<{
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.debug('error::savingBoost', e);
             presentToast('Unable to save boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -465,7 +467,7 @@ const BoostCMS: React.FC<{
             }
         } catch (e) {
             setIsPublishLoading(false);
-            console.log('error::boosting::someone', e);
+            log.debug('error::boosting::someone', e);
             presentToast('Error issuing boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -483,8 +485,8 @@ const BoostCMS: React.FC<{
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
                         if (issuee?.profileId === profile?.profileId) {
-                            console.log('boostUri', boostUri);
-                            console.log(
+                            log.debug('boostUri', boostUri);
+                            log.debug(
                                 'boost',
                                 await (wallet?.invoke as any)?.resolveFromLCN(boostUri)
                             );
@@ -560,7 +562,7 @@ const BoostCMS: React.FC<{
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.debug('error::boosting::someone', e);
             presentToast('Error issuing boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

@@ -42,6 +42,8 @@ import {
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('auth-key-debug-widget');
 
 import {
     type AuthDebugEvent,
@@ -382,7 +384,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                 await clearAllShares();
                 await checkDeviceShare();
             } catch (e) {
-                console.error('Failed to clear device share:', e);
+                log.error('Failed to clear device share:', e);
             }
         }
     }, [checkDeviceShare]);
@@ -393,7 +395,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                 await deleteDeviceShare(id);
                 await checkDeviceShare();
             } catch (e) {
-                console.error('Failed to delete device share:', e);
+                log.error('Failed to delete device share:', e);
             }
         }
     }, [checkDeviceShare]);
@@ -488,7 +490,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
             setServerError(null);
         } catch (e) {
-            console.error('[DebugWidget] fetchServerState error:', e);
+            log.error('[DebugWidget] fetchServerState error:', e);
             setServerError(e instanceof Error ? e.message : String(e));
             setServerState(null);
         } finally {
@@ -538,7 +540,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
             alert('Firebase session invalidated. Auth session is now expired.\nTry opening Account Recovery to see the re-auth gate.');
         } catch (e) {
-            console.error('[DebugWidget] invalidate session error:', e);
+            log.error('[DebugWidget] invalidate session error:', e);
             alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
         }
     }, [authUser]);

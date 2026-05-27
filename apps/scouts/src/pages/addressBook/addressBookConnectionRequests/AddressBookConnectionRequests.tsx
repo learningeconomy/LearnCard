@@ -21,6 +21,8 @@ import {
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('address-book-connection-requests');
 
 const AddressBookConnectionRequests: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -62,7 +64,7 @@ const AddressBookConnectionRequests: React.FC<{
                 }
             );
         } catch (err: any) {
-            console.log('blockProfile::error', err);
+            log.debug('blockProfile::error', err);
             presentToast(err?.message || 'An error occurred, unable to block user', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

@@ -38,6 +38,8 @@ import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import ShareModal from '../share/ShareModal';
 import ScannerPermissionsPrompt from '../scanner-permissions-prompt/ScannerPermissionsPrompt';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('qr-code-user-card');
 
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
@@ -138,7 +140,7 @@ const QrCodeUserCard: React.FC<{
                 const connections = await wallet.invoke.getConnections();
                 setConnections(connections);
             } catch (e) {
-                console.log('getConnections::error', e);
+                log.debug('getConnections::error', e);
             }
         };
 

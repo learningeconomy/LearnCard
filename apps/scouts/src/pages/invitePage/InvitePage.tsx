@@ -10,6 +10,8 @@ import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
+import { getLogger } from 'learn-card-base/logging/logger';
+const log = getLogger('invite-page');
 
 const InvitePage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
@@ -39,7 +41,7 @@ const InvitePage: React.FC = () => {
         }
 
         if (!profileId || !challenge) {
-            console.log('no handle or challenge detected');
+            log.debug('no handle or challenge detected');
             setLoading(false);
             return;
         }
@@ -53,7 +55,7 @@ const InvitePage: React.FC = () => {
                 }
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.debug('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
