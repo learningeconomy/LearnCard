@@ -48,6 +48,9 @@ import {
     getNativeBundleId,
 } from '../config/bootstrapTenantConfig';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-firebase');
+
 export const useFirebase = () => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -115,7 +118,7 @@ export const useFirebase = () => {
                         );
                         await signInWithCredential(firebaseAuth, credential);
                     } catch (error) {
-                        console.log('googleLogin::signInWithCredential::web::error', error);
+                        log.info('googleLogin::signInWithCredential::web::error', error);
                     }
                 }
 
@@ -141,19 +144,19 @@ export const useFirebase = () => {
             }
 
             if (errorCode === 'auth/popup-blocked') {
-                if (errorCode) console.warn(errorCode);
-                if (errorMessage) console.warn(errorMessage);
+                if (errorCode) log.warn(errorCode);
+                if (errorMessage) log.warn(errorMessage);
                 presentGoogleHelpModal(
                     'Popups are blocked in your browser. Please enable popups in your browser and try again.'
                 );
             } else if (errorCode === 'auth/cancelled-popup-request') {
-                if (errorCode) console.warn(errorCode);
-                if (errorMessage) console.warn(errorMessage);
+                if (errorCode) log.warn(errorCode);
+                if (errorMessage) log.warn(errorMessage);
                 return;
             } else {
-                if (errorCode) console.warn(errorCode);
+                if (errorCode) log.warn(errorCode);
                 if (errorMessage) {
-                    console.error('errorMessage', errorMessage);
+                    log.error('errorMessage', errorMessage);
                     presentGoogleHelpModal(errorMessage);
                 }
             }
@@ -199,7 +202,7 @@ export const useFirebase = () => {
                     });
                 })
                 .catch(error => {
-                    console.error('sendSignInLinkToEmail::error', error);
+                    log.error('sendSignInLinkToEmail::error', error);
                     presentToast('An error occurred, unable to send a login link!', {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
@@ -226,7 +229,7 @@ export const useFirebase = () => {
                     });
                 })
                 .catch(error => {
-                    console.error('sendSignInLinkToEmail::error', error);
+                    log.error('sendSignInLinkToEmail::error', error);
                     presentToast('An error occurred, unable to send a login link!', {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
@@ -274,9 +277,13 @@ export const useFirebase = () => {
                             track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
                             firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
-                            emitAuthSuccess('firebase:auth_state_change', 'Email link auth successful', {
-                                data: { uid: user?.uid },
-                            });
+                            emitAuthSuccess(
+                                'firebase:auth_state_change',
+                                'Email link auth successful',
+                                {
+                                    data: { uid: user?.uid },
+                                }
+                            );
 
                             // AuthCoordinator auto-handles key derivation when firebaseUser changes
                         }
@@ -288,9 +295,9 @@ export const useFirebase = () => {
 
                 emitAuthError('auth:login_error', `Email link login failed: ${errorCode}`, error);
 
-                if (errorCode) console.error('errorCode', errorCode);
+                if (errorCode) log.error('errorCode', errorCode);
                 if (errorMessage) {
-                    console.error('errorMessage', errorMessage);
+                    log.error('errorMessage', errorMessage);
                     presentAlert(errorMessage);
                 }
             }
@@ -318,9 +325,9 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                if (errorCode) console.error('errorCode', errorCode);
+                if (errorCode) log.error('errorCode', errorCode);
                 if (errorMessage) {
-                    console.error('errorMessage', errorMessage);
+                    log.error('errorMessage', errorMessage);
                     presentAlert(errorMessage);
                 }
             }
@@ -361,8 +368,8 @@ export const useFirebase = () => {
                 emitAuthError('auth:login_error', `SMS send failed: ${errorCode}`, error);
                 errorCallback(errorCode);
 
-                console.error('errorCode', errorCode);
-                console.error('errorMessage', errorMessage);
+                log.error('errorCode', errorCode);
+                log.error('errorMessage', errorMessage);
             });
     };
 
@@ -389,7 +396,7 @@ export const useFirebase = () => {
             const res = await signInWithCredential(firebaseAuth, credential);
             user = res?.user;
         } catch (error) {
-            console.log('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
+            log.info('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
 
@@ -413,7 +420,7 @@ export const useFirebase = () => {
                 }
             }
         } catch (error) {
-            console.error('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
+            log.error('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
     };
@@ -446,8 +453,8 @@ export const useFirebase = () => {
 
             errorCallback(errorCode);
 
-            console.error('errorCode', errorCode);
-            console.error('errorMessage', errorMessage);
+            log.error('errorCode', errorCode);
+            log.error('errorMessage', errorMessage);
 
             if (errorCode === 5111) {
                 presentToast('An error occured. Please refresh to fix.', {
@@ -489,7 +496,7 @@ export const useFirebase = () => {
                 }
             }
         } catch (error) {
-            console.error('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
+            log.error('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
     };
@@ -520,12 +527,12 @@ export const useFirebase = () => {
 
                 // user cancelled apple login
                 if (errorMessage?.includes('1001')) {
-                    if (errorCode) console.warn('errorCode', errorCode);
-                    if (errorMessage) console.warn('errorMessage', errorMessage);
+                    if (errorCode) log.warn('errorCode', errorCode);
+                    if (errorMessage) log.warn('errorMessage', errorMessage);
                 } else {
-                    if (errorCode) console.error('errorCode', errorCode);
+                    if (errorCode) log.error('errorCode', errorCode);
                     if (errorMessage) {
-                        console.error('errorMessage', errorMessage);
+                        log.error('errorMessage', errorMessage);
                         presentAlert(errorMessage);
                     }
                 }
@@ -541,9 +548,13 @@ export const useFirebase = () => {
                 track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
-                emitAuthSuccess('firebase:auth_state_change', 'Firebase Apple auth successful (native)', {
-                    data: { uid: user?.uid },
-                });
+                emitAuthSuccess(
+                    'firebase:auth_state_change',
+                    'Firebase Apple auth successful (native)',
+                    {
+                        data: { uid: user?.uid },
+                    }
+                );
 
                 if (token) {
                     // AuthCoordinator auto-handles key derivation when firebaseUser changes
@@ -565,9 +576,13 @@ export const useFirebase = () => {
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
                     track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
 
-                    emitAuthSuccess('firebase:auth_state_change', 'Firebase Apple auth successful (web)', {
-                        data: { uid: user?.uid },
-                    });
+                    emitAuthSuccess(
+                        'firebase:auth_state_change',
+                        'Firebase Apple auth successful (web)',
+                        {
+                            data: { uid: user?.uid },
+                        }
+                    );
 
                     if (token) {
                         // AuthCoordinator auto-handles key derivation when firebaseUser changes
@@ -583,8 +598,8 @@ export const useFirebase = () => {
                 const credential = OAuthProvider.credentialFromError(error);
 
                 if (errorCode === 'auth/popup-blocked') {
-                    if (errorCode) console.warn(errorCode);
-                    if (errorMessage) console.warn(errorMessage);
+                    if (errorCode) log.warn(errorCode);
+                    if (errorMessage) log.warn(errorMessage);
                     presentAlert(
                         'Popups are blocked in your browser. Please enable Popups to login with this method.'
                     );
@@ -592,13 +607,13 @@ export const useFirebase = () => {
                     errorCode === 'auth/cancelled-popup-request' ||
                     errorCode === 'auth/popup-closed-by-user'
                 ) {
-                    if (errorCode) console.warn(errorCode);
-                    if (errorMessage) console.warn(errorMessage);
+                    if (errorCode) log.warn(errorCode);
+                    if (errorMessage) log.warn(errorMessage);
                     return;
                 } else {
-                    if (errorCode) console.error('errorCode', errorCode);
+                    if (errorCode) log.error('errorCode', errorCode);
                     if (errorMessage) {
-                        console.error('errorMessage', errorMessage);
+                        log.error('errorMessage', errorMessage);
                         presentAlert(errorMessage);
                     }
                 }
@@ -632,8 +647,8 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                console.error('errorCode', errorCode);
-                console.error('errorMessage', errorMessage);
+                log.error('errorCode', errorCode);
+                log.error('errorMessage', errorMessage);
 
                 if (errorMessage) presentAlert(errorMessage);
 
@@ -664,8 +679,8 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = error?.code;
             const errorMessage = error?.message;
-            console.error('errorCode', errorCode);
-            console.error('errorMessage', errorMessage);
+            log.error('errorCode', errorCode);
+            log.error('errorMessage', errorMessage);
 
             if (errorMessage) presentAlert(errorMessage);
         }

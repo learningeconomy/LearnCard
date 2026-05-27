@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { IonSpinner } from '@ionic/react';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-selector');
 
 import { useDeveloperPortal } from '../useDeveloperPortal';
 
@@ -32,7 +34,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
             setNewName('');
             setIsCreating(false);
         } catch (error) {
-            console.error('Failed to create integration:', error);
+            log.error('Failed to create integration:', error);
         }
     };
 

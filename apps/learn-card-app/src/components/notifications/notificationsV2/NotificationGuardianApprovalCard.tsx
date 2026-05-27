@@ -5,6 +5,8 @@ import { UserProfilePicture, useWallet, useUpdateNotification } from 'learn-card
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notification-guardian-approval-card');
 
 type NotificationGuardianApprovalCardProps = {
     notification: NotificationType;
@@ -53,7 +55,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                 payload: { actionStatus: 'COMPLETED', read: true },
             });
         } catch (err) {
-            console.error('[NotificationGuardianApprovalCard] Approve failed:', err);
+            log.error('[NotificationGuardianApprovalCard] Approve failed:', err);
             setActionState('pending');
         }
     };
@@ -73,7 +75,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                 payload: { actionStatus: 'REJECTED', read: true },
             });
         } catch (err) {
-            console.error('[NotificationGuardianApprovalCard] Reject failed:', err);
+            log.error('[NotificationGuardianApprovalCard] Reject failed:', err);
             setActionState('pending');
         }
     };

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-setup');
 
 import { pushUtilities, useWallet } from 'learn-card-base';
 
@@ -91,7 +93,7 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
                     setLcNetworkProfile(profile);
                 }
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
             }
         };
 

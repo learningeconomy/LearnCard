@@ -30,6 +30,9 @@ interface RecoverySetupModalProps {
     onClose: () => void;
 }
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('recovery-setup-modal');
+
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPasskey,
     onGeneratePhrase,
@@ -52,7 +55,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const isConfigured = (type: RecoverySetupType): boolean =>
         hasExistingMethod(type) || sessionConfigured.has(type);
 
-    const anyConfigured = existingMethods.some(m => m.type !== 'email') || sessionConfigured.size > 0;
+    const anyConfigured =
+        existingMethods.some(m => m.type !== 'email') || sessionConfigured.size > 0;
 
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
@@ -114,7 +118,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setSuccess('Passkey recovery is set up!');
             setShowUpdateForm(false);
         } catch (e) {
-            console.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
+            log.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -129,7 +133,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const phrase = await onGeneratePhrase();
             setRecoveryPhrase(phrase);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -157,7 +161,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         }
 
         if (backupPassword !== confirmBackupPassword) {
-            setError('Passwords don\'t match.');
+            setError("Passwords don't match.");
             return;
         }
 
@@ -168,7 +172,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const fileJson = await onSetupBackup(backupPassword);
             setBackupFileJson(fileJson);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -197,7 +201,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                 setBackupDownloaded(true);
             } catch (e) {
-                console.error('[RecoverySetupModal] Native file download failed:', e);
+                log.error('[RecoverySetupModal] Native file download failed:', e);
                 setError('Could not save the file. Please try again.');
             }
         } else {
@@ -238,7 +242,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await onAddRecoveryEmail(emailInput);
             setEmailCodeSent(true);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -259,7 +263,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setEmailVerified(true);
             setEmailMasked(maskedEmail);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Incorrect code. Please try again.');
         } finally {
             setLoading(false);
@@ -277,7 +281,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setSuccess('Recovery key sent to your email!');
             setShowUpdateForm(false);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
+            log.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -287,7 +291,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const allTabs = [
         { id: 'email' as const, label: 'Email', icon: mailOutline, iconClass: 'text-sm' },
         { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline, iconClass: 'text-sm' },
-        { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline, iconClass: 'text-sm' },
+        {
+            id: 'backup' as const,
+            label: 'Backup',
+            icon: cloudDownloadOutline,
+            iconClass: 'text-sm',
+        },
         { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
     ];
 
@@ -300,7 +309,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const updateWarning = (text: string) => (
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
-            <IonIcon icon={alertCircleOutline} className="text-amber-500 text-base mt-0.5 shrink-0" />
+            <IonIcon
+                icon={alertCircleOutline}
+                className="text-amber-500 text-base mt-0.5 shrink-0"
+            />
 
             <span className="text-xs text-amber-700 leading-relaxed">{text}</span>
         </div>
@@ -323,7 +335,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         label: string,
         onClick: () => void,
         disabled: boolean,
-        loadingText: string,
+        loadingText: string
     ) => (
         <button
             onClick={onClick}
@@ -335,7 +347,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     {loadingText}
                 </span>
-            ) : label}
+            ) : (
+                label
+            )}
         </button>
     );
 
@@ -343,7 +357,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const configuredRow = (statusText: string, onChangeClick: () => void) => (
         <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-grayscale-100/60">
             <div className="flex items-center gap-2.5">
-                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-base shrink-0" />
+                <IonIcon
+                    icon={checkmarkCircleOutline}
+                    className="text-emerald-500 text-base shrink-0"
+                />
 
                 <span className="text-sm text-grayscale-900">{statusText}</span>
             </div>
@@ -369,9 +386,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     {anyConfigured
-                        ? `${configuredCount} recovery ${configuredCount === 1 ? 'method' : 'methods'} active`
-                        : 'Set up a recovery method so you can get back in if you lose access to this device.'
-                    }
+                        ? `${configuredCount} recovery ${
+                              configuredCount === 1 ? 'method' : 'methods'
+                          } active`
+                        : 'Set up a recovery method so you can get back in if you lose access to this device.'}
                 </p>
             </div>
 
@@ -391,7 +409,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         {tab.label}
 
                         {isConfigured(tab.id) && (
-                            <IonIcon icon={checkmarkCircleOutline} className="text-emerald-400 text-sm" />
+                            <IonIcon
+                                icon={checkmarkCircleOutline}
+                                className="text-emerald-400 text-sm"
+                            />
                         )}
                     </button>
                 ))}
@@ -400,7 +421,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Error */}
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="text-red-400 text-lg mt-0.5 shrink-0"
+                    />
 
                     <span className="text-sm text-red-700 leading-relaxed">{error}</span>
                 </div>
@@ -409,7 +433,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Success */}
             {success && (
                 <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                    <IonIcon
+                        icon={checkmarkCircleOutline}
+                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                    />
 
                     <span className="text-sm text-emerald-700 leading-relaxed">{success}</span>
                 </div>
@@ -421,7 +448,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     {!webAuthnSupported ? (
                         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                             <p className="text-sm text-amber-800 leading-relaxed">
-                                Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.
+                                Passkeys aren't supported on this device or browser. Try using a
+                                recovery phrase or backup file instead.
                             </p>
                         </div>
                     ) : isConfigured('passkey') && !showUpdateForm ? (
@@ -431,24 +459,34 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             {isUpdate && updateWarning('This will replace your current passkey.')}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Use Face ID, Touch ID, or Windows Hello as your recovery method. Nothing to remember.
+                                Use Face ID, Touch ID, or Windows Hello as your recovery method.
+                                Nothing to remember.
                             </p>
 
                             <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl">
                                 <p className="text-xs text-amber-700 leading-relaxed">
-                                    Passkeys with encryption are currently supported on desktop Chrome and Edge only.
+                                    Passkeys with encryption are currently supported on desktop
+                                    Chrome and Edge only.
                                 </p>
                             </div>
 
                             <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="space-y-2.5 text-sm text-emerald-800">
                                     <div className="flex items-start gap-2.5">
-                                        <IonIcon icon={fingerPrint} className="text-emerald-600 text-lg mt-0.5 shrink-0" />
-                                        <span>Uses your device's secure biometric authentication</span>
+                                        <IonIcon
+                                            icon={fingerPrint}
+                                            className="text-emerald-600 text-lg mt-0.5 shrink-0"
+                                        />
+                                        <span>
+                                            Uses your device's secure biometric authentication
+                                        </span>
                                     </div>
 
                                     <div className="flex items-start gap-2.5">
-                                        <IonIcon icon={checkmarkCircleOutline} className="text-emerald-600 text-lg mt-0.5 shrink-0" />
+                                        <IonIcon
+                                            icon={checkmarkCircleOutline}
+                                            className="text-emerald-600 text-lg mt-0.5 shrink-0"
+                                        />
                                         <span>No password to remember</span>
                                     </div>
                                 </div>
@@ -458,7 +496,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 isUpdate ? 'Replace Passkey' : 'Set Up Passkey',
                                 handlePasskeySetup,
                                 loading,
-                                isUpdate ? 'Replacing...' : 'Setting up...',
+                                isUpdate ? 'Replacing...' : 'Setting up...'
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -474,14 +512,20 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         configuredRow('Phrase is saved', () => setShowUpdateForm(true))
                     ) : !recoveryPhrase ? (
                         <>
-                            {isUpdate && updateWarning('This will generate a new phrase. Your previous phrase will no longer work.')}
+                            {isUpdate &&
+                                updateWarning(
+                                    'This will generate a new phrase. Your previous phrase will no longer work.'
+                                )}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Generate a 25-word phrase that can restore your account from anywhere. Write it down and keep it safe.
+                                Generate a 25-word phrase that can restore your account from
+                                anywhere. Write it down and keep it safe.
                             </p>
 
                             <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                                <p className="text-sm font-medium text-amber-800 mb-2">Keep it safe</p>
+                                <p className="text-sm font-medium text-amber-800 mb-2">
+                                    Keep it safe
+                                </p>
 
                                 <ul className="text-sm text-amber-700 space-y-1.5">
                                     <li className="flex items-start gap-2">
@@ -491,7 +535,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                                     <li className="flex items-start gap-2">
                                         <span className="text-amber-500 mt-0.5">•</span>
-                                        <span>Never share it — anyone with this phrase has full access</span>
+                                        <span>
+                                            Never share it — anyone with this phrase has full access
+                                        </span>
                                     </li>
                                 </ul>
                             </div>
@@ -500,7 +546,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 isUpdate ? 'Generate New Phrase' : 'Generate Recovery Phrase',
                                 handleGeneratePhrase,
                                 loading,
-                                'Generating...',
+                                'Generating...'
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -508,7 +554,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : (
                         <>
                             <div className="p-4 bg-grayscale-900 rounded-2xl">
-                                <p className="text-xs text-grayscale-400 mb-2 font-medium">Your Recovery Phrase</p>
+                                <p className="text-xs text-grayscale-400 mb-2 font-medium">
+                                    Your Recovery Phrase
+                                </p>
 
                                 <p className="font-mono text-sm text-white leading-relaxed break-words">
                                     {recoveryPhrase}
@@ -519,7 +567,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 onClick={handleCopyPhrase}
                                 className="w-full py-2.5 px-4 bg-grayscale-100 hover:bg-grayscale-200 rounded-[20px] flex items-center justify-center gap-2 text-sm text-grayscale-700 font-medium transition-colors"
                             >
-                                <IonIcon icon={phraseCopied ? checkmarkOutline : copyOutline} className="text-base" />
+                                <IonIcon
+                                    icon={phraseCopied ? checkmarkOutline : copyOutline}
+                                    className="text-base"
+                                />
                                 {phraseCopied ? 'Copied!' : 'Copy to Clipboard'}
                             </button>
 
@@ -543,14 +594,21 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         configuredRow('Backup file created', () => setShowUpdateForm(true))
                     ) : !backupFileJson ? (
                         <>
-                            {isUpdate && updateWarning('This will generate a new backup file. Your previous backup file will no longer work.')}
+                            {isUpdate &&
+                                updateWarning(
+                                    'This will generate a new backup file. Your previous backup file will no longer work.'
+                                )}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Generate an encrypted backup file protected by a password. Store it somewhere safe — you'll need both the file and the password to recover.
+                                Generate an encrypted backup file protected by a password. Store it
+                                somewhere safe — you'll need both the file and the password to
+                                recover.
                             </p>
 
                             <div>
-                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Backup Password</label>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                    Backup Password
+                                </label>
 
                                 <input
                                     type="password"
@@ -562,7 +620,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Confirm Password</label>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                    Confirm Password
+                                </label>
 
                                 <input
                                     type="password"
@@ -577,25 +637,32 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 isUpdate ? 'Generate New Backup' : 'Generate Backup File',
                                 handleBackupSetup,
                                 loading || !backupPassword || !confirmBackupPassword,
-                                'Generating...',
+                                'Generating...'
                             )}
 
-                            {isUpdate && cancelUpdateButton(() => {
-                                setBackupPassword('');
-                                setConfirmBackupPassword('');
-                            })}
+                            {isUpdate &&
+                                cancelUpdateButton(() => {
+                                    setBackupPassword('');
+                                    setConfirmBackupPassword('');
+                                })}
                         </>
                     ) : (
                         <>
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="flex items-start gap-2.5">
-                                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                                    <IonIcon
+                                        icon={checkmarkCircleOutline}
+                                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                    />
 
                                     <div>
-                                        <p className="text-sm font-medium text-emerald-800 mb-1">Backup file ready</p>
+                                        <p className="text-sm font-medium text-emerald-800 mb-1">
+                                            Backup file ready
+                                        </p>
 
                                         <p className="text-xs text-emerald-700 leading-relaxed">
-                                            Download this file and store it somewhere safe. You'll need it along with your backup password to recover.
+                                            Download this file and store it somewhere safe. You'll
+                                            need it along with your backup password to recover.
                                         </p>
                                     </div>
                                 </div>
@@ -627,7 +694,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 <div className="space-y-4">
                     {isConfigured('email') && !showUpdateForm ? (
                         configuredRow(
-                            emailMasked ? `Recovery email: ${emailMasked}` : 'Email recovery is set up',
+                            emailMasked
+                                ? `Recovery email: ${emailMasked}`
+                                : 'Email recovery is set up',
                             () => {
                                 setShowUpdateForm(true);
                                 // Reset email flow for re-setup
@@ -642,7 +711,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : !emailVerified ? (
                         // Step 1 & 2: Verify email
                         <>
-                            {isUpdate && updateWarning('This will replace your current recovery email.')}
+                            {isUpdate &&
+                                updateWarning('This will replace your current recovery email.')}
 
                             {!anyConfigured && (
                                 <span className="inline-block text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
@@ -651,14 +721,17 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             )}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.
+                                Add a personal email (different from your login) as a recovery
+                                destination. A recovery key will be sent there.
                             </p>
 
                             {!emailCodeSent ? (
                                 // Step 1: Enter email
                                 <>
                                     <div>
-                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Recovery Email</label>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                            Recovery Email
+                                        </label>
 
                                         <input
                                             type="email"
@@ -673,32 +746,40 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                         'Send Verification Code',
                                         handleSendEmailCode,
                                         loading || !emailInput.includes('@'),
-                                        'Sending...',
+                                        'Sending...'
                                     )}
 
-                                    {isUpdate && cancelUpdateButton(() => {
-                                        setEmailInput('');
-                                        setEmailCodeSent(false);
-                                    })}
+                                    {isUpdate &&
+                                        cancelUpdateButton(() => {
+                                            setEmailInput('');
+                                            setEmailCodeSent(false);
+                                        })}
                                 </>
                             ) : (
                                 // Step 2: Enter code
                                 <>
                                     <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                         <p className="text-sm text-emerald-700 leading-relaxed">
-                                            We sent a 6-digit code to <strong>{emailInput}</strong>. Check your inbox.
+                                            We sent a 6-digit code to <strong>{emailInput}</strong>.
+                                            Check your inbox.
                                         </p>
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Verification Code</label>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                            Verification Code
+                                        </label>
 
                                         <input
                                             type="text"
                                             inputMode="numeric"
                                             maxLength={6}
                                             value={emailCode}
-                                            onChange={e => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            onChange={e =>
+                                                setEmailCode(
+                                                    e.target.value.replace(/\D/g, '').slice(0, 6)
+                                                )
+                                            }
                                             placeholder="123456"
                                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                         />
@@ -708,7 +789,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                         'Verify Code',
                                         handleVerifyEmailCode,
                                         loading || emailCode.length !== 6,
-                                        'Verifying...',
+                                        'Verifying...'
                                     )}
 
                                     <button
@@ -727,24 +808,30 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         // Step 3: Email verified, send recovery share
                         <>
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                />
 
                                 <div>
-                                    <p className="text-sm font-medium text-emerald-800">Email verified</p>
+                                    <p className="text-sm font-medium text-emerald-800">
+                                        Email verified
+                                    </p>
 
                                     <p className="text-xs text-emerald-700 mt-0.5">{emailMasked}</p>
                                 </div>
                             </div>
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                We'll send a recovery key to this email. If you ever lose access, just check your inbox and paste the key to recover.
+                                We'll send a recovery key to this email. If you ever lose access,
+                                just check your inbox and paste the key to recover.
                             </p>
 
                             {primaryButton(
                                 'Send Recovery Key',
                                 handleSetupEmailRecovery,
                                 loading,
-                                'Sending...',
+                                'Sending...'
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -753,13 +840,19 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         // Step 4: Done
                         <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                             <div className="flex items-start gap-2.5">
-                                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                />
 
                                 <div>
-                                    <p className="text-sm font-medium text-emerald-800 mb-1">Recovery key sent</p>
+                                    <p className="text-sm font-medium text-emerald-800 mb-1">
+                                        Recovery key sent
+                                    </p>
 
                                     <p className="text-xs text-emerald-700 leading-relaxed">
-                                        Check your inbox at {emailMasked}. Keep that email safe — you'll need the recovery key if you ever lose access.
+                                        Check your inbox at {emailMasked}. Keep that email safe —
+                                        you'll need the recovery key if you ever lose access.
                                     </p>
                                 </div>
                             </div>
@@ -773,8 +866,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 <p className="mt-4 text-center text-xs text-grayscale-500 leading-relaxed">
                     {configuredCount === 1
                         ? 'We recommend setting up at least two recovery methods.'
-                        : 'Adding another method improves your security.'
-                    }
+                        : 'Adding another method improves your security.'}
                 </p>
             )}
 

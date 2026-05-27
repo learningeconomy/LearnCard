@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('a-p-i-tokens-page');
 
 import { IonGrid, IonRow, IonCol, IonSpinner } from '@ionic/react';
 import AdminPageStructure from '../AdminPageStructure';
@@ -73,7 +75,7 @@ const APITokensPage: React.FC = () => {
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
+            log.error('Failed to copy to clipboard:', err);
             closeModal();
             presentToast('Unable to copy API Token to clipboard', {
                 type: ToastTypeEnum.Error,
@@ -119,13 +121,13 @@ const APITokensPage: React.FC = () => {
             }
         } catch (err) {
             if (status === 'active') {
-                console.error(`Failed to revoke API Token`, err);
+                log.error(`Failed to revoke API Token`, err);
                 presentToast(`Unable to revoke API Token`, {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             } else if (status === 'revoked') {
-                console.error(`Failed to delete API Token`, err);
+                log.error(`Failed to delete API Token`, err);
                 presentToast(`Unable to delete API Token`, {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,

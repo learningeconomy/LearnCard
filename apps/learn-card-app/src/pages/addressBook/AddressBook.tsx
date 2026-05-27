@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { IonContent, IonPage, IonSpinner, IonRow, IonGrid } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book');
 
 import MainHeader from '../../components/main-header/MainHeader';
 import AddressBookHeader from './addressBook-header/AddressBookHeader';
@@ -99,7 +101,7 @@ const AddressBook: React.FC = () => {
                     }
                 );
             } catch (err: any) {
-                console.log('blockProfile::error', err);
+                log.info('blockProfile::error', err);
                 presentToast(err?.message || 'An error occurred, unable to block user', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
