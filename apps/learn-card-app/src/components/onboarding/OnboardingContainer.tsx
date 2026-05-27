@@ -36,6 +36,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     const [ageGateError, setAgeGateError] = useState<string | null>(null);
     const [isPreparingKey, setIsPreparingKey] = useState(false);
     const didPrepareNewKeyRef = useRef(false);
+    const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
 
     const currentUser = useCurrentUser();
     const [formData, setFormData] = useState<
@@ -110,26 +111,36 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             return true;
         }
 
-        setIsPreparingKey(true);
-
-        try {
-            const privateKey = await generateEd25519PrivateKey();
-            const did = await deriveDidFromPrivateKey(privateKey);
-
-            if (!did) {
-                throw new Error('Failed to derive account identity');
-            }
-
-            await setupNewKey(privateKey, did);
-            didPrepareNewKeyRef.current = true;
-            return true;
-        } catch (e) {
-            setAgeGateError('Something went wrong. Please try again.');
-            console.error('Failed to prepare new user key:', e);
-            return false;
-        } finally {
-            setIsPreparingKey(false);
+        if (prepareNewKeyPromiseRef.current) {
+            return prepareNewKeyPromiseRef.current;
         }
+
+        const preparePromise = (async (): Promise<boolean> => {
+            setIsPreparingKey(true);
+
+            try {
+                const privateKey = await generateEd25519PrivateKey();
+                const did = await deriveDidFromPrivateKey(privateKey);
+
+                if (!did) {
+                    throw new Error('Failed to derive account identity');
+                }
+
+                await setupNewKey(privateKey, did);
+                didPrepareNewKeyRef.current = true;
+                return true;
+            } catch (e) {
+                setAgeGateError('Something went wrong. Please try again.');
+                console.error('Failed to prepare new user key:', e);
+                return false;
+            } finally {
+                setIsPreparingKey(false);
+                prepareNewKeyPromiseRef.current = null;
+            }
+        })();
+
+        prepareNewKeyPromiseRef.current = preparePromise;
+        return preparePromise;
     }, [coordinatorState.status, deriveDidFromPrivateKey, setupNewKey]);
 
     const routeChildToParentFlow = useCallback(() => {
