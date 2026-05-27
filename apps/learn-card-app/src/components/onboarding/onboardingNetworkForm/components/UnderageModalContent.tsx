@@ -1,5 +1,6 @@
 import React from 'react';
 import { IonInput, IonSpinner } from '@ionic/react';
+import { ToastTypeEnum, useToast } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import WarningCircle from '../../../svgs/WarningCircle';
@@ -22,6 +23,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
     onBypass,
     familyInviteUrl,
 }) => {
+    const { presentToast } = useToast();
     const [view, setView] = React.useState<'adult' | 'school'>('adult');
     const [code, setCode] = React.useState('');
     const [error, setError] = React.useState('');
@@ -81,6 +83,10 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                     window.setTimeout(() => setCopied(false), 2000);
                                 } catch {
                                     setCopied(false);
+                                    presentToast('Failed to copy to clipboard.', {
+                                        type: ToastTypeEnum.Error,
+                                        hasDismissButton: true,
+                                    });
                                 }
                             }}
                             className="w-full max-w-[320px] py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
