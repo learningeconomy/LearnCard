@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-page');
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
@@ -102,7 +104,7 @@ const WalletPage: React.FC = () => {
                     );
                 }
             } catch (error) {
-                console.log(error);
+                log.info(error);
             }
         });
 

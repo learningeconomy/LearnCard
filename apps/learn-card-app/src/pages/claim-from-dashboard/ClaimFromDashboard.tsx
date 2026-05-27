@@ -13,6 +13,9 @@ import {
     useIonModal,
 } from '@ionic/react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-from-dashboard');
+
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import ClaimFromDashboardLoggedOut from './ClaimFromDashboardLoggedOut';
@@ -196,7 +199,7 @@ const ClaimFromDashboard: React.FC = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                if (res.status !== 200) console.error('Rip lol');
+                if (res.status !== 200) log.error('Rip lol');
                 else {
                     const { links, metadata } = (await res.json()) as {
                         links: {
@@ -258,7 +261,7 @@ const ClaimFromDashboard: React.FC = () => {
                     setCredential(await credResponse.json());
                 }
             } catch (error) {
-                console.error(error);
+                log.error(error);
             }
 
             setLoading(false);
@@ -298,7 +301,9 @@ const ClaimFromDashboard: React.FC = () => {
 
                 const now = Date.now();
                 const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                     method: ProfileBuildMethod.Dashboard,
                     itemType: 'credential',
@@ -318,7 +323,7 @@ const ClaimFromDashboard: React.FC = () => {
             });
         } catch (e) {
             setClaimingCredential(false);
-            console.error('Error claiming credential', e);
+            log.error('Error claiming credential', e);
             /**
              * Sometimes, when claiming a credential, this error is thrown:
              * TRPCClientError: Record with that ID already exists!

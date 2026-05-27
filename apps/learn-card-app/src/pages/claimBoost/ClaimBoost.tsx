@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
@@ -204,7 +206,7 @@ const ClaimBoost: React.FC<{
             setBoost(boostVC);
             verify(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -292,7 +294,7 @@ const ClaimBoost: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 

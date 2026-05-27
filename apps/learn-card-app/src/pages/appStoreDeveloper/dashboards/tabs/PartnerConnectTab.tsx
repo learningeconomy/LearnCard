@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('partner-connect-tab');
 /**
  * PartnerConnectTab - Partner Connect SDK Reference & Code Generator
  *
@@ -132,8 +134,8 @@ const learnCard = createPartnerConnect();
 const identity = await learnCard.requestIdentity();
 
 // Use the identity in your app
-console.log('Welcome,', identity.profile.displayName);
-console.log('User DID:', identity.did);
+log.info('Welcome,', identity.profile.displayName);
+log.info('User DID:', identity.did);
 
 // You can use the DID as a unique user identifier
 const userId = identity.did;`,
@@ -190,7 +192,7 @@ const resultWithData = await learnCard.sendCredential({
 });
 
 if (resultWithData.credentialUri) {
-    console.log('Credential issued:', resultWithData.credentialUri);
+    log.info('Credential issued:', resultWithData.credentialUri);
     showSuccessMessage('Credential added to your wallet!');
 }`,
         tips: [
@@ -237,15 +239,15 @@ const result = await learnCard.askCredentialSearch({
 
 // User selects which credentials to share
 if (result.credentials.length > 0) {
-    console.log('User shared', result.credentials.length, 'credentials');
+    log.info('User shared', result.credentials.length, 'credentials');
     
     // Process the shared credentials
     for (const cred of result.credentials) {
-        console.log('Credential:', cred.name);
+        log.info('Credential:', cred.name);
         // Verify, display, or store the credential
     }
 } else {
-    console.log('User declined or has no matching credentials');
+    log.info('User declined or has no matching credentials');
 }`,
         tips: [
             'Users control what they share — respect their privacy',
@@ -293,7 +295,7 @@ const result = await learnCard.initiateTemplateIssue({
 });
 
 if (result.success) {
-    console.log('Credential issued:', result.credentialId);
+    log.info('Credential issued:', result.credentialId);
     showSuccess('Achievement unlocked!');
 }`,
         tips: [
@@ -390,7 +392,7 @@ const result = await learnCard.requestConsent('lc:contract:your-app:data-access'
 });
 
 if (result.granted) {
-    console.log('Consent granted! ID:', result.consentId);
+    log.info('Consent granted! ID:', result.consentId);
     
     // Store the consent ID for future reference
     await saveUserConsent(userId, result.consentId);
@@ -398,7 +400,7 @@ if (result.granted) {
     // Now you can access data per the contract terms
     enablePremiumFeatures();
 } else {
-    console.log('User declined consent');
+    log.info('User declined consent');
     showLimitedFeatures();
 }`,
         tips: [
@@ -536,7 +538,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                             variables: extractVariables(credential),
                         });
                     } catch (e) {
-                        console.warn('Failed to fetch boost:', link.boostUri, e);
+                        log.warn('Failed to fetch boost:', link.boostUri, e);
                     }
                 }
 
@@ -566,7 +568,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                             category: fullBoost?.category as string,
                         });
                     } catch (e) {
-                        console.warn('Failed to fetch peer boost:', boost.uri, e);
+                        log.warn('Failed to fetch peer boost:', boost.uri, e);
                     }
                 }
 
@@ -575,7 +577,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                     setPeerBadgesTemplates(peerTemplates);
                 }
             } catch (err) {
-                console.error('Failed to fetch templates:', err);
+                log.error('Failed to fetch templates:', err);
 
                 if (!cancelled) {
                     setIssueCredentialsTemplates([]);
@@ -745,13 +747,13 @@ async function getUserIdentity() {
     try {
         const identity = await learnCard.requestIdentity();
         
-        console.log('User DID:', identity.did);
-        console.log('Display Name:', identity.profile.displayName);
-        console.log('Profile ID:', identity.profile.profileId);
+        log.info('User DID:', identity.did);
+        log.info('Display Name:', identity.profile.displayName);
+        log.info('Profile ID:', identity.profile.profileId);
         
         return identity;
     } catch (error) {
-        console.error('Failed to get user identity:', error);
+        log.error('Failed to get user identity:', error);
         throw error;
     }
 }`);
@@ -803,7 +805,7 @@ async function issueCredentialToUser() {
     const result = await learnCard.sendCredential({ credential: issuedVC });
 
     if (result.success) {
-        console.log('Credential claimed!');
+        log.info('Credential claimed!');
     }
 }`);
             } else {
@@ -849,7 +851,7 @@ async function issue${
     });
     
     if (result.credentialUri) {
-        console.log('Credential issued:', result.credentialUri);
+        log.info('Credential issued:', result.credentialUri);
     }
     return result;
 }
@@ -873,7 +875,7 @@ async function issue${
     });
     
     if (result.credentialUri) {
-        console.log('Credential issued:', result.credentialUri);
+        log.info('Credential issued:', result.credentialUri);
     }
     return result;
 }`;
@@ -904,7 +906,7 @@ async function issueCredentialByAlias(templateAlias: string, templateData?: Reco
     });
     
     if (result.credentialUri) {
-        console.log('Credential issued:', result.credentialUri);
+        log.info('Credential issued:', result.credentialUri);
     }
     return result;
 }`);
@@ -949,9 +951,9 @@ function findPeerBadgeTemplate(query: string) {
 async function sendPeerBadge(templateUri: string) {
     try {
         await learnCard.initiateTemplateIssue(templateUri);
-        console.log('Peer badge flow initiated with template:', templateUri);
+        log.info('Peer badge flow initiated with template:', templateUri);
     } catch (error) {
-        console.error('Failed to initiate peer badge:', error);
+        log.error('Failed to initiate peer badge:', error);
         throw error;
     }
 }
@@ -985,12 +987,12 @@ async function requestUserCredentials() {
         });
 
         if (response.credentials?.length > 0) {
-            console.log('User shared', response.credentials.length, 'credentials');
+            log.info('User shared', response.credentials.length, 'credentials');
             return response.credentials;
         }
         return [];
     } catch (error) {
-        console.error('Error requesting credentials:', error);
+        log.error('Error requesting credentials:', error);
         throw error;
     }
 }`);
@@ -1013,7 +1015,7 @@ async function requestDataConsent() {
         });
 
         if (result.granted) {
-            console.log('User granted consent! User ID:', result.userId);
+            log.info('User granted consent! User ID:', result.userId);
 
             await fetch('/api/consent-granted', {
                 method: 'POST',
@@ -1025,7 +1027,7 @@ async function requestDataConsent() {
         }
         return false;
     } catch (error) {
-        console.error('Failed to request consent:', error);
+        log.error('Failed to request consent:', error);
         throw error;
     }
 }`);
@@ -1094,7 +1096,7 @@ const learnCard = createPartnerConnect();
 
 // Get user identity (SSO - no login needed!)
 const identity = await learnCard.requestIdentity();
-console.log('User:', identity.profile.displayName);`;
+log.info('User:', identity.profile.displayName);`;
 
     return (
         <div className="space-y-4">

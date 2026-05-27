@@ -17,8 +17,16 @@ import {
     Palette,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-claim-guide');
 
-import { useWallet, useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
+import {
+    useWallet,
+    useToast,
+    useFilestack,
+    ToastTypeEnum,
+    useGetCurrentLCNUser,
+} from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
@@ -80,15 +88,25 @@ const PublishableKeyStep: React.FC<{
             {/* Status */}
             <StatusIndicator
                 status={selectedIntegration ? 'ready' : 'warning'}
-                label={selectedIntegration ? `Using "${selectedIntegration.name}"` : 'No project selected'}
-                description={selectedIntegration ? 'Your publishable key is ready to use' : 'Select a project from the header dropdown'}
+                label={
+                    selectedIntegration
+                        ? `Using "${selectedIntegration.name}"`
+                        : 'No project selected'
+                }
+                description={
+                    selectedIntegration
+                        ? 'Your publishable key is ready to use'
+                        : 'Select a project from the header dropdown'
+                }
             />
 
             {/* Selected Key Display */}
             {selectedIntegration ? (
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-emerald-800">Publishable Key</label>
+                        <label className="text-sm font-medium text-emerald-800">
+                            Publishable Key
+                        </label>
 
                         <button
                             onClick={copyKey}
@@ -104,7 +122,8 @@ const PublishableKeyStep: React.FC<{
                     </div>
 
                     <p className="text-xs text-emerald-700 mt-2">
-                        This key can only be used to claim credentials. Keep your secret key secure on your server.
+                        This key can only be used to claim credentials. Keep your secret key secure
+                        on your server.
                     </p>
                 </div>
             ) : (
@@ -146,10 +165,13 @@ const AddTargetStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Add HTML Target Element</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Add HTML Target Element
+                </h3>
 
                 <p className="text-gray-600">
-                    Add a container element to your page where the "Claim Credential" button will appear.
+                    Add a container element to your page where the "Claim Credential" button will
+                    appear.
                 </p>
             </div>
 
@@ -174,8 +196,8 @@ const AddTargetStep: React.FC<{
                 <h4 className="font-medium text-gray-800 mb-2">What gets rendered</h4>
 
                 <p className="text-sm text-gray-600 mb-3">
-                    The SDK replaces the target element with a styled button. When clicked, it opens a modal
-                    for the user to verify their email and claim the credential.
+                    The SDK replaces the target element with a styled button. When clicked, it opens
+                    a modal for the user to verify their email and claim the credential.
                 </p>
 
                 <div className="flex items-center gap-3">
@@ -228,9 +250,7 @@ const LoadSdkStep: React.FC<{
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Load the Embed SDK</h3>
 
-                <p className="text-gray-600">
-                    Choose how to load the SDK in your project.
-                </p>
+                <p className="text-gray-600">Choose how to load the SDK in your project.</p>
             </div>
 
             <div className="flex gap-2">
@@ -296,8 +316,8 @@ init({
                 <h4 className="font-medium text-emerald-800 mb-2">Zero dependencies</h4>
 
                 <p className="text-sm text-emerald-700">
-                    The SDK is a single optimized file (~15KB gzipped) with no external dependencies.
-                    It works on any website — no React, Vue, or framework required.
+                    The SDK is a single optimized file (~15KB gzipped) with no external
+                    dependencies. It works on any website — no React, Vue, or framework required.
                 </p>
             </div>
 
@@ -342,7 +362,11 @@ const ConfigureStep: React.FC<{
         accentColor: string;
         partnerLogoUrl: string;
     };
-    setBranding: (branding: { primaryColor: string; accentColor: string; partnerLogoUrl: string }) => void;
+    setBranding: (branding: {
+        primaryColor: string;
+        accentColor: string;
+        partnerLogoUrl: string;
+    }) => void;
     requestBackgroundIssuance: boolean;
     setRequestBackgroundIssuance: (value: boolean) => void;
     onTemplatesChange: (templates: ManagedTemplate[]) => void;
@@ -375,7 +399,11 @@ const ConfigureStep: React.FC<{
     const [domainInput, setDomainInput] = useState('');
 
     // Logo upload via Filestack
-    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo, error: logoUploadError } = useFilestack({
+    const {
+        handleFileSelect: handleLogoUpload,
+        isLoading: isUploadingLogo,
+        error: logoUploadError,
+    } = useFilestack({
         onUpload: (url: string) => {
             setBranding({ ...branding, partnerLogoUrl: url });
         },
@@ -394,12 +422,15 @@ const ConfigureStep: React.FC<{
 
     // Check if branding is set
 
-
     // Format branding object for code
     const brandingCode = `{
         primaryColor: '${branding.primaryColor}',
-        accentColor: '${branding.accentColor}',${branding.partnerLogoUrl ? `
-        partnerLogoUrl: '${branding.partnerLogoUrl}'` : ''}
+        accentColor: '${branding.accentColor}',${
+        branding.partnerLogoUrl
+            ? `
+        partnerLogoUrl: '${branding.partnerLogoUrl}'`
+            : ''
+    }
     }`;
 
     const getCode = () => {
@@ -425,20 +456,30 @@ const ConfigureStep: React.FC<{
 
     // Custom branding for the claim modal
     branding: ${brandingCode},
-    ${requestBackgroundIssuance ? `
+    ${
+        requestBackgroundIssuance
+            ? `
     // Request consent for future credential issuance
     requestBackgroundIssuance: true,
-    ` : ''}
+    `
+            : ''
+    }
     // Called when credential is successfully claimed
     onSuccess: ({ credentialId, consentGiven }) => {
-        console.log('Claimed!', credentialId);${requestBackgroundIssuance ? `
+        log.info('Claimed!', credentialId);${
+            requestBackgroundIssuance
+                ? `
         if (consentGiven) {
-            console.log('User consented to future issuance!');
-        }` : ''}
+            log.info('User consented to future issuance!');
+        }`
+                : ''
+        }
         // Show success message, redirect, etc.
     },
 
-    // apiBaseUrl: '${getResolvedTenantConfig().apis.brainServiceApi}', // Override API base URL if needed
+    // apiBaseUrl: '${
+        getResolvedTenantConfig().apis.brainServiceApi
+    }', // Override API base URL if needed
 });`;
     };
 
@@ -448,8 +489,9 @@ const ConfigureStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Configure the SDK</h3>
 
                 <p className="text-gray-600">
-                    Create your credential templates and customize branding for the claim experience.
-                    Templates persist as reusable credentials that you can reference by URI.
+                    Create your credential templates and customize branding for the claim
+                    experience. Templates persist as reusable credentials that you can reference by
+                    URI.
                 </p>
             </div>
 
@@ -459,7 +501,9 @@ const ConfigureStep: React.FC<{
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <Key className="w-4 h-4 text-indigo-600" />
-                            <label className="text-sm font-medium text-indigo-800">Publishable Key</label>
+                            <label className="text-sm font-medium text-indigo-800">
+                                Publishable Key
+                            </label>
                         </div>
 
                         <button
@@ -478,7 +522,11 @@ const ConfigureStep: React.FC<{
                             }}
                             className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                         >
-                            {keyCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {keyCopied ? (
+                                <Check className="w-3 h-3" />
+                            ) : (
+                                <Copy className="w-3 h-3" />
+                            )}
                             {keyCopied ? 'Copied!' : 'Copy'}
                         </button>
                     </div>
@@ -510,7 +558,8 @@ const ConfigureStep: React.FC<{
                             <h4 className="font-medium text-amber-800 mb-1">No Project Selected</h4>
 
                             <p className="text-sm text-amber-700">
-                                Select or create a project using the dropdown in the header to continue.
+                                Select or create a project using the dropdown in the header to
+                                continue.
                             </p>
                         </div>
                     </div>
@@ -523,7 +572,7 @@ const ConfigureStep: React.FC<{
                 featureType="issue-credentials"
                 showCodeSnippets={false}
                 editable={true}
-                onTemplateChange={(newTemplates) => {
+                onTemplateChange={newTemplates => {
                     setHasTemplates(newTemplates.length > 0);
                     onTemplatesChange(newTemplates);
                 }}
@@ -532,158 +581,185 @@ const ConfigureStep: React.FC<{
 
             {/* Branding & Advanced Options */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
-                    {/* Branding Section */}
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Palette className="w-4 h-4 text-indigo-500" />
-                            Modal Branding
-                        </div>
+                {/* Branding Section */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <Palette className="w-4 h-4 text-indigo-500" />
+                        Modal Branding
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Primary Color</label>
-
-                                <div className="flex gap-2">
-                                    <input
-                                        type="color"
-                                        value={branding.primaryColor}
-                                        onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                                        className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                                    />
-
-                                    <input
-                                        type="text"
-                                        value={branding.primaryColor}
-                                        onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                                        placeholder="#1F51FF"
-                                        className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Accent Color</label>
-
-                                <div className="flex gap-2">
-                                    <input
-                                        type="color"
-                                        value={branding.accentColor}
-                                        onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
-                                        className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                                    />
-
-                                    <input
-                                        type="text"
-                                        value={branding.accentColor}
-                                        onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
-                                        placeholder="#0F3BD9"
-                                        className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    />
-                                </div>
-                            </div>
-
-                        </div>
-
-                        {/* Partner Name */}
-                        <div className="pt-3 border-t border-gray-100">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Partner Name <span className="text-gray-400 font-normal">(Optional)</span></label>
-
-                            <input
-                                type="text"
-                                value={partnerName}
-                                onChange={(e) => setPartnerName(e.target.value)}
-                                placeholder="Your company name"
-                                className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                style={{ colorScheme: 'light' }}
-                            />
-
-                            <p className="text-xs text-gray-500 mt-1">
-                                Shown alongside your logo in the claim modal. Not included on the issued credential.
-                            </p>
-                        </div>
-
-                        {/* Partner Logo */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Partner Logo <span className="text-gray-400 font-normal">(Optional)</span></label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                Primary Color
+                            </label>
 
                             <div className="flex gap-2">
                                 <input
-                                    type="url"
-                                    value={branding.partnerLogoUrl}
-                                    onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
-                                    placeholder="https://example.com/logo.png"
-                                    className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    disabled={isUploadingLogo}
-                                    style={{ colorScheme: 'light' }}
+                                    type="color"
+                                    value={branding.primaryColor}
+                                    onChange={e =>
+                                        setBranding({ ...branding, primaryColor: e.target.value })
+                                    }
+                                    className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
                                 />
 
-                                <button
-                                    type="button"
-                                    onClick={() => handleLogoUpload()}
-                                    disabled={isUploadingLogo}
-                                    className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                    title="Upload image"
-                                >
-                                    {isUploadingLogo ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Upload className="w-4 h-4" />
-                                    )}
-                                </button>
+                                <input
+                                    type="text"
+                                    value={branding.primaryColor}
+                                    onChange={e =>
+                                        setBranding({ ...branding, primaryColor: e.target.value })
+                                    }
+                                    placeholder="#1F51FF"
+                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
                             </div>
+                        </div>
 
-                            {branding.partnerLogoUrl && (
-                                <img
-                                    src={branding.partnerLogoUrl}
-                                    alt="Logo preview"
-                                    className="mt-2 h-12 object-contain rounded border border-gray-200"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                Accent Color
+                            </label>
+
+                            <div className="flex gap-2">
+                                <input
+                                    type="color"
+                                    value={branding.accentColor}
+                                    onChange={e =>
+                                        setBranding({ ...branding, accentColor: e.target.value })
+                                    }
+                                    className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
                                 />
-                            )}
+
+                                <input
+                                    type="text"
+                                    value={branding.accentColor}
+                                    onChange={e =>
+                                        setBranding({ ...branding, accentColor: e.target.value })
+                                    }
+                                    placeholder="#0F3BD9"
+                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Background Issuance Section */}
-                    <div className="space-y-3 pt-3 border-t border-gray-200">
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Settings className="w-4 h-4 text-emerald-500" />
-                            Advanced Settings
-                        </div>
+                    {/* Partner Name */}
+                    <div className="pt-3 border-t border-gray-100">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Partner Name{' '}
+                            <span className="text-gray-400 font-normal">(Optional)</span>
+                        </label>
 
-                        <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="text"
+                            value={partnerName}
+                            onChange={e => setPartnerName(e.target.value)}
+                            placeholder="Your company name"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            style={{ colorScheme: 'light' }}
+                        />
+
+                        <p className="text-xs text-gray-500 mt-1">
+                            Shown alongside your logo in the claim modal. Not included on the issued
+                            credential.
+                        </p>
+                    </div>
+
+                    {/* Partner Logo */}
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Partner Logo{' '}
+                            <span className="text-gray-400 font-normal">(Optional)</span>
+                        </label>
+
+                        <div className="flex gap-2">
                             <input
-                                type="checkbox"
-                                checked={requestBackgroundIssuance}
-                                onChange={(e) => setRequestBackgroundIssuance(e.target.checked)}
-                                className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
+                                type="url"
+                                value={branding.partnerLogoUrl}
+                                onChange={e =>
+                                    setBranding({ ...branding, partnerLogoUrl: e.target.value })
+                                }
+                                placeholder="https://example.com/logo.png"
+                                className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                disabled={isUploadingLogo}
+                                style={{ colorScheme: 'light' }}
                             />
 
-                            <div>
-                                <span className="text-sm font-medium text-gray-700">Request Background Issuance Consent</span>
+                            <button
+                                type="button"
+                                onClick={() => handleLogoUpload()}
+                                disabled={isUploadingLogo}
+                                className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                title="Upload image"
+                            >
+                                {isUploadingLogo ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Upload className="w-4 h-4" />
+                                )}
+                            </button>
+                        </div>
 
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                    Ask the user for permission to issue future credentials without requiring email verification each time.
-                                </p>
-                            </div>
-                        </label>
+                        {branding.partnerLogoUrl && (
+                            <img
+                                src={branding.partnerLogoUrl}
+                                alt="Logo preview"
+                                className="mt-2 h-12 object-contain rounded border border-gray-200"
+                                onError={e => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        )}
+                    </div>
+                </div>
+
+                {/* Background Issuance Section */}
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <Settings className="w-4 h-4 text-emerald-500" />
+                        Advanced Settings
                     </div>
 
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={requestBackgroundIssuance}
+                            onChange={e => setRequestBackgroundIssuance(e.target.checked)}
+                            className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
+                        />
+
+                        <div>
+                            <span className="text-sm font-medium text-gray-700">
+                                Request Background Issuance Consent
+                            </span>
+
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Ask the user for permission to issue future credentials without
+                                requiring email verification each time.
+                            </p>
+                        </div>
+                    </label>
                 </div>
+            </div>
 
             {/* Whitelisted Domains */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Whitelisted Domains</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Whitelisted Domains
+                </label>
 
                 <p className="text-xs text-gray-500 mb-2">
-                    Add the domains where you'll embed this claim button. The API will only accept claims from these domains.
+                    Add the domains where you'll embed this claim button. The API will only accept
+                    claims from these domains.
                 </p>
 
                 <div className="flex gap-2 mb-2">
                     <input
                         type="text"
                         value={domainInput}
-                        onChange={(e) => setDomainInput(e.target.value)}
-                        onKeyDown={(e) => {
+                        onChange={e => setDomainInput(e.target.value)}
+                        onKeyDown={e => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
                                 const domain = domainInput.trim();
@@ -715,7 +791,7 @@ const ConfigureStep: React.FC<{
 
                 {whitelistedDomains.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                        {whitelistedDomains.map((domain) => (
+                        {whitelistedDomains.map(domain => (
                             <span
                                 key={domain}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-medium text-indigo-700"
@@ -723,7 +799,11 @@ const ConfigureStep: React.FC<{
                                 {domain}
                                 <button
                                     type="button"
-                                    onClick={() => onWhitelistedDomainsChange(whitelistedDomains.filter(d => d !== domain))}
+                                    onClick={() =>
+                                        onWhitelistedDomainsChange(
+                                            whitelistedDomains.filter(d => d !== domain)
+                                        )
+                                    }
                                     className="text-indigo-400 hover:text-indigo-700 ml-0.5"
                                     aria-label={`Remove ${domain}`}
                                 >
@@ -734,26 +814,43 @@ const ConfigureStep: React.FC<{
                     </div>
                 ) : (
                     <p className="text-xs text-amber-600">
-                        No domains whitelisted yet. The embed will not work until you add at least one domain.
+                        No domains whitelisted yet. The embed will not work until you add at least
+                        one domain.
                     </p>
                 )}
             </div>
 
-            <CodeOutputPanel
-                title="Full Configuration"
-                snippets={{ typescript: getCode() }}
-            />
+            <CodeOutputPanel title="Full Configuration" snippets={{ typescript: getCode() }} />
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                 <h4 className="font-medium text-amber-800 mb-2">Important Options</h4>
 
                 <ul className="text-sm text-amber-700 space-y-1">
-                    <li>• <code className="bg-amber-100 px-1 rounded">target</code> — CSS selector or HTMLElement for the claim button</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">credential</code> — Credential config with name and boost URI</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">publishableKey</code> — Required for real claims</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">branding</code> — Customize the claim modal appearance</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code> — Ask consent for future issuance</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">onSuccess</code> — Handle post-claim actions</li>
+                    <li>
+                        • <code className="bg-amber-100 px-1 rounded">target</code> — CSS selector
+                        or HTMLElement for the claim button
+                    </li>
+                    <li>
+                        • <code className="bg-amber-100 px-1 rounded">credential</code> — Credential
+                        config with name and boost URI
+                    </li>
+                    <li>
+                        • <code className="bg-amber-100 px-1 rounded">publishableKey</code> —
+                        Required for real claims
+                    </li>
+                    <li>
+                        • <code className="bg-amber-100 px-1 rounded">branding</code> — Customize
+                        the claim modal appearance
+                    </li>
+                    <li>
+                        •{' '}
+                        <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code>{' '}
+                        — Ask consent for future issuance
+                    </li>
+                    <li>
+                        • <code className="bg-amber-100 px-1 rounded">onSuccess</code> — Handle
+                        post-claim actions
+                    </li>
                 </ul>
             </div>
 
@@ -789,7 +886,6 @@ const ConfigureStep: React.FC<{
                         Save or cancel the template you&apos;re editing before continuing.
                     </p>
                 )}
-
             </div>
         </div>
     );
@@ -808,7 +904,19 @@ const TestStep: React.FC<{
     apiBaseUrl?: string;
     issuerName?: string;
     issuerLogoUrl?: string;
-}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance, isTransitioning, apiBaseUrl, issuerName, issuerLogoUrl }) => {
+}> = ({
+    onBack,
+    onComplete,
+    publishableKey,
+    templates,
+    partnerName,
+    branding,
+    requestBackgroundIssuance,
+    isTransitioning,
+    apiBaseUrl,
+    issuerName,
+    issuerLogoUrl,
+}) => {
     const [selectedTemplateIdx, setSelectedTemplateIdx] = useState(0);
 
     const checks = [
@@ -846,7 +954,9 @@ const TestStep: React.FC<{
                     {checks.map(check => (
                         <div key={check.label} className="flex items-center gap-2">
                             <CheckCircle2
-                                className={`w-4 h-4 ${check.ok ? 'text-emerald-600' : 'text-gray-300'}`}
+                                className={`w-4 h-4 ${
+                                    check.ok ? 'text-emerald-600' : 'text-gray-300'
+                                }`}
                             />
                             <span className={check.ok ? 'text-gray-800' : 'text-gray-400'}>
                                 {check.label}
@@ -895,7 +1005,8 @@ const TestStep: React.FC<{
             ) : (
                 <div className="border rounded-lg bg-gray-50 p-6 text-center">
                     <p className="text-sm text-gray-500">
-                        Complete all pre-flight checks above to see a live preview of the claim button.
+                        Complete all pre-flight checks above to see a live preview of the claim
+                        button.
                     </p>
                 </div>
             )}
@@ -906,38 +1017,54 @@ const TestStep: React.FC<{
 
                 <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">1</div>
+                        <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">
+                            1
+                        </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">User clicks the claim button</p>
+                            <p className="font-medium text-gray-800">
+                                User clicks the claim button
+                            </p>
                             <p className="text-sm text-gray-500">Opens a branded modal</p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">2</div>
+                        <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">
+                            2
+                        </div>
 
                         <div>
                             <p className="font-medium text-gray-800">User enters their email</p>
-                            <p className="text-sm text-gray-500">A 6-digit code is sent to verify</p>
+                            <p className="text-sm text-gray-500">
+                                A 6-digit code is sent to verify
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">3</div>
+                        <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">
+                            3
+                        </div>
 
                         <div>
                             <p className="font-medium text-gray-800">User enters the OTP code</p>
-                            <p className="text-sm text-gray-500">Credential is issued to their wallet</p>
+                            <p className="text-sm text-gray-500">
+                                Credential is issued to their wallet
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center justify-center shrink-0">✓</div>
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center justify-center shrink-0">
+                            ✓
+                        </div>
 
                         <div>
                             <p className="font-medium text-gray-800">Success!</p>
-                            <p className="text-sm text-gray-500">LearnCard wallet opens, <code>onSuccess</code> is called</p>
+                            <p className="text-sm text-gray-500">
+                                LearnCard wallet opens, <code>onSuccess</code> is called
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -948,8 +1075,8 @@ const TestStep: React.FC<{
                 <h4 className="font-medium text-blue-800 mb-2">Returning Users</h4>
 
                 <p className="text-sm text-blue-700">
-                    The SDK remembers logged-in users via localStorage. On their next visit, they'll see an
-                    "Accept Credential" button instead of entering email/OTP again.
+                    The SDK remembers logged-in users via localStorage. On their next visit, they'll
+                    see an "Accept Credential" button instead of entering email/OTP again.
                 </p>
             </div>
 
@@ -1031,8 +1158,15 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
             const authority = await wallet.invoke.createSigningAuthority(saName);
             if (!authority?.endpoint || !authority?.name || !authority?.did) return;
 
-            await wallet.invoke.registerSigningAuthority(authority.endpoint, authority.name, authority.did);
-            await wallet.invoke.setPrimaryRegisteredSigningAuthority(authority.endpoint, authority.name);
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint,
+                authority.name,
+                authority.did
+            );
+            await wallet.invoke.setPrimaryRegisteredSigningAuthority(
+                authority.endpoint,
+                authority.name
+            );
         };
         ensureSigningAuthority().catch(console.error);
     }, []);
@@ -1074,7 +1208,8 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         if (savedConfig) {
             if (savedConfig.partnerName !== undefined) setPartnerName(savedConfig.partnerName);
             if (savedConfig.branding !== undefined) setBranding(savedConfig.branding);
-            if (savedConfig.requestBackgroundIssuance !== undefined) setRequestBackgroundIssuance(savedConfig.requestBackgroundIssuance);
+            if (savedConfig.requestBackgroundIssuance !== undefined)
+                setRequestBackgroundIssuance(savedConfig.requestBackgroundIssuance);
         }
 
         setHasRestoredState(true);
@@ -1120,46 +1255,57 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         }, 50);
     }, []);
 
-    const handleStepComplete = useCallback((stepId: string) => {
-        if (isTransitioning) return;
-        setIsTransitioning(true);
-        guideState.markStepComplete(stepId);
-        guideState.nextStep();
-        scrollToTop();
-        // Brief debounce to prevent double-clicks during step transition
-        setTimeout(() => setIsTransitioning(false), 150);
-    }, [isTransitioning, guideState, scrollToTop]);
+    const handleStepComplete = useCallback(
+        (stepId: string) => {
+            if (isTransitioning) return;
+            setIsTransitioning(true);
+            guideState.markStepComplete(stepId);
+            guideState.nextStep();
+            scrollToTop();
+            // Brief debounce to prevent double-clicks during step transition
+            setTimeout(() => setIsTransitioning(false), 150);
+        },
+        [isTransitioning, guideState, scrollToTop]
+    );
 
     const handleBack = useCallback(() => {
         guideState.prevStep();
         scrollToTop();
     }, [guideState, scrollToTop]);
 
-    const handleStepClick = useCallback((step: number) => {
-        guideState.goToStep(step);
-        scrollToTop();
-    }, [guideState, scrollToTop]);
+    const handleStepClick = useCallback(
+        (step: number) => {
+            guideState.goToStep(step);
+            scrollToTop();
+        },
+        [guideState, scrollToTop]
+    );
 
     // Integration selection guard — placed after all hooks to respect Rules of Hooks
     if (!selectedIntegration) {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
+                <p className="text-gray-500">
+                    Please select an integration from the header dropdown to continue.
+                </p>
             </div>
         );
     }
 
     // Allow navigating to current step, any completed step, or any earlier step.
     // Forward navigation requires all previous steps to be complete.
-    const canNavigateToStep = useCallback((index: number) => {
-        if (index === guideState.currentStep) return true;
-        if (index < guideState.currentStep) return true;
-        if (guideState.isStepComplete(STEPS[index].id)) return true;
-        for (let i = 0; i < index; i++) {
-            if (!guideState.isStepComplete(STEPS[i].id)) return false;
-        }
-        return true;
-    }, [guideState.currentStep, guideState.isStepComplete]);
+    const canNavigateToStep = useCallback(
+        (index: number) => {
+            if (index === guideState.currentStep) return true;
+            if (index < guideState.currentStep) return true;
+            if (guideState.isStepComplete(STEPS[index].id)) return true;
+            for (let i = 0; i < index; i++) {
+                if (!guideState.isStepComplete(STEPS[i].id)) return false;
+            }
+            return true;
+        },
+        [guideState.currentStep, guideState.isStepComplete]
+    );
 
     return (
         <div ref={guideTopRef} className="max-w-3xl mx-auto py-4">
@@ -1212,7 +1358,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     templates={templates}
                     isTransitioning={isTransitioning}
                     whitelistedDomains={selectedIntegration.whitelistedDomains || []}
-                    onWhitelistedDomainsChange={(domains) => {
+                    onWhitelistedDomainsChange={domains => {
                         updateIntegrationMutation.mutate({
                             id: selectedIntegration.id,
                             updates: { whitelistedDomains: domains },

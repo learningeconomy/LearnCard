@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Inbox, Award, Bell, ExternalLink } from 'lucide-react';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-panel-content');
 
 import { useWallet } from 'learn-card-base';
 
@@ -235,7 +237,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
             setEarnedCredentials(appCredentials);
             setBadgeCount(result.totalCount);
         } catch (error) {
-            console.error('[CredentialPanelContent] Error fetching credentials:', error);
+            log.error('[CredentialPanelContent] Error fetching credentials:', error);
         } finally {
             setIsLoading(false);
         }
@@ -258,7 +260,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                 setNotifications(result.notifications);
             }
         } catch (error) {
-            console.error('[CredentialPanelContent] Error fetching notifications:', error);
+            log.error('[CredentialPanelContent] Error fetching notifications:', error);
         } finally {
             setIsLoadingNotifications(false);
         }
@@ -296,7 +298,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
 
             setNotifications(prev => prev.filter(n => n._id !== notificationId));
         } catch (error) {
-            console.error('[CredentialPanelContent] Error archiving notification:', error);
+            log.error('[CredentialPanelContent] Error archiving notification:', error);
         }
     }, [initWallet]);
 
@@ -312,7 +314,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                 );
             }
         } catch (error) {
-            console.error('[CredentialPanelContent] Error marking notification read:', error);
+            log.error('[CredentialPanelContent] Error marking notification read:', error);
         }
 
         if (actionPath && onNavigateAction) {

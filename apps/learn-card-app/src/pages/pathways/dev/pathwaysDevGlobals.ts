@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('pathways-dev-globals');
 /**
  * Dev-only console globals for the Pathways v0.5 demo loop.
  *
@@ -195,7 +197,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
     const activeId = options.pathwayId ?? pathwayStore.get.activePathwayId();
 
     if (!activeId) {
-        console.warn('[pathwaysDev] No active pathway — seed one first.');
+        log.warn('[pathwaysDev] No active pathway — seed one first.');
 
         return { proposalsEmitted: 0, skipped: [] };
     }
@@ -203,7 +205,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
     const pathway = pathwayStore.get.pathways()[activeId];
 
     if (!pathway) {
-        console.warn(`[pathwaysDev] Active pathway "${activeId}" not in the store.`);
+        log.warn(`[pathwaysDev] Active pathway "${activeId}" not in the store.`);
 
         return { proposalsEmitted: 0, skipped: [] };
     }
@@ -211,7 +213,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
     const outcomes = pathway.outcomes ?? [];
 
     if (outcomes.length === 0) {
-        console.warn(`[pathwaysDev] Pathway "${pathway.title}" has no outcomes to match against.`);
+        log.warn(`[pathwaysDev] Pathway "${pathway.title}" has no outcomes to match against.`);
 
         return { proposalsEmitted: 0, skipped: [] };
     }
@@ -399,7 +401,7 @@ const simulateCredentialClaim = (
             ...(input.boostUri ? { boostUri: input.boostUri } : {}),
         });
     } catch (err) {
-        console.error('[pathwaysDev] simulateCredentialClaim rejected by bus:', err);
+        log.error('[pathwaysDev] simulateCredentialClaim rejected by bus:', err);
 
         return null;
     }
@@ -447,7 +449,7 @@ const simulateAiSessionFinish = (
     input: SimulateSessionInput,
 ): ProgressDispatchRecord | null => {
     if (!input.topicUri) {
-        console.warn('[pathwaysDev] simulateAiSessionFinish requires a topicUri.');
+        log.warn('[pathwaysDev] simulateAiSessionFinish requires a topicUri.');
 
         return null;
     }
@@ -468,7 +470,7 @@ const simulateAiSessionFinish = (
             source: 'user-finish',
         });
     } catch (err) {
-        console.error('[pathwaysDev] simulateAiSessionFinish rejected by bus:', err);
+        log.error('[pathwaysDev] simulateAiSessionFinish rejected by bus:', err);
 
         return null;
     }
@@ -498,7 +500,7 @@ const inspectActivePathway = (): void => {
     const activeId = pathwayStore.get.activePathwayId();
 
     if (!activeId) {
-        console.warn('[pathwaysDev] No active pathway.');
+        log.warn('[pathwaysDev] No active pathway.');
 
         return;
     }
@@ -654,7 +656,7 @@ export const installPathwaysDevGlobals = (): void => {
             const id = pathwayId ?? pathwayStore.get.activePathwayId();
 
             if (!id) {
-                console.warn(
+                log.warn(
                     '[pathwaysDev] triggerCelebration: no pathwayId given and no active pathway.',
                 );
 

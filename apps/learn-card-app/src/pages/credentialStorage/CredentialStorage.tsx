@@ -13,6 +13,9 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-storage');
+
 import {
     getCredentialName,
     getImageUrlFromCredential,
@@ -160,11 +163,11 @@ const CredentialStorage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (!currentUser?.privateKey) {
-                console.warn('🤔 Current user still loading...');
+                log.warn('🤔 Current user still loading...');
                 return;
             }
 
-            console.log('Current user found ✅.');
+            log.info('Current user found ✅.');
 
             const wallet = await initWallet();
             const walletDid = wallet?.id.did();
@@ -204,7 +207,7 @@ const CredentialStorage: React.FC = () => {
                     uri,
                     imgUrl,
                 };
-                console.log(
+                log.info(
                     `Adding VC to LearnCard (${x + 1}/${credentialsToAccept.length})`,
                     payload
                 );
@@ -230,7 +233,7 @@ const CredentialStorage: React.FC = () => {
             setIsLoading(false);
             setClaimCount(totalToClaim);
         } catch (e) {
-            console.error(e);
+            log.error(e);
             presentToast(`Oops, we were unable accept the credentials. Please try again.`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -245,7 +248,7 @@ const CredentialStorage: React.FC = () => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
             presentToast(`Oops, we were unable reject the credentials. Please try again.`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

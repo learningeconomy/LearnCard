@@ -12,6 +12,9 @@ import {
     useSearchFrameworkSkills,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('browse-framework-page');
+
 import { IonPage, IonSpinner } from '@ionic/react';
 import ManageSkills from './ManageSkills';
 import FrameworkColumn from './FrameworkColumn';
@@ -887,7 +890,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                                 toastType: ToastTypeEnum.Error,
                                 duration: 10000,
                             });
-                            console.error('Error updating skills:', error);
+                            log.error('Error updating skills:', error);
                         }
                     }}
                 />,

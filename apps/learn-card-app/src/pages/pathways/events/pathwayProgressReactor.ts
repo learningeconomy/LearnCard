@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('pathway-progress-reactor');
 /**
  * pathwayProgressReactor — the seam between "something happened in
  * the wallet" and "the pathway just advanced".
@@ -255,7 +257,7 @@ export const createPathwayProgressReactor = (
             onDispatch?.(record);
         } catch (err) {
             // eslint-disable-next-line no-console
-            console.error('[pathwayProgressReactor] onDispatch threw:', err);
+            log.error('[pathwayProgressReactor] onDispatch threw:', err);
         }
 
         for (const listener of Array.from(subscribers)) {
@@ -263,7 +265,7 @@ export const createPathwayProgressReactor = (
                 listener(record);
             } catch (err) {
                 // eslint-disable-next-line no-console
-                console.error(
+                log.error(
                     '[pathwayProgressReactor] subscribe listener threw:',
                     err,
                 );
@@ -512,7 +514,7 @@ const tryAutoAccept = (
 
         if (!existing) {
             // eslint-disable-next-line no-console
-            console.warn(
+            log.warn(
                 '[pathwayProgressReactor] proposal targets unknown pathway',
                 proposal.pathwayId,
             );
@@ -526,7 +528,7 @@ const tryAutoAccept = (
         // routing bug.
         if (proposal.ownerDid !== ownerDid) {
             // eslint-disable-next-line no-console
-            console.warn(
+            log.warn(
                 '[pathwayProgressReactor] proposal owner does not match session owner',
                 { proposalOwner: proposal.ownerDid, sessionOwner: ownerDid },
             );
@@ -547,7 +549,7 @@ const tryAutoAccept = (
             // surfaces if they exist; otherwise the proposal simply
             // ages out at its expiresAt. Don't crash the reactor.
             // eslint-disable-next-line no-console
-            console.error(
+            log.error(
                 '[pathwayProgressReactor] auto-accept failed for',
                 proposal.id,
                 err,

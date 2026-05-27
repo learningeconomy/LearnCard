@@ -2,6 +2,8 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { X } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-iframe-modal');
 
 import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
@@ -107,7 +109,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
             const url = new URL(embedUrl);
             return url.origin;
         } catch (error) {
-            console.error('[PostMessage] Invalid embedUrl:', embedUrl);
+            log.error('[PostMessage] Invalid embedUrl:', embedUrl);
             setErrorMessage(`Invalid embed URL: ${embedUrl}`);
             setShowErrorToast(true);
             return '';

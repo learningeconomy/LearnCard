@@ -10,6 +10,9 @@ import {
     IonTitle,
 } from '@ionic/react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-app-full-screen');
+
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
@@ -52,9 +55,12 @@ export const EmbedAppFullScreen: React.FC = () => {
         credential?: any; // LC-1644: pre-resolved VC/VP from APP_EVENT, avoids redundant wallet.read.get()
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string, credential?: any) => {
-        setPendingCredential({ credentialUri, boostUri, credential });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
 
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
@@ -87,7 +93,9 @@ export const EmbedAppFullScreen: React.FC = () => {
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(window.location.origin)}`;
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(
+                    window.location.origin
+                )}`;
             } catch {
                 // embedUrl is invalid — do not navigate
             }
@@ -105,9 +113,7 @@ export const EmbedAppFullScreen: React.FC = () => {
     // Redirect back if no embedUrl provided
     React.useEffect(() => {
         if (!embedUrl) {
-            console.error(
-                '[EmbedApp] No embedUrl provided in query params or state, redirecting back'
-            );
+            log.error('[EmbedApp] No embedUrl provided in query params or state, redirecting back');
             history.goBack();
         }
     }, [embedUrl, history]);
@@ -119,7 +125,7 @@ export const EmbedAppFullScreen: React.FC = () => {
             const url = new URL(embedUrl);
             return url.origin;
         } catch {
-            console.error('[PostMessage] Invalid embedUrl:', embedUrl);
+            log.error('[PostMessage] Invalid embedUrl:', embedUrl);
             return '';
         }
     }, [embedUrl]);
