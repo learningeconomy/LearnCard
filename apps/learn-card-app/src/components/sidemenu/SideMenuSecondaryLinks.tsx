@@ -2,6 +2,8 @@ import React from 'react';
 import PreloadingLink from '../generic/PreloadingLink';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../paraglide/messages.js';
+
 import CustomSpinner from '../svgs/CustomSpinner';
 import { IonMenuToggle, IonList } from '@ionic/react';
 
@@ -14,6 +16,7 @@ import {
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
+import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { chatBotStore } from '../../stores/chatBotStore';
 
@@ -92,8 +95,9 @@ const SideMenuSecondaryLinks: React.FC<{
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    const passportLabel = m['sidemenu.links.passport']();
+    let walletText = passportLabel;
+    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? passportLabel;
 
     let walletTextStyles = '';
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
@@ -149,20 +153,20 @@ const SideMenuSecondaryLinks: React.FC<{
                     e.preventDefault();
                     const msg =
                         reason === 'disabled_minor'
-                            ? 'AI features are not available for users under 18.'
-                            : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                            ? m['launchpad.aiDisabledMinor']()
+                            : m['launchpad.aiDisabledPrivacy']();
                     presentToast(msg, { type: ToastTypeEnum.Error });
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
             >
-                {renderIcon()} {link.label}
+                {renderIcon()} {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
             </button>
         ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
-                {renderIcon()} {link.label}
+                {renderIcon()} {m[`sidemenu_links_${getSideMenuTranslationKey(link.id)}`]()}
             </PreloadingLink>
         );
 

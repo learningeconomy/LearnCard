@@ -1,0 +1,124 @@
+{
+    "sidemenu": {
+        "addTo": "Add to {{brand}}",
+        "newAiSession": "New AI Session",
+        "footer": {
+            "poweredBy": "Powered by <0>Consent Flow</0>",
+            "ownYourData": "You own your own data.",
+            "connectionsEncrypted": "All connections are <0>encrypted.</0>",
+            "privacyPolicy": "Privacy Policy",
+            "termsOfService": "Terms of Service",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Close"
+        },
+        "links": {
+            "launchPad": "Apps",
+            "contacts": "Contacts",
+            "alerts": "Alerts",
+            "personalize": "Personalize",
+            "adminTools": "Admin Tools",
+            "wallet": "Wallet",
+            "passport": "Passport",
+            "aiTopics": "AI Sessions",
+            "aiInsights": "AI Insights",
+            "aiPathways": "AI Pathways",
+            "skills": "Skills",
+            "socialBadges": "Boosts",
+            "achievements": "Achievements",
+            "studies": "Studies",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Experiences",
+            "families": "Families",
+            "ids": "IDs",
+            "pathways": "Journeys"
+        }
+    },
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "Build My {{brand}}",
+            "progress": "{{percent}}% optimized",
+            "processing": "Processing documents…",
+            "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
+            "pendingReview": "{{count}} credential(s) ready for review"
+        },
+        "resumeBuilder": {
+            "title": "Resume Builder",
+            "subtitle": "Build your resume with {{brand}} credentials.",
+            "yourResume": "Your Resume",
+            "buildYourResume": "Build Your Resume",
+            "updatedToday": "Updated <0>today</0>",
+            "tagline": "Stand out with a tailored resume"
+        },
+        "explore": "Explore"
+    },
+    "launchpad": {
+        "title": "Apps",
+        "header": {
+            "contacts": "Contacts",
+            "aiSessions": "AI Sessions",
+            "alerts": "Alerts"
+        },
+        "tabs": {
+            "myApps": "My Apps",
+            "ai": "AI",
+            "learning": "Learning",
+            "games": "Games",
+            "tools": "Tools",
+            "employment": "Employment",
+            "credentials": "Credentials",
+            "other": "Other",
+            "plugins": "Plugins",
+            "all": "All"
+        },
+        "sections": {
+            "suggestedApps": "Suggested Apps",
+            "installedApps": "Installed Apps",
+            "allApps": "All Apps",
+            "allCategory": "All {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "Your apps will live here",
+            "noAppsAvailable": "No apps available right now",
+            "nothingInCategory": "Nothing in {{category}} yet",
+            "installSomething": "Install something from the App Store to get started.",
+            "checkBackLater": "Check back later — new apps are added all the time.",
+            "checkBackSoon": "Check back soon, or browse all apps."
+        },
+        "aiDisabledMinor": "AI features are not available for users under 18.",
+        "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "AI Sessions",
+            "aiPathways": "AI Pathways",
+            "aiInsights": "AI Insights",
+            "skills": "Skills",
+            "socialBadges": "Boosts",
+            "achievements": "Achievements",
+            "studies": "Studies",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Experiences",
+            "families": "Families",
+            "ids": "IDs"
+        }
+    },
+    "theme": {
+        "title": "Choose Your Theme",
+        "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
+        "subtitleGeneric": "Choose your preferred visual style.",
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        }
+    },
+    "language": {
+        "select": "Select language",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية"
+    }
+}

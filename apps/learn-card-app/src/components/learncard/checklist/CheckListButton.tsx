@@ -1,6 +1,9 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../paraglide/messages.js';
+import { renderParts } from '../../../i18n';
+
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import CheckListContainer from '../checklist/CheckListContainer';
@@ -88,16 +91,16 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
 
                 <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                    Build My {brandingConfig.name}
+                    {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                 </h5>
 
                 {isParsing ? (
                     <p className={`mt-2 text-[13px] leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
-                        Processing documents...
+                        {m['passport.buildMyLearnCard.processing']()}
                     </p>
                 ) : hasPendingReview ? (
                     <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
-                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                        {m['passport.buildMyLearnCard.pendingReview']({ count: pendingReviewCount })}
                     </p>
                 ) : (
                     <div className="mt-3">
@@ -108,7 +111,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             />
                         </div>
                         <p className={`mt-2 text-xs leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-600'}`}>
-                            {optimizedPercent}% optimized
+                            {m['passport.buildMyLearnCard.progress']({ percent: optimizedPercent })}
                         </p>
                     </div>
                 )}
@@ -137,21 +140,22 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col">
                     <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                        Build My {brandingConfig.name}
+                        {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                     </h5>
                     {isParsing ? (
                         <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                            Processing documents...
+                            {m['passport.buildMyLearnCard.processing']()}
                         </p>
                     ) : hasPendingReview ? (
                         <p className="text-[14px] text-amber-600 font-poppins font-semibold">
-                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                            {m['passport.buildMyLearnCard.pendingReview']({ count: pendingReviewCount })}
                         </p>
                     ) : (
                         <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                            <span className="font-semibold">{completedItems}</span> of{' '}
-                            <span className="font-semibold">{checklistItems.length}</span> Steps
-                            Completed
+                            {renderParts(m['passport.buildMyLearnCard.stepsCompleted'].parts({ completed: completedItems, total: checklistItems.length }), {
+                                '0': <span className="font-semibold" />,
+                                '1': <span className="font-semibold" />,
+                            })}
                         </p>
                     )}
                 </div>

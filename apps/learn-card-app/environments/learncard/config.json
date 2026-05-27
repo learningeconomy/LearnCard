@@ -99,6 +99,11 @@
         "websiteUrl": "https://www.learncard.com/"
     },
 
+    "i18n": {
+        "defaultLanguage": "en",
+        "supportedLanguages": ["en", "es", "de", "ar"]
+    },
+
     "native": {
         "bundleId": "com.learncard.app",
         "displayName": "LearnCard",

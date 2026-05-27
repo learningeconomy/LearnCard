@@ -9,6 +9,7 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
 /**
  * Resolve a short build commit SHA at config-eval time.
@@ -62,6 +63,10 @@ export default defineConfig(({ mode }) => {
             react(),
             svgr(),
             tsconfigPaths({ root: '../../' }),
+            paraglideVitePlugin({
+                project: './project.inlang',
+                outdir: './src/paraglide',
+            }),
             ...(process.env.ANALYZE
                 ? [
                       visualizer({

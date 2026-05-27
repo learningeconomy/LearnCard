@@ -46,6 +46,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals } from 'learn-card-base';
+import { LocaleProvider } from './i18n';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
@@ -375,6 +376,7 @@ const AppRouter: React.FC = () => {
     if (initLoading) return <LoginLoadingPage />;
 
     return (
+        <LocaleProvider>
         <GenericErrorBoundary>
             <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
                 <IonSplitPane
@@ -397,6 +399,7 @@ const AppRouter: React.FC = () => {
             </div>
             <Modals />
         </GenericErrorBoundary>
+        </LocaleProvider>
     );
 };
 

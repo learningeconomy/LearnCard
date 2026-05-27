@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import * as m from '../../paraglide/messages.js';
+
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
@@ -18,7 +20,7 @@ import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
 import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
-import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
+import LaunchPadAppTabs, { LaunchPadTabEnum, getTabTranslationKey } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -35,6 +37,24 @@ import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+
+    // Local tab→message map. Duplicated from LaunchPadAppTabs.tsx to
+    // avoid coupling to that module's internals now that getTabTranslationKey
+    // has been replaced by Paraglide's direct message functions.
+    const tabLabel = (tab: LaunchPadTabEnum): string =>
+        ({
+            [LaunchPadTabEnum.myApps]: m['launchpad.tabs.myApps'],
+            [LaunchPadTabEnum.ai]: m['launchpad.tabs.ai'],
+            [LaunchPadTabEnum.learning]: m['launchpad.tabs.learning'],
+            [LaunchPadTabEnum.games]: m['launchpad.tabs.games'],
+            [LaunchPadTabEnum.tools]: m['launchpad.tabs.tools'],
+            [LaunchPadTabEnum.employment]: m['launchpad.tabs.employment'],
+            [LaunchPadTabEnum.credentials]: m['launchpad.tabs.credentials'],
+            [LaunchPadTabEnum.other]: m['launchpad.tabs.other'],
+            [LaunchPadTabEnum.plugins]: m['launchpad.tabs.plugins'],
+            [LaunchPadTabEnum.all]: m['launchpad.tabs.all'],
+        })[tab]();
+
     const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
@@ -377,7 +397,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Installed Apps
+                                                    {m['launchpad.sections.installedApps']()}
                                                 </p>
                                             </div>
                                             {filteredInstalledApps.map(app => (
@@ -396,7 +416,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Suggested Apps
+                                                    {m['launchpad.sections.suggestedApps']()}
                                                 </p>
                                             </div>
                                             {filteredCuratedApps.map(app => (
@@ -418,7 +438,9 @@ const LaunchPad: React.FC = () => {
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                        {isAll
+                                                            ? m['launchpad.sections.allApps']()
+                                                            : m['launchpad.sections.allCategory']({ category: tabLabel(tab) })}
                                                     </p>
                                                 </div>
                                                 {nonPromotedAvailableApps.map(app => (
@@ -476,17 +498,18 @@ const LaunchPad: React.FC = () => {
 
                                         if (!isEmpty) return null;
 
+                                        const tabLabelStr = tabLabel(tab);
                                         const title = isMyApps
-                                            ? 'Your apps will live here'
+                                            ? m['launchpad.emptyStates.noInstalledApps']()
                                             : isAll
-                                              ? 'No apps available right now'
-                                              : `Nothing in ${tab} yet`;
+                                              ? m['launchpad.emptyStates.noAppsAvailable']()
+                                              : m['launchpad.emptyStates.nothingInCategory']({ category: tabLabelStr })
 
                                         const subtitle = isMyApps
-                                            ? 'Install something from the App Store to get started.'
+                                            ? m['launchpad.emptyStates.installSomething']()
                                             : isAll
-                                              ? 'Check back later — new apps are added all the time.'
-                                              : 'Check back soon, or browse all apps.';
+                                              ? m['launchpad.emptyStates.checkBackLater']()
+                                              : m['launchpad.emptyStates.checkBackSoon']();
 
                                         const showCta = !isAll;
 

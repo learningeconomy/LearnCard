@@ -199,6 +199,11 @@ export const tenantEmailConfigSchema = z.object({
     copyrightHolder: z.string().optional(),
 }).passthrough();
 
+export const tenantI18nConfigSchema = z.object({
+    defaultLanguage: z.string().default('en'),
+    supportedLanguages: z.array(z.string()).default(['en']),
+}).passthrough();
+
 /** @planned — ecosystem fields reserved for multi-tenant org hierarchy support */
 export const tenantEcosystemConfigSchema = z.object({
     ecosystemId: z.string().optional(),
@@ -228,6 +233,7 @@ export const tenantConfigSchema = z.object({
     features: tenantFeatureConfigSchema,
     observability: tenantObservabilityConfigSchema,
     links: tenantLinksConfigSchema,
+    i18n: tenantI18nConfigSchema.optional(),
 
     email: tenantEmailConfigSchema.optional(),
     native: tenantNativeConfigSchema.optional(),
@@ -250,6 +256,7 @@ export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfig
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;
 export type TenantNativeConfig = z.infer<typeof tenantNativeConfigSchema>;
 export type TenantEmailConfig = z.infer<typeof tenantEmailConfigSchema>;
+export type TenantI18nConfig = z.infer<typeof tenantI18nConfigSchema>;
 export type TenantEcosystemConfig = z.infer<typeof tenantEcosystemConfigSchema>;
 
 // -----------------------------------------------------------------

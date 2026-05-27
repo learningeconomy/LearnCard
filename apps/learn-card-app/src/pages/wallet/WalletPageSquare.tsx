@@ -1,6 +1,8 @@
 import React from 'react';
 import numeral from 'numeral';
 
+import * as m from '../../paraglide/messages.js';
+
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
@@ -48,7 +50,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
         categoryType === CredentialCategoryEnum.aiInsight ||
         categoryType === CredentialCategoryEnum.aiPathway
     ) {
-        metaData = <p className="text-white font-poppins font-semibold text-base">Explore</p>;
+        metaData = <p className="text-white font-poppins font-semibold text-base">{m['passport.explore']()}</p>;
         metaDataContainerStyles = 'w-[80px]';
     }
 

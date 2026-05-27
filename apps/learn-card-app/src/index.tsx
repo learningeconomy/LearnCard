@@ -1,4 +1,5 @@
 import './constants/sentry';
+import { LocaleProvider } from './i18n';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -61,9 +62,11 @@ import * as Sentry from '@sentry/browser';
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
-                    <App />
-                </LDProvider>
+                <LocaleProvider>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </LocaleProvider>
             </TenantConfigProvider>
         );
     }

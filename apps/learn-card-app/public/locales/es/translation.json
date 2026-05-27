@@ -1,0 +1,124 @@
+{
+    "sidemenu": {
+        "addTo": "Agregar a {{brand}}",
+        "newAiSession": "Nueva Sesión IA",
+        "footer": {
+            "poweredBy": "Desarrollado por <0>Consent Flow</0>",
+            "ownYourData": "Tú eres dueño de tus propios datos.",
+            "connectionsEncrypted": "Todas las conexiones están <0>cifradas.</0>",
+            "privacyPolicy": "Política de Privacidad",
+            "termsOfService": "Términos de Servicio",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Cerrar"
+        },
+        "links": {
+            "launchPad": "Apps",
+            "contacts": "Contactos",
+            "alerts": "Alertas",
+            "personalize": "Personalizar",
+            "adminTools": "Administración",
+            "wallet": "Cartera",
+            "passport": "Pasaporte",
+            "aiTopics": "Sesiones IA",
+            "aiInsights": "Perspectivas IA",
+            "aiPathways": "Trayectos IA",
+            "skills": "Habilidades",
+            "socialBadges": "Insignias",
+            "achievements": "Logros",
+            "studies": "Estudios",
+            "portfolio": "Portafolio",
+            "assistance": "Asistencia",
+            "experiences": "Experiencias",
+            "families": "Familias",
+            "ids": "Identificaciones",
+            "pathways": "Trayectos"
+        }
+    },
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "Construye Mi {{brand}}",
+            "progress": "{{percent}}% optimizado",
+            "processing": "Procesando documentos…",
+            "stepsCompleted": "<0>{{completed}}</0> de <1>{{total}}</1> pasos completados",
+            "pendingReview": "{{count}} credencial(es) pendiente(s) de revisión"
+        },
+        "resumeBuilder": {
+            "title": "Creador de Currículum",
+            "subtitle": "Crea tu currículum con las credenciales de {{brand}}.",
+            "yourResume": "Tu Currículum",
+            "buildYourResume": "Crea Tu Currículum",
+            "updatedToday": "Actualizado <0>hoy</0>",
+            "tagline": "Destaca con un currículum personalizado"
+        },
+        "explore": "Explorar"
+    },
+    "launchpad": {
+        "title": "Apps",
+        "header": {
+            "contacts": "Contactos",
+            "aiSessions": "Sesiones IA",
+            "alerts": "Alertas"
+        },
+        "tabs": {
+            "myApps": "Mis apps",
+            "ai": "IA",
+            "learning": "Aprendizaje",
+            "games": "Juegos",
+            "tools": "Herramientas",
+            "employment": "Empleo",
+            "credentials": "Credenciales",
+            "other": "Otros",
+            "plugins": "Plugins",
+            "all": "Todas"
+        },
+        "sections": {
+            "suggestedApps": "Apps sugeridas",
+            "installedApps": "Apps instaladas",
+            "allApps": "Todas las apps",
+            "allCategory": "Todas: {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "Tus apps aparecerán aquí",
+            "noAppsAvailable": "No hay apps disponibles en este momento",
+            "nothingInCategory": "Nada en {{category}} todavía",
+            "installSomething": "Instala algo desde la App Store para empezar.",
+            "checkBackLater": "Vuelve más tarde — se añaden apps nuevas con frecuencia.",
+            "checkBackSoon": "Vuelve pronto, o explora todas las apps."
+        },
+        "aiDisabledMinor": "Las funciones de IA no están disponibles para usuarios menores de 18 años.",
+        "aiDisabledPrivacy": "Las funciones de IA están desactivadas. Puedes activarlas en Privacidad y Datos desde tu perfil."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "Sesiones IA",
+            "aiPathways": "Trayectos IA",
+            "aiInsights": "Perspectivas IA",
+            "skills": "Habilidades",
+            "socialBadges": "Insignias",
+            "achievements": "Logros",
+            "studies": "Estudios",
+            "portfolio": "Portafolio",
+            "assistance": "Asistencia",
+            "experiences": "Experiencias",
+            "families": "Familias",
+            "ids": "Identificaciones"
+        }
+    },
+    "theme": {
+        "title": "Elige Tu Tema",
+        "subtitleColorfulFormal": "Alterna entre nuestra experiencia colorida característica y un estilo clásico y formal.",
+        "subtitleGeneric": "Elige tu estilo visual preferido.",
+        "names": {
+            "colorful": "Colorido",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        }
+    },
+    "language": {
+        "select": "Seleccionar idioma",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية"
+    }
+}

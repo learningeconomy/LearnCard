@@ -2,6 +2,9 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../paraglide/messages.js';
+import { renderParts } from '../../i18n';
+
 import SlimCaretRight from '../svgs/SlimCaretRight';
 import ResumeBuilderIcon from '../../assets/images/resume-builder-icon.png';
 
@@ -52,10 +55,10 @@ export const ResumeBuilderController: React.FC<{
                 </div>
 
                 <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                    Resume Builder
+                    {m['passport.resumeBuilder.title']()}
                 </h5>
                 <p className={`mt-1 text-[13px] leading-[125%] font-poppins text-center line-clamp-2 ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
-                    Build your resume with {brandingConfig.name} credentials.
+                    {m['passport.resumeBuilder.subtitle']({ brand: brandingConfig.name })}
                 </p>
             </div>
         );
@@ -83,15 +86,17 @@ export const ResumeBuilderController: React.FC<{
                 </div>
                 <div className="flex flex-col">
                     <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
-                        {resumeExists ? 'Your Resume' : 'Build Your Resume'}
+                        {resumeExists
+                            ? m['passport.resumeBuilder.yourResume']()
+                            : m['passport.resumeBuilder.buildYourResume']()}
                     </h5>
                     <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                         {resumeExists ? (
-                            <span>
-                                Updated <span className="font-semibold">today</span>
-                            </span>
+                            renderParts(m['passport.resumeBuilder.updatedToday'].parts(), {
+                                '0': <span className="font-semibold" />,
+                            })
                         ) : (
-                            'Stand out with a tailored resume'
+                            m['passport.resumeBuilder.tagline']()
                         )}
                     </p>
                 </div>
