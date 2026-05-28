@@ -56,10 +56,15 @@ import { importLearnCardBundle } from '@learncard/holder-continuity';
 await importLearnCardBundle('./learncard-export.zip', {
     password: 'use-a-strong-password',
     wallet: freshWallet,
+    verifyBeforeImport: true,
 });
 ```
 
 Import uploads credential and presentation payloads to the target wallet's LearnCloud store and recreates their LearnCloud index records.
+
+If `verifyBeforeImport` is not set, import only proves bundle integrity and successful decryption. It does not prove issuer signatures, so only import bundles from sources you trust.
+
+Bundle readers enforce default compressed-bundle, per-entry, and JSON parse size limits. Override `maxBundleBytes`, `maxEntryBytes`, or `maxJsonBytes` only for trusted local workflows.
 
 ## Bundle format
 

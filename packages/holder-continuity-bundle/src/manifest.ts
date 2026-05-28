@@ -31,6 +31,8 @@ Sensitive entries use JSON encryption envelopes produced by \`@learncard/sss-key
 
 Debug exports MAY use plaintext payloads by setting \`encrypt: false\`; production exports MUST encrypt sensitive payloads.
 
+Status-list snapshot fetching is HTTPS-only and rejects private, loopback, link-local, and single-label hosts. Exporters SHOULD keep the default timeout and response-size caps unless they are running in a trusted local environment.
+
 ## Manifest hashing
 
 Each \`contents[]\` entry contains the SHA-256 hash of the bytes stored at \`path\`. \`payloadSha256\` is SHA-256 over a deterministic JSON serialization of \`contents[]\` with entries sorted by path.
@@ -43,9 +45,15 @@ Each credential or presentation entry MAY reference an encrypted \`index-record\
 
 \`importLearnCardBundle(...)\` decrypts credential and presentation payloads, uploads them to the target wallet's LearnCloud store, and recreates index records from the encrypted \`index-record\` companions.
 
+Import writes bundle contents into the target wallet. A bundle author who knows the password can include arbitrary credentials, presentations, and index metadata. Use \`verifyBeforeImport: true\` to verify VC/VP signatures before upload when the target wallet exposes \`invoke.verifyCredential\` and \`invoke.verifyPresentation\`.
+
+## Size limits
+
+Readers enforce default compressed-bundle, per-entry, and JSON parse limits to avoid accidentally processing oversized ZIP or JSON payloads. Callers can override these with \`maxBundleBytes\`, \`maxEntryBytes\`, and \`maxJsonBytes\` for trusted local workflows.
+
 ## Import expectations
 
-Importers MUST verify the stored bytes against each entry hash before trusting decrypted content. Importers SHOULD preserve issuer-signed credential and presentation payloads exactly.
+Importers MUST verify the stored bytes against each entry hash before trusting decrypted content. Importers SHOULD verify issuer signatures before upload and preserve issuer-signed credential and presentation payloads exactly.
 `;
 
 export const BUNDLE_README_MD = `# LearnCard Holder Continuity Export
@@ -61,7 +69,9 @@ export const sortContents = (
     contents: LearnCardBundleEntryMetadata[]
 ): LearnCardBundleEntryMetadata[] => [...contents].sort((a, b) => a.path.localeCompare(b.path));
 
-const normalizeContents = (contents: LearnCardBundleEntryMetadata[]): LearnCardBundleEntryMetadata[] =>
+const normalizeContents = (
+    contents: LearnCardBundleEntryMetadata[]
+): LearnCardBundleEntryMetadata[] =>
     JSON.parse(JSON.stringify(sortContents(contents))) as LearnCardBundleEntryMetadata[];
 
 export const computePayloadSha256 = (contents: LearnCardBundleEntryMetadata[]): string =>
@@ -82,5 +92,6 @@ export const assertValidManifest = (manifest: LearnCardBundleManifest): void => 
 
     const expected = computePayloadSha256(manifest.contents);
 
-    if (manifest.payloadSha256 !== expected) throw new Error('LearnCard bundle manifest hash mismatch');
+    if (manifest.payloadSha256 !== expected)
+        throw new Error('LearnCard bundle manifest hash mismatch');
 };

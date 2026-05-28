@@ -17,13 +17,17 @@ const getSeedEntry = (bundle: ReadLearnCardBundleResult): string => {
     const seedEntry = bundle.entries.find(entry => entry.type === 'key-private-seed');
 
     if (!seedEntry) {
-        throw new Error('LearnCard bundle does not contain key-private-seed and cannot be restored');
+        throw new Error(
+            'LearnCard bundle does not contain key-private-seed and cannot be restored'
+        );
     }
 
     const seed = seedEntry.content.trim();
 
-    if (!/^[0-9a-f]+$/i.test(seed)) {
-        throw new Error('LearnCard bundle key-private-seed is not valid hexadecimal seed material');
+    if (!/^[0-9a-f]{64}$/i.test(seed)) {
+        throw new Error(
+            'LearnCard bundle key-private-seed must be exactly 64 hexadecimal characters'
+        );
     }
 
     return seed;

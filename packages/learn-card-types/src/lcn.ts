@@ -839,6 +839,14 @@ export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecord
 
 export const HolderExportMetadataValidator = z.object({
     consentRecords: HolderExportConsentRecordValidator.array(),
+    truncated: z.boolean().optional(),
+    warnings: z.string().array().optional(),
+    limits: z
+        .object({
+            maxConsentRecords: z.number(),
+            maxTransactionsPerConsentRecord: z.number(),
+        })
+        .optional(),
 });
 export type HolderExportMetadata = z.infer<typeof HolderExportMetadataValidator>;
 
@@ -960,10 +968,7 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
     to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    from: z.union([
-        z.string(),
-        LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    ]),
+    from: z.union([z.string(), LCNProfileValidator.partial().and(z.object({ did: z.string() }))]),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.iso.datetime().optional(),

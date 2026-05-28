@@ -1,8 +1,11 @@
 import { webcrypto } from 'node:crypto';
 
+import JSZip from 'jszip';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createLearnCardBundle } from '../exportBundle';
+import { sha256Hex } from '../crypto';
+import { computePayloadSha256 } from '../manifest';
 import { readLearnCardBundleSeedData, restoreLearnCardFromBundleData } from '../restoreBundle';
 import type { JsonValue, LearnCardBundleWallet } from '../types';
 
@@ -83,5 +86,36 @@ describe('restore helpers', () => {
             didkit: 'node',
         });
         expect(restored).toEqual({ restored: true });
+    });
+
+    it('rejects malformed exported seeds', async () => {
+        const bundle = await createLearnCardBundle(createWallet(), {
+            password: 'correct horse battery staple',
+            fetchStatusLists: false,
+        });
+        const zip = await JSZip.loadAsync(bundle.data);
+        const seedPath = 'keys/private-key-seed.txt.enc';
+        const tamperedSeed = `${'f'.repeat(63)}\n`;
+        const contents = bundle.manifest.contents.map(entry =>
+            entry.path === seedPath
+                ? { ...entry, encrypted: false, sha256: sha256Hex(tamperedSeed) }
+                : entry
+        );
+        const manifest = {
+            ...bundle.manifest,
+            contents,
+            payloadSha256: computePayloadSha256(contents),
+        };
+
+        zip.file(seedPath, tamperedSeed, { date: new Date('2024-01-01T00:00:00.000Z') });
+        zip.file('manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+
+        const data = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+
+        await expect(
+            readLearnCardBundleSeedData(data, { password: 'correct horse battery staple' })
+        ).rejects.toThrow(
+            'LearnCard bundle key-private-seed must be exactly 64 hexadecimal characters'
+        );
     });
 });

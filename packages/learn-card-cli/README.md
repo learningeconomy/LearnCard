@@ -12,6 +12,7 @@ you all the tools you need to easily play around with the Learn Card SDK!
 ![LearnCard CLI](https://user-images.githubusercontent.com/2185016/201382605-13eb7bb2-f6b6-4099-97a1-1a623bf58486.gif)
 
 ## Documentation
+
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
@@ -29,35 +30,40 @@ npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7
 The CLI exposes REPL helpers from `@learncard/holder-continuity` for holder-controlled export, restore, and self-import:
 
 ```js
+const password = await getLearnCardBundlePassword();
+
 await exportLearnCardBundle(learnCard, {
     out: './learncard-export.zip',
-    password: 'use-a-strong-password',
+    password,
 });
 
 const freshWallet = await initLearnCard({ seed: '0'.repeat(64), network: true });
 await importLearnCardBundle('./learncard-export.zip', {
-    password: 'use-a-strong-password',
+    password,
     wallet: freshWallet,
+    verifyBeforeImport: true,
 });
 ```
 
 ```js
-const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', {
-    password: 'use-a-strong-password',
-});
+const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', { password });
 ```
+
+`getLearnCardBundlePassword()` prompts without echoing the password into the REPL, which avoids saving it in REPL history. You can still pass a password string directly for local scripts.
 
 `restoreLearnCardFromBundle(...)` decrypts the exported seed and returns a wallet with the original DID. It does not upload bundle payloads or recreate index records; use `importLearnCardBundle(...)` when copying credentials into another wallet.
 
 If you omit the first argument, the CLI exports the default `learnCard` wallet it created at startup:
 
 ```js
-await exportLearnCardBundle({ out: './learncard-export.zip', password: 'use-a-strong-password' });
+const password = await getLearnCardBundlePassword();
+await exportLearnCardBundle({ out: './learncard-export.zip', password });
 ```
 
 See `@learncard/holder-continuity` `BUNDLE_SPEC.md` for the ZIP layout and manifest hashing rules.
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
@@ -65,7 +71,6 @@ Please make sure to update tests as appropriate.
 ## Who is Learning Economy Foundation?
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
-
 
 ## License
 

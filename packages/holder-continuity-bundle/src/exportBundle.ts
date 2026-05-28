@@ -1,4 +1,6 @@
+import { lookup } from 'node:dns/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { isIP } from 'node:net';
 import { dirname } from 'node:path';
 
 import JSZip from 'jszip';
@@ -18,6 +20,160 @@ import { encodePayload, sha256Hex, stableStringify } from './crypto';
 
 const ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 
+const DEFAULT_STATUS_LIST_FETCH_TIMEOUT_MS = 5000;
+const DEFAULT_MAX_STATUS_LIST_BYTES = 5 * 1024 * 1024;
+
+const redactUrl = (value: string): string => {
+    try {
+        const url = new URL(value);
+        const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+        const shouldRedactHost =
+            !hostname.includes('.') ||
+            hostname === 'localhost' ||
+            hostname.endsWith('.localhost') ||
+            Boolean(isIP(hostname) && isPrivateAddress(hostname));
+        const host = shouldRedactHost ? '[redacted-host]' : url.host;
+
+        return `${url.protocol}//${host}${url.pathname}${url.search ? '?[redacted]' : ''}`;
+    } catch {
+        return value.replace(/[?&][^=\s]+=[^\s&]+/g, '?[redacted]');
+    }
+};
+
+const redactText = (value: string): string =>
+    value.replace(/https?:\/\/[^\s'"<>]+/gi, match => redactUrl(match));
+
+const safeMessage = (error: unknown): string =>
+    redactText(error instanceof Error ? error.message : String(error));
+
+const isPrivateIPv4 = (address: string): boolean => {
+    const parts = address.split('.').map(part => Number(part));
+
+    if (parts.length !== 4 || parts.some(part => !Number.isInteger(part) || part < 0 || part > 255))
+        return true;
+
+    const [a, b] = parts;
+
+    if (a === 0 || a === 10 || a === 127 || a >= 224) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 198 && (b === 18 || b === 19)) return true;
+
+    return false;
+};
+
+const isPrivateIPv6 = (address: string): boolean => {
+    const normalized = address.toLowerCase();
+
+    if (normalized === '::' || normalized === '::1') return true;
+    if (normalized.startsWith('fc') || normalized.startsWith('fd')) return true;
+    if (
+        normalized.startsWith('fe8') ||
+        normalized.startsWith('fe9') ||
+        normalized.startsWith('fea') ||
+        normalized.startsWith('feb')
+    )
+        return true;
+
+    const ipv4Mapped = normalized.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+
+    return ipv4Mapped ? isPrivateIPv4(ipv4Mapped[1]!) : false;
+};
+
+const isPrivateAddress = (address: string): boolean => {
+    const version = isIP(address);
+
+    if (version === 4) return isPrivateIPv4(address);
+    if (version === 6) return isPrivateIPv6(address);
+
+    return true;
+};
+
+const assertPublicHttpsUrl = async (uri: string): Promise<URL> => {
+    const url = new URL(uri);
+    const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+
+    if (url.protocol !== 'https:') throw new Error('status-list URL must use https');
+    if (!hostname.includes('.') || hostname === 'localhost' || hostname.endsWith('.localhost')) {
+        throw new Error('status-list URL host must be public');
+    }
+
+    if (isIP(hostname)) {
+        if (isPrivateAddress(hostname)) throw new Error('status-list URL host must be public');
+
+        return url;
+    }
+
+    const addresses = await lookup(hostname, { all: true, verbatim: true });
+
+    if (addresses.length === 0 || addresses.some(address => isPrivateAddress(address.address))) {
+        throw new Error('status-list URL host must resolve to public addresses');
+    }
+
+    return url;
+};
+
+const readResponseText = async (response: Response, maxBytes: number): Promise<string> => {
+    const contentLength = Number(response.headers.get('content-length'));
+
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+        throw new Error(`status-list response exceeds ${maxBytes} bytes`);
+    }
+
+    if (!response.body) {
+        const text = await response.text();
+
+        if (Buffer.byteLength(text, 'utf8') > maxBytes) {
+            throw new Error(`status-list response exceeds ${maxBytes} bytes`);
+        }
+
+        return text;
+    }
+
+    const reader = response.body.getReader();
+    const chunks: Buffer[] = [];
+    let total = 0;
+
+    while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        total += value.byteLength;
+
+        if (total > maxBytes) {
+            await reader.cancel();
+
+            throw new Error(`status-list response exceeds ${maxBytes} bytes`);
+        }
+
+        chunks.push(Buffer.from(value));
+    }
+
+    return Buffer.concat(chunks).toString('utf8');
+};
+
+const fetchJsonWithTimeout = async (
+    url: URL,
+    timeoutMs: number,
+    maxBytes: number
+): Promise<JsonValue> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        return JSON.parse(await readResponseText(response, maxBytes)) as JsonValue;
+    } finally {
+        clearTimeout(timeout);
+    }
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
@@ -25,8 +181,6 @@ const stringArrayIncludes = (value: unknown, expected: string): boolean =>
     Array.isArray(value) && value.some(item => item === expected);
 
 const json = (value: unknown): string => `${stableStringify(value)}\n`;
-
-const safeMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 const classifyPayload = (payload: JsonValue): BundleContentType => {
     if (!isRecord(payload)) return 'unknown-json';
@@ -76,7 +230,9 @@ const collectDids = (wallet: LearnCardBundleWallet, warnings: string[]): Record<
         try {
             dids[method ?? 'default'] = wallet.id.did(method);
         } catch (error) {
-            warnings.push(`Could not derive DID method ${method ?? 'default'}: ${safeMessage(error)}`);
+            warnings.push(
+                `Could not derive DID method ${method ?? 'default'}: ${safeMessage(error)}`
+            );
         }
     }
 
@@ -103,8 +259,15 @@ const collectDidDocument = async (
 const collectKeyPayloads = async (
     wallet: LearnCardBundleWallet,
     warnings: string[]
-): Promise<Array<{ path: string; type: BundleContentType; content: string; encrypted: boolean }>> => {
-    const payloads: Array<{ path: string; type: BundleContentType; content: string; encrypted: boolean }> = [];
+): Promise<
+    Array<{ path: string; type: BundleContentType; content: string; encrypted: boolean }>
+> => {
+    const payloads: Array<{
+        path: string;
+        type: BundleContentType;
+        content: string;
+        encrypted: boolean;
+    }> = [];
 
     if (wallet.invoke.getKey) {
         try {
@@ -128,7 +291,9 @@ const collectKeyPayloads = async (
             warnings.push(`Could not export seed or recovery phrase: ${safeMessage(error)}`);
         }
     } else {
-        warnings.push('Wallet does not expose invoke.getKey(); private seed and recovery phrase were not exported');
+        warnings.push(
+            'Wallet does not expose invoke.getKey(); private seed and recovery phrase were not exported'
+        );
     }
 
     if (wallet.id.keypair) {
@@ -163,8 +328,8 @@ const extractStatusListUrls = (payload: JsonValue): string[] => {
     const statuses = Array.isArray(payload.credentialStatus)
         ? payload.credentialStatus
         : payload.credentialStatus
-          ? [payload.credentialStatus]
-          : [];
+        ? [payload.credentialStatus]
+        : [];
 
     return statuses.flatMap(status =>
         isRecord(status) && typeof status.statusListCredential === 'string'
@@ -176,7 +341,9 @@ const extractStatusListUrls = (payload: JsonValue): string[] => {
 const collectStatusLists = async (
     payloads: JsonValue[],
     enabled: boolean,
-    warnings: string[]
+    warnings: string[],
+    timeoutMs = DEFAULT_STATUS_LIST_FETCH_TIMEOUT_MS,
+    maxBytes = DEFAULT_MAX_STATUS_LIST_BYTES
 ): Promise<Array<{ uri: string; content: JsonValue }>> => {
     if (!enabled) return [];
 
@@ -185,16 +352,13 @@ const collectStatusLists = async (
 
     for (const uri of urls) {
         try {
-            const response = await fetch(uri);
+            const url = await assertPublicHttpsUrl(uri);
 
-            if (!response.ok) {
-                warnings.push(`Could not cache status-list credential ${uri}: HTTP ${response.status}`);
-                continue;
-            }
-
-            results.push({ uri, content: (await response.json()) as JsonValue });
+            results.push({ uri, content: await fetchJsonWithTimeout(url, timeoutMs, maxBytes) });
         } catch (error) {
-            warnings.push(`Could not cache status-list credential ${uri}: ${safeMessage(error)}`);
+            warnings.push(
+                `Could not cache status-list credential ${redactUrl(uri)}: ${safeMessage(error)}`
+            );
         }
     }
 
@@ -208,6 +372,14 @@ const collectConsentRecords = async (
     if (wallet.invoke.getHolderExportMetadata) {
         try {
             const metadata = await wallet.invoke.getHolderExportMetadata();
+
+            if (isRecord(metadata) && Array.isArray(metadata.warnings)) {
+                warnings.push(
+                    ...metadata.warnings
+                        .filter(warning => typeof warning === 'string')
+                        .map(warning => redactText(warning))
+                );
+            }
 
             return isRecord(metadata) && Array.isArray(metadata.consentRecords)
                 ? (metadata.consentRecords as JsonValue[])
@@ -238,7 +410,8 @@ export const createLearnCardBundle = async (
 ): Promise<LearnCardBundleResult> => {
     const encrypt = options.encrypt ?? true;
 
-    if (encrypt && !options.password) throw new Error('A password is required for LearnCard export');
+    if (encrypt && !options.password)
+        throw new Error('A password is required for LearnCard export');
 
     const warnings: string[] = [];
     const zip = new JSZip();
@@ -264,7 +437,8 @@ export const createLearnCardBundle = async (
             encrypt: entry.encrypted && encrypt,
             password: options.password,
         });
-        const path = encoded.encrypted && !entry.path.endsWith('.enc') ? `${entry.path}.enc` : entry.path;
+        const path =
+            encoded.encrypted && !entry.path.endsWith('.enc') ? `${entry.path}.enc` : entry.path;
 
         addZipText(zip, path, encoded.stored);
 
@@ -298,26 +472,22 @@ export const createLearnCardBundle = async (
     }
 
     const records = await wallet.index.LearnCloud.get();
-    const seenUris = new Set<string>();
 
-    for (const record of records) {
-        if (seenUris.has(record.uri)) continue;
-
-        seenUris.add(record.uri);
-
+    for (const [recordIndex, record] of records.entries()) {
         const entryWarnings: string[] = [];
-        const digest = sha256Hex(record.uri || record.id);
+        const digest = sha256Hex(
+            stableStringify({ recordIndex, id: record.id ?? null, uri: record.uri ?? null })
+        );
 
         try {
             const resolved = await wallet.read.get(record.uri);
 
             if (!resolved) {
-                warnings.push(`Could not resolve wallet index URI ${record.uri}`);
+                warnings.push(`Could not resolve wallet index URI ${redactUrl(record.uri)}`);
                 continue;
             }
 
             credentialPayloads.push(resolved);
-
             const type = classifyPayload(resolved);
             const credentialId = getCredentialId(resolved);
             if (type === 'unknown-json') entryWarnings.push('Payload is not a recognized VC or VP');
@@ -346,7 +516,9 @@ export const createLearnCardBundle = async (
                 warnings: entryWarnings.length > 0 ? entryWarnings : undefined,
             });
         } catch (error) {
-            warnings.push(`Could not export wallet index URI ${record.uri}: ${safeMessage(error)}`);
+            warnings.push(
+                `Could not export wallet index URI ${redactUrl(record.uri)}: ${safeMessage(error)}`
+            );
         }
     }
 
@@ -367,7 +539,9 @@ export const createLearnCardBundle = async (
     for (const statusList of await collectStatusLists(
         credentialPayloads,
         options.fetchStatusLists ?? true,
-        warnings
+        warnings,
+        options.statusListFetchTimeoutMs,
+        options.maxStatusListBytes
     )) {
         const digest = sha256Hex(statusList.uri);
 

@@ -6,25 +6,27 @@ A LearnCard holder continuity bundle is a ZIP file with readable metadata and en
 
 Required readable entries:
 
-- `manifest.json` — inventory, hashes, warnings, and encryption metadata.
-- `README.md` — human-readable recovery notes.
-- `BUNDLE_SPEC.md` — this format description.
+-   `manifest.json` — inventory, hashes, warnings, and encryption metadata.
+-   `README.md` — human-readable recovery notes.
+-   `BUNDLE_SPEC.md` — this format description.
 
 Sensitive entries use JSON encryption envelopes produced by `@learncard/sss-key-manager` `encryptWithPassword`: Argon2id key derivation and AES-GCM authenticated encryption. The ZIP itself is not password encrypted.
 
 ## Paths
 
-- `keys/recovery-phrase.txt.enc`
-- `keys/private-key-seed.txt.enc`
-- `keys/jwks.json.enc`
-- `keys/did-document.json`
-- `credentials/<sha256>.json.enc`
-- `presentations/<sha256>.json.enc`
-- `index-records/<sha256>.json.enc`
-- `consent-records/<sha256>.json.enc`
-- `status-cache/<sha256>.json.enc`
+-   `keys/recovery-phrase.txt.enc`
+-   `keys/private-key-seed.txt.enc`
+-   `keys/jwks.json.enc`
+-   `keys/did-document.json`
+-   `credentials/<sha256>.json.enc`
+-   `presentations/<sha256>.json.enc`
+-   `index-records/<sha256>.json.enc`
+-   `consent-records/<sha256>.json.enc`
+-   `status-cache/<sha256>.json.enc`
 
 Debug exports MAY use plaintext payloads by setting `encrypt: false`; production exports MUST encrypt sensitive payloads.
+
+Status-list snapshot fetching is HTTPS-only and rejects private, loopback, link-local, and single-label hosts. Exporters SHOULD keep the default timeout and response-size caps unless they are running in a trusted local environment.
 
 ## Manifest hashing
 
@@ -38,6 +40,12 @@ Each credential or presentation entry MAY reference an encrypted `index-record` 
 
 `importLearnCardBundle(...)` decrypts credential and presentation payloads, uploads them to the target wallet's LearnCloud store, and recreates index records from the encrypted `index-record` companions.
 
+Import writes bundle contents into the target wallet. A bundle author who knows the password can include arbitrary credentials, presentations, and index metadata. Use `verifyBeforeImport: true` to verify VC/VP signatures before upload when the target wallet exposes `invoke.verifyCredential` and `invoke.verifyPresentation`.
+
+## Size limits
+
+Readers enforce default compressed-bundle, per-entry, and JSON parse limits to avoid accidentally processing oversized ZIP or JSON payloads. Callers can override these with `maxBundleBytes`, `maxEntryBytes`, and `maxJsonBytes` for trusted local workflows.
+
 ## Import expectations
 
-Importers MUST verify the stored bytes against each entry hash before trusting decrypted content. Importers SHOULD preserve issuer-signed credential and presentation payloads exactly.
+Importers MUST verify the stored bytes against each entry hash before trusting decrypted content. Importers SHOULD verify issuer signatures before upload and preserve issuer-signed credential and presentation payloads exactly.

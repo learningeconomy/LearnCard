@@ -303,36 +303,46 @@ export const getConsentedContractsForProfile = async (
         terms: inflateObject(result.terms),
         autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
     }));
-
 };
+
+const HOLDER_EXPORT_PAGE_SIZE = 100;
+const HOLDER_EXPORT_MAX_CONSENT_RECORDS = 500;
+const HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD = 500;
+
 export const getHolderExportMetadataForProfile = async (
     profile: ProfileType,
     domain: string
 ): Promise<HolderExportMetadata> => {
-    const limit = 100;
     const consentRecords: HolderExportMetadata['consentRecords'] = [];
+    const warnings: string[] = [];
     let cursor: string | undefined;
+    let truncated = false;
 
-    do {
+    while (consentRecords.length < HOLDER_EXPORT_MAX_CONSENT_RECORDS) {
+        const remainingRecords = HOLDER_EXPORT_MAX_CONSENT_RECORDS - consentRecords.length;
+        const pageLimit = Math.min(HOLDER_EXPORT_PAGE_SIZE, remainingRecords);
         const records = await getConsentedContractsForProfile(profile, {
             query: {},
-            limit: limit + 1,
+            limit: pageLimit + 1,
             cursor,
             domain,
         });
-        const page = records.slice(0, limit);
+        const page = records.slice(0, pageLimit);
 
         for (const record of page) {
             const transactions: HolderExportMetadata['consentRecords'][number]['transactions'] = [];
             let transactionCursor: string | undefined;
 
-            do {
+            while (transactions.length < HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD) {
+                const remainingTransactions =
+                    HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD - transactions.length;
+                const transactionLimit = Math.min(HOLDER_EXPORT_PAGE_SIZE, remainingTransactions);
                 const transactionResults = await getTransactionsForTerms(record.terms.id, {
                     query: {},
-                    limit: limit + 1,
+                    limit: transactionLimit + 1,
                     cursor: transactionCursor,
                 });
-                const transactionPage = transactionResults.slice(0, limit);
+                const transactionPage = transactionResults.slice(0, transactionLimit);
 
                 transactions.push(
                     ...transactionPage.map(transaction => {
@@ -340,14 +350,27 @@ export const getHolderExportMetadataForProfile = async (
 
                         return {
                             ...rest,
-                            uris: credentials.map(credential => getCredentialUri(credential.id, domain)),
+                            uris: credentials.map(credential =>
+                                getCredentialUri(credential.id, domain)
+                            ),
                         };
                     })
                 );
 
                 transactionCursor =
-                    transactionResults.length > limit ? transactionPage.at(-1)?.date : undefined;
-            } while (transactionCursor);
+                    transactionResults.length > transactionLimit
+                        ? transactionPage.at(-1)?.date
+                        : undefined;
+
+                if (!transactionCursor) break;
+            }
+
+            if (transactionCursor) {
+                truncated = true;
+                warnings.push(
+                    `Transactions for terms ${record.terms.id} were capped at ${HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD}`
+                );
+            }
 
             consentRecords.push({
                 termsUri: constructUri('terms', record.terms.id, domain),
@@ -374,10 +397,25 @@ export const getHolderExportMetadataForProfile = async (
             });
         }
 
-        cursor = records.length > limit ? page.at(-1)?.terms.updatedAt : undefined;
-    } while (cursor);
+        cursor = records.length > pageLimit ? page.at(-1)?.terms.updatedAt : undefined;
 
-    return { consentRecords };
+        if (!cursor) break;
+    }
+
+    if (cursor) {
+        truncated = true;
+        warnings.push(`Consent records were capped at ${HOLDER_EXPORT_MAX_CONSENT_RECORDS}`);
+    }
+
+    return {
+        consentRecords,
+        truncated,
+        warnings,
+        limits: {
+            maxConsentRecords: HOLDER_EXPORT_MAX_CONSENT_RECORDS,
+            maxTransactionsPerConsentRecord: HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD,
+        },
+    };
 };
 
 export const getConsentedDataForProfile = async (
@@ -490,8 +528,9 @@ export const getConsentedDataBetweenProfiles = async (
 ): Promise<ConsentFlowContractDataForDid[]> => {
     const { id, ...params } = query;
     const convertedContractQuery = id ? convertObjectRegExpToNeo4j({ id }) : {};
-    const { whereClause: contractWhereClause, params: contractQueryParams } = buildWhereForQueryBuilder('contract', convertedContractQuery as any);
-    
+    const { whereClause: contractWhereClause, params: contractQueryParams } =
+        buildWhereForQueryBuilder('contract', convertedContractQuery as any);
+
     const _dbQuery = new QueryBuilder(
         new BindParam({
             params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
@@ -574,8 +613,11 @@ export const getTransactionsForTerms = async (
     }: { query?: ConsentFlowTransactionsQuery; limit: number; cursor?: string }
 ): Promise<(DbTransactionType & { credentials: CredentialType[] })[]> => {
     const convertedQuery = flattenObject(matchQuery);
-    const { whereClause, params: transactionQueryParams } = buildWhereForQueryBuilder('transaction', convertedQuery as any);
-    
+    const { whereClause, params: transactionQueryParams } = buildWhereForQueryBuilder(
+        'transaction',
+        convertedQuery as any
+    );
+
     const query = new QueryBuilder(new BindParam({ cursor, ...transactionQueryParams }))
         .match({
             related: [
@@ -584,11 +626,7 @@ export const getTransactionsForTerms = async (
                 { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
-        .where(
-            `${whereClause}${
-                cursor ? ' AND transaction.date < $cursor' : ''
-            }`
-        )
+        .where(`${whereClause}${cursor ? ' AND transaction.date < $cursor' : ''}`)
         .with('transaction')
         .match({
             optional: true,

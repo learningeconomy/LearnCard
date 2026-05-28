@@ -66,6 +66,20 @@ const createWallet = (): LearnCardBundleWallet & {
                     },
                 ],
             }),
+            verifyCredential: async credential =>
+                typeof credential === 'object' &&
+                credential !== null &&
+                'id' in credential &&
+                credential.id === vc.id
+                    ? { checks: ['proof'], warnings: [], errors: [] }
+                    : { checks: [], warnings: [], errors: ['invalid'] },
+            verifyPresentation: async presentation =>
+                typeof presentation === 'object' &&
+                presentation !== null &&
+                'id' in presentation &&
+                presentation.id === vp.id
+                    ? { checks: ['proof'], warnings: [], errors: [] }
+                    : { checks: [], warnings: [], errors: ['invalid'] },
         },
         index: {
             LearnCloud: {
@@ -153,7 +167,9 @@ describe('LearnCard holder continuity bundles', () => {
             password: 'correct horse battery staple',
         });
 
-        expect(read.entries.some(entry => entry.content.includes('urn:uuid:credential-1'))).toBe(true);
+        expect(read.entries.some(entry => entry.content.includes('urn:uuid:credential-1'))).toBe(
+            true
+        );
     });
 
     it('exports fake wallet credentials, presentations, consent records, and missing URI warnings', async () => {
@@ -163,16 +179,27 @@ describe('LearnCard holder continuity bundles', () => {
             fetchStatusLists: false,
         });
         const zip = await JSZip.loadAsync(bundle.data);
-        const manifest = JSON.parse(
-            await zip.file('manifest.json')!.async('string')
-        ) as { contents: Array<Record<string, unknown>> };
-        const credentialManifestEntry = manifest.contents.find(entry => entry.type === 'credential');
+        const manifest = JSON.parse(await zip.file('manifest.json')!.async('string')) as {
+            contents: Array<Record<string, unknown>>;
+        };
+        const credentialManifestEntry = manifest.contents.find(
+            entry => entry.type === 'credential'
+        );
 
-
-        expect(bundle.manifest.contents.filter(entry => entry.type === 'credential')).toHaveLength(1);
-        expect(bundle.manifest.contents.filter(entry => entry.type === 'presentation')).toHaveLength(1);
-        expect(bundle.manifest.contents.filter(entry => entry.type === 'consent-record')).toHaveLength(1);
-        expect(bundle.warnings).toContain('Could not resolve wallet index URI lc:cloud:https%3A%2F%2Fcloud.example:missing:1');
+        expect(bundle.manifest.contents.filter(entry => entry.type === 'credential')).toHaveLength(
+            2
+        );
+        expect(
+            bundle.manifest.contents.filter(entry => entry.type === 'presentation')
+        ).toHaveLength(1);
+        expect(
+            bundle.manifest.contents.filter(entry => entry.type === 'consent-record')
+        ).toHaveLength(1);
+        expect(
+            bundle.warnings.some(warning =>
+                warning.startsWith('Could not resolve wallet index URI ')
+            )
+        ).toBe(true);
         expect(credentialManifestEntry?.indexRecordRef).toBeDefined();
         expect(credentialManifestEntry).not.toHaveProperty('indexRecord');
         expect(credentialManifestEntry).not.toHaveProperty('title');
@@ -194,14 +221,71 @@ describe('LearnCard holder continuity bundles', () => {
 
         const report = await importLearnCardBundle(path, { wallet: target });
 
+        expect(report.warnings).toContain(
+            'Bundle credential signatures were not verified before import; only import bundles from sources you trust.'
+        );
         expect(report.errors).toEqual([]);
-        expect(report.importedCredentials).toBe(1);
+        expect(report.importedCredentials).toBe(2);
         expect(report.importedPresentations).toBe(1);
-        expect(target.stored).toHaveLength(2);
-        expect(target.added).toHaveLength(2);
+        expect(target.stored).toHaveLength(3);
+        expect(target.added).toHaveLength(3);
         expect(target.added[0]?.sourceExport).toMatchObject({
             manifestCreatedAt: '2024-01-01T00:00:00.000Z',
             credentialId: 'urn:uuid:credential-1',
         });
+    });
+
+    it('verifies signatures before import when requested', async () => {
+        const source = createWallet();
+        const target = createWallet();
+        const bundle = await createLearnCardBundle(source, {
+            encrypt: false,
+            createdAt: '2024-01-01T00:00:00.000Z',
+            fetchStatusLists: false,
+        });
+        const dir = await mkdtemp(join(tmpdir(), 'learncard-bundle-'));
+        const path = join(dir, 'bundle.zip');
+
+        await writeFile(path, bundle.data);
+
+        const report = await importLearnCardBundle(path, {
+            wallet: target,
+            verifyBeforeImport: true,
+        });
+
+        expect(report.warnings).not.toContain(
+            'Bundle credential signatures were not verified before import; only import bundles from sources you trust.'
+        );
+        expect(report.errors).toEqual([]);
+        expect(report.importedCredentials).toBe(2);
+        expect(report.importedPresentations).toBe(1);
+    });
+
+    it('rejects status-list URLs that are not public HTTPS URLs', async () => {
+        const wallet = createWallet();
+
+        wallet.read.get = async uri =>
+            uri.includes('credentials')
+                ? {
+                      ...vc,
+                      credentialStatus: {
+                          type: 'BitstringStatusListEntry',
+                          statusListCredential: 'http://127.0.0.1/latest-status?token=secret',
+                      },
+                  }
+                : uri.includes('presentations')
+                ? vp
+                : undefined;
+
+        const bundle = await createLearnCardBundle(wallet, {
+            encrypt: false,
+            createdAt: '2024-01-01T00:00:00.000Z',
+        });
+
+        expect(bundle.warnings).toContain(
+            'Could not cache status-list credential http://[redacted-host]/latest-status?[redacted]: status-list URL must use https'
+        );
+        expect(JSON.stringify(bundle.manifest)).not.toContain('127.0.0.1');
+        expect(JSON.stringify(bundle.manifest)).not.toContain('token=secret');
     });
 });

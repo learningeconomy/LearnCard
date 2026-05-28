@@ -57,6 +57,8 @@ export type LearnCardBundleOptions = {
     encrypt?: boolean;
     createdAt?: string;
     fetchStatusLists?: boolean;
+    statusListFetchTimeoutMs?: number;
+    maxStatusListBytes?: number;
 };
 
 export type ExportLearnCardBundleOptions = LearnCardBundleOptions & {
@@ -66,10 +68,14 @@ export type ExportLearnCardBundleOptions = LearnCardBundleOptions & {
 export type ReadLearnCardBundleOptions = {
     password?: string;
     decrypt?: boolean;
+    maxBundleBytes?: number;
+    maxEntryBytes?: number;
+    maxJsonBytes?: number;
 };
 
 export type ImportLearnCardBundleOptions = ReadLearnCardBundleOptions & {
     wallet: LearnCardBundleWallet;
+    verifyBeforeImport?: boolean;
 };
 
 export type LearnCardBundleResult = {
@@ -100,6 +106,14 @@ export type LearnCardBundleWallet = {
     invoke: {
         getKey?: () => string;
         resolveDid?: (did: string) => Promise<JsonValue>;
+        verifyCredential?: (
+            credential: JsonValue,
+            options?: Record<string, unknown>
+        ) => Promise<unknown>;
+        verifyPresentation?: (
+            presentation: JsonValue,
+            options?: Record<string, unknown>
+        ) => Promise<unknown>;
         getHolderExportMetadata?: () => Promise<JsonValue>;
         getConsentedContracts?: () => Promise<JsonValue>;
     };

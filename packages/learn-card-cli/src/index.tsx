@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import dns from 'node:dns';
+import { createInterface } from 'node:readline/promises';
+import { Writable } from 'node:stream';
 
 import repl from 'pretty-repl';
 import { getTestCache } from '@learncard/core';
@@ -41,6 +43,7 @@ const g = {
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
     types: gradient(['cyan', 'green'])('types'),
+    getLearnCardBundlePassword: gradient(['cyan', 'green'])('getLearnCardBundlePassword'),
     copy: gradient(['cyan', 'green'])('copy'),
     exportLearnCardBundle: gradient(['cyan', 'green'])('exportLearnCardBundle'),
     importLearnCardBundle: gradient(['cyan', 'green'])('importLearnCardBundle'),
@@ -64,6 +67,24 @@ const copyFunction = (text: string | object | number) => {
             'Failed to copy to clipboard:',
             error instanceof Error ? error.message : 'Unknown error'
         );
+    }
+};
+
+const getLearnCardBundlePassword = async (prompt = 'Bundle password: '): Promise<string> => {
+    process.stdout.write(prompt);
+
+    const mutedOutput = new Writable({
+        write(_chunk, _encoding, callback) {
+            callback();
+        },
+    });
+    const rl = createInterface({ input: process.stdin, output: mutedOutput, terminal: true });
+
+    try {
+        return await rl.question('');
+    } finally {
+        rl.close();
+        process.stdout.write('\n');
     }
 };
 
@@ -123,6 +144,7 @@ program
         globalThis.getTestCache = getTestCache;
 
         globalThis.copy = copyFunction;
+        globalThis.getLearnCardBundlePassword = getLearnCardBundlePassword;
         globalThis.exportLearnCardBundle = createExportLearnCardBundleHelper(
             writeLearnCardBundle,
             globalThis.learnCard
@@ -157,6 +179,7 @@ program
         console.log(`│         ${g.generateRandomSeed} │ Generates a random seed          │`);
         console.log(`│                      ${g.types} │ Helpful zod validators           │`);
         console.log(`│                       ${g.copy} │ Copy text to clipboard           │`);
+        console.log(`│ ${g.getLearnCardBundlePassword} │ Prompt for bundle password      │`);
         console.log(`│      ${g.exportLearnCardBundle} │ Export wallet continuity ZIP     │`);
         console.log(`│      ${g.importLearnCardBundle} │ Import continuity ZIP            │`);
         console.log(`│ ${g.restoreLearnCardFromBundle} │ Restore original wallet from ZIP │`);
@@ -200,10 +223,13 @@ program
             `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp);                                    │`
         );
         console.log(
-            `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password: '...' }); │`
+            `│  Prompt bundle password │ const password = await ${g.getLearnCardBundlePassword}();                         │`
         );
         console.log(
-            `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password: '...' });            │`
+            `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password }); │`
+        );
+        console.log(
+            `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password });                │`
         );
         console.log(
             '└─────────────────────────┴───────────────────────────────────────────────────────────────────────────────────┘'
@@ -221,6 +247,7 @@ program
                     .replace('seed', g.seed)
                     .replace('generateRandomSeed', g.generateRandomSeed)
                     .replace('copy', g.copy)
+                    .replace('getLearnCardBundlePassword', g.getLearnCardBundlePassword)
                     .replace('exportLearnCardBundle', g.exportLearnCardBundle)
                     .replace('importLearnCardBundle', g.importLearnCardBundle)
                     .replace('createLearnCardBundle', g.createLearnCardBundle)
