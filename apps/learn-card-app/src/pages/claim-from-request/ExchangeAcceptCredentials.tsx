@@ -160,7 +160,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         source: 'vc-api-exchange',
                     });
                 } catch (err) {
-                    log.error('[ExchangeAcceptCredentials] failed to publish ingest event:', err);
+                    log.error('failed to publish ingest event', err);
                 }
             });
 

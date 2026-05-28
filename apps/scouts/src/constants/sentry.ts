@@ -81,7 +81,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
 
         if (isSentryEnabled) {
             if (currentUser) {
-                if (options.debug) log.debug('Identify user! 🎸', currentUser);
+                if (options.debug) log.debug('Identify user! 🎸', { uid: currentUser.uid });
                 getDID()
                     .then(did => {
                         const user = {

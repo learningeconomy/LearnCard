@@ -55,7 +55,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                 payload: { actionStatus: 'COMPLETED', read: true },
             });
         } catch (err) {
-            log.error('[NotificationGuardianApprovalCard] Approve failed:', err);
+            log.error('Approve failed', err);
             setActionState('pending');
         }
     };
@@ -75,7 +75,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                 payload: { actionStatus: 'REJECTED', read: true },
             });
         } catch (err) {
-            log.error('[NotificationGuardianApprovalCard] Reject failed:', err);
+            log.error('Reject failed', err);
             setActionState('pending');
         }
     };

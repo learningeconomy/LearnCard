@@ -119,7 +119,7 @@ export const emitConfigDebugEvent = (
         try {
             listener(event);
         } catch (e) {
-            log.error('[ConfigDebug] Listener error:', e);
+            log.error('Listener error', e);
         }
     });
 };

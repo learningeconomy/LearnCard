@@ -144,14 +144,12 @@ export const useFirebase = () => {
             }
 
             if (errorCode === 'auth/popup-blocked') {
-                if (errorCode) log.warn(errorCode);
-                if (errorMessage) log.warn(errorMessage);
+                log.warn(`googleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
                 presentGoogleHelpModal(
                     'Popups are blocked in your browser. Please enable popups in your browser and try again.'
                 );
             } else if (errorCode === 'auth/cancelled-popup-request') {
-                if (errorCode) log.warn(errorCode);
-                if (errorMessage) log.warn(errorMessage);
+                log.warn(`googleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                 return;
             } else {
                 log.error(`googleLogin failed (${errorCode ?? 'unknown'})`, error);
@@ -583,8 +581,7 @@ export const useFirebase = () => {
                 const credential = OAuthProvider.credentialFromError(error);
 
                 if (errorCode === 'auth/popup-blocked') {
-                    if (errorCode) log.warn(errorCode);
-                    if (errorMessage) log.warn(errorMessage);
+                    log.warn(`appleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
                     presentAlert(
                         'Popups are blocked in your browser. Please enable Popups to login with this method.'
                     );
@@ -592,8 +589,7 @@ export const useFirebase = () => {
                     errorCode === 'auth/cancelled-popup-request' ||
                     errorCode === 'auth/popup-closed-by-user'
                 ) {
-                    if (errorCode) log.warn(errorCode);
-                    if (errorMessage) log.warn(errorMessage);
+                    log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                     return;
                 } else {
                     log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);

@@ -576,7 +576,7 @@ const ClaimFromRequest: React.FC = () => {
                         source: 'vc-api-request',
                     });
                 } catch (err) {
-                    log.error('[ClaimFromRequest] failed to publish ingest event:', err);
+                    log.error('failed to publish ingest event', err);
                 }
             }
 

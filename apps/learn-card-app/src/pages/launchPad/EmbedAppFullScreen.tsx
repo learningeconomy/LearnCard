@@ -113,7 +113,7 @@ export const EmbedAppFullScreen: React.FC = () => {
     // Redirect back if no embedUrl provided
     React.useEffect(() => {
         if (!embedUrl) {
-            log.error('[EmbedApp] No embedUrl provided in query params or state, redirecting back');
+            log.error('No embedUrl provided in query params or state, redirecting back');
             history.goBack();
         }
     }, [embedUrl, history]);

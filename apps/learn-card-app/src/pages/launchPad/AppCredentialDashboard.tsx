@@ -77,7 +77,7 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
             const result = await wallet.invoke.getMyCredentialsFromApp(appId, { limit: 1 });
             setCredentialCount(result.totalCount);
         } catch (error) {
-            log.error('[AppCredentialDashboard] Error fetching credential count:', error);
+            log.error('Error fetching credential count', error);
         }
     }, [appId, initWallet]);
 
@@ -96,7 +96,7 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
                 setNotificationCount(result.notifications.length);
             }
         } catch (error) {
-            log.error('[AppCredentialDashboard] Error fetching notification count:', error);
+            log.error('Error fetching notification count', error);
         }
     }, [listingId, initWallet]);
 

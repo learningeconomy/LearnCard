@@ -22,7 +22,7 @@ export function getTrustedOrigins(): TrustedOriginData[] {
         if (!stored) return [];
         return JSON.parse(stored);
     } catch (error) {
-        log.error('[TrustedOrigins] Failed to parse trusted origins:', error);
+        log.error('Failed to parse trusted origins', error);
         return [];
     }
 }
@@ -60,9 +60,9 @@ export function addTrustedOrigin(origin: string, appName?: string): void {
         }
         
         localStorage.setItem(STORAGE_KEY, JSON.stringify(trusted));
-        log.info('[TrustedOrigins] Added trusted origin:', origin);
+        log.info('Added trusted origin', origin);
     } catch (error) {
-        log.error('[TrustedOrigins] Failed to add trusted origin:', error);
+        log.error('Failed to add trusted origin', error);
     }
 }
 
@@ -74,9 +74,9 @@ export function removeTrustedOrigin(origin: string): void {
         const trusted = getTrustedOrigins();
         const filtered = trusted.filter(item => item.origin !== origin);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-        log.info('[TrustedOrigins] Removed trusted origin:', origin);
+        log.info('Removed trusted origin', origin);
     } catch (error) {
-        log.error('[TrustedOrigins] Failed to remove trusted origin:', error);
+        log.error('Failed to remove trusted origin', error);
     }
 }
 
@@ -86,8 +86,8 @@ export function removeTrustedOrigin(origin: string): void {
 export function clearTrustedOrigins(): void {
     try {
         localStorage.removeItem(STORAGE_KEY);
-        log.info('[TrustedOrigins] Cleared all trusted origins');
+        log.info('Cleared all trusted origins');
     } catch (error) {
-        log.error('[TrustedOrigins] Failed to clear trusted origins:', error);
+        log.error('Failed to clear trusted origins', error);
     }
 }

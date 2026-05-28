@@ -112,7 +112,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
 
         if (Sentry.getClient()) {
             if (currentUser && bugReportsEnabled) {
-                if (options.debug) log.debug('Identify user! 🎸', currentUser);
+                if (options.debug) log.debug('Identify user! 🎸', { uid: currentUser.uid });
                 getDID()
                     .then(did => {
                         if (typeof did !== 'string' || did.trim() === '') {

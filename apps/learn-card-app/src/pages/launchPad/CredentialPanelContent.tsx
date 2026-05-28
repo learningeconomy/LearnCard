@@ -237,7 +237,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
             setEarnedCredentials(appCredentials);
             setBadgeCount(result.totalCount);
         } catch (error) {
-            log.error('[CredentialPanelContent] Error fetching credentials:', error);
+            log.error('Error fetching credentials', error);
         } finally {
             setIsLoading(false);
         }
@@ -260,7 +260,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                 setNotifications(result.notifications);
             }
         } catch (error) {
-            log.error('[CredentialPanelContent] Error fetching notifications:', error);
+            log.error('Error fetching notifications', error);
         } finally {
             setIsLoadingNotifications(false);
         }
@@ -298,7 +298,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
 
             setNotifications(prev => prev.filter(n => n._id !== notificationId));
         } catch (error) {
-            log.error('[CredentialPanelContent] Error archiving notification:', error);
+            log.error('Error archiving notification', error);
         }
     }, [initWallet]);
 
@@ -314,7 +314,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                 );
             }
         } catch (error) {
-            log.error('[CredentialPanelContent] Error marking notification read:', error);
+            log.error('Error marking notification read', error);
         }
 
         if (actionPath && onNavigateAction) {

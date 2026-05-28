@@ -110,7 +110,7 @@ export const emitAuthDebugEvent = (
         try {
             listener(event);
         } catch (e) {
-            log.error('[AuthDebug] Listener error:', e);
+            log.error('Listener error', e);
         }
     });
 };

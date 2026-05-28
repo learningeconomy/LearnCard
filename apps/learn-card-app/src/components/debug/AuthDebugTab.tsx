@@ -519,7 +519,7 @@ export const AuthDebugTab: React.FC = () => {
 
             setServerError(null);
         } catch (e) {
-            log.error('[DebugWidget] fetchServerState error:', e);
+            log.error('fetchServerState error', e);
             setServerError(e instanceof Error ? e.message : String(e));
             setServerState(null);
         } finally {
@@ -569,7 +569,7 @@ export const AuthDebugTab: React.FC = () => {
                 'Auth session invalidated. Auth session is now expired.\nTry opening Account Recovery to see the re-auth gate.'
             );
         } catch (e) {
-            log.error('[DebugWidget] invalidate session error:', e);
+            log.error('invalidate session error', e);
             alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
         }
     }, [authUser]);

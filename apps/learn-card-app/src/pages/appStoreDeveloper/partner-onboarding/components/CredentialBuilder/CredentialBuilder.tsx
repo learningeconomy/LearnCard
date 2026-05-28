@@ -366,7 +366,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                 }
             } catch (jsonLdErr) {
                 // If JSON-LD validation itself fails to load, fall through to server validation
-                log.warn('[CredentialBuilder] Client-side JSON-LD validation unavailable:', jsonLdErr);
+                log.warn('Client-side JSON-LD validation unavailable', jsonLdErr);
             }
 
             const result = await onTestIssue(json);
