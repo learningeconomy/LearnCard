@@ -472,7 +472,7 @@ describe('flexible arguments (like console.log)', () => {
         const err = new Error('failed');
         logger.error(err, 42);
 
-        expect(spy).toHaveBeenCalledWith('', 'failed', err);
+        expect(spy).toHaveBeenCalledWith('', 'failed', err, 42);
     });
 
     it('log.info(error) uses error.message and creates breadcrumb', () => {
@@ -540,5 +540,70 @@ describe('flexible arguments (like console.log)', () => {
 
         const call = transport.calls.find(c => c.method === 'captureException');
         expect(call!.args[1]).toMatchObject({ scope: 'auth' });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Rest-args contract: nothing dropped, nothing char-spread
+// ---------------------------------------------------------------------------
+
+describe('rest-args contract', () => {
+    it('recovers an Error from any position (msg, primitive, err)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const err = new Error('boom');
+        logger.error('failed to fetch boost', 'lc:boost:abc', err);
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        expect(call).toBeDefined();
+        expect(call!.args[0]).toBe(err);
+        // leftover primitive (the boostUri) reaches Sentry as `value`
+        expect((call!.args[2] as Record<string, unknown>).value).toBe('lc:boost:abc');
+    });
+
+    it('keeps a trailing string in slot 3 as a plain extra (no char-spread)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const err = new Error('boom');
+        logger.error('msg:', err, 'object');
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        // Should be a clean string, not { '0': 'o', '1': 'b', ... }
+        expect((call!.args[2] as Record<string, unknown>).value).toBe('object');
+        // No indexed-char keys leaked from a rest-spread of the string
+        expect((call!.args[2] as Record<string, unknown>)['0']).toBeUndefined();
+    });
+
+    it('preserves a 4th argument instead of silently dropping it', () => {
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        logger.warn('ReAuth: UID mismatch', 'old-uid', 'got', 'new-uid');
+
+        // All four positional args must reach the console
+        expect(spy).toHaveBeenCalledWith(
+            '',
+            'ReAuth: UID mismatch',
+            'old-uid',
+            'got',
+            'new-uid'
+        );
+    });
+
+    it('warn surfaces an Error via the `error` extra rather than dropping it', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const err = new Error('fetch failed');
+        logger.warn('failed to fetch boost', 'lc:boost:abc', err);
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect(call).toBeDefined();
+        const extra = call!.args[3] as Record<string, unknown>;
+        expect(extra.value).toBe('lc:boost:abc');
+        expect(extra.error).toBe('Error: fetch failed');
     });
 });

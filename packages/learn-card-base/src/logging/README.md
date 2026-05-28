@@ -66,15 +66,17 @@ logger.info('app boot');
 
 ## Flexible arguments (like `console.log`)
 
-All methods accept up to **3 flexible arguments**. The logger intelligently parses **any combination** of errors, messages, objects, primitives, and arrays:
+All methods accept **any number of arguments in any order** (rest-args). The logger classifies each one and slots it into the right place — nothing is silently dropped or char-spread into the metadata bag.
 
 | Argument type | Handling |
 | --- | --- |
-| **Error** object | Extracted and sent to `captureException` (if Sentry active); message derived from `error.message` |
-| **String** | Used as the log message |
-| **Plain object** `{ key: value }` | Treated as metadata, attached to Sentry as `extra` |
-| **Primitive** — `boolean`, `number`, `string`, `bigint` | Logged as-is to console; wrapped as `{ value: x }` for Sentry |
-| **Array** | Logged as-is to console; wrapped as `{ value: [...] }` for Sentry |
+| **Error** object | First wins the `err` slot — sent to `captureException` (error level) or surfaced as `extra.error` (warn level). Additional Errors collect into `values`. |
+| **String** | First wins the log message. Additional strings collect into `values`. |
+| **Plain object** `{ key: value }` | Treated as metadata. Multiple objects merge into one `extra` bag (later wins on key conflicts). |
+| **Primitive** — `boolean`, `number`, `bigint` | Collected into `values`. Sentry sees `{ value: x }` for a single leftover or `{ values: [...] }` for multiple. |
+| **Array** | Same as a primitive — collected into `values`. |
+
+If a method is called with only an `Error` and no string, the log message falls back to `error.message`.
 
 ### Examples
 
@@ -113,6 +115,17 @@ log.info('flags', [true, false]);
 
 // All three: message, error, metadata
 log.error('sign-in failed', err, { userId, provider: 'firebase' });
+
+// Message + extra primitive + error (any order works — Error is recovered)
+log.warn('failed to fetch boost', boostUri, err);
+// console:  '[scope]' 'failed to fetch boost' Error('…') 'lc:boost:abc'
+// Sentry:   captureMessage('failed to fetch boost', 'warning', tags,
+//                          { value: 'lc:boost:abc', error: 'Error: …' })
+
+// Multi-key context — prefer a meta object over positional pairs
+log.warn('UID mismatch', { expected, got });
+// ✗ avoid: log.warn('UID mismatch — expected', expected, 'got', got);
+//   (still works — extras land in `values` — but the meta-object form makes Sentry easier to triage)
 ```
 
 ---

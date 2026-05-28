@@ -1306,20 +1306,22 @@ logger.withContext(scope => scope.setTag('flow', 'oid4vci'));
 
 ### Argument parsing rules
 
-The logger intelligently parses **any combination** of up to 3 arguments:
+The logger accepts **any number of arguments in any order** (rest-args, like `console.log`). Each arg is classified by type and slotted into the right place — nothing is silently dropped or char-spread.
 
 | Argument type | Handling |
 |---|---|
-| **Error** | Extracted and sent to `captureException` (if Sentry active); message used from `error.message` |
-| **String** | Used as the log message |
-| **Plain object** | Treated as metadata, attached to Sentry as `extra` |
-| **Primitive** (bool, number, bigint) | Logged as-is to console; wrapped as `{ value: x }` for Sentry |
-| **Array** | Logged as-is to console; wrapped as `{ value: [...] }` for Sentry |
+| **Error** | First one wins the `err` slot → `captureException` (error level) or `extra.error` (warn level). Additional Errors collect into `values`. |
+| **String** | First one wins the log message. Additional strings collect into `values` (they reach Sentry, never char-spread into the meta bag). |
+| **Plain object** | Treated as metadata. Multiple objects are merged into a single `extra` bag (later wins on key conflicts). |
+| **Primitive** (bool, number, bigint) | Collected into `values`. Sentry sees `{ value: x }` for a single leftover or `{ values: [...] }` for multiple. |
+| **Array** | Same as a primitive — collected into `values`. |
 
 Examples:
 - `log.error(err)` — error becomes message + captures exception
 - `log.info('msg', false)` — message + boolean value
-- `log.error('msg', err, { userId })` — all three types together
+- `log.error('msg', err, { userId })` — message + error + meta
+- `log.warn('failed to fetch', uri, err)` — message + leftover primitive + recovered Error (all reach Sentry; the Error is never dropped)
+- `log.warn('UID mismatch', { expected, got })` — preferred over positional `'expected', a, 'got', b`
 - `log.warn(42, { label: 'count' })` — no message, just primitive + metadata
 
 ### Setup (apps)
