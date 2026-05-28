@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('config-editor');
 
 /**
