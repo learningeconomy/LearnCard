@@ -338,4 +338,4 @@ export const logger = createLogger();
  * PII fields are automatically scrubbed from meta objects.
  * Pass { allowPii: true } in meta to opt out for internal debug calls (never in prod paths).
  */
-export const getLogger = (scope: string): Logger => createLogger(scope);
+export const getLogger = (scope?: string): Logger => createLogger(scope);
