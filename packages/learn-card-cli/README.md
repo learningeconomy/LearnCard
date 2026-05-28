@@ -40,12 +40,14 @@ await importLearnCardBundle('./learncard-export.zip', {
     wallet: freshWallet,
 });
 ```
+
 ```js
 const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', {
     password: 'use-a-strong-password',
 });
 ```
 
+`restoreLearnCardFromBundle(...)` decrypts the exported seed and returns a wallet with the original DID. It does not upload bundle payloads or recreate index records; use `importLearnCardBundle(...)` when copying credentials into another wallet.
 
 If you omit the first argument, the CLI exports the default `learnCard` wallet it created at startup:
 

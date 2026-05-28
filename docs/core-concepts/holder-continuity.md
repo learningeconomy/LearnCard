@@ -41,18 +41,28 @@ A holder who can still access their wallet can export a bundle with the LearnCar
 await exportLearnCardBundle(learnCard, { out: './learncard-export.zip', password: 'use-a-strong-password' });
 ```
 
-The CLI also supports `await exportLearnCardBundle({ ...options })`, which exports the default `learnCard` wallet created at startup. The underlying bundle helpers live in `@learncard/holder-continuity`.
+The CLI also supports `await exportLearnCardBundle({ ...options })`, which exports the default `learnCard` wallet created at startup.
 
-After the ZIP is created, the holder can decrypt and inspect it with only the bundle password and public tooling. The readable `manifest.json` lists every payload and SHA-256 hash. Encrypted files use Argon2id and AES-GCM through the same `@learncard/sss-key-manager` password envelope used for account backup files.
+The underlying bundle helpers live in `@learncard/holder-continuity`:
+
+```ts
+import {
+    exportLearnCardBundle,
+    importLearnCardBundle,
+    restoreLearnCardFromBundle,
+} from '@learncard/holder-continuity';
+```
+
+After the ZIP is created, the holder can decrypt and inspect it with only the bundle password and public tooling. The readable `manifest.json` lists every payload and SHA-256 hash, while sensitive payloads and LearnCloud index records remain encrypted. Encrypted files use Argon2id and AES-GCM through the same `@learncard/sss-key-manager` password envelope used for account backup files.
 
 A fresh LearnCard wallet can import the bundle without help from the original LearnCard account:
 
 ```js
-const freshWallet = await initLearnCard({ seed: 'fresh 32-byte seed as hex' });
+const freshWallet = await initLearnCard({ seed: '0'.repeat(64) });
 await importLearnCardBundle('./learncard-export.zip', { password: 'use-a-strong-password', wallet: freshWallet });
 ```
 
-The original wallet can also be reconstructed directly from the exported seed, without re-uploading each credential:
+The original wallet identity can also be reconstructed directly from the exported seed:
 
 ```js
 const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', {
@@ -60,6 +70,8 @@ const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip'
     init: { network: true, didkit: 'node' },
 });
 ```
+
+Restore passes the exported `key-private-seed` to `initLearnCard(...)`. It recreates the original key and DID; it does not upload payloads or recreate index records. Use restore when you want the original wallet identity back, and use import when you want to copy credentials into another wallet.
 
 ## Continuity of service
 

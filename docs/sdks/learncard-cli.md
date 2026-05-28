@@ -8,7 +8,7 @@
 npx @learncard/cli
 
 # Optionally specify a deterministic seed to instantiate the wallet with
-npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2h
+npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2
 ```
 
 ### Holder Continuity Export
@@ -33,6 +33,8 @@ const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip'
     password: 'use-a-strong-password',
 });
 ```
+
+`restoreLearnCardFromBundle(...)` decrypts the exported seed and returns a wallet with the original DID. It does not upload bundle payloads or recreate index records; use `importLearnCardBundle(...)` when copying credentials into another wallet.
 
 If you omit the first argument, the CLI exports the default `learnCard` wallet it created at startup:
 

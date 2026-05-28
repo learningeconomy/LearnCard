@@ -7,7 +7,8 @@
     "types": "./dist/index.d.ts",
     "files": [
         "dist",
-        "BUNDLE_SPEC.md"
+        "BUNDLE_SPEC.md",
+        "README.md"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
