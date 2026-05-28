@@ -12,14 +12,19 @@ export type EUParentalConsentModalContentProps = {
     country?: string | undefined;
     onClose: () => void;
     onComplete?: () => void;
+    /**
+     * Optional override for how the guardian email is submitted. When provided, the modal
+     * calls this instead of sending the approval email directly. The onboarding age-gate flow
+     * uses it to *defer* the send, since the user's network profile (which the approval is
+     * keyed to) doesn't exist yet — the email is sent later, after createProfile.
+     */
+    onSubmit?: (guardianEmail: string) => void | Promise<void>;
 };
 
 const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps> = ({
-    name,
-    dob,
-    country,
     onClose,
     onComplete,
+    onSubmit,
 }) => {
     const { initWallet } = useWallet();
 
@@ -37,23 +42,15 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
         setError('');
         setLoading(true);
         try {
-            const wallet = await initWallet();
-            if (!wallet) throw new Error('Wallet not initialized');
+            if (onSubmit) {
+                await onSubmit(email.trim());
+            } else {
+                const wallet = await initWallet();
+                if (!wallet) throw new Error('Wallet not initialized');
 
-            const response = await wallet.invoke.sendGuardianApprovalEmail({
-                guardianEmail: email.trim(),
-            });
+                await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail: email.trim() });
+            }
 
-            const payload = {
-                email: email.trim(),
-                name: name ?? '',
-                dob: dob ?? '',
-                country: country ?? '',
-                createdAt: new Date().toISOString(),
-                approvalUrl: response?.approvalUrl,
-            };
-
-            localStorage.setItem('eu_parental_consent_request', JSON.stringify(payload));
             setSent(true);
         } catch (e) {
             console.error('Failed to send guardian approval email:', e);
