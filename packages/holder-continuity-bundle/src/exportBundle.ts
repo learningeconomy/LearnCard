@@ -23,10 +23,29 @@ const ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const DEFAULT_STATUS_LIST_FETCH_TIMEOUT_MS = 5000;
 const DEFAULT_MAX_STATUS_LIST_BYTES = 5 * 1024 * 1024;
 
+const stripIpv6Brackets = (hostname: string): string =>
+    hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+
+const redactMalformedUrl = (value: string): string => {
+    const queryIndex = value.indexOf('?');
+    const ampIndex = value.indexOf('&');
+
+    if (queryIndex === -1 && ampIndex === -1) return value;
+
+    const redactionIndex =
+        queryIndex === -1
+            ? ampIndex
+            : ampIndex === -1
+            ? queryIndex
+            : Math.min(queryIndex, ampIndex);
+
+    return `${value.slice(0, redactionIndex)}?[redacted]`;
+};
+
 const redactUrl = (value: string): string => {
     try {
         const url = new URL(value);
-        const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+        const hostname = stripIpv6Brackets(url.hostname.toLowerCase());
         const shouldRedactHost =
             !hostname.includes('.') ||
             hostname === 'localhost' ||
@@ -36,12 +55,51 @@ const redactUrl = (value: string): string => {
 
         return `${url.protocol}//${host}${url.pathname}${url.search ? '?[redacted]' : ''}`;
     } catch {
-        return value.replace(/[?&][^=\s]+=[^\s&]+/g, '?[redacted]');
+        return redactMalformedUrl(value);
     }
 };
 
-const redactText = (value: string): string =>
-    value.replace(/https?:\/\/[^\s'"<>]+/gi, match => redactUrl(match));
+const urlEndDelimiters = new Set([' ', '\n', '\r', '\t', "'", '"', '<', '>']);
+
+const findNextUrlStart = (value: string, fromIndex: number): number => {
+    const httpIndex = value.indexOf('http://', fromIndex);
+    const httpsIndex = value.indexOf('https://', fromIndex);
+
+    if (httpIndex === -1) return httpsIndex;
+    if (httpsIndex === -1) return httpIndex;
+
+    return Math.min(httpIndex, httpsIndex);
+};
+
+const findUrlEnd = (value: string, fromIndex: number): number => {
+    let index = fromIndex;
+
+    while (index < value.length && !urlEndDelimiters.has(value[index]!)) index += 1;
+
+    return index;
+};
+
+const redactText = (value: string): string => {
+    let redacted = '';
+    let index = 0;
+
+    while (index < value.length) {
+        const urlStart = findNextUrlStart(value, index);
+
+        if (urlStart === -1) {
+            redacted += value.slice(index);
+            break;
+        }
+
+        const urlEnd = findUrlEnd(value, urlStart);
+
+        redacted += value.slice(index, urlStart);
+        redacted += redactUrl(value.slice(urlStart, urlEnd));
+        index = urlEnd;
+    }
+
+    return redacted;
+};
 
 const safeMessage = (error: unknown): string =>
     redactText(error instanceof Error ? error.message : String(error));
