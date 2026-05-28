@@ -29,6 +29,7 @@ import {
     ConsentFlowDataQuery,
     ConsentFlowTermsQuery,
     ConsentFlowTransactionsQuery,
+    HolderExportMetadata,
     LCNProfile,
 } from '@learncard/types';
 import { FlatBoostType } from 'types/boost';
@@ -38,6 +39,7 @@ import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/co
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -301,6 +303,81 @@ export const getConsentedContractsForProfile = async (
         terms: inflateObject(result.terms),
         autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
     }));
+
+};
+export const getHolderExportMetadataForProfile = async (
+    profile: ProfileType,
+    domain: string
+): Promise<HolderExportMetadata> => {
+    const limit = 100;
+    const consentRecords: HolderExportMetadata['consentRecords'] = [];
+    let cursor: string | undefined;
+
+    do {
+        const records = await getConsentedContractsForProfile(profile, {
+            query: {},
+            limit: limit + 1,
+            cursor,
+            domain,
+        });
+        const page = records.slice(0, limit);
+
+        for (const record of page) {
+            const transactions: HolderExportMetadata['consentRecords'][number]['transactions'] = [];
+            let transactionCursor: string | undefined;
+
+            do {
+                const transactionResults = await getTransactionsForTerms(record.terms.id, {
+                    query: {},
+                    limit: limit + 1,
+                    cursor: transactionCursor,
+                });
+                const transactionPage = transactionResults.slice(0, limit);
+
+                transactions.push(
+                    ...transactionPage.map(transaction => {
+                        const { credentials, ...rest } = transaction;
+
+                        return {
+                            ...rest,
+                            uris: credentials.map(credential => getCredentialUri(credential.id, domain)),
+                        };
+                    })
+                );
+
+                transactionCursor =
+                    transactionResults.length > limit ? transactionPage.at(-1)?.date : undefined;
+            } while (transactionCursor);
+
+            consentRecords.push({
+                termsUri: constructUri('terms', record.terms.id, domain),
+                status: record.terms.status,
+                contract: {
+                    contract: record.contract.contract,
+                    name: record.contract.name,
+                    subtitle: record.contract.subtitle,
+                    description: record.contract.description,
+                    reasonForAccessing: record.contract.reasonForAccessing,
+                    needsGuardianConsent: record.contract.needsGuardianConsent,
+                    redirectUrl: record.contract.redirectUrl,
+                    frontDoorBoostUri: record.contract.frontDoorBoostUri,
+                    image: record.contract.image,
+                    createdAt: record.contract.createdAt,
+                    updatedAt: record.contract.updatedAt,
+                    uri: constructUri('contract', record.contract.id, domain),
+                    owner: record.owner,
+                    ...(record.contract.expiresAt ? { expiresAt: record.contract.expiresAt } : {}),
+                    autoBoosts: record.autoBoosts,
+                },
+                terms: record.terms.terms,
+                transactions,
+            });
+        }
+
+        cursor = records.length > limit ? page.at(-1)?.terms.updatedAt : undefined;
+    } while (cursor);
+
+    return { consentRecords };
 };
 
 export const getConsentedDataForProfile = async (
