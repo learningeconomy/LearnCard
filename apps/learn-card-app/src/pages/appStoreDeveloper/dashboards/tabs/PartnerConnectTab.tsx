@@ -538,7 +538,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                             variables: extractVariables(credential),
                         });
                     } catch (e) {
-                        log.warn('Failed to fetch boost:', link.boostUri, e);
+                        log.warn('Failed to fetch boost', e, { boostUri: link.boostUri });
                     }
                 }
 

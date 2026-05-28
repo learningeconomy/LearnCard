@@ -15,6 +15,9 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
+import { getLogger } from 'learn-card-base';
+
+const log = getLogger('recovery-setup-modal');
 
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
@@ -29,9 +32,6 @@ interface RecoverySetupModalProps {
     maskedRecoveryEmail?: string | null;
     onClose: () => void;
 }
-
-import { getLogger } from 'learn-card-base';
-const log = getLogger('recovery-setup-modal');
 
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPasskey,

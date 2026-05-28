@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import moment from 'moment';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('create-a-p-i-token-modal');
+const log = getLogger('create-api-token-modal');
 
 import {
     IonInput,

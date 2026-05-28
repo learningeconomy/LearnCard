@@ -225,7 +225,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                             isAddedToListing: !!templateAlias,
                         } as ManagedTemplate;
                     } catch (e) {
-                        log.warn('Failed to fetch boost:', boostUri, e);
+                        log.warn('Failed to fetch boost', e, { boostUri });
                         return null;
                     }
                 });
@@ -299,7 +299,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
                         return { masterId: master.id, children };
                     } catch (e) {
-                        log.warn('Failed to fetch boost children:', master.boostUri, e);
+                        log.warn('Failed to fetch boost children', e, { boostUri: master.boostUri });
                         return { masterId: master.id, children: [] };
                     }
                 });

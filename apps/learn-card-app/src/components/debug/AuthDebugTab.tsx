@@ -27,6 +27,8 @@ import {
     getLogger,
 } from 'learn-card-base';
 
+const log = getLogger('auth-debug-tab');
+
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
@@ -194,8 +196,6 @@ export type { StatusMeta };
 // ---------------------------------------------------------------------------
 // Auth Debug Tab
 // ---------------------------------------------------------------------------
-
-const log = getLogger('auth-debug-tab');
 
 export const AuthDebugTab: React.FC = () => {
     const [copied, copyToClipboard] = useCopyToClipboard();

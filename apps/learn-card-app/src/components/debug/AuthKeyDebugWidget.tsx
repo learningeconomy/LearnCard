@@ -30,6 +30,8 @@ import {
     getLogger,
 } from 'learn-card-base';
 
+const log = getLogger('auth-key-debug-widget');
+
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
@@ -218,8 +220,6 @@ interface ServerState {
 // ---------------------------------------------------------------------------
 // Reusable sub-components
 // ---------------------------------------------------------------------------
-
-const log = getLogger('auth-key-debug-widget');
 
 const KVRow: React.FC<{
     label: string;
