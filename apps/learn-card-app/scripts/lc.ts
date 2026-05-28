@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
-const log = getLogger('lc');
+const log = getLogger();
 
 /**
  * lc.ts — Interactive developer launcher for the LearnCard app.

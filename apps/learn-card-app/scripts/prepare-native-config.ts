@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
-const log = getLogger('prepare-native-config');
+const log = getLogger();
 
 /**
  * prepare-native-config.ts

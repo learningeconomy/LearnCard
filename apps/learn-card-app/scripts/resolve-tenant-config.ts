@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
-const log = getLogger('resolve-tenant-config');
+const log = getLogger();
 
 /**
  * resolve-tenant-config.ts

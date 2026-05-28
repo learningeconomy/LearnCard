@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
-const log = getLogger('create-theme');
+const log = getLogger();
 
 /**
  * create-theme.ts — Interactive theme scaffolding tool.

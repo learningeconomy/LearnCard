@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
-const log = getLogger('create-tenant');
+const log = getLogger();
 
 /**
  * create-tenant.ts — Interactive tenant scaffolding tool.
