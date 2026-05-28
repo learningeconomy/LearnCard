@@ -15,7 +15,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('troop.helpers');
 
 type AllowedBackgroundStylesType = {

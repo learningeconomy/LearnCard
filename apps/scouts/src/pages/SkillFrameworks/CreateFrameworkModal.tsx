@@ -29,7 +29,7 @@ import { IonFooter, IonInput, IonSpinner, IonTextarea } from '@ionic/react';
 import { SkillFramework } from '../../components/boost/boost';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('create-framework-modal');
 
 type CreateFrameworkModalProps = {

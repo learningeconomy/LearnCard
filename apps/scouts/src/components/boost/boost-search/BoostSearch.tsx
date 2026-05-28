@@ -22,7 +22,7 @@ import HourGlass from '../../../assets/lotties/hourglass.json';
 import boostSearchStore from '../../../stores/boostSearchStore';
 import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../pages/troop/TroopPageMembersBox';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-search');
 
 type BoostSearchProps = {

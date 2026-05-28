@@ -29,7 +29,7 @@ import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import MeritBadgesIcon from 'learn-card-base/svgs/MeritBadgesIcon';
 import ScoutsPledge2 from 'learn-card-base/svgs/ScoutsPledge2';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('wallet-page');
 
 const walletPageData: {

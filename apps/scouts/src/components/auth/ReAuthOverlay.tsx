@@ -37,7 +37,7 @@ import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('re-auth-overlay');
 
 type ReAuthState = 'refreshing' | 'needs_reauth' | 'reauthing' | 'success' | 'error';
@@ -131,7 +131,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
 
             // UID mismatch guard — reject if a different account was used
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
-                log.warn('ReAuth: UID mismatch — expected', expectedUidRef.current, 'got', newUid);
+                log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
                 await firebaseSignOut(firebaseAuth);
                 setError(UID_MISMATCH_ERROR);
                 setState('error');
@@ -204,7 +204,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
 
             // UID mismatch guard — reject if a different account was used
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
-                log.warn('ReAuth: UID mismatch — expected', expectedUidRef.current, 'got', newUid);
+                log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
                 await firebaseSignOut(firebaseAuth);
                 setError(UID_MISMATCH_ERROR);
                 setState('error');

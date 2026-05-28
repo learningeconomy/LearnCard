@@ -15,7 +15,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-pending-connections');
 
 const AddressBookPendingConnections: React.FC<{

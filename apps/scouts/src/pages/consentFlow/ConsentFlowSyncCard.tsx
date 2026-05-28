@@ -25,7 +25,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowEditAccess from './ConsentFlowEditAccess';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-sync-card');
 
 export type ConsentFlowWriteAccessType = {

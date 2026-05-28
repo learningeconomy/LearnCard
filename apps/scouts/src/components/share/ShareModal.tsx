@@ -8,7 +8,7 @@ import User from 'learn-card-base/svgs/User';
 import CopyStack from '../svgs/CopyStack';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('share-modal');
 
 const ShareModal: React.FC<{

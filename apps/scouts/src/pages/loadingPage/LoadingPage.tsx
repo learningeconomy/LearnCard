@@ -6,7 +6,7 @@ import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
 import LoginLoadingPage from '../login/LoginPageLoader/LoginLoader';
 
 import { useHistory } from 'react-router-dom';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 import {
     useWallet,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
 
 import { useWallet, useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('vpr-query-by-example');
 
 import {

@@ -22,7 +22,7 @@ import { useGetBoostParents } from 'learn-card-base';
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import Lottie from 'react-lottie-player';
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connections');
 
 const AddressBookConnections: React.FC<{

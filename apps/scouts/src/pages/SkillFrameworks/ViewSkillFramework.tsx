@@ -6,7 +6,7 @@ import X from 'learn-card-base/svgs/X';
 import Pencil from 'apps/scouts/src/components/svgs/Pencil';
 import { ThreeDotVertical } from '@learncard/react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('view-skill-framework');
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';

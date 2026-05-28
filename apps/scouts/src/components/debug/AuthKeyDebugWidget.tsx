@@ -42,7 +42,7 @@ import {
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('auth-key-debug-widget');
 
 import {

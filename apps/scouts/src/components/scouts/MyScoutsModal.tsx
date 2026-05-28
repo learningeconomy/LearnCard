@@ -49,7 +49,7 @@ import { UserCMSAppearance } from '../scoutsID-CMS/scouts-cms.helpers';
 import { LCNProfile } from '@learncard/types';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('my-scouts-modal');
 
 type MyScoutsModalProps = {

@@ -24,7 +24,7 @@ import {
 } from './troopCMSState';
 import { VC } from '@learncard/types';
 import { MemberTabsEnum } from '../../pages/troop/TroopPageMembersBox';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('troops-cms-wrapper');
 
 type TroopsCMSWrapperProps = {

@@ -18,7 +18,7 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { ModalTypes, useIsCurrentUserLCNUser, useModal, useScreenWidth } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('side-menu');
 
 const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnum.scoutPass }) => {

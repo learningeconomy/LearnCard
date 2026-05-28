@@ -6,7 +6,7 @@ import CopyStack from '../../svgs/CopyStack';
 import X from 'learn-card-base/svgs/X';
 
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('view-json-modal');
 
 type ViewJsonModalProps = {

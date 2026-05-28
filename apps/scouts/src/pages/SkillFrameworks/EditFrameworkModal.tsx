@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // oxlint-disable-next-line no-unused-vars
 import { SkillFrameworkType } from '@learncard/types';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('edit-framework-modal');
 
 type EditFrameworkModalProps = {

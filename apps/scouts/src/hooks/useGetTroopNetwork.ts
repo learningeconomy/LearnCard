@@ -3,7 +3,7 @@ import { getScoutsRole } from '../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('use-get-troop-network');
 
 interface NetworkRecord {

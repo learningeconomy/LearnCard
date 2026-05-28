@@ -36,7 +36,7 @@ import { LCNBoostStatusEnum } from '../../../components/boost/boost';
 import { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
 import { getFileInfo } from '../../../hooks/useUploadFile';
 import { boostCategoryOptions } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-bulk-boost-import-option');
 
 export enum ImageStatus {

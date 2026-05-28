@@ -935,7 +935,9 @@ export const useDeleteEarnedBoostMutation = () => {
                     return index?.uri === boostUri;
                 });
 
-                const sqliteIndex = await wallet.index.SQLite?.get?.().catch(console.error);
+                const sqliteIndex = await wallet.index.SQLite?.get?.().catch(err =>
+                    log.error('SQLite index get failed', err)
+                );
                 const foundIndex = sqliteIndex?.find(index => {
                     return index?.uri === boostUri;
                 });

@@ -28,7 +28,7 @@ import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('external-consent-flow-door');
 
 enum Step {

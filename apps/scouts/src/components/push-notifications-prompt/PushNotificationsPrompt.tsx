@@ -15,7 +15,7 @@ import {
 import { pushUtilities, useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('push-notifications-prompt');
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('sentry');
 
 export type UseSentryIdentifyOptions = {

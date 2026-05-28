@@ -38,7 +38,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
 import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('use-firebase');
 
 export const useFirebase = () => {
@@ -132,11 +132,8 @@ export const useFirebase = () => {
                 if (errorMessage) log.warn(errorMessage);
                 return;
             } else {
-                if (errorCode) log.warn(errorCode);
-                if (errorMessage) {
-                    log.error('errorMessage', errorMessage);
-                    presentGoogleHelpModal(errorMessage);
-                }
+                log.error(`googleLogin failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) presentGoogleHelpModal(errorMessage);
             }
         }
     };
@@ -251,11 +248,8 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                if (errorCode) log.error('errorCode', errorCode);
-                if (errorMessage) {
-                    log.error('errorMessage', errorMessage);
-                    presentAlert(errorMessage);
-                }
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) presentAlert(errorMessage);
             }
         } else {
             try {
@@ -280,11 +274,8 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                if (errorCode) log.error('errorCode', errorCode);
-                if (errorMessage) {
-                    log.error('errorMessage', errorMessage);
-                    presentAlert(errorMessage);
-                }
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) presentAlert(errorMessage);
             }
         }
     };
@@ -317,8 +308,7 @@ export const useFirebase = () => {
 
                 errorCallback(errorCode);
 
-                log.error('errorCode', errorCode);
-                log.error('errorMessage', errorMessage);
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
             });
     };
 
@@ -395,8 +385,7 @@ export const useFirebase = () => {
 
             errorCallback(errorCode);
 
-            log.error('errorCode', errorCode);
-            log.error('errorMessage', errorMessage);
+            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorCode === 5111) {
                 presentToast('An error occured. Please refresh to fix.', {
@@ -468,14 +457,10 @@ export const useFirebase = () => {
 
                 // user cancelled apple login
                 if (errorMessage?.includes('1001')) {
-                    if (errorCode) log.warn('errorCode', errorCode);
-                    if (errorMessage) log.warn('errorMessage', errorMessage);
+                    log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                 } else {
-                    if (errorCode) log.error('errorCode', errorCode);
-                    if (errorMessage) {
-                        log.error('errorMessage', errorMessage);
-                        presentAlert(errorMessage);
-                    }
+                    log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
+                    if (errorMessage) presentAlert(errorMessage);
                 }
             }
 
@@ -535,11 +520,8 @@ export const useFirebase = () => {
                     if (errorMessage) log.warn(errorMessage);
                     return;
                 } else {
-                    if (errorCode) log.error('errorCode', errorCode);
-                    if (errorMessage) {
-                        log.error('errorMessage', errorMessage);
-                        presentAlert(errorMessage);
-                    }
+                    log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
+                    if (errorMessage) presentAlert(errorMessage);
                 }
             }
         }
@@ -571,8 +553,7 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                log.error('errorCode', errorCode);
-                log.error('errorMessage', errorMessage);
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
                 if (errorMessage) presentAlert(errorMessage);
 
@@ -603,8 +584,7 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = (error as any)?.code;
             const errorMessage = (error as any)?.message;
-            log.error('errorCode', errorCode);
-            log.error('errorMessage', errorMessage);
+            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorMessage) presentAlert(errorMessage as any);
         }
@@ -635,8 +615,7 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = (error as any)?.code;
             const errorMessage = (error as any)?.message;
-            log.error('errorCode', errorCode);
-            log.error('errorMessage', errorMessage);
+            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorMessage) presentAlert(errorMessage as any);
         }

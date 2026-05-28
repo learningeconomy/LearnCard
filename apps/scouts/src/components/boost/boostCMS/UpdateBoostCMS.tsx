@@ -77,7 +77,7 @@ import {
 } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('update-boost-cms');
 
 type UpdateBoostCMSProps = {

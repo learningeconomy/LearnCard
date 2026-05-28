@@ -2,7 +2,7 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { isLocalhost } from 'learn-card-base';
 import SpilledCup from '../svgs/SpilledCup';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('generic-error-boundary');
 
 type ErrorFallbackProps = {

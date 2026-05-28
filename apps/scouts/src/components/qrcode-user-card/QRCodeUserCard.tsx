@@ -38,7 +38,7 @@ import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import ShareModal from '../share/ShareModal';
 import ScannerPermissionsPrompt from '../scanner-permissions-prompt/ScannerPermissionsPrompt';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('qr-code-user-card');
 
 const QrCodeUserCard: React.FC<{

@@ -13,7 +13,7 @@ import { IonPage, IonContent } from '@ionic/react';
 import CredentialStorageFooter from './CredentialStorageFooter';
 import LoadingPage from '../loadingPage/LoadingPage';
 import { useAddCredentialToWallet } from '../../components/boost/mutations';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('credential-storage');
 
 export const getCredentialFromVp = (vp: VP): VC => {

@@ -4,7 +4,7 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { IonRow } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 import AppIcon from '../../assets/images/app-icon.png';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('cap-go-update-modal');
 
 export const CapGoUpdateModal: React.FC<{

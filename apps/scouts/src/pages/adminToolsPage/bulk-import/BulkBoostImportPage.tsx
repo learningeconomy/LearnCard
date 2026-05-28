@@ -38,7 +38,7 @@ import BulkBoostImportInstructions from './BulkImportInstructions';
 import BulkImportMissingImagesError from './BulkImportMissingImagesError';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BulkImportDataRow from './BulkImportDataRow';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('bulk-boost-import-page');
 
 export enum ImageStatus {

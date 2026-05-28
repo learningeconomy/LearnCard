@@ -35,7 +35,7 @@ import { getBespokeLearnCard, getUserHandleFromDid } from 'learn-card-base/helpe
 import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/troop.helpers';
 import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('view-shared-boost');
 
 const websiteLink = 'https://pass.scout.org/login';

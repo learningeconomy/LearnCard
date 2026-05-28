@@ -203,7 +203,9 @@ export const useDeleteCredentialRecord = () => {
 
                     // Also try SQLite index for completeness (if available)
                     try {
-                        const sqliteIndex = await wallet.index.SQLite?.get?.().catch(console.error);
+                        const sqliteIndex = await wallet.index.SQLite?.get?.().catch(err =>
+                            log.error('SQLite index get failed', err)
+                        );
                         const foundIndex = sqliteIndex?.find(index => index?.uri === record.uri);
 
                         if (foundIndex?.id) {

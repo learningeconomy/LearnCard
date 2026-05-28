@@ -15,7 +15,7 @@ import { defaultIDCardImage, defaultIssuerThumbnail } from './boost-options/boos
 import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
 import { BoostCMSAlignment } from './boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from './boost-options/boostOptions';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-helpers');
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {

@@ -3,7 +3,7 @@ import useWallet from 'learn-card-base/hooks/useWallet';
 import { VC } from '@learncard/types';
 import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
 import { Capacitor } from '@capacitor/core';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('troop-analytics-embed');
 
 export interface AnalyticsPayload {

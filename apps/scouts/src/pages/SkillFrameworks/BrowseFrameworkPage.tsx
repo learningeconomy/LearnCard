@@ -37,7 +37,7 @@ import {
     SkillFrameworkNodeWithSearchInfo,
 } from '../../components/boost/boost';
 import { SetState } from 'packages/shared-types/dist';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('browse-framework-page');
 
 type BrowseFrameworkPageProps = {

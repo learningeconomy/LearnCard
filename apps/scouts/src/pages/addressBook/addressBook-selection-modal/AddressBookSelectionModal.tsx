@@ -7,7 +7,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, useWallet, useGetConnections } from 'learn-card-base';
 import TroopButton from './TroopButton';
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-selection-modal');
 
 type AddressBookSelectionModalProps = {

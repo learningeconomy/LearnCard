@@ -12,7 +12,7 @@ import {
 
 import { MemberTabsEnum } from '../pages/troop/TroopPageMembersBox';
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('use-troop-members');
 
 type MemberRow = {

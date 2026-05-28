@@ -36,7 +36,7 @@ import { LCNBoostStatusEnum } from '../boost/boost';
 import { useAddCredentialToWallet } from '../boost/mutations';
 import { getPermissionsByRole } from './troops.helpers';
 import { cloneDeep } from 'lodash';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('troops-cms');
 
 const StateValidator = z.object({

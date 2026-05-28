@@ -8,7 +8,7 @@ import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
 import { useModal, ModalTypes } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-media-cms-form-video-item');
 
 const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({

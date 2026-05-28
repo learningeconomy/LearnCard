@@ -46,7 +46,7 @@ import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
 import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../../../pages/troop/TroopPageMembersBox';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-address-book');
 
 export enum BoostAddressBookEditMode {

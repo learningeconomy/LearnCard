@@ -9,7 +9,7 @@ import { Updater } from 'use-immer';
 import { produce } from 'immer';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-cms-media-photo-upload');
 
 type ThumbListItemProps = {

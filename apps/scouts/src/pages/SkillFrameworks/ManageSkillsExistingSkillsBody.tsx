@@ -9,7 +9,7 @@ import ManageSkillsUploadJsonButton from './ManageSkillsUploadJsonButton';
 import { SkillFramework } from '../../components/boost/boost';
 import SkillPreview from './SkillPreview';
 import { useWallet, useModal, ModalTypes } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-skills-existing-skills-body');
 import {
     ApiSkillNode,

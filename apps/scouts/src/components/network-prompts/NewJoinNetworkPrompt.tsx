@@ -32,7 +32,7 @@ import ErrorLogout from './ErrorLogout';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('new-join-network-prompt');
 
 const StateValidator = z.object({

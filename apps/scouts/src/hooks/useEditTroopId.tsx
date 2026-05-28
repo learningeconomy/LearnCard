@@ -22,7 +22,7 @@ import {
 import { getRoleFromCred } from '../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../stores/troopPageStore';
 import { VC } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('use-edit-troop-id');
 
 export const useEditTroopId = (credential: VC, uri?: string) => {

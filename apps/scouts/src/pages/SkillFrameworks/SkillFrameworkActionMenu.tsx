@@ -7,7 +7,7 @@ import TrashBin from 'learn-card-base/svgs/TrashBin';
 import EditFrameworkModal from './EditFrameworkModal';
 import ManageFrameworkNetworksModal from './ManageFrameworkNetworksModal';
 import ManageFrameworkAdminsModal from './ManageFrameworkAdminsModal';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('skill-framework-action-menu');
 
 type SkillFrameworkActionMenuProps = {

@@ -220,8 +220,7 @@ const CredentialStorage: React.FC = () => {
                 chapiStore.set.isChapiInteraction(null);
                 redirectStore.set.authRedirect(null);
             } catch (e) {
-                console.error;
-                e;
+                log.error('failed to clear chapi/redirect stores', e);
             }
 
             event.respondWith(

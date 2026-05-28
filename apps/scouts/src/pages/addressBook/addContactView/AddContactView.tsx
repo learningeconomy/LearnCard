@@ -21,7 +21,7 @@ import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prom
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('add-contact-view');
 
 export enum AddContactViewMode {

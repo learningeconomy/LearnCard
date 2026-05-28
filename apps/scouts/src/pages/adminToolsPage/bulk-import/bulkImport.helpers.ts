@@ -5,7 +5,7 @@ import {
 } from '../../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { BoostCategoryOptionsEnum, constructCustomBoostType } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('bulk-import.helpers');
 
 /* Take an input like

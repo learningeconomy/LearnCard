@@ -6,7 +6,7 @@ import { SkillFrameworkType } from '@learncard/types';
 import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
 import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-framework-networks-modal');
 
 type ManageFrameworkNetworksModalProps = {

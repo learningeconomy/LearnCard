@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('a-p-i-tokens-page');
+const log = getLogger('api-tokens-page');
 
 import { IonGrid, IonRow, IonCol, IonSpinner } from '@ionic/react';
 import AdminPageStructure from '../AdminPageStructure';

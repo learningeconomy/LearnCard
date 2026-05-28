@@ -177,7 +177,7 @@ interface OBv3CredentialBuilderProps {
 }
 
 import { getLogger } from 'learn-card-base';
-const log = getLogger('o-bv3-credential-builder');
+const log = getLogger('obv3-credential-builder');
 
 const InputField: React.FC<{
     label: string;

@@ -14,7 +14,7 @@ import {
 } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, ModalTypes } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-cms-skills-form');
 
 const BoostCMSPrimarySkillButton: React.FC<{

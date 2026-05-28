@@ -22,7 +22,7 @@ import {
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import { PermissionsByRole } from '../../components/troopsCMS/troops.helpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('id-options-modal');
 
 type IdOptionsModalProps = {

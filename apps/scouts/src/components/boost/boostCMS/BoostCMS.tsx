@@ -83,7 +83,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<{

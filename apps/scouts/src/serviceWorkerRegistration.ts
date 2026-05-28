@@ -1,4 +1,4 @@
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('service-worker-registration');
 // This optional code is used to register a service worker.
 // register() is not called by default.

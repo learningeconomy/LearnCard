@@ -17,7 +17,7 @@ import { useFirebase } from '../../../hooks/useFirebase';
 import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('phone-form');
 
 import 'react-phone-number-input/style.css';

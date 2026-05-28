@@ -24,7 +24,7 @@ import {
     useVerifyLoginVerificationCode,
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('email-form');
 
 const StateValidator = z.object({

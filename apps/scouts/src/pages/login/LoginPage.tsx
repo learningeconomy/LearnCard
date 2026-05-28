@@ -37,7 +37,7 @@ import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {

@@ -23,7 +23,7 @@ import ContactsIcon from '../../assets/icons/ContactsIcon';
 import TroopsIcon from '../../assets/icons/TroopsIcon';
 import AlertsIcon from '../../assets/icons/AlertsIcon';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('launch-pad');
 
 type CapacitorBundle = {

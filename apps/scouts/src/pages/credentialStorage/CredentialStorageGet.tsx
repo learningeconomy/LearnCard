@@ -9,7 +9,7 @@ import LoadingPage from '../loadingPage/LoadingPage';
 
 import VprDIDAuth from './vpr/VprDIDAuth';
 import VprQueryByExample from './vpr/VprQueryByExample';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('credential-storage-get');
 
 export const getCredentialFromVp = (vp: VP): VC => {

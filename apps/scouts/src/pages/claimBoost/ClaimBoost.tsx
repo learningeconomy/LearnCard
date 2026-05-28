@@ -42,7 +42,7 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../hooks/useHighlightedCredentials';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
 const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {

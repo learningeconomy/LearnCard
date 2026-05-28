@@ -36,7 +36,7 @@ import {
 } from '../network-settings/networkSettings.helpers';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('join-network-prompt');
 
 const StateValidator = z.object({

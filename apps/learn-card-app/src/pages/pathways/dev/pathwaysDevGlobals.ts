@@ -22,6 +22,11 @@ const log = getLogger('pathways-dev-globals');
  * VC that will satisfy each outcome's predicate. We're not simulating a
  * real wallet-observer here; we're confirming the binder → proposal →
  * commit path fires end-to-end without needing a real issuer.
+ *
+ * Note: the console.info calls in this file are intentionally raw. This module
+ * is gated by `import.meta.env.DEV` and the output is direct feedback for the
+ * dev typing commands into the browser console — it is not application logging
+ * and should not be routed through the Sentry transport.
  */
 
 import { v4 as uuid } from 'uuid';

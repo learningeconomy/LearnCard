@@ -34,7 +34,7 @@ import AllContactsIcon from '../../components/svgs/AllContactsIcon';
 import Lottie from 'react-lottie-player';
 import Pulpo from '../../assets/lotties/cuteopulpo.json';
 import MainHeader from '../../components/main-header/MainHeader';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {

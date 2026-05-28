@@ -15,7 +15,7 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 import { useAddCredentialToWallet } from '../../boost/mutations';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('notifications-list');
 
 export const NotificationItem: React.FC<{

@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
 import DatePickerInput from '../date-picker/DatePickerInput';
+
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-profile-update-form');
 
@@ -25,7 +26,6 @@ import {
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
-    getLogger,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
@@ -86,8 +86,6 @@ type UserProfileUpdateFormProps = {
     handleChapiInfo: () => void;
     children?: any;
 };
-
-const log = getLogger('UserProfileUpdateForm');
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     title = 'My Account',

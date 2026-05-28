@@ -32,7 +32,7 @@ import {
     generateSkillId,
 } from '../../helpers/skillFramework.helpers';
 import { ReplaceSkillFrameworkSkillsResult } from '@learncard/types';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-skills');
 
 // Define the base schema for SkillFrameworkNode

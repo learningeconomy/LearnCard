@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('user-profile-setup-listener');
 import {
     SocialLoginTypes,

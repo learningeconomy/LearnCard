@@ -12,7 +12,7 @@ import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('notification-card-container');
 
 type NotificationCardProps = {

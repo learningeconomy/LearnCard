@@ -4,7 +4,7 @@ import { initLearnCard } from '@learncard/init';
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
 import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('vpr-did-auth');
 
 const VprDIDAuth: React.FC = ({ event, currentUser }) => {

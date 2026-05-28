@@ -13,7 +13,7 @@ import AddContactView, {
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('qr-code-scanner-listener');
 
 export const QRCodeScannerListener: React.FC = () => {

@@ -14,7 +14,7 @@ import {
 
 import { useAddCredentialToWallet } from '../mutations';
 import { LCNBoostStatusEnum } from '../boost';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('use-boost');
 
 // oxlint-disable-next-line no-unused-vars

@@ -8,7 +8,7 @@ import {
     setProxy,
 } from './scouts-sso.helpers';
 import { useWallet } from 'learn-card-base';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('use-scouts-sso-login');
 
 // !! Using CapacitorHttp to bypass CORS and leverage native networking capabilities. for (IOS/Android) !!

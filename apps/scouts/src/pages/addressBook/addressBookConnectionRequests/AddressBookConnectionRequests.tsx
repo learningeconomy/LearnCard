@@ -21,7 +21,7 @@ import {
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connection-requests');
 
 const AddressBookConnectionRequests: React.FC<{

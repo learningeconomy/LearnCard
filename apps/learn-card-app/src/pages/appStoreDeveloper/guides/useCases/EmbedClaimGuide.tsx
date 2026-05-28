@@ -1168,7 +1168,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                 authority.name
             );
         };
-        ensureSigningAuthority().catch(console.error);
+        ensureSigningAuthority().catch(err => log.error('ensureSigningAuthority failed', err));
     }, []);
 
     const guideState = useGuideState('embed-claim', STEPS.length, selectedIntegration);

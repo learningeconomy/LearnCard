@@ -10,7 +10,7 @@ import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
-import { getLogger } from 'learn-card-base/logging/logger';
+import { getLogger } from 'learn-card-base';
 const log = getLogger('connect-page');
 
 const ConnectPage: React.FC = () => {
