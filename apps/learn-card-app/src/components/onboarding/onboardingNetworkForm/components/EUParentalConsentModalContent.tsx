@@ -132,8 +132,12 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         <button
                             type="button"
                             onClick={() => {
-                                onComplete?.();
-                                onClose();
+                                // onComplete (age-gate flow) closes the modal itself and then
+                                // advances onboarding. Only fall back to onClose when there's no
+                                // onComplete (re-prompt callers) — calling both closes one modal
+                                // too many and tears down the underlying onboarding modal.
+                                if (onComplete) onComplete();
+                                else onClose();
                             }}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
