@@ -105,6 +105,7 @@
 -   [Partner Connect SDK](sdks/partner-connect.md)
 -   [Plugins](sdks/official-plugins/README.md)
 -   [LearnCard CLI](sdks/learncard-cli.md)
+    -   [Holder Continuity Export](sdks/learncard-cli.md#holder-continuity-export)
 
 ## 🧠 Core Concepts
 
@@ -117,6 +118,8 @@
     -   [Network Profiles](core-concepts/identities-and-keys/network-profiles.md)
     -   [Signing Authorities](core-concepts/identities-and-keys/signing-authorities.md)
     -   [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)
+-   [Holder Continuity](core-concepts/holder-continuity.md)
+-   [Holder Continuity Compatibility](core-concepts/holder-continuity-compat.md)
 -   [Credentials & Data](core-concepts/credentials-and-data/README.md)
     -   [Verifiable Credentials (VCs)](core-concepts/credentials-and-data/verifiable-credentials-vcs.md)
     -   [Credential Lifecycle](core-concepts/credentials-and-data/credential-lifecycle.md)

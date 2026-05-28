@@ -11,6 +11,44 @@ npx @learncard/cli
 npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2h
 ```
 
+### Holder Continuity Export
+
+The CLI also provides REPL helpers from `@learncard/holder-continuity` for holder-controlled continuity exports. These helpers create a standard ZIP with a readable manifest and encrypted payload files for keys, credentials, presentations, consent records, and status-list snapshots.
+
+```javascript
+await exportLearnCardBundle(learnCard, {
+    out: './learncard-export.zip',
+    password: 'use-a-strong-password',
+});
+
+const freshWallet = await initLearnCard({ seed: '0'.repeat(64), network: true });
+await importLearnCardBundle('./learncard-export.zip', {
+    password: 'use-a-strong-password',
+    wallet: freshWallet,
+});
+```
+
+```javascript
+const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', {
+    password: 'use-a-strong-password',
+});
+```
+
+If you omit the first argument, the CLI exports the default `learnCard` wallet it created at startup:
+
+```javascript
+await exportLearnCardBundle({ out: './learncard-export.zip', password: 'use-a-strong-password' });
+```
+
+Lower-level helpers are also available in the REPL:
+
+```javascript
+await createLearnCardBundle(learnCard, { password: 'use-a-strong-password' });
+await readLearnCardBundle('./learncard-export.zip', { password: 'use-a-strong-password' });
+```
+
+For the data model and portability caveats, see [Holder Continuity](../core-concepts/holder-continuity.md) and the `@learncard/holder-continuity` package `BUNDLE_SPEC.md`.
+
 ### Getting Started
 
 <figure><img src="../.gitbook/assets/Screen Shot 2022-09-29 at 6.08.26 PM.png" alt=""><figcaption><p>Run npx @learncard/cli to boot up the CLI - you should see this screen in your terminal! </p></figcaption></figure>

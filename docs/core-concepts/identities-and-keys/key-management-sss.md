@@ -18,25 +18,25 @@ Private keys are the foundation of a user's digital identity. Whoever controls t
 
 ## How It Works
 
-### The 2-of-3 Threshold Scheme
+### The 2-of-4 Threshold Scheme
 
-When a user's private key is created (or migrated), it is split into **three shares** using Shamir's Secret Sharing with a **threshold of 2**. Any two of the three shares are sufficient to reconstruct the original key. No single share reveals anything about the key on its own.
+When a user's private key is created (or migrated), it is split into **four shares** using Shamir's Secret Sharing with a **threshold of 2**. Any two of the four shares are sufficient to reconstruct the original key. No single share reveals anything about the key on its own.
 
 ```
 Private Key (32 bytes)
     │
-    ├── Split via Shamir 2-of-3 ──────────────────────────┐
+    ├── Split via Shamir 2-of-4 ──────────────────────────┐
     │                                                      │
-    ▼                  ▼                    ▼               │
-Device Share      Auth Share          Recovery Share(s)    │
-(IndexedDB)    (lca-api server,      (passkey, phrase,     │
-                AES-256-GCM          backup file, or       │
-                encrypted at rest)   email backup)         │
+    ▼                  ▼                 ▼                 ▼
+Device Share      Auth Share       Recovery Share      Email Share
+(IndexedDB)    (lca-api server,    (passkey, phrase,   (encrypted email
+                AES-256-GCM        or backup file)     backup)
+                encrypted at rest)
                                                            │
 Any 2 shares → reconstruct private key ◄──────────────────┘
 ```
 
-### The Three Shares
+### The Four Shares
 
 #### 1. Device Share
 
@@ -52,16 +52,21 @@ Any 2 shares → reconstruct private key ◄────────────
 - Retrieved by authenticating with the user's auth provider (e.g., Firebase).
 - Supports **share versioning** — when shares are rotated, previous versions are kept so that recovery methods created against older shares remain valid.
 
-#### 3. Recovery Share(s)
+#### 3. Recovery Share
 
-One or more recovery shares can be created by the user. Each recovery share is the third share, encrypted or encoded differently depending on the method:
+The recovery share can be protected by the user in multiple ways:
 
 | Method | How the share is protected | Storage |
 |---|---|---|
 | **Passkey (WebAuthn PRF)** | Encrypted using a key derived from the passkey's PRF output — hardware-bound, phishing-resistant | Server (encrypted) |
-| **Recovery Phrase** | Encoded as a BIP39-style 24-word mnemonic that the user writes down | User (offline) |
+| **Recovery Phrase** | Encoded as a BIP39-style mnemonic that the user writes down | User (offline) |
 | **Backup File** | Encrypted with a user-chosen password using Argon2id + AES-GCM, stored as a downloadable JSON file | User (file) |
-| **Email Backup** | The encrypted backup share is emailed to the user's verified recovery email address | User (email) |
+
+#### 4. Email Share
+
+- Encrypted before being sent to the user's verified recovery email.
+- Provides an additional independent recovery path.
+- Optional; deployments can disable email backup.
 
 ### Normal Login (Same Device)
 
@@ -78,8 +83,8 @@ When a user logs in on a new device (no device share available):
 
 1. Authentication succeeds, but the device share is missing.
 2. The user enters **recovery mode** and is prompted to use one of their recovery methods.
-3. The **recovery share** (from passkey, phrase, backup, or email) is combined with the **auth share** to reconstruct the key.
-4. A **new device share** is generated and stored locally. The key is re-split so that all three shares are fresh.
+3. The **recovery share** or **email share** is combined with the **auth share** to reconstruct the key.
+4. A **new device share** is generated and stored locally. The key is re-split so that all four shares are fresh.
 
 ---
 
@@ -125,7 +130,7 @@ Existing users who were on the previous Web3Auth-based key management system are
 1. The **AuthCoordinator** detects that the user has an existing account but no SSS record on the server.
 2. It enters a `needs_migration` state.
 3. The legacy private key is retrieved from the cached Web3Auth Single Factor Auth (SFA) key.
-4. The key is split into three shares using SSS, and the shares are stored as described above.
+4. The key is split into four shares using SSS, and the shares are stored as described above.
 5. The user is marked as migrated on the server.
 6. The user is prompted to set up recovery methods.
 
@@ -136,7 +141,7 @@ Migration is automatic — the AuthCoordinator detects legacy accounts and enter
 ## Key Takeaways
 
 - Private keys are **never stored whole** — they are always split into shares.
-- **2-of-3 threshold** — any two shares can reconstruct the key, but one share alone reveals nothing.
+- **2-of-4 threshold** — any two shares can reconstruct the key, but one share alone reveals nothing.
 - **Server shares are encrypted at rest** with AES-256-GCM using HKDF-derived keys.
 - **Multiple recovery methods** provide resilience against device loss.
 - **Share versioning** ensures backward compatibility when shares are rotated.

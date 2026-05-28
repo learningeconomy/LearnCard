@@ -24,6 +24,37 @@ npx @learncard/cli
 npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2
 ```
 
+## Holder continuity export
+
+The CLI exposes REPL helpers from `@learncard/holder-continuity` for holder-controlled export, restore, and self-import:
+
+```js
+await exportLearnCardBundle(learnCard, {
+    out: './learncard-export.zip',
+    password: 'use-a-strong-password',
+});
+
+const freshWallet = await initLearnCard({ seed: '0'.repeat(64), network: true });
+await importLearnCardBundle('./learncard-export.zip', {
+    password: 'use-a-strong-password',
+    wallet: freshWallet,
+});
+```
+```js
+const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', {
+    password: 'use-a-strong-password',
+});
+```
+
+
+If you omit the first argument, the CLI exports the default `learnCard` wallet it created at startup:
+
+```js
+await exportLearnCardBundle({ out: './learncard-export.zip', password: 'use-a-strong-password' });
+```
+
+See `@learncard/holder-continuity` `BUNDLE_SPEC.md` for the ZIP layout and manifest hashing rules.
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
