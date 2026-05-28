@@ -146,21 +146,21 @@ program
 
         console.log('Wallet created!\n');
 
-        console.log('┌───────────────────────────────────────────────────────┐');
-        console.log('│                Variables Available                    │');
-        console.log('├───────────────────────┬───────────────────────────────┤');
-        console.log('│      Variable         │           Description         │');
-        console.log('├───────────────────────┼───────────────────────────────┤');
-        console.log(`│          ${g.learnCard}    │ Learn Card Wallet             │`);
-        console.log(`│      ${g.initLearnCard}    │ Wallet Instantiation Function │`);
-        console.log(`│               ${g.seed}    │ Seed used to generate wallet  │`);
-        console.log(`│ ${g.generateRandomSeed}    │ Generates a random seed       │`);
-        console.log(`│              ${g.types}    │ Helpful zod validators        │`);
-        console.log(`│              ${g.copy}     │ Copy text to clipboard        │`);
-        console.log(`│ ${g.exportLearnCardBundle}  │ Export wallet continuity ZIP  │`);
-        console.log(`│ ${g.importLearnCardBundle}  │ Import continuity ZIP         │`);
+        console.log('┌───────────────────────────────────────────────────────────────┐');
+        console.log('│                        Variables Available                    │');
+        console.log('├────────────────────────────┬──────────────────────────────────┤');
+        console.log('│      Variable              │             Description          │');
+        console.log('├────────────────────────────┼──────────────────────────────────┤');
+        console.log(`│                  ${g.learnCard} │ Learn Card Wallet                │`);
+        console.log(`│              ${g.initLearnCard} │ Wallet Instantiation Function    │`);
+        console.log(`│                       ${g.seed} │ Seed used to generate wallet     │`);
+        console.log(`│         ${g.generateRandomSeed} │ Generates a random seed          │`);
+        console.log(`│                      ${g.types} │ Helpful zod validators           │`);
+        console.log(`│                       ${g.copy} │ Copy text to clipboard           │`);
+        console.log(`│      ${g.exportLearnCardBundle} │ Export wallet continuity ZIP     │`);
+        console.log(`│      ${g.importLearnCardBundle} │ Import continuity ZIP            │`);
         console.log(`│ ${g.restoreLearnCardFromBundle} │ Restore original wallet from ZIP │`);
-        console.log('└───────────────────────┴───────────────────────────────┘');
+        console.log('└────────────────────────────┴──────────────────────────────────┘');
 
         console.log('');
 
@@ -176,7 +176,7 @@ program
             '┌─────────────────────────┬───────────────────────────────────────────────────────────────────────────────────┐'
         );
         console.log(
-            '│        Description      │                    Command                                                        │'
+            '│        Description      │                       Command                                                     │'
         );
         console.log(
             '├─────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤'
@@ -200,10 +200,10 @@ program
             `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp);                                    │`
         );
         console.log(
-            `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password: '...' });   │`
+            `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password: '...' }); │`
         );
         console.log(
-            `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password: '...' });               │`
+            `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password: '...' });            │`
         );
         console.log(
             '└─────────────────────────┴───────────────────────────────────────────────────────────────────────────────────┘'
