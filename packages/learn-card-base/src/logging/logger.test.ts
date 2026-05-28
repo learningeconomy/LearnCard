@@ -190,7 +190,7 @@ describe('scope prefixing', () => {
         const log = getLogger('wallet/claim');
         log.warn('something happened');
 
-        expect(spy).toHaveBeenCalledWith('[wallet/claim]', 'something happened', {});
+        expect(spy).toHaveBeenCalledWith('[wallet/claim]', 'something happened');
     });
 
     it('attaches scope tag to Sentry events', () => {
@@ -393,7 +393,7 @@ describe('flexible arguments (like console.log)', () => {
 
         logger.error(err);
 
-        expect(spy).toHaveBeenCalledWith('', 'something broke', err, {});
+        expect(spy).toHaveBeenCalledWith('', 'something broke', err);
     });
 
     it('log.error(error) calls captureException with the error', () => {
@@ -426,7 +426,7 @@ describe('flexible arguments (like console.log)', () => {
         const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
         logger.error('just a message');
 
-        expect(spy).toHaveBeenCalledWith('', 'just a message', {});
+        expect(spy).toHaveBeenCalledWith('', 'just a message');
     });
 
     it('log.error(primitive) logs a primitive value without a message', () => {
@@ -472,7 +472,7 @@ describe('flexible arguments (like console.log)', () => {
         const err = new Error('failed');
         logger.error(err, 42);
 
-        expect(spy).toHaveBeenCalledWith('', 'failed', err, {});
+        expect(spy).toHaveBeenCalledWith('', 'failed', err);
     });
 
     it('log.info(error) uses error.message and creates breadcrumb', () => {
@@ -508,7 +508,7 @@ describe('flexible arguments (like console.log)', () => {
 
         logger.debug(err);
 
-        expect(spy).toHaveBeenCalledWith('', 'internal state: x=5', err, {});
+        expect(spy).toHaveBeenCalledWith('', 'internal state: x=5', err);
     });
 
     it('getLogger(scope).error(error) includes scope prefix', () => {
@@ -518,7 +518,7 @@ describe('flexible arguments (like console.log)', () => {
 
         log.error(err);
 
-        expect(spy).toHaveBeenCalledWith('[wallet]', 'load failed', err, {});
+        expect(spy).toHaveBeenCalledWith('[wallet]', 'load failed', err);
     });
 
     it('getLogger(scope).error(primitive) includes scope prefix even without message', () => {

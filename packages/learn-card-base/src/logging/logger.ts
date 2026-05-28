@@ -1,4 +1,69 @@
 // ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+// Structured metadata bag that may carry an opt-in PII bypass flag.
+type Meta = Record<string, unknown> & { allowPii?: boolean };
+
+// Guards against accidental Error objects and arrays being treated as metadata bags.
+const isMeta = (x: unknown): x is Meta => {
+    return typeof x === 'object' && x !== null && !(x instanceof Error) && !Array.isArray(x);
+};
+
+// Normalises the overloaded second argument accepted by every log method.
+// Accepts `unknown` so callers can pass any value without wrapping it first.
+// Primitives and arrays are surfaced as-is for console output and wrapped in
+// { value } for Sentry — no object wrapper required at the call site.
+//
+//   log.error('msg', err)          → [err,       {},      undefined]
+//   log.error('msg', err, { key }) → [err,       { key }, undefined]
+//   log.error('msg', { key })      → [undefined, { key }, undefined]
+//   log.info('flag', false)        → [undefined, {},      false]
+//   log.info('items', [1, 2])      → [undefined, {},      [1, 2]]
+//
+// Strips allowPii before returning so it never reaches Sentry as an extra field.
+const parseMeta = (
+    metaOrError?: unknown,
+    meta?: Meta
+): [Error | undefined, Record<string, unknown>, unknown?] => {
+    let err: Error | undefined;
+    let raw: Record<string, unknown> = {};
+    let primitive: unknown;
+
+    if (metaOrError instanceof Error) {
+        err = metaOrError;
+        raw = meta ?? {};
+    } else if (isMeta(metaOrError)) {
+        raw = metaOrError;
+    } else if (metaOrError !== undefined) {
+        // Primitive (boolean, number, string, bigint) or array — display directly
+        primitive = metaOrError;
+        raw = meta ?? {};
+    }
+
+    const { allowPii: allowPiiFromRaw, ...rest } = raw as Meta;
+    const allowPii = allowPiiFromRaw ?? (meta as Meta | undefined)?.allowPii;
+    return [err, scrub(rest, allowPii), primitive];
+};
+
+// Returns extra only when it has keys — avoids printing `{}` on every log line.
+const extraOrNothing = (extra: Record<string, unknown>): [] | [Record<string, unknown>] =>
+    Object.keys(extra).length > 0 ? [extra] : [];
+
+// True only when a Sentry transport is registered AND the user has opted in.
+// When false the logger falls back to console-only (dev mode or privacy gate active).
+const sentryActive = (): boolean => _transport !== null && _bugReportsEnabled;
+
+// Assembles the Sentry tags that are attached to every captured event.
+// scope identifies which feature/module logged the event; tenantId enables per-tenant filtering.
+const buildTags = (scope?: string): Record<string, string> => {
+    const tags: Record<string, string> = {};
+    if (scope) tags['scope'] = scope;
+    if (_tenantId) tags['tenantId'] = _tenantId;
+    return tags;
+};
+
+// ---------------------------------------------------------------------------
 // PII scrubbing
 // ---------------------------------------------------------------------------
 
@@ -157,67 +222,6 @@ export const configureLoggerContext = (opts: {
 };
 
 // ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-// Structured metadata bag that may carry an opt-in PII bypass flag.
-type Meta = Record<string, unknown> & { allowPii?: boolean };
-
-// Guards against accidental Error objects and arrays being treated as metadata bags.
-const isMeta = (x: unknown): x is Meta => {
-    return typeof x === 'object' && x !== null && !(x instanceof Error) && !Array.isArray(x);
-};
-
-// Normalises the overloaded second argument accepted by every log method.
-// Accepts `unknown` so callers can pass any value without wrapping it first.
-// Primitives and arrays are surfaced as-is for console output and wrapped in
-// { value } for Sentry — no object wrapper required at the call site.
-//
-//   log.error('msg', err)          → [err,       {},      undefined]
-//   log.error('msg', err, { key }) → [err,       { key }, undefined]
-//   log.error('msg', { key })      → [undefined, { key }, undefined]
-//   log.info('flag', false)        → [undefined, {},      false]
-//   log.info('items', [1, 2])      → [undefined, {},      [1, 2]]
-//
-// Strips allowPii before returning so it never reaches Sentry as an extra field.
-const parseMeta = (
-    metaOrError?: unknown,
-    meta?: Meta
-): [Error | undefined, Record<string, unknown>, unknown?] => {
-    let err: Error | undefined;
-    let raw: Record<string, unknown> = {};
-    let primitive: unknown;
-
-    if (metaOrError instanceof Error) {
-        err = metaOrError;
-        raw = meta ?? {};
-    } else if (isMeta(metaOrError)) {
-        raw = metaOrError;
-    } else if (metaOrError !== undefined) {
-        // Primitive (boolean, number, string, bigint) or array — display directly
-        primitive = metaOrError;
-        raw = meta ?? {};
-    }
-
-    const { allowPii: allowPiiFromRaw, ...rest } = raw as Meta;
-    const allowPii = allowPiiFromRaw ?? (meta as Meta | undefined)?.allowPii;
-    return [err, scrub(rest, allowPii), primitive];
-};
-
-// True only when a Sentry transport is registered AND the user has opted in.
-// When false the logger falls back to console-only (dev mode or privacy gate active).
-const sentryActive = (): boolean => _transport !== null && _bugReportsEnabled;
-
-// Assembles the Sentry tags that are attached to every captured event.
-// scope identifies which feature/module logged the event; tenantId enables per-tenant filtering.
-const buildTags = (scope?: string): Record<string, string> => {
-    const tags: Record<string, string> = {};
-    if (scope) tags['scope'] = scope;
-    if (_tenantId) tags['tenantId'] = _tenantId;
-    return tags;
-};
-
-// ---------------------------------------------------------------------------
 // Logger factory
 // ---------------------------------------------------------------------------
 
@@ -250,12 +254,12 @@ const createLogger = (scope?: string): Logger => {
             if (sentryActive() && process.env.NODE_ENV === 'production') return;
             const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
-            if (err && message) console.debug(prefix, message, err, extra);
-            else if (err) console.debug(prefix, err, extra);
+            if (err && message) console.debug(prefix, message, err, ...extraOrNothing(extra));
+            else if (err) console.debug(prefix, err, ...extraOrNothing(extra));
             else if (primitive !== undefined && message) console.debug(prefix, message, primitive);
             else if (primitive !== undefined) console.debug(prefix, primitive);
-            else if (message) console.debug(prefix, message, extra);
-            else console.debug(prefix, extra);
+            else if (message) console.debug(prefix, message, ...extraOrNothing(extra));
+            else console.debug(prefix, ...extraOrNothing(extra));
         },
 
         info(arg1, arg2, arg3) {
@@ -272,12 +276,13 @@ const createLogger = (scope?: string): Logger => {
                     level: 'info',
                 });
             } else {
-                if (err && message) console.info(prefix, message, err, extra);
-                else if (err) console.info(prefix, err, extra);
-                else if (primitive !== undefined && message) console.info(prefix, message, primitive);
+                if (err && message) console.info(prefix, message, err, ...extraOrNothing(extra));
+                else if (err) console.info(prefix, err, ...extraOrNothing(extra));
+                else if (primitive !== undefined && message)
+                    console.info(prefix, message, primitive);
                 else if (primitive !== undefined) console.info(prefix, primitive);
-                else if (message) console.info(prefix, message, extra);
-                else console.info(prefix, extra);
+                else if (message) console.info(prefix, message, ...extraOrNothing(extra));
+                else console.info(prefix, ...extraOrNothing(extra));
             }
         },
 
@@ -285,12 +290,12 @@ const createLogger = (scope?: string): Logger => {
             const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
             // Always log to console so devs see warnings in both envs
-            if (err && message) console.warn(prefix, message, err, extra);
-            else if (err) console.warn(prefix, err, extra);
+            if (err && message) console.warn(prefix, message, err, ...extraOrNothing(extra));
+            else if (err) console.warn(prefix, err, ...extraOrNothing(extra));
             else if (primitive !== undefined && message) console.warn(prefix, message, primitive);
             else if (primitive !== undefined) console.warn(prefix, primitive);
-            else if (message) console.warn(prefix, message, extra);
-            else console.warn(prefix, extra);
+            else if (message) console.warn(prefix, message, ...extraOrNothing(extra));
+            else console.warn(prefix, ...extraOrNothing(extra));
             if (sentryActive()) {
                 _transport!.captureMessage(
                     message || 'warning',
@@ -304,12 +309,12 @@ const createLogger = (scope?: string): Logger => {
         error(arg1, arg2, arg3) {
             const { message, metaOrError, meta } = parseAllArgs(arg1, arg2, arg3);
             const [err, extra, primitive] = parseMeta(metaOrError, meta);
-            if (err && message) console.error(prefix, message, err, extra);
-            else if (err) console.error(prefix, err, extra);
+            if (err && message) console.error(prefix, message, err, ...extraOrNothing(extra));
+            else if (err) console.error(prefix, err, ...extraOrNothing(extra));
             else if (primitive !== undefined && message) console.error(prefix, message, primitive);
             else if (primitive !== undefined) console.error(prefix, primitive);
-            else if (message) console.error(prefix, message, extra);
-            else console.error(prefix, extra);
+            else if (message) console.error(prefix, message, ...extraOrNothing(extra));
+            else console.error(prefix, ...extraOrNothing(extra));
             if (sentryActive()) {
                 if (err) _transport!.captureException(err, tags(), extra);
                 else
@@ -350,7 +355,7 @@ export const logger = createLogger();
  * const log = getLogger('auth-coordinator');
  *
  * log.debug('wallet ready');
- * → console.debug('[auth-coordinator]', 'wallet ready', {})   (dev only)
+ * → console.debug('[auth-coordinator]', 'wallet ready')   (dev only)
  *
  * log.info('profile loaded', { profileId: '123' });
  * → console.info('[auth-coordinator]', 'profile loaded', { profileId: '123' })
@@ -361,7 +366,7 @@ export const logger = createLogger();
  * → Sentry captureMessage('token expiring soon', 'warning', { scope: 'auth-coordinator' }, { expiresIn: 60 })
  *
  * log.error('sign-in failed', error);
- * → console.error('[auth-coordinator]', 'sign-in failed', Error('...'), {})
+ * → console.error('[auth-coordinator]', 'sign-in failed', Error('...'))
  * → Sentry captureException(error, { scope: 'auth-coordinator' })
  *
  * PII fields are automatically scrubbed from meta objects (including nested)

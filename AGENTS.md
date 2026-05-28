@@ -1299,7 +1299,7 @@ logger.withContext(scope => scope.setTag('flow', 'oid4vci'));
 
 | Level | Dev / staging | Production (`NODE_ENV === 'production'`) |
 |-------|---------------|------------------------------------------|
-| `debug` | `console.debug` | **dropped** — silent in prod, visible in staging |
+| `debug` | `console.debug` | **dropped** — silent in prod, visible in staging (no Sentry) |
 | `info` | `console.info` | Sentry breadcrumb |
 | `warn` | `console.warn` | `console.warn` + Sentry captureMessage |
 | `error` | `console.error` | `console.error` + Sentry captureException / captureMessage |

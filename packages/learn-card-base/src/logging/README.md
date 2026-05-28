@@ -8,6 +8,15 @@ Central logger for all LearnCard apps. Provides structured, PII-safe logging wit
 import { getLogger } from 'learn-card-base';
 
 const log = getLogger('my-feature');
+```
+
+> **Node.js / tsx scripts** (e.g. `apps/learn-card-app/scripts/`): import from the specific file to avoid loading the full React barrel:
+> ```ts
+> import { getLogger } from 'learn-card-base/src/logging/logger';
+> ```
+
+```ts
+const log = getLogger('my-feature');
 
 log.debug('wallet ready');
 log.info('profile loaded', { profileId: '123' });
