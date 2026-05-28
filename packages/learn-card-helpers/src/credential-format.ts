@@ -93,13 +93,16 @@ export const toStoredCredential = (record: CredentialRecord): StoredCredential =
     }
 
     if (vc && typeof vc === 'object') {
-        const wireFromProof = extractWireFormFromVc(vc);
+        const proof = getWireFormProof(vc, true);
+        const wireFromProof = getWireFormFromProof(proof);
+
         if (wireFromProof) {
-            const proof = getProofObject(vc);
             const proofType = proof?.type;
+
             if (proofType === 'SdJwtCompactProof') {
                 return { format: 'dc+sd-jwt', data: wireFromProof };
             }
+
             if (proofType === 'JwtProof2020') {
                 return { format: 'jwt-vc-json', data: wireFromProof };
             }
@@ -118,24 +121,50 @@ const JWS_COMPACT_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const looksLikeSdJwtCompact = (value: string): boolean => SD_JWT_COMPACT_RE.test(value);
 const looksLikeJwsCompact = (value: string): boolean => JWS_COMPACT_RE.test(value);
 
-const getProofObject = (vc: unknown): { type?: unknown; jwt?: unknown } | undefined => {
+type WireFormProof = { type?: unknown; jwt?: unknown };
+
+const getWireFormProof = (vc: unknown, requireSupportedType = false): WireFormProof | undefined => {
     if (!vc || typeof vc !== 'object') return undefined;
+
     const proof = (vc as { proof?: unknown }).proof;
-    const flat = Array.isArray(proof)
-        ? proof.find(p => p && typeof p === 'object')
-        : proof;
-    return flat && typeof flat === 'object'
-        ? (flat as { type?: unknown; jwt?: unknown })
+
+    if (Array.isArray(proof)) {
+        for (const entry of proof) {
+            const proofObject = asWireFormProof(entry);
+
+            if (proofObject && isUsableWireFormProof(proofObject, requireSupportedType)) {
+                return proofObject;
+            }
+        }
+
+        return undefined;
+    }
+
+    const proofObject = asWireFormProof(proof);
+
+    return proofObject && isUsableWireFormProof(proofObject, requireSupportedType)
+        ? proofObject
         : undefined;
 };
 
-const extractWireFormFromVc = (vc: unknown): string | undefined => {
-    const proof = getProofObject(vc);
-    if (proof && typeof proof.jwt === 'string' && proof.jwt.length > 0) {
-        return proof.jwt;
-    }
-    return undefined;
-};
+const asWireFormProof = (proof: unknown): WireFormProof | undefined =>
+    proof && typeof proof === 'object' ? (proof as WireFormProof) : undefined;
+
+const isUsableWireFormProof = (
+    proof: WireFormProof,
+    requireSupportedType: boolean
+): boolean =>
+    typeof proof.jwt === 'string' &&
+    proof.jwt.length > 0 &&
+    (!requireSupportedType ||
+        proof.type === 'SdJwtCompactProof' ||
+        proof.type === 'JwtProof2020');
+
+const getWireFormFromProof = (proof: WireFormProof | undefined): string | undefined =>
+    typeof proof?.jwt === 'string' && proof.jwt.length > 0 ? proof.jwt : undefined;
+
+const extractWireFormFromVc = (vc: unknown): string | undefined =>
+    getWireFormFromProof(getWireFormProof(vc));
 
 /**
  * Extract the meaningful identifying segment from an SD-JWT-VC `vct` claim

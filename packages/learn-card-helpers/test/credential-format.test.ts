@@ -287,6 +287,40 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
         expect(stored.format).toBe('dc+sd-jwt');
     });
 
+    it('scans array-valued proofs for the supported JWT proof', () => {
+        const compact = 'header.payload.sig';
+        const wrapper = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            proof: [
+                { type: 'Ed25519Signature2020' },
+                { type: 'JwtProof2020', jwt: compact },
+            ],
+        } as any;
+        const stored = toStoredCredential(make({ vc: wrapper }));
+        expect(stored.format).toBe('jwt-vc-json');
+        if (stored.format === 'jwt-vc-json') {
+            expect(stored.data).toBe(compact);
+        }
+    });
+
+    it('scans array-valued proofs for the supported SD-JWT proof', () => {
+        const compact = 'header.payload.sig~';
+        const wrapper = {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential', 'SdJwtVcCredential'],
+            proof: [
+                { type: 'Ed25519Signature2020' },
+                { type: 'SdJwtCompactProof', jwt: compact },
+            ],
+        } as any;
+        const stored = toStoredCredential(make({ vc: wrapper }));
+        expect(stored.format).toBe('dc+sd-jwt');
+        if (stored.format === 'dc+sd-jwt') {
+            expect(stored.data).toBe(compact);
+        }
+    });
+
     it('falls back to w3c-vc-1.1 for an object with no recognizable shape', () => {
         const opaque: Record<string, unknown> = { foo: 'bar' };
         const stored = toStoredCredential(make({ vc: opaque }));
