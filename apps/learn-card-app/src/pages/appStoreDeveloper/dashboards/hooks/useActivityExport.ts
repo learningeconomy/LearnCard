@@ -398,7 +398,7 @@ export function useActivityExport(): {
                 return true;
             } catch (err) {
                 if (!signal.aborted) {
-                    log.error('[useActivityExport] Export failed:', err);
+                    log.error('Export failed', err);
                     setState({
                         isExporting: false,
                         progress: null,

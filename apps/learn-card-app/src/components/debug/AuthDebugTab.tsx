@@ -24,6 +24,7 @@ import {
     currentUserStore,
     getAuthConfig,
     getSSSConfig,
+    getLogger,
 } from 'learn-card-base';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
@@ -194,7 +195,6 @@ export type { StatusMeta };
 // Auth Debug Tab
 // ---------------------------------------------------------------------------
 
-import { getLogger } from 'learn-card-base';
 const log = getLogger('auth-debug-tab');
 
 export const AuthDebugTab: React.FC = () => {

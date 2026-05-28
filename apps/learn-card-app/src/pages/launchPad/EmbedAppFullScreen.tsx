@@ -125,7 +125,7 @@ export const EmbedAppFullScreen: React.FC = () => {
             const url = new URL(embedUrl);
             return url.origin;
         } catch {
-            log.error('[PostMessage] Invalid embedUrl:', embedUrl);
+            log.error('Invalid embedUrl', embedUrl);
             return '';
         }
     }, [embedUrl]);

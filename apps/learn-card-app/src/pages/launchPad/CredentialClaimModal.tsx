@@ -107,7 +107,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                             }
                         } catch (enrichErr) {
                             // Enrichment failure is non-fatal — modal remains usable.
-                            log.warn('[claim] background enrichment failed:', enrichErr);
+                            log.warn('background enrichment failed', enrichErr);
                         } finally {
                             if (!cancelled) setIsEnrichingFromFastPath(false);
                         }

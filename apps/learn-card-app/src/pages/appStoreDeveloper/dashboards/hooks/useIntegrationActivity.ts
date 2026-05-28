@@ -285,7 +285,7 @@ export function useIntegrationActivity(
                 setError(null);
             } catch (err) {
                 if (cancelled) return;
-                log.error('[useIntegrationActivity] Failed to fetch activity:', err);
+                log.error('Failed to fetch activity', err);
                 setError(err instanceof Error ? err : new Error('Failed to fetch activity'));
                 setActivity([]);
             } finally {
@@ -332,7 +332,7 @@ export function useIntegrationActivity(
             setHasMore(apiHasMore);
             setCursor(nextCursor);
         } catch (err) {
-            log.error('[useIntegrationActivity] Failed to load more activity:', err);
+            log.error('Failed to load more activity', err);
             setError(err instanceof Error ? err : new Error('Failed to load more activity'));
         } finally {
             setIsLoadingMore(false);

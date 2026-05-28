@@ -31,6 +31,7 @@ import {
     BoostCategoryOptionsEnum,
     BoostPageViewMode,
     useWallet,
+    getLogger,
 } from 'learn-card-base';
 import { BoostEarnedCard } from '../boost/boost-earned-card/BoostEarnedCard';
 
@@ -176,7 +177,6 @@ interface OBv3CredentialBuilderProps {
     initialData?: Partial<CredentialData>;
 }
 
-import { getLogger } from 'learn-card-base';
 const log = getLogger('obv3-credential-builder');
 
 const InputField: React.FC<{

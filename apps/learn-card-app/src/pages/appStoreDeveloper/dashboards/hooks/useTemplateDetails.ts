@@ -329,7 +329,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 setError(null);
             } catch (err) {
                 if (cancelled) return;
-                log.error('[useTemplateDetails] Failed to fetch templates:', err);
+                log.error('Failed to fetch templates', err);
                 setError(err instanceof Error ? err : new Error('Failed to fetch templates'));
             } finally {
                 if (!cancelled) {

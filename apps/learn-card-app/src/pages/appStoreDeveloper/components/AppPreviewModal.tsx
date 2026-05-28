@@ -77,7 +77,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
             const url = new URL(embedUrl);
             return url.origin;
         } catch (error) {
-            log.error('[Preview] Invalid embedUrl:', embedUrl);
+            log.error('Invalid embedUrl', embedUrl);
             setErrorMessage(`Invalid embed URL: ${embedUrl}`);
             setShowErrorToast(true);
             return '';

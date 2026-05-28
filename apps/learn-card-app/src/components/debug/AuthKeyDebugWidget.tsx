@@ -27,6 +27,7 @@ import {
     currentUserStore,
     getAuthConfig,
     getSSSConfig,
+    getLogger,
 } from 'learn-card-base';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
@@ -218,7 +219,6 @@ interface ServerState {
 // Reusable sub-components
 // ---------------------------------------------------------------------------
 
-import { getLogger } from 'learn-card-base';
 const log = getLogger('auth-key-debug-widget');
 
 const KVRow: React.FC<{
