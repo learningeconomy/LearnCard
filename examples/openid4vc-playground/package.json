@@ -1,7 +1,7 @@
 {
     "name": "@learncard/openid4vc-playground",
     "private": true,
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Curated OID4VCI + OID4VP scenarios for testing the LearnCard wallet UI end-to-end against real verifiers and issuers.",
     "type": "module",
     "scripts": {
