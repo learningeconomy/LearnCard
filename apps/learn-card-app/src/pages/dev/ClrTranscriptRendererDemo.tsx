@@ -204,7 +204,11 @@ const ClrTranscriptRendererDemo = () => {
                     <ClrTranscriptEmbedWidget model={currentModel} />
                 )}
                 {surface === ClrTranscriptSurface.Full && (
-                    <ClrTranscriptFullPage model={currentModel} options={{ viewer, surface }} />
+                    <ClrTranscriptFullPage
+                        model={currentModel}
+                        credential={FIXTURES[fixture] as any}
+                        options={{ viewer, surface }}
+                    />
                 )}
             </div>
         </div>
