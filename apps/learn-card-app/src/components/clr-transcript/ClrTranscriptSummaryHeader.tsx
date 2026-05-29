@@ -1,12 +1,15 @@
-import type { VC } from '@learncard/types';
+import React from 'react';
+
 import { QRCodeSVG } from 'qrcode.react';
-import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
+import { StatCard } from './ClrStatCard';
+import ClrIssuerBadge from './ClrIssuerBadge';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+
+import type { VC } from '@learncard/types';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { StatCard } from './ClrStatCard';
 
 type Props = {
     model: ClrTranscriptDisplayModel;
@@ -113,13 +116,7 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
             <div className="flex items-end justify-between gap-3 flex-wrap">
                 <CredentialVerificationDisplay credential={credential} showText />
 
-                {issuerLogo && (
-                    <img
-                        src={issuerLogo}
-                        alt={model.header.issuerName?.value ?? 'Issuer logo'}
-                        className="w-14 h-14 object-contain shrink-0"
-                    />
-                )}
+                <ClrIssuerBadge logoSrc={issuerLogo} issuerName={model.header.issuerName?.value} />
             </div>
         </div>
     );
