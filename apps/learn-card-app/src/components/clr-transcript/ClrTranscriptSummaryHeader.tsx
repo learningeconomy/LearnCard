@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
@@ -18,7 +19,6 @@ type Props = {
 };
 
 const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Props) => {
-    const initial = model.header.learnerName?.value?.charAt(0).toUpperCase() ?? '?';
     const issuerLogo = model.header.image?.value;
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
 
@@ -35,12 +35,14 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
 
             {/* Top: avatar + identity + QR */}
             <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-grayscale-200 flex items-center justify-center shrink-0 overflow-hidden">
-                    <span className="text-2xl font-bold text-grayscale-700">{initial}</span>
-                </div>
+                <UserProfilePicture
+                    user={{ displayName: model.header.learnerName?.value }}
+                    customContainerClass="w-16 h-16 shrink-0 text-2xl"
+                    customImageClass="w-16 h-16"
+                />
 
                 <div className="flex-1 min-w-0">
-                    <p className="text-2xl font-semibold text-grayscale-900 leading-tight truncate">
+                    <p className="text-[22px] text-grayscale-900 leading-tight truncate">
                         {model.header.learnerName?.value ?? 'Unknown learner'}
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />
@@ -49,14 +51,14 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
                             {model.header.issuerName.value}
                         </p>
                     )}
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-grayscale-500 mt-1">
+                    <p className="text-xs font-medium uppercase tracking-wider text-grayscale-800 mt-1">
                         {transcriptTitle}
                         {model.header.issuedAt?.value && (
                             <> • Issued {formatClrDate(model.header.issuedAt.value)}</>
                         )}
                     </p>
                     {adminMode && model.header.issuerId?.value && (
-                        <p className="text-[10px] font-mono text-grayscale-400 mt-1 truncate">
+                        <p className="text-xs font-semibold text-grayscale-600 mt-1 truncate">
                             {model.header.issuerId.value}
                         </p>
                     )}
@@ -114,7 +116,9 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
 
             {/* Verification badge + issuer logo */}
             <div className="flex items-end justify-between gap-3 flex-wrap">
-                <CredentialVerificationDisplay credential={credential} showText />
+                <div className="bg-grayscale-100 rounded-full px-2 py-1">
+                    <CredentialVerificationDisplay credential={credential} showText />
+                </div>
 
                 <ClrIssuerBadge logoSrc={issuerLogo} issuerName={model.header.issuerName?.value} />
             </div>
