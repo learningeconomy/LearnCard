@@ -1,5 +1,13 @@
 # learn-card-base
 
+## 0.1.35
+
+### Patch Changes
+
+-   [#1261](https://github.com/learningeconomy/LearnCard/pull/1261) [`57d7724515a064256037827dffc3e79b72b9186f`](https://github.com/learningeconomy/LearnCard/commit/57d7724515a064256037827dffc3e79b72b9186f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1844 - Central Logging System (LCA/ScoutPass)
+
+-   [#1243](https://github.com/learningeconomy/LearnCard/pull/1243) [`dd5872914236a7f0a089a76292c792bb949dd4ca`](https://github.com/learningeconomy/LearnCard/commit/dd5872914236a7f0a089a76292c792bb949dd4ca) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1843] Replace horizontal role scroller
+
 ## 0.1.34
 
 ### Patch Changes
