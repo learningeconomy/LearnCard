@@ -23,10 +23,23 @@ import {
     ChevronDown,
     Download,
     Layout,
+    Ban,
+    Trash2,
+    RotateCcw,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
-import { useModal, ModalTypes } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useRevokeBoostRecipient,
+    useSuspendBoostRecipient,
+    useUnsuspendBoostRecipient,
+    useConfirmation,
+    useToast,
+    ToastTypeEnum,
+    useGetBoostRecipients,
+} from 'learn-card-base';
 
 import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
 import {
@@ -47,7 +60,11 @@ import {
 import { ExportDialog } from '../components/ExportDialog';
 
 import { useWallet } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
+
+import { useAnalytics } from '../../../../analytics';
+import { AnalyticsEvents } from '../../../../analytics/events';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -88,6 +105,85 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
     const [isLoadingChain, setIsLoadingChain] = useState(true);
     const [chainError, setChainError] = useState<string | null>(null);
     const [showAllEvents, setShowAllEvents] = useState(false);
+
+    const revokeRecipient = useRevokeBoostRecipient();
+    const suspendRecipient = useSuspendBoostRecipient();
+    const unsuspendRecipient = useUnsuspendBoostRecipient();
+    const { confirm } = useConfirmation();
+    const { presentToast } = useToast();
+    const { track } = useAnalytics();
+    const queryClient = useQueryClient();
+
+    // Lookup recipient status for this boost+recipient combo
+    const hasBoostAndRecipient = !!(item.boostUri && item.recipientProfile?.profileId);
+    const { data: boostRecipients } = useGetBoostRecipients(
+        hasBoostAndRecipient ? item.boostUri! : null,
+        hasBoostAndRecipient,
+        true
+    );
+    const recipientStatus = hasBoostAndRecipient
+        ? (boostRecipients?.find(r => r.to?.profileId === item.recipientProfile?.profileId) as any)
+              ?.status || 'active'
+        : undefined;
+
+    // Whether we can show credential management actions
+    const canManage =
+        hasBoostAndRecipient &&
+        recipientStatus !== undefined &&
+        recipientStatus !== 'revoked';
+
+    const handleCredentialAction = async (action: 'revoke' | 'suspend' | 'unsuspend') => {
+        if (!item.boostUri || !item.recipientProfile?.profileId) return;
+        const recipientName = item.recipientProfile.displayName || item.recipientProfile.profileId;
+        const actionLabels = {
+            revoke: { verb: 'revoke', noun: 'revoked' },
+            suspend: { verb: 'suspend', noun: 'suspended' },
+            unsuspend: { verb: 'reactivate', noun: 'reactivated' },
+        };
+        const { verb, noun } = actionLabels[action];
+
+        await confirm({
+            text: `Are you sure you want to ${verb} the credential for ${recipientName}?`,
+            onConfirm: async () => {
+                try {
+                    const mutation =
+                        action === 'revoke'
+                            ? revokeRecipient
+                            : action === 'suspend'
+                              ? suspendRecipient
+                              : unsuspendRecipient;
+                    await mutation.mutateAsync({
+                        boostUri: item.boostUri!,
+                        recipientProfileId: item.recipientProfile!.profileId,
+                    });
+                    // Fire analytics event
+                    const eventMap = {
+                        revoke: AnalyticsEvents.CREDENTIAL_REVOKED,
+                        suspend: AnalyticsEvents.CREDENTIAL_SUSPENDED,
+                        unsuspend: AnalyticsEvents.CREDENTIAL_UNSUSPENDED,
+                    };
+                    track(eventMap[action], { boostUri: item.boostUri!, surface: 'issuer-dashboard' });
+                    // Invalidate activity queries so the view refreshes
+                    queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
+                    queryClient.invalidateQueries({ queryKey: ['getActivityChain'] });
+                    queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
+                    presentToast(
+                        `${recipientName}'s credential has been ${noun}.`,
+                        { type: ToastTypeEnum.Success }
+                    );
+                } catch (error) {
+                    presentToast(
+                        `Failed to ${verb} credential for ${recipientName}. Please try again.`,
+                        { type: ToastTypeEnum.Error }
+                    );
+                }
+            },
+            cancelButtonClassName:
+                'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            confirmButtonClassName:
+                'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
+        });
+    };
 
     // Fetch the full activity chain
     useEffect(() => {
@@ -446,6 +542,66 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         </div>
                     </div>
                 </div>
+                {canManage && (
+                    <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3">
+                        {recipientStatus === 'active' && (
+                            <>
+                                <button
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                                    onClick={() => handleCredentialAction('suspend')}
+                                    disabled={suspendRecipient.isPending}
+                                >
+                                    {suspendRecipient.isPending ? (
+                                        <span className="w-3 h-3 border border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                                    ) : (
+                                        <Ban className="w-3 h-3" />
+                                    )}
+                                    Suspend
+                                </button>
+                                <button
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                                    onClick={() => handleCredentialAction('revoke')}
+                                    disabled={revokeRecipient.isPending}
+                                >
+                                    {revokeRecipient.isPending ? (
+                                        <span className="w-3 h-3 border border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-3 h-3" />
+                                    )}
+                                    Revoke
+                                </button>
+                            </>
+                        )}
+                        {recipientStatus === 'suspended' && (
+                            <>
+                                <button
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                    onClick={() => handleCredentialAction('unsuspend')}
+                                    disabled={unsuspendRecipient.isPending}
+                                >
+                                    {unsuspendRecipient.isPending ? (
+                                        <span className="w-3 h-3 border border-emerald-300 border-t-emerald-600 rounded-full animate-spin" />
+                                    ) : (
+                                        <RotateCcw className="w-3 h-3" />
+                                    )}
+                                    Unsuspend
+                                </button>
+                                <button
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                                    onClick={() => handleCredentialAction('revoke')}
+                                    disabled={revokeRecipient.isPending}
+                                >
+                                    {revokeRecipient.isPending ? (
+                                        <span className="w-3 h-3 border border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-3 h-3" />
+                                    )}
+                                    Revoke
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

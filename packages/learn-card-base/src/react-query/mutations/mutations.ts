@@ -538,3 +538,86 @@ export const useRevokeBoostRecipient = () => {
         },
     });
 };
+
+/**
+ * Suspend a boost recipient, temporarily disabling their credential.
+ * The recipient remains visible in the list with status='suspended'.
+ */
+export const useSuspendBoostRecipient = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    return useMutation<boolean, Error, RevokeBoostRecipientParams>({
+        mutationFn: async ({ boostUri, recipientProfileId }) => {
+            try {
+                const wallet = await initWallet();
+                const result = await (wallet?.invoke as any)?.suspendBoostRecipient(
+                    boostUri,
+                    recipientProfileId
+                );
+
+                return result;
+            } catch (error) {
+                return Promise.reject(new Error(String(error)));
+            }
+        },
+        onSuccess: (_, { boostUri }) => {
+            queryClient.invalidateQueries({
+                queryKey: ['boostRecipients', boostUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getPaginatedBoostRecipients'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getBoostRecipientCount'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['boosts'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useNetworkMembers'],
+            });
+        },
+    });
+};
+
+/**
+ * Unsuspend a boost recipient, re-enabling their previously suspended credential.
+ */
+export const useUnsuspendBoostRecipient = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    return useMutation<boolean, Error, RevokeBoostRecipientParams>({
+        mutationFn: async ({ boostUri, recipientProfileId }) => {
+            try {
+                const wallet = await initWallet();
+                const result = await (wallet?.invoke as any)?.unsuspendBoostRecipient(
+                    boostUri,
+                    recipientProfileId
+                );
+
+                return result;
+            } catch (error) {
+                return Promise.reject(new Error(String(error)));
+            }
+        },
+        onSuccess: (_, { boostUri }) => {
+            queryClient.invalidateQueries({
+                queryKey: ['boostRecipients', boostUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getPaginatedBoostRecipients'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getBoostRecipientCount'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['boosts'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useNetworkMembers'],
+            });
+        },
+    });
+};

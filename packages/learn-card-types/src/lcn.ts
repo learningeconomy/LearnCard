@@ -343,6 +343,7 @@ export const BoostRecipientValidator = z.object({
     from: z.string(),
     received: z.string().optional(),
     uri: z.string().optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
@@ -357,6 +358,7 @@ export const BoostRecipientWithChildrenValidator = z.object({
     received: z.string().optional(),
     boostUris: z.array(z.string()),
     credentialUris: z.array(z.string()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type BoostRecipientWithChildrenInfo = z.infer<typeof BoostRecipientWithChildrenValidator>;
 

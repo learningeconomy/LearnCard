@@ -162,6 +162,11 @@ export const AnalyticsEvents = {
     // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
     FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
 
+    // LC-1862 Credential lifecycle management (revoke/suspend/unsuspend)
+    CREDENTIAL_REVOKED: 'credential_revoked',
+    CREDENTIAL_SUSPENDED: 'credential_suspended',
+    CREDENTIAL_UNSUSPENDED: 'credential_unsuspended',
+
        // ── LC-1853 Profile-building analytics ──────────────────────────────────
     ACCOUNT_CREATED: 'account_created',
     PROFILE_ITEM_ADDED: 'profile_item_added',
@@ -693,6 +698,20 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.SKILL_PROFILE_COMPLETED]: { totalDurationMs: number };
 
     [AnalyticsEvents.SKILL_PROFILE_ABANDONED]: { step: 1 | 2 | 3 | 4 | 5; stepDurationMs: number };
+
+    // LC-1862 Credential lifecycle management
+    [AnalyticsEvents.CREDENTIAL_REVOKED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_SUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_UNSUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
 }
 
 /**
