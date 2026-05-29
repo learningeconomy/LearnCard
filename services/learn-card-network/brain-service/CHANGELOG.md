@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.15.2
+
+### Patch Changes
+
+-   [#1260](https://github.com/learningeconomy/LearnCard/pull/1260) [`8014ca6408ac30f9c356f3978cbbf9c3174b8e1d`](https://github.com/learningeconomy/LearnCard/commit/8014ca6408ac30f9c356f3978cbbf9c3174b8e1d) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for multiple global skills frameworks (specifically Pathsmith for now)
+
 ## 3.15.1
 
 ### Patch Changes
