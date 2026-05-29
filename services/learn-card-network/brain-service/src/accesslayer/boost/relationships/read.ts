@@ -435,14 +435,9 @@ export const getBoostRecipients = async (
         .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
 };
 
-/** Coalesce sent/received status into a single value, defaulting to 'active'. */
-const coalesceStatus = (
-    sentStatus?: string | null,
-    receivedStatus?: string | null
-): string | undefined => {
-    const status = sentStatus || receivedStatus || undefined;
-    return status || undefined;
-};
+/** Coalesce sent/received status into a single value (undefined when unset — callers treat as 'active'). */
+const coalesceStatus = (sentStatus?: unknown, receivedStatus?: unknown): string | undefined =>
+    (sentStatus as string) || (receivedStatus as string) || undefined;
 
 /** @deprecated */
 export const getBoostRecipientsSkipLimit = async (
@@ -533,15 +528,13 @@ export const countBoostRecipients = async (
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WITH DISTINCT sent.to AS recipientId, sent.status AS sentStatus, received
-            WHERE coalesce(sentStatus, received.status, '') <> 'revoked'
+            WITH DISTINCT sent.to AS recipientId
             RETURN COUNT(DISTINCT recipientId) AS count
           `
         : `
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WHERE coalesce(sent.status, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT sent.to) AS count
           `;
 
@@ -1530,7 +1523,6 @@ export const getBoostRecipientsWithChildren = async (
     }>(await _query.run());
 
     // Process results and group by profile, keeping revoked/suspended with status
-    console.log('[getBoostRecipientsWithChildren] Total results:', results.length);
 
     const resultsWithIds = results
         .map(({ relevantBoost, sender, sent, received, credential }) => {

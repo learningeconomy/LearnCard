@@ -15,6 +15,7 @@ import {
     useRevokeBoostRecipient,
     useSuspendBoostRecipient,
     useUnsuspendBoostRecipient,
+    useGetBoostPermissions,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -63,11 +64,9 @@ const StatusBadge = ({ status }: { status?: string }) => {
 /** Per-recipient action menu with confirm + toast */
 const RecipientActionMenu = ({
     recipient,
-    boostUri,
     onAction,
 }: {
     recipient: BoostRecipientInfo;
-    boostUri: string;
     onAction: (action: 'revoke' | 'suspend' | 'unsuspend') => void;
 }) => {
     const [popoverOpen, setPopoverOpen] = useState(false);
@@ -152,7 +151,8 @@ export const useManagedBoost = (
     const revokeRecipient = useRevokeBoostRecipient();
     const suspendRecipient = useSuspendBoostRecipient();
     const unsuspendRecipient = useUnsuspendBoostRecipient();
-    const { confirm } = useConfirmation();
+    const { data: boostPermissions } = useGetBoostPermissions(boost?.uri);
+    const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { track } = useAnalytics();
 
@@ -404,10 +404,9 @@ export const useManagedBoost = (
                                     </div>
                                 </div>
                             </div>
-                            {status !== 'revoked' && (
+                            {status !== 'revoked' && boostPermissions?.canRevoke && (
                                 <RecipientActionMenu
                                     recipient={recipient}
-                                    boostUri={boost?.uri}
                                     onAction={action => handleRecipientAction(action, recipient)}
                                 />
                             )}
@@ -501,10 +500,9 @@ export const useManagedBoost = (
                                     </div>
                                 </div>
                             </div>
-                            {status !== 'revoked' && (
+                            {status !== 'revoked' && boostPermissions?.canRevoke && (
                                 <RecipientActionMenu
                                     recipient={recipient}
-                                    boostUri={boost?.uri}
                                     onAction={action => handleRecipientAction(action, recipient)}
                                 />
                             )}

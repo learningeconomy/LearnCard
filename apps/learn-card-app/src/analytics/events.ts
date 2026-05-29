@@ -167,7 +167,7 @@ export const AnalyticsEvents = {
     CREDENTIAL_SUSPENDED: 'credential_suspended',
     CREDENTIAL_UNSUSPENDED: 'credential_unsuspended',
 
-       // ── LC-1853 Profile-building analytics ──────────────────────────────────
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
     ACCOUNT_CREATED: 'account_created',
     PROFILE_ITEM_ADDED: 'profile_item_added',
     ENGAGEMENT_SIGNAL: 'engagement_signal',

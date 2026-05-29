@@ -39,6 +39,7 @@ import {
     useToast,
     ToastTypeEnum,
     useGetBoostRecipients,
+    useGetBoostPermissions,
 } from 'learn-card-base';
 
 import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
@@ -109,7 +110,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
     const revokeRecipient = useRevokeBoostRecipient();
     const suspendRecipient = useSuspendBoostRecipient();
     const unsuspendRecipient = useUnsuspendBoostRecipient();
-    const { confirm } = useConfirmation();
+    const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { track } = useAnalytics();
     const queryClient = useQueryClient();
@@ -126,9 +127,15 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
               ?.status || 'active'
         : undefined;
 
-    // Whether we can show credential management actions
+    // Only fetch permissions when we have a boost to act on
+    const { data: boostPermissions } = useGetBoostPermissions(
+        hasBoostAndRecipient ? item.boostUri! : undefined
+    );
+
+    // Whether we can show credential management actions (gated on revoke permission)
     const canManage =
         hasBoostAndRecipient &&
+        !!boostPermissions?.canRevoke &&
         recipientStatus !== undefined &&
         recipientStatus !== 'revoked';
 
