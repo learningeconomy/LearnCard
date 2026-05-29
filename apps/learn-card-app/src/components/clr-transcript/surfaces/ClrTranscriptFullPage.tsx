@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import ClrCourseTable from '../ClrCourseTable';
+import ClrProgramsSection from '../ClrProgramsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import CredentialSummaryView from '../views/CredentialSummaryView';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
@@ -53,34 +54,7 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
 
                     {/* Programs section */}
                     {model.programs.length > 0 && (
-                        <div className="space-y-2">
-                            <p className="text-sm font-semibold text-grayscale-900 px-1">
-                                Programs
-                            </p>
-                            {model.programs.map(p => (
-                                <div
-                                    key={p.sourceCredentialId}
-                                    className="bg-white border border-grayscale-200 rounded-[20px] p-4 space-y-1"
-                                >
-                                    <p className="text-sm font-medium text-grayscale-900">
-                                        {p.name?.value ?? 'Program'}
-                                    </p>
-                                    <p className="text-xs text-grayscale-500">
-                                        {p.achievementType.value}
-                                    </p>
-                                    {p.description?.value && (
-                                        <p className="text-xs text-grayscale-600 leading-relaxed">
-                                            {p.description.value}
-                                        </p>
-                                    )}
-                                    {p.earnedAt?.value && (
-                                        <p className="text-xs text-grayscale-400">
-                                            Conferred: {p.earnedAt.value}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <ClrProgramsSection programs={model.programs} adminMode={adminMode} />
                     )}
 
                     {/* Structured transcript: term accordion + course table */}
@@ -145,8 +119,8 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
                                 </span>
                             </p>
                             <p className="text-xs text-grayscale-600">
-                                Nested credentials:{' '}
-                                {model.verification.nestedCredentialSignedCount} signed
+                                Nested credentials: {model.verification.nestedCredentialSignedCount}{' '}
+                                signed
                                 {model.verification.nestedCredentialUnsignedCount > 0 &&
                                     ` · ${model.verification.nestedCredentialUnsignedCount} unsigned`}
                             </p>
