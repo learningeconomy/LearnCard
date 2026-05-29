@@ -62,7 +62,7 @@ const ClrProgramsSection = ({ programs, adminMode = false }: Props) => {
                             {/* Right: View button */}
                             <button
                                 onClick={() => handleSelect(p)}
-                                className="shrink-0 flex items-center gap-1.5 border border-grayscale-300 rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 hover:bg-grayscale-50 transition-colors whitespace-nowrap"
+                                className="shrink-0 flex items-center gap-1.5 border-[1px] border-solid border-grayscale-100 bg-white rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 whitespace-nowrap"
                             >
                                 <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-200" />
                                 View {inferProgramKind(p.achievementType.value)}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 
 import ClrCourseTable from '../ClrCourseTable';
 import ClrProgramsSection from '../ClrProgramsSection';
@@ -8,6 +8,8 @@ import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import ClrTranscriptSummaryHeader from '../ClrTranscriptSummaryHeader';
 import ClrTranscriptWarningsPanel from '../ClrTranscriptWarningsPanel';
 import SparseAcademicRecordView from '../views/SparseAcademicRecordView';
+
+import { ModalTypes, useModal } from 'learn-card-base';
 
 import type { VC } from '@learncard/types';
 import type {
@@ -26,13 +28,17 @@ type Props = {
 
 const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
-    const [selectedCourse, setSelectedCourse] = useState<CourseDisplayModel | null>(null);
+    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
 
     const handleSelectCourse = (course: CourseDisplayModel) => {
-        setSelectedCourse(prev =>
-            prev?.sourceCredentialId === course.sourceCredentialId ? null : course
+        newModal(
+            <ClrCourseDetailPanel
+                course={course}
+                adminMode={adminMode}
+                associations={model.associations}
+            />
         );
     };
 
@@ -76,7 +82,6 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
                                 <ClrCourseTable
                                     courses={model.courses}
                                     onSelectCourse={handleSelectCourse}
-                                    selectedCourseId={selectedCourse?.sourceCredentialId}
                                     adminMode={adminMode}
                                 />
                             </div>
@@ -135,14 +140,6 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
                             </p>
                         </div>
                     )}
-
-                    {/* Course detail side panel */}
-                    <ClrCourseDetailPanel
-                        course={selectedCourse}
-                        onClose={() => setSelectedCourse(null)}
-                        adminMode={adminMode}
-                        associations={model.associations}
-                    />
                 </div>
             </div>
         </div>
