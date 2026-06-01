@@ -52,7 +52,9 @@ import AppsCard from './components/AppsCard';
 import { countReviewsDueToday } from './helpers/dueReviews';
 import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
+import useSkillProfileModal from './hooks/useSkillProfileModal';
 import useAppStore from '../launchPad/useAppStore';
+import { useSkillProfileCompletion } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileProgressBar';
 import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
@@ -72,6 +74,8 @@ const DashboardPage: React.FC = () => {
     const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
     const { openClaimLink, openIssueCredential, openScanQr: openScanQrCredential } =
         useAddToLearnCardActions();
+    const { openSkillProfile } = useSkillProfileModal();
+    const { percentage: skillProfilePercentage } = useSkillProfileCompletion();
     const { newModal: openHeaderModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -273,7 +277,7 @@ const DashboardPage: React.FC = () => {
 
     const hasCredentials = totalCredentialCount > 0;
     const hasGoal = !!activePathway;
-    const hasConnections = connections.length > 0;
+    const hasSkillProfile = skillProfilePercentage >= 100;
 
     const goToWallet = () => history.push('/wallet');
 
@@ -294,10 +298,10 @@ const DashboardPage: React.FC = () => {
             onClick: goToSetGoal,
         },
         {
-            key: 'connect-contact',
-            label: 'Connect with someone',
-            done: hasConnections,
-            onClick: () => history.push('/contacts'),
+            key: 'skill-profile',
+            label: 'Fill out your skills profile',
+            done: hasSkillProfile,
+            onClick: openSkillProfile,
         },
     ];
 
