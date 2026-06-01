@@ -1,6 +1,12 @@
 import path from 'path';
 import { execSync } from 'child_process';
 
+// CommonJS interop: readDefaultChannel.cjs is the single source of truth for
+// the Capgo channel SSOT (also used by CI tools). Importing via require keeps
+// us in lockstep without duplicating the regex.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { readDefaultChannel } = require('../../tools/capgo/readDefaultChannel.cjs');
+
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -108,6 +114,9 @@ export default defineConfig(({ mode }) => {
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+            __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
+                readDefaultChannel(path.join(__dirname, 'capacitor.config.ts')) ?? '',
+            ),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
             // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
             // Kept as fallbacks for backward compat; will be removed in a future PR.

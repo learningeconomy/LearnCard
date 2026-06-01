@@ -124,15 +124,7 @@ const PLATFORM_LABELS: Record<Platform, string> = {
     web: 'Web',
 };
 
-/**
- * Curated Capgo channels surfaced in the switcher. `production` MUST match
- * `defaultChannel` in `apps/learn-card-app/capacitor.config.ts` — bump both in
- * lockstep when the native binary channel rolls forward. `staging` is the
- * channel that PR merges to `main` upload to (see `.github/workflows/capgo-staging.yml`).
- */
-const PRODUCTION_CHANNEL = '1.0.7';
 const STAGING_CHANNEL = 'staging';
-
 const GITHUB_REPO = 'learningeconomy/LearnCard';
 
 type ChannelKind = 'production' | 'staging' | 'pr' | 'custom';
@@ -151,20 +143,35 @@ interface PrPreview {
     url: string;
 }
 
-const CURATED_CHANNELS: ChannelOption[] = [
-    {
-        value: PRODUCTION_CHANNEL,
-        label: 'Production',
-        description: `Released app store builds (\`${PRODUCTION_CHANNEL}\`)`,
-        kind: 'production',
-    },
-    {
+/**
+ * Build the curated channel list at render time so the Production entry
+ * always reflects the current `defaultChannel` in `capacitor.config.ts`,
+ * which is injected at build time via the `__CAPGO_DEFAULT_CHANNEL__` Vite
+ * define (see `vite.config.ts`). Falls back to the device's currently-
+ * assigned channel on web (where the define resolves to '') so we never
+ * surface an empty-string "Production" row.
+ */
+const getCuratedChannels = (productionChannel: string | undefined): ChannelOption[] => {
+    const channels: ChannelOption[] = [];
+
+    if (productionChannel) {
+        channels.push({
+            value: productionChannel,
+            label: 'Production',
+            description: `Released app store builds (\`${productionChannel}\`)`,
+            kind: 'production',
+        });
+    }
+
+    channels.push({
         value: STAGING_CHANNEL,
         label: 'Staging',
         description: 'Latest merged code on `main`',
         kind: 'staging',
-    },
-];
+    });
+
+    return channels;
+};
 
 const fetchOpenCapgoPreviewPrs = async (): Promise<PrPreview[]> => {
     const url = `https://api.github.com/search/issues?q=${encodeURIComponent(
@@ -587,6 +594,14 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const buildDateRaw = typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : undefined;
     const buildDate = formatBuildDate(buildDateRaw);
     const channelSwitcherEnabled = Boolean(flags?.enableChannelSwitcher);
+    const productionChannel =
+        typeof __CAPGO_DEFAULT_CHANNEL__ === 'string' && __CAPGO_DEFAULT_CHANNEL__.trim() !== ''
+            ? __CAPGO_DEFAULT_CHANNEL__
+            : undefined;
+    const curatedChannels = useMemo(
+        () => getCuratedChannels(productionChannel),
+        [productionChannel],
+    );
 
     const refreshInfo = async (): Promise<void> => {
         const next = await collectVersionInfo(fallbackVersion);
@@ -1078,7 +1093,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                     </div>
 
                                     <ChannelPickerSection title="Releases">
-                                        {CURATED_CHANNELS.map(opt => (
+                                        {curatedChannels.map(opt => (
                                             <ChannelRow
                                                 key={opt.value}
                                                 option={opt}
