@@ -1,10 +1,14 @@
 name: CapGo Upload (Reusable)
 
+# Reusable workflow: build a Capacitor app and push a JS bundle to a Capgo
+# channel. Callers control which project, which channel, and (for the LCA app)
+# which tenant + stage to prepare.
+
 on:
     workflow_call:
         inputs:
             project:
-                description: NX project name to build
+                description: NX project name to build (e.g. learn-card-app)
                 required: true
                 type: string
             app_id:
@@ -12,11 +16,11 @@ on:
                 required: true
                 type: string
             version:
-                description: Version to upload (e.g., 1.2.3)
+                description: Bundle version to upload (e.g. 1.2.3, 1.2.3-staging.abcdef0)
                 required: true
                 type: string
             build_path:
-                description: Path to built web assets
+                description: Path to built web assets (e.g. apps/learn-card-app/build)
                 required: true
                 type: string
             package_json:
@@ -32,9 +36,32 @@ on:
                 required: true
                 type: string
             channel:
-                description: CapGo default channel name to upload to (ex.g. production, 1.0.1)
+                description: CapGo channel name to upload to (e.g. production, staging, pr-123)
                 required: true
                 type: string
+            ref:
+                description: Git ref to check out. Defaults to the caller's ref.
+                required: false
+                type: string
+                default: ''
+            tenant:
+                description: Tenant name for prepare-native-config (LCA only). Empty to skip.
+                required: false
+                type: string
+                default: ''
+            stage:
+                description: Stage flag for prepare-native-config (LCA only). Empty for no stage.
+                required: false
+                type: string
+                default: ''
+            self_assign:
+                description: |
+                    If 'true', run `channel set ... --self-assign` after upload so this
+                    bundle becomes the default for the channel. Set to 'false' for PR
+                    previews where users opt in explicitly.
+                required: false
+                type: string
+                default: 'true'
         secrets:
             CAPGO_TOKEN:
                 required: true
@@ -48,6 +75,8 @@ jobs:
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
+              with:
+                  ref: ${{ inputs.ref }}
 
             - name: Setup Node.js 20.x
               uses: actions/setup-node@v4
@@ -76,6 +105,19 @@ jobs:
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
 
+            # Prepare tenant config for learn-card-app builds. For other projects
+            # (e.g. scouts) the tenant input is left empty and this step is skipped.
+            - name: Prepare tenant config
+              if: inputs.tenant != ''
+              working-directory: apps/learn-card-app
+              run: |
+                  STAGE_FLAG=""
+                  if [[ -n "${{ inputs.stage }}" ]]; then
+                    STAGE_FLAG="--stage ${{ inputs.stage }}"
+                  fi
+                  echo "Preparing tenant config: ${{ inputs.tenant }} $STAGE_FLAG"
+                  npx tsx scripts/prepare-native-config.ts "${{ inputs.tenant }}" $STAGE_FLAG
+
             - name: Build ${{ inputs.project }}
               run: pnpm exec nx build ${{ inputs.project }}
               env:
@@ -94,8 +136,21 @@ jobs:
                   VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
+                  VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
+                  VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-            - name: Create Release (CapGo)
+            # Ensure the channel exists. Capgo's `channel add` is idempotent — it
+            # returns success if the channel already exists. Without this, the
+            # very first PR-preview upload for a fresh `pr-<n>` channel fails.
+            - name: Ensure CapGo channel exists
+              run: >-
+                  npx @capgo/cli@latest channel add
+                  ${{ inputs.channel }}
+                  ${{ inputs.app_id }}
+                  --apikey ${{ secrets.CAPGO_TOKEN }}
+                  || true
+
+            - name: Upload bundle (CapGo)
               run: >-
                   npx @capgo/cli@latest bundle upload
                   ${{ inputs.app_id }}
@@ -107,7 +162,8 @@ jobs:
                   --package-json ${{ inputs.package_json }}
                   --node-modules ${{ inputs.node_modules_path }}
 
-            - name: Set Release (CapGo)
+            - name: Set channel default (CapGo)
+              if: inputs.self_assign == 'true'
               run: >-
                   npx @capgo/cli@latest channel set ${{ inputs.channel }}
                   --apikey ${{ secrets.CAPGO_TOKEN }}
