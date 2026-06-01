@@ -4,6 +4,7 @@ export * from './vc';
 export * from './did';
 export * from './obv3';
 export * from './clr';
+export * from './credential-format';
 export * from './learncard';
 export * from './learncloud';
 export * from './lcn';
