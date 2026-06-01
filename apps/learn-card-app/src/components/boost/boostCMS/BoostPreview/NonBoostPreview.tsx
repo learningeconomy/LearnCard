@@ -17,6 +17,8 @@ import {
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
 } from '../../../../helpers/clrRenderer.helpers';
+import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
+import ClrEvidenceHeader from './ClrEvidenceHeader';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -192,12 +194,22 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const isIssuerViewSelected =
-        enableRenderMethod && Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
 
     const bgColor = isClrCredential ? 'bg-grayscale-100' : '';
+
+    const clrEvidence = isClrCredential
+        ? getDownloadableEvidence(
+              normalizeClrTranscriptDisplayModel(credential as unknown as Record<string, unknown>)
+                  .evidence
+          )
+        : [];
+    const hasClrEvidence = clrEvidence.length > 0;
 
     const credentialDisplay = (
         <VCDisplayCardWrapper2
@@ -255,7 +267,14 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     return (
         <IonPage>
             <div className={`flex h-full ${bgColor}`}>
-                <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                {isClrCredential && hasClrEvidence && (
+                    <ClrEvidenceHeader evidence={clrEvidence} />
+                )}
+                <section
+                    className={`flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 ${
+                        isClrCredential && hasClrEvidence ? 'pt-[57px]' : ''
+                    }`}
+                >
                     <div
                         className={`w-full px-2 flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                             isCertificate ? 'certificate-display-zoom' : ''
@@ -279,7 +298,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         useFullCloseButton={!isMobile}
                     />
                 </footer>
-                {!isMobile && (
+                {!isMobile && !isClrCredential && (
                     <BoostDetailsSideBar
                         credential={selectedCredential}
                         categoryType={categoryType}

@@ -1,4 +1,41 @@
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { FileViewer } from '@capacitor/file-viewer';
+
+export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): EvidenceDisplayModel[] =>
+    evidence.filter(e => e.id?.value);
+
+export const toSafeFileName = (name: string | undefined, mimeType: string | undefined): string => {
+    const base = (name || 'evidence').trim().replace(/[^\w.\-]/g, '_');
+    if (/\.\w{2,5}$/.test(base)) return base;
+    const ext = mimeType === 'application/pdf' ? '.pdf' : mimeType?.startsWith('image/') ? `.${mimeType.split('/')[1]}` : '';
+    return `${base}${ext}`;
+};
+
+export const downloadEvidence = async (item: EvidenceDisplayModel) => {
+    const raw = item.id?.value;
+    if (!raw) return;
+
+    const fileName = toSafeFileName(item.name?.value, item.mimeType);
+
+    if (item.isInlineDataUri) {
+        const base64 = raw.split(',')[1];
+
+        if (Capacitor.isNativePlatform()) {
+            await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Documents });
+            const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Documents });
+            await FileViewer.openDocumentFromLocalPath({ path: uri });
+        } else {
+            const a = document.createElement('a');
+            a.href = raw;
+            a.download = fileName;
+            a.click();
+        }
+    } else {
+        window.open(raw, '_blank', 'noopener');
+    }
+};
 
 // "BachelorDegree" → "Bachelor Degree", "LearningProgram" → "Learning Program"
 export const formatAchievementType = (type: string): string =>
