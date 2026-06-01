@@ -1,6 +1,6 @@
 import React from 'react';
 
-import ClrCourseTable from '../ClrCourseTable';
+import ClrCourseSection from '../ClrCourseSection';
 import ClrProgramsSection from '../ClrProgramsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import CredentialSummaryView from '../views/CredentialSummaryView';
@@ -67,24 +67,11 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
                     {(selectedView === 'StructuredTranscriptView' ||
                         selectedView === 'VerifierInspectionView') &&
                         model.courses.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between px-1">
-                                    <p className="text-sm font-semibold text-grayscale-900">
-                                        Course History
-                                    </p>
-                                    <p className="text-xs text-grayscale-500">
-                                        {model.summary.courseCount} course
-                                        {model.summary.courseCount !== 1 ? 's' : ''}
-                                        {model.summary.totalCreditsAvailable !== undefined &&
-                                            ` · ${model.summary.totalCreditsAvailable} credits`}
-                                    </p>
-                                </div>
-                                <ClrCourseTable
-                                    courses={model.courses}
-                                    onSelectCourse={handleSelectCourse}
-                                    adminMode={adminMode}
-                                />
-                            </div>
+                            <ClrCourseSection
+                                model={model}
+                                onSelectCourse={handleSelectCourse}
+                                adminMode={adminMode}
+                            />
                         )}
 
                     {/* Sparse / summary views */}

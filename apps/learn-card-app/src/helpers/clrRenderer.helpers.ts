@@ -753,8 +753,9 @@ export const normalizeClrTranscriptDisplayModel = (
             : undefined;
 
     const totalCreditsAvailable = courses.reduce<number | undefined>((sum, course) => {
-        if (course.creditsAvailable === undefined) return sum;
-        return (sum ?? 0) + course.creditsAvailable.value;
+        const credits = course.creditsEarned?.value ?? course.creditsAvailable?.value;
+        if (credits === undefined) return sum;
+        return (sum ?? 0) + credits;
     }, undefined);
 
     // Quality is based on explicit structured signal, not text heuristics.
