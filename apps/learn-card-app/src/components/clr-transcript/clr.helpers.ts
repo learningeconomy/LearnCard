@@ -16,11 +16,21 @@ export const achievementTypeLabel = (type: string, count: number): string => {
 };
 
 export const gradeColor = (grade: string): string => {
-    if (/^A/.test(grade)) return 'text-emerald-600';
-    if (/^B/.test(grade)) return 'text-blue-600';
-    if (/^C/.test(grade)) return 'text-amber-600';
-    if (/^[DF]/.test(grade)) return 'text-red-600';
+    if (/^A/.test(grade)) return 'text-emerald-700';
+    if (/^B/.test(grade)) return 'text-sky-700';
+    if (/^C/.test(grade)) return 'text-yellow-700';
+    if (/^D/.test(grade)) return 'text-orange-600';
+    if (/^F/.test(grade)) return 'text-spice-700';
     return 'text-grayscale-600';
+};
+
+export const gradeColorBackground = (grade: string): string => {
+    if (['A+', 'A', 'A-'].includes(grade)) return 'bg-emerald-100 border-emerald-400';
+    if (['B+', 'B', 'B-'].includes(grade)) return 'bg-sky-100 border-sky-300';
+    if (['C+', 'C', 'C-'].includes(grade)) return 'bg-yellow-200 border-yellow-400';
+    if (['D+', 'D', 'D-'].includes(grade)) return 'bg-orange-200 border-orange-400';
+    if (grade === 'F') return 'bg-spice-100 border-spice-400';
+    return 'bg-emerald-100 border-emerald-400';
 };
 
 const deriveDisplayTerm = (isoDate: string): string => {

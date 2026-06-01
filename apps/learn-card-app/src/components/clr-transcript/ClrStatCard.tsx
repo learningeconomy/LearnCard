@@ -12,7 +12,7 @@ type StatCardConfig = {
     variant: 'highlight' | 'default';
 };
 
-const FlatIcon = ({ children }: { children: React.ReactNode }) => (
+export const FlatIcon = ({ children }: { children: React.ReactNode }) => (
     <span className="[&_path]:!fill-current [&_path]:!stroke-none shrink-0">{children}</span>
 );
 

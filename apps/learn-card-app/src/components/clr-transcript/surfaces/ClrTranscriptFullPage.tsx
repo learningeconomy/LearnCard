@@ -38,6 +38,8 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
                 course={course}
                 adminMode={adminMode}
                 associations={model.associations}
+                competencies={model.competencies}
+                issuerName={model.header.issuerName?.value}
             />
         );
     };
