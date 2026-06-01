@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import LockSimple from 'learn-card-base/svgs/LockSimple';
+import { useEngagementSignal } from '@analytics';
 
 import 'swiper/css';
 
@@ -14,9 +15,14 @@ export const AiPathwaySessionsItem: React.FC<{
     pathwayUri: string | undefined;
 }> = ({ title, description, skills, topicUri, pathwayUri }) => {
     const history = useHistory();
+    const fireEngagement = useEngagementSignal();
 
     const handleStart = (item: any) => {
         if (!item?.topicUri || !item?.pathwayUri) return;
+
+        // LC-1853 (review #7): per-session gate. Clicking multiple pathways
+        // in the same session only counts as one engagement signal.
+        fireEngagement('ai_pathway');
 
         history.push(
             `/chats?topicUri=${encodeURIComponent(item.topicUri)}&pathwayUri=${encodeURIComponent(

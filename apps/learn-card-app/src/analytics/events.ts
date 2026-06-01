@@ -3,6 +3,30 @@
  * Add new events here with their corresponding payload types.
  */
 
+// ── LC-1853 Profile-building analytics ──────────────────────────────────────
+
+/** How the user added an item to their profile. Used by `profile_item_added` only. */
+export enum ProfileBuildMethod {
+    Notification = 'notification',
+    ClaimLink = 'claim_link',
+    Dashboard = 'dashboard',
+    VcApiRequest = 'vc_api_request',
+    SelfIssue = 'self_issue',
+    ReceivedBoost = 'received_boost',
+    SelfArticulation = 'self_articulation',
+    SkillsProfileData = 'skills_profile_data',
+    ConsentFlow = 'consent_flow',
+    ResumeImport = 'resume_import',
+}
+
+/** Snapshot of the user's profile state at a point in time. */
+export interface ProfileSnapshot {
+    credentialCount: number;
+    hasSkillsProfile: boolean;
+    skillsCount: number;
+    daysSinceSignup: number;
+}
+
 export const AnalyticsEvents = {
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
@@ -137,6 +161,15 @@ export const AnalyticsEvents = {
     // LC-1644 frontend perf telemetry — captures user-perceived sendCredential→claim flow.
     // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
     FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
+
+       // ── LC-1853 Profile-building analytics ──────────────────────────────────
+    ACCOUNT_CREATED: 'account_created',
+    PROFILE_ITEM_ADDED: 'profile_item_added',
+    ENGAGEMENT_SIGNAL: 'engagement_signal',
+    SKILL_PROFILE_STEP_STARTED: 'skill_profile_step_started',
+    SKILL_PROFILE_STEP_COMPLETED: 'skill_profile_step_completed',
+    SKILL_PROFILE_COMPLETED: 'skill_profile_completed',
+    SKILL_PROFILE_ABANDONED: 'skill_profile_abandoned',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -151,6 +184,8 @@ export interface AnalyticsEventPayloads {
         boostType?: string;
         achievementType?: string;
         method: 'VC-API Request' | 'Dashboard' | 'Claim Modal' | 'Notification' | string;
+        /** LC-1853: ms from when the claim flow started to when the boost was claimed. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.BOOST_CMS_PUBLISH]: {
@@ -197,12 +232,16 @@ export interface AnalyticsEventPayloads {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+        /** LC-1853: ms from when the self-boost flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.SEND_BOOST]: {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+        /** LC-1853: ms from when the send-boost flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.SEND_BOOST_WITH_ATTACHMENTS]: {
@@ -237,6 +276,8 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.ONBOARDING_COMPLETED]: {
         role?: string;
         country?: string;
+        /** LC-1853: ms from when the onboarding flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.CONSENT_FLOW_STARTED]: {
@@ -617,6 +658,41 @@ export interface AnalyticsEventPayloads {
             | 'raw-vc'
             | 'interaction';
     };
+
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
+
+    [AnalyticsEvents.ACCOUNT_CREATED]: {
+        method: 'new_signup' | 'returning_user';
+        signupSource?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_ADDED]: {
+        method: ProfileBuildMethod;
+        itemType: 'credential' | 'skill' | 'profile_data';
+        /** Always 1 per call. */
+        itemCount: number;
+        /** Pre-mutation count + 1 (arithmetic — do NOT re-read). */
+        totalItemsAfter: number;
+        msSinceAccountCreated: number;
+        msSinceSessionStart: number;
+    };
+
+    [AnalyticsEvents.ENGAGEMENT_SIGNAL]: {
+        signal: 'ai_chat' | 'ai_insights' | 'ai_pathway' | 'returning_session';
+        profileSnapshot: ProfileSnapshot;
+    };
+
+    [AnalyticsEvents.SKILL_PROFILE_STEP_STARTED]: { step: 1 | 2 | 3 | 4 | 5 };
+
+    [AnalyticsEvents.SKILL_PROFILE_STEP_COMPLETED]: {
+        step: 1 | 2 | 3 | 4 | 5;
+        stepDurationMs: number;
+        fieldsCompleted: string[];
+    };
+
+    [AnalyticsEvents.SKILL_PROFILE_COMPLETED]: { totalDurationMs: number };
+
+    [AnalyticsEvents.SKILL_PROFILE_ABANDONED]: { step: 1 | 2 | 3 | 4 | 5; stepDurationMs: number };
 }
 
 /**
