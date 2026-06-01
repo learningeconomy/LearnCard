@@ -11,12 +11,14 @@
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test",
+        "validate-packages": "node scripts/validate-packages.mjs",
         "env:pull": "bash scripts/pull-env.sh",
         "env:backup": "bash scripts/backup-env.sh",
         "env:compare-backup": "bash scripts/compare-env-backup.sh",
         "env:compare-infisical": "bash scripts/compare-env-infisical.sh"
     },
     "devDependencies": {
+        "@arethetypeswrong/cli": "^0.18.3",
         "@changesets/changelog-github": "^0.4.8",
         "@changesets/cli": "^2.26.0",
         "@types/jest": "^29.5.12",
@@ -40,6 +42,7 @@
         "nx": "16.1.4",
         "prettier": "^2.8.4",
         "prettier-plugin-astro": "^0.5.5",
+        "publint": "^0.3.21",
         "ts-jest": "^29.0.5",
         "tslib": "^2.5.0",
         "vite-tsconfig-paths": "^4.3.2",

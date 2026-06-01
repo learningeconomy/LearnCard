@@ -7,16 +7,21 @@
     "module": "./dist/idx-plugin.esm.js",
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/idx-plugin.esm.js",
-            "require": "./dist/index.cjs"
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/idx-plugin.esm.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
         }
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
