@@ -9,18 +9,18 @@ import {
     useWallet,
     useToast,
     ToastTypeEnum,
-    useGetSkillFrameworkById,
     annotateBackendSkillsWithIcons,
 } from 'learn-card-base';
 
-import Plus from 'learn-card-base/svgs/Plus';
-import RefreshIcon from 'learn-card-base/svgs/Refresh';
+import Plus from '../../components/svgs/Plus';
+import RefreshIcon from '../../components/svgs/Refresh';
 import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
 import { IonInput, IonSpinner } from '@ionic/react';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import {
     isFrameworkAllowedByOpenSaltAllowlist,
     isOpenSaltFramework,
@@ -61,20 +61,36 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
     const { presentToast } = useToast();
     const queryClient = useQueryClient();
     const flags = useFlags<Flags>();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
 
-    const { data: userFrameworks = [], isLoading: isLoadingFrameworks } =
+    const { data: userFrameworks = [] as ApiFrameworkInfo[], isLoading: isLoadingFrameworks } =
         useListMySkillFrameworks();
 
-    const defaultFrameworkId = flags?.selfAssignedSkillsFrameworkId;
-    const { data: defaultFramework } = useGetSkillFrameworkById(defaultFrameworkId);
+    const globalFrameworkInfos = React.useMemo<ApiFrameworkInfo[]>(
+        () =>
+            globalSkillFrameworks.map(
+                (framework): ApiFrameworkInfo => ({
+                    id: framework.frameworkId,
+                    name: framework.name,
+                    status: 'active',
+                })
+            ) as ApiFrameworkInfo[],
+        [globalSkillFrameworks]
+    );
 
-    const frameworks: ApiFrameworkInfo[] = [];
-    if (defaultFramework?.framework) {
-        frameworks.push(defaultFramework.framework);
-    }
-    if (userFrameworks) {
-        frameworks.push(...userFrameworks.filter(f => f.id !== defaultFramework?.framework?.id));
-    }
+    const frameworks = React.useMemo(() => {
+        const combined = new Map<string, ApiFrameworkInfo>();
+
+        globalFrameworkInfos.forEach(framework => {
+            combined.set(framework.id, framework);
+        });
+
+        userFrameworks.forEach((framework: ApiFrameworkInfo) => {
+            combined.set(framework.id, framework);
+        });
+
+        return [...combined.values()];
+    }, [globalFrameworkInfos, userFrameworks]);
 
     const [openSaltRef, setOpenSaltRef] = React.useState('');
     const [isImportingOpenSaltFramework, setIsImportingOpenSaltFramework] = React.useState(false);
@@ -92,10 +108,10 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             let cursor: string | null | undefined = null;
 
             for (let i = 0; i < 40; i++) {
-                const page = await wallet.invoke.getAllAvailableFrameworks({
+                const page = (await wallet.invoke.getAllAvailableFrameworks({
                     limit: 100,
                     cursor,
-                });
+                })) as { records: ApiFrameworkInfo[]; hasMore: boolean; cursor?: string | null };
 
                 records.push(...(page.records as ApiFrameworkInfo[]));
 
