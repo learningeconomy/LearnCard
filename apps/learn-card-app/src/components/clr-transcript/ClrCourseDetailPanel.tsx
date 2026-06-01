@@ -7,7 +7,7 @@ import type {
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
 import ClrProvenanceTable from './ClrProvenanceTable';
-import { gradeColor } from './ClrCourseTable';
+import { gradeColor } from './clr.helpers';
 
 type Props = {
     course: CourseDisplayModel;
