@@ -45,13 +45,21 @@ import {
 
 import DashboardHeaderCard from './components/DashboardHeaderCard';
 import CurrentGoalCard from './components/CurrentGoalCard';
-import QuickActionsRow, { type QuickAction } from './components/QuickActionsRow';
+import QuickActionsRow from './components/QuickActionsRow';
 import GetStartedChecklist from './components/GetStartedChecklist';
 import ActivityCard from './components/ActivityCard';
 import AppsCard from './components/AppsCard';
 import { countReviewsDueToday } from './helpers/dueReviews';
 import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
+import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
 import useAppStore from '../launchPad/useAppStore';
+import { DEFAULT_REGISTRY } from './quickActions/registry';
+import { resolveSlots } from './quickActions/resolveSlots';
+import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
+
+import ScanIcon from 'learn-card-base/svgs/ScanIcon';
+import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
+import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
@@ -62,6 +70,8 @@ const DashboardPage: React.FC = () => {
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
     const pathwaysEnabled = usePathwaysEnabled();
     const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
+    const { openClaimLink, openIssueCredential, openScanQr: openScanQrCredential } =
+        useAddToLearnCardActions();
     const { newModal: openHeaderModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -234,13 +244,13 @@ const DashboardPage: React.FC = () => {
     const goToCollect = () => {
         openBuildMyLearnCard();
     };
-    const goToUnderstand = () => {
-        if (flags?.showAiInsights) history.push('/ai/insights');
-        else history.push('/skills');
+    const goToInsights = () => history.push('/ai/insights');
+    const goToSkills = () => history.push('/skills');
+    const goToSetGoal = () => {
+        history.push(pathwaysEnabled ? '/pathways/onboard' : '/ai/pathways');
     };
-    const goToNavigate = () => {
-        if (pathwaysEnabled) history.push('/pathways');
-        else history.push('/ai/pathways');
+    const goToBrowsePathways = () => {
+        history.push(pathwaysEnabled ? '/pathways' : '/ai/pathways');
     };
 
     const goToPathway = () => {
@@ -261,34 +271,14 @@ const DashboardPage: React.FC = () => {
         if (pathwaysEnabled) history.push('/pathways/today');
     };
 
-    const quickActions: QuickAction[] = [
-        {
-            key: 'collect',
-            label: 'Collect',
-            caption: 'Add to LearnCard',
-            Icon: sideMenuIcons.wallet,
-            onClick: goToCollect,
-        },
-        {
-            key: 'understand',
-            label: 'Understand',
-            caption: flags?.showAiInsights ? 'See your insights' : 'Explore your skills',
-            Icon: sideMenuIcons[CredentialCategoryEnum.aiInsight],
-            onClick: goToUnderstand,
-        },
-        {
-            key: 'navigate',
-            label: 'Navigate',
-            caption: 'Set or follow a goal',
-            Icon: sideMenuIcons.pathways,
-            onClick: goToNavigate,
-        },
-    ];
-
     const hasCredentials = totalCredentialCount > 0;
     const hasGoal = !!activePathway;
     const hasConnections = connections.length > 0;
+
+    const goToWallet = () => history.push('/wallet');
+
     const showGetStarted = !getStartedDismissed && (!hasCredentials || !hasGoal);
+    const heroSlot: 'getStarted' | 'goal' = showGetStarted ? 'getStarted' : 'goal';
 
     const checklistItems = [
         {
@@ -301,8 +291,7 @@ const DashboardPage: React.FC = () => {
             key: 'set-goal',
             label: 'Set a goal',
             done: hasGoal,
-            onClick: () =>
-                history.push(pathwaysEnabled ? '/pathways/onboard' : '/ai/pathways'),
+            onClick: goToSetGoal,
         },
         {
             key: 'connect-contact',
@@ -316,13 +305,59 @@ const DashboardPage: React.FC = () => {
         firstStartupStore.set.dashboardGetStartedDismissed(true);
     };
 
+    const dashboardState: DashboardState = {
+        credentialsCount: totalCredentialCount,
+        skillsCount,
+        hasGoal,
+        nextNodeTitle: goalSummary?.nextNode?.title,
+        pathwaysEnabled,
+        showAiInsights: Boolean(flags?.showAiInsights),
+    };
+
+    const actionHandlers: ActionHandlers = {
+        goToAddCredential: goToCollect,
+        goToWallet,
+        goToSkills,
+        goToInsights,
+        goToSetGoal,
+        goToPathway,
+        goToBrowsePathways,
+        goToBrowseAppStore: () => history.push('/launchpad'),
+    };
+
+    const slotIcons: SlotIcons = {
+        collect: sideMenuIcons.wallet,
+        understand: sideMenuIcons[CredentialCategoryEnum.aiInsight],
+        navigate: sideMenuIcons.pathways,
+    };
+
+    const nextChecklistItem = checklistItems.find(item => !item.done) ?? null;
+    const heroActionId: string | null = (() => {
+        if (heroSlot === 'getStarted' && nextChecklistItem) {
+            if (nextChecklistItem.key === 'add-credential') return 'add-first-credential';
+            if (nextChecklistItem.key === 'set-goal') return 'set-goal';
+            return null;
+        }
+        if (heroSlot === 'goal') {
+            return goalSummary ? 'continue-goal' : 'set-goal';
+        }
+        return null;
+    })();
+
+    const resolvedSlots = resolveSlots(
+        dashboardState,
+        { handlers: actionHandlers, icons: slotIcons },
+        heroActionId,
+        DEFAULT_REGISTRY,
+    );
+
     return (
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <IonContent fullscreen color="grayscale-100">
 
                     <div className="flex justify-center w-full font-poppins">
-                        <div className="w-full max-w-[680px] flex flex-col gap-5 px-4 pt-4 pb-[100px]">
+                        <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6">
                             <GenericErrorBoundary>
                                 <DashboardHeaderCard
                                     displayName={displayName}
@@ -353,42 +388,84 @@ const DashboardPage: React.FC = () => {
                                     }
                                 />
                             </GenericErrorBoundary>
+
+                            <div className="grid grid-cols-1 desktop:grid-cols-12 gap-5">
+                                <div className="flex flex-col gap-5 desktop:col-span-7 min-w-0">
+                                    {heroSlot === 'getStarted' ? (
+                                        <GenericErrorBoundary>
+                                            <GetStartedChecklist
+                                                items={checklistItems}
+                                                onDismiss={dismissGetStarted}
+                                                variant="hero"
+                                                primaryButtonClass={primaryButtonClass}
+                                            />
+                                        </GenericErrorBoundary>
+                                    ) : (
+                                        <GenericErrorBoundary>
+                                            <CurrentGoalCard
+                                                goalSummary={goalSummary}
+                                                pathwaysEnabled={pathwaysEnabled}
+                                                reviewsDueToday={reviewSummary.total}
+                                                onContinue={goToPathway}
+                                                onReview={goToReviews}
+                                                primaryButtonClass={primaryButtonClass}
+                                                variant="hero"
+                                            />
+                                        </GenericErrorBoundary>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-5 desktop:col-span-5 min-w-0">
+                                    <GenericErrorBoundary>
+                                        <ActivityCard
+                                            notifications={unreadNotifications}
+                                            pendingContractRequests={pendingContractRequests}
+                                            pendingConnections={receivedConnectionRequests}
+                                            records={allCredentialRecords}
+                                            isLoading={allCredentialsLoading}
+                                            emptyTips={[
+                                                ...(openScanQrCredential
+                                                    ? [
+                                                          {
+                                                              key: 'scan-qr',
+                                                              title: 'Scan a QR code',
+                                                              subtitle:
+                                                                  'Claim a credential from a poster or screen',
+                                                              Icon: ScanIcon,
+                                                              onClick: openScanQrCredential,
+                                                          },
+                                                      ]
+                                                    : []),
+                                                {
+                                                    key: 'claim-link',
+                                                    title: 'Use a claim link',
+                                                    subtitle: 'Paste or upload a credential link',
+                                                    Icon: LinkOutlinedIcon,
+                                                    onClick: openClaimLink,
+                                                },
+                                                {
+                                                    key: 'issue-credential',
+                                                    title: 'Issue a credential',
+                                                    subtitle: 'Send a credential to someone',
+                                                    Icon: AddCredentialIcon,
+                                                    onClick: openIssueCredential,
+                                                },
+                                            ]}
+                                        />
+                                    </GenericErrorBoundary>
+                                </div>
+                            </div>
+
                             <GenericErrorBoundary>
-                                <ActivityCard
-                                    notifications={unreadNotifications}
-                                    pendingContractRequests={pendingContractRequests}
-                                    pendingConnections={receivedConnectionRequests}
-                                    records={allCredentialRecords}
-                                    isLoading={allCredentialsLoading}
-                                />
+                                <QuickActionsRow slots={resolvedSlots} />
                             </GenericErrorBoundary>
-                            <GenericErrorBoundary>
-                                <QuickActionsRow actions={quickActions} />
-                            </GenericErrorBoundary>
+
                             <GenericErrorBoundary>
                                 <AppsCard
                                     installedApps={installedApps}
                                     suggestedApps={suggestedApps}
                                     unreadByListing={unreadByListing}
                                     onInstallSuccess={refetchInstalledApps}
-                                />
-                            </GenericErrorBoundary>
-                            {showGetStarted && (
-                                <GenericErrorBoundary>
-                                    <GetStartedChecklist
-                                        items={checklistItems}
-                                        onDismiss={dismissGetStarted}
-                                    />
-                                </GenericErrorBoundary>
-                            )}
-                            <GenericErrorBoundary>
-                                <CurrentGoalCard
-                                    goalSummary={goalSummary}
-                                    pathwaysEnabled={pathwaysEnabled}
-                                    reviewsDueToday={reviewSummary.total}
-                                    onContinue={goToPathway}
-                                    onReview={goToReviews}
-                                    primaryButtonClass={primaryButtonClass}
+                                    variant="featured"
                                 />
                             </GenericErrorBoundary>
                         </div>

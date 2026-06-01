@@ -1,39 +1,43 @@
 import React from 'react';
 
-type QuickActionIcon = React.FC<{ className?: string; shadeColor?: string }>;
-
-type QuickAction = {
-    key: string;
-    label: string;
-    caption: string;
-    Icon: QuickActionIcon;
-    onClick: () => void;
-};
+import { SLOT_ORDER, type ResolvedAction } from '../quickActions/types';
 
 type QuickActionsRowProps = {
-    actions: QuickAction[];
+    slots: Record<'collect' | 'understand' | 'navigate', ResolvedAction | null>;
 };
 
-const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ actions }) => {
+const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
     return (
-        <div className="grid grid-cols-3 gap-3 animate-fade-in-up">
-            {actions.map(action => {
+        <div className="grid grid-cols-3 gap-2 animate-fade-in-up">
+            {SLOT_ORDER.map(slot => {
+                const action = slots[slot];
+                if (!action) {
+                    return (
+                        <div
+                            key={slot}
+                            aria-hidden
+                            className="rounded-2xl border border-dashed border-grayscale-200 bg-grayscale-10/40"
+                        />
+                    );
+                }
                 const { Icon } = action;
                 return (
                     <button
-                        key={action.key}
+                        key={slot}
                         type="button"
                         onClick={action.onClick}
-                        className="group flex flex-col items-start gap-2 bg-white rounded-[20px] p-4 border border-grayscale-200 shadow-soft-bottom hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left"
+                        className="group flex items-center gap-3 bg-white rounded-2xl py-3 px-3 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0"
                     >
-                        <span className="w-11 h-11 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
-                            <Icon className="w-7 h-7" />
+                        <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
+                            <Icon className="w-5 h-5" />
                         </span>
-                        <span className="text-sm font-semibold text-grayscale-900">
-                            {action.label}
-                        </span>
-                        <span className="text-xs text-grayscale-500 leading-tight">
-                            {action.caption}
+                        <span className="flex flex-col min-w-0">
+                            <span className="text-sm font-semibold text-grayscale-900 truncate">
+                                {action.label}
+                            </span>
+                            <span className="hidden desktop:inline text-[11px] text-grayscale-500 leading-tight truncate">
+                                {action.caption}
+                            </span>
                         </span>
                     </button>
                 );
@@ -43,4 +47,4 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ actions }) => {
 };
 
 export default QuickActionsRow;
-export type { QuickAction, QuickActionIcon };
+export type { ResolvedAction };

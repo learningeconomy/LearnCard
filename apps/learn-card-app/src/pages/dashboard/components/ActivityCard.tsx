@@ -23,6 +23,14 @@ type ActivityRecord = {
 
 type LcnVisibleProfile = { profileId?: string; displayName?: string; image?: string };
 
+type EmptyTip = {
+    key: string;
+    title: string;
+    subtitle: string;
+    Icon?: React.FC<{ className?: string; shadeColor?: string }>;
+    onClick: () => void;
+};
+
 type ActivityCardProps = {
     notifications: NotificationType[];
     pendingContractRequests: {
@@ -32,6 +40,7 @@ type ActivityCardProps = {
     pendingConnections: LcnVisibleProfile[];
     records: ActivityRecord[];
     isLoading?: boolean;
+    emptyTips?: EmptyTip[];
 };
 
 const ACTIONABLE_NOTIFICATION_TYPES = new Set([
@@ -94,6 +103,41 @@ const SkeletonRow: React.FC<{ index: number }> = ({ index }) => (
     </div>
 );
 
+const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
+    <div className="mt-auto pt-3 border-t border-grayscale-100 flex flex-col gap-1">
+        <p className="text-[11px] font-medium tracking-wider text-grayscale-400 uppercase px-1 mb-1">
+            Meanwhile
+        </p>
+        {tips.map(tip => {
+            const TipIcon = tip.Icon;
+            return (
+                <button
+                    key={tip.key}
+                    type="button"
+                    onClick={tip.onClick}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-grayscale-10 transition-colors text-left"
+                >
+                    <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 flex items-center justify-center text-grayscale-700">
+                        {TipIcon ? (
+                            <TipIcon className="w-5 h-5" />
+                        ) : (
+                            <span className="text-sm leading-none">›</span>
+                        )}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium text-grayscale-900 truncate">
+                            {tip.title}
+                        </span>
+                        <span className="block text-[11px] text-grayscale-500 truncate">
+                            {tip.subtitle}
+                        </span>
+                    </span>
+                </button>
+            );
+        })}
+    </div>
+);
+
 const ActionableRow: React.FC<{
     item: ActionableItem;
     animationDelayMs: number;
@@ -149,6 +193,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     pendingConnections,
     records,
     isLoading = false,
+    emptyTips = [],
 }) => {
     const history = useHistory();
 
@@ -210,11 +255,50 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
     const hasActionable = visibleActionable.length > 0;
     const hasPassive = visiblePassive.length > 0 || showSkeleton;
+    const totalVisibleItems = visibleActionable.length + visiblePassive.length;
+    const showPopulatedMeanwhile =
+        !showSkeleton && totalVisibleItems > 0 && totalVisibleItems <= 2 && emptyTips.length > 0;
 
-    if (!hasActionable && !hasPassive) return null;
+    if (!hasActionable && !hasPassive) {
+        return (
+            <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up flex flex-col desktop:min-h-[420px]">
+                <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase mb-3">
+                    Activity
+                </h2>
+                <div className="flex flex-col items-center text-center py-6 desktop:py-8">
+                    <span
+                        aria-hidden
+                        className="w-12 h-12 rounded-full bg-grayscale-100 text-grayscale-500 flex items-center justify-center mb-3"
+                    >
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10 21a2 2 0 0 0 4 0" />
+                        </svg>
+                    </span>
+                    <p className="text-sm font-semibold text-grayscale-900">
+                        No alerts right now
+                    </p>
+                    <p className="mt-1 text-xs text-grayscale-500 leading-relaxed max-w-[260px]">
+                        We&apos;ll let you know here when someone wants to connect or send you a
+                        credential.
+                    </p>
+                </div>
+                {emptyTips.length > 0 && <MeanwhileTips tips={emptyTips} />}
+            </section>
+        );
+    }
 
     return (
-        <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
+        <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up flex flex-col">
             <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase mb-2">
                 Activity
             </h2>
@@ -283,6 +367,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     </button>
                 </div>
             )}
+
+            {showPopulatedMeanwhile && <MeanwhileTips tips={emptyTips} />}
         </section>
     );
 };
