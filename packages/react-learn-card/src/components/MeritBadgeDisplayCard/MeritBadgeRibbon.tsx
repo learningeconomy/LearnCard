@@ -6,6 +6,14 @@ type MeritBadgeRibbonProps = {
 };
 
 const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', image }) => {
+    const [errored, setErrored] = React.useState(false);
+
+    React.useEffect(() => {
+        setErrored(false);
+    }, [image]);
+
+    const showPlaceholder = !image || errored;
+
     return (
         <svg
             width="207"
@@ -47,15 +55,34 @@ const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', ima
             <clipPath id="circleClip">
                 <circle cx="103.5" cy="84" r="75" />
             </clipPath>
-            <image
-                xlinkHref={image}
-                x="28.5"
-                y="9"
-                width="150"
-                height="150"
-                clipPath="url(#circleClip)"
-                preserveAspectRatio="xMidYMid slice"
-            />
+            {showPlaceholder ? (
+                <g
+                    clipPath="url(#circleClip)"
+                    transform="translate(78.5 58) scale(2.1)"
+                    className="text-grayscale-400"
+                >
+                    <circle cx="12" cy="9" r="6" stroke="currentColor" strokeWidth="1.75" fill="none" />
+                    <path
+                        d="M8.5 14.5 7 22l5-3 5 3-1.5-7.5"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                    />
+                </g>
+            ) : (
+                <image
+                    xlinkHref={image}
+                    x="28.5"
+                    y="9"
+                    width="150"
+                    height="150"
+                    clipPath="url(#circleClip)"
+                    preserveAspectRatio="xMidYMid slice"
+                    onError={() => setErrored(true)}
+                />
+            )}
 
             <defs>
                 <filter
