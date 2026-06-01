@@ -15,7 +15,9 @@
                 "types": "./dist/index.d.cts",
                 "default": "./dist/index.cjs"
             }
-        }
+        },
+        "./dist/didkit_wasm_bg.wasm": "./dist/didkit_wasm_bg.wasm",
+        "./dist/didkit/didkit_wasm_bg.wasm": "./dist/didkit/didkit_wasm_bg.wasm"
     },
     "files": [
         "dist"
