@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { renderParts } from '../../../i18n';
 import { useHistory } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -56,7 +58,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
-    const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
+        const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -297,20 +299,15 @@ export const LoginContent: React.FC = () => {
                         </div>
 
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            You're all set!
+                            {m['login.qrApproved.heading']()}
                         </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                <>
-                                    Sign in with{' '}
-                                    <span className="font-medium text-grayscale-900">
-                                        {accountHint}
-                                    </span>{' '}
-                                    to access your account.
-                                </>
+                                {renderParts(m['login.qrApproved.withHint'].parts({ hint: accountHint }), {})}]}
+                                />
                             ) : (
-                                'Now just sign in below to access your account.'
+                                m['login.qrApproved.noHint']()
                             )}
                         </p>
 
@@ -322,7 +319,7 @@ export const LoginContent: React.FC = () => {
                             }}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            Continue to Sign In
+                            {m['login.qrApproved.continueButton']()}
                         </button>
                     </div>
                 </IonRow>
@@ -347,13 +344,10 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-semibold">{accountHint}</span> to
-                                            finish
-                                        </>
+                                        {renderParts(m['login.linkedBanner.withHint'].parts({ hint: accountHint }), {})}]}
+                                        />
                                     ) : (
-                                        'Device linked — sign in to finish'
+                                        m['login.linkedBanner.noHint']()
                                     )}
                                 </span>
                             </div>
@@ -371,11 +365,8 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    You'll be taken back to{' '}
-                                    <span className="font-semibold">
-                                        {installIntent.appName ?? 'the app'}
-                                    </span>{' '}
-                                    after sign in
+                                    {renderParts(m['login.installIntent.banner'].parts({ appName: installIntent.appName ?? m['login.installIntent.defaultAppName']() }), {})}]}
+                                    />
                                 </span>
                             </div>
                         </IonRow>
@@ -468,7 +459,7 @@ export const LoginContent: React.FC = () => {
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
                                 `}
                                 >
-                                    Shared or public computer
+                                    {m['login.sharedComputer']()}
                                 </span>
                             </button>
                         </IonRow>
@@ -480,7 +471,7 @@ export const LoginContent: React.FC = () => {
                                 onClick={() => setShowQrLogin(true)}
                                 className="text-sm text-white/80 hover:text-white underline transition-colors"
                             >
-                                Sign in from another device
+                                {m['login.signInFromAnotherDevice']()}
                             </button>
                         </IonRow>
                     )}

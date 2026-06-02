@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import * as m from '../../../../../paraglide/messages.js';
+import { renderParts } from '../../../../../i18n';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
@@ -18,7 +20,7 @@ export type ParentInviteModalProps = {
 };
 
 const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal }) => {
-    const { initWallet } = useWallet();
+        const { initWallet } = useWallet();
     const brandingConfig = useBrandingConfig();
 
     const { presentToast } = useToast();
@@ -107,12 +109,11 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                     <img src={LearnCardCircle} alt="LearnCard" className="h-[60px] w-[60px]" />
                 </div>
                 <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                    Invite your parent to join {brandingConfig?.name}!
+                    {m['onboarding.consent.parentInvite.heading']({ brand: brandingConfig?.name })}
                 </h2>
                 <p className="text-grayscale-700 text-[15px] leading-[22px] px-[10px]">
-                    Click the <span className="font-semibold">Share Invite</span> button or type in
-                    their email and click the <span className="font-semibold">Send Invite</span>
-                    button.
+                    {renderParts(m['onboarding.consent.parentInvite.description'].parts({}), {})}, <span className="font-semibold" key="e" />]}
+                    />
                 </p>
 
                 <div className="w-full flex items-center justify-center mt-4 px-2">
@@ -122,14 +123,14 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         disabled={loading || !inviteLink}
                         className="flex items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[12px] text-white font-poppins text-[16px] w-full shadow-lg"
                     >
-                        {loading ? <IonSpinner name="crescent" /> : 'Share Invite'}
+                        {loading ? <IonSpinner name="crescent" /> : m['onboarding.consent.parentInvite.shareInvite']()}
                     </button>
                 </div>
 
                 <div className="flex items-center justify-center w-full mt-3">
                     <div className="flex items-center justify-center w-full px-5">
                         <h2 className="divider-with-text">
-                            <span>or</span>
+                            <span>{m['onboarding.consent.parentInvite.or']()}</span>
                         </h2>
                     </div>
                 </div>
@@ -137,7 +138,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                 <div className="w-full flex items-center justify-center mt-1 px-2">
                     <input
                         type="email"
-                        placeholder="email@email.com"
+                        placeholder={m['onboarding.consent.parentInvite.placeholder']()}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         className="w-full bg-grayscale-100 rounded-2xl px-4 py-3 text-grayscale-800 placeholder:text-grayscale-500"
@@ -152,7 +153,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         onClick={handleCloseModal}
                         className="shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['onboarding.back']()}
                     </button>
                     <button
                         type="button"
@@ -160,7 +161,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         disabled={loading || !inviteLink}
                         className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                     >
-                        Send Invite
+                        {m['onboarding.consent.parentInvite.sendInvite']()}
                     </button>
                 </div>
             </div>

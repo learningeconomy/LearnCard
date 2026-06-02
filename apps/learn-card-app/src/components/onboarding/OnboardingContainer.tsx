@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { renderParts } from '../../../i18n';
 
 import OnboardingRoles from './onboardingRoles/OnboardingRoles';
 import OnboardingFooter from './onboardingFooter/OnboardingFooter';
@@ -9,10 +11,9 @@ import { useModal } from 'learn-card-base';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
-import { ONBOARDING_STARTED_AT_KEY } from '@analytics';
 
 const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
-    const { closeModal } = useModal();
+        const { closeModal } = useModal();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
 
     const [step, setStep] = useState<OnboardingStepsEnum>(OnboardingStepsEnum.selectRole);
@@ -36,15 +37,6 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
     useEffect(() => {
         // Set flag so AppListingPage's auto-trigger waits until onboarding closes
         redirectStore.set.isOnboardingOpen(true);
-
-        // LC-1853 (review #8): stamp the onboarding-entry timestamp at the very
-        // first onboarding screen (this container, which renders selectRole
-        // before the network form) so ONBOARDING_COMPLETED.msSinceMethodStarted
-        // reports time-in-flow rather than time-on-final-form. Set only if not
-        // already set, so a back-and-forth between steps doesn't reset it.
-        if (!localStorage.getItem(ONBOARDING_STARTED_AT_KEY)) {
-            localStorage.setItem(ONBOARDING_STARTED_AT_KEY, String(Date.now()));
-        }
 
         // Claim installIntent — must happen after setting isOnboardingOpen
         const intent = redirectStore.get.installIntent();
@@ -92,12 +84,12 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
                             />
                         )}
                         <p className="text-sm text-indigo-800 font-medium">
-                            After creating your account, you'll be able to install{' '}
-                            <span className="font-semibold">{pendingInstall.appName}</span>
+                            {renderParts(m['onboarding.profile.installBanner'].parts({ appName: pendingInstall.appName }), {})}]}
+                            />
                         </p>
                     </div>
                 )}
-                <OnboardingHeader text="Select what best describes you!" />
+                <OnboardingHeader text={m['onboarding.selectRole.header']()} />
                 <OnboardingRoles role={role} setRole={setRole} />
                 <OnboardingFooter
                     overrideSkip={

@@ -7,20 +7,19 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
-const messages = _.shuffle([
-    'Credentials coming right up!',
-    'Waving a magic credential wand!',
-    'Fetching your badge brilliance!',
-    'Unlocking your secret stardust!',
-    'Brewing your digital delights!',
-    'Summoning your credential superpowers!',
-    'Your digital treasure is near!',
-    'Preparing your badge bonanza!',
-    'Credentials loading with pizzazz!',
-    'Get ready for credential spark!',
-]);
-
 export const LoginLoadingPage: React.FC = () => {
+        const messages = useMemo(() => _.shuffle([
+        m['login.loader.messages.0'](),
+        m['login.loader.messages.1'](),
+        m['login.loader.messages.2'](),
+        m['login.loader.messages.3'](),
+        m['login.loader.messages.4'](),
+        m['login.loader.messages.5'](),
+        m['login.loader.messages.6'](),
+        m['login.loader.messages.7'](),
+        m['login.loader.messages.8'](),
+        m['login.loader.messages.9'](),
+    ]), [t]);
     const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;

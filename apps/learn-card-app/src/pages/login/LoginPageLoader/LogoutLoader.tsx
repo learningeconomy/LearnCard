@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import * as m from '../../../../paraglide/messages.js';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
@@ -8,7 +9,7 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
 export const LogoutLoadingPage: React.FC = () => {
-    const { textLogo } = useTenantBrandingAssets();
+        const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;
     const [currentColorIndex, setCurrentColorIndex] = useState(0);
@@ -39,7 +40,7 @@ export const LogoutLoadingPage: React.FC = () => {
                     <div className="w-full flex items-center justify-center text-center px-6">
                         <Typewriter
                             options={{
-                                strings: ['Logging out...'],
+                                strings: [m['login.logout']()],
                                 autoStart: true,
                                 loop: true,
                                 delay: 70,

@@ -1,126 +1,468 @@
 {
-    "sidemenu": {
-        "addTo": "{{brand}}에 추가",
-        "newAiSession": "새 AI 세션",
-        "footer": {
-            "poweredBy": "Powered by <0>Consent Flow</0>",
-            "ownYourData": "데이터의 주인은 당신입니다.",
-            "connectionsEncrypted": "모든 연결은 <0>암호화</0>됩니다.",
-            "privacyPolicy": "개인정보 처리방침",
-            "termsOfService": "이용약관",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "닫기"
-        },
-        "links": {
-            "launchPad": "앱",
-            "contacts": "연락처",
-            "alerts": "알림",
-            "personalize": "개인 설정",
-            "adminTools": "관리자 도구",
-            "wallet": "지갑",
-            "passport": "패스포트",
-            "aiTopics": "AI 세션",
-            "aiInsights": "AI 인사이트",
-            "aiPathways": "AI 경로",
-            "skills": "기술",
-            "socialBadges": "부스트",
-            "achievements": "성취",
-            "studies": "학습",
-            "portfolio": "포트폴리오",
-            "assistance": "지원",
-            "experiences": "경험",
-            "families": "가족",
-            "ids": "신분증",
-            "pathways": "여정"
-        }
+  "sidemenu": {
+    "addTo": "Add to {{brand}}",
+    "newAiSession": "New AI Session",
+    "footer": {
+      "poweredBy": "Powered by <0>Consent Flow</0>",
+      "ownYourData": "You own your own data.",
+      "connectionsEncrypted": "All connections are <0>encrypted.</0>",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "copyright": "© {{year}} Learning Economy",
+      "close": "Close"
     },
-    "passport": {
-        "buildMyLearnCard": {
-            "title": "내 {{brand}} 만들기",
-            "progress": "{{percent}}% 최적화됨",
-            "processing": "문서 처리 중…",
-            "stepsCompleted": "총 <1>{{total}}</1>단계 중 <0>{{completed}}</0>단계 완료",
-            "pendingReview": "검토 대기 중인 자격증명 {{count}}개"
-        },
-        "resumeBuilder": {
-            "title": "이력서 만들기",
-            "subtitle": "{{brand}} 자격증명으로 이력서를 만드세요.",
-            "yourResume": "내 이력서",
-            "buildYourResume": "이력서 만들기",
-            "updatedToday": "<0>오늘</0> 업데이트됨",
-            "tagline": "맞춤형 이력서로 돋보이세요"
-        },
-        "explore": "둘러보기"
-    },
-    "launchpad": {
-        "title": "앱",
-        "header": {
-            "contacts": "연락처",
-            "aiSessions": "AI 세션",
-            "alerts": "알림"
-        },
-        "tabs": {
-            "myApps": "내 앱",
-            "ai": "AI",
-            "learning": "학습",
-            "games": "게임",
-            "tools": "도구",
-            "employment": "취업",
-            "credentials": "자격증명",
-            "other": "기타",
-            "plugins": "플러그인",
-            "all": "전체"
-        },
-        "sections": {
-            "suggestedApps": "추천 앱",
-            "installedApps": "설치된 앱",
-            "allApps": "전체 앱",
-            "allCategory": "{{category}} 전체"
-        },
-        "emptyStates": {
-            "noInstalledApps": "여기에 앱이 표시됩니다",
-            "noAppsAvailable": "현재 사용 가능한 앱이 없습니다",
-            "nothingInCategory": "{{category}}에 아직 항목이 없습니다",
-            "installSomething": "앱 스토어에서 앱을 설치하여 시작하세요.",
-            "checkBackLater": "나중에 다시 확인해주세요 — 새 앱이 계속 추가됩니다.",
-            "checkBackSoon": "곧 다시 확인하거나 전체 앱을 둘러보세요."
-        },
-        "aiDisabledMinor": "AI 기능은 만 18세 미만 사용자에게는 제공되지 않습니다.",
-        "aiDisabledPrivacy": "AI 기능이 현재 비활성화되어 있습니다. 프로필의 개인정보 및 데이터에서 활성화할 수 있습니다."
-    },
-    "wallet": {
-        "categories": {
-            "aiSessions": "AI 세션",
-            "aiPathways": "AI 경로",
-            "aiInsights": "AI 인사이트",
-            "skills": "기술",
-            "socialBadges": "부스트",
-            "achievements": "성취",
-            "studies": "학습",
-            "portfolio": "포트폴리오",
-            "assistance": "지원",
-            "experiences": "경험",
-            "families": "가족",
-            "ids": "신분증"
-        }
-    },
-    "theme": {
-        "title": "테마 선택",
-        "subtitleColorfulFormal": "시그니처 컬러풀 경험과 클래식한 포멀 스타일 사이를 전환하세요.",
-        "subtitleGeneric": "원하는 시각 스타일을 선택하세요.",
-        "names": {
-            "colorful": "컬러풀",
-            "formal": "포멀",
-            "vetpass": "VetPass"
-        }
-    },
-    "language": {
-        "select": "언어 선택",
-        "english": "English",
-        "spanish": "Español",
-        "german": "Deutsch",
-        "arabic": "العربية",
-        "french": "Français",
-        "korean": "한국어"
+    "links": {
+      "launchPad": "Apps",
+      "contacts": "Contacts",
+      "alerts": "Alerts",
+      "personalize": "Personalize",
+      "adminTools": "Admin Tools",
+      "wallet": "Wallet",
+      "passport": "Passport",
+      "aiTopics": "AI Sessions",
+      "aiInsights": "AI Insights",
+      "aiPathways": "AI Pathways",
+      "skills": "Skills",
+      "socialBadges": "Boosts",
+      "achievements": "Achievements",
+      "studies": "Studies",
+      "portfolio": "Portfolio",
+      "assistance": "Assistance",
+      "experiences": "Experiences",
+      "families": "Families",
+      "ids": "IDs",
+      "pathways": "Journeys"
     }
+  },
+  "passport": {
+    "buildMyLearnCard": {
+      "title": "Build My {{brand}}",
+      "progress": "{{percent}}% optimized",
+      "processing": "Processing documents…",
+      "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
+      "pendingReview": "{{count}} credential(s) ready for review"
+    },
+    "resumeBuilder": {
+      "title": "Resume Builder",
+      "subtitle": "Build your resume with {{brand}} credentials.",
+      "yourResume": "Your Resume",
+      "buildYourResume": "Build Your Resume",
+      "updatedToday": "Updated <0>today</0>",
+      "tagline": "Stand out with a tailored resume"
+    },
+    "explore": "Explore"
+  },
+  "launchpad": {
+    "title": "Apps",
+    "header": {
+      "contacts": "Contacts",
+      "aiSessions": "AI Sessions",
+      "alerts": "Alerts"
+    },
+    "tabs": {
+      "myApps": "My Apps",
+      "ai": "AI",
+      "learning": "Learning",
+      "games": "Games",
+      "tools": "Tools",
+      "employment": "Employment",
+      "credentials": "Credentials",
+      "other": "Other",
+      "plugins": "Plugins",
+      "all": "All"
+    },
+    "sections": {
+      "suggestedApps": "Suggested Apps",
+      "installedApps": "Installed Apps",
+      "allApps": "All Apps",
+      "allCategory": "All {{category}}"
+    },
+    "emptyStates": {
+      "noInstalledApps": "Your apps will live here",
+      "noAppsAvailable": "No apps available right now",
+      "nothingInCategory": "Nothing in {{category}} yet",
+      "installSomething": "Install something from the App Store to get started.",
+      "checkBackLater": "Check back later — new apps are added all the time.",
+      "checkBackSoon": "Check back soon, or browse all apps."
+    },
+    "aiDisabledMinor": "AI features are not available for users under 18.",
+    "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
+  },
+  "wallet": {
+    "categories": {
+      "aiSessions": "AI Sessions",
+      "aiPathways": "AI Pathways",
+      "aiInsights": "AI Insights",
+      "skills": "Skills",
+      "socialBadges": "Boosts",
+      "achievements": "Achievements",
+      "studies": "Studies",
+      "portfolio": "Portfolio",
+      "assistance": "Assistance",
+      "experiences": "Experiences",
+      "families": "Families",
+      "ids": "IDs"
+    }
+  },
+  "theme": {
+    "title": "Choose Your Theme",
+    "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
+    "subtitleGeneric": "Choose your preferred visual style.",
+    "names": {
+      "colorful": "Colorful",
+      "formal": "Formal",
+      "vetpass": "VetPass"
+    }
+  },
+  "language": {
+    "select": "Select language",
+    "english": "English",
+    "spanish": "Español",
+    "german": "Deutsch",
+    "arabic": "العربية",
+    "french": "Français",
+    "korean": "한국어"
+  },
+  "login": {
+    "welcome": {
+      "heading": "{{brand}}에 오신 것을 환영합니다",
+      "subtitle": "로그인하여 자격 증명, 성취도 등에 액세스하세요.",
+      "pills": {
+        "credentials": "자격 증명",
+        "achievements": "성취도",
+        "skills": "기술"
+      }
+    },
+    "sharedComputer": "공유 또는 공용 컴퓨터",
+    "signInFromAnotherDevice": "다른 기기에서 로그인",
+    "qrApproved": {
+      "heading": "모두 준비되었습니다!",
+      "withHint": "<0>{{hint}}</0>(으)로 로그인하여 계정에 액세스하세요.",
+      "noHint": "아래에서 로그인하여 계정에 액세스하세요.",
+      "continueButton": "로그인 계속하기"
+    },
+    "linkedBanner": {
+      "withHint": "<0>{{hint}}</0>(으)로 로그인하여 완료하세요",
+      "noHint": "기기 연결됨 — 로그인하여 완료하세요"
+    },
+    "installIntent": {
+      "banner": "로그인 후 <0>{{appName}}</0>(으)로 돌아갑니다"
+    },
+    "footer": {
+      "terms": "이용약관",
+      "privacy": "개인정보",
+      "learnMore": "더 알아보기",
+      "explorePathways": "경로 탐색",
+      "selfCustodialLogin": "자체 보관 로그인.",
+      "haveSeedPhrase": "자체 <0>시드 구문</0>이 있으신가요?"
+    },
+    "email": {
+      "placeholder": "이메일 주소",
+      "button": "이메일로 로그인",
+      "sendingCode": "코드 전송 중...",
+      "verification": {
+        "title": "인증 코드를 입력하거나 <0>다시 시작</0>하세요",
+        "verify": "확인",
+        "verifying": "확인 중...",
+        "error": "코드를 확인할 수 없습니다. 다시 시도해 주세요."
+      },
+      "password": {
+        "placeholder": "비밀번호",
+        "login": "로그인",
+        "create": "계정 만들기",
+        "existingAccount": "이미 계정이 있으신가요?",
+        "differentEmail": "다른 이메일 사용",
+        "staySignedIn": "로그인 상태 유지",
+        "agreeToTerms": "<0>이용약관</0>에 동의합니다"
+      },
+      "resend": "코드 재전송",
+      "resending": "코드 전송 중...",
+      "resendIn": "{{seconds}}초 후 재전송",
+      "error": {
+        "invalidEmail": "이메일이 누락되었거나 유효하지 않습니다",
+        "invalidCode": "유효하지 않은 코드"
+      }
+    },
+    "phone": {
+      "placeholder": "전화번호",
+      "button": "SMS로 로그인",
+      "loading": "로딩 중...",
+      "verification": {
+        "title": "인증 코드를 입력하거나 <0>다시 시작</0>하세요",
+        "verify": "확인",
+        "verifying": "확인 중..."
+      },
+      "password": {
+        "placeholder": "비밀번호",
+        "login": "로그인",
+        "create": "계정 만들기",
+        "existingAccount": "이미 계정이 있으신가요?",
+        "differentEmail": "다른 이메일 사용",
+        "staySignedIn": "로그인 상태 유지",
+        "agreeToTerms": "<0>이용약관</0>에 동의합니다"
+      },
+      "resend": "코드 재전송",
+      "resending": "코드 전송 중...",
+      "resendIn": "{{seconds}}초 후 재전송",
+      "smsSent": "인증 코드가 전송되었습니다",
+      "error": {
+        "invalidPhone": "전화번호가 필요합니다!",
+        "invalidCode": "유효하지 않은 코드"
+      }
+    },
+    "social": {
+      "or": "또는"
+    },
+    "seedPhrase": {
+      "title": "시드 구문을 사용하여 패스포트 가져오기",
+      "description": "기존 {{brand}} 패스포트에 다시 액세스하려면 아래에 <0>64자 시드</0> 또는 <2>단어 구문 시드</2>를 입력하세요.",
+      "advancedOption": "이것은 패스포트 생성 중에 이미 시드를 저장한 사용자를 위한 고급 옵션입니다. 시드가 없으면 돌아가서 <0>새 패스포트 만들기</0>를 대신 선택해야 합니다.",
+      "placeholder": "시드 구문 또는 키를 여기에 붙여넣으세요...",
+      "important": {
+        "heading": "중요!",
+        "rule1": "시드를 안전하게 오프라인으로 보관하세요.",
+        "rule2": "절대 다른 사람과 공유하지 마세요.",
+        "rule3": "다른 사람이 시드를 가지고 있으면 패스포트를 제어할 수 있습니다."
+      },
+      "back": "뒤로",
+      "import": "패스포트 가져오기",
+      "error": {
+        "invalidChars": "시드는 숫자와 문자(a–f)만 포함해야 합니다.",
+        "tooShort": "시드 구문은 64자여야 합니다.",
+        "generic": "문제가 발생했습니다. 다시 시도해 주세요."
+      }
+    },
+    "loader": {
+      "messages": {
+        "0": "자격 증명이 곧 도착합니다!",
+        "1": "마법의 자격 증명 지팡이를 흔드는 중!",
+        "2": "배지의 광채를 가져오는 중!",
+        "3": "비밀 별가루 잠금 해제 중!",
+        "4": "디지털 즐거움을 준비하는 중!",
+        "5": "자격 증명 초능력 소환 중!",
+        "6": "디지털 보물이 가까이 있습니다!",
+        "7": "배지 보물창고 준비 중!",
+        "8": "자격 증명을 화려하게 로딩 중!",
+        "9": "자격 증명의 불꽃을 준비하세요!"
+      }
+    },
+    "logout": "로그아웃 중..."
+  },
+  "onboarding": {
+    "selectRole": {
+      "header": "자신을 가장 잘 설명하는 것을 선택하세요!"
+    },
+    "profile": {
+      "header": "시작하려면 프로필을 설정하세요!",
+      "imA": "저는 ",
+      "selectRole": "역할 선택",
+      "fullName": "전체 이름",
+      "dateOfBirth": "생년월일",
+      "age": "나이: {{age}}",
+      "countryOfResidence": "거주 국가",
+      "userId": {
+        "placeholder": "사용자 ID",
+        "charLength": "3~25자 사이여야 합니다.",
+        "format": "문자, 숫자 및 대시(-)만 사용 가능합니다."
+      },
+      "privacyNotice": "개인정보 보호법을 준수하고 안전을 보장하기 위해 연령과 국가를 요청합니다.",
+      "joiningNetwork": "네트워크 참여 중...",
+      "installBanner": "계정을 만든 후 <0>{{appName}}</0>을(를) 설치할 수 있습니다",
+      "error": {
+        "nameRequired": "이름이 필요합니다.",
+        "countryRequired": "국가가 필요합니다.",
+        "createFailed": "프로필을 만드는 중 오류가 발생했습니다",
+        "generic": "프로필을 만들 수 없습니다. 지금도 부모 동의를 요청할 수 있습니다. 나중에 프로필 설정을 다시 시도해 주세요.",
+        "firebase": "Firebase 오류 발생: {{error}}"
+      }
+    },
+    "welcome": "환영합니다",
+    "continue": "계속",
+    "back": "뒤로",
+    "skipForNow": "지금은 건너뛰기",
+    "close": "닫기",
+    "save": "저장",
+    "role": {
+      "learner": {
+        "title": "학습자",
+        "description": "프로필을 구축하고 진행 상황을 추적하는 학생입니다."
+      },
+      "guardian": {
+        "title": "보호자",
+        "description": "학습자를 지원하는 부모 또는 보호자입니다."
+      },
+      "teacher": {
+        "title": "교사",
+        "description": "학습자와 직접 일하는 교육자입니다."
+      },
+      "admin": {
+        "title": "관리자",
+        "description": "조직의 시스템, 데이터 또는 사용자 액세스를 관리합니다."
+      },
+      "counselor": {
+        "title": "진로 상담사",
+        "description": "학습자의 교육 또는 진로 경로 계획을 지원합니다."
+      },
+      "developer": {
+        "title": "개발자",
+        "description": "조직의 시스템, 데이터 및 기술을 관리합니다."
+      }
+    },
+    "consent": {
+      "underage": {
+        "heading": "성인에게 문의하세요",
+        "description": "참여하려면 부모 또는 보호자가 가족 계정에 추가해야 합니다.",
+        "schoolCode": {
+          "heading": "학교 코드 입력",
+          "description": "부모 계정 없이 참여하려면 학교에서 제공한 특별 코드를 입력하세요.",
+          "cta": "학교 코드가 있나요?",
+          "placeholder": "코드 입력",
+          "verify": "확인",
+          "error": "유효하지 않은 학교 코드입니다. 다시 시도해 주세요."
+        },
+        "adultButton": "저는 성인입니다",
+        "or": "또는",
+        "loggingOut": {
+          "heading": "로그아웃 중...",
+          "description": "부모 또는 보호자가 로그인하여 가족 계정을 만들도록 요청하세요."
+        },
+        "addChild": {
+          "heading": "{{brand}}에 자녀를 추가하세요!",
+          "description": "로그인 또는 가입하여 가족 계정 내에서 프로필을 만드세요."
+        }
+      },
+      "eu": {
+        "heading": "부모 동의 필요",
+        "description": "부모의 이메일을 입력하여 동의 요청을 보내주세요.",
+        "placeholder": "부모님 이메일",
+        "sendRequest": "요청 보내기",
+        "sending": "전송 중...",
+        "sent": {
+          "heading": "요청 전송됨",
+          "description": "<0>{{email}}</0>님께 동의 요청을 보냈습니다. 승인되면 알려드리겠습니다."
+        },
+        "done": "완료",
+        "error": {
+          "invalidEmail": "유효한 이메일을 입력하세요.",
+          "sendFailed": "동의 요청을 보내지 못했습니다. 다시 시도해 주세요."
+        }
+      },
+      "us": {
+        "heading": "동의 안내",
+        "description": "학습 진행 상황과 자격 증명을 수집합니다. 이는 귀하, 교사 또는 인증된 조직과 공유될 수 있습니다."
+      },
+      "parentInvite": {
+        "heading": "부모님을 {{brand}}에 초대하세요!",
+        "description": "<0>초대 공유</0> 버튼을 클릭하거나 이메일을 입력하고 <1>초대 보내기</1> 버튼을 클릭하세요.",
+        "shareInvite": "초대 공유",
+        "sendInvite": "초대 보내기",
+        "placeholder": "email@email.com",
+        "or": "또는"
+      }
+    },
+    "guardianLinked": {
+      "heading": "모두 설정되었습니다!",
+      "description": "이제 <0>{{name}}</0>의 자격 증명을 관리할 수 있습니다. 향후 승인은 앱에서 직접 표시됩니다.",
+      "gotIt": "확인했습니다"
+    },
+    "slides": {
+      "next": "다음",
+      "getStarted": "시작하기",
+      "learner": {
+        "slide1": {
+          "bold": "캡처",
+          "regular": "어디서든 학습을 캡처하세요",
+          "over13": "학습 및 업무 경험"
+        },
+        "slide2": {
+          "bold": "수집",
+          "regular": "교육 경험을 패스포트에 수집하세요"
+        },
+        "slide3": {
+          "bold": "학습",
+          "regular": "기술 및 경험에 대해 알아보세요"
+        },
+        "slide4": {
+          "bold": "레벨업",
+          "regular": "성장하는 AI 튜터로 학습을 향상시키세요"
+        }
+      },
+      "guardian": {
+        "slide1": {
+          "bold": "자녀 안내",
+          "regular": "학습 경험을 통해"
+        },
+        "slide2": {
+          "bold": "보호",
+          "regular": "동의 기반의 안전한 데이터 도구로 자녀의 개인정보 보호"
+        },
+        "slide3": {
+          "bold": "향상",
+          "regular": "AI 튜터와 학습 앱으로 자녀의 학습 향상"
+        },
+        "slide4": {
+          "bold": "통찰력 확보",
+          "regular": "자녀의 학습 여정에 대한 통찰력"
+        }
+      },
+      "teacher": {
+        "slide1": {
+          "bold": "모든 학생과 학습 데이터 정리",
+          "regular": "하나의 대시보드에서"
+        },
+        "slide2": {
+          "bold": "맞춤형 자격 증명",
+          "regular": "생성 및 관리"
+        },
+        "slide3": {
+          "bold": "수여",
+          "regular": "학습 경험에 대한 실제 증명을 학습자에게"
+        },
+        "slide4": {
+          "bold": "평가",
+          "regular": "학생의 진행 상황을 실시간으로"
+        }
+      },
+      "admin": {
+        "slide1": {
+          "bold": "생성",
+          "regular": "기술 프레임워크 및 자격 증명"
+        },
+        "slide2": {
+          "bold": "정리",
+          "regular": "학습자, 교사 및 학습 경험"
+        },
+        "slide3": {
+          "bold": "배포",
+          "regular": "사용하기 쉬운 앱으로 학습 자료 배포"
+        },
+        "slide4": {
+          "bold": "관리",
+          "regular": "데이터 공유 등을 위한 고급 도구"
+        }
+      },
+      "developer": {
+        "slide1": {
+          "bold": "구성",
+          "regular": "발급자, 동의 프로토콜 및 연결된 시스템"
+        },
+        "slide2": {
+          "bold": "통합",
+          "regular": "학교, 애플리케이션 및 데이터 소스와"
+        },
+        "slide3": {
+          "bold": "관리",
+          "regular": "엔드투엔드 데이터 흐름"
+        },
+        "slide4": {
+          "bold": "설계",
+          "regular": "맞춤형 모듈식 사용자 경험"
+        }
+      }
+    },
+    "country": {
+      "search": "국가 검색",
+      "title": "국가 선택"
+    }
+  }
 }

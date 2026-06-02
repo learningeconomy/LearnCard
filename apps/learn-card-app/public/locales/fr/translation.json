@@ -1,126 +1,468 @@
 {
-    "sidemenu": {
-        "addTo": "Ajouter à {{brand}}",
-        "newAiSession": "Nouvelle session IA",
-        "footer": {
-            "poweredBy": "Propulsé par <0>Consent Flow</0>",
-            "ownYourData": "Vos données vous appartiennent.",
-            "connectionsEncrypted": "Toutes les connexions sont <0>chiffrées.</0>",
-            "privacyPolicy": "Politique de confidentialité",
-            "termsOfService": "Conditions d'utilisation",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "Fermer"
-        },
-        "links": {
-            "launchPad": "Applications",
-            "contacts": "Contacts",
-            "alerts": "Alertes",
-            "personalize": "Personnaliser",
-            "adminTools": "Outils admin",
-            "wallet": "Portefeuille",
-            "passport": "Passeport",
-            "aiTopics": "Sessions IA",
-            "aiInsights": "Analyses IA",
-            "aiPathways": "Parcours IA",
-            "skills": "Compétences",
-            "socialBadges": "Boosts",
-            "achievements": "Réussites",
-            "studies": "Études",
-            "portfolio": "Portfolio",
-            "assistance": "Assistance",
-            "experiences": "Expériences",
-            "families": "Familles",
-            "ids": "Pièces d'identité",
-            "pathways": "Parcours"
-        }
+  "sidemenu": {
+    "addTo": "Add to {{brand}}",
+    "newAiSession": "New AI Session",
+    "footer": {
+      "poweredBy": "Powered by <0>Consent Flow</0>",
+      "ownYourData": "You own your own data.",
+      "connectionsEncrypted": "All connections are <0>encrypted.</0>",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "copyright": "© {{year}} Learning Economy",
+      "close": "Close"
     },
-    "passport": {
-        "buildMyLearnCard": {
-            "title": "Construire mon {{brand}}",
-            "progress": "{{percent}} % optimisé",
-            "processing": "Traitement des documents…",
-            "stepsCompleted": "<0>{{completed}}</0> sur <1>{{total}}</1> étapes terminées",
-            "pendingReview": "{{count}} justificatif(s) prêt(s) à être examiné(s)"
-        },
-        "resumeBuilder": {
-            "title": "Créateur de CV",
-            "subtitle": "Créez votre CV avec vos justificatifs {{brand}}.",
-            "yourResume": "Votre CV",
-            "buildYourResume": "Créer votre CV",
-            "updatedToday": "Mis à jour <0>aujourd'hui</0>",
-            "tagline": "Démarquez-vous avec un CV personnalisé"
-        },
-        "explore": "Explorer"
-    },
-    "launchpad": {
-        "title": "Applications",
-        "header": {
-            "contacts": "Contacts",
-            "aiSessions": "Sessions IA",
-            "alerts": "Alertes"
-        },
-        "tabs": {
-            "myApps": "Mes applis",
-            "ai": "IA",
-            "learning": "Apprentissage",
-            "games": "Jeux",
-            "tools": "Outils",
-            "employment": "Emploi",
-            "credentials": "Justificatifs",
-            "other": "Autres",
-            "plugins": "Extensions",
-            "all": "Tout"
-        },
-        "sections": {
-            "suggestedApps": "Applications suggérées",
-            "installedApps": "Applications installées",
-            "allApps": "Toutes les applications",
-            "allCategory": "Tout {{category}}"
-        },
-        "emptyStates": {
-            "noInstalledApps": "Vos applications s'afficheront ici",
-            "noAppsAvailable": "Aucune application disponible pour le moment",
-            "nothingInCategory": "Rien dans {{category}} pour l'instant",
-            "installSomething": "Installez quelque chose depuis l'App Store pour commencer.",
-            "checkBackLater": "Revenez plus tard — de nouvelles applications sont ajoutées régulièrement.",
-            "checkBackSoon": "Revenez bientôt, ou parcourez toutes les applications."
-        },
-        "aiDisabledMinor": "Les fonctionnalités IA ne sont pas disponibles pour les utilisateurs de moins de 18 ans.",
-        "aiDisabledPrivacy": "Les fonctionnalités IA sont actuellement désactivées. Vous pouvez les activer dans Confidentialité et données depuis votre profil."
-    },
-    "wallet": {
-        "categories": {
-            "aiSessions": "Sessions IA",
-            "aiPathways": "Parcours IA",
-            "aiInsights": "Analyses IA",
-            "skills": "Compétences",
-            "socialBadges": "Boosts",
-            "achievements": "Réussites",
-            "studies": "Études",
-            "portfolio": "Portfolio",
-            "assistance": "Assistance",
-            "experiences": "Expériences",
-            "families": "Familles",
-            "ids": "Pièces d'identité"
-        }
-    },
-    "theme": {
-        "title": "Choisir votre thème",
-        "subtitleColorfulFormal": "Basculez entre notre expérience colorée caractéristique et un style classique et formel.",
-        "subtitleGeneric": "Choisissez votre style visuel préféré.",
-        "names": {
-            "colorful": "Coloré",
-            "formal": "Formel",
-            "vetpass": "VetPass"
-        }
-    },
-    "language": {
-        "select": "Choisir une langue",
-        "english": "English",
-        "spanish": "Español",
-        "german": "Deutsch",
-        "arabic": "العربية",
-        "french": "Français",
-        "korean": "한국어"
+    "links": {
+      "launchPad": "Apps",
+      "contacts": "Contacts",
+      "alerts": "Alerts",
+      "personalize": "Personalize",
+      "adminTools": "Admin Tools",
+      "wallet": "Wallet",
+      "passport": "Passport",
+      "aiTopics": "AI Sessions",
+      "aiInsights": "AI Insights",
+      "aiPathways": "AI Pathways",
+      "skills": "Skills",
+      "socialBadges": "Boosts",
+      "achievements": "Achievements",
+      "studies": "Studies",
+      "portfolio": "Portfolio",
+      "assistance": "Assistance",
+      "experiences": "Experiences",
+      "families": "Families",
+      "ids": "IDs",
+      "pathways": "Journeys"
     }
+  },
+  "passport": {
+    "buildMyLearnCard": {
+      "title": "Build My {{brand}}",
+      "progress": "{{percent}}% optimized",
+      "processing": "Processing documents…",
+      "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
+      "pendingReview": "{{count}} credential(s) ready for review"
+    },
+    "resumeBuilder": {
+      "title": "Resume Builder",
+      "subtitle": "Build your resume with {{brand}} credentials.",
+      "yourResume": "Your Resume",
+      "buildYourResume": "Build Your Resume",
+      "updatedToday": "Updated <0>today</0>",
+      "tagline": "Stand out with a tailored resume"
+    },
+    "explore": "Explore"
+  },
+  "launchpad": {
+    "title": "Apps",
+    "header": {
+      "contacts": "Contacts",
+      "aiSessions": "AI Sessions",
+      "alerts": "Alerts"
+    },
+    "tabs": {
+      "myApps": "My Apps",
+      "ai": "AI",
+      "learning": "Learning",
+      "games": "Games",
+      "tools": "Tools",
+      "employment": "Employment",
+      "credentials": "Credentials",
+      "other": "Other",
+      "plugins": "Plugins",
+      "all": "All"
+    },
+    "sections": {
+      "suggestedApps": "Suggested Apps",
+      "installedApps": "Installed Apps",
+      "allApps": "All Apps",
+      "allCategory": "All {{category}}"
+    },
+    "emptyStates": {
+      "noInstalledApps": "Your apps will live here",
+      "noAppsAvailable": "No apps available right now",
+      "nothingInCategory": "Nothing in {{category}} yet",
+      "installSomething": "Install something from the App Store to get started.",
+      "checkBackLater": "Check back later — new apps are added all the time.",
+      "checkBackSoon": "Check back soon, or browse all apps."
+    },
+    "aiDisabledMinor": "AI features are not available for users under 18.",
+    "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
+  },
+  "wallet": {
+    "categories": {
+      "aiSessions": "AI Sessions",
+      "aiPathways": "AI Pathways",
+      "aiInsights": "AI Insights",
+      "skills": "Skills",
+      "socialBadges": "Boosts",
+      "achievements": "Achievements",
+      "studies": "Studies",
+      "portfolio": "Portfolio",
+      "assistance": "Assistance",
+      "experiences": "Experiences",
+      "families": "Families",
+      "ids": "IDs"
+    }
+  },
+  "theme": {
+    "title": "Choose Your Theme",
+    "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
+    "subtitleGeneric": "Choose your preferred visual style.",
+    "names": {
+      "colorful": "Colorful",
+      "formal": "Formal",
+      "vetpass": "VetPass"
+    }
+  },
+  "language": {
+    "select": "Select language",
+    "english": "English",
+    "spanish": "Español",
+    "german": "Deutsch",
+    "arabic": "العربية",
+    "french": "Français",
+    "korean": "한국어"
+  },
+  "login": {
+    "welcome": {
+      "heading": "Bienvenue sur {{brand}}",
+      "subtitle": "Connectez-vous pour accéder à vos certifications, réalisations et plus.",
+      "pills": {
+        "credentials": "Certifications",
+        "achievements": "Réalisations",
+        "skills": "Compétences"
+      }
+    },
+    "sharedComputer": "Ordinateur partagé ou public",
+    "signInFromAnotherDevice": "Se connecter depuis un autre appareil",
+    "qrApproved": {
+      "heading": "Vous êtes prêt !",
+      "withHint": "Connectez-vous avec <0>{{hint}}</0> pour accéder à votre compte.",
+      "noHint": "Connectez-vous ci-dessous pour accéder à votre compte.",
+      "continueButton": "Continuer vers la connexion"
+    },
+    "linkedBanner": {
+      "withHint": "Connectez-vous avec <0>{{hint}}</0> pour terminer",
+      "noHint": "Appareil lié — connectez-vous pour terminer"
+    },
+    "installIntent": {
+      "banner": "Vous serez redirigé vers <0>{{appName}}</0> après la connexion"
+    },
+    "footer": {
+      "terms": "Conditions",
+      "privacy": "Confidentialité",
+      "learnMore": "En savoir plus",
+      "explorePathways": "Explorer les parcours",
+      "selfCustodialLogin": "Connexion auto-hébergée.",
+      "haveSeedPhrase": "Vous avez votre propre <0>phrase de récupération</0> ?"
+    },
+    "email": {
+      "placeholder": "Adresse e-mail",
+      "button": "Se connecter par e-mail",
+      "sendingCode": "Envoi du code...",
+      "verification": {
+        "title": "Saisissez le code de vérification ou <0>recommencez</0>",
+        "verify": "Vérifier",
+        "verifying": "Vérification...",
+        "error": "Impossible de vérifier le code. Veuillez réessayer."
+      },
+      "password": {
+        "placeholder": "Mot de passe",
+        "login": "Connexion",
+        "create": "Créer un compte",
+        "existingAccount": "Vous avez déjà un compte ?",
+        "differentEmail": "Utiliser une autre adresse e-mail",
+        "staySignedIn": "Rester connecté",
+        "agreeToTerms": "J'accepte les <0>Conditions</0>"
+      },
+      "resend": "Renvoyer le code",
+      "resending": "Envoi du code...",
+      "resendIn": "Renvoyer dans {{seconds}}s",
+      "error": {
+        "invalidEmail": "E-mail manquant ou invalide",
+        "invalidCode": "Code invalide"
+      }
+    },
+    "phone": {
+      "placeholder": "Numéro de téléphone",
+      "button": "Se connecter par SMS",
+      "loading": "Chargement...",
+      "verification": {
+        "title": "Saisissez le code de vérification ou <0>recommencez</0>",
+        "verify": "Vérifier",
+        "verifying": "Vérification..."
+      },
+      "password": {
+        "placeholder": "Mot de passe",
+        "login": "Connexion",
+        "create": "Créer un compte",
+        "existingAccount": "Vous avez déjà un compte ?",
+        "differentEmail": "Utiliser une autre adresse e-mail",
+        "staySignedIn": "Rester connecté",
+        "agreeToTerms": "J'accepte les <0>Conditions</0>"
+      },
+      "resend": "Renvoyer le code",
+      "resending": "Envoi du code...",
+      "resendIn": "Renvoyer dans {{seconds}}s",
+      "smsSent": "Un code de vérification a été envoyé",
+      "error": {
+        "invalidPhone": "Le numéro de téléphone est requis !",
+        "invalidCode": "Code invalide"
+      }
+    },
+    "social": {
+      "or": "OU"
+    },
+    "seedPhrase": {
+      "title": "Utiliser une phrase de récupération pour importer votre passeport",
+      "description": "Saisissez votre <0>phrase de 64 caractères</0> ou <2>phrase de mots</2> ci-dessous pour retrouver l'accès à un passeport {{brand}} existant.",
+      "advancedOption": "Ceci est une option avancée pour les utilisateurs ayant déjà sauvegardé leur phrase lors de la création du passeport. Si vous n'avez pas de phrase, vous devrez revenir en arrière et <0>créer un nouveau passeport</0>.",
+      "placeholder": "Collez votre phrase de récupération ou clé ici...",
+      "important": {
+        "heading": "Important !",
+        "rule1": "Conservez votre phrase en lieu sûr et hors ligne.",
+        "rule2": "Ne la partagez jamais avec quiconque.",
+        "rule3": "Si quelqu'un d'autre a votre phrase, il peut contrôler votre passeport."
+      },
+      "back": "Retour",
+      "import": "Importer le passeport",
+      "error": {
+        "invalidChars": "La phrase ne doit contenir que des chiffres et des lettres (a–f).",
+        "tooShort": "La phrase de récupération doit comporter 64 caractères.",
+        "generic": "Une erreur est survenue. Veuillez réessayer."
+      }
+    },
+    "loader": {
+      "messages": {
+        "0": "Vos certifications arrivent !",
+        "1": "Agitation de la baguette magique !",
+        "2": "Récupération de l'éclat de vos badges !",
+        "3": "Déverrouillage de votre poussière d'étoile secrète !",
+        "4": "Préparation de vos délices numériques !",
+        "5": "Invocation de vos super-pouvoirs de certification !",
+        "6": "Votre trésor numérique est proche !",
+        "7": "Préparation de votre collection de badges !",
+        "8": "Chargement des certifications avec panache !",
+        "9": "Préparez-vous pour l'étincelle des certifications !"
+      }
+    },
+    "logout": "Déconnexion..."
+  },
+  "onboarding": {
+    "selectRole": {
+      "header": "Sélectionnez ce qui vous décrit le mieux !"
+    },
+    "profile": {
+      "header": "Configurez votre profil pour commencer !",
+      "imA": "Je suis ",
+      "selectRole": "Sélectionner le rôle",
+      "fullName": "Nom complet",
+      "dateOfBirth": "Date de naissance",
+      "age": "Âge : {{age}}",
+      "countryOfResidence": "Pays de résidence",
+      "userId": {
+        "placeholder": "Identifiant",
+        "charLength": "Doit contenir entre 3 et 25 caractères.",
+        "format": "Lettres, chiffres et tirets (-) uniquement."
+      },
+      "privacyNotice": "Nous demandons votre âge et votre pays pour respecter les lois sur la confidentialité et vous protéger.",
+      "joiningNetwork": "Connexion au réseau...",
+      "installBanner": "Après avoir créé votre compte, vous pourrez installer <0>{{appName}}</0>",
+      "error": {
+        "nameRequired": "Le nom est requis.",
+        "countryRequired": "Le pays est requis.",
+        "createFailed": "Une erreur est survenue lors de la création de votre profil",
+        "generic": "Impossible de créer votre profil. Vous pouvez toujours demander le consentement parental maintenant. Veuillez réessayer la configuration du profil plus tard.",
+        "firebase": "Une erreur Firebase est survenue : {{error}}"
+      }
+    },
+    "welcome": "Bienvenue sur",
+    "continue": "Continuer",
+    "back": "Retour",
+    "skipForNow": "Passer pour l'instant",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "role": {
+      "learner": {
+        "title": "Apprenant",
+        "description": "Je suis un étudiant qui construit son profil et suit sa progression."
+      },
+      "guardian": {
+        "title": "Tuteur",
+        "description": "Je suis un parent ou tuteur qui soutient un apprenant."
+      },
+      "teacher": {
+        "title": "Enseignant",
+        "description": "Je suis un éducateur travaillant directement avec des apprenants."
+      },
+      "admin": {
+        "title": "Administrateur",
+        "description": "Je gère les systèmes, les données ou les accès utilisateurs pour mon organisation."
+      },
+      "counselor": {
+        "title": "Conseiller d'orientation",
+        "description": "Je soutiens les apprenants dans la planification de leurs parcours éducatifs ou professionnels."
+      },
+      "developer": {
+        "title": "Développeur",
+        "description": "Je gère les systèmes, les données et la technologie pour mon organisation."
+      }
+    },
+    "consent": {
+      "underage": {
+        "heading": "Trouvez un adulte",
+        "description": "Vous aurez besoin qu'un parent ou tuteur vous ajoute à un compte familial avant de pouvoir rejoindre.",
+        "schoolCode": {
+          "heading": "Saisir le code école",
+          "description": "Pour rejoindre sans compte parent, veuillez saisir le code spécial fourni par votre école.",
+          "cta": "Vous avez un code école ?",
+          "placeholder": "Saisir le code",
+          "verify": "Vérifier",
+          "error": "Code école invalide. Veuillez réessayer."
+        },
+        "adultButton": "Je suis adulte",
+        "or": "Ou",
+        "loggingOut": {
+          "heading": "Déconnexion...",
+          "description": "Veuillez demander à un parent ou tuteur de se connecter et de créer un compte familial."
+        },
+        "addChild": {
+          "heading": "Ajoutez votre enfant à {{brand}} !",
+          "description": "Connectez-vous ou inscrivez-vous pour créer votre profil au sein d'un compte familial."
+        }
+      },
+      "eu": {
+        "heading": "Consentement parental requis",
+        "description": "Veuillez saisir l'e-mail de votre parent pour que nous puissions lui envoyer une demande de consentement.",
+        "placeholder": "E-mail du parent",
+        "sendRequest": "Envoyer la demande",
+        "sending": "Envoi en cours...",
+        "sent": {
+          "heading": "Demande envoyée",
+          "description": "Nous avons envoyé une demande de consentement à <0>{{email}}</0>. Nous vous informerons dès qu'elle sera approuvée."
+        },
+        "done": "Terminé",
+        "error": {
+          "invalidEmail": "Veuillez saisir un e-mail valide.",
+          "sendFailed": "Échec de l'envoi de la demande. Veuillez réessayer."
+        }
+      },
+      "us": {
+        "heading": "Avis de consentement",
+        "description": "Nous collectons les progrès d'apprentissage et les certifications. Ceux-ci peuvent être partagés avec vous, vos enseignants ou des organisations vérifiées."
+      },
+      "parentInvite": {
+        "heading": "Invitez votre parent à rejoindre {{brand}} !",
+        "description": "Cliquez sur <0>Partager l'invitation</0> ou saisissez son e-mail et cliquez sur <1>Envoyer l'invitation</1>.",
+        "shareInvite": "Partager l'invitation",
+        "sendInvite": "Envoyer l'invitation",
+        "placeholder": "email@email.com",
+        "or": "ou"
+      }
+    },
+    "guardianLinked": {
+      "heading": "Tout est configuré !",
+      "description": "Vous pouvez maintenant gérer les certifications pour <0>{{name}}</0>. Les approbations futures apparaîtront directement dans l'application.",
+      "gotIt": "Compris"
+    },
+    "slides": {
+      "next": "Suivant",
+      "getStarted": "Commencer",
+      "learner": {
+        "slide1": {
+          "bold": "Capturez",
+          "regular": "votre apprentissage où qu'il se produise",
+          "over13": "vos expériences d'apprentissage et de travail"
+        },
+        "slide2": {
+          "bold": "Collectionnez",
+          "regular": "vos expériences éducatives dans votre Passeport"
+        },
+        "slide3": {
+          "bold": "Apprenez",
+          "regular": "sur vos Compétences et Expériences"
+        },
+        "slide4": {
+          "bold": "Progressez",
+          "regular": "dans votre apprentissage avec une suite croissante de Tuteurs IA"
+        }
+      },
+      "guardian": {
+        "slide1": {
+          "bold": "Guide your child",
+          "regular": "through learning experiences"
+        },
+        "slide2": {
+          "bold": "Protégez",
+          "regular": "la vie privée de votre enfant avec des outils de données sécurisés basés sur le consentement"
+        },
+        "slide3": {
+          "bold": "Améliorez",
+          "regular": "l'apprentissage de votre enfant avec des tuteurs IA et des applications éducatives"
+        },
+        "slide4": {
+          "bold": "Obtenez des informations",
+          "regular": "sur le parcours d'apprentissage de votre enfant"
+        }
+      },
+      "teacher": {
+        "slide1": {
+          "bold": "Organisez tous vos élèves et données",
+          "regular": "dans un seul tableau de bord"
+        },
+        "slide2": {
+          "bold": "Créez et gérez",
+          "regular": "des certifications personnalisées"
+        },
+        "slide3": {
+          "bold": "Attribuez",
+          "regular": "aux apprenants une preuve réelle des expériences d'apprentissage"
+        },
+        "slide4": {
+          "bold": "Évaluez",
+          "regular": "les progrès de vos élèves en temps réel"
+        }
+      },
+      "admin": {
+        "slide1": {
+          "bold": "Créez",
+          "regular": "des référentiels de compétences et des certifications"
+        },
+        "slide2": {
+          "bold": "Organisez",
+          "regular": "vos apprenants, enseignants et expériences d'apprentissage"
+        },
+        "slide3": {
+          "bold": "Distribuez",
+          "regular": "vos supports d'apprentissage dans une application facile à utiliser"
+        },
+        "slide4": {
+          "bold": "Gérez",
+          "regular": "des outils avancés pour le partage de données et plus"
+        }
+      },
+      "developer": {
+        "slide1": {
+          "bold": "Configurez",
+          "regular": "les émetteurs, protocoles de consentement et systèmes connectés"
+        },
+        "slide2": {
+          "bold": "Intégrez",
+          "regular": "avec les écoles, applications et sources de données"
+        },
+        "slide3": {
+          "bold": "Gérez",
+          "regular": "votre flux de données de bout en bout"
+        },
+        "slide4": {
+          "bold": "Concevez",
+          "regular": "des expériences utilisateur modulaires et personnalisées"
+        }
+      }
+    },
+    "country": {
+      "search": "Rechercher des pays",
+      "title": "Sélectionner le pays"
+    }
+  }
 }
