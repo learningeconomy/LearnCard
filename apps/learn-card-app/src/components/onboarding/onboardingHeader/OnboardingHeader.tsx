@@ -1,12 +1,12 @@
 import React from 'react';
-import * as m from '../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
 import { BrandingEnum } from 'learn-card-base';
 
 const OnboardingHeader: React.FC<{ text: string; hideTitle?: boolean }> = ({ text, hideTitle }) => {
-        return (
+    return (
         <div className="flex flex-col gap-[20px]">
             {!hideTitle && (
                 <div className="flex w-full items-center justify-center">

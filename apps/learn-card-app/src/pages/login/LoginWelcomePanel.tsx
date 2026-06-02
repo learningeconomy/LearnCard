@@ -1,5 +1,5 @@
 import React from 'react';
-import * as m from '../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -16,7 +16,7 @@ const pillKeyMap: Record<string, string> = {
 };
 
 const LoginWelcomePanel: React.FC = () => {
-        const brandingConfig = useBrandingConfig();
+    const brandingConfig = useBrandingConfig();
     const { brandMarkLight, fullLogoDark } = useTenantBrandingAssets();
     const { theme } = useTheme();
 

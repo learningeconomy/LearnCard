@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import * as m from '../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
@@ -9,7 +9,7 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
 export const LogoutLoadingPage: React.FC = () => {
-        const { textLogo } = useTenantBrandingAssets();
+    const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;
     const [currentColorIndex, setCurrentColorIndex] = useState(0);

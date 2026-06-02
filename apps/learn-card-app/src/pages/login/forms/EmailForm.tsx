@@ -78,7 +78,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
-        const { theme } = useTheme();
+    const { theme } = useTheme();
     const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
     const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
 
@@ -365,11 +365,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         if (isLoading) buttonTitle = m['login.email.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
-        formTitle = (
-            {renderParts(m['login.email.verification.title'].parts({}), {})},
-                ]}
-            />
-        );
+        formTitle = m['login.email.verification.title']();
         activeStep = (
             <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
@@ -429,8 +425,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        {renderParts(m['login.email.password.agreeToTerms'].parts({}), {})}]}
-                        />
+                        {m['login.email.password.agreeToTerms']()}
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>

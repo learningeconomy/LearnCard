@@ -20,7 +20,7 @@ export type ParentInviteModalProps = {
 };
 
 const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal }) => {
-        const { initWallet } = useWallet();
+    const { initWallet } = useWallet();
     const brandingConfig = useBrandingConfig();
 
     const { presentToast } = useToast();
@@ -43,10 +43,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             }&profileId=${generated?.profileId}`;
             setInviteLink(_inviteLink);
         } catch (e) {
-            presentToast('Failed to generate invite link', {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
+            presentToasm['Failed to generate invite link']();
         } finally {
             setLoading(false);
         }
@@ -59,14 +56,9 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
     const copyInviteLinkToClipboard = async () => {
         try {
             await Clipboard.write({ string: inviteLink });
-            presentToast('Invite link copied to clipboard', {
-                hasDismissButton: true,
-            });
+            presentToasm['Invite link copied to clipboard']();
         } catch (e) {
-            presentToast('Unable to copy Invite link', {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
+            presentToasm['Unable to copy Invite link']();
         }
     };
 
@@ -87,10 +79,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
     const handleSendEmailInvite = async () => {
         if (!inviteLink) return;
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            presentToast('Please enter a valid email', {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
+            presentToasm['Please enter a valid email']();
             return;
         }
 
@@ -112,8 +101,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                     {m['onboarding.consent.parentInvite.heading']({ brand: brandingConfig?.name })}
                 </h2>
                 <p className="text-grayscale-700 text-[15px] leading-[22px] px-[10px]">
-                    {renderParts(m['onboarding.consent.parentInvite.description'].parts({}), {})}, <span className="font-semibold" key="e" />]}
-                    />
+                    {m['onboarding.consent.parentInvite.description']()}
                 </p>
 
                 <div className="w-full flex items-center justify-center mt-4 px-2">

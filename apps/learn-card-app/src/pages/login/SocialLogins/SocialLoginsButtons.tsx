@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as m from '../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 import { IonCol, IonRow } from '@ionic/react';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
@@ -35,8 +35,7 @@ export const SocialLoginsButtons: React.FC<{
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
     const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
-
-        const socialLogins = useSocialLogins(branding);
+    const socialLogins = useSocialLogins(branding);
 
     const handleActiveLoginType = () => {
         if (activeLoginType === LoginTypesEnum.phone) {

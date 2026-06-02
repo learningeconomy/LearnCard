@@ -18,7 +18,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     hideSelfCustodialLogin = false,
 }) => {
-        const history = useHistory();
+    const history = useHistory();
     const links = useTenantLinks();
 
     const { newModal } = useModal({
@@ -94,9 +94,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                             {m['login.footer.selfCustodialLogin']()}
                         </p>
                         <p className="text-white/80 text-sm">
-                            {renderParts(m['login.footer.haveSeedPhrase'].parts({}), {})},
-                                ]}
-                            />
+                            {m['login.footer.haveSeedPhrase']()}
                         </p>
                     </IonCol>
                 )}

@@ -14,7 +14,7 @@ type Props = {
 };
 
 const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
-        const names = children.map(c => c.childDisplayName || c.childProfileId);
+    const names = children.map(c => c.childDisplayName || c.childProfileId);
 
     let nameText: string;
     if (names.length === 1) {
@@ -35,8 +35,7 @@ const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
                 {m['onboarding.guardianLinked.heading']()}
             </h2>
             <p className="text-[14px] font-notoSans text-grayscale-600 mb-6">
-                {renderParts(m['onboarding.guardianLinked.description'].parts({ name: nameText }), {})}]}
-                />
+                {m['onboarding.guardianLinked.description']({name: nameText})}
             </p>
             <button
                 onClick={onDismiss}

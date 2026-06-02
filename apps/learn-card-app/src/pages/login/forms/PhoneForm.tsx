@@ -58,7 +58,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
-        const { theme } = useTheme();
+    const { theme } = useTheme();
     const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
     const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
 
@@ -298,11 +298,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         buttonTitle = isLoading ? m['login.phone.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
-        formTitle = (
-            {renderParts(m['login.phone.verification.title'].parts({}), {})},
-                ]}
-            />
-        );
+        formTitle = m['login.phone.verification.title']();
         activeStep = (
             <IonCol
                 size="12"
@@ -364,8 +360,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        {renderParts(m['login.phone.password.agreeToTerms'].parts({}), {})}]}
-                        />
+                        {m['login.phone.password.agreeToTerms']()}
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>

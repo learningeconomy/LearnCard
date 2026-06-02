@@ -21,7 +21,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
     country,
     onClose,
 }) => {
-        const { initWallet } = useWallet();
+    const { initWallet } = useWallet();
 
     const [email, setEmail] = useState<string>('');
     const [error, setError] = useState<string>('');
@@ -106,8 +106,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             {m['onboarding.consent.eu.sent.heading']()}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            {renderParts(m['onboarding.consent.eu.sent.description'].parts({ email }), {})}]}
-                            />
+                            {m['onboarding.consent.eu.sent.description']({email})}
                         </p>
                     </>
                 )}

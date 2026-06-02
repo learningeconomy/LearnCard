@@ -8,7 +8,7 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
 export const LoginLoadingPage: React.FC = () => {
-        const messages = useMemo(() => _.shuffle([
+    const messages = useMemo(() => _.shuffle([
         m['login.loader.messages.0'](),
         m['login.loader.messages.1'](),
         m['login.loader.messages.2'](),

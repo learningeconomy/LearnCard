@@ -58,7 +58,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
-        const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
+    const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -304,8 +304,7 @@ export const LoginContent: React.FC = () => {
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                {renderParts(m['login.qrApproved.withHint'].parts({ hint: accountHint }), {})}]}
-                                />
+                                m['login.qrApproved.withHint']({hint: accountHint})
                             ) : (
                                 m['login.qrApproved.noHint']()
                             )}
@@ -344,8 +343,7 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        {renderParts(m['login.linkedBanner.withHint'].parts({ hint: accountHint }), {})}]}
-                                        />
+                                        m['login.linkedBanner.withHint']({hint: accountHint})
                                     ) : (
                                         m['login.linkedBanner.noHint']()
                                     )}
@@ -365,8 +363,7 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    {renderParts(m['login.installIntent.banner'].parts({ appName: installIntent.appName ?? m['login.installIntent.defaultAppName']() }), {})}]}
-                                    />
+                                    {m['login.installIntent.banner']({appName: installIntent.appName ?? m['login.installIntent.defaultAppName']()})}
                                 </span>
                             </div>
                         </IonRow>

@@ -1,5 +1,5 @@
 import React from 'react';
-import * as m from '../../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 import WarningCircle from '../../../svgs/WarningCircle';
 import { ModalTypes, useModal } from 'learn-card-base';
 import ParentInviteModal from './ParentInviteModal';
@@ -13,7 +13,7 @@ const USConsentNoticeModalContent: React.FC<USConsentNoticeModalContentProps> = 
     onBack,
     onContinue,
 }) => {
-        const { newModal, closeModal } = useModal({
+    const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });

@@ -1,5 +1,5 @@
 import React from 'react';
-import * as m from '../../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 import { IonInput, IonSpinner } from '@ionic/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
@@ -21,7 +21,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
     schoolCodes = [],
     onBypass,
 }) => {
-        const [view, setView] = React.useState<'adult' | 'school'>('adult');
+    const [view, setView] = React.useState<'adult' | 'school'>('adult');
     const [code, setCode] = React.useState('');
     const [error, setError] = React.useState('');
     const [isValidating, setIsValidating] = React.useState(false);

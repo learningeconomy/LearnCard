@@ -13,7 +13,7 @@ import redirectStore from 'learn-card-base/stores/redirectStore';
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
 
 const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
-        const { closeModal } = useModal();
+    const { closeModal } = useModal();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
 
     const [step, setStep] = useState<OnboardingStepsEnum>(OnboardingStepsEnum.selectRole);
@@ -84,8 +84,7 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
                             />
                         )}
                         <p className="text-sm text-indigo-800 font-medium">
-                            {renderParts(m['onboarding.profile.installBanner'].parts({ appName: pendingInstall.appName }), {})}]}
-                            />
+                            {m['onboarding.profile.installBanner']({appName: pendingInstall.appName})}
                         </p>
                     </div>
                 )}

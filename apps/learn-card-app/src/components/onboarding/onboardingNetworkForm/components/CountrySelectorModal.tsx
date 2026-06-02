@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as m from '../../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 import { IonInput } from '@ionic/react';
 import { Checkmark } from '@learncard/react';
 
@@ -14,7 +14,7 @@ export type CountrySelectorModalProps = {
 };
 
 const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, onSelect }) => {
-        const [query, setQuery] = useState<string>('');
+    const [query, setQuery] = useState<string>('');
 
     const filtered = COUNTRY_ENTRIES.filter(([_, label]) =>
         label.toLowerCase().includes((query ?? '').toLowerCase())

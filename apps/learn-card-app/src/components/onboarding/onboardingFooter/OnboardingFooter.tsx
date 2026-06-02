@@ -1,5 +1,5 @@
 import React from 'react';
-import * as m from '../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 
 import { IonFooter, IonToolbar } from '@ionic/react';
 
@@ -30,7 +30,7 @@ export const OnboardingFooter: React.FC<{
     overrideSkip,
     disabled,
 }) => {
-        const { closeModal } = useModal();
+    const { closeModal } = useModal();
     const isDisabled = (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
     const activeStyles = isDisabled
         ? 'bg-grayscale-200 text-grayscale-500 cursor-not-allowed'

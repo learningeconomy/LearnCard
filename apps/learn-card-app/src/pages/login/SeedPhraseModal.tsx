@@ -18,7 +18,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useTheme from '../../theme/hooks/useTheme';
 
 const SeedPhraseModal: React.FC = () => {
-        const { colors } = useTheme();
+    const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
     const brandingConfig = useBrandingConfig();
 
@@ -84,13 +84,10 @@ const SeedPhraseModal: React.FC = () => {
                 {m['login.seedPhrase.title']()}
             </h1>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                {renderParts(m['login.seedPhrase.description'].parts({ brand: brandingConfig?.name }), {})}, <React.Fragment key="1" />, <span className="font-semibold" key="2" />]}
-                />
+                {m['login.seedPhrase.description']({brand: brandingConfig?.name})}
             </p>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                {renderParts(m['login.seedPhrase.advancedOption'].parts({}), {})},
-                    ]}
-                />
+                {m['login.seedPhrase.advancedOption']()}
             </p>
             <IonInput
                 placeholder={m['login.seedPhrase.placeholder']()}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as m from '../../../../paraglide/messages.js';
+import { useTranslation } from 'react-i18next';
 import { IonicSlides } from '@ionic/react';
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -23,7 +23,7 @@ type OnboardingSwiperForSlidesProps = {
 };
 
 const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ roleItem, dob }) => {
-        const [slidesRef, setSlidesRef] = useState<SwiperInterface>();
+    const [slidesRef, setSlidesRef] = useState<SwiperInterface>();
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Freeform,
