@@ -169,6 +169,7 @@ export const importLearnCardBundle = async (
         importedCredentials: 0,
         importedPresentations: 0,
         skipped: 0,
+        skippedByType: {},
         errors: [],
         warnings: [...bundle.warnings],
     };
@@ -184,6 +185,7 @@ export const importLearnCardBundle = async (
     for (const entry of bundle.entries) {
         if (!isImportableCredentialEntry(entry)) {
             report.skipped += 1;
+            report.skippedByType[entry.type] = (report.skippedByType[entry.type] ?? 0) + 1;
             continue;
         }
 

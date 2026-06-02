@@ -12,6 +12,18 @@ Required readable entries:
 
 Sensitive entries use JSON encryption envelopes produced by `@learncard/sss-key-manager` `encryptWithPassword`: Argon2id key derivation and AES-GCM authenticated encryption. The ZIP itself is not password encrypted.
 
+## Security model
+
+A holder continuity bundle exports the wallet's full raw private-key seed at `keys/private-key-seed.txt.enc`. This is a deliberate trade-off that prioritizes holder self-custody and a zero-cooperation exit path over the live wallet's threshold model.
+
+LearnCard's live wallet protects the key with 2-of-4 Shamir Secret Sharing (device, auth, recovery, and email shares), where no single share can reconstruct the key. The bundle does **not** preserve that threshold property: the exported seed alone is sufficient to reconstruct the key and DID and take full control of the identity. The bundle password (Argon2id + AES-256-GCM) is therefore the only barrier protecting the seed.
+
+Consequences:
+
+- Anyone who obtains both the bundle and its password gains complete control of the wallet, bypassing SSS entirely.
+- The `keys/recovery-phrase.txt.enc` entry is derived from the current SSS recovery share. It is provided for reference and is **not** independently sufficient to recover the key on its own; recovery from a bundle uses the exported seed.
+- Treat the bundle like a password-vault backup: store it offline, use a strong unique password, and rotate the wallet if the bundle is exposed.
+
 ## Paths
 
 -   `keys/recovery-phrase.txt.enc`

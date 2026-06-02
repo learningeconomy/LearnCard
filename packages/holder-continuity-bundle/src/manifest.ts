@@ -17,6 +17,10 @@ Required readable entries:
 
 Sensitive entries use JSON encryption envelopes produced by \`@learncard/sss-key-manager\` \`encryptWithPassword\`: Argon2id key derivation and AES-GCM authenticated encryption. The ZIP itself is not password encrypted.
 
+## Security model
+
+This bundle exports the wallet's full raw private-key seed at \`keys/private-key-seed.txt.enc\`. LearnCard's live wallet protects the key with 2-of-4 Shamir Secret Sharing, where no single share can reconstruct it. The bundle does NOT preserve that threshold: the exported seed alone is sufficient to take full control of the identity, and the bundle password is the only barrier protecting it. \`keys/recovery-phrase.txt.enc\` is derived from the current recovery share for reference and is not independently sufficient to recover the key. Treat the bundle like a password-vault backup, use a strong unique password, and rotate the wallet if the bundle is exposed.
+
 ## Paths
 
 - \`keys/recovery-phrase.txt.enc\`
@@ -61,6 +65,8 @@ export const BUNDLE_README_MD = `# LearnCard Holder Continuity Export
 This archive contains a point-in-time holder export from a LearnCard wallet.
 
 Keep the password separately. Without it, encrypted credentials, key material, consent records, and status-list snapshots cannot be recovered.
+
+This archive contains your full private-key seed (encrypted). Anyone with both this file and its password can take complete control of your wallet identity, so store it like a password-vault backup and rotate your wallet if it is exposed.
 
 The readable manifest lists every payload and its SHA-256 hash. Third-party wallets can import individual W3C Verifiable Credentials or Verifiable Presentations from the decrypted JSON files even when they do not support the LearnCard ZIP bundle directly.
 `;

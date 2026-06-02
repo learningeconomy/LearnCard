@@ -94,6 +94,8 @@ export type ImportLearnCardBundleReport = {
     importedCredentials: number;
     importedPresentations: number;
     skipped: number;
+    /** Count of skipped (non-importable) entries broken down by their bundle content type. */
+    skippedByType: Partial<Record<BundleContentType, number>>;
     errors: Array<{ path: string; message: string }>;
     warnings: string[];
 };

@@ -227,6 +227,11 @@ describe('LearnCard holder continuity bundles', () => {
         expect(report.errors).toEqual([]);
         expect(report.importedCredentials).toBe(2);
         expect(report.importedPresentations).toBe(1);
+        expect(report.skipped).toBe(
+            Object.values(report.skippedByType).reduce((sum, count) => sum + count, 0)
+        );
+        expect(report.skippedByType['index-record']).toBeGreaterThan(0);
+        expect(report.skippedByType['consent-record']).toBe(1);
         expect(target.stored).toHaveLength(3);
         expect(target.added).toHaveLength(3);
         expect(target.added[0]?.sourceExport).toMatchObject({

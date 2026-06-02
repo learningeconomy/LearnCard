@@ -256,7 +256,6 @@ const classifyPayload = (payload: JsonValue): BundleContentType => {
     ) {
         return 'credential';
     }
-    if ('protected' in payload && 'iv' in payload && 'ciphertext' in payload) return 'unknown-json';
 
     return 'unknown-json';
 };

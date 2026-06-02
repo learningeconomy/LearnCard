@@ -113,6 +113,8 @@ Some of this can be recreated from credentials and consent records. For example,
 
 A holder continuity export is personal data. It can include identifiers, credentials, consent history, transaction timestamps, and key material. Store it like a password vault backup, rotate the export if it is exposed, and treat status-cache files as point-in-time snapshots rather than live revocation guarantees.
 
+Critically, the export contains the wallet's **full raw private-key seed** (encrypted with the bundle password). The live wallet normally protects this key with the 2-of-4 SSS threshold described above, where no single share is enough to reconstruct it. The bundle does not preserve that threshold: the exported seed alone is sufficient to take full control of the identity, so the bundle password is the only thing protecting it. The exported recovery phrase is derived from the current recovery share for reference and is not independently sufficient to recover the key — restore uses the exported seed.
+
 ## Related pages
 
 -   [Holder continuity compatibility](holder-continuity-compat.md)
