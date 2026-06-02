@@ -61,7 +61,7 @@ import {
 import { ExportDialog } from '../components/ExportDialog';
 
 import { useWallet } from 'learn-card-base';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQueries } from '@tanstack/react-query';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 import { useAnalytics } from '../../../../analytics';
@@ -676,6 +676,37 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
+    const { initWallet } = useWallet();
+
+    // Best-effort recipient-status overlay for the activity list: fetch recipients
+    // once per unique boost (cache-shared with the detail modal's useGetBoostRecipients),
+    // capped at 25/boost, so rows can badge revoked/suspended without an N+1-per-row fetch.
+    const uniqueActivityBoostUris = Array.from(
+        new Set(activity.map(a => a.boostUri).filter((u): u is string => Boolean(u)))
+    );
+    const activityRecipientQueries = useQueries({
+        queries: uniqueActivityBoostUris.map(uri => ({
+            queryKey: ['boostRecipients', uri, true],
+            queryFn: async () => {
+                const wallet = await initWallet();
+                const data = await wallet.invoke.getBoostRecipients(uri, 25, undefined, true);
+                return Array.isArray(data) ? data : [];
+            },
+            enabled: Boolean(uri),
+            staleTime: 30_000,
+        })),
+    });
+    const recipientStatusMap = new Map<string, string>();
+    uniqueActivityBoostUris.forEach((uri, i) => {
+        const recips = activityRecipientQueries[i]?.data as Array<any> | undefined;
+        recips?.forEach(r => {
+            const status = r?.status;
+            if (r?.to?.profileId && status && status !== 'active') {
+                recipientStatusMap.set(`${uri}|${r.to.profileId}`, status);
+            }
+        });
+    });
+
     // Refetch when refreshKey changes
     useEffect(() => {
         if (refreshKey && refreshKey > 0) {
@@ -896,6 +927,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                 const templateName = getActivityName(item);
                                 const recipientName = getRecipientDisplayName(item);
                                 const statusLabel = getActivityLabel(item);
+                                const rowStatus =
+                                    item.boostUri && item.recipientProfile?.profileId
+                                        ? recipientStatusMap.get(
+                                              `${item.boostUri}|${item.recipientProfile.profileId}`
+                                          )
+                                        : undefined;
 
                                 // Determine icon and colors based on event type
                                 let bgColor = 'bg-cyan-100';
@@ -958,6 +995,21 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                                 >
                                                     {statusLabel}
                                                 </span>
+
+                                                {(rowStatus === 'revoked' ||
+                                                    rowStatus === 'suspended') && (
+                                                    <span
+                                                        className={`text-xs px-1.5 py-0.5 rounded ${
+                                                            rowStatus === 'revoked'
+                                                                ? 'bg-red-100 text-red-700'
+                                                                : 'bg-amber-100 text-amber-700'
+                                                        }`}
+                                                    >
+                                                        {rowStatus === 'revoked'
+                                                            ? 'Revoked'
+                                                            : 'Suspended'}
+                                                    </span>
+                                                )}
 
                                                 {isInbox && (
                                                     <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
