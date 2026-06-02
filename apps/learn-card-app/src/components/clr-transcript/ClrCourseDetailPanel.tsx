@@ -108,7 +108,7 @@ const ClrCourseDetailPanel = ({
                     {(grade !== undefined || credits !== undefined) && (
                         <div className="flex gap-3 mb-4">
                             {grade !== undefined && (
-                                <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 flex-1">
+                                <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 w-[50%]">
                                     <p
                                         className={`text-3xl font-semibold leading-none ${gradeColor(
                                             grade
@@ -122,7 +122,7 @@ const ClrCourseDetailPanel = ({
                                 </div>
                             )}
                             {credits !== undefined && (
-                                <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 flex-1">
+                                <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 w-[50%]">
                                     <p className="text-3xl font-semibold text-grayscale-900 leading-none">
                                         {credits}
                                     </p>

@@ -54,7 +54,7 @@ export const StatCard: React.FC<{
 
     return (
         <div
-            className={`flex flex-col rounded-2xl px-4 py-3 min-w-[110px] flex-1 ${
+            className={`flex flex-col rounded-2xl px-4 py-3 min-w-[110px] ${
                 variant === 'highlight'
                     ? 'bg-white border border-grayscale-200'
                     : 'bg-grayscale-100/70'

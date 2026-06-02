@@ -74,7 +74,7 @@ const ClrProgramDetailPanel = ({ program, adminMode = false, issuerName }: Props
                                     {program.earnedAt?.value && (
                                         <div>
                                             <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                                                Conferred
+                                                Awarded
                                             </p>
                                             <p className="text-sm text-grayscale-900">
                                                 {formatClrDate(program.earnedAt.value)}

@@ -61,11 +61,22 @@ type VideoMetadata = {
 
 type ParsedVideoMetadata = Awaited<ReturnType<typeof parseVideoMetadata>>;
 
+const normalizeAttachmentType = (
+    value: string | undefined
+): Attachment['type'] | undefined => {
+    const normalized = value?.toLowerCase();
+    if (normalized === 'photo' || normalized === 'video' || normalized === 'document' || normalized === 'link' || normalized === 'text') {
+        return normalized;
+    }
+    return undefined;
+};
+
 type MediaAttachmentsBoxProps = {
     attachments?: Attachment[];
     evidence?: Evidence[];
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
+    title?: string;
 };
 
 const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
@@ -73,6 +84,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     evidence,
     getFileMetadata = getFileMetadataHelper,
     getVideoMetadata = getVideoMetadataHelper,
+    title = 'Attachments',
 }) => {
     const [documentMetadata, setDocumentMetadata] = useState<{
         [documentUrl: string]: MediaMetadata | undefined;
@@ -107,12 +119,12 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                     let attachmentUrl = '';
                     let type: Attachment['type'] = 'link';
 
-                    if (ev.url) {
-                        type = await getEvidenceAttachmentType(ev.url);
+                    if (ev?.type?.includes('EvidenceFile')) {
+                        type = normalizeAttachmentType(ev.genre) ?? 'document';
                     } else if (typeof ev.id === 'string' && isPdfAttachmentSource(ev.id)) {
                         type = 'document';
-                    } else if (ev?.type?.includes('EvidenceFile')) {
-                        type = (ev.genre as Attachment['type']) ?? 'document';
+                    } else if (ev.url) {
+                        type = await getEvidenceAttachmentType(ev.url);
                     } else {
                         type = await getEvidenceAttachmentType(ev.id);
                     }
@@ -144,7 +156,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const allowedTypes = ['link', 'photo', 'video', 'document', 'text'] as const;
     const safeEvidenceAttachments = (evidenceAttachments ?? []).map(item => ({
         ...item,
-        type: allowedTypes.includes(item.type as any) ? (item.type as Attachment['type']) : 'link',
+        type: allowedTypes.includes(item.type as any)
+            ? (item.type as Attachment['type'])
+            : 'link',
     }));
     const combinedAttachments = [...(attachments ?? []), ...safeEvidenceAttachments];
 
@@ -261,7 +275,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-            <h3 className="text-[17px] text-grayscale-900 font-poppins">Attachments</h3>
+            <h3 className="text-[17px] text-grayscale-900 font-poppins">{title}</h3>
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     <Lightbox
