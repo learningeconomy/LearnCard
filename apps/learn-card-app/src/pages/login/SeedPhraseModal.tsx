@@ -94,7 +94,7 @@ const SeedPhraseModal: React.FC = () => {
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
                 <Trans
                     i18nKey="login.seedPhrase.advancedOption"
-                    defaults="This is an advanced option for users who already saved their seed during passport creation. If you don"'"t have a seed, you will need to go back and <0>create a new passport</0> instead."
+                    defaults="This is an advanced option for users who already saved their seed during passport creation. If you don't have a seed, you will need to go back and <0>create a new passport</0> instead."
                     components={[
                         <button
                             key="0"
