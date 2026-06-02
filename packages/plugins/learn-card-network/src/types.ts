@@ -404,9 +404,9 @@ export type LearnCardNetworkPluginMethods = {
         statusPurposes?: BitstringCredentialStatusPurpose[];
         listSize?: number;
     }) => Promise<BitstringCredentialStatusEntry[]>;
-    revokeBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
-    suspendBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
-    unsuspendBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
+    revokeBoostRecipient: (boostUri: string, recipientProfileId: string, credentialUri?: string) => Promise<boolean>;
+    suspendBoostRecipient: (boostUri: string, recipientProfileId: string, credentialUri?: string) => Promise<boolean>;
+    unsuspendBoostRecipient: (boostUri: string, recipientProfileId: string, credentialUri?: string) => Promise<boolean>;
     sendBoost: (
         profileId: string,
         boostUri: string,

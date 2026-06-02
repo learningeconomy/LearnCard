@@ -1309,25 +1309,27 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.allocateCredentialStatus.mutate(options);
             },
-            revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+            revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId, credentialUri) => {
                 await ensureUser();
 
-                return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
+                return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId, credentialUri });
             },
-            suspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+            suspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId, credentialUri) => {
                 await ensureUser();
 
                 return client.boost.suspendBoostRecipient.mutate({
                     boostUri,
                     recipientProfileId,
+                    credentialUri,
                 });
             },
-            unsuspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+            unsuspendBoostRecipient: async (_learnCard, boostUri, recipientProfileId, credentialUri) => {
                 await ensureUser();
 
                 return client.boost.unsuspendBoostRecipient.mutate({
                     boostUri,
                     recipientProfileId,
+                    credentialUri,
                 });
             },
             deleteBoost: async (_learnCard, uri) => {

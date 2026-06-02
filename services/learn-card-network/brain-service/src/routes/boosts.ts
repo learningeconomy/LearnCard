@@ -1871,12 +1871,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -1912,14 +1913,39 @@ export const boostsRouter = t.router({
                 });
             }
 
-            // Get the credential instance for this boost + recipient
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            let credential;
+            if (credentialUri) {
+                const { getCredentialByUri } = await import('@accesslayer/credential/read');
+                const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+                if (!resolvedCredential) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No credential found for the provided credentialUri',
+                    });
+                }
+                // Verify the credential is an instance of this boost
+                const { neogma } = await import('@instance');
+                const instanceCheck = await neogma.queryRunner.run(
+                    `MATCH (cred:Credential {id: $credId})-[:INSTANCE_OF]->(boost:Boost {id: $boostId}) RETURN cred LIMIT 1`,
+                    { credId: resolvedCredential.id, boostId: boost.id }
+                );
+                if (instanceCheck.records.length === 0) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Credential is not an instance of the specified boost',
+                    });
+                }
+                credential = resolvedCredential;
+            } else {
+                const { getCredentialInstanceForBoostAndProfile } = await import(
+                    '@accesslayer/credential/read'
+                );
+                credential = await getCredentialInstanceForBoostAndProfile(
+                    boost.id,
+                    resolvedRecipientProfileId
+                );
+            }
 
             if (!credential) {
                 throw new TRPCError({
@@ -1968,12 +1994,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -2005,13 +2032,38 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            let credential;
+            if (credentialUri) {
+                const { getCredentialByUri } = await import('@accesslayer/credential/read');
+                const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+                if (!resolvedCredential) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No credential found for the provided credentialUri',
+                    });
+                }
+                const { neogma } = await import('@instance');
+                const instanceCheck = await neogma.queryRunner.run(
+                    `MATCH (cred:Credential {id: $credId})-[:INSTANCE_OF]->(boost:Boost {id: $boostId}) RETURN cred LIMIT 1`,
+                    { credId: resolvedCredential.id, boostId: boost.id }
+                );
+                if (instanceCheck.records.length === 0) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Credential is not an instance of the specified boost',
+                    });
+                }
+                credential = resolvedCredential;
+            } else {
+                const { getCredentialInstanceForBoostAndProfile } = await import(
+                    '@accesslayer/credential/read'
+                );
+                credential = await getCredentialInstanceForBoostAndProfile(
+                    boost.id,
+                    resolvedRecipientProfileId
+                );
+            }
 
             if (!credential) {
                 throw new TRPCError({
@@ -2054,12 +2106,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -2083,13 +2136,38 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            let credential;
+            if (credentialUri) {
+                const { getCredentialByUri } = await import('@accesslayer/credential/read');
+                const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+                if (!resolvedCredential) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No credential found for the provided credentialUri',
+                    });
+                }
+                const { neogma } = await import('@instance');
+                const instanceCheck = await neogma.queryRunner.run(
+                    `MATCH (cred:Credential {id: $credId})-[:INSTANCE_OF]->(boost:Boost {id: $boostId}) RETURN cred LIMIT 1`,
+                    { credId: resolvedCredential.id, boostId: boost.id }
+                );
+                if (instanceCheck.records.length === 0) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Credential is not an instance of the specified boost',
+                    });
+                }
+                credential = resolvedCredential;
+            } else {
+                const { getCredentialInstanceForBoostAndProfile } = await import(
+                    '@accesslayer/credential/read'
+                );
+                credential = await getCredentialInstanceForBoostAndProfile(
+                    boost.id,
+                    resolvedRecipientProfileId
+                );
+            }
 
             if (!credential) {
                 throw new TRPCError({
