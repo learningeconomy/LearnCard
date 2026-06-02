@@ -125,7 +125,30 @@ const PLATFORM_LABELS: Record<Platform, string> = {
 };
 
 const STAGING_CHANNEL = 'staging';
-const GITHUB_REPO = 'learningeconomy/LearnCard';
+const SEMVER_RE = /^\d+\.\d+\.\d+$/;
+const PR_RE = /^pr-(\d+)$/;
+const CHANNELS_CACHE_TTL_MS = 60_000;
+
+/**
+ * Module-level cache for `listChannels()`. Capgo rate-limits its backend, and
+ * the version modal unmounts on close — without this, every open re-hits the
+ * API and quickly trips the limit. Survives remounts; `force` bypasses the TTL
+ * for the manual refresh button.
+ */
+let channelsCache: { data: { name: string }[]; at: number } | null = null;
+
+const fetchChannelsCached = async (force = false): Promise<{ name: string }[]> => {
+    const fresh = channelsCache && Date.now() - channelsCache.at < CHANNELS_CACHE_TTL_MS;
+
+    if (!force && fresh) return channelsCache!.data;
+
+    const result = await CapacitorUpdater.listChannels();
+    const data = result.channels ?? [];
+
+    channelsCache = { data, at: Date.now() };
+
+    return data;
+};
 
 type ChannelKind = 'production' | 'staging' | 'pr' | 'custom';
 
@@ -136,68 +159,99 @@ interface ChannelOption {
     kind: ChannelKind;
 }
 
-interface PrPreview {
-    number: number;
-    title: string;
-    user?: string;
-    url: string;
+interface GroupedChannels {
+    productionLatest?: ChannelOption;
+    productionOlder: ChannelOption[];
+    staging?: ChannelOption;
+    prPreviews: ChannelOption[];
 }
 
-/**
- * Build the curated channel list at render time so the Production entry
- * always reflects the current `defaultChannel` in `capacitor.config.ts`,
- * which is injected at build time via the `__CAPGO_DEFAULT_CHANNEL__` Vite
- * define (see `vite.config.ts`). Falls back to the device's currently-
- * assigned channel on web (where the define resolves to '') so we never
- * surface an empty-string "Production" row.
- */
-const getCuratedChannels = (productionChannel: string | undefined): ChannelOption[] => {
-    const channels: ChannelOption[] = [];
+const compareSemverDesc = (a: string, b: string): number => {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
 
-    if (productionChannel) {
-        channels.push({
-            value: productionChannel,
-            label: 'Production',
-            description: `Released app store builds (\`${productionChannel}\`)`,
-            kind: 'production',
-        });
+    for (let i = 0; i < 3; i += 1) {
+        if (pa[i] !== pb[i]) return pb[i] - pa[i];
     }
 
-    channels.push({
-        value: STAGING_CHANNEL,
-        label: 'Staging',
-        description: 'Latest merged code on `main`',
-        kind: 'staging',
-    });
-
-    return channels;
+    return 0;
 };
 
-const fetchOpenCapgoPreviewPrs = async (): Promise<PrPreview[]> => {
-    const url = `https://api.github.com/search/issues?q=${encodeURIComponent(
-        `repo:${GITHUB_REPO} is:pr is:open label:capgo-preview`,
-    )}&per_page=30`;
-    const res = await fetch(url, {
-        headers: { Accept: 'application/vnd.github+json' },
-    });
+/**
+ * Sort the self-assignable channels returned by `CapacitorUpdater.listChannels()`
+ * into the four UI buckets. The production stream is semver-named (e.g. `1.0.7`),
+ * so the channel matching the build-time `__CAPGO_DEFAULT_CHANNEL__` define is the
+ * "Latest" production row; any other semver channels are older production versions
+ * (newest first). `staging` and `pr-<n>` channels get their own sections.
+ */
+const groupChannels = (
+    channels: { name: string }[],
+    productionChannel: string | undefined,
+): GroupedChannels => {
+    const productionOlder: ChannelOption[] = [];
+    const prPreviews: ChannelOption[] = [];
+    let productionLatest: ChannelOption | undefined;
+    let staging: ChannelOption | undefined;
 
-    if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+    const semverChannels = channels
+        .map(c => c.name)
+        .filter(name => SEMVER_RE.test(name))
+        .sort(compareSemverDesc);
 
-    const data = (await res.json()) as {
-        items?: Array<{
-            number: number;
-            title: string;
-            html_url: string;
-            user?: { login?: string };
-        }>;
-    };
+    for (const name of semverChannels) {
+        if (name === productionChannel) {
+            productionLatest = {
+                value: name,
+                label: 'Production (Latest)',
+                description: `Released app store build (\`${name}\`)`,
+                kind: 'production',
+            };
+        } else {
+            productionOlder.push({
+                value: name,
+                label: name,
+                description: 'Older production version',
+                kind: 'production',
+            });
+        }
+    }
 
-    return (data.items ?? []).map(item => ({
-        number: item.number,
-        title: item.title,
-        user: item.user?.login,
-        url: item.html_url,
-    }));
+    // If the device's production channel isn't in the self-settable list (e.g.
+    // it's locked), still surface it as Latest so users can switch back to it.
+    if (!productionLatest && productionChannel) {
+        productionLatest = {
+            value: productionChannel,
+            label: 'Production (Latest)',
+            description: `Released app store build (\`${productionChannel}\`)`,
+            kind: 'production',
+        };
+    }
+
+    for (const { name } of channels) {
+        if (name === STAGING_CHANNEL) {
+            staging = {
+                value: name,
+                label: 'Staging',
+                description: 'Latest merged code on `main`',
+                kind: 'staging',
+            };
+        }
+
+        const prMatch = name.match(PR_RE);
+
+        if (prMatch) {
+            prPreviews.push({
+                value: name,
+                label: `PR #${prMatch[1]}`,
+                description: 'Open PR preview build',
+                kind: 'pr',
+            });
+        }
+    }
+
+    prPreviews.sort((a, b) => Number(b.value.slice(3)) - Number(a.value.slice(3)));
+
+    return { productionLatest, productionOlder, staging, prPreviews };
 };
 
 const shorten = (value: string | undefined, head = 6, tail = 4): string => {
@@ -580,12 +634,10 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
     const [checkingForUpdate, setCheckingForUpdate] = useState(false);
     const [showChannelPicker, setShowChannelPicker] = useState(false);
-    const [showCustomInput, setShowCustomInput] = useState(false);
-    const [channelInput, setChannelInput] = useState('');
     const [switchingChannel, setSwitchingChannel] = useState<string | null>(null);
-    const [prPreviews, setPrPreviews] = useState<PrPreview[] | null>(null);
-    const [previewsLoading, setPreviewsLoading] = useState(false);
-    const [previewsError, setPreviewsError] = useState<string | null>(null);
+    const [channels, setChannels] = useState<{ name: string }[] | null>(null);
+    const [channelsLoading, setChannelsLoading] = useState(false);
+    const [channelsError, setChannelsError] = useState<string | null>(null);
 
     const appName = brandingConfig?.name ?? 'App';
     const tenantId = tenantConfig?.tenantId;
@@ -598,9 +650,9 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
         typeof __CAPGO_DEFAULT_CHANNEL__ === 'string' && __CAPGO_DEFAULT_CHANNEL__.trim() !== ''
             ? __CAPGO_DEFAULT_CHANNEL__
             : undefined;
-    const curatedChannels = useMemo(
-        () => getCuratedChannels(productionChannel),
-        [productionChannel],
+    const grouped = useMemo(
+        () => groupChannels(channels ?? [], productionChannel),
+        [channels, productionChannel],
     );
 
     const refreshInfo = async (): Promise<void> => {
@@ -718,29 +770,35 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
         }
     };
 
-    const loadPrPreviews = async (): Promise<void> => {
-        setPreviewsLoading(true);
-        setPreviewsError(null);
+    const loadChannels = async (force = false): Promise<void> => {
+        setChannelsLoading(true);
+        setChannelsError(null);
 
         try {
-            const list = await fetchOpenCapgoPreviewPrs();
-
-            setPrPreviews(list);
+            setChannels(await fetchChannelsCached(force));
         } catch (err) {
             const msg = (err as { message?: string } | null)?.message ?? 'unknown error';
+            const rateLimited = /rate.?limit/i.test(msg);
 
-            setPreviewsError(msg);
-            setPrPreviews([]);
+            // Degrade gracefully: keep whatever we already have (cache or prior
+            // state) so Production/Staging from the build-time define still show.
+            // Only surface a hard error when we have nothing to display.
+            setChannels(prev => prev ?? channelsCache?.data ?? []);
+            setChannelsError(
+                rateLimited
+                    ? 'Channel list is temporarily rate-limited — showing known channels. Try again in a minute.'
+                    : msg,
+            );
         } finally {
-            setPreviewsLoading(false);
+            setChannelsLoading(false);
         }
     };
 
     useEffect(() => {
-        if (!showChannelPicker || prPreviews !== null || previewsLoading) return;
+        if (!showChannelPicker || channels !== null || channelsLoading) return;
 
-        void loadPrPreviews();
-    }, [showChannelPicker, prPreviews, previewsLoading]);
+        void loadChannels();
+    }, [showChannelPicker, channels, channelsLoading]);
 
     /**
      * Switch the device to a different Capgo channel.
@@ -788,8 +846,6 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             });
 
             setShowChannelPicker(false);
-            setShowCustomInput(false);
-            setChannelInput('');
             await refreshInfo();
         } catch (err) {
             const msg = (err as { message?: string } | null)?.message ?? 'unknown error';
@@ -1092,136 +1148,116 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                         </p>
                                     </div>
 
-                                    <ChannelPickerSection title="Releases">
-                                        {curatedChannels.map(opt => (
-                                            <ChannelRow
-                                                key={opt.value}
-                                                option={opt}
-                                                currentChannel={info.channel}
-                                                pending={switchingChannel === opt.value}
-                                                disabled={switchingChannel !== null}
-                                                onClick={() => handleSwitchChannel(opt.value)}
+                                    <div className="flex items-center justify-end -mb-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => void loadChannels(true)}
+                                            disabled={channelsLoading}
+                                            aria-label="Refresh channels"
+                                            className="text-grayscale-400 hover:text-grayscale-700 transition-colors p-1"
+                                        >
+                                            <IonIcon
+                                                icon={refreshOutline}
+                                                className={`text-base ${
+                                                    channelsLoading ? 'animate-spin' : ''
+                                                }`}
                                             />
-                                        ))}
-                                    </ChannelPickerSection>
+                                        </button>
+                                    </div>
 
-                                    <ChannelPickerSection
-                                        title="PR previews"
-                                        action={
-                                            <button
-                                                type="button"
-                                                onClick={() => void loadPrPreviews()}
-                                                disabled={previewsLoading}
-                                                aria-label="Refresh PR previews"
-                                                className="text-grayscale-400 hover:text-grayscale-700 transition-colors p-1"
-                                            >
-                                                <IonIcon
-                                                    icon={refreshOutline}
-                                                    className={`text-base ${
-                                                        previewsLoading ? 'animate-spin' : ''
-                                                    }`}
-                                                />
-                                            </button>
-                                        }
-                                    >
-                                        {previewsLoading && prPreviews === null ? (
-                                            <div className="text-xs text-grayscale-500 py-2 px-1">
-                                                Loading open PRs…
-                                            </div>
-                                        ) : previewsError ? (
-                                            <div className="text-xs text-red-700 py-2 px-1">
-                                                Couldn&rsquo;t load PR previews: {previewsError}
-                                            </div>
-                                        ) : !prPreviews || prPreviews.length === 0 ? (
-                                            <div className="text-xs text-grayscale-500 py-2 px-1">
-                                                No open PRs have a Capgo preview right now.
-                                            </div>
-                                        ) : (
-                                            prPreviews.map(pr => {
-                                                const value = `pr-${pr.number}`;
-
-                                                return (
-                                                    <ChannelRow
-                                                        key={pr.number}
-                                                        option={{
-                                                            value,
-                                                            label: `PR #${pr.number}`,
-                                                            description: pr.title,
-                                                            kind: 'pr',
-                                                        }}
-                                                        currentChannel={info.channel}
-                                                        pending={switchingChannel === value}
-                                                        disabled={switchingChannel !== null}
-                                                        onClick={() => handleSwitchChannel(value)}
-                                                    />
-                                                );
-                                            })
-                                        )}
-                                    </ChannelPickerSection>
-
-                                    <ChannelPickerSection title="Custom">
-                                        {!showCustomInput ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setChannelInput(info.channel ?? '');
-                                                    setShowCustomInput(true);
-                                                }}
-                                                className="w-full py-2.5 px-3 rounded-xl border border-dashed border-grayscale-300 text-grayscale-600 text-sm hover:bg-grayscale-10 transition-colors text-left"
-                                            >
-                                                Enter a channel name manually…
-                                            </button>
-                                        ) : (
-                                            <div className="flex flex-col gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={channelInput}
-                                                    onChange={e => setChannelInput(e.target.value)}
-                                                    placeholder="e.g. pr-1234"
-                                                    spellCheck={false}
-                                                    autoCapitalize="off"
-                                                    autoCorrect="off"
-                                                    className="w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                                />
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setShowCustomInput(false);
-                                                            setChannelInput('');
-                                                        }}
-                                                        className="flex-1 py-2.5 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleSwitchChannel(channelInput)
-                                                        }
-                                                        disabled={
-                                                            switchingChannel !== null ||
-                                                            !channelInput.trim() ||
-                                                            channelInput.trim() === info.channel
-                                                        }
-                                                        className="flex-1 py-2.5 px-3 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                                                    >
-                                                        {switchingChannel === channelInput.trim()
-                                                            ? 'Switching…'
-                                                            : 'Apply'}
-                                                    </button>
+                                    {channelsLoading && channels === null ? (
+                                        <div className="text-xs text-grayscale-500 py-2 px-1">
+                                            Loading channels…
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {channelsError ? (
+                                                <div className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-xl py-2 px-2.5">
+                                                    {channelsError}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </ChannelPickerSection>
+                                            ) : null}
+
+                                            {grouped.productionLatest ? (
+                                                <ChannelPickerSection title="Production">
+                                                    <ChannelRow
+                                                        option={grouped.productionLatest}
+                                                        currentChannel={info.channel}
+                                                        pending={
+                                                            switchingChannel ===
+                                                            grouped.productionLatest.value
+                                                        }
+                                                        disabled={switchingChannel !== null}
+                                                        onClick={() =>
+                                                            handleSwitchChannel(
+                                                                grouped.productionLatest!.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </ChannelPickerSection>
+                                            ) : null}
+
+                                            {grouped.productionOlder.length > 0 ? (
+                                                <ChannelPickerSection title="Other production versions">
+                                                    {grouped.productionOlder.map(opt => (
+                                                        <ChannelRow
+                                                            key={opt.value}
+                                                            option={opt}
+                                                            currentChannel={info.channel}
+                                                            pending={switchingChannel === opt.value}
+                                                            disabled={switchingChannel !== null}
+                                                            onClick={() =>
+                                                                handleSwitchChannel(opt.value)
+                                                            }
+                                                        />
+                                                    ))}
+                                                </ChannelPickerSection>
+                                            ) : null}
+
+                                            {grouped.staging ? (
+                                                <ChannelPickerSection title="Staging">
+                                                    <ChannelRow
+                                                        option={grouped.staging}
+                                                        currentChannel={info.channel}
+                                                        pending={
+                                                            switchingChannel ===
+                                                            grouped.staging.value
+                                                        }
+                                                        disabled={switchingChannel !== null}
+                                                        onClick={() =>
+                                                            handleSwitchChannel(
+                                                                grouped.staging!.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </ChannelPickerSection>
+                                            ) : null}
+
+                                            <ChannelPickerSection title="PR previews">
+                                                {grouped.prPreviews.length === 0 ? (
+                                                    <div className="text-xs text-grayscale-500 py-2 px-1">
+                                                        No open PRs have a Capgo preview right now.
+                                                    </div>
+                                                ) : (
+                                                    grouped.prPreviews.map(opt => (
+                                                        <ChannelRow
+                                                            key={opt.value}
+                                                            option={opt}
+                                                            currentChannel={info.channel}
+                                                            pending={switchingChannel === opt.value}
+                                                            disabled={switchingChannel !== null}
+                                                            onClick={() =>
+                                                                handleSwitchChannel(opt.value)
+                                                            }
+                                                        />
+                                                    ))
+                                                )}
+                                            </ChannelPickerSection>
+                                        </>
+                                    )}
 
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setShowChannelPicker(false);
-                                            setShowCustomInput(false);
-                                            setChannelInput('');
-                                        }}
+                                        onClick={() => setShowChannelPicker(false)}
                                         className="w-full py-2.5 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                                     >
                                         Close
