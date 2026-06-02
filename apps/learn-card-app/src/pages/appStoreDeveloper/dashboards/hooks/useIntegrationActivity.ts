@@ -194,9 +194,10 @@ export function useIntegrationActivity(
         integrationId?: string;
         listingId?: string;
         eventType?: CredentialEventType;
+        boostUri?: string;
     } = {}
 ): IntegrationActivityResult {
-    const { limit = 25, integrationId, listingId, eventType } = options;
+    const { limit = 25, integrationId, listingId, eventType, boostUri } = options;
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
@@ -238,18 +239,21 @@ export function useIntegrationActivity(
                     integrationId,
                     listingId,
                     eventType,
+                    boostUri,
                 });
 
                 // Fetch stats using unified API with integrationId/listingId for accurate per-integration/app stats
                 // When integrationId or listingId is provided, don't also filter by boostUris — it's redundant
                 // and excludes activities without a FOR_BOOST relationship (e.g. embed claims)
                 const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris:
-                        !integrationId && !listingId && boostUris.length > 0
-                            ? boostUris
-                            : undefined,
+                    boostUris: boostUri
+                        ? [boostUri]
+                        : !integrationId && !listingId && boostUris.length > 0
+                          ? boostUris
+                          : undefined,
                     integrationId,
                     listingId,
+                    boostUri,
                 });
 
                 if (cancelled) return;
@@ -298,7 +302,7 @@ export function useIntegrationActivity(
         return () => {
             cancelled = true;
         };
-    }, [boostUris.join(','), limit, integrationId, listingId, eventType, fetchKey]);
+    }, [boostUris.join(','), limit, integrationId, listingId, eventType, boostUri, fetchKey]);
 
     const refetch = useCallback(() => {
         setCursor(undefined);
@@ -320,6 +324,7 @@ export function useIntegrationActivity(
                 integrationId,
                 listingId,
                 eventType,
+                boostUri,
             });
 
             const records: CredentialActivityRecord[] = activityResult?.records || [];
@@ -335,7 +340,7 @@ export function useIntegrationActivity(
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, hasMore, cursor, limit, integrationId, listingId, eventType]);
+    }, [isLoadingMore, hasMore, cursor, limit, integrationId, listingId, eventType, boostUri]);
 
     return { activity, isLoading, isLoadingMore, hasMore, error, refetch, loadMore, stats };
 }
