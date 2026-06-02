@@ -99,11 +99,9 @@ export const getActivitiesForProfile = async (
                 CASE WHEN e.activity.timestamp > latest.activity.timestamp THEN e ELSE latest END) as latestEvent
             ${postGroupFilter}
             WITH latestEvent.activity as a, latestEvent.boost as b, latestEvent.recipient as r
-            OPTIONAL MATCH (cred:Credential)
-                WHERE a.credentialUri IS NOT NULL AND cred.id = last(split(a.credentialUri, ':'))
-            OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { to: r.profileId }]->(cred)
+            OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { activityId: a.activityId }]->(cred:Credential)
                 WHERE sender:Profile OR sender:AppStoreListing
-            OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile { profileId: r.profileId })
+            OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
             WITH a, b, r, coalesce(sent.status, received.status) AS credStatus
             ORDER BY a.timestamp DESC
             LIMIT $limit
@@ -143,11 +141,9 @@ export const getActivitiesForProfile = async (
             ${boostMatch}
             OPTIONAL MATCH (a)-[:TO_RECIPIENT]->(r:Profile)
             WITH a, b, r
-            OPTIONAL MATCH (cred:Credential)
-                WHERE a.credentialUri IS NOT NULL AND cred.id = last(split(a.credentialUri, ':'))
-            OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { to: r.profileId }]->(cred)
+            OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { activityId: a.activityId }]->(cred:Credential)
                 WHERE sender:Profile OR sender:AppStoreListing
-            OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile { profileId: r.profileId })
+            OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
             WITH a, b, r, coalesce(sent.status, received.status) AS credStatus
             ORDER BY a.timestamp DESC
             LIMIT $limit
