@@ -383,12 +383,13 @@ export const getBoostRecipients = async (
                 { identifier: 'recipient' },
             ],
         })
-        .with('sender, sent, received, recipient, credential');
-
-    // Apply optional WHERE clauses (no revoked filter — revoked recipients remain visible)
-    if (whereClause) {
-        _query.where(whereClause);
-    }
+        .with('sender, sent, received, recipient, credential')
+        // Filter out revoked credentials using WITH barrier pattern
+        .where(
+            `coalesce(sent.status, received.status, '') <> 'revoked'${
+                whereClause ? ' AND ' + whereClause : ''
+            }`
+        );
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -483,8 +484,9 @@ export const getBoostRecipientsSkipLimit = async (
                 { identifier: 'recipient', model: Profile },
             ],
         })
-        // No revoked filter — revoked/suspended recipients remain visible with status field
-        .with('sender, sent, received, credential');
+        // Use WITH barrier pattern to properly filter revoked credentials
+        .with('sender, sent, received, credential')
+        .where(`coalesce(sent.status, received.status, '') <> 'revoked'`);
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -528,13 +530,15 @@ export const countBoostRecipients = async (
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WITH DISTINCT sent.to AS recipientId
+            WITH DISTINCT sent.to AS recipientId, sent.status AS sentStatus, received
+            WHERE coalesce(sentStatus, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT recipientId) AS count
           `
         : `
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
+            WHERE coalesce(sent.status, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT sent.to) AS count
           `;
 
@@ -1522,9 +1526,9 @@ export const getBoostRecipientsWithChildren = async (
         credential?: CredentialInstance;
     }>(await _query.run());
 
-    // Process results and group by profile, keeping revoked/suspended with status
-
+    // Process results and group by profile, filtering out revoked credentials
     const resultsWithIds = results
+        .filter(({ received }) => received?.status !== 'revoked')
         .map(({ relevantBoost, sender, sent, received, credential }) => {
             const boostId = relevantBoost.id;
             return {
