@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 
 import OnboardingRoles from './onboardingRoles/OnboardingRoles';
 import OnboardingFooter from './onboardingFooter/OnboardingFooter';
@@ -11,6 +12,7 @@ import redirectStore from 'learn-card-base/stores/redirectStore';
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
 
 const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
 
@@ -82,12 +84,16 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
                             />
                         )}
                         <p className="text-sm text-indigo-800 font-medium">
-                            After creating your account, you'll be able to install{' '}
-                            <span className="font-semibold">{pendingInstall.appName}</span>
+                            <Trans
+                                i18nKey="onboarding.profile.installBanner"
+                                defaults="After creating your account, you'll be able to install <0>{{appName}}</0>"
+                                values={{ appName: pendingInstall.appName }}
+                                components={[<span className="font-semibold" key="a" />]}
+                            />
                         </p>
                     </div>
                 )}
-                <OnboardingHeader text="Select what best describes you!" />
+                <OnboardingHeader text={t('onboarding.selectRole.header', 'Select what best describes you!')} />
                 <OnboardingRoles role={role} setRole={setRole} />
                 <OnboardingFooter
                     overrideSkip={

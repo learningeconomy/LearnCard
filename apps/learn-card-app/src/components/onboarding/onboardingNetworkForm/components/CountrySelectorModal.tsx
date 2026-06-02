@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IonInput } from '@ionic/react';
 import { Checkmark } from '@learncard/react';
 
@@ -13,6 +14,7 @@ export type CountrySelectorModalProps = {
 };
 
 const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, onSelect }) => {
+    const { t } = useTranslation();
     const [query, setQuery] = useState<string>('');
 
     const filtered = COUNTRY_ENTRIES.filter(([_, label]) =>
@@ -23,13 +25,13 @@ const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, o
         <div className="w-full h-full transparent flex items-center justify-center">
             <div className="bg-white text-grayscale-800 w-full rounded-[20px] shadow-3xl z-50 font-notoSans max-w-[600px] h-[600px] max-h-[85vh] flex flex-col">
                 <div className="px-4 py-3 border-b border-grayscale-100">
-                    <h2 className="font-notoSans font-semibold text-[16px] normal-case">Select Country</h2>
+                    <h2 className="font-notoSans font-semibold text-[16px] normal-case">{t('onboarding.country.title', 'Select Country')}</h2>
                 </div>
                 <div className="p-4">
                     <IonInput
                         type="text"
                         value={query}
-                        placeholder="Search countries"
+                        placeholder={t('onboarding.country.search', 'Search countries')}
                         onIonInput={e => setQuery(e.detail.value ?? '')}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[12px] !py-[5px] font-normal text-base !pl-[15px]"
                     />

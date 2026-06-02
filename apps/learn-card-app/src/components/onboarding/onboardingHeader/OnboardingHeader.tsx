@@ -1,10 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
 import { BrandingEnum } from 'learn-card-base';
 
 const OnboardingHeader: React.FC<{ text: string; hideTitle?: boolean }> = ({ text, hideTitle }) => {
+    const { t } = useTranslation();
     return (
         <div className="flex flex-col gap-[20px]">
             {!hideTitle && (
@@ -13,7 +15,7 @@ const OnboardingHeader: React.FC<{ text: string; hideTitle?: boolean }> = ({ tex
                         className={`font-poppins select-none text-xl font-medium tracking-wider text-center text-black`}
                     >
                         <span className="font-poppins font-normal text-center text-grayscale-900 text-[24px] tracking-[0.75px]">
-                            Welcome to
+                            {t('onboarding.welcome', 'Welcome to')}
                         </span>
                         <br />
                         <HeaderBranding

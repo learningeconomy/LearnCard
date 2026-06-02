@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IonCol, IonRow } from '@ionic/react';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
@@ -35,6 +36,7 @@ export const SocialLoginsButtons: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
     const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
 
+    const { t } = useTranslation();
     const socialLogins = useSocialLogins(branding);
 
     const handleActiveLoginType = () => {
@@ -91,7 +93,7 @@ export const SocialLoginsButtons: React.FC<{
                     </div>
                     {showSocialLogins && (
                         <p className="border-b-[1px] border-solid border-[#EFF0F5] leading-[0.1em] w-full text-center my-[40px]">
-                            <span className="py-0 px-[10px] text-white" style={{ backgroundColor: loginBgColor }}>OR</span>
+                            <span className="py-0 px-[10px] text-white" style={{ backgroundColor: loginBgColor }}>{t('login.social.or', 'OR')}</span>
                         </p>
                     )}
                 </div>

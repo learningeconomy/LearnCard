@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 
 import { IonCol } from '@ionic/react';
@@ -16,6 +17,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     hideSelfCustodialLogin = false,
 }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const links = useTenantLinks();
 
@@ -47,7 +49,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         }}
                         className="flex items-center justify-center text-white/80 font-bold text-xs hover:underline"
                     >
-                        Terms
+                        {t('login.footer.terms', 'Terms')}
                     </a>
                     <a
                         href={links.privacyPolicyUrl}
@@ -59,7 +61,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         }}
                         className="flex items-center text-white/80 font-bold text-xs hover:underline"
                     >
-                        Privacy
+                        {t('login.footer.privacy', 'Privacy')}
                     </a>
                     <a
                         href={links.websiteUrl}
@@ -71,7 +73,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         }}
                         className="flex items-center text-white/80 font-bold text-xs hover:underline min-w-[69px]"
                     >
-                        Learn More
+                        {t('login.footer.learnMore', 'Learn More')}
                     </a>
                     <button
                         onClick={e => {
@@ -80,7 +82,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         }}
                         className="flex items-center text-white/80 font-bold text-xs hover:underline"
                     >
-                        Explore Pathways
+                        {t('login.footer.explorePathways', 'Explore Pathways')}
                     </button>
                 </IonCol>
                 {!hideSelfCustodialLogin && (
@@ -89,21 +91,24 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-[4px] "
                     >
                         <p className="text-white/80 font-medium text-base">
-                            Self-custodial login.
+                            {t('login.footer.selfCustodialLogin', 'Self-custodial login.')}
                         </p>
                         <p className="text-white/80 text-sm">
-                            Have your own{' '}
-                            <button
-                                onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    openSeedPhraseModal();
-                                }}
-                                className="font-bold underline text-sm text-white/80"
-                            >
-                                seed phrase
-                            </button>
-                            ?
+                            <Trans
+                                i18nKey="login.footer.haveSeedPhrase"
+                                defaults="Have your own <0>seed phrase</0>?"
+                                components={[
+                                    <button
+                                        key="s"
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openSeedPhraseModal();
+                                        }}
+                                        className="font-bold underline text-sm text-white/80"
+                                    />,
+                                ]}
+                            />
                         </p>
                     </IonCol>
                 )}

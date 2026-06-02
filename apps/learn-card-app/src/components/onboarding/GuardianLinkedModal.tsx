@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 
 type LinkedChild = {
     childProfileId: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
+    const { t } = useTranslation();
     const names = children.map(c => c.childDisplayName || c.childProfileId);
 
     let nameText: string;
@@ -30,18 +32,21 @@ const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
                 <span className="text-emerald-700 text-xl">✓</span>
             </div>
             <h2 className="text-[18px] font-[700] font-notoSans text-grayscale-900 mb-3">
-                You're all set up!
+                {t('onboarding.guardianLinked.heading', "You're all set up!")}
             </h2>
             <p className="text-[14px] font-notoSans text-grayscale-600 mb-6">
-                You're now set up to manage credentials for{' '}
-                <span className="font-[600] text-grayscale-900">{nameText}</span>. Future
-                approvals will appear directly in the app.
+                <Trans
+                    i18nKey="onboarding.guardianLinked.description"
+                    defaults="You're now set up to manage credentials for <0>{{name}}</0>. Future approvals will appear directly in the app."
+                    values={{ name: nameText }}
+                    components={[<span className="font-[600] text-grayscale-900" key="n" />]}
+                />
             </p>
             <button
                 onClick={onDismiss}
                 className="w-full rounded-full bg-emerald-700 text-white py-[12px] text-[15px] font-[600] font-notoSans"
             >
-                Got it
+                {t('onboarding.guardianLinked.gotIt', 'Got it')}
             </button>
         </div>
     );

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
@@ -18,6 +19,7 @@ export type ParentInviteModalProps = {
 };
 
 const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal }) => {
+    const { t } = useTranslation();
     const { initWallet } = useWallet();
     const brandingConfig = useBrandingConfig();
 
@@ -107,12 +109,14 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                     <img src={LearnCardCircle} alt="LearnCard" className="h-[60px] w-[60px]" />
                 </div>
                 <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                    Invite your parent to join {brandingConfig?.name}!
+                    {t('onboarding.consent.parentInvite.heading', 'Invite your parent to join {{brand}}!', { brand: brandingConfig?.name })}
                 </h2>
                 <p className="text-grayscale-700 text-[15px] leading-[22px] px-[10px]">
-                    Click the <span className="font-semibold">Share Invite</span> button or type in
-                    their email and click the <span className="font-semibold">Send Invite</span>
-                    button.
+                    <Trans
+                        i18nKey="onboarding.consent.parentInvite.description"
+                        defaults="Click the <0>Share Invite</0> button or type in their email and click the <1>Send Invite</1> button."
+                        components={[<span className="font-semibold" key="s" />, <span className="font-semibold" key="e" />]}
+                    />
                 </p>
 
                 <div className="w-full flex items-center justify-center mt-4 px-2">
@@ -122,14 +126,14 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         disabled={loading || !inviteLink}
                         className="flex items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[12px] text-white font-poppins text-[16px] w-full shadow-lg"
                     >
-                        {loading ? <IonSpinner name="crescent" /> : 'Share Invite'}
+                        {loading ? <IonSpinner name="crescent" /> : t('onboarding.consent.parentInvite.shareInvite', 'Share Invite')}
                     </button>
                 </div>
 
                 <div className="flex items-center justify-center w-full mt-3">
                     <div className="flex items-center justify-center w-full px-5">
                         <h2 className="divider-with-text">
-                            <span>or</span>
+                            <span>{t('onboarding.consent.parentInvite.or', 'or')}</span>
                         </h2>
                     </div>
                 </div>
@@ -137,7 +141,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                 <div className="w-full flex items-center justify-center mt-1 px-2">
                     <input
                         type="email"
-                        placeholder="email@email.com"
+                        placeholder={t('onboarding.consent.parentInvite.placeholder', 'email@email.com')}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         className="w-full bg-grayscale-100 rounded-2xl px-4 py-3 text-grayscale-800 placeholder:text-grayscale-500"
@@ -152,7 +156,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         onClick={handleCloseModal}
                         className="shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {t('onboarding.back', 'Back')}
                     </button>
                     <button
                         type="button"
@@ -160,7 +164,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         disabled={loading || !inviteLink}
                         className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                     >
-                        Send Invite
+                        {t('onboarding.consent.parentInvite.sendInvite', 'Send Invite')}
                     </button>
                 </div>
             </div>

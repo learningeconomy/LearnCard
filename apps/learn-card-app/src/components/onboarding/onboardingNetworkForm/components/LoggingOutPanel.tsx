@@ -1,14 +1,16 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { IonSpinner } from '@ionic/react';
 
 const LoggingOutPanel: React.FC<{ isLoggingOut: boolean }> = ({ isLoggingOut }) => {
+    const { t } = useTranslation();
     if (!isLoggingOut) return null;
 
     return (
         <div className="mx-auto mt-2 flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-[12px] px-3 py-2 w-full max-w-[420px]">
             <IonSpinner name="crescent" className="w-[18px] h-[18px]" />
             <span className="text-[14px]">
-                Logging out... Please get a parent or guardian to login.
+                {t('onboarding.consent.underage.loggingOut.description', 'Please get a parent or guardian to login and create a family account.')}
             </span>
         </div>
     );

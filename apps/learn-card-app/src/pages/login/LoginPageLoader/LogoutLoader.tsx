@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
@@ -8,6 +9,7 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
 export const LogoutLoadingPage: React.FC = () => {
+    const { t } = useTranslation();
     const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;
@@ -39,7 +41,7 @@ export const LogoutLoadingPage: React.FC = () => {
                     <div className="w-full flex items-center justify-center text-center px-6">
                         <Typewriter
                             options={{
-                                strings: ['Logging out...'],
+                                strings: [t('login.logout', 'Logging out...')],
                                 autoStart: true,
                                 loop: true,
                                 delay: 70,

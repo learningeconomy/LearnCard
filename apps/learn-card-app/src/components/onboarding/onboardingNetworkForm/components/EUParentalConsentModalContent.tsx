@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { IonInput } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
@@ -19,6 +20,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
     country,
     onClose,
 }) => {
+    const { t } = useTranslation();
     const { initWallet } = useWallet();
 
     const [email, setEmail] = useState<string>('');
@@ -28,7 +30,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
 
     const handleSend = async () => {
         if (!EMAIL_REGEX.test(email.trim())) {
-            setError(' Please enter a valid email.');
+            setError(t('onboarding.consent.eu.error.invalidEmail', 'Please enter a valid email.'));
             return;
         }
 
@@ -55,7 +57,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
             setSent(true);
         } catch (e) {
             console.error('Failed to send guardian approval email:', e);
-            setError(' Failed to send consent request. Please try again.');
+            setError(t('onboarding.consent.eu.error.sendFailed', 'Failed to send consent request. Please try again.'));
         } finally {
             setLoading(false);
         }
@@ -72,15 +74,15 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                 {!sent ? (
                     <>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Parental Consent Required
+                            {t('onboarding.consent.eu.heading', 'Parental Consent Required')}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            Please enter your parent's email so we can send them a consent request.
+                            {t('onboarding.consent.eu.description', "Please enter your parent's email so we can send them a consent request.")}
                         </p>
                         <div className="mt-3">
                             <IonInput
                                 type="email"
-                                placeholder="Parent's email"
+                                placeholder={t('onboarding.consent.eu.placeholder', "Parent's email")}
                                 value={email}
                                 onIonInput={e => {
                                     setError('');
@@ -101,12 +103,15 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                 ) : (
                     <>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Request Sent
+                            {t('onboarding.consent.eu.sent.heading', 'Request Sent')}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            We sent a consent request to{' '}
-                            <span className="font-semibold">{email}</span>. We'll notify you once
-                            it's approved.
+                            <Trans
+                                i18nKey="onboarding.consent.eu.sent.description"
+                                defaults="We sent a consent request to <0>{{email}}</0>. We'll notify you once it's approved."
+                                values={{ email }}
+                                components={[<span className="font-semibold" key="e" />]}
+                            />
                         </p>
                     </>
                 )}
@@ -118,7 +123,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         onClick={onClose}
                         className=" shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {t('onboarding.back', 'Back')}
                     </button>
                     {!sent ? (
                         <button
@@ -127,7 +132,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             disabled={loading}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            {loading ? 'Sending...' : 'Send Request'}
+                            {loading ? t('onboarding.consent.eu.sending', 'Sending...') : t('onboarding.consent.eu.sendRequest', 'Send Request')}
                         </button>
                     ) : (
                         <button
@@ -135,7 +140,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             onClick={onClose}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            Done
+                            {t('onboarding.consent.eu.done', 'Done')}
                         </button>
                     )}
                 </div>

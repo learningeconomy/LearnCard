@@ -1,126 +1,468 @@
 {
-    "sidemenu": {
-        "addTo": "Add to {{brand}}",
-        "newAiSession": "New AI Session",
-        "footer": {
-            "poweredBy": "Powered by <0>Consent Flow</0>",
-            "ownYourData": "You own your own data.",
-            "connectionsEncrypted": "All connections are <0>encrypted.</0>",
-            "privacyPolicy": "Privacy Policy",
-            "termsOfService": "Terms of Service",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "Close"
-        },
-        "links": {
-            "launchPad": "Apps",
-            "contacts": "Contacts",
-            "alerts": "Alerts",
-            "personalize": "Personalize",
-            "adminTools": "Admin Tools",
-            "wallet": "Wallet",
-            "passport": "Passport",
-            "aiTopics": "AI Sessions",
-            "aiInsights": "AI Insights",
-            "aiPathways": "AI Pathways",
-            "skills": "Skills",
-            "socialBadges": "Boosts",
-            "achievements": "Achievements",
-            "studies": "Studies",
-            "portfolio": "Portfolio",
-            "assistance": "Assistance",
-            "experiences": "Experiences",
-            "families": "Families",
-            "ids": "IDs",
-            "pathways": "Journeys"
-        }
+  "sidemenu": {
+    "addTo": "Add to {{brand}}",
+    "newAiSession": "New AI Session",
+    "footer": {
+      "poweredBy": "Powered by <0>Consent Flow</0>",
+      "ownYourData": "You own your own data.",
+      "connectionsEncrypted": "All connections are <0>encrypted.</0>",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "copyright": "© {{year}} Learning Economy",
+      "close": "Close"
     },
-    "passport": {
-        "buildMyLearnCard": {
-            "title": "Build My {{brand}}",
-            "progress": "{{percent}}% optimized",
-            "processing": "Processing documents…",
-            "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
-            "pendingReview": "{{count}} credential(s) ready for review"
-        },
-        "resumeBuilder": {
-            "title": "Resume Builder",
-            "subtitle": "Build your resume with {{brand}} credentials.",
-            "yourResume": "Your Resume",
-            "buildYourResume": "Build Your Resume",
-            "updatedToday": "Updated <0>today</0>",
-            "tagline": "Stand out with a tailored resume"
-        },
-        "explore": "Explore"
-    },
-    "launchpad": {
-        "title": "Apps",
-        "header": {
-            "contacts": "Contacts",
-            "aiSessions": "AI Sessions",
-            "alerts": "Alerts"
-        },
-        "tabs": {
-            "myApps": "My Apps",
-            "ai": "AI",
-            "learning": "Learning",
-            "games": "Games",
-            "tools": "Tools",
-            "employment": "Employment",
-            "credentials": "Credentials",
-            "other": "Other",
-            "plugins": "Plugins",
-            "all": "All"
-        },
-        "sections": {
-            "suggestedApps": "Suggested Apps",
-            "installedApps": "Installed Apps",
-            "allApps": "All Apps",
-            "allCategory": "All {{category}}"
-        },
-        "emptyStates": {
-            "noInstalledApps": "Your apps will live here",
-            "noAppsAvailable": "No apps available right now",
-            "nothingInCategory": "Nothing in {{category}} yet",
-            "installSomething": "Install something from the App Store to get started.",
-            "checkBackLater": "Check back later — new apps are added all the time.",
-            "checkBackSoon": "Check back soon, or browse all apps."
-        },
-        "aiDisabledMinor": "AI features are not available for users under 18.",
-        "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
-    },
-    "wallet": {
-        "categories": {
-            "aiSessions": "AI Sessions",
-            "aiPathways": "AI Pathways",
-            "aiInsights": "AI Insights",
-            "skills": "Skills",
-            "socialBadges": "Boosts",
-            "achievements": "Achievements",
-            "studies": "Studies",
-            "portfolio": "Portfolio",
-            "assistance": "Assistance",
-            "experiences": "Experiences",
-            "families": "Families",
-            "ids": "IDs"
-        }
-    },
-    "theme": {
-        "title": "Choose Your Theme",
-        "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
-        "subtitleGeneric": "Choose your preferred visual style.",
-        "names": {
-            "colorful": "Colorful",
-            "formal": "Formal",
-            "vetpass": "VetPass"
-        }
-    },
-    "language": {
-        "select": "Select language",
-        "english": "English",
-        "spanish": "Español",
-        "german": "Deutsch",
-        "arabic": "العربية",
-        "french": "Français",
-        "korean": "한국어"
+    "links": {
+      "launchPad": "Apps",
+      "contacts": "Contacts",
+      "alerts": "Alerts",
+      "personalize": "Personalize",
+      "adminTools": "Admin Tools",
+      "wallet": "Wallet",
+      "passport": "Passport",
+      "aiTopics": "AI Sessions",
+      "aiInsights": "AI Insights",
+      "aiPathways": "AI Pathways",
+      "skills": "Skills",
+      "socialBadges": "Boosts",
+      "achievements": "Achievements",
+      "studies": "Studies",
+      "portfolio": "Portfolio",
+      "assistance": "Assistance",
+      "experiences": "Experiences",
+      "families": "Families",
+      "ids": "IDs",
+      "pathways": "Journeys"
     }
+  },
+  "passport": {
+    "buildMyLearnCard": {
+      "title": "Build My {{brand}}",
+      "progress": "{{percent}}% optimized",
+      "processing": "Processing documents…",
+      "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
+      "pendingReview": "{{count}} credential(s) ready for review"
+    },
+    "resumeBuilder": {
+      "title": "Resume Builder",
+      "subtitle": "Build your resume with {{brand}} credentials.",
+      "yourResume": "Your Resume",
+      "buildYourResume": "Build Your Resume",
+      "updatedToday": "Updated <0>today</0>",
+      "tagline": "Stand out with a tailored resume"
+    },
+    "explore": "Explore"
+  },
+  "launchpad": {
+    "title": "Apps",
+    "header": {
+      "contacts": "Contacts",
+      "aiSessions": "AI Sessions",
+      "alerts": "Alerts"
+    },
+    "tabs": {
+      "myApps": "My Apps",
+      "ai": "AI",
+      "learning": "Learning",
+      "games": "Games",
+      "tools": "Tools",
+      "employment": "Employment",
+      "credentials": "Credentials",
+      "other": "Other",
+      "plugins": "Plugins",
+      "all": "All"
+    },
+    "sections": {
+      "suggestedApps": "Suggested Apps",
+      "installedApps": "Installed Apps",
+      "allApps": "All Apps",
+      "allCategory": "All {{category}}"
+    },
+    "emptyStates": {
+      "noInstalledApps": "Your apps will live here",
+      "noAppsAvailable": "No apps available right now",
+      "nothingInCategory": "Nothing in {{category}} yet",
+      "installSomething": "Install something from the App Store to get started.",
+      "checkBackLater": "Check back later — new apps are added all the time.",
+      "checkBackSoon": "Check back soon, or browse all apps."
+    },
+    "aiDisabledMinor": "AI features are not available for users under 18.",
+    "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
+  },
+  "wallet": {
+    "categories": {
+      "aiSessions": "AI Sessions",
+      "aiPathways": "AI Pathways",
+      "aiInsights": "AI Insights",
+      "skills": "Skills",
+      "socialBadges": "Boosts",
+      "achievements": "Achievements",
+      "studies": "Studies",
+      "portfolio": "Portfolio",
+      "assistance": "Assistance",
+      "experiences": "Experiences",
+      "families": "Families",
+      "ids": "IDs"
+    }
+  },
+  "theme": {
+    "title": "Choose Your Theme",
+    "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
+    "subtitleGeneric": "Choose your preferred visual style.",
+    "names": {
+      "colorful": "Colorful",
+      "formal": "Formal",
+      "vetpass": "VetPass"
+    }
+  },
+  "language": {
+    "select": "Select language",
+    "english": "English",
+    "spanish": "Español",
+    "german": "Deutsch",
+    "arabic": "العربية",
+    "french": "Français",
+    "korean": "한국어"
+  },
+  "login": {
+    "welcome": {
+      "heading": "Welcome to {{brand}}",
+      "subtitle": "Sign in to access your credentials, achievements, and more.",
+      "pills": {
+        "credentials": "Credentials",
+        "achievements": "Achievements",
+        "skills": "Skills"
+      }
+    },
+    "sharedComputer": "Shared or public computer",
+    "signInFromAnotherDevice": "Sign in from another device",
+    "qrApproved": {
+      "heading": "You're all set!",
+      "withHint": "Sign in with <0>{{hint}}</0> to access your account.",
+      "noHint": "Now just sign in below to access your account.",
+      "continueButton": "Continue to Sign In"
+    },
+    "linkedBanner": {
+      "withHint": "Sign in with <0>{{hint}}</0> to finish",
+      "noHint": "Device linked — sign in to finish"
+    },
+    "installIntent": {
+      "banner": "You'll be taken back to <0>{{appName}}</0> after sign in"
+    },
+    "footer": {
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "learnMore": "Learn More",
+      "explorePathways": "Explore Pathways",
+      "selfCustodialLogin": "Self-custodial login.",
+      "haveSeedPhrase": "Have your own <0>seed phrase</0>?"
+    },
+    "email": {
+      "placeholder": "Email address",
+      "button": "Sign in with Email",
+      "sendingCode": "Sending Code...",
+      "verification": {
+        "title": "Enter verification code or <0>start over</0>",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "error": "Unable to verify code. Please try again."
+      },
+      "password": {
+        "placeholder": "Password",
+        "login": "Login",
+        "create": "Create Account",
+        "existingAccount": "Already have an account?",
+        "differentEmail": "Use a different email address",
+        "staySignedIn": "Stay Signed In",
+        "agreeToTerms": "Agree to <0>Terms</0>"
+      },
+      "resend": "Resend Code",
+      "resending": "Sending Code...",
+      "resendIn": "Resend in {{seconds}}s",
+      "error": {
+        "invalidEmail": "Missing or Invalid Email",
+        "invalidCode": "Invalid code"
+      }
+    },
+    "phone": {
+      "placeholder": "Phone Number",
+      "button": "Sign in with SMS",
+      "loading": "Loading...",
+      "verification": {
+        "title": "Enter verification code or <0>start over</0>",
+        "verify": "Verify",
+        "verifying": "Verifying..."
+      },
+      "password": {
+        "placeholder": "Password",
+        "login": "Login",
+        "create": "Create Account",
+        "existingAccount": "Already have an account?",
+        "differentEmail": "Use a different email address",
+        "staySignedIn": "Stay Signed In",
+        "agreeToTerms": "Agree to <0>Terms</0>"
+      },
+      "resend": "Resend Code",
+      "resending": "Sending Code...",
+      "resendIn": "Resend in {{seconds}}s",
+      "smsSent": "A verification code has been sent",
+      "error": {
+        "invalidPhone": "Phone is required!",
+        "invalidCode": "Invalid code"
+      }
+    },
+    "social": {
+      "or": "OR"
+    },
+    "seedPhrase": {
+      "title": "Use a Seed Phrase to Import Your Passport",
+      "description": "Enter your <0>64-character</0> or <2>word phrase seed</2> below to regain access to an existing {{brand}} passport.",
+      "advancedOption": "This is an advanced option for users who already saved their seed during passport creation. If you don't have a seed, you will need to go back and <0>create a new passport</0> instead.",
+      "placeholder": "Paste your seed phrase or key here...",
+      "important": {
+        "heading": "Important!",
+        "rule1": "Keep your seed safe and offline.",
+        "rule2": "Never share it with anyone.",
+        "rule3": "If someone else has your seed, they can control your passport."
+      },
+      "back": "Back",
+      "import": "Import Passport",
+      "error": {
+        "invalidChars": "Seed must only contain numbers and letters (a–f).",
+        "tooShort": "Seed phrase needs to be 64 characters long.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "loader": {
+      "messages": {
+        "0": "Credentials coming right up!",
+        "1": "Waving a magic credential wand!",
+        "2": "Fetching your badge brilliance!",
+        "3": "Unlocking your secret stardust!",
+        "4": "Brewing your digital delights!",
+        "5": "Summoning your credential superpowers!",
+        "6": "Your digital treasure is near!",
+        "7": "Preparing your badge bonanza!",
+        "8": "Credentials loading with pizzazz!",
+        "9": "Get ready for credential spark!"
+      }
+    },
+    "logout": "Logging out..."
+  },
+  "onboarding": {
+    "selectRole": {
+      "header": "Select what best describes you!"
+    },
+    "profile": {
+      "header": "Set up your profile to get started!",
+      "imA": "I'm a ",
+      "selectRole": "Select Role",
+      "fullName": "Full Name",
+      "dateOfBirth": "Date of Birth",
+      "age": "Age: {{age}}",
+      "countryOfResidence": "Country of Residence",
+      "userId": {
+        "placeholder": "User ID",
+        "charLength": "Must be between 3 to 25 characters.",
+        "format": "Letters, numbers, and dashes (-) only."
+      },
+      "privacyNotice": "We ask for your age and country to make sure we comply with privacy laws and keep you safe.",
+      "joiningNetwork": "Joining Network...",
+      "installBanner": "After creating your account, you'll be able to install <0>{{appName}}</0>",
+      "error": {
+        "nameRequired": "Name is required.",
+        "countryRequired": "Country is required.",
+        "createFailed": "There was an error creating your profile",
+        "generic": "Could not create your profile. You can still request parental consent now. Please try profile setup again later.",
+        "firebase": "There was a firebase error: {{error}}"
+      }
+    },
+    "welcome": "Welcome to",
+    "continue": "Continue",
+    "back": "Back",
+    "skipForNow": "Skip For Now",
+    "close": "Close",
+    "save": "Save",
+    "role": {
+      "learner": {
+        "title": "Learner",
+        "description": "I'm a student building my profile and tracking my progress."
+      },
+      "guardian": {
+        "title": "Guardian",
+        "description": "I'm a parent or guardian supporting a learner."
+      },
+      "teacher": {
+        "title": "Teacher",
+        "description": "I'm an educator working directly with learners."
+      },
+      "admin": {
+        "title": "Admin",
+        "description": "I manage systems, data, or user access for my organization."
+      },
+      "counselor": {
+        "title": "Guidance Counselor",
+        "description": "I support learners in planning their educational or career paths."
+      },
+      "developer": {
+        "title": "Developer",
+        "description": "I manage systems, data, and technology for my organization."
+      }
+    },
+    "consent": {
+      "underage": {
+        "heading": "Get an Adult",
+        "description": "You'll need a parent or guardian to add you to a family account before you can join.",
+        "schoolCode": {
+          "heading": "Enter School Code",
+          "description": "To join without a parent account, please enter the special code provided by your school.",
+          "cta": "Have a school code?",
+          "placeholder": "Enter Code",
+          "verify": "Verify",
+          "error": "Invalid school code. Please try again."
+        },
+        "adultButton": "I'm an Adult",
+        "or": "Or",
+        "loggingOut": {
+          "heading": "Logging out...",
+          "description": "Please get a parent or guardian to login and create a family account."
+        },
+        "addChild": {
+          "heading": "Add Your Child to {{brand}}!",
+          "description": "Log in or sign up to create your profile inside a family account."
+        }
+      },
+      "eu": {
+        "heading": "Parental Consent Required",
+        "description": "Please enter your parent's email so we can send them a consent request.",
+        "placeholder": "Parent's email",
+        "sendRequest": "Send Request",
+        "sending": "Sending...",
+        "sent": {
+          "heading": "Request Sent",
+          "description": "We sent a consent request to <0>{{email}}</0>. We'll notify you once it's approved."
+        },
+        "done": "Done",
+        "error": {
+          "invalidEmail": "Please enter a valid email.",
+          "sendFailed": "Failed to send consent request. Please try again."
+        }
+      },
+      "us": {
+        "heading": "Consent Notice",
+        "description": "We collect learning progress and credentials. These can be shared with you, your teachers, or verified organizations."
+      },
+      "parentInvite": {
+        "heading": "Invite your parent to join {{brand}}!",
+        "description": "Click the <0>Share Invite</0> button or type in their email and click the <1>Send Invite</1> button.",
+        "shareInvite": "Share Invite",
+        "sendInvite": "Send Invite",
+        "placeholder": "email@email.com",
+        "or": "or"
+      }
+    },
+    "guardianLinked": {
+      "heading": "You're all set up!",
+      "description": "You're now set up to manage credentials for <0>{{name}}</0>. Future approvals will appear directly in the app.",
+      "gotIt": "Got it"
+    },
+    "slides": {
+      "next": "Next",
+      "getStarted": "Get Started",
+      "learner": {
+        "slide1": {
+          "bold": "Capture",
+          "regular": "your learning wherever it happens",
+          "over13": "your learning & work experiences"
+        },
+        "slide2": {
+          "bold": "Collect",
+          "regular": "your education experiences in your Passport"
+        },
+        "slide3": {
+          "bold": "Learn",
+          "regular": "about your Skills & Experiences"
+        },
+        "slide4": {
+          "bold": "Level up",
+          "regular": "your learning with a growing suite of AI Tutors"
+        }
+      },
+      "guardian": {
+        "slide1": {
+          "bold": "Guide your child",
+          "regular": "through learning experiences"
+        },
+        "slide2": {
+          "bold": "Safeguard",
+          "regular": "your child's privacy with secure, consent based data tools"
+        },
+        "slide3": {
+          "bold": "Enhance",
+          "regular": "your child's learning with AI tutors and learning apps"
+        },
+        "slide4": {
+          "bold": "Gain insights",
+          "regular": "into your child's learning journey"
+        }
+      },
+      "teacher": {
+        "slide1": {
+          "bold": "Organize all your students & learning data",
+          "regular": "in one dashboard"
+        },
+        "slide2": {
+          "bold": "Create and manage",
+          "regular": "customized credentials"
+        },
+        "slide3": {
+          "bold": "Award",
+          "regular": "learners with real, high-fidelity proof of learning experiences"
+        },
+        "slide4": {
+          "bold": "Assess",
+          "regular": "your student's progress in real time"
+        }
+      },
+      "admin": {
+        "slide1": {
+          "bold": "Create",
+          "regular": "skills frameworks and credentials"
+        },
+        "slide2": {
+          "bold": "Organize",
+          "regular": "your learners, teachers, and learning experiences"
+        },
+        "slide3": {
+          "bold": "Distribute",
+          "regular": "your learning materials in one easy-to-use app"
+        },
+        "slide4": {
+          "bold": "Manage",
+          "regular": "advanced tools and settings for data sharing and more"
+        }
+      },
+      "developer": {
+        "slide1": {
+          "bold": "Configure",
+          "regular": "issuers, consent protocols and connected systems"
+        },
+        "slide2": {
+          "bold": "Integrate",
+          "regular": "with schools, applications, and data sources"
+        },
+        "slide3": {
+          "bold": "Manage",
+          "regular": "your end-to-end data flow"
+        },
+        "slide4": {
+          "bold": "Design",
+          "regular": "custom, modular user experiences"
+        }
+      }
+    },
+    "country": {
+      "search": "Search countries",
+      "title": "Select Country"
+    }
+  }
 }

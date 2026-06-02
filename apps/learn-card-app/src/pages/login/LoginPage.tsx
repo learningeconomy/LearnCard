@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -56,6 +57,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
+    const { t } = useTranslation();
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
@@ -297,20 +299,19 @@ export const LoginContent: React.FC = () => {
                         </div>
 
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            You're all set!
+                            {t('login.qrApproved.heading', "You're all set!")}
                         </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                <>
-                                    Sign in with{' '}
-                                    <span className="font-medium text-grayscale-900">
-                                        {accountHint}
-                                    </span>{' '}
-                                    to access your account.
-                                </>
+                                <Trans
+                                    i18nKey="login.qrApproved.withHint"
+                                    defaults="Sign in with <0>{{hint}}</0> to access your account."
+                                    values={{ hint: accountHint }}
+                                    components={[<span className="font-medium text-grayscale-900" key="h" />]}
+                                />
                             ) : (
-                                'Now just sign in below to access your account.'
+                                t('login.qrApproved.noHint', 'Now just sign in below to access your account.')
                             )}
                         </p>
 
@@ -322,7 +323,7 @@ export const LoginContent: React.FC = () => {
                             }}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            Continue to Sign In
+                            {t('login.qrApproved.continueButton', 'Continue to Sign In')}
                         </button>
                     </div>
                 </IonRow>
@@ -347,13 +348,14 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-semibold">{accountHint}</span> to
-                                            finish
-                                        </>
+                                        <Trans
+                                            i18nKey="login.linkedBanner.withHint"
+                                            defaults="Sign in with <0>{{hint}}</0> to finish"
+                                            values={{ hint: accountHint }}
+                                            components={[<span className="font-semibold" key="h" />]}
+                                        />
                                     ) : (
-                                        'Device linked — sign in to finish'
+                                        t('login.linkedBanner.noHint', 'Device linked — sign in to finish')
                                     )}
                                 </span>
                             </div>
@@ -371,11 +373,12 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    You'll be taken back to{' '}
-                                    <span className="font-semibold">
-                                        {installIntent.appName ?? 'the app'}
-                                    </span>{' '}
-                                    after sign in
+                                    <Trans
+                                        i18nKey="login.installIntent.banner"
+                                        defaults="You'll be taken back to <0>{{appName}}</0> after sign in"
+                                        values={{ appName: installIntent.appName ?? t('login.installIntent.defaultAppName', 'the app') }}
+                                        components={[<span className="font-semibold" key="a" />]}
+                                    />
                                 </span>
                             </div>
                         </IonRow>
@@ -468,7 +471,7 @@ export const LoginContent: React.FC = () => {
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
                                 `}
                                 >
-                                    Shared or public computer
+                                    {t('login.sharedComputer', 'Shared or public computer')}
                                 </span>
                             </button>
                         </IonRow>
@@ -480,7 +483,7 @@ export const LoginContent: React.FC = () => {
                                 onClick={() => setShowQrLogin(true)}
                                 className="text-sm text-white/80 hover:text-white underline transition-colors"
                             >
-                                Sign in from another device
+                                {t('login.signInFromAnotherDevice', 'Sign in from another device')}
                             </button>
                         </IonRow>
                     )}

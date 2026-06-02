@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -8,7 +9,14 @@ import { useTheme } from '../../theme/hooks/useTheme';
  * Themed branded welcome panel shown on the right side of the desktop
  * login page when the tenant doesn't provide a custom desktop-login-bg image.
  */
+const pillKeyMap: Record<string, string> = {
+    Credentials: 'login.welcome.pills.credentials',
+    Achievements: 'login.welcome.pills.achievements',
+    Skills: 'login.welcome.pills.skills',
+};
+
 const LoginWelcomePanel: React.FC = () => {
+    const { t } = useTranslation();
     const brandingConfig = useBrandingConfig();
     const { brandMarkLight, fullLogoDark } = useTenantBrandingAssets();
     const { theme } = useTheme();
@@ -55,11 +63,11 @@ const LoginWelcomePanel: React.FC = () => {
                 )} */}
 
                 <h2 className="text-white text-3xl font-semibold mb-4 leading-snug drop-shadow-sm">
-                    Welcome to {brandingConfig.name}
+                    {t('login.welcome.heading', 'Welcome to {{brand}}', { brand: brandingConfig.name })}
                 </h2>
 
                 <p className="text-white/70 text-base leading-relaxed max-w-[340px]">
-                    Sign in to access your credentials, achievements, and more.
+                    {t('login.welcome.subtitle', 'Sign in to access your credentials, achievements, and more.')}
                 </p>
 
                 {/* Feature pills */}
@@ -69,7 +77,7 @@ const LoginWelcomePanel: React.FC = () => {
                             key={label}
                             className="px-4 py-2 rounded-full text-sm font-medium text-white/90 bg-white/10 backdrop-blur-sm"
                         >
-                            {label}
+                            {t(pillKeyMap[label] ?? label, label)}
                         </span>
                     ))}
                 </div>

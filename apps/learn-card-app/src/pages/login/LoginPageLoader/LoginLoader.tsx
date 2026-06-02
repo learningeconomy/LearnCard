@@ -7,20 +7,20 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
-const messages = _.shuffle([
-    'Credentials coming right up!',
-    'Waving a magic credential wand!',
-    'Fetching your badge brilliance!',
-    'Unlocking your secret stardust!',
-    'Brewing your digital delights!',
-    'Summoning your credential superpowers!',
-    'Your digital treasure is near!',
-    'Preparing your badge bonanza!',
-    'Credentials loading with pizzazz!',
-    'Get ready for credential spark!',
-]);
-
 export const LoginLoadingPage: React.FC = () => {
+    const { t } = useTranslation();
+    const messages = useMemo(() => _.shuffle([
+        t('login.loader.messages.0', 'Credentials coming right up!'),
+        t('login.loader.messages.1', 'Waving a magic credential wand!'),
+        t('login.loader.messages.2', 'Fetching your badge brilliance!'),
+        t('login.loader.messages.3', 'Unlocking your secret stardust!'),
+        t('login.loader.messages.4', 'Brewing your digital delights!'),
+        t('login.loader.messages.5', 'Summoning your credential superpowers!'),
+        t('login.loader.messages.6', 'Your digital treasure is near!'),
+        t('login.loader.messages.7', 'Preparing your badge bonanza!'),
+        t('login.loader.messages.8', 'Credentials loading with pizzazz!'),
+        t('login.loader.messages.9', 'Get ready for credential spark!'),
+    ]), [t]);
     const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import Countdown from 'react-countdown';
 import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
@@ -56,6 +57,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
     const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
@@ -161,7 +163,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     };
 
     const showSuccessToast = () => {
-        presentToast('A verification code has been sent', {
+        presentToast(t('login.phone.smsSent', 'A verification code has been sent'), {
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
         });
@@ -265,7 +267,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     let activeStep: React.ReactNode | null = null;
     let formTitle: React.ReactNode | null = null;
     let buttonTitle: string | null = null;
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText: string = isResendCodeLoading ? t('login.phone.resending', 'Sending Code...') : t('login.phone.resend', 'Resend Code');
 
     let disabled = isLoading;
     if (currentStep === PhoneFormStepsEnum.phone) {
@@ -274,7 +276,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         activeStep = (
             <IonCol size="12" className="ion-no-padding">
                 <PhoneInput
-                    placeholder="Phone Number"
+                    placeholder={t('login.phone.placeholder', 'Phone Number')}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
                     value={phone}
@@ -293,23 +295,21 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Loading...' : 'Sign in with SMS';
+        buttonTitle = isLoading ? t('login.phone.loading', 'Loading...') : t('login.phone.button', 'Sign in with SMS');
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
         formTitle = (
-            <p
-                className={`w-full ${
-                    formTitleClassNameOverride ?? 'text-white text-lg'
-                } text-center`}
-            >
-                Enter verification code or{' '}
-                <span
-                    className={startOverClassNameOverride ?? 'text-white underline font-bold'}
-                    onClick={resetForm}
-                >
-                    start over
-                </span>
-            </p>
+            <Trans
+                i18nKey="login.phone.verification.title"
+                defaults="Enter verification code or <0>start over</0>"
+                components={[
+                    <span
+                        key="0"
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                        onClick={resetForm}
+                    />,
+                ]}
+            />
         );
         activeStep = (
             <IonCol
@@ -336,7 +336,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? t('login.phone.verification.verifying', 'Verifying...') : t('login.phone.verification.verify', 'Verify');
     } else if (currentStep === PhoneFormStepsEnum.passwordExistingUser) {
         formTitle = <p className="font-medium text-grayscale-600 normal">Password</p>;
         activeStep = (
@@ -344,19 +344,19 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
+                    placeholder={t('login.phone.password.placeholder', 'Password')}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
                     type="password"
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">Stay Signed In</p>{' '}
+                    <p className="mr-3 text-gray-700 font-medium text-lg">{t('login.phone.password.staySignedIn', 'Stay Signed In')}</p>{' '}
                     <IonToggle />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Login';
+        buttonTitle = t('login.phone.password.login', 'Login');
     } else if (currentStep === PhoneFormStepsEnum.passwordNewUser) {
         formTitle = 'Password';
         activeStep = (
@@ -372,16 +372,17 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        Agree to{' '}
-                        <IonRouterLink href="#" className="font-semibold login-terms-span">
-                            Terms
-                        </IonRouterLink>
+                        <Trans
+                            i18nKey="login.phone.password.agreeToTerms"
+                            defaults="Agree to <0>Terms</0>"
+                            components={[<IonRouterLink key="t" href="#" className="font-semibold login-terms-span" />]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Create Account';
+        buttonTitle = t('login.phone.password.create', 'Create Account');
     }
 
     return (
@@ -433,7 +434,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                         'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
-                                    Resend in {seconds}s
+                                    {t('login.phone.resendIn', 'Resend in {{seconds}}s', { seconds })}
                                 </button>
                             )
                         }
@@ -445,12 +446,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
-                    <p>Already have an account?</p>
+                    <p>{t('login.phone.password.existingAccount', 'Already have an account?')}</p>
                     <button
                         onClick={resetForm}
                         className="w-full text-center font-bold text-lg login-reset-btn"
                     >
-                        Use a different email address
+                        {t('login.phone.password.differentEmail', 'Use a different email address')}
                     </button>
                 </IonCol>
             )}

@@ -957,12 +957,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     onChange={handleDobChange}
                                     error={errors?.dob?.[0]}
                                     isMobile={!isDesktop}
-                                    label="Date of Birth"
+                                    label={t('onboarding.profile.dateOfBirth', 'Date of Birth')}
                                 />
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
-                                        Age: {calculateAge(dob)}
+                                        {t('onboarding.profile.age', 'Age: {{age}}', { age: calculateAge(dob) })}
                                     </p>
                                 )}
 
