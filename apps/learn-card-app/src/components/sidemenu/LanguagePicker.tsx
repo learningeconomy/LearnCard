@@ -20,6 +20,8 @@ const LANGUAGE_NATIVE_NAMES: Record<SupportedLanguage, string> = {
     es: 'Español',
     de: 'Deutsch',
     ar: 'العربية',
+    fr: 'Français',
+    ko: '한국어',
 };
 
 /**
