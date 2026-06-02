@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { IonContent, IonPage, IonRow } from '@ionic/react';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 

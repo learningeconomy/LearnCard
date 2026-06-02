@@ -1,6 +1,6 @@
 import React from 'react';
-import * as m from '../../../paraglide/messages.js';
-import { renderParts } from '../../../i18n';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 
 import { IonCol } from '@ionic/react';
@@ -94,7 +94,20 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                             {m['login.footer.selfCustodialLogin']()}
                         </p>
                         <p className="text-white/80 text-sm">
-                            {m['login.footer.haveSeedPhrase']()}
+                            <TransP
+                                m={m['login.footer.haveSeedPhrase']}
+                                components={[
+                                    <button
+                                        key="s"
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openSeedPhraseModal();
+                                        }}
+                                        className="font-bold underline text-sm text-white/80"
+                                    />,
+                                ]}
+                            />
                         </p>
                     </IonCol>
                 )}

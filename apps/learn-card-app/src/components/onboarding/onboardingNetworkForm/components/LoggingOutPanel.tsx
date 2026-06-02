@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../../paraglide/messages.js';
 import { IonSpinner } from '@ionic/react';
 
 const LoggingOutPanel: React.FC<{ isLoggingOut: boolean }> = ({ isLoggingOut }) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import * as m from '../../../../paraglide/messages.js';
-import { renderParts } from '../../../../i18n';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
 import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
@@ -298,7 +298,18 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         buttonTitle = isLoading ? m['login.phone.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
-        formTitle = m['login.phone.verification.title']();
+        formTitle = (
+            <TransP
+                m={m['login.phone.verification.title']}
+                components={[
+                    <span
+                        key="0"
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                        onClick={resetForm}
+                    />,
+                ]}
+            />
+        );
         activeStep = (
             <IonCol
                 size="12"
@@ -360,7 +371,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        {m['login.phone.password.agreeToTerms']()}
+                        <TransP
+                            m={m['login.phone.password.agreeToTerms']}
+                            components={[<IonRouterLink key="t" href="#" className="font-semibold login-terms-span" />]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../../paraglide/messages.js';
 import WarningCircle from '../../../svgs/WarningCircle';
 import { ModalTypes, useModal } from 'learn-card-base';
 import ParentInviteModal from './ParentInviteModal';

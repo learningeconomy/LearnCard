@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import * as m from '../../../paraglide/messages.js';
-import { renderParts } from '../../../i18n';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { IonInput } from '@ionic/react';
 import {
     useModal,
@@ -84,10 +84,27 @@ const SeedPhraseModal: React.FC = () => {
                 {m['login.seedPhrase.title']()}
             </h1>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                {m['login.seedPhrase.description']({brand: brandingConfig?.name})}
+                <TransP
+                    m={m['login.seedPhrase.description']}
+                    values={{ brand: brandingConfig?.name }}
+                    components={[
+                        <span className="font-semibold" key="0" />,
+                        <React.Fragment key="1" />,
+                        <span className="font-semibold" key="2" />,
+                    ]}
+                />
             </p>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                {m['login.seedPhrase.advancedOption']()}
+                <TransP
+                    m={m['login.seedPhrase.advancedOption']}
+                    components={[
+                        <button
+                            key="0"
+                            onClick={closeModal}
+                            className={`text-${primaryColor} font-semibold underline`}
+                        />,
+                    ]}
+                />
             </p>
             <IonInput
                 placeholder={m['login.seedPhrase.placeholder']()}

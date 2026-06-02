@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import * as m from '../../../../../paraglide/messages.js';
-import { renderParts } from '../../../../../i18n';
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
@@ -101,7 +101,13 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                     {m['onboarding.consent.parentInvite.heading']({ brand: brandingConfig?.name })}
                 </h2>
                 <p className="text-grayscale-700 text-[15px] leading-[22px] px-[10px]">
-                    {m['onboarding.consent.parentInvite.description']()}
+                    <TransP
+                        m={m['onboarding.consent.parentInvite.description']}
+                        components={[
+                            <span className="font-semibold" key="s" />,
+                            <span className="font-semibold" key="e" />,
+                        ]}
+                    />
                 </p>
 
                 <div className="w-full flex items-center justify-center mt-4 px-2">

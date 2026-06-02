@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import * as m from '../../../../paraglide/messages.js';
-import { renderParts } from '../../../../i18n';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
 import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
@@ -365,7 +365,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
         if (isLoading) buttonTitle = m['login.email.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
-        formTitle = m['login.email.verification.title']();
+        formTitle = (
+            <TransP
+                m={m['login.email.verification.title']}
+                components={[
+                    <span
+                        key="0"
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                        onClick={resetForm}
+                    />,
+                ]}
+            />
+        );
         activeStep = (
             <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
@@ -425,7 +436,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        {m['login.email.password.agreeToTerms']()}
+                        <TransP
+                            m={m['login.email.password.agreeToTerms']}
+                            components={[<IonRouterLink key="t" href="#" className="font-semibold login-terms-span" />]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>

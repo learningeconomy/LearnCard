@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../../paraglide/messages.js';
 import { IonInput, IonSpinner } from '@ionic/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';

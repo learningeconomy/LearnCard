@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../../paraglide/messages.js';
 import { IonInput } from '@ionic/react';
 import { Checkmark } from '@learncard/react';
 

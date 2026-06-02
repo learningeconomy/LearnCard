@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import * as m from '../../../paraglide/messages.js';
-import { renderParts } from '../../../i18n';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -304,7 +304,11 @@ export const LoginContent: React.FC = () => {
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                m['login.qrApproved.withHint']({hint: accountHint})
+                                <TransP
+                                    m={m['login.qrApproved.withHint']}
+                                    values={{ hint: accountHint }}
+                                    components={[<span className="font-medium text-grayscale-900" key="h" />]}
+                                />
                             ) : (
                                 m['login.qrApproved.noHint']()
                             )}
@@ -343,7 +347,11 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        m['login.linkedBanner.withHint']({hint: accountHint})
+                                        <TransP
+                                            m={m['login.linkedBanner.withHint']}
+                                            values={{ hint: accountHint }}
+                                            components={[<span className="font-semibold" key="h" />]}
+                                        />
                                     ) : (
                                         m['login.linkedBanner.noHint']()
                                     )}
@@ -363,7 +371,11 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    {m['login.installIntent.banner']({appName: installIntent.appName ?? m['login.installIntent.defaultAppName']()})}
+                                    <TransP
+                                        m={m['login.installIntent.banner']}
+                                        values={{ appName: installIntent.appName ?? m['login.installIntent.defaultAppName']() }}
+                                        components={[<span className="font-semibold" key="a" />]}
+                                    />
                                 </span>
                             </div>
                         </IonRow>

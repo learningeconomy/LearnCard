@@ -1,6 +1,6 @@
 import React from 'react';
-import * as m from '../../../paraglide/messages.js';
-import { renderParts } from '../../../i18n';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 type LinkedChild = {
     childProfileId: string;
@@ -35,7 +35,11 @@ const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
                 {m['onboarding.guardianLinked.heading']()}
             </h2>
             <p className="text-[14px] font-notoSans text-grayscale-600 mb-6">
-                {m['onboarding.guardianLinked.description']({name: nameText})}
+                <TransP
+                    m={m['onboarding.guardianLinked.description']}
+                    values={{ name: nameText }}
+                    components={[<span className="font-[600] text-grayscale-900" key="n" />]}
+                />
             </p>
             <button
                 onClick={onDismiss}

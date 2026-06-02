@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../paraglide/messages.js';
 import { IonicSlides } from '@ionic/react';
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
 import { Swiper, SwiperSlide } from 'swiper/react';

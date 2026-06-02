@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
+
+import * as m from '../../../paraglide/messages.js';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
@@ -957,12 +959,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     onChange={handleDobChange}
                                     error={errors?.dob?.[0]}
                                     isMobile={!isDesktop}
-                                    label={t('onboarding.profile.dateOfBirth', 'Date of Birth')}
+                                    label={m['onboarding.profile.dateOfBirth']()}
                                 />
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
-                                        {t('onboarding.profile.age', 'Age: {{age}}', { age: calculateAge(dob) })}
+                                        {m['onboarding.profile.age']({ age: calculateAge(dob) })}
                                     </p>
                                 )}
 

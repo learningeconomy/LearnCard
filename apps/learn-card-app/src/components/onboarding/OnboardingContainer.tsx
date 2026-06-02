@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import * as m from '../../../paraglide/messages.js';
-import { renderParts } from '../../../i18n';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 import OnboardingRoles from './onboardingRoles/OnboardingRoles';
 import OnboardingFooter from './onboardingFooter/OnboardingFooter';
@@ -84,7 +84,11 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
                             />
                         )}
                         <p className="text-sm text-indigo-800 font-medium">
-                            {m['onboarding.profile.installBanner']({appName: pendingInstall.appName})}
+                            <TransP
+                                m={m['onboarding.profile.installBanner']}
+                                values={{ appName: pendingInstall.appName }}
+                                components={[<span className="font-semibold" key="a" />]}
+                            />
                         </p>
                     </div>
                 )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../paraglide/messages.js';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 

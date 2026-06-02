@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import * as m from '../../../../../paraglide/messages.js';
-import { renderParts } from '../../../../../i18n';
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 import { IonInput } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
@@ -106,7 +106,11 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             {m['onboarding.consent.eu.sent.heading']()}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            {m['onboarding.consent.eu.sent.description']({email})}
+                            <TransP
+                                m={m['onboarding.consent.eu.sent.description']}
+                                values={{ email }}
+                                components={[<span className="font-semibold" key="e" />]}
+                            />
                         </p>
                     </>
                 )}

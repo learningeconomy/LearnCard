@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../paraglide/messages.js';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
