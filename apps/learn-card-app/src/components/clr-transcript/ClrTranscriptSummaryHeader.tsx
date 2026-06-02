@@ -10,6 +10,7 @@ import { UserProfilePicture } from 'learn-card-base/components/profilePicture/Pr
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
+import ClrCompetencyDetailPanel from './ClrCompetencyDetailPanel';
 
 import type { VC } from '@learncard/types';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
@@ -32,6 +33,14 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
     };
     const openEvidenceModal = () => {
         newModal(<ClrEvidenceDetailPanel evidence={model.evidence} />);
+    };
+    const openCompetenciesModal = () => {
+        newModal(
+            <ClrCompetencyDetailPanel
+                competencies={model.competencies}
+                adminMode={adminMode}
+            />
+        );
     };
 
     return (
@@ -101,7 +110,11 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
                     />
                 )}
                 {model.summary.explicitCompetencyCount > 0 && (
-                    <StatCard type="competencies" value={model.summary.explicitCompetencyCount} />
+                    <StatCard
+                        type="competencies"
+                        value={model.summary.explicitCompetencyCount}
+                        onClick={openCompetenciesModal}
+                    />
                 )}
                 {model.summary.evidenceCount > 0 && (
                     <StatCard
