@@ -1,0 +1,126 @@
+{
+    "sidemenu": {
+        "addTo": "Ajouter à {{brand}}",
+        "newAiSession": "Nouvelle session IA",
+        "footer": {
+            "poweredBy": "Propulsé par <0>Consent Flow</0>",
+            "ownYourData": "Vos données vous appartiennent.",
+            "connectionsEncrypted": "Toutes les connexions sont <0>chiffrées.</0>",
+            "privacyPolicy": "Politique de confidentialité",
+            "termsOfService": "Conditions d'utilisation",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Fermer"
+        },
+        "links": {
+            "launchPad": "Applications",
+            "contacts": "Contacts",
+            "alerts": "Alertes",
+            "personalize": "Personnaliser",
+            "adminTools": "Outils admin",
+            "wallet": "Portefeuille",
+            "passport": "Passeport",
+            "aiTopics": "Sessions IA",
+            "aiInsights": "Analyses IA",
+            "aiPathways": "Parcours IA",
+            "skills": "Compétences",
+            "socialBadges": "Boosts",
+            "achievements": "Réussites",
+            "studies": "Études",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Expériences",
+            "families": "Familles",
+            "ids": "Pièces d'identité",
+            "pathways": "Parcours"
+        }
+    },
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "Construire mon {{brand}}",
+            "progress": "{{percent}} % optimisé",
+            "processing": "Traitement des documents…",
+            "stepsCompleted": "<0>{{completed}}</0> sur <1>{{total}}</1> étapes terminées",
+            "pendingReview": "{{count}} justificatif(s) prêt(s) à être examiné(s)"
+        },
+        "resumeBuilder": {
+            "title": "Créateur de CV",
+            "subtitle": "Créez votre CV avec vos justificatifs {{brand}}.",
+            "yourResume": "Votre CV",
+            "buildYourResume": "Créer votre CV",
+            "updatedToday": "Mis à jour <0>aujourd'hui</0>",
+            "tagline": "Démarquez-vous avec un CV personnalisé"
+        },
+        "explore": "Explorer"
+    },
+    "launchpad": {
+        "title": "Applications",
+        "header": {
+            "contacts": "Contacts",
+            "aiSessions": "Sessions IA",
+            "alerts": "Alertes"
+        },
+        "tabs": {
+            "myApps": "Mes applis",
+            "ai": "IA",
+            "learning": "Apprentissage",
+            "games": "Jeux",
+            "tools": "Outils",
+            "employment": "Emploi",
+            "credentials": "Justificatifs",
+            "other": "Autres",
+            "plugins": "Extensions",
+            "all": "Tout"
+        },
+        "sections": {
+            "suggestedApps": "Applications suggérées",
+            "installedApps": "Applications installées",
+            "allApps": "Toutes les applications",
+            "allCategory": "Tout {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "Vos applications s'afficheront ici",
+            "noAppsAvailable": "Aucune application disponible pour le moment",
+            "nothingInCategory": "Rien dans {{category}} pour l'instant",
+            "installSomething": "Installez quelque chose depuis l'App Store pour commencer.",
+            "checkBackLater": "Revenez plus tard — de nouvelles applications sont ajoutées régulièrement.",
+            "checkBackSoon": "Revenez bientôt, ou parcourez toutes les applications."
+        },
+        "aiDisabledMinor": "Les fonctionnalités IA ne sont pas disponibles pour les utilisateurs de moins de 18 ans.",
+        "aiDisabledPrivacy": "Les fonctionnalités IA sont actuellement désactivées. Vous pouvez les activer dans Confidentialité et données depuis votre profil."
+    },
+    "wallet": {
+        "categories": {
+            "aiSessions": "Sessions IA",
+            "aiPathways": "Parcours IA",
+            "aiInsights": "Analyses IA",
+            "skills": "Compétences",
+            "socialBadges": "Boosts",
+            "achievements": "Réussites",
+            "studies": "Études",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Expériences",
+            "families": "Familles",
+            "ids": "Pièces d'identité"
+        }
+    },
+    "theme": {
+        "title": "Choisir votre thème",
+        "subtitleColorfulFormal": "Basculez entre notre expérience colorée caractéristique et un style classique et formel.",
+        "subtitleGeneric": "Choisissez votre style visuel préféré.",
+        "names": {
+            "colorful": "Coloré",
+            "formal": "Formel",
+            "vetpass": "VetPass"
+        }
+    },
+    "language": {
+        "select": "Choisir une langue",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية",
+        "french": "Français",
+        "korean": "한국어"
+    }
+}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+
+import * as m from '../../../paraglide/messages.js';
 
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 
@@ -14,7 +15,6 @@ import { chatBotStore } from '../../../stores/chatBotStore';
 const NewAiSessionSideMenuButton: React.FC<{ handleNewSession?: () => void }> = ({
     handleNewSession,
 }) => {
-    const { t } = useTranslation();
     const location = useLocation();
     const { getColorSet } = useTheme();
     const { isDesktop } = useDeviceTypeByWidth();
@@ -41,7 +41,7 @@ const NewAiSessionSideMenuButton: React.FC<{ handleNewSession?: () => void }> = 
                 onHandleNewSession();
             }}
         >
-            {t('sidemenu.newAiSession', 'New AI Session')}
+            {m['sidemenu.newAiSession']()}
             <NewAiSessionIcon className="ml-1 shrink-0" />
         </IonMenuToggle>
     );

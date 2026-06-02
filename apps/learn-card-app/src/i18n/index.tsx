@@ -28,7 +28,7 @@ export type MessagePart =
 
 // ── Supported languages (mirrors LC-1831 POC) ──────────────────────────
 
-export const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'ar'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'ar', 'fr', 'ko'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 // Full RTL mode for Arabic: flips <html dir="rtl"> so the layout mirrors.
