@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import OnboardingContainer from './OnboardingContainer';
+import { OnboardingStepsEnum } from './onboarding.helpers';
 
 const mockNewModal = vi.fn();
 const mockCloseModal = vi.fn();
@@ -13,7 +14,15 @@ const mockGetSigningLearnCard = vi.fn();
 const mockCalculateAge = vi.fn();
 const mockIsFutureDate = vi.fn();
 const mockIsOnboardingOpen = vi.fn();
-const mockInstallIntent = vi.fn(() => null);
+const mockInstallIntent = vi.fn((_value?: unknown) => null);
+let mockAuthState: { status: 'needs_setup' | 'ready' } = { status: 'needs_setup' };
+let mockCurrentLCNUser: {
+    displayName: string;
+    image?: string;
+    dob?: string;
+    country?: string;
+} | null = null;
+let mockCurrentLCNUserLoading = false;
 
 let lastModalElement: React.ReactElement | null = null;
 
@@ -39,6 +48,10 @@ vi.mock('learn-card-base', () => ({
             mockNewModal(...args);
         },
         closeModal: mockCloseModal,
+    }),
+    useGetProfile: () => ({
+        data: mockCurrentLCNUser,
+        isLoading: mockCurrentLCNUserLoading,
     }),
 }));
 
@@ -70,13 +83,17 @@ vi.mock('learn-card-base/stores/redirectStore', () => ({
     },
 }));
 
+vi.mock('@analytics', () => ({
+    ONBOARDING_STARTED_AT_KEY: 'onboarding-started-at-test-key',
+}));
+
 vi.mock('@learncard/sss-key-manager', () => ({
     generateEd25519PrivateKey: (...args: unknown[]) => mockGenerateEd25519PrivateKey(...args),
 }));
 
 vi.mock('../../providers/AuthCoordinatorProvider', () => ({
     useAppAuth: () => ({
-        state: { status: 'needs_setup' },
+        state: mockAuthState,
         setupNewKey: (...args: unknown[]) => mockSetupNewKey(...args),
     }),
 }));
@@ -147,6 +164,16 @@ describe('OnboardingContainer school-code bypass', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         lastModalElement = null;
+        mockAuthState = { status: 'needs_setup' };
+        mockCurrentLCNUser = null;
+        mockCurrentLCNUserLoading = false;
+
+        vi.stubGlobal('localStorage', {
+            getItem: vi.fn(() => null),
+            setItem: vi.fn(),
+            removeItem: vi.fn(),
+            clear: vi.fn(),
+        });
 
         mockGenerateEd25519PrivateKey.mockResolvedValue('private-key');
         mockGetSigningLearnCard.mockResolvedValue({
@@ -200,5 +227,23 @@ describe('OnboardingContainer school-code bypass', () => {
         await waitFor(() => {
             expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
         });
+    });
+
+    it('honors the requested initial step when the profile already has age data', async () => {
+        mockAuthState = { status: 'ready' };
+        mockCurrentLCNUser = {
+            displayName: 'Test User',
+            image: 'https://example.com/avatar.png',
+            dob: '2000-01-01',
+            country: 'US',
+        };
+
+        render(<OnboardingContainer initialStep={OnboardingStepsEnum.joinNetwork} />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('onboarding-network-form')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByTestId('age-gate')).toBeNull();
     });
 });

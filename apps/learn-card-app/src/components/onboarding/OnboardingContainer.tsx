@@ -11,6 +11,7 @@ import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import OnboardingNetworkForm from './onboardingNetworkForm/OnboardingNetworkForm';
 import OnboardingAgeGate from './OnboardingAgeGate';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
+import { useGetProfile } from 'learn-card-base';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -40,23 +41,44 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
 
     const currentUser = useCurrentUser();
+    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useGetProfile();
+    const currentLCNUserDob =
+        currentLCNUser && 'dob' in currentLCNUser ? currentLCNUser.dob ?? '' : '';
+    const currentLCNUserCountry =
+        currentLCNUser && 'country' in currentLCNUser ? currentLCNUser.country : undefined;
     const [formData, setFormData] = useState<
         React.ComponentProps<typeof OnboardingNetworkForm>['formData']
     >({
-        name: currentUser?.name ?? '',
-        dob: '',
-        country: undefined,
-        photo: currentUser?.profileImage ?? '',
+        name: currentLCNUser?.displayName ?? currentUser?.name ?? '',
+        dob: currentLCNUserDob,
+        country: currentLCNUserCountry,
+        photo: currentLCNUser?.image ?? currentUser?.profileImage ?? '',
         usMinorConsent: false,
         euParentalConsentRequested: false,
         guardianEmail: '',
         profileId: '',
     });
 
-    const shouldStartAtAgeGate = !formData.dob || !formData.country;
+    useEffect(() => {
+        if (!currentLCNUser) {
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            name: prev.name || currentLCNUser.displayName || prev.name,
+            dob: prev.dob || currentLCNUserDob || '',
+            country: prev.country || currentLCNUserCountry,
+            photo: prev.photo || currentLCNUser.image || currentUser?.profileImage || '',
+        }));
+    }, [currentLCNUser, currentLCNUserCountry, currentLCNUserDob, currentUser?.profileImage]);
+
+    const hasProfileAgeData = Boolean(currentLCNUserDob && currentLCNUserCountry);
+    const shouldStartAtAgeGate =
+        coordinatorState.status === 'needs_setup' || (!currentLCNUserLoading && !hasProfileAgeData);
 
     const [step, setStep] = useState<OnboardingStepsEnum>(
-        shouldStartAtAgeGate || coordinatorState.status === 'needs_setup'
+        shouldStartAtAgeGate
             ? OnboardingStepsEnum.ageGate
             : initialStep ?? OnboardingStepsEnum.selectRole
     );
@@ -72,6 +94,16 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             setStep(OnboardingStepsEnum.ageGate);
         }
     }, [coordinatorState.status]);
+
+    useEffect(() => {
+        if (coordinatorState.status === 'needs_setup' || currentLCNUserLoading) {
+            return;
+        }
+
+        if (!currentLCNUserDob || !currentLCNUserCountry) {
+            setStep(OnboardingStepsEnum.ageGate);
+        }
+    }, [coordinatorState.status, currentLCNUserCountry, currentLCNUserDob, currentLCNUserLoading]);
 
     useEffect(() => {
         // Set flag so AppListingPage's auto-trigger waits until onboarding closes
