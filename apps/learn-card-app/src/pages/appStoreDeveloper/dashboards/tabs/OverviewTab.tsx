@@ -292,6 +292,19 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                 >
                                     {isInbox ? 'Email Delivery' : 'Direct Send'}
                                 </span>
+
+                                {(recipientStatus === 'revoked' ||
+                                    recipientStatus === 'suspended') && (
+                                    <span
+                                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                            recipientStatus === 'revoked'
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-amber-100 text-amber-700'
+                                        }`}
+                                    >
+                                        {recipientStatus === 'revoked' ? 'Revoked' : 'Suspended'}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
