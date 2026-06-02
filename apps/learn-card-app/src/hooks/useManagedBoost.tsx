@@ -131,7 +131,8 @@ export const useManagedBoost = (
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Issuances</h2>
                 <IssuanceList boostUri={boost.uri} />
             </div>,
-            { sectionClassName: '!max-w-[480px]' }
+            { sectionClassName: '!max-w-[480px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
 
