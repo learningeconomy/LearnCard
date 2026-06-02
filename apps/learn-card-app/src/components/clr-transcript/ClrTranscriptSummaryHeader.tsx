@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { ModalTypes, useModal } from 'learn-card-base';
 import { QRCodeSVG } from 'qrcode.react';
 import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
@@ -8,6 +9,7 @@ import { UserProfilePicture } from 'learn-card-base/components/profilePicture/Pr
 
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
 
 import type { VC } from '@learncard/types';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
@@ -19,8 +21,18 @@ type Props = {
 };
 
 const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Props) => {
+    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const issuerLogo = model.header.image?.value;
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
+    const scrollToCourseHistory = () => {
+        document.getElementById('course-history')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    };
+    const openEvidenceModal = () => {
+        newModal(<ClrEvidenceDetailPanel evidence={model.evidence} />);
+    };
 
     return (
         <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-5 relative overflow-hidden">
@@ -82,13 +94,21 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
                     <StatCard type="gpa" value={String(model.summary.gpa.value)} />
                 )}
                 {model.summary.courseCount > 0 && (
-                    <StatCard type="courses" value={model.summary.courseCount} />
+                    <StatCard
+                        type="courses"
+                        value={model.summary.courseCount}
+                        onClick={scrollToCourseHistory}
+                    />
                 )}
                 {model.summary.explicitCompetencyCount > 0 && (
                     <StatCard type="competencies" value={model.summary.explicitCompetencyCount} />
                 )}
                 {model.summary.evidenceCount > 0 && (
-                    <StatCard type="evidence" value={model.summary.evidenceCount} />
+                    <StatCard
+                        type="evidence"
+                        value={model.summary.evidenceCount}
+                        onClick={openEvidenceModal}
+                    />
                 )}
             </div>
 
