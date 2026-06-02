@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import moment from 'moment';
+import React from 'react';
 import { useHistory } from 'react-router-dom';
 
 import useBoostMenu, { BoostMenuType } from '../components/boost/hooks/useBoostMenu';
@@ -12,24 +11,14 @@ import {
     useResolveBoost,
     useGetBoostRecipients,
     useCountBoostRecipients,
-    useRevokeBoostRecipient,
-    useSuspendBoostRecipient,
-    useUnsuspendBoostRecipient,
-    useGetBoostPermissions,
-    useConfirmation,
-    useToast,
-    ToastTypeEnum,
     ModalTypes,
     CredentialBadge,
     CredentialCategory,
     UserProfilePicture,
 } from 'learn-card-base';
 
-import { useAnalytics } from '../analytics';
-import { AnalyticsEvents } from '../analytics/events';
-
-import { IonItem, IonList, IonIcon, IonPopover, IonButton } from '@ionic/react';
-import { ellipsisVertical, banOutline, stopCircleOutline, playOutline, trashOutline } from 'ionicons/icons';
+import { IssuanceList } from '../components/issuances/IssuanceList';
+import { IssuancesSummary } from '../components/issuances/IssuancesSummary';
 import BoostPreview from '../components/boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../components/boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -42,97 +31,8 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { Boost, BoostRecipientInfo, LCNProfile, VC } from '@learncard/types';
+import { Boost, LCNProfile, VC } from '@learncard/types';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-
-/** Status badge styling for recipient rows */
-const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Active' },
-    suspended: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Suspended' },
-    revoked: { bg: 'bg-red-50', text: 'text-red-700', label: 'Revoked' },
-};
-
-const StatusBadge = ({ status }: { status?: string }) => {
-    const style = STATUS_STYLES[status || 'active'] || STATUS_STYLES.active;
-    return (
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.bg} ${style.text}`}>
-            {style.label}
-        </span>
-    );
-};
-
-/** Per-recipient action menu with confirm + toast */
-const RecipientActionMenu = ({
-    recipient,
-    onAction,
-}: {
-    recipient: BoostRecipientInfo;
-    onAction: (action: 'revoke' | 'suspend' | 'unsuspend') => void;
-}) => {
-    const [popoverOpen, setPopoverOpen] = useState(false);
-    const status = (recipient as any).status || 'active';
-
-    return (
-        <>
-            <IonButton
-                fill="clear"
-                size="small"
-                onClick={e => {
-                    e.stopPropagation();
-                    setPopoverOpen(true);
-                }}
-                className="shrink-0 --padding-start-0 --padding-end-0 min-w-[32px]"
-            >
-                <IonIcon slot="icon-only" icon={ellipsisVertical} className="text-grayscale-500" />
-            </IonButton>
-            <IonPopover
-                isOpen={popoverOpen}
-                onDidDismiss={() => setPopoverOpen(false)}
-                side="left"
-                alignment="end"
-            >
-                <div className="py-2 min-w-[160px]">
-                    {status === 'active' && (
-                        <>
-                            <button
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-grayscale-700 hover:bg-grayscale-100"
-                                onClick={() => { setPopoverOpen(false); onAction('suspend'); }}
-                            >
-                                <IonIcon icon={stopCircleOutline} className="text-amber-500" />
-                                Suspend
-                            </button>
-                            <button
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                onClick={() => { setPopoverOpen(false); onAction('revoke'); }}
-                            >
-                                <IonIcon icon={trashOutline} className="text-red-500" />
-                                Revoke
-                            </button>
-                        </>
-                    )}
-                    {status === 'suspended' && (
-                        <>
-                            <button
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => { setPopoverOpen(false); onAction('unsuspend'); }}
-                            >
-                                <IonIcon icon={playOutline} className="text-emerald-500" />
-                                Unsuspend
-                            </button>
-                            <button
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                onClick={() => { setPopoverOpen(false); onAction('revoke'); }}
-                            >
-                                <IonIcon icon={trashOutline} className="text-red-500" />
-                                Revoke
-                            </button>
-                        </>
-                    )}
-                </div>
-            </IonPopover>
-        </>
-    );
-};
 
 export const useManagedBoost = (
     boost: Boost,
@@ -147,66 +47,6 @@ export const useManagedBoost = (
 ) => {
     const history = useHistory();
     const currentUser = useCurrentUser();
-
-    const revokeRecipient = useRevokeBoostRecipient();
-    const suspendRecipient = useSuspendBoostRecipient();
-    const unsuspendRecipient = useUnsuspendBoostRecipient();
-    const { data: boostPermissions } = useGetBoostPermissions(boost?.uri);
-    const confirm = useConfirmation();
-    const { presentToast } = useToast();
-    const { track } = useAnalytics();
-
-    const handleRecipientAction = async (
-        action: 'revoke' | 'suspend' | 'unsuspend',
-        recipient: BoostRecipientInfo
-    ) => {
-        const recipientName = recipient.to?.displayName || recipient.to?.profileId;
-        const recipientProfileId = recipient.to?.profileId;
-        const boostUri = boost?.uri;
-        if (!recipientProfileId || !boostUri) return;
-
-        const actionLabels = {
-            revoke: { verb: 'revoke', noun: 'revoked' },
-            suspend: { verb: 'suspend', noun: 'suspended' },
-            unsuspend: { verb: 'reactivate', noun: 'reactivated' },
-        };
-        const { verb, noun } = actionLabels[action];
-
-        await confirm({
-            text: `Are you sure you want to ${verb} the credential for ${recipientName}?`,
-            onConfirm: async () => {
-                try {
-                    const mutation =
-                        action === 'revoke'
-                            ? revokeRecipient
-                            : action === 'suspend'
-                              ? suspendRecipient
-                              : unsuspendRecipient;
-                    await mutation.mutateAsync({ boostUri, recipientProfileId });
-                    // Fire analytics event
-                    const eventMap = {
-                        revoke: AnalyticsEvents.CREDENTIAL_REVOKED,
-                        suspend: AnalyticsEvents.CREDENTIAL_SUSPENDED,
-                        unsuspend: AnalyticsEvents.CREDENTIAL_UNSUSPENDED,
-                    };
-                    track(eventMap[action], { boostUri, surface: 'managed-boosts' });
-                    presentToast(
-                        `${recipientName}'s credential has been ${noun}.`,
-                        { type: ToastTypeEnum.Success }
-                    );
-                } catch (error) {
-                    presentToast(
-                        `Failed to ${verb} credential for ${recipientName}. Please try again.`,
-                        { type: ToastTypeEnum.Error }
-                    );
-                }
-            },
-            cancelButtonClassName:
-                'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
-            confirmButtonClassName:
-                'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
-        });
-    };
 
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -284,6 +124,11 @@ export const useManagedBoost = (
         isError: myProfileError,
     } = useGetProfile();
 
+    const presentManageIssuancesModal = () => {
+        if (!boost?.uri) return;
+        newModal(<IssuanceList boostUri={boost.uri} />, { sectionClassName: '!max-w-[480px]' });
+    };
+
     const handlePresentBoostMenuModal = useBoostMenu({
         boostUri: boost.uri,
         boostCredential: boostVC,
@@ -291,6 +136,7 @@ export const useManagedBoost = (
         menuType: BoostMenuType.managed,
         onCloseModal: () => closeModal?.(),
         onDelete: () => closeAllModals?.(),
+        onManageIssuances: () => presentManageIssuancesModal(),
     });
 
     const handleOptionsMenu = async () => {
@@ -329,8 +175,11 @@ export const useManagedBoost = (
         showVerifications: false,
         issueHistory: issueHistory,
         handleCloseModal: () => closeModal(),
-        onDotsClick: boost?.status === 'DRAFT' ? handleOptionsMenu : undefined,
+        onDotsClick: !showSkeleton ? handleOptionsMenu : undefined,
         formattedDisplayType: formattedDisplayType,
+        issuancesSummaryComponent: boost?.uri ? (
+            <IssuancesSummary boostUri={boost.uri} onManage={presentManageIssuancesModal} />
+        ) : undefined,
         customBodyCardComponent: (
             <BoostPreviewBody
                 recipients={recipients ?? []}
@@ -372,49 +221,6 @@ export const useManagedBoost = (
                 selectedVCType={categoryType}
             />
         ),
-        customIssueHistoryComponent: (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
-                {recipients?.map((recipient, index) => {
-                    const status = (recipient as any).status || 'active';
-                    return (
-                        <IonItem
-                            key={recipient?.recieved || index}
-                            lines="none"
-                            className={`w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
-                        >
-                            <div className="flex items-center justify-start w-full">
-                                <div className="flex items-center justify-start">
-                                    <UserProfilePicture
-                                        customContainerClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
-                                        customImageClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden object-cover"
-                                        customSize={120}
-                                        user={recipient?.to}
-                                    />
-                                </div>
-                                <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1">
-                                    <p className="text-grayscale-900 font-semibold capitalize text-sm">
-                                        {recipient?.to?.displayName || recipient?.to?.profileId}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-grayscale-600 font-normal text-sm">
-                                            {moment(recipient?.received).format('DD MMMM YYYY')} &bull;{' '}
-                                            {moment(recipient?.received).format('h:mm A')}
-                                        </p>
-                                        <StatusBadge status={status} />
-                                    </div>
-                                </div>
-                            </div>
-                            {status !== 'revoked' && boostPermissions?.canRevoke && (
-                                <RecipientActionMenu
-                                    recipient={recipient}
-                                    onAction={action => handleRecipientAction(action, recipient)}
-                                />
-                            )}
-                        </IonItem>
-                    );
-                })}
-            </IonList>
-        ),
         hideQRCode: true,
         previewType,
     };
@@ -425,7 +231,7 @@ export const useManagedBoost = (
         showVerifications: false,
         issueHistory: issueHistory,
         handleCloseModal: () => closeModal(),
-        onDotsClick: isDraft && !showSkeleton ? handleOptionsMenu : undefined,
+        onDotsClick: !showSkeleton ? handleOptionsMenu : undefined,
         issueeOverride: isCertificate
             ? `${filteredRecipients?.length} ${filteredRecipients.length > 1 ? 'people' : 'person'}`
             : undefined,
@@ -438,6 +244,9 @@ export const useManagedBoost = (
                 <UserProfilePicture user={issuerProfileOverride || currentUser} />
             ) : undefined,
         hideIssueDate: true,
+        issuancesSummaryComponent: boost?.uri ? (
+            <IssuancesSummary boostUri={boost.uri} onManage={presentManageIssuancesModal} />
+        ) : undefined,
         customBodyCardComponent: isCertificate ? (
             <CertificatePreviewRecipients recipients={recipients} />
         ) : (
@@ -467,49 +276,6 @@ export const useManagedBoost = (
                 handleSubmit={handleIssueOnClick}
                 selectedVCType={categoryType}
             />
-        ),
-        customIssueHistoryComponent: (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
-                {recipients?.map((recipient, index) => {
-                    const status = (recipient as any).status || 'active';
-                    return (
-                        <IonItem
-                            key={recipient?.recieved || index}
-                            lines="none"
-                            className="w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2"
-                        >
-                            <div className="flex items-center justify-start w-full">
-                                <div className="flex items-center justify-start">
-                                    <UserProfilePicture
-                                        customContainerClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
-                                        customImageClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden object-cover"
-                                        customSize={120}
-                                        user={recipient?.to}
-                                    />
-                                </div>
-                                <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1 text-sm">
-                                    <p className="text-grayscale-900 font-semibold capitalize">
-                                        {recipient?.to?.displayName || recipient?.to?.profileId}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-grayscale-600 font-normal text-sm">
-                                            {moment(recipient?.received).format('DD MMMM YYYY')} &bull;{' '}
-                                            {moment(recipient?.received).format('h:mm A')}
-                                        </p>
-                                        <StatusBadge status={status} />
-                                    </div>
-                                </div>
-                            </div>
-                            {status !== 'revoked' && boostPermissions?.canRevoke && (
-                                <RecipientActionMenu
-                                    recipient={recipient}
-                                    onAction={action => handleRecipientAction(action, recipient)}
-                                />
-                            )}
-                        </IonItem>
-                    );
-                })}
-            </IonList>
         ),
         formattedDisplayType: formattedDisplayType,
         displayType: cred?.display?.displayType,

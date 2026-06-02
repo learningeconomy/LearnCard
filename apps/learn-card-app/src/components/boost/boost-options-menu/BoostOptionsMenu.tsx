@@ -1,6 +1,7 @@
 import React from 'react';
 
 import TrashBin from '../../svgs/TrashBin';
+import Settings from '../../svgs/Settings';
 import ShareBoostLink from './ShareBoostLink';
 import JsonPreviewModal from './JsonPreviewModal';
 import BracketsIcon from '../../svgs/BracketsIcon';
@@ -20,6 +21,7 @@ type BoostOptionsMenuProps = {
     record?: Partial<LCR>;
     menuType?: BoostMenuType;
     categoryType?: string;
+    handleManageIssuances?: () => void;
 };
 
 const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
@@ -30,6 +32,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     record: _record,
     menuType,
     categoryType,
+    handleManageIssuances,
 }) => {
     const confirm = useConfirmation();
 
@@ -91,6 +94,15 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
         icon?: React.ReactNode;
         onClick?: () => void;
     }[] = [];
+
+    if (menuType === BoostMenuType.managed && handleManageIssuances) {
+        boostMenuOptions.push({
+            id: 0,
+            title: 'Manage Issuances',
+            icon: <Settings className="text-grayscale-900 w-5 h-5" />,
+            onClick: () => handleManageIssuances(),
+        });
+    }
 
     if (menuType === BoostMenuType.managed || record?.id) {
         boostMenuOptions.push({

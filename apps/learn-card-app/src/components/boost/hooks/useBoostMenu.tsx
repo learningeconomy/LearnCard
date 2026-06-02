@@ -28,6 +28,7 @@ const useBoostMenu = ({
     boostCredential,
     onCloseModal,
     onDelete,
+    onManageIssuances,
 }:
     | {
           credential?: VC;
@@ -36,6 +37,7 @@ const useBoostMenu = ({
           menuType: BoostMenuType.earned;
           onCloseModal?: () => void;
           onDelete?: () => void;
+          onManageIssuances?: never;
           boostUri?: never;
           boostCredential?: never;
       }
@@ -46,6 +48,7 @@ const useBoostMenu = ({
           boostCredential?: VC | UnsignedVC;
           onCloseModal?: () => void;
           onDelete?: () => void;
+          onManageIssuances?: () => void;
           credential?: never;
           record?: never;
       }) => {
@@ -94,6 +97,7 @@ const useBoostMenu = ({
                 handleDelete={handleDelete}
                 menuType={menuType}
                 categoryType={categoryType}
+                handleManageIssuances={onManageIssuances}
             />,
             { sectionClassName: '!max-w-[400px]' }
         );
