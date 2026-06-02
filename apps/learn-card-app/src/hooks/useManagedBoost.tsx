@@ -126,7 +126,13 @@ export const useManagedBoost = (
 
     const presentManageIssuancesModal = () => {
         if (!boost?.uri) return;
-        newModal(<IssuanceList boostUri={boost.uri} />, { sectionClassName: '!max-w-[480px]' });
+        newModal(
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Issuances</h2>
+                <IssuanceList boostUri={boost.uri} />
+            </div>,
+            { sectionClassName: '!max-w-[480px]' }
+        );
     };
 
     const handlePresentBoostMenuModal = useBoostMenu({
