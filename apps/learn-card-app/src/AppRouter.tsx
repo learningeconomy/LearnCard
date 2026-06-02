@@ -83,6 +83,7 @@ const AppRouter: React.FC = () => {
     const initLoading = !(
         walletReady ||
         coordinatorState.status === 'idle' ||
+        coordinatorState.status === 'needs_setup' ||
         coordinatorState.status === 'needs_recovery' ||
         coordinatorState.status === 'error'
     );
@@ -97,6 +98,7 @@ const AppRouter: React.FC = () => {
         const ready =
             walletReady ||
             coordinatorState.status === 'idle' ||
+            coordinatorState.status === 'needs_setup' ||
             coordinatorState.status === 'needs_recovery' ||
             coordinatorState.status === 'error';
         if (ready) {
