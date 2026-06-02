@@ -118,8 +118,12 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     }, []);
 
     const prepareNewUserKey = useCallback(async (): Promise<boolean> => {
-        if (coordinatorState.status !== 'needs_setup' || didPrepareNewKeyRef.current) {
+        if (didPrepareNewKeyRef.current || coordinatorState.status === 'ready') {
             return true;
+        }
+
+        if (coordinatorState.status !== 'needs_setup') {
+            return false;
         }
 
         if (prepareNewKeyPromiseRef.current) {
