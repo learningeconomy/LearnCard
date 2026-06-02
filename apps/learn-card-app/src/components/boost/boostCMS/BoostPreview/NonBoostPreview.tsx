@@ -273,9 +273,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     return (
         <IonPage>
             <div className={`flex h-full ${bgColor}`}>
-                {isClrCredential && hasClrEvidence && (
-                    <ClrEvidenceHeader evidence={clrEvidence} />
-                )}
+                {isClrCredential && hasClrEvidence && <ClrEvidenceHeader evidence={clrEvidence} />}
                 <section
                     className={`flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 ${
                         isClrCredential && hasClrEvidence ? 'pt-[57px]' : ''
@@ -287,9 +285,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                     >
                         <section
-                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+                            } ${isMobile && isClrCredential ? 'px-2' : 'px-6'}`}
                         >
                             {credentialContent}
                         </section>

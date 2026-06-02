@@ -29,10 +29,10 @@ const ClrProgramsSection: React.FC<{
                         key={p.sourceCredentialId}
                         className="bg-white border border-grayscale-200 rounded-[20px] p-5"
                     >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             {/* Left: name + meta */}
-                            <div className="flex-1 min-w-0 space-y-1">
-                                <p className="text-sm font-semibold text-grayscale-900 leading-snug">
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <p className="text-sm font-semibold text-grayscale-900 leading-snug break-words">
                                     {p.name?.value ?? 'Program'}
                                 </p>
                                 <p className="text-xs text-grayscale-500">
@@ -40,7 +40,7 @@ const ClrProgramsSection: React.FC<{
                                     {p.earnedAt?.value && ` • ${p.earnedAt.value}`}
                                 </p>
                                 {p.description?.value && (
-                                    <p className="text-xs text-grayscale-600 leading-relaxed pt-1">
+                                    <p className="text-xs text-grayscale-600 leading-relaxed pt-1 break-words">
                                         {p.description.value}
                                     </p>
                                 )}
@@ -49,7 +49,7 @@ const ClrProgramsSection: React.FC<{
                             {/* Right: View button */}
                             <button
                                 onClick={() => onSelectProgram(p)}
-                                className="shrink-0 flex items-center gap-1.5 border-[1px] border-solid border-grayscale-100 bg-white rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 whitespace-nowrap"
+                                className="shrink-0 self-end md:self-auto flex items-center gap-1.5 border-[1px] border-solid border-grayscale-100 bg-white rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 whitespace-nowrap md:ml-auto"
                             >
                                 <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-200" />
                                 View {inferProgramKind(p.achievementType.value)}

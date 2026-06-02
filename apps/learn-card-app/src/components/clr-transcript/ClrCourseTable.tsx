@@ -62,11 +62,11 @@ const ClrCourseTable: React.FC<{
                         {/* Rows */}
                         {!isCollapsed && (
                             <div className="border-t border-grayscale-100">
-                                <div className="grid grid-cols-[1fr_96px_64px_56px_24px] px-5 py-2 bg-white border-b border-grayscale-100">
+                                <div className="grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_96px_64px_56px_24px] px-3 sm:px-5 py-2 bg-white border-b border-grayscale-100">
                                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider">
                                         Course
                                     </p>
-                                    <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-center">
+                                    <p className="hidden sm:block text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-center">
                                         Credentials
                                     </p>
                                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-right">
@@ -92,7 +92,7 @@ const ClrCourseTable: React.FC<{
                                     return (
                                         <button
                                             key={course.sourceCredentialId}
-                                            className={`w-full grid grid-cols-[1fr_96px_64px_56px_24px] px-5 py-3.5 border-b border-grayscale-100 last:border-0 transition-colors text-left items-center odd:bg-white even:bg-grayscale-50`}
+                                            className={`w-full grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_96px_64px_56px_24px] px-3 sm:px-5 py-3.5 border-b border-grayscale-100 last:border-0 transition-colors text-left items-center odd:bg-white even:bg-grayscale-50`}
                                             onClick={() => onSelectCourse?.(course)}
                                         >
                                             {/* Course name + code */}
@@ -114,7 +114,7 @@ const ClrCourseTable: React.FC<{
                                                 )}
                                             </div>
                                             {/* Credentials */}
-                                            <div className="flex items-center justify-center gap-1.5">
+                                            <div className="hidden sm:flex items-center justify-center gap-1.5">
                                                 {credentialCount > 0 ? (
                                                     <>
                                                         <span className="text-sm text-grayscale-600">

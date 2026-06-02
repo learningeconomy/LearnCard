@@ -35,7 +35,7 @@ const ClrProgramCredentialCollapsible: React.FC<{
                         <div className="absolute left-[10px]">
                             <ClrIssuerBadge variant="standard" issuerName={issuerName} size={80} />
                         </div>
-                        <div className="min-w-0 space-y-0.5 pr-2 pl-[50px] py-2 rounded-[15px] shadow-box-bottom w-full relative">
+                        <div className="min-w-0 space-y-0.5 pr-2 pl-[45px] py-2 rounded-[15px] shadow-box-bottom w-full relative">
                             <p className="text-sm font-medium text-grayscale-900 truncate">
                                 {program.name?.value ?? 'Program'}
                             </p>

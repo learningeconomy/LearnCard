@@ -50,14 +50,14 @@ const ClrTranscriptSummaryHeader: React.FC<{
             )}
 
             {/* Top: avatar + identity + QR */}
-            <div className="flex items-start gap-4">
+            <div className="relative flex flex-col gap-4 md:flex-row md:items-start">
                 <UserProfilePicture
                     user={{ displayName: model.header.learnerName?.value }}
-                    customContainerClass="w-16 h-16 shrink-0 text-2xl"
+                    customContainerClass="w-16 h-16 shrink-0 text-2xl self-start"
                     customImageClass="w-16 h-16"
                 />
 
-                <div className="flex-1 min-w-0">
+                <div className="w-full min-w-0 md:flex-1 md:pt-1">
                     <p className="text-[22px] text-grayscale-900 leading-tight truncate">
                         {model.header.learnerName?.value ?? 'Unknown learner'}
                     </p>
@@ -80,12 +80,14 @@ const ClrTranscriptSummaryHeader: React.FC<{
                     )}
                 </div>
 
-                <ShareBoostLink
-                    boost={boost}
-                    boostUri={boostUri ?? model.header.id.value}
-                    categoryType={CredentialCategoryEnum.learningHistory}
-                    compact
-                />
+                <div className="absolute right-0 top-0 md:static md:ml-auto">
+                    <ShareBoostLink
+                        boost={boost}
+                        boostUri={boostUri ?? model.header.id.value}
+                        categoryType={CredentialCategoryEnum.learningHistory}
+                        compact
+                    />
+                </div>
             </div>
 
             {/* Stats */}
