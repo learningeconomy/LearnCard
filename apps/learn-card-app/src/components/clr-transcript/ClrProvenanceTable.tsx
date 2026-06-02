@@ -1,8 +1,6 @@
-import type { CourseDisplayModel, SourceMappedField } from '../../helpers/clrRenderer.helpers';
+import React from 'react';
 
-type Props = {
-    course: CourseDisplayModel;
-};
+import type { CourseDisplayModel, SourceMappedField } from '../../helpers/clrRenderer.helpers';
 
 type Row = {
     field: string;
@@ -12,40 +10,42 @@ type Row = {
     credentialId?: string;
 };
 
-const push = <T,>(rows: Row[], field: string, f?: SourceMappedField<T>) => {
-    if (!f) return;
-    rows.push({
-        field,
-        value: Array.isArray(f.value) ? f.value.join(', ') : String(f.value),
-        sourcePath: f.sourcePath,
-        specField: f.specField,
-        credentialId: f.sourceCredentialId,
-    });
-};
+const ClrProvenanceTable: React.FC<{
+    course: CourseDisplayModel;
+}> = ({ course }) => {
+    const pushRow = <T,>(rows: Row[], field: string, f?: SourceMappedField<T>) => {
+        if (!f) return;
+        rows.push({
+            field,
+            value: Array.isArray(f.value) ? f.value.join(', ') : String(f.value),
+            sourcePath: f.sourcePath,
+            specField: f.specField,
+            credentialId: f.sourceCredentialId,
+        });
+    };
 
-const buildRows = (course: CourseDisplayModel): Row[] => {
-    const rows: Row[] = [];
-    push(rows, 'Course Name', course.name);
-    push(rows, 'Course Code', course.humanCode);
-    push(rows, 'Description', course.description);
-    push(rows, 'Achievement Type', course.achievementType);
-    push(rows, 'Credits Available', course.creditsAvailable);
-    push(rows, 'Credits Earned', course.creditsEarned);
-    push(rows, 'Term', course.term);
-    push(rows, 'Earned', course.earnedAt);
-    push(rows, 'Valid Until', course.validUntil);
-    for (const [i, result] of course.results.entries()) {
-        push(rows, `Result ${i + 1}`, result.value);
-        if (result.resultType) push(rows, `Result ${i + 1} Type`, result.resultType);
-        if (result.label) push(rows, `Result ${i + 1} Label`, result.label);
-        if (result.valueMin) push(rows, `Result ${i + 1} Min`, result.valueMin);
-        if (result.valueMax) push(rows, `Result ${i + 1} Max`, result.valueMax);
-        if (result.allowedValue) push(rows, `Result ${i + 1} Allowed`, result.allowedValue);
-    }
-    return rows;
-};
+    const buildRows = (course: CourseDisplayModel): Row[] => {
+        const rows: Row[] = [];
+        pushRow(rows, 'Course Name', course.name);
+        pushRow(rows, 'Course Code', course.humanCode);
+        pushRow(rows, 'Description', course.description);
+        pushRow(rows, 'Achievement Type', course.achievementType);
+        pushRow(rows, 'Credits Available', course.creditsAvailable);
+        pushRow(rows, 'Credits Earned', course.creditsEarned);
+        pushRow(rows, 'Term', course.term);
+        pushRow(rows, 'Earned', course.earnedAt);
+        pushRow(rows, 'Valid Until', course.validUntil);
+        for (const [i, result] of course.results.entries()) {
+            pushRow(rows, `Result ${i + 1}`, result.value);
+            if (result.resultType) pushRow(rows, `Result ${i + 1} Type`, result.resultType);
+            if (result.label) pushRow(rows, `Result ${i + 1} Label`, result.label);
+            if (result.valueMin) pushRow(rows, `Result ${i + 1} Min`, result.valueMin);
+            if (result.valueMax) pushRow(rows, `Result ${i + 1} Max`, result.valueMax);
+            if (result.allowedValue) pushRow(rows, `Result ${i + 1} Allowed`, result.allowedValue);
+        }
+        return rows;
+    };
 
-const ClrProvenanceTable = ({ course }: Props) => {
     const rows = buildRows(course);
 
     return (
@@ -57,10 +57,18 @@ const ClrProvenanceTable = ({ course }: Props) => {
                 <table className="w-full text-xs">
                     <thead>
                         <tr className="bg-grayscale-50 border-b border-grayscale-200">
-                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">Field</th>
-                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">Value</th>
-                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">Source path</th>
-                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">Status</th>
+                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">
+                                Field
+                            </th>
+                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">
+                                Value
+                            </th>
+                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">
+                                Source path
+                            </th>
+                            <th className="text-left px-3 py-2 font-semibold text-grayscale-500">
+                                Status
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

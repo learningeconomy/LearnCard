@@ -1,19 +1,18 @@
-import { useState } from 'react';
-import { useModal } from 'learn-card-base';
+import React, { useState } from 'react';
+
+import X from '../svgs/X';
+import { FlatIcon } from './ClrStatCard';
 import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
-import type { CompetencyDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { useModal } from 'learn-card-base';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import { FlatIcon } from './ClrStatCard';
-import X from '../svgs/X';
+import type { CompetencyDisplayModel } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrCompetencyDetailPanel: React.FC<{
     competencies: CompetencyDisplayModel[];
     adminMode?: boolean;
-};
-
-const ClrCompetencyDetailPanel = ({ competencies, adminMode = false }: Props) => {
+}> = ({ competencies, adminMode = false }) => {
     const { closeModal } = useModal();
     const [open, setOpen] = useState(true);
     const [selectedCompetencyId, setSelectedCompetencyId] = useState(

@@ -1,10 +1,8 @@
 import type { DisplayWarning } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrTranscriptWarningsPanel: React.FC<{
     warnings: DisplayWarning[];
-};
-
-const ClrTranscriptWarningsPanel = ({ warnings }: Props) => {
+}> = ({ warnings }) => {
     if (warnings.length === 0) return null;
 
     return (

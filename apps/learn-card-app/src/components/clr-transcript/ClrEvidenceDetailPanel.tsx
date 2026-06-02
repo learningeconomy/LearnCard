@@ -1,16 +1,16 @@
-import { useModal } from 'learn-card-base';
-import PaperClip from '../svgs/PaperClip';
+import React from 'react';
 
 import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import PaperClip from '../svgs/PaperClip';
 import X from '../svgs/X';
+
+import { useModal } from 'learn-card-base';
 
 import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrEvidenceDetailPanel: React.FC<{
     evidence: EvidenceDisplayModel[];
-};
-
-const ClrEvidenceDetailPanel = ({ evidence }: Props) => {
+}> = ({ evidence }) => {
     const { closeModal } = useModal();
     const evidenceCount = evidence.length;
 

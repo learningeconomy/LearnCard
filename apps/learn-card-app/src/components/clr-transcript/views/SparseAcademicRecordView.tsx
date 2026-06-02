@@ -1,13 +1,14 @@
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
+import React from 'react';
+
 import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
 
-type Props = {
+import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+
+const SparseAcademicRecordView: React.FC<{
     model: ClrTranscriptDisplayModel;
     showSource?: boolean;
-};
-
-const SparseAcademicRecordView = ({ model, showSource = false }: Props) => {
+}> = ({ model, showSource = false }) => {
     return (
         <div className="space-y-4">
             {model.assessments.length > 0 && (

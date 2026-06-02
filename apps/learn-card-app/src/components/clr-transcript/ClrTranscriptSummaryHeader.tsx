@@ -1,32 +1,25 @@
 import React from 'react';
 
-import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
-import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
-
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
 import ClrCompetencyDetailPanel from './ClrCompetencyDetailPanel';
+import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
+import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+
+import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 
 import type { VC } from '@learncard/types';
+import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
-import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
 
-type Props = {
+const ClrTranscriptSummaryHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
     boost: VC;
     boostUri?: string;
     adminMode?: boolean;
-};
-
-const ClrTranscriptSummaryHeader = ({
-    model,
-    boost,
-    boostUri,
-    adminMode = false,
-}: Props) => {
+}> = ({ model, boost, boostUri, adminMode = false }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const issuerLogo = model.header.image?.value;
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';

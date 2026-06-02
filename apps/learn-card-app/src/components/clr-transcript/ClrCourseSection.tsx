@@ -1,3 +1,5 @@
+import React from 'react';
+
 import ClrCourseTable from './ClrCourseTable';
 
 import type {
@@ -5,13 +7,11 @@ import type {
     CourseDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrCourseSection: React.FC<{
     model: ClrTranscriptDisplayModel;
     onSelectCourse: (course: CourseDisplayModel) => void;
     adminMode?: boolean;
-};
-
-const ClrCourseSection = ({ model, onSelectCourse, adminMode = false }: Props) => {
+}> = ({ model, onSelectCourse, adminMode = false }) => {
     return (
         <div id="course-history" className="space-y-3 scroll-mt-6">
             <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">

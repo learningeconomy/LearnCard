@@ -1,20 +1,21 @@
-import { ModalTypes, useModal } from 'learn-card-base';
-import { VC } from '@learncard/types';
-
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
-import { ClrTranscriptSurface } from '../../../helpers/clrRenderer.helpers';
+import React from 'react';
 
 import ClrTranscriptHeader from '../ClrTranscriptHeader';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import ClrTranscriptDetailModal from '../ClrTranscriptDetailModal';
 
-type Props = {
+import { ModalTypes, useModal } from 'learn-card-base';
+
+import { ClrTranscriptSurface } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+
+import { VC } from '@learncard/types';
+
+const ClrTranscriptCard: React.FC<{
     model: ClrTranscriptDisplayModel;
     boost: VC;
     onViewDetails?: () => void;
-};
-
-const ClrTranscriptCard = ({ model, boost, onViewDetails }: Props) => {
+}> = ({ model, boost, onViewDetails }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const handleViewDetails = () => {

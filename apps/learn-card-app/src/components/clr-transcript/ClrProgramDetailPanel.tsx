@@ -1,25 +1,24 @@
-import { useState } from 'react';
-import { useModal } from 'learn-card-base';
+import React, { useState } from 'react';
 
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import X from '../svgs/X';
+import { FlatIcon } from './ClrStatCard';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { CertificateDisplayIcon } from 'learn-card-base';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
 import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
+
+import { useModal } from 'learn-card-base';
+
 import { formatAchievementType } from './clr.helpers';
-import { FlatIcon } from './ClrStatCard';
-import { CertificateDisplayIcon } from 'learn-card-base';
-import X from '../svgs/X';
-
+import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
-type Props = {
+const ClrProgramDetailPanel: React.FC<{
     program: ProgramDisplayModel;
     onClose?: () => void;
     adminMode?: boolean;
     issuerName?: string;
-};
-
-const ClrProgramDetailPanel = ({ program, adminMode = false, issuerName }: Props) => {
+}> = ({ program, adminMode = false, issuerName }) => {
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
 

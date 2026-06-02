@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { FlatIcon } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
@@ -8,12 +8,10 @@ import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrCourseCredentialCollapsible: React.FC<{
     course: CourseDisplayModel;
     issuerName?: string;
-};
-
-const ClrCourseCredentialCollapsible = ({ course, issuerName }: Props) => {
+}> = ({ course, issuerName }) => {
     const [open, setOpen] = useState(true);
 
     return (

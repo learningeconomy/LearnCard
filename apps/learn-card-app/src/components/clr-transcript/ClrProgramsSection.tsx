@@ -1,15 +1,14 @@
+import React from 'react';
+
 import { CertificateDisplayIcon } from 'learn-card-base';
 
+import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { inferProgramKind, achievementTypeLabel, formatAchievementType } from './clr.helpers';
 
-import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
-
-type Props = {
+const ClrProgramsSection: React.FC<{
     programs: ProgramDisplayModel[];
     onSelectProgram: (program: ProgramDisplayModel) => void;
-};
-
-const ClrProgramsSection = ({ programs, onSelectProgram }: Props) => {
+}> = ({ programs, onSelectProgram }) => {
     const primaryType = programs[0]?.achievementType.value ?? 'Program';
     const countLabel = achievementTypeLabel(primaryType, programs.length);
 
@@ -59,7 +58,6 @@ const ClrProgramsSection = ({ programs, onSelectProgram }: Props) => {
                     </div>
                 ))}
             </div>
-
         </>
     );
 };

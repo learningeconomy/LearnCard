@@ -1,24 +1,23 @@
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrTranscriptSummaryStats: React.FC<{
     model: ClrTranscriptDisplayModel;
-};
-
-const Card = ({ title, value }: { title: string; value: string | number }) => (
-    <div className="bg-white border border-grayscale-200 rounded-[20px] p-4 min-w-[140px]">
-        <p className="text-xs font-medium text-grayscale-700">{title}</p>
-        <p className="text-xl font-semibold text-grayscale-900">{value}</p>
-    </div>
-);
-
-const ClrTranscriptSummaryStats = ({ model }: Props) => {
+}> = ({ model }) => {
     const hasAny =
         model.summary.gpa ||
         model.summary.courseCount > 0 ||
         model.summary.totalCreditsAvailable !== undefined ||
         model.summary.explicitCompetencyCount > 0 ||
         model.summary.evidenceCount > 0;
+
     if (!hasAny) return null;
+
+    const Card = ({ title, value }: { title: string; value: string | number }) => (
+        <div className="bg-white border border-grayscale-200 rounded-[20px] p-4 min-w-[140px]">
+            <p className="text-xs font-medium text-grayscale-700">{title}</p>
+            <p className="text-xl font-semibold text-grayscale-900">{value}</p>
+        </div>
+    );
 
     return (
         <div className="flex flex-wrap gap-3">

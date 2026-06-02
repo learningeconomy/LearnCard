@@ -1,14 +1,15 @@
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import React from 'react';
+
 import ClrTranscriptWarningsPanel from '../ClrTranscriptWarningsPanel';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import StructuredTranscriptView from './StructuredTranscriptView';
 import SparseAcademicRecordView from './SparseAcademicRecordView';
 
-type Props = {
-    model: ClrTranscriptDisplayModel;
-};
+import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
 
-const VerifierInspectionView = ({ model }: Props) => {
+const VerifierInspectionView: React.FC<{
+    model: ClrTranscriptDisplayModel;
+}> = ({ model }) => {
     return (
         <div className="space-y-4">
             <ClrTranscriptWarningsPanel warnings={model.warnings} />

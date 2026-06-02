@@ -1,21 +1,19 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { CertificateDisplayIcon } from 'learn-card-base';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import { FlatIcon } from './ClrStatCard';
+
+import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import { formatAchievementType } from './clr.helpers';
 
 import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrProgramCredentialCollapsible: React.FC<{
     program: ProgramDisplayModel;
     issuerName?: string;
-};
-
-const ClrProgramCredentialCollapsible = ({ program, issuerName }: Props) => {
+}> = ({ program, issuerName }) => {
     const [open, setOpen] = useState(true);
 
     return (

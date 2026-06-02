@@ -1,7 +1,8 @@
-import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { Capacitor } from '@capacitor/core';
-import { Directory, Filesystem } from '@capacitor/filesystem';
 import { FileViewer } from '@capacitor/file-viewer';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+
+import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): EvidenceDisplayModel[] =>
     evidence.filter(e => e.id?.value);
@@ -9,7 +10,12 @@ export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): Evide
 export const toSafeFileName = (name: string | undefined, mimeType: string | undefined): string => {
     const base = (name || 'evidence').trim().replace(/[^\w.\-]/g, '_');
     if (/\.\w{2,5}$/.test(base)) return base;
-    const ext = mimeType === 'application/pdf' ? '.pdf' : mimeType?.startsWith('image/') ? `.${mimeType.split('/')[1]}` : '';
+    const ext =
+        mimeType === 'application/pdf'
+            ? '.pdf'
+            : mimeType?.startsWith('image/')
+            ? `.${mimeType.split('/')[1]}`
+            : '';
     return `${base}${ext}`;
 };
 
@@ -23,8 +29,15 @@ export const downloadEvidence = async (item: EvidenceDisplayModel) => {
         const base64 = raw.split(',')[1];
 
         if (Capacitor.isNativePlatform()) {
-            await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Documents });
-            const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Documents });
+            await Filesystem.writeFile({
+                path: fileName,
+                data: base64,
+                directory: Directory.Documents,
+            });
+            const { uri } = await Filesystem.getUri({
+                path: fileName,
+                directory: Directory.Documents,
+            });
             await FileViewer.openDocumentFromLocalPath({ path: uri });
         } else {
             const a = document.createElement('a');

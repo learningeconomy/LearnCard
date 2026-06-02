@@ -1,24 +1,19 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import { gradeColor, groupByTerm } from './clr.helpers';
 import { AwardDisplayIcon } from 'learn-card-base/svgs/displayTypes/AwardDisplayIcon';
 
-type Props = {
+import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import { gradeColor, groupByTerm } from './clr.helpers';
+
+import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
+
+const ClrCourseTable: React.FC<{
     courses: CourseDisplayModel[];
     onSelectCourse?: (course: CourseDisplayModel) => void;
     selectedCourseId?: string;
     adminMode?: boolean;
-};
-
-const ClrCourseTable = ({
-    courses,
-    onSelectCourse,
-    selectedCourseId,
-    adminMode = false,
-}: Props) => {
+}> = ({ courses, onSelectCourse, selectedCourseId, adminMode = false }) => {
     const groups = groupByTerm(courses);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 

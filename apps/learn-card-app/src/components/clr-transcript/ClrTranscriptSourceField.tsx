@@ -1,5 +1,7 @@
-import type { SourceMappedField } from '../../helpers/clrRenderer.helpers';
+import type React from 'react';
+
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import type { SourceMappedField } from '../../helpers/clrRenderer.helpers';
 
 type Props<T> = {
     label: string;
@@ -7,14 +9,18 @@ type Props<T> = {
     showSource?: boolean;
 };
 
-const stringifyValue = (value: unknown): string => {
-    if (typeof value === 'string') return formatClrDate(value);
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    return JSON.stringify(value);
-};
-
-const ClrTranscriptSourceField = <T,>({ label, field, showSource = false }: Props<T>) => {
+const ClrTranscriptSourceField: React.FC<Props<any>> = <T,>({
+    label,
+    field,
+    showSource = false,
+}: Props<T>) => {
     if (!field) return null;
+
+    const stringifyValue: (value: unknown) => string = (value: unknown): string => {
+        if (typeof value === 'string') return formatClrDate(value);
+        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+        return JSON.stringify(value);
+    };
 
     return (
         <div className="space-y-1">

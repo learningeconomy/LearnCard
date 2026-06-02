@@ -1,15 +1,15 @@
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import React from 'react';
 
 import ClrIssuerAddress from './ClrIssuerAddress';
 import ClrTranscriptSourceField from './ClrTranscriptSourceField';
 import ClrTranscriptTrustBadge from './ClrTranscriptTrustBadge';
 
-type Props = {
+import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+
+const ClrTranscriptHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
     showSource?: boolean;
-};
-
-const ClrTranscriptHeader = ({ model, showSource = false }: Props) => {
+}> = ({ model, showSource = false }) => {
     return (
         <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-4">
             {model.meta.partial && (

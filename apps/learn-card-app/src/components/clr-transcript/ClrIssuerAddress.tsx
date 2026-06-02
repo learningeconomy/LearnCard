@@ -1,11 +1,11 @@
+import React from 'react';
+
 import type { IssuerAddressDisplayModel } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrIssuerAddress: React.FC<{
     address: IssuerAddressDisplayModel;
     showSource: boolean;
-};
-
-const ClrIssuerAddress = ({ address, showSource }: Props) => {
+}> = ({ address, showSource }) => {
     const cityLine = [address.addressLocality, address.addressRegion, address.postalCode]
         .filter(Boolean)
         .join(', ');

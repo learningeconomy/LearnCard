@@ -1,13 +1,12 @@
+import React from 'react';
 import { gradeColorBackground } from './clr.helpers';
 
 const GRADE_ORDER = ['F', 'D-', 'D', 'D+', 'C-', 'C+', 'C', 'B-', 'B', 'B+', 'A-', 'A', 'A+'];
 
-type Props = {
+const ClrGradeScale: React.FC<{
     grade: string;
     allowedGrades: string[];
-};
-
-const ClrGradeScale = ({ grade, allowedGrades }: Props) => {
+}> = ({ grade, allowedGrades }) => {
     const orderedGrades = GRADE_ORDER.filter(g => allowedGrades.includes(g));
 
     if (orderedGrades.length === 0) return null;

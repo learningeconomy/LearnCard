@@ -1,11 +1,6 @@
-import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
+import React from 'react';
 
-type Props = {
-    logoSrc?: string;
-    issuerName?: string;
-    size?: number;
-    variant?: 'default' | 'standard';
-};
+import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 const STARBURST_PATHS = {
     default: {
@@ -22,7 +17,12 @@ const STARBURST_PATHS = {
     },
 } as const;
 
-const ClrIssuerBadge = ({ logoSrc, issuerName, size = 50, variant = 'default' }: Props) => {
+const ClrIssuerBadge: React.FC<{
+    logoSrc?: string;
+    issuerName?: string;
+    size?: number;
+    variant?: 'default' | 'standard';
+}> = ({ logoSrc, issuerName, size = 50, variant = 'default' }) => {
     const innerSize = Math.round(size * 0.58);
     const shape = STARBURST_PATHS[variant];
 

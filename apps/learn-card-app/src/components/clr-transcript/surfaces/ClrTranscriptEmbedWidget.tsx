@@ -1,13 +1,14 @@
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import React from 'react';
+
 import ClrTranscriptHeader from '../ClrTranscriptHeader';
 import ClrTranscriptSummaryStats from '../ClrTranscriptSummaryStats';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 
-type Props = {
-    model: ClrTranscriptDisplayModel;
-};
+import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
 
-const ClrTranscriptEmbedWidget = ({ model }: Props) => {
+const ClrTranscriptEmbedWidget: React.FC<{
+    model: ClrTranscriptDisplayModel;
+}> = ({ model }) => {
     return (
         <div className="space-y-3">
             <ClrTranscriptHeader model={model} />

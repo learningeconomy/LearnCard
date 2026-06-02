@@ -12,29 +12,22 @@ import SparseAcademicRecordView from '../views/SparseAcademicRecordView';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 
-import type { VC } from '@learncard/types';
 import type {
     ViewOptions,
     CourseDisplayModel,
     ProgramDisplayModel,
     ClrTranscriptDisplayModel,
 } from '../../../helpers/clrRenderer.helpers';
-
 import { selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
 
-type Props = {
+import type { VC } from '@learncard/types';
+
+const ClrTranscriptFullPage: React.FC<{
     model: ClrTranscriptDisplayModel;
     boost: VC;
     options: ViewOptions;
     boostUri?: string;
-};
-
-const ClrTranscriptFullPage = ({
-    model,
-    boost,
-    options,
-    boostUri,
-}: Props) => {
+}> = ({ model, boost, options, boostUri }) => {
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
@@ -81,7 +74,10 @@ const ClrTranscriptFullPage = ({
 
                     {/* Programs section */}
                     {model.programs.length > 0 && (
-                        <ClrProgramsSection programs={model.programs} onSelectProgram={handleSelectProgram} />
+                        <ClrProgramsSection
+                            programs={model.programs}
+                            onSelectProgram={handleSelectProgram}
+                        />
                     )}
 
                     {/* Structured transcript: term accordion + course table */}

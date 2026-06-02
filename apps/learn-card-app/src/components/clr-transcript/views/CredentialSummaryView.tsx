@@ -1,15 +1,15 @@
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import React from 'react';
+
 import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
 
-type Props = {
-    model: ClrTranscriptDisplayModel;
-};
-
-const CredentialSummaryView = ({ model }: Props) => {
+const CredentialSummaryView: React.FC<{ model: ClrTranscriptDisplayModel }> = ({ model }) => {
     return (
         <div className="bg-white border border-grayscale-200 rounded-[20px] p-6 space-y-4">
             <div className="space-y-1">
-                <p className="text-sm font-semibold text-grayscale-900">{model.header.title.value}</p>
+                <p className="text-sm font-semibold text-grayscale-900">
+                    {model.header.title.value}
+                </p>
                 {model.header.description?.value && (
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {model.header.description.value}

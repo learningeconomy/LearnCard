@@ -1,36 +1,30 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+
+import X from '../svgs/X';
+import { FlatIcon } from './ClrStatCard';
+import ClrGradeScale from './ClrGradeScale';
+import ClrProvenanceTable from './ClrProvenanceTable';
+import { CertificateDisplayIcon } from 'learn-card-base';
+import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
+import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
+
 import { useModal } from 'learn-card-base';
 
 import type {
-    AssociationDisplayModel,
-    CompetencyDisplayModel,
     CourseDisplayModel,
+    CompetencyDisplayModel,
+    AssociationDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import ClrProvenanceTable from './ClrProvenanceTable';
-import ClrGradeScale from './ClrGradeScale';
-import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 import { gradeColor } from './clr.helpers';
-import { FlatIcon } from './ClrStatCard';
-import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
-import { CertificateDisplayIcon } from 'learn-card-base';
-import X from '../svgs/X';
+import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrCourseDetailPanel: React.FC<{
     course: CourseDisplayModel;
     adminMode?: boolean;
     associations?: AssociationDisplayModel[];
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-};
-
-const ClrCourseDetailPanel = ({
-    course,
-    adminMode = false,
-    associations = [],
-    competencies = [],
-    issuerName,
-}: Props) => {
+}> = ({ course, adminMode = false, associations = [], competencies = [], issuerName }: Props) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 

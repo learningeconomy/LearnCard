@@ -1,13 +1,14 @@
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
+import React from 'react';
+
 import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
 
-type Props = {
+import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+
+const StructuredTranscriptView: React.FC<{
     model: ClrTranscriptDisplayModel;
     showSource?: boolean;
-};
-
-const StructuredTranscriptView = ({ model, showSource = false }: Props) => {
+}> = ({ model, showSource = false }) => {
     return (
         <div className="space-y-4">
             {model.programs.length > 0 && (
@@ -28,12 +29,17 @@ const StructuredTranscriptView = ({ model, showSource = false }: Props) => {
                             )}
                             {(program.earnedAt?.value || program.validUntil?.value) && (
                                 <p className="text-xs text-grayscale-500">
-                                    {program.earnedAt?.value && `Earned: ${formatClrDate(program.earnedAt.value)}`}
+                                    {program.earnedAt?.value &&
+                                        `Earned: ${formatClrDate(program.earnedAt.value)}`}
                                     {program.earnedAt?.value && program.validUntil?.value && ' · '}
-                                    {program.validUntil?.value && `Expires: ${formatClrDate(program.validUntil.value)}`}
+                                    {program.validUntil?.value &&
+                                        `Expires: ${formatClrDate(program.validUntil.value)}`}
                                 </p>
                             )}
-                            <ClrTranscriptResultsList results={program.results} showResultType={showSource} />
+                            <ClrTranscriptResultsList
+                                results={program.results}
+                                showResultType={showSource}
+                            />
                         </div>
                     ))}
                 </div>
@@ -90,12 +96,17 @@ const StructuredTranscriptView = ({ model, showSource = false }: Props) => {
                             </div>
                             {(course.earnedAt?.value || course.validUntil?.value) && (
                                 <p className="text-xs text-grayscale-500">
-                                    {course.earnedAt?.value && `Earned: ${formatClrDate(course.earnedAt.value)}`}
+                                    {course.earnedAt?.value &&
+                                        `Earned: ${formatClrDate(course.earnedAt.value)}`}
                                     {course.earnedAt?.value && course.validUntil?.value && ' · '}
-                                    {course.validUntil?.value && `Expires: ${formatClrDate(course.validUntil.value)}`}
+                                    {course.validUntil?.value &&
+                                        `Expires: ${formatClrDate(course.validUntil.value)}`}
                                 </p>
                             )}
-                            <ClrTranscriptResultsList results={course.results} showResultType={showSource} />
+                            <ClrTranscriptResultsList
+                                results={course.results}
+                                showResultType={showSource}
+                            />
                         </div>
                     );
 

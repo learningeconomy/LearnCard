@@ -1,21 +1,20 @@
+import React from 'react';
 import type { ResultDisplayModel } from '../../helpers/clrRenderer.helpers';
 
-type Props = {
+const ClrTranscriptResultsList: React.FC<{
     results: ResultDisplayModel[];
     showResultType?: boolean;
-};
-
-const gradeScale = (result: ResultDisplayModel): string | undefined => {
-    if (result.valueMin && result.valueMax)
-        return `${result.valueMin.value}–${result.valueMax.value}`;
-    if (result.valueMax) return `max ${result.valueMax.value}`;
-    if (result.allowedValue && result.allowedValue.value.length > 0)
-        return result.allowedValue.value.join(', ');
-    return undefined;
-};
-
-const ClrTranscriptResultsList = ({ results, showResultType = false }: Props) => {
+}> = ({ results, showResultType = false }) => {
     if (results.length === 0) return null;
+
+    const gradeScale = (result: ResultDisplayModel): string | undefined => {
+        if (result.valueMin && result.valueMax)
+            return `${result.valueMin.value}–${result.valueMax.value}`;
+        if (result.valueMax) return `max ${result.valueMax.value}`;
+        if (result.allowedValue && result.allowedValue.value.length > 0)
+            return result.allowedValue.value.join(', ');
+        return undefined;
+    };
 
     return (
         <div className="bg-white border border-grayscale-200 rounded-[20px] overflow-hidden">
