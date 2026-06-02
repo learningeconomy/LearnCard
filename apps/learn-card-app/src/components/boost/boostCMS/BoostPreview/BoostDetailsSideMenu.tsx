@@ -152,8 +152,10 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                     </TruncateTextBox>
 
                     {issuancesSummaryComponent && (
-                        <div className="mt-4 border-t border-grayscale-200 pt-4">
-                            <p className="text-sm font-semibold text-grayscale-900 mb-2">Issuances</p>
+                        <div className="p-[15px] bg-white flex flex-col items-start gap-[10px] rounded-[20px] w-full shadow-bottom-2-4">
+                            <h3 className="text-[22px] leading-[130%] tracking-[-0.25px] text-grayscale-900 font-notoSans">
+                                Issuances
+                            </h3>
                             {issuancesSummaryComponent}
                         </div>
                     )}
