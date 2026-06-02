@@ -9,6 +9,7 @@ import type {
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrProvenanceTable from './ClrProvenanceTable';
 import ClrGradeScale from './ClrGradeScale';
+import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 import { gradeColor } from './clr.helpers';
 import { FlatIcon } from './ClrStatCard';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
@@ -32,7 +33,6 @@ const ClrCourseDetailPanel = ({
 }: Props) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
-    const [credentialOpen, setCredentialOpen] = useState(true);
 
     const primaryResult = course.results.find(r => r.value);
     const grade = primaryResult ? String(primaryResult.value.value) : undefined;
@@ -255,43 +255,7 @@ const ClrCourseDetailPanel = ({
                 )}
 
                 {/* Source credential collapsible */}
-                <div className="bg-white border border-grayscale-200 rounded-2xl overflow-hidden">
-                    <button
-                        type="button"
-                        onClick={() => setCredentialOpen(o => !o)}
-                        className="w-full flex items-center justify-between px-4 py-3.5"
-                    >
-                        <p className="text-sm font-semibold text-grayscale-900">1 Credential</p>
-                        <span className="text-grayscale-400 text-xs">
-                            {credentialOpen ? '∧' : '∨'}
-                        </span>
-                    </button>
-                    {credentialOpen && (
-                        <div className="px-4 pb-4">
-                            <div className="bg-grayscale-50 border border-grayscale-200 rounded-xl p-3 space-y-1">
-                                <p className="text-sm font-semibold text-grayscale-900">
-                                    {course.name?.value ?? 'Course'}
-                                </p>
-                                <p className="text-xs text-grayscale-500 uppercase tracking-wide font-medium">
-                                    {course.achievementType.value}
-                                    {course.fieldOfStudy?.value &&
-                                        ` · ${course.fieldOfStudy.value}`}
-                                </p>
-                                {issuerName && (
-                                    <p className="text-xs text-grayscale-600">
-                                        <span className="text-base leading-none">🍎</span> · By{' '}
-                                        <span className="font-semibold">{issuerName}</span>
-                                    </p>
-                                )}
-                                {course.earnedAt?.value && (
-                                    <p className="text-xs text-grayscale-500 mt-0.5">
-                                        {formatClrDate(course.earnedAt.value)}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <ClrCourseCredentialCollapsible course={course} issuerName={issuerName} />
 
                 {/* Admin provenance */}
                 {adminMode && (
