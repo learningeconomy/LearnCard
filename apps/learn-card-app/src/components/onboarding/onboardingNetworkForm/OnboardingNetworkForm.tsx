@@ -90,6 +90,7 @@ type OnboardingNetworkFormProps = {
         photo: string | null | undefined;
         usMinorConsent: boolean;
         euParentalConsentRequested: boolean;
+        guardianEmail?: string;
         profileId: string | null | undefined;
     };
     updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
@@ -126,8 +127,16 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    const { name, dob, country, photo, usMinorConsent, euParentalConsentRequested, profileId } =
-        formData;
+    const {
+        name,
+        dob,
+        country,
+        photo,
+        usMinorConsent,
+        euParentalConsentRequested,
+        guardianEmail,
+        profileId,
+    } = formData;
 
     const handleNameChange = (value: string) => {
         updateFormData({ name: value ?? '' });
@@ -323,10 +332,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     role: role ?? '',
                     dob: dob ?? '',
                     country: country ?? '',
+                    // EU minors stay unapproved until a guardian approves via email; the
+                    // existing `profile.approved === false` re-prompt keeps gating them.
+                    ...(euParentalConsentRequested ? { approved: false } : {}),
                     authToken,
                 });
 
                 if (didWeb) {
+                    // Now that the profile exists, send the guardian approval email. This is
+                    // deferred to here because sendGuardianApprovalEmail is keyed to the
+                    // requester's profileId, which doesn't exist at the age-gate step.
+                    if (euParentalConsentRequested && guardianEmail) {
+                        try {
+                            await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail });
+                        } catch (err) {
+                            console.error('Failed to send guardian approval email:', err);
+                        }
+                    }
                     // Initialize privacy preferences based on age at signup
                     const age = dob ? calculateAge(dob) : null;
                     const limit = getMinorAgeThreshold(country);

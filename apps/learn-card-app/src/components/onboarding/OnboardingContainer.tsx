@@ -48,6 +48,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
         photo: currentUser?.profileImage ?? '',
         usMinorConsent: false,
         euParentalConsentRequested: false,
+        guardianEmail: '',
         profileId: '',
     });
 
@@ -145,9 +146,11 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
 
     const routeChildToParentFlow = useCallback(() => {
         closeModal();
+        // The child is logged out here; LoginPage's `redirectTo` query handling sends the
+        // guardian to family creation once they log in. (No `underageFamily` flag — that
+        // triggered a second logout that bounced the freshly-logged-in guardian.)
         handleLogout({
-            overrideRedirectUrl:
-                '/login?underageFamily=1&redirectTo=%2Ffamilies%3FcreateFamily%3Dtrue',
+            overrideRedirectUrl: '/login?redirectTo=%2Ffamilies%3FcreateFamily%3Dtrue',
         });
     }, [closeModal, handleLogout]);
 
@@ -163,7 +166,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
 
         const familyInviteUrl = `${
             window.location.origin
-        }/login?underageFamily=1&redirectTo=${encodeURIComponent('/families?createFamily=true')}`;
+        }/login?redirectTo=${encodeURIComponent('/families?createFamily=true')}`;
 
         newModal(
             <UnderageModalContent
@@ -209,8 +212,12 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                 dob={formData.dob}
                 country={formData.country}
                 onClose={closeModal}
+                onSubmit={guardianEmail => {
+                    // Defer the actual send — the profile this approval is keyed to doesn't
+                    // exist yet. OnboardingNetworkForm sends it after createProfile.
+                    updateFormData({ euParentalConsentRequested: true, guardianEmail });
+                }}
                 onComplete={async () => {
-                    updateFormData({ euParentalConsentRequested: true });
                     closeModal();
                     if (await prepareNewUserKey()) {
                         setStep(OnboardingStepsEnum.selectRole);
