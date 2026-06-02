@@ -115,8 +115,22 @@ A holder continuity export is personal data. It can include identifiers, credent
 
 Critically, the export contains the wallet's **full raw private-key seed** (encrypted with the bundle password). The live wallet normally protects this key with the 2-of-4 SSS threshold described above, where no single share is enough to reconstruct it. The bundle does not preserve that threshold: the exported seed alone is sufficient to take full control of the identity, so the bundle password is the only thing protecting it. The exported recovery phrase is derived from the current recovery share for reference and is not independently sufficient to recover the key — restore uses the exported seed.
 
+## Compatibility with other wallets
+
+No third-party wallet imports the LearnCard ZIP bundle directly today. External wallets receive credentials through protocols (OID4VCI, DIDComm) or through SDK-level JSON import, not by reading `manifest.json` and decrypting entries.
+
+In practice, the portable path is: decrypt the bundle, take the individual Verifiable Credential and Presentation JSON payloads, and hand them to the target wallet through whatever import path that wallet documents. Keep the original ZIP as an audit backup.
+
+The table below reflects what each vendor's public docs describe at the time of writing. Treat it as a starting point — verify against current vendor docs, and do not assume a wallet supports the LearnCard bundle unless it has been tested against the ZIP format.
+
+| Wallet / toolkit | Raw ZIP import | Credential JSON import (after decrypt) | OID4VCI receive | DIDComm receive |
+|---|---|---|---|---|
+| [Spruce / SpruceKit](https://www.sprucekit.dev/sprucekit-mobile/sprucekit-mobile-sdk/core-components/credentialpack) | No | Yes — `CredentialPack.addJsonVc(...)` | Yes | Not documented |
+| [Sphereon Wallet / SSI SDK](https://ssisdk.docs.sphereon.com/mobile-wallet/receiving-credentials) | No | Not documented | Yes | Not documented |
+| [MATTR](https://learn.mattr.global/docs/holding/credential-claiming-overview) | No | Not documented | Yes | Not documented |
+| [Paradym Wallet](https://docs.paradym.id/api-and-dashboard/integrating-with-a-holder-wallet/paradym-wallet) | No | Not documented | Yes | Not documented |
+
 ## Related pages
 
--   [Holder continuity compatibility](holder-continuity-compat.md)
 -   [LearnCard CLI](../sdks/learncard-cli.md)
 -   [Key Management (SSS)](identities-and-keys/key-management-sss.md)

@@ -15,6 +15,7 @@
 ## ✅ How-To Guides
 
 -   [Send Credentials](how-to-guides/send-credentials.md)
+-   [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)
 -   [Create Signing Authority](how-to-guides/create-signing-authority.md)
 -   [Interoperate with LearnCard](how-to-guides/interoperate-with-learncard.md)
 -   [Verify My Issuer](how-to-guides/verify-my-issuer.md)
@@ -119,7 +120,6 @@
     -   [Signing Authorities](core-concepts/identities-and-keys/signing-authorities.md)
     -   [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)
 -   [Holder Continuity](core-concepts/holder-continuity.md)
--   [Holder Continuity Compatibility](core-concepts/holder-continuity-compat.md)
 -   [Credentials & Data](core-concepts/credentials-and-data/README.md)
     -   [Verifiable Credentials (VCs)](core-concepts/credentials-and-data/verifiable-credentials-vcs.md)
     -   [Credential Lifecycle](core-concepts/credentials-and-data/credential-lifecycle.md)
