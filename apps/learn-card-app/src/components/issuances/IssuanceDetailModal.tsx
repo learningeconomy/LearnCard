@@ -543,66 +543,77 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                         </div>
                     </div>
                 </div>
-                {canManage && (
-                    <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3">
-                        {recipientStatus === 'active' && (
-                            <>
-                                <button
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
-                                    onClick={() => handleCredentialAction('suspend')}
-                                    disabled={suspendRecipient.isPending}
-                                >
-                                    {suspendRecipient.isPending ? (
-                                        <span className="w-3 h-3 border border-amber-300 border-t-amber-600 rounded-full animate-spin" />
-                                    ) : (
-                                        <Ban className="w-3 h-3" />
-                                    )}
-                                    Suspend
-                                </button>
-                                <button
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                                    onClick={() => handleCredentialAction('revoke')}
-                                    disabled={revokeRecipient.isPending}
-                                >
-                                    {revokeRecipient.isPending ? (
-                                        <span className="w-3 h-3 border border-red-300 border-t-red-600 rounded-full animate-spin" />
-                                    ) : (
-                                        <Trash2 className="w-3 h-3" />
-                                    )}
-                                    Revoke
-                                </button>
-                            </>
-                        )}
-                        {recipientStatus === 'suspended' && (
-                            <>
-                                <button
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
-                                    onClick={() => handleCredentialAction('unsuspend')}
-                                    disabled={unsuspendRecipient.isPending}
-                                >
-                                    {unsuspendRecipient.isPending ? (
-                                        <span className="w-3 h-3 border border-emerald-300 border-t-emerald-600 rounded-full animate-spin" />
-                                    ) : (
-                                        <RotateCcw className="w-3 h-3" />
-                                    )}
-                                    Unsuspend
-                                </button>
-                                <button
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                                    onClick={() => handleCredentialAction('revoke')}
-                                    disabled={revokeRecipient.isPending}
-                                >
-                                    {revokeRecipient.isPending ? (
-                                        <span className="w-3 h-3 border border-red-300 border-t-red-600 rounded-full animate-spin" />
-                                    ) : (
-                                        <Trash2 className="w-3 h-3" />
-                                    )}
-                                    Revoke
-                                </button>
-                            </>
-                        )}
-                    </div>
-                )}
+                {canManage &&
+                    (() => {
+                        const SUSPEND_ACTION = {
+                            key: 'suspend' as const,
+                            label: 'Suspend',
+                            description:
+                                'Temporarily turns off this credential. The recipient keeps it, but it verifies as suspended until you reactivate it.',
+                            icon: Ban,
+                            pending: suspendRecipient.isPending,
+                            btn: 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+                            spinner: 'border-amber-300 border-t-amber-600',
+                        };
+                        const REACTIVATE_ACTION = {
+                            key: 'unsuspend' as const,
+                            label: 'Reactivate',
+                            description:
+                                'Turns a suspended credential back on so it verifies as valid again.',
+                            icon: RotateCcw,
+                            pending: unsuspendRecipient.isPending,
+                            btn: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+                            spinner: 'border-emerald-300 border-t-emerald-600',
+                        };
+                        const REVOKE_ACTION = {
+                            key: 'revoke' as const,
+                            label: 'Revoke',
+                            description:
+                                'Permanently cancels this credential. It will verify as revoked — this cannot be undone.',
+                            icon: Trash2,
+                            pending: revokeRecipient.isPending,
+                            btn: 'bg-red-50 text-red-700 hover:bg-red-100',
+                            spinner: 'border-red-300 border-t-red-600',
+                        };
+                        const actions =
+                            recipientStatus === 'suspended'
+                                ? [REACTIVATE_ACTION, REVOKE_ACTION]
+                                : [SUSPEND_ACTION, REVOKE_ACTION];
+
+                        return (
+                            <div className="px-6 py-4 border-t border-gray-100">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                                    Actions
+                                </p>
+                                <div className="flex flex-col gap-3">
+                                    {actions.map(action => (
+                                        <div
+                                            key={action.key}
+                                            className="flex items-start gap-3"
+                                        >
+                                            <button
+                                                className={`flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex-shrink-0 w-32 disabled:opacity-60 ${action.btn}`}
+                                                onClick={() => handleCredentialAction(action.key)}
+                                                disabled={action.pending}
+                                            >
+                                                {action.pending ? (
+                                                    <span
+                                                        className={`w-4 h-4 border rounded-full animate-spin ${action.spinner}`}
+                                                    />
+                                                ) : (
+                                                    <action.icon className="w-4 h-4" />
+                                                )}
+                                                {action.label}
+                                            </button>
+                                            <p className="text-xs text-gray-500 leading-relaxed flex-1 pt-1">
+                                                {action.description}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
             </div>
         </div>
     );
