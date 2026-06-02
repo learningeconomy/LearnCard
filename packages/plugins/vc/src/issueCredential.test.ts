@@ -22,6 +22,7 @@ type ProofOptionsForTest = {
     type?: string;
     proofPurpose?: string;
     cryptosuite?: string;
+    proofFormat?: string;
     verificationMethod?: string;
 };
 
@@ -118,5 +119,19 @@ describe('issueCredential', () => {
         const options = issueCredentialMock.mock.calls[0][1] as ProofOptionsForTest;
 
         expect(options.cryptosuite).toBe('json-eddsa-2022');
+    });
+
+    test('leaves type unset and does not inject a cryptosuite for JWT proof format', async () => {
+        const { initLearnCard, issueCredentialMock, learnCard } = getLearnCard();
+
+        await issueCredential(initLearnCard as never)(learnCard as never, credential as never, {
+            proofFormat: 'jwt',
+        });
+
+        const options = issueCredentialMock.mock.calls[0][1] as ProofOptionsForTest;
+
+        expect(options.type).toBeUndefined();
+        expect(options.cryptosuite).toBeUndefined();
+        expect(options.proofFormat).toBe('jwt');
     });
 });
