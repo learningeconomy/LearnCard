@@ -581,8 +581,8 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                                 : [SUSPEND_ACTION, REVOKE_ACTION];
 
                         return (
-                            <div className="px-6 py-4 border-t border-gray-100">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                            <div className="mt-5 pt-4 border-t border-gray-100">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                                     Actions
                                 </p>
                                 <div className="flex flex-col gap-3">
