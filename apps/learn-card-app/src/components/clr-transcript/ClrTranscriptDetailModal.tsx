@@ -9,15 +9,26 @@ import VerificationsBox from '../../pages/ids/view-id/IdDetails/VerificationsBox
 type Props = {
     model: ClrTranscriptDisplayModel;
     options: ViewOptions;
-    credential: VC;
+    boost: VC;
+    boostUri?: string;
 };
 
-const ClrTranscriptDetailModal = ({ model, options, credential }: Props) => {
-    const verificationItems = useVerification(credential);
+const ClrTranscriptDetailModal = ({
+    model,
+    options,
+    boost,
+    boostUri,
+}: Props) => {
+    const verificationItems = useVerification(boost);
 
     return (
         <div className="h-full overflow-y-auto">
-            <ClrTranscriptFullPage model={model} options={options} credential={credential} />
+            <ClrTranscriptFullPage
+                model={model}
+                options={options}
+                boost={boost}
+                boostUri={boostUri}
+            />
             {verificationItems.length > 0 && (
                 <div className="px-4 pb-10">
                     <VerificationsBox verificationItems={verificationItems} />

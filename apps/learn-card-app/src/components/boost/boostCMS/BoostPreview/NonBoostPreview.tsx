@@ -40,6 +40,8 @@ type IssueHistory = {
 
 type NonBoostPreviewProps = {
     credential: VC;
+    boostUri?: string;
+    credentialUri?: string;
     verificationItems: VerificationItem[];
     categoryType: BoostCategoryOptionsEnum;
     customThumbComponent: React.ReactNode;
@@ -71,6 +73,8 @@ type NonBoostPreviewProps = {
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     credential,
+    boostUri,
+    credentialUri,
     verificationItems,
     categoryType,
     issueHistory,
@@ -248,6 +252,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 model={normalizeClrTranscriptDisplayModel(
                     credential as unknown as Record<string, unknown>
                 )}
+                boost={credential}
+                boostUri={boostUri ?? credentialUri}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );

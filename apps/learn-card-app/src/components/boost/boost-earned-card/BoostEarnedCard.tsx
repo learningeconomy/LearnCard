@@ -311,6 +311,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         const earnedBoostModalProps = {
             credential,
+            boostUri: record?.uri,
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,

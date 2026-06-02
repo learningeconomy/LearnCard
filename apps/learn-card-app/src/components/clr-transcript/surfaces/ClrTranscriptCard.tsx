@@ -10,18 +10,18 @@ import ClrTranscriptDetailModal from '../ClrTranscriptDetailModal';
 
 type Props = {
     model: ClrTranscriptDisplayModel;
-    credential: VC;
+    boost: VC;
     onViewDetails?: () => void;
 };
 
-const ClrTranscriptCard = ({ model, credential, onViewDetails }: Props) => {
+const ClrTranscriptCard = ({ model, boost, onViewDetails }: Props) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const handleViewDetails = () => {
         newModal(
             <ClrTranscriptDetailModal
                 model={model}
-                credential={credential}
+                boost={boost}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );

@@ -24,11 +24,17 @@ import { selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
 
 type Props = {
     model: ClrTranscriptDisplayModel;
-    credential: VC;
+    boost: VC;
     options: ViewOptions;
+    boostUri?: string;
 };
 
-const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
+const ClrTranscriptFullPage = ({
+    model,
+    boost,
+    options,
+    boostUri,
+}: Props) => {
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
@@ -68,7 +74,8 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
                     {/* Summary hero card */}
                     <ClrTranscriptSummaryHeader
                         model={model}
-                        credential={credential}
+                        boost={boost}
+                        boostUri={boostUri}
                         adminMode={adminMode}
                     />
 

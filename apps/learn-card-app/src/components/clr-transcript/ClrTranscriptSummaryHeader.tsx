@@ -1,27 +1,32 @@
 import React from 'react';
 
-import { ModalTypes, useModal } from 'learn-card-base';
-import { QRCodeSVG } from 'qrcode.react';
+import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
 import ClrCompetencyDetailPanel from './ClrCompetencyDetailPanel';
 
 import type { VC } from '@learncard/types';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
 
 type Props = {
     model: ClrTranscriptDisplayModel;
-    credential: VC;
+    boost: VC;
+    boostUri?: string;
     adminMode?: boolean;
 };
 
-const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Props) => {
+const ClrTranscriptSummaryHeader = ({
+    model,
+    boost,
+    boostUri,
+    adminMode = false,
+}: Props) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const issuerLogo = model.header.image?.value;
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
@@ -36,10 +41,7 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
     };
     const openCompetenciesModal = () => {
         newModal(
-            <ClrCompetencyDetailPanel
-                competencies={model.competencies}
-                adminMode={adminMode}
-            />
+            <ClrCompetencyDetailPanel competencies={model.competencies} adminMode={adminMode} />
         );
     };
 
@@ -85,16 +87,12 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
                     )}
                 </div>
 
-                {/* QR + verification icon */}
-                <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8">
-                    <QRCodeSVG value={model.header.id.value || getAppBaseUrl()} size={50} />
-                    <div className="absolute bottom-[5px] left-1/2 -translate-x-1/2">
-                        <CredentialVerificationDisplay
-                            credential={credential}
-                            iconClassName="w-6 h-6"
-                        />
-                    </div>
-                </div>
+                <ShareBoostLink
+                    boost={boost}
+                    boostUri={boostUri ?? model.header.id.value}
+                    categoryType={CredentialCategoryEnum.learningHistory}
+                    compact
+                />
             </div>
 
             {/* Stats */}
@@ -150,7 +148,7 @@ const ClrTranscriptSummaryHeader = ({ model, credential, adminMode = false }: Pr
             {/* Verification badge + issuer logo */}
             <div className="flex items-end justify-between gap-3 flex-wrap">
                 <div className="bg-grayscale-100 rounded-full px-2 py-1">
-                    <CredentialVerificationDisplay credential={credential} showText />
+                    <CredentialVerificationDisplay credential={boost} showText />
                 </div>
 
                 <ClrIssuerBadge logoSrc={issuerLogo} issuerName={model.header.issuerName?.value} />
