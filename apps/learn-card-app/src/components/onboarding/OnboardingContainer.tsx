@@ -33,7 +33,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey } = useAppAuth();
     const { handleLogout } = useLogout();
-    const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
+    const [role, setRole] = useState<LearnCardRolesEnum>(LearnCardRolesEnum.learner);
 
     const [ageGateError, setAgeGateError] = useState<string | null>(null);
     const [isPreparingKey, setIsPreparingKey] = useState(false);

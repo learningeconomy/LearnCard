@@ -5,10 +5,8 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import moment from 'moment';
-import DatePickerInput from '../../date-picker/DatePickerInput';
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
@@ -17,12 +15,9 @@ import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSli
 import ErrorLogout from '../../network-prompts/ErrorLogout';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import { Checkmark } from '@learncard/react';
-import Calendar from '../../svgs/Calendar';
 import Pencil from '../../svgs/Pencil';
-import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
 
-import LocationIcon from '../../svgs/LocationIcon';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -40,9 +35,7 @@ import {
     getNotificationsEndpoint,
     SocialLoginTypes,
     ModalTypes,
-    BrandingEnum,
     useToast,
-    ToastTypeEnum,
     useDeviceTypeByWidth,
     useUpdatePreferences,
 } from 'learn-card-base';
@@ -54,9 +47,7 @@ import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { LearnCardRoles, LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
 
 import countries from '../../../constants/countries.json';
-import CountrySelectorModal from './components/CountrySelectorModal';
 import EUParentalConsentModalContent from './components/EUParentalConsentModalContent';
-import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
@@ -562,7 +553,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleUsMinorConsentToggle(true);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
-                    console.log('///onContinue');
                 }}
             />,
             {
