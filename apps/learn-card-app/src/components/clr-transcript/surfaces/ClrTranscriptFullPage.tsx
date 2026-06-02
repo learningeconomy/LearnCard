@@ -3,6 +3,7 @@ import React from 'react';
 import ClrCourseSection from '../ClrCourseSection';
 import ClrProgramsSection from '../ClrProgramsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
+import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
 import CredentialSummaryView from '../views/CredentialSummaryView';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import ClrTranscriptSummaryHeader from '../ClrTranscriptSummaryHeader';
@@ -15,6 +16,7 @@ import type { VC } from '@learncard/types';
 import type {
     ViewOptions,
     CourseDisplayModel,
+    ProgramDisplayModel,
     ClrTranscriptDisplayModel,
 } from '../../../helpers/clrRenderer.helpers';
 
@@ -31,6 +33,15 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
+
+    const handleSelectProgram = (program: ProgramDisplayModel) => {
+        newModal(
+            <ClrProgramDetailPanel
+                program={program}
+                adminMode={adminMode}
+            />
+        );
+    };
 
     const handleSelectCourse = (course: CourseDisplayModel) => {
         newModal(
@@ -62,7 +73,7 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
 
                     {/* Programs section */}
                     {model.programs.length > 0 && (
-                        <ClrProgramsSection programs={model.programs} adminMode={adminMode} />
+                        <ClrProgramsSection programs={model.programs} onSelectProgram={handleSelectProgram} />
                     )}
 
                     {/* Structured transcript: term accordion + course table */}

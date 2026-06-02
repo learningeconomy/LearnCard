@@ -1,27 +1,15 @@
-import { useState } from 'react';
-
 import { CertificateDisplayIcon } from 'learn-card-base';
 
-import ClrProgramDetailPanel from './ClrProgramDetailPanel';
 import { inferProgramKind, achievementTypeLabel, formatAchievementType } from './clr.helpers';
 
 import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 type Props = {
     programs: ProgramDisplayModel[];
-    adminMode?: boolean;
+    onSelectProgram: (program: ProgramDisplayModel) => void;
 };
 
-const ClrProgramsSection = ({ programs, adminMode = false }: Props) => {
-    const [selectedProgram, setSelectedProgram] = useState<ProgramDisplayModel | null>(null);
-
-    const handleSelect = (program: ProgramDisplayModel) => {
-        setSelectedProgram(prev =>
-            prev?.sourceCredentialId === program.sourceCredentialId ? null : program
-        );
-    };
-
-    // Derive a concise count label (e.g. "1 Degree", "2 Degrees")
+const ClrProgramsSection = ({ programs, onSelectProgram }: Props) => {
     const primaryType = programs[0]?.achievementType.value ?? 'Program';
     const countLabel = achievementTypeLabel(primaryType, programs.length);
 
@@ -61,7 +49,7 @@ const ClrProgramsSection = ({ programs, adminMode = false }: Props) => {
 
                             {/* Right: View button */}
                             <button
-                                onClick={() => handleSelect(p)}
+                                onClick={() => onSelectProgram(p)}
                                 className="shrink-0 flex items-center gap-1.5 border-[1px] border-solid border-grayscale-100 bg-white rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 whitespace-nowrap"
                             >
                                 <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-200" />
@@ -72,11 +60,6 @@ const ClrProgramsSection = ({ programs, adminMode = false }: Props) => {
                 ))}
             </div>
 
-            <ClrProgramDetailPanel
-                program={selectedProgram}
-                onClose={() => setSelectedProgram(null)}
-                adminMode={adminMode}
-            />
         </>
     );
 };
