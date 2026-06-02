@@ -26,6 +26,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
     const total = items.length;
     const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
     const nextItem = items.find(i => !i.done) ?? null;
+    const orderedItems = [...items.filter(i => !i.done), ...items.filter(i => i.done)];
 
     if (variant === 'hero') {
         return (
@@ -74,7 +75,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                 </div>
 
                 <ul className="relative flex flex-col gap-2 mb-5">
-                    {items.map(item => (
+                    {orderedItems.map(item => (
                         <li key={item.key}>
                             <button
                                 type="button"
@@ -159,7 +160,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
             </div>
 
             <ul className="flex flex-col gap-2">
-                {items.map(item => (
+                {orderedItems.map(item => (
                     <li key={item.key}>
                         <button
                             type="button"

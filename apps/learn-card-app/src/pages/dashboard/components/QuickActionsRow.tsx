@@ -8,7 +8,7 @@ type QuickActionsRowProps = {
 
 const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
     return (
-        <div className="grid grid-cols-3 gap-2 animate-fade-in-up">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 animate-fade-in-up">
             {SLOT_ORDER.map(slot => {
                 const action = slots[slot];
                 if (!action) {
@@ -16,7 +16,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                         <div
                             key={slot}
                             aria-hidden
-                            className="rounded-2xl border border-dashed border-grayscale-200 bg-grayscale-10/40"
+                            className="hidden sm:block rounded-2xl border border-dashed border-grayscale-200 bg-grayscale-10/40"
                         />
                     );
                 }
@@ -35,7 +35,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                             <span className="text-sm font-semibold text-grayscale-900 truncate">
                                 {action.label}
                             </span>
-                            <span className="hidden desktop:inline text-[11px] text-grayscale-500 leading-tight truncate">
+                            <span className="inline sm:hidden desktop:inline text-[11px] text-grayscale-500 leading-tight truncate">
                                 {action.caption}
                             </span>
                         </span>
