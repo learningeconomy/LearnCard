@@ -46,6 +46,7 @@ type BoostDetailsSideBarProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
+    issuancesSummaryComponent?: React.ReactNode;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -59,6 +60,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     renderMethodCredential,
+    issuancesSummaryComponent,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
 
@@ -143,6 +145,13 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    {issuancesSummaryComponent && (
+                        <div className="mt-4 border-t border-grayscale-200 pt-4">
+                            <p className="text-sm font-semibold text-grayscale-900 mb-2">Issuances</p>
+                            {issuancesSummaryComponent}
+                        </div>
+                    )}
 
                     {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
                         <BoostDisplayStyleSelector
