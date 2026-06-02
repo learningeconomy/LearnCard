@@ -49,17 +49,31 @@ const STAT_CARD_CONFIG: Record<StatCardType, StatCardConfig> = {
 export const StatCard: React.FC<{
     type: StatCardType;
     value: string | number;
-}> = ({ type, value }) => {
+    onClick?: () => void;
+}> = ({ type, value, onClick }) => {
     const { label, icon, variant } = STAT_CARD_CONFIG[type];
+    const cardClasses = `flex flex-col rounded-2xl px-4 py-3 min-w-[110px] text-left transition-colors ${
+        variant === 'highlight'
+            ? 'bg-white border border-grayscale-200'
+            : 'bg-grayscale-100/70'
+    } ${onClick ? 'cursor-pointer hover:bg-grayscale-100' : 'cursor-default'}`;
+
+    if (onClick) {
+        return (
+            <button type="button" onClick={onClick} className={cardClasses}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-grayscale-600 mb-1.5">
+                    {label}
+                </p>
+                <div className="flex items-center gap-1.5">
+                    {icon && <span className="text-grayscale-700 shrink-0">{icon}</span>}
+                    <p className="text-2xl font-bold text-grayscale-900 leading-none">{value}</p>
+                </div>
+            </button>
+        );
+    }
 
     return (
-        <div
-            className={`flex flex-col rounded-2xl px-4 py-3 min-w-[110px] ${
-                variant === 'highlight'
-                    ? 'bg-white border border-grayscale-200'
-                    : 'bg-grayscale-100/70'
-            }`}
-        >
+        <div className={cardClasses}>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-grayscale-600 mb-1.5">
                 {label}
             </p>

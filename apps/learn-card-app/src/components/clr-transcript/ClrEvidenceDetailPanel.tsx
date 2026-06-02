@@ -1,0 +1,54 @@
+import { useModal } from 'learn-card-base';
+import PaperClip from '../svgs/PaperClip';
+
+import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import { FlatIcon } from './ClrStatCard';
+import X from '../svgs/X';
+
+import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+
+type Props = {
+    evidence: EvidenceDisplayModel[];
+};
+
+const ClrEvidenceDetailPanel = ({ evidence }: Props) => {
+    const { closeModal } = useModal();
+    const evidenceCount = evidence.length;
+
+    return (
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
+            {/* Header */}
+            <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[22px] text-grayscale-900 leading-tight font-semibold">
+                            Evidence
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="text-base leading-none text-grayscale-600">
+                                <FlatIcon>
+                                    <PaperClip className="w-4 h-4" />
+                                </FlatIcon>
+                            </span>
+                            <p className="text-sm text-grayscale-600">
+                                {evidenceCount} artifact{evidenceCount !== 1 ? 's' : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={closeModal}
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+            </div>
+
+            <div className="px-5">
+                <ClrTranscriptEvidenceList evidence={evidence} />
+            </div>
+        </div>
+    );
+};
+
+export default ClrEvidenceDetailPanel;

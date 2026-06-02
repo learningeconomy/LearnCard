@@ -13,7 +13,7 @@ type Props = {
 
 const ClrCourseSection = ({ model, onSelectCourse, adminMode = false }: Props) => {
     return (
-        <div className="space-y-3">
+        <div id="course-history" className="space-y-3 scroll-mt-6">
             <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
                 <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
                     Course History
