@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import type { AppStoreListing } from '@learncard/types';
 
-import { useModal, ModalTypes, useWallet } from 'learn-card-base';
-import { useQueries } from '@tanstack/react-query';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 import type { CredentialTemplate } from 'src/pages/appStoreDeveloper/dashboards/types';
 import {
@@ -78,37 +77,6 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
         listingId,
         boostUri,
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
-    });
-
-    const { initWallet } = useWallet();
-
-    // Best-effort recipient-status overlay for the activity list: fetch recipients
-    // once per unique boost (cache-shared with the detail modal's useGetBoostRecipients),
-    // capped at 25/boost, so rows can badge revoked/suspended without an N+1-per-row fetch.
-    const uniqueActivityBoostUris = Array.from(
-        new Set(activity.map(a => a.boostUri).filter((u): u is string => Boolean(u)))
-    );
-    const activityRecipientQueries = useQueries({
-        queries: uniqueActivityBoostUris.map(uri => ({
-            queryKey: ['boostRecipients', uri, true],
-            queryFn: async () => {
-                const wallet = await initWallet();
-                const data = await wallet.invoke.getBoostRecipients(uri, 25, undefined, true);
-                return Array.isArray(data) ? data : [];
-            },
-            enabled: Boolean(uri),
-            staleTime: 30_000,
-        })),
-    });
-    const recipientStatusMap = new Map<string, string>();
-    uniqueActivityBoostUris.forEach((uri, i) => {
-        const recips = activityRecipientQueries[i]?.data as Array<any> | undefined;
-        recips?.forEach(r => {
-            const status = r?.status;
-            if (r?.to?.profileId && status && status !== 'active') {
-                recipientStatusMap.set(`${uri}|${r.to.profileId}`, status);
-            }
-        });
     });
 
     // Refetch when refreshKey changes
@@ -221,12 +189,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                             const templateName = getActivityName(item);
                             const recipientName = getRecipientDisplayName(item);
                             const statusLabel = getActivityLabel(item);
-                            const rowStatus =
-                                item.boostUri && item.recipientProfile?.profileId
-                                    ? recipientStatusMap.get(
-                                          `${item.boostUri}|${item.recipientProfile.profileId}`
-                                      )
-                                    : undefined;
+                            const rowStatus = item.status;
 
                             // Determine icon and colors based on event type
                             let bgColor = 'bg-cyan-100';

@@ -31,6 +31,7 @@ export interface CredentialActivityRecord {
         profileId: string;
         displayName?: string;
     };
+    status?: 'active' | 'revoked' | 'suspended';
 }
 
 interface CredentialActivityStats {

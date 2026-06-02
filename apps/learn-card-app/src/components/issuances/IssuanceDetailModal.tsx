@@ -27,7 +27,6 @@ import {
     useConfirmation,
     useToast,
     ToastTypeEnum,
-    useGetBoostRecipients,
     useGetBoostPermissions,
 } from 'learn-card-base';
 
@@ -96,28 +95,20 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
     const { track } = useAnalytics();
     const queryClient = useQueryClient();
 
-    // Lookup recipient status for this boost+recipient combo
-    const hasBoostAndRecipient = !!(item.boostUri && item.recipientProfile?.profileId);
-    const { data: boostRecipients } = useGetBoostRecipients(
-        hasBoostAndRecipient ? item.boostUri! : null,
-        hasBoostAndRecipient,
-        true
-    );
-    const recipientStatus = hasBoostAndRecipient
-        ? (boostRecipients?.find(r => r.to?.profileId === item.recipientProfile?.profileId) as any)
-              ?.status || 'active'
-        : undefined;
+    // Per-instance status comes directly from the activity record
+    const recipientStatus = item.status;
 
     // Only fetch permissions when we have a boost to act on
+    const hasBoostAndRecipient = !!(item.boostUri && item.recipientProfile?.profileId);
     const { data: boostPermissions } = useGetBoostPermissions(
         hasBoostAndRecipient ? item.boostUri! : undefined
     );
 
-    // Whether we can show credential management actions (gated on revoke permission)
+    // Whether we can show credential management actions (gated on revoke permission).
+    // An undefined status means active — only 'revoked' hides the actions.
     const canManage =
         hasBoostAndRecipient &&
         !!boostPermissions?.canRevoke &&
-        recipientStatus !== undefined &&
         recipientStatus !== 'revoked';
 
     const handleCredentialAction = async (action: 'revoke' | 'suspend' | 'unsuspend') => {
@@ -143,6 +134,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                     await mutation.mutateAsync({
                         boostUri: item.boostUri!,
                         recipientProfileId: item.recipientProfile!.profileId,
+                        credentialUri: item.credentialUri,
                     });
                     // Fire analytics event
                     const eventMap = {

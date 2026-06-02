@@ -492,6 +492,7 @@ export const useDeleteCredentialRecord = () => {
 type RevokeBoostRecipientParams = {
     boostUri: string;
     recipientProfileId: string;
+    credentialUri?: string;
 };
 
 /**
@@ -504,12 +505,13 @@ export const useRevokeBoostRecipient = () => {
     const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, RevokeBoostRecipientParams>({
-        mutationFn: async ({ boostUri, recipientProfileId }) => {
+        mutationFn: async ({ boostUri, recipientProfileId, credentialUri }) => {
             try {
                 const wallet = await initWallet();
                 const result = await (wallet?.invoke as any)?.revokeBoostRecipient(
                     boostUri,
-                    recipientProfileId
+                    recipientProfileId,
+                    credentialUri
                 );
 
                 return result;
@@ -548,12 +550,13 @@ export const useSuspendBoostRecipient = () => {
     const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, RevokeBoostRecipientParams>({
-        mutationFn: async ({ boostUri, recipientProfileId }) => {
+        mutationFn: async ({ boostUri, recipientProfileId, credentialUri }) => {
             try {
                 const wallet = await initWallet();
                 const result = await (wallet?.invoke as any)?.suspendBoostRecipient(
                     boostUri,
-                    recipientProfileId
+                    recipientProfileId,
+                    credentialUri
                 );
 
                 return result;
@@ -589,12 +592,13 @@ export const useUnsuspendBoostRecipient = () => {
     const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, RevokeBoostRecipientParams>({
-        mutationFn: async ({ boostUri, recipientProfileId }) => {
+        mutationFn: async ({ boostUri, recipientProfileId, credentialUri }) => {
             try {
                 const wallet = await initWallet();
                 const result = await (wallet?.invoke as any)?.unsuspendBoostRecipient(
                     boostUri,
-                    recipientProfileId
+                    recipientProfileId,
+                    credentialUri
                 );
 
                 return result;
