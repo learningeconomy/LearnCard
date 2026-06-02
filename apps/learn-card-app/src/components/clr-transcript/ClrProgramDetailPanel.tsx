@@ -3,25 +3,28 @@ import { useModal } from 'learn-card-base';
 
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
+import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
 import { formatAchievementType } from './clr.helpers';
 import { FlatIcon } from './ClrStatCard';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import X from '../svgs/X';
 
 import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 type Props = {
     program: ProgramDisplayModel;
     onClose?: () => void;
     adminMode?: boolean;
+    issuerName?: string;
 };
 
-const ClrProgramDetailPanel = ({ program, adminMode = false }: Props) => {
+const ClrProgramDetailPanel = ({ program, adminMode = false, issuerName }: Props) => {
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
 
     return (
-        <div className="space-y-5 pb-10">
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -50,51 +53,53 @@ const ClrProgramDetailPanel = ({ program, adminMode = false }: Props) => {
             </div>
 
             <div className="px-5 space-y-5">
-                {/* Description + dates */}
-                {(program.description?.value ||
-                    program.earnedAt?.value ||
-                    program.validUntil?.value) && (
-                    <div className="space-y-2">
-                        {program.description?.value && (
-                            <div>
-                                <h3 className="text-lg font-medium text-grayscale-900 mb-2">
-                                    Description
-                                </h3>
-                                <p className="text-sm text-grayscale-700">
-                                    {program.description.value}
-                                </p>
-                            </div>
-                        )}
-                        {(program.earnedAt?.value || program.validUntil?.value) && (
-                            <div className="flex gap-4 flex-wrap">
-                                {program.earnedAt?.value && (
-                                    <div>
-                                        <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                                            Conferred
-                                        </p>
-                                        <p className="text-sm text-grayscale-900">
-                                            {formatClrDate(program.earnedAt.value)}
-                                        </p>
-                                    </div>
-                                )}
-                                {program.validUntil?.value && (
-                                    <div>
-                                        <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                                            Expires
-                                        </p>
-                                        <p className="text-sm text-grayscale-900">
-                                            {formatClrDate(program.validUntil.value)}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
+                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
+                    {/* Description + dates */}
+                    {(program.description?.value ||
+                        program.earnedAt?.value ||
+                        program.validUntil?.value) && (
+                        <div className="space-y-2">
+                            {program.description?.value && (
+                                <div>
+                                    <h3 className="text-lg font-medium text-grayscale-900 mb-2">
+                                        Description
+                                    </h3>
+                                    <p className="text-sm text-grayscale-700">
+                                        {program.description.value}
+                                    </p>
+                                </div>
+                            )}
+                            {(program.earnedAt?.value || program.validUntil?.value) && (
+                                <div className="flex gap-4 flex-wrap">
+                                    {program.earnedAt?.value && (
+                                        <div>
+                                            <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
+                                                Conferred
+                                            </p>
+                                            <p className="text-sm text-grayscale-900">
+                                                {formatClrDate(program.earnedAt.value)}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {program.validUntil?.value && (
+                                        <div>
+                                            <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
+                                                Expires
+                                            </p>
+                                            <p className="text-sm text-grayscale-900">
+                                                {formatClrDate(program.validUntil.value)}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {/* Results collapsible */}
                 {program.results.length > 0 && (
-                    <div className="bg-white border border-grayscale-200 rounded-2xl overflow-hidden">
+                    <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden">
                         <button
                             type="button"
                             onClick={() => setResultsOpen(o => !o)}
@@ -104,8 +109,8 @@ const ClrProgramDetailPanel = ({ program, adminMode = false }: Props) => {
                                 {program.results.length} Result
                                 {program.results.length !== 1 ? 's' : ''}
                             </p>
-                            <span className="text-grayscale-400 text-xs">
-                                {resultsOpen ? '∧' : '∨'}
+                            <span className="text-grayscale-600 text-xs">
+                                {resultsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                             </span>
                         </button>
                         {resultsOpen && (
@@ -118,6 +123,9 @@ const ClrProgramDetailPanel = ({ program, adminMode = false }: Props) => {
                         )}
                     </div>
                 )}
+
+                {/* Source credential collapsible */}
+                <ClrProgramCredentialCollapsible program={program} issuerName={issuerName} />
 
                 {/* Admin provenance */}
                 {adminMode && (

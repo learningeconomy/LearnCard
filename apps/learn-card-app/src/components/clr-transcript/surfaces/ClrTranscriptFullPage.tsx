@@ -39,6 +39,7 @@ const ClrTranscriptFullPage = ({ model, credential, options }: Props) => {
             <ClrProgramDetailPanel
                 program={program}
                 adminMode={adminMode}
+                issuerName={model.header.issuerName?.value}
             />
         );
     };
