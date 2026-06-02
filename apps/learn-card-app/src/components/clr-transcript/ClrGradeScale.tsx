@@ -13,7 +13,7 @@ const ClrGradeScale = ({ grade, allowedGrades }: Props) => {
     if (orderedGrades.length === 0) return null;
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 mt-4 border-t border-grayscale-200 pt-4">
             <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                 Grade Scale
             </p>

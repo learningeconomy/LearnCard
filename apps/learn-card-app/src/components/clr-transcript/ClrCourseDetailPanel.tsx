@@ -61,7 +61,7 @@ const ClrCourseDetailPanel = ({
     const allowedGrades = primaryResult?.allowedValue?.value ?? [];
 
     return (
-        <div className="space-y-5 pb-10">
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -103,112 +103,116 @@ const ClrCourseDetailPanel = ({
             </div>
 
             <div className="px-5 space-y-5">
-                {/* Grade + credits hero */}
-                {(grade !== undefined || credits !== undefined) && (
-                    <div className="flex gap-3">
-                        {grade !== undefined && (
-                            <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 flex-1">
-                                <p
-                                    className={`text-3xl font-semibold leading-none ${gradeColor(
-                                        grade
-                                    )}`}
-                                >
-                                    {grade}
-                                </p>
-                                <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
-                                    {gradeLabel}
-                                </p>
-                            </div>
-                        )}
-                        {credits !== undefined && (
-                            <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 flex-1">
-                                <p className="text-3xl font-semibold text-grayscale-900 leading-none">
-                                    {credits}
-                                </p>
-                                <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
-                                    {course.creditsEarned !== undefined ? 'Credits' : 'Available'}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
+                    {/* Grade + credits hero */}
+                    {(grade !== undefined || credits !== undefined) && (
+                        <div className="flex gap-3 mb-4">
+                            {grade !== undefined && (
+                                <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 flex-1">
+                                    <p
+                                        className={`text-3xl font-semibold leading-none ${gradeColor(
+                                            grade
+                                        )}`}
+                                    >
+                                        {grade}
+                                    </p>
+                                    <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
+                                        {gradeLabel}
+                                    </p>
+                                </div>
+                            )}
+                            {credits !== undefined && (
+                                <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 flex-1">
+                                    <p className="text-3xl font-semibold text-grayscale-900 leading-none">
+                                        {credits}
+                                    </p>
+                                    <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
+                                        {course.creditsEarned !== undefined
+                                            ? 'Credits'
+                                            : 'Available'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                {/* Description + earned date */}
-                {(course.description?.value || course.earnedAt?.value) && (
-                    <div className="space-y-2">
-                        {course.description?.value && (
-                            <div>
-                                <h3 className="text-lg font-medium text-grayscale-900 mb-2">
-                                    Description
-                                </h3>
-                                <p className="text-sm text-grayscale-700">
-                                    {course.description.value}
+                    {/* Description + earned date */}
+                    {(course.description?.value || course.earnedAt?.value) && (
+                        <div className="space-y-2">
+                            {course.description?.value && (
+                                <div>
+                                    <h3 className="text-lg font-medium text-grayscale-900 mb-2">
+                                        Description
+                                    </h3>
+                                    <p className="text-sm text-grayscale-700">
+                                        {course.description.value}
+                                    </p>
+                                </div>
+                            )}
+                            {course.earnedAt?.value && (
+                                <p className="text-sm text-grayscale-600">
+                                    Earned on{' '}
+                                    <span className="font-semibold text-grayscale-600">
+                                        {formatClrDate(course.earnedAt.value)}
+                                    </span>
+                                    {issuerName && (
+                                        <>
+                                            {' '}
+                                            at{' '}
+                                            <span className="font-semibold text-grayscale-600">
+                                                {issuerName}
+                                            </span>
+                                        </>
+                                    )}
                                 </p>
-                            </div>
-                        )}
-                        {course.earnedAt?.value && (
-                            <p className="text-sm text-grayscale-600">
-                                Earned on{' '}
-                                <span className="font-semibold text-grayscale-600">
-                                    {formatClrDate(course.earnedAt.value)}
-                                </span>
-                                {issuerName && (
-                                    <>
-                                        {' '}
-                                        at{' '}
-                                        <span className="font-semibold text-grayscale-600">
-                                            {issuerName}
-                                        </span>
-                                    </>
-                                )}
+                            )}
+                        </div>
+                    )}
+
+                    {/* Part of program */}
+                    {partOf.length > 0 && (
+                        <div className="space-y-2 mt-4 border-t border-grayscale-200 pt-4">
+                            <p className="text-xs font-semibold text-grayscale-700 uppercase">
+                                Part of Degree Track
                             </p>
-                        )}
-                    </div>
-                )}
-
-                {/* Part of program */}
-                {partOf.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="text-xs font-semibold text-grayscale-700 uppercase">
-                            Part of Degree Track
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {partOf.map(a => (
-                                <span
-                                    key={a.targetId}
-                                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-grayscale-800 bg-white border border-grayscale-200 rounded-full px-3 py-1.5"
-                                >
-                                    <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-200" />
-                                    {a.targetName}
-                                </span>
-                            ))}
+                            <div className="flex flex-wrap gap-1.5">
+                                {partOf.map(a => (
+                                    <span
+                                        key={a.targetId}
+                                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-grayscale-800 bg-indigo-50 border border-indigo-300 rounded-full px-3 py-1.5"
+                                    >
+                                        <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-200" />
+                                        {a.targetName}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Prerequisites */}
-                {prerequisites.length > 0 && (
-                    <div className="space-y-1.5">
-                        <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
-                            Prerequisites
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {prerequisites.map(a => (
-                                <span
-                                    key={a.sourceId}
-                                    className="text-xs text-grayscale-700 bg-grayscale-100 border border-grayscale-200 rounded-full px-2.5 py-0.5"
-                                >
-                                    {a.sourceName}
-                                </span>
-                            ))}
+                    {/* Prerequisites */}
+                    {prerequisites.length > 0 && (
+                        <div className="space-y-1.5 mt-4 border-t border-grayscale-200 pt-4">
+                            <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
+                                Prerequisites
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {prerequisites.map(a => (
+                                    <span
+                                        key={a.sourceId}
+                                        className="text-xs text-grayscale-700 bg-grayscale-100 border border-grayscale-200 rounded-full px-2.5 py-0.5"
+                                    >
+                                        {a.sourceName}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Grade scale */}
-                {grade !== undefined && allowedGrades.length > 0 && (
-                    <ClrGradeScale grade={grade} allowedGrades={allowedGrades} />
-                )}
+                    {/* Grade scale */}
+                    {grade !== undefined && allowedGrades.length > 0 && (
+                        <ClrGradeScale grade={grade} allowedGrades={allowedGrades} />
+                    )}
+                </div>
 
                 {/* Expires */}
                 {course.validUntil?.value && (
