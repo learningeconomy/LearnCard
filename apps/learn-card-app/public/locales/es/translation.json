@@ -1,1084 +1,1111 @@
 {
-  "sidemenu": {
-    "addTo": "Add to {{brand}}",
-    "newAiSession": "New AI Session",
-    "footer": {
-      "poweredBy": "Powered by <0>Consent Flow</0>",
-      "ownYourData": "You own your own data.",
-      "connectionsEncrypted": "All connections are <0>encrypted.</0>",
-      "privacyPolicy": "Privacy Policy",
-      "termsOfService": "Terms of Service",
-      "copyright": "© {{year}} Learning Economy",
-      "close": "Close"
+    "sidemenu": {
+        "addTo": "Agregar a {{brand}}",
+        "newAiSession": "Nueva sesión de IA",
+        "footer": {
+            "poweredBy": "Desarrollado por <0>Consent Flow</0>",
+            "ownYourData": "Tus datos te pertenecen.",
+            "connectionsEncrypted": "Todas las conexiones están <0>encriptadas.</0>",
+            "privacyPolicy": "Política de privacidad",
+            "termsOfService": "Términos de servicio",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "Cerrar"
+        },
+        "links": {
+            "launchPad": "Aplicaciones",
+            "contacts": "Contactos",
+            "alerts": "Alertas",
+            "personalize": "Personalizar",
+            "adminTools": "Herramientas de administración",
+            "wallet": "Billetera",
+            "passport": "Pasaporte",
+            "aiTopics": "Sesiones de IA",
+            "aiInsights": "IA Insights",
+            "aiPathways": "IA Pathways",
+            "skills": "Habilidades",
+            "socialBadges": "Boosts",
+            "achievements": "Logros",
+            "studies": "Estudios",
+            "portfolio": "Portafolio",
+            "assistance": "Asistencia",
+            "experiences": "Experiencias",
+            "families": "Familias",
+            "ids": "Identificaciones",
+            "pathways": "Caminos"
+        }
     },
-    "links": {
-      "launchPad": "Apps",
-      "contacts": "Contacts",
-      "alerts": "Alerts",
-      "personalize": "Personalize",
-      "adminTools": "Admin Tools",
-      "wallet": "Wallet",
-      "passport": "Passport",
-      "aiTopics": "AI Sessions",
-      "aiInsights": "AI Insights",
-      "aiPathways": "AI Pathways",
-      "skills": "Skills",
-      "socialBadges": "Boosts",
-      "achievements": "Achievements",
-      "studies": "Studies",
-      "portfolio": "Portfolio",
-      "assistance": "Assistance",
-      "experiences": "Experiences",
-      "families": "Families",
-      "ids": "IDs",
-      "pathways": "Journeys"
-    }
-  },
-  "passport": {
-    "buildMyLearnCard": {
-      "title": "Build My {{brand}}",
-      "progress": "{{percent}}% optimized",
-      "processing": "Processing documents…",
-      "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
-      "pendingReview": "{{count}} credential(s) ready for review"
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "Construye tu {{brand}}",
+            "progress": "{{percent}}% optimizado",
+            "processing": "Procesando documentos…",
+            "stepsCompleted": "<0>{{completed}}</0> de <1>{{total}}</1> pasos completados",
+            "pendingReview": "{{count}} credencial(es) listas para revisión"
+        },
+        "resumeBuilder": {
+            "title": "Creador de currículum",
+            "subtitle": "Crea tu currículum con credenciales de {{brand}}.",
+            "yourResume": "Tu currículum",
+            "buildYourResume": "Crea tu currículum",
+            "updatedToday": "Actualizado <0>hoy</0>",
+            "tagline": "Destaca con un currículum personalizado"
+        },
+        "explore": "Explorar"
     },
-    "resumeBuilder": {
-      "title": "Resume Builder",
-      "subtitle": "Build your resume with {{brand}} credentials.",
-      "yourResume": "Your Resume",
-      "buildYourResume": "Build Your Resume",
-      "updatedToday": "Updated <0>today</0>",
-      "tagline": "Stand out with a tailored resume"
+    "launchpad": {
+        "title": "Aplicaciones",
+        "header": {
+            "contacts": "Contactos",
+            "aiSessions": "Sesiones de IA",
+            "alerts": "Alertas"
+        },
+        "tabs": {
+            "myApps": "Mis aplicaciones",
+            "ai": "IA",
+            "learning": "Aprendizaje",
+            "games": "Juegos",
+            "tools": "Herramientas",
+            "employment": "Empleo",
+            "credentials": "Credenciales",
+            "other": "Otros",
+            "plugins": "Plugins",
+            "all": "Todos"
+        },
+        "sections": {
+            "suggestedApps": "Aplicaciones sugeridas",
+            "installedApps": "Aplicaciones instaladas",
+            "allApps": "Todas las aplicaciones",
+            "allCategory": "Todos en {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "Tus aplicaciones aparecerán aquí",
+            "noAppsAvailable": "No hay aplicaciones disponibles ahora",
+            "nothingInCategory": "Nada en {{category}} todavía",
+            "installSomething": "Instala algo desde la Tienda de aplicaciones para comenzar.",
+            "checkBackLater": "Vuelve pronto — se agregan nuevas aplicaciones todo el tiempo.",
+            "checkBackSoon": "Vuelve pronto o explora todas las aplicaciones."
+        },
+        "aiDisabledMinor": "Las funciones de IA no están disponibles para usuarios menores de 18 años.",
+        "aiDisabledPrivacy": "Las funciones de IA están deshabilitadas. Puedes habilitarlas en Privacidad y Datos desde tu perfil."
     },
-    "explore": "Explore"
-  },
-  "launchpad": {
-    "title": "Apps",
-    "header": {
-      "contacts": "Contacts",
-      "aiSessions": "AI Sessions",
-      "alerts": "Alerts"
+    "wallet": {
+        "categories": {
+            "aiSessions": "Sesiones de IA",
+            "aiPathways": "IA Pathways",
+            "aiInsights": "IA Insights",
+            "skills": "Habilidades",
+            "socialBadges": "Boosts",
+            "achievements": "Logros",
+            "studies": "Estudios",
+            "portfolio": "Portafolio",
+            "assistance": "Asistencia",
+            "experiences": "Experiencias",
+            "families": "Familias",
+            "ids": "Identificaciones"
+        },
+        "emptyState": "Aún no hay credenciales",
+        "credentialCount": "{{count}} credencial(es)",
+        "viewMode": "Vista",
+        "listView": "Lista",
+        "gridView": "Cuadrícula",
+        "earned": "Obtenidas",
+        "managed": "Gestionadas",
+        "noManaged": "Sin credenciales gestionadas",
+        "search": "Buscar credenciales...",
+        "expired": "Expirada",
+        "invalid": "Identificación inválida",
+        "expiredId": "Identificación expirada",
+        "noTitle": "Sin título",
+        "issuedBy": "Emitida por:",
+        "evidence": "Evidencia",
+        "issuance": "Emisión",
+        "issued": "Emitida",
+        "details": "Detalles",
+        "filter": "Filtrar",
+        "credentialDetail": "Detalle de credencial",
+        "shareCredential": "Compartir",
+        "deleteCredential": "Eliminar",
+        "confirmDelete": "¿Estás seguro de que deseas eliminar esta credencial?",
+        "addToWallet": "Agregar a la billetera",
+        "viewCredential": "Ver credencial",
+        "issuer": "Emisor",
+        "subject": "Asunto",
+        "issueDate": "Fecha de emisión",
+        "expirationDate": "Fecha de expiración",
+        "status": "Estado",
+        "actions": "Acciones",
+        "openSyllabus": "Abrir programa",
+        "certificate": "Certificado",
+        "meritBadge": "Insignia al mérito",
+        "meritBadges": "Insignias al mérito",
+        "evidenceFile": "Archivo de evidencia",
+        "courseSyllabus": "Programa del curso"
     },
-    "tabs": {
-      "myApps": "My Apps",
-      "ai": "AI",
-      "learning": "Learning",
-      "games": "Games",
-      "tools": "Tools",
-      "employment": "Employment",
-      "credentials": "Credentials",
-      "other": "Other",
-      "plugins": "Plugins",
-      "all": "All"
+    "theme": {
+        "title": "Elige tu tema",
+        "subtitleColorfulFormal": "Cambia entre nuestra experiencia colorida y un estilo clásico y formal.",
+        "subtitleGeneric": "Elige tu estilo visual preferido.",
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        }
     },
-    "sections": {
-      "suggestedApps": "Suggested Apps",
-      "installedApps": "Installed Apps",
-      "allApps": "All Apps",
-      "allCategory": "All {{category}}"
+    "language": {
+        "select": "Seleccionar idioma",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية",
+        "french": "Français",
+        "korean": "한국어"
     },
-    "emptyStates": {
-      "noInstalledApps": "Your apps will live here",
-      "noAppsAvailable": "No apps available right now",
-      "nothingInCategory": "Nothing in {{category}} yet",
-      "installSomething": "Install something from the App Store to get started.",
-      "checkBackLater": "Check back later — new apps are added all the time.",
-      "checkBackSoon": "Check back soon, or browse all apps."
+    "login": {
+        "welcome": {
+            "heading": "Bienvenido a {{brand}}",
+            "subtitle": "Inicia sesión para acceder a tus credenciales, logros y más.",
+            "pills": {
+                "credentials": "Credenciales",
+                "achievements": "Logros",
+                "skills": "Habilidades"
+            }
+        },
+        "sharedComputer": "Computadora compartida o pública",
+        "signInFromAnotherDevice": "Iniciar sesión desde otro dispositivo",
+        "qrApproved": {
+            "heading": "¡Todo listo!",
+            "withHint": "Inicia sesión con <0>{{hint}}</0> para acceder a tu cuenta.",
+            "noHint": "Ahora solo inicia sesión abajo para acceder a tu cuenta.",
+            "continueButton": "Continuar para iniciar sesión"
+        },
+        "linkedBanner": {
+            "withHint": "Inicia sesión con <0>{{hint}}</0> para terminar",
+            "noHint": "Dispositivo vinculado — inicia sesión para terminar"
+        },
+        "installIntent": {
+            "banner": "Volverás a <0>{{appName}}</0> después de iniciar sesión"
+        },
+        "footer": {
+            "terms": "Términos",
+            "privacy": "Privacidad",
+            "learnMore": "Más información",
+            "explorePathways": "Explorar rutas",
+            "selfCustodialLogin": "Inicio de sesión autocustodiado.",
+            "haveSeedPhrase": "¿Tienes tu propia <0>frase semilla</0>?"
+        },
+        "email": {
+            "placeholder": "Dirección de correo",
+            "button": "Iniciar sesión con correo",
+            "sendingCode": "Enviando código...",
+            "verification": {
+                "title": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
+                "verify": "Verificar",
+                "verifying": "Verificando...",
+                "error": "No se pudo verificar el código. Intenta de nuevo."
+            },
+            "password": {
+                "placeholder": "Contraseña",
+                "login": "Iniciar sesión",
+                "create": "Crear cuenta",
+                "existingAccount": "¿Ya tienes una cuenta?",
+                "differentEmail": "Usar otro correo",
+                "staySignedIn": "Permanecer conectado",
+                "agreeToTerms": "Acepto los <0>Términos</0>"
+            },
+            "resend": "Reenviar código",
+            "resending": "Enviando código...",
+            "resendIn": "Reenviar en {{seconds}}s",
+            "error": {
+                "invalidEmail": "Correo faltante o inválido",
+                "invalidCode": "Código inválido"
+            }
+        },
+        "phone": {
+            "placeholder": "Número de teléfono",
+            "button": "Iniciar sesión con SMS",
+            "loading": "Cargando...",
+            "verification": {
+                "title": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
+                "verify": "Verificar",
+                "verifying": "Verificando..."
+            },
+            "password": {
+                "placeholder": "Contraseña",
+                "login": "Iniciar sesión",
+                "create": "Crear cuenta",
+                "existingAccount": "¿Ya tienes una cuenta?",
+                "differentEmail": "Usar otro correo",
+                "staySignedIn": "Permanecer conectado",
+                "agreeToTerms": "Acepto los <0>Términos</0>"
+            },
+            "resend": "Reenviar código",
+            "resending": "Enviando código...",
+            "resendIn": "Reenviar en {{seconds}}s",
+            "smsSent": "Se ha enviado un código de verificación",
+            "error": {
+                "invalidPhone": "¡Se requiere teléfono!",
+                "invalidCode": "Código inválido"
+            }
+        },
+        "social": {
+            "or": "O"
+        },
+        "seedPhrase": {
+            "title": "Usa una frase semilla para importar tu pasaporte",
+            "description": "Ingresa tu <0>semilla de 64 caracteres</0> o <2>frase de palabras</2> abajo para recuperar el acceso a un pasaporte {{brand}} existente.",
+            "advancedOption": "Esta es una opción avanzada para usuarios que ya guardaron su semilla al crear el pasaporte. Si no tienes una semilla, deberás volver y <0>crear un nuevo pasaporte</0>.",
+            "placeholder": "Pega tu frase semilla o clave aquí...",
+            "important": {
+                "heading": "¡Importante!",
+                "rule1": "Guarda tu semilla de forma segura y sin conexión.",
+                "rule2": "Nunca la compartas con nadie.",
+                "rule3": "Si alguien más tiene tu semilla, puede controlar tu pasaporte."
+            },
+            "back": "Atrás",
+            "import": "Importar pasaporte",
+            "error": {
+                "invalidChars": "La semilla solo debe contener números y letras (a–f).",
+                "tooShort": "La frase semilla debe tener 64 caracteres.",
+                "generic": "Algo salió mal. Intenta de nuevo."
+            }
+        },
+        "loader": {
+            "messages": {
+                "0": "¡Credenciales en camino!",
+                "1": "¡Agitando la varita mágica de credenciales!",
+                "2": "¡Obteniendo el brillo de tus insignias!",
+                "3": "¡Desbloqueando tu polvo estelar secreto!",
+                "4": "¡Preparando tus delicias digitales!",
+                "5": "¡Invocando tus superpoderes de credenciales!",
+                "6": "¡Tu tesoro digital está cerca!",
+                "7": "¡Preparando tu colección de insignias!",
+                "8": "¡Credenciales cargando con estilo!",
+                "9": "¡Prepárate para la chispa de credenciales!"
+            }
+        },
+        "logout": "Cerrando sesión..."
     },
-    "aiDisabledMinor": "AI features are not available for users under 18.",
-    "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
-  },
-  "wallet": {
-    "categories": {
-      "aiSessions": "AI Sessions",
-      "aiPathways": "AI Pathways",
-      "aiInsights": "AI Insights",
-      "skills": "Skills",
-      "socialBadges": "Boosts",
-      "achievements": "Achievements",
-      "studies": "Studies",
-      "portfolio": "Portfolio",
-      "assistance": "Assistance",
-      "experiences": "Experiences",
-      "families": "Families",
-      "ids": "IDs"
-    },
-    "emptyState": "No credentials yet",
-    "credentialCount": "{{count}} credential(s)",
-    "viewMode": "View",
-    "listView": "List",
-    "gridView": "Grid",
-    "earned": "Earned",
-    "managed": "Managed",
-    "noManaged": "No managed credentials",
-    "search": "Search credentials...",
-    "expired": "Expired",
-    "invalid": "Invalid ID",
-    "expiredId": "Expired ID",
-    "noTitle": "No title",
-    "issuedBy": "Issued by:",
-    "evidence": "Evidence",
-    "issuance": "Issuance",
-    "issued": "Issued",
-    "details": "Details",
-    "filter": "Filter",
-    "credentialDetail": "Credential Detail",
-    "shareCredential": "Share",
-    "deleteCredential": "Delete",
-    "confirmDelete": "Are you sure you want to delete this credential?",
-    "addToWallet": "Add to Wallet",
-    "viewCredential": "View Credential",
-    "issuer": "Issuer",
-    "subject": "Subject",
-    "issueDate": "Issue Date",
-    "expirationDate": "Expiration Date",
-    "status": "Status",
-    "actions": "Actions",
-    "openSyllabus": "Open Syllabus",
-    "certificate": "Certificate",
-    "meritBadge": "Merit Badge",
-    "meritBadges": "Merit Badges",
-    "evidenceFile": "Evidence File",
-    "courseSyllabus": "Course Syllabus"
-  },
-  "theme": {
-    "title": "Choose Your Theme",
-    "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
-    "subtitleGeneric": "Choose your preferred visual style.",
-    "names": {
-      "colorful": "Colorful",
-      "formal": "Formal",
-      "vetpass": "VetPass"
-    }
-  },
-  "language": {
-    "select": "Select language",
-    "english": "English",
-    "spanish": "Español",
-    "german": "Deutsch",
-    "arabic": "العربية",
-    "french": "Français",
-    "korean": "한국어"
-  },
-  "login": {
-    "welcome": {
-      "heading": "Bienvenido a {{brand}}",
-      "subtitle": "Inicia sesión para acceder a tus credenciales, logros y más.",
-      "pills": {
-        "credentials": "Credenciales",
-        "achievements": "Logros",
-        "skills": "Habilidades"
-      }
-    },
-    "sharedComputer": "Computadora compartida o pública",
-    "signInFromAnotherDevice": "Iniciar sesión desde otro dispositivo",
-    "qrApproved": {
-      "heading": "¡Todo listo!",
-      "withHint": "Inicia sesión con <0>{{hint}}</0> para acceder a tu cuenta.",
-      "noHint": "Ahora solo inicia sesión abajo para acceder a tu cuenta.",
-      "continueButton": "Continuar para iniciar sesión"
-    },
-    "linkedBanner": {
-      "withHint": "Inicia sesión con <0>{{hint}}</0> para terminar",
-      "noHint": "Dispositivo vinculado — inicia sesión para terminar"
-    },
-    "installIntent": {
-      "banner": "Volverás a <0>{{appName}}</0> después de iniciar sesión"
-    },
-    "footer": {
-      "terms": "Términos",
-      "privacy": "Privacidad",
-      "learnMore": "Más información",
-      "explorePathways": "Explorar rutas",
-      "selfCustodialLogin": "Inicio de sesión autocustodiado.",
-      "haveSeedPhrase": "¿Tienes tu propia <0>frase semilla</0>?"
-    },
-    "email": {
-      "placeholder": "Dirección de correo",
-      "button": "Iniciar sesión con correo",
-      "sendingCode": "Enviando código...",
-      "verification": {
-        "title": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
-        "verify": "Verificar",
-        "verifying": "Verificando...",
-        "error": "No se pudo verificar el código. Intenta de nuevo."
-      },
-      "password": {
-        "placeholder": "Contraseña",
-        "login": "Iniciar sesión",
-        "create": "Crear cuenta",
-        "existingAccount": "¿Ya tienes una cuenta?",
-        "differentEmail": "Usar otro correo",
-        "staySignedIn": "Permanecer conectado",
-        "agreeToTerms": "Acepto los <0>Términos</0>"
-      },
-      "resend": "Reenviar código",
-      "resending": "Enviando código...",
-      "resendIn": "Reenviar en {{seconds}}s",
-      "error": {
-        "invalidEmail": "Correo faltante o inválido",
-        "invalidCode": "Código inválido"
-      }
-    },
-    "phone": {
-      "placeholder": "Número de teléfono",
-      "button": "Iniciar sesión con SMS",
-      "loading": "Cargando...",
-      "verification": {
-        "title": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
-        "verify": "Verificar",
-        "verifying": "Verificando..."
-      },
-      "password": {
-        "placeholder": "Contraseña",
-        "login": "Iniciar sesión",
-        "create": "Crear cuenta",
-        "existingAccount": "¿Ya tienes una cuenta?",
-        "differentEmail": "Usar otro correo",
-        "staySignedIn": "Permanecer conectado",
-        "agreeToTerms": "Acepto los <0>Términos</0>"
-      },
-      "resend": "Reenviar código",
-      "resending": "Enviando código...",
-      "resendIn": "Reenviar en {{seconds}}s",
-      "smsSent": "Se ha enviado un código de verificación",
-      "error": {
-        "invalidPhone": "¡Se requiere teléfono!",
-        "invalidCode": "Código inválido"
-      }
-    },
-    "social": {
-      "or": "O"
-    },
-    "seedPhrase": {
-      "title": "Usa una frase semilla para importar tu pasaporte",
-      "description": "Ingresa tu <0>semilla de 64 caracteres</0> o <2>frase de palabras</2> abajo para recuperar el acceso a un pasaporte {{brand}} existente.",
-      "advancedOption": "Esta es una opción avanzada para usuarios que ya guardaron su semilla al crear el pasaporte. Si no tienes una semilla, deberás volver y <0>crear un nuevo pasaporte</0>.",
-      "placeholder": "Pega tu frase semilla o clave aquí...",
-      "important": {
-        "heading": "¡Importante!",
-        "rule1": "Guarda tu semilla de forma segura y sin conexión.",
-        "rule2": "Nunca la compartas con nadie.",
-        "rule3": "Si alguien más tiene tu semilla, puede controlar tu pasaporte."
-      },
-      "back": "Atrás",
-      "import": "Importar pasaporte",
-      "error": {
-        "invalidChars": "La semilla solo debe contener números y letras (a–f).",
-        "tooShort": "La frase semilla debe tener 64 caracteres.",
-        "generic": "Algo salió mal. Intenta de nuevo."
-      }
-    },
-    "loader": {
-      "messages": {
-        "0": "¡Credenciales en camino!",
-        "1": "¡Agitando la varita mágica de credenciales!",
-        "2": "¡Obteniendo el brillo de tus insignias!",
-        "3": "¡Desbloqueando tu polvo estelar secreto!",
-        "4": "¡Preparando tus delicias digitales!",
-        "5": "¡Invocando tus superpoderes de credenciales!",
-        "6": "¡Tu tesoro digital está cerca!",
-        "7": "¡Preparando tu colección de insignias!",
-        "8": "¡Credenciales cargando con estilo!",
-        "9": "¡Prepárate para la chispa de credenciales!"
-      }
-    },
-    "logout": "Cerrando sesión..."
-  },
-  "onboarding": {
-    "selectRole": {
-      "header": "¡Selecciona lo que mejor te describe!"
+    "onboarding": {
+        "selectRole": {
+            "header": "¡Selecciona lo que mejor te describe!"
+        },
+        "profile": {
+            "header": "¡Configura tu perfil para comenzar!",
+            "imA": "Soy ",
+            "selectRole": "Seleccionar rol",
+            "fullName": "Nombre completo",
+            "dateOfBirth": "Fecha de nacimiento",
+            "age": "Edad: {{age}}",
+            "countryOfResidence": "País de residencia",
+            "userId": {
+                "placeholder": "ID de usuario",
+                "charLength": "Debe tener entre 3 y 25 caracteres.",
+                "format": "Solo letras, números y guiones (-)."
+            },
+            "privacyNotice": "Pedimos tu edad y país para cumplir con las leyes de privacidad y mantenerte seguro.",
+            "joiningNetwork": "Uniéndose a la red...",
+            "installBanner": "Después de crear tu cuenta, podrás instalar <0>{{appName}}</0>",
+            "error": {
+                "nameRequired": "Se requiere nombre.",
+                "countryRequired": "Se requiere país.",
+                "createFailed": "Hubo un error al crear tu perfil",
+                "generic": "No se pudo crear tu perfil. Aún puedes solicitar consentimiento parental ahora. Intenta configurar tu perfil más tarde.",
+                "firebase": "Hubo un error de Firebase: {{error}}"
+            }
+        },
+        "welcome": "Bienvenido a",
+        "continue": "Continuar",
+        "back": "Atrás",
+        "skipForNow": "Omitir por ahora",
+        "close": "Cerrar",
+        "save": "Guardar",
+        "role": {
+            "learner": {
+                "title": "Estudiante",
+                "description": "Soy un estudiante construyendo mi perfil y siguiendo mi progreso."
+            },
+            "guardian": {
+                "title": "Tutor",
+                "description": "Soy padre, madre o tutor apoyando a un estudiante."
+            },
+            "teacher": {
+                "title": "Profesor",
+                "description": "Soy un educador trabajando directamente con estudiantes."
+            },
+            "admin": {
+                "title": "Administrador",
+                "description": "Administro sistemas, datos o acceso de usuarios para mi organización."
+            },
+            "counselor": {
+                "title": "Orientador",
+                "description": "Apoyo a estudiantes en la planificación de sus trayectorias educativas o profesionales."
+            },
+            "developer": {
+                "title": "Desarrollador",
+                "description": "Administro sistemas, datos y tecnología para mi organización."
+            }
+        },
+        "consent": {
+            "underage": {
+                "heading": "Busca un adulto",
+                "description": "Necesitarás que un padre o tutor te agregue a una cuenta familiar antes de poder unirte.",
+                "schoolCode": {
+                    "heading": "Ingresar código escolar",
+                    "description": "Para unirte sin una cuenta de padre, ingresa el código especial proporcionado por tu escuela.",
+                    "cta": "¿Tienes un código escolar?",
+                    "placeholder": "Ingresar código",
+                    "verify": "Verificar",
+                    "error": "Código escolar inválido. Intenta de nuevo."
+                },
+                "adultButton": "Soy adulto",
+                "or": "O",
+                "loggingOut": {
+                    "heading": "Cerrando sesión...",
+                    "description": "Pide a un padre o tutor que inicie sesión y cree una cuenta familiar."
+                },
+                "addChild": {
+                    "heading": "¡Agrega a tu hijo a {{brand}}!",
+                    "description": "Inicia sesión o regístrate para crear tu perfil dentro de una cuenta familiar."
+                }
+            },
+            "eu": {
+                "heading": "Consentimiento parental requerido",
+                "description": "Ingresa el correo de tu padre/madre para enviarles una solicitud de consentimiento.",
+                "placeholder": "Correo del padre/madre",
+                "sendRequest": "Enviar solicitud",
+                "sending": "Enviando...",
+                "sent": {
+                    "heading": "Solicitud enviada",
+                    "description": "Enviamos una solicitud de consentimiento a <0>{{email}}</0>. Te avisaremos cuando sea aprobada."
+                },
+                "done": "Listo",
+                "error": {
+                    "invalidEmail": "Ingresa un correo válido.",
+                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo."
+                }
+            },
+            "us": {
+                "heading": "Aviso de consentimiento",
+                "description": "Recopilamos progreso de aprendizaje y credenciales. Estos pueden compartirse contigo, tus profesores u organizaciones verificadas."
+            },
+            "parentInvite": {
+                "heading": "¡Invita a tu padre/madre a {{brand}}!",
+                "description": "Haz clic en <0>Compartir invitación</0> o escribe su correo y haz clic en <1>Enviar invitación</1>.",
+                "shareInvite": "Compartir invitación",
+                "sendInvite": "Enviar invitación",
+                "placeholder": "correo@correo.com",
+                "or": "o"
+            }
+        },
+        "guardianLinked": {
+            "heading": "¡Todo configurado!",
+            "description": "Ahora puedes administrar credenciales para <0>{{name}}</0>. Las aprobaciones futuras aparecerán directamente en la app.",
+            "gotIt": "Entendido"
+        },
+        "slides": {
+            "next": "Siguiente",
+            "getStarted": "Comenzar",
+            "learner": {
+                "slide1": {
+                    "bold": "Captura",
+                    "regular": "tu aprendizaje donde sea que ocurra",
+                    "over13": "tus experiencias de aprendizaje y trabajo"
+                },
+                "slide2": {
+                    "bold": "Colecciona",
+                    "regular": "tus experiencias educativas en tu Pasaporte"
+                },
+                "slide3": {
+                    "bold": "Aprende",
+                    "regular": "sobre tus Habilidades y Experiencias"
+                },
+                "slide4": {
+                    "bold": "Sube de nivel",
+                    "regular": "tu aprendizaje con una creciente suite de Tutores IA"
+                }
+            },
+            "guardian": {
+                "slide1": {
+                    "bold": "Guía a tu hijo",
+                    "regular": "a través de experiencias de aprendizaje"
+                },
+                "slide2": {
+                    "bold": "Protege",
+                    "regular": "la privacidad de tu hijo con herramientas de datos seguras basadas en consentimiento"
+                },
+                "slide3": {
+                    "bold": "Mejora",
+                    "regular": "el aprendizaje de tu hijo con tutores IA y apps educativas"
+                },
+                "slide4": {
+                    "bold": "Obtén información",
+                    "regular": "sobre el viaje de aprendizaje de tu hijo"
+                }
+            },
+            "teacher": {
+                "slide1": {
+                    "bold": "Organiza todos tus estudiantes y datos",
+                    "regular": "en un solo panel"
+                },
+                "slide2": {
+                    "bold": "Crea y administra",
+                    "regular": "credenciales personalizadas"
+                },
+                "slide3": {
+                    "bold": "Otorga",
+                    "regular": "a los estudiantes prueba real de experiencias de aprendizaje"
+                },
+                "slide4": {
+                    "bold": "Evalúa",
+                    "regular": "el progreso de tus estudiantes en tiempo real"
+                }
+            },
+            "admin": {
+                "slide1": {
+                    "bold": "Crea",
+                    "regular": "marcos de habilidades y credenciales"
+                },
+                "slide2": {
+                    "bold": "Organiza",
+                    "regular": "tus estudiantes, profesores y experiencias de aprendizaje"
+                },
+                "slide3": {
+                    "bold": "Distribuye",
+                    "regular": "tus materiales de aprendizaje en una app fácil de usar"
+                },
+                "slide4": {
+                    "bold": "Administra",
+                    "regular": "herramientas avanzadas para compartir datos y más"
+                }
+            },
+            "developer": {
+                "slide1": {
+                    "bold": "Configura",
+                    "regular": "emisores, protocolos de consentimiento y sistemas conectados"
+                },
+                "slide2": {
+                    "bold": "Integra",
+                    "regular": "con escuelas, aplicaciones y fuentes de datos"
+                },
+                "slide3": {
+                    "bold": "Administra",
+                    "regular": "tu flujo de datos de extremo a extremo"
+                },
+                "slide4": {
+                    "bold": "Diseña",
+                    "regular": "experiencias de usuario modulares y personalizadas"
+                }
+            }
+        },
+        "country": {
+            "search": "Buscar países",
+            "title": "Seleccionar país"
+        }
     },
     "profile": {
-      "header": "¡Configura tu perfil para comenzar!",
-      "imA": "Soy ",
-      "selectRole": "Seleccionar rol",
-      "fullName": "Nombre completo",
-      "dateOfBirth": "Fecha de nacimiento",
-      "age": "Edad: {{age}}",
-      "countryOfResidence": "País de residencia",
-      "userId": {
-        "placeholder": "ID de usuario",
-        "charLength": "Debe tener entre 3 y 25 caracteres.",
-        "format": "Solo letras, números y guiones (-)."
-      },
-      "privacyNotice": "Pedimos tu edad y país para cumplir con las leyes de privacidad y mantenerte seguro.",
-      "joiningNetwork": "Uniéndose a la red...",
-      "installBanner": "Después de crear tu cuenta, podrás instalar <0>{{appName}}</0>",
-      "error": {
-        "nameRequired": "Se requiere nombre.",
-        "countryRequired": "Se requiere país.",
-        "createFailed": "Hubo un error al crear tu perfil",
-        "generic": "No se pudo crear tu perfil. Aún puedes solicitar consentimiento parental ahora. Intenta configurar tu perfil más tarde.",
-        "firebase": "Hubo un error de Firebase: {{error}}"
-      }
-    },
-    "welcome": "Bienvenido a",
-    "continue": "Continuar",
-    "back": "Atrás",
-    "skipForNow": "Omitir por ahora",
-    "close": "Cerrar",
-    "save": "Guardar",
-    "role": {
-      "learner": {
-        "title": "Estudiante",
-        "description": "Soy un estudiante construyendo mi perfil y siguiendo mi progreso."
-      },
-      "guardian": {
-        "title": "Tutor",
-        "description": "Soy padre, madre o tutor apoyando a un estudiante."
-      },
-      "teacher": {
-        "title": "Profesor",
-        "description": "Soy un educador trabajando directamente con estudiantes."
-      },
-      "admin": {
-        "title": "Administrador",
-        "description": "Administro sistemas, datos o acceso de usuarios para mi organización."
-      },
-      "counselor": {
-        "title": "Orientador",
-        "description": "Apoyo a estudiantes en la planificación de sus trayectorias educativas o profesionales."
-      },
-      "developer": {
-        "title": "Desarrollador",
-        "description": "Administro sistemas, datos y tecnología para mi organización."
-      }
-    },
-    "consent": {
-      "underage": {
-        "heading": "Busca un adulto",
-        "description": "Necesitarás que un padre o tutor te agregue a una cuenta familiar antes de poder unirte.",
-        "schoolCode": {
-          "heading": "Ingresar código escolar",
-          "description": "Para unirte sin una cuenta de padre, ingresa el código especial proporcionado por tu escuela.",
-          "cta": "¿Tienes un código escolar?",
-          "placeholder": "Ingresar código",
-          "verify": "Verificar",
-          "error": "Código escolar inválido. Intenta de nuevo."
+        "title": "Mi cuenta",
+        "editProfile": "Editar perfil",
+        "exportSeedPhrase": "Exportar frase inicial",
+        "deleteAccount": "Eliminar cuenta",
+        "connectingHandler": "Conectar controlador",
+        "save": "Ahorrar",
+        "saving": "Ahorro...",
+        "close": "Cerca",
+        "back": "Atrás",
+        "fullName": "Nombre completo",
+        "userId": "ID de usuario",
+        "emailAddress": "Dirección de correo electrónico",
+        "phoneNumber": "Número de teléfono",
+        "country": "País",
+        "dateOfBirth": "Fecha de nacimiento",
+        "disabled": "(desactivado)",
+        "age": "Edad:",
+        "didLabel": "{{marca}} Número (DID)",
+        "didCopied": "DID copiado al portapapeles",
+        "didCopyFailed": "No se puede copiar DID al portapapeles",
+        "getAnAdult": "conseguir un adulto",
+        "needParentGuardian": "Necesitarás que un padre o tutor configure una cuenta familiar antes de poder unirte.",
+        "imAnAdult": "soy un adulto",
+        "notifications": "Notificaciones",
+        "delete": {
+            "title": "¿Eliminar cuenta?",
+            "warning": "Al eliminar su cuenta, se eliminará permanentemente su identidad en {{brand}} y todas sus credenciales. <0>¡Advertencia, esta acción no se puede deshacer!</0>",
+            "confirmByTyping": "Confirmar escribiendo",
+            "below": "abajo.",
+            "deleteForever": "Eliminar para siempre",
+            "loading": "Cargando...",
+            "deleting": "Eliminando cuenta...",
+            "recentLoginRequired": "¡Se requiere un inicio de sesión reciente!",
+            "reauthenticateHere": "Volver a autenticarse aquí"
         },
-        "adultButton": "Soy adulto",
-        "or": "O",
-        "loggingOut": {
-          "heading": "Cerrando sesión...",
-          "description": "Pide a un padre o tutor que inicie sesión y cree una cuenta familiar."
+        "export": {
+            "title": "Exportar frase inicial",
+            "warning": "¡Advertencia!",
+            "masterKeyWarning": "Esta es la clave maestra de tu {{marca}}. Cualquiera que tenga acceso a esta frase puede controlar su {{marca}} y su identidad. - NO lo compartas. - NO lo almacene en línea ni tome capturas de pantalla. - Anótelo y guárdelo sin conexión. - Si lo pierdes, es posible que pierdas el acceso de forma permanente. <0>¿Está seguro de que desea continuar?</0>",
+            "confirmByTyping": "Confirmar escribiendo",
+            "below": "abajo.",
+            "phonePlaceholder": "Número de teléfono...",
+            "emailPlaceholder": "Correo electrónico...",
+            "button": "Exportar frase inicial",
+            "revealPrompt": "Entiendo - Revela Mi Semilla",
+            "confirm": "Confirmar",
+            "cancel": "Cancelar"
         },
-        "addChild": {
-          "heading": "¡Agrega a tu hijo a {{brand}}!",
-          "description": "Inicia sesión o regístrate para crear tu perfil dentro de una cuenta familiar."
+        "email": {
+            "header": "Direcciones de correo electrónico",
+            "placeholder": "Correo electrónico",
+            "noEmails": "Aún no se han agregado correos electrónicos.",
+            "invalidEmail": "Correo electrónico faltante o no válido",
+            "primary": "Primario",
+            "setAsPrimary": "Establecer como principal",
+            "remove": "Eliminar",
+            "unverified": "Inconfirmado",
+            "resendVerification": "Reenviar correo electrónico de verificación",
+            "sending": "Envío...",
+            "setPrimaryConfirm": {
+                "title": "Establecer método de contacto principal",
+                "text": "¿Está seguro de que desea configurar este correo electrónico como principal?",
+                "yes": "Sí",
+                "no": "No"
+            },
+            "removeConfirm": {
+                "title": "Eliminar método de contacto",
+                "text": "¿Estás seguro de que deseas eliminar este correo electrónico?",
+                "yes": "Sí",
+                "no": "No"
+            }
+        },
+        "phone": {
+            "header": "Teléfono",
+            "placeholder": "Teléfono",
+            "setAsPrimary": "Establecer como principal"
+        },
+        "verify": {
+            "verifying": "Verificando tu correo electrónico...",
+            "pleaseWait": "Un momento mientras completamos su verificación.",
+            "success": "Su correo electrónico ha sido verificado exitosamente.",
+            "failed": "Verificación fallida",
+            "failedDesc": "No pudimos verificar su correo electrónico. El token puede no ser válido o haber caducado. Inténtelo de nuevo o solicite un nuevo correo electrónico de verificación.",
+            "returnHome": "Regresar a casa"
+        },
+        "seed": {
+            "yourSeedPhrase": "Tu frase semilla:",
+            "copyConfirm": "¿Estás seguro de que deseas copiar esto al portapapeles?",
+            "copiedToast": "Frase semilla copiada al portapapeles",
+            "copyFailedToast": "No se pudo copiar la frase semilla al portapapeles",
+            "reveal": "Revelar mi semilla",
+            "hide": "Ocultar mi semilla",
+            "howToStore": "¿Cómo guardar tu frase semilla de forma segura?"
+        },
+        "setupTitle": "Configura tu perfil"
+    },
+    "settings": {
+        "privacyTitle": "Privacidad y datos",
+        "minorWarning": "Algunas funciones están restringidas para usuarios menores de 18 años.",
+        "aiFeatures": "Funciones de IA",
+        "aiFeaturesDesc": "Sesiones de tutoría, conocimientos y personalización de IA",
+        "analytics": "Análisis e información",
+        "analyticsDesc": "Ayude a mejorar {{brand}} con datos de uso anónimos",
+        "bugReports": "Informes de errores",
+        "bugReportsDesc": "Envíe automáticamente informes de fallos para ayudar a solucionar problemas",
+        "goBack": "Volver",
+        "notifications": {
+            "title": "Editar configuración de notificaciones",
+            "connectionRequests": {
+                "title": "Nuevas solicitudes de conexión",
+                "description": "Cuando alguien escanea su código o hace clic en sus enlaces de usuario, iniciará una solicitud de red que puede aceptar o rechazar."
+            },
+            "newBoosts": {
+                "title": "Nuevos aumentos",
+                "description": "Los aumentos incluyen todo tipo de credenciales, incluidas: habilidades, identificaciones, logros, historial de aprendizaje, historial laboral, moneda e insignias."
+            },
+            "prompt": {
+                "title": "¿Permanecer informado?",
+                "description": "Reciba notificaciones automáticas para:",
+                "details": "Nuevas solicitudes de conexión, nuevos impulsos (como logros, credenciales e insignias).",
+                "continue": "Continuar",
+                "notYet": "Aún no",
+                "privacyPolicy": "política de privacidad",
+                "termsOfService": "Términos de servicio"
+            }
+        },
+        "privacy": {
+            "profilePrivacy": "Privacidad del perfil",
+            "profilePrivacyDesc": "Controla cómo aparece tu perfil de {{brand}} ante otros en la red.",
+            "profileVisibility": "Visibilidad del perfil",
+            "profileVisibilityDesc": "Elige quién puede ver los detalles de tu perfil.",
+            "visibilityPublic": "Público",
+            "visibilityConnectionsOnly": "Solo contactos",
+            "visibilityPrivate": "Privado",
+            "showEmail": "Mostrar correo a los contactos",
+            "showEmailDesc": "Permite que los usuarios conectados vean tu correo electrónico en tu perfil.",
+            "connectionRequests": "Solicitudes de conexión",
+            "connectionRequestsDesc": "Decide quién puede enviarte nuevas solicitudes de conexión.",
+            "connectionRequestsAnyone": "Cualquiera",
+            "connectionRequestsInviteOnly": "Solo por invitación",
+            "unableToUpdate": "No se pudo actualizar la configuración de privacidad."
         }
-      },
-      "eu": {
-        "heading": "Consentimiento parental requerido",
-        "description": "Ingresa el correo de tu padre/madre para enviarles una solicitud de consentimiento.",
-        "placeholder": "Correo del padre/madre",
+    },
+    "contacts": {
+        "title": "Contactos",
+        "addContact": "Agregar contacto",
+        "addContactDesc": "Agregar contacto",
+        "scanCode": "Escanear código",
+        "showCode": "Mostrar código",
+        "shareCode": "Compartir código",
+        "search": "Buscar",
+        "back": "Volver",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "connect": "Conectar",
+        "accept": "Aceptar",
+        "acceptRequest": "Aceptar solicitud",
+        "requestConnection": "Solicitar conexión",
         "sendRequest": "Enviar solicitud",
-        "sending": "Enviando...",
-        "sent": {
-          "heading": "Solicitud enviada",
-          "description": "Enviamos una solicitud de consentimiento a <0>{{email}}</0>. Te avisaremos cuando sea aprobada."
-        },
-        "done": "Listo",
-        "error": {
-          "invalidEmail": "Ingresa un correo válido.",
-          "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo."
-        }
-      },
-      "us": {
-        "heading": "Aviso de consentimiento",
-        "description": "Recopilamos progreso de aprendizaje y credenciales. Estos pueden compartirse contigo, tus profesores u organizaciones verificadas."
-      },
-      "parentInvite": {
-        "heading": "¡Invita a tu padre/madre a {{brand}}!",
-        "description": "Haz clic en <0>Compartir invitación</0> o escribe su correo y haz clic en <1>Enviar invitación</1>.",
-        "shareInvite": "Compartir invitación",
-        "sendInvite": "Enviar invitación",
-        "placeholder": "correo@correo.com",
-        "or": "o"
-      }
+        "cancelRequest": "Cancelar solicitud",
+        "connectionSent": "Solicitud de conexión enviada",
+        "connectedSuccessfully": "Conectado exitosamente",
+        "connectionPending": "Solicitud pendiente",
+        "connectionAlreadyRequested": "Conexión ya solicitada",
+        "inviteExpired": "¡El enlace de invitación ha expirado!",
+        "inviteNotFound": "Invitación no encontrada o expirada",
+        "loading": "Cargando...",
+        "returnHome": "Volver al inicio",
+        "contact": "Contacto",
+        "removeContact": "Eliminar contacto",
+        "unblock": "Desbloquear",
+        "unblockContact": "Desbloquear contacto",
+        "noBlockedUsers": "No hay usuarios bloqueados",
+        "noPendingConnections": "No hay conexiones pendientes",
+        "linkCopied": "Enlace de contacto copiado al portapapeles",
+        "linkCopyFailed": "No se pudo copiar el enlace de contacto",
+        "didCopyFailed": "No se pudo copiar el DID al portapapeles",
+        "connectionRequests": "Solicitudes de conexión",
+        "pendingConnections": "Pendientes",
+        "blockedContacts": "Bloqueados",
+        "allContacts": "Todos",
+        "boost": "Boost",
+        "claimed": "Reclamado",
+        "joined": "Unido",
+        "saving": "Guardando...",
+        "joining": "Uniéndose...",
+        "acceptBoost": "Aceptar",
+        "joinBoost": "Unirse",
+        "notification": "Notificación",
+        "okay": "Aceptar",
+        "results": "Resultados",
+        "result": "Resultado",
+        "confirmSendRequest": "¿Estás seguro de que quieres enviar una solicitud de conexión?",
+        "confirmCancelRequest": "¿Estás seguro de que quieres cancelar tu solicitud de conexión?",
+        "confirmAcceptRequest": "¿Estás seguro de que quieres aceptar la solicitud de conexión?",
+        "confirmUnblock": "¿Estás seguro de que quieres desbloquear a este usuario?",
+        "confirmRemoveConnection": "¿Estás seguro de que quieres eliminar esta conexión?",
+        "confirmBlock": "¿Estás seguro de que quieres bloquear a este usuario?"
     },
-    "guardianLinked": {
-      "heading": "¡Todo configurado!",
-      "description": "Ahora puedes administrar credenciales para <0>{{name}}</0>. Las aprobaciones futuras aparecerán directamente en la app.",
-      "gotIt": "Entendido"
-    },
-    "slides": {
-      "next": "Siguiente",
-      "getStarted": "Comenzar",
-      "learner": {
-        "slide1": {
-          "bold": "Captura",
-          "regular": "tu aprendizaje donde sea que ocurra",
-          "over13": "tus experiencias de aprendizaje y trabajo"
-        },
-        "slide2": {
-          "bold": "Colecciona",
-          "regular": "tus experiencias educativas en tu Pasaporte"
-        },
-        "slide3": {
-          "bold": "Aprende",
-          "regular": "sobre tus Habilidades y Experiencias"
-        },
-        "slide4": {
-          "bold": "Sube de nivel",
-          "regular": "tu aprendizaje con una creciente suite de Tutores IA"
-        }
-      },
-      "guardian": {
-        "slide1": {
-          "bold": "Guía a tu hijo",
-          "regular": "a través de experiencias de aprendizaje"
-        },
-        "slide2": {
-          "bold": "Protege",
-          "regular": "la privacidad de tu hijo con herramientas de datos seguras basadas en consentimiento"
-        },
-        "slide3": {
-          "bold": "Mejora",
-          "regular": "el aprendizaje de tu hijo con tutores IA y apps educativas"
-        },
-        "slide4": {
-          "bold": "Obtén información",
-          "regular": "sobre el viaje de aprendizaje de tu hijo"
-        }
-      },
-      "teacher": {
-        "slide1": {
-          "bold": "Organiza todos tus estudiantes y datos",
-          "regular": "en un solo panel"
-        },
-        "slide2": {
-          "bold": "Crea y administra",
-          "regular": "credenciales personalizadas"
-        },
-        "slide3": {
-          "bold": "Otorga",
-          "regular": "a los estudiantes prueba real de experiencias de aprendizaje"
-        },
-        "slide4": {
-          "bold": "Evalúa",
-          "regular": "el progreso de tus estudiantes en tiempo real"
-        }
-      },
-      "admin": {
-        "slide1": {
-          "bold": "Crea",
-          "regular": "marcos de habilidades y credenciales"
-        },
-        "slide2": {
-          "bold": "Organiza",
-          "regular": "tus estudiantes, profesores y experiencias de aprendizaje"
-        },
-        "slide3": {
-          "bold": "Distribuye",
-          "regular": "tus materiales de aprendizaje en una app fácil de usar"
-        },
-        "slide4": {
-          "bold": "Administra",
-          "regular": "herramientas avanzadas para compartir datos y más"
-        }
-      },
-      "developer": {
-        "slide1": {
-          "bold": "Configura",
-          "regular": "emisores, protocolos de consentimiento y sistemas conectados"
-        },
-        "slide2": {
-          "bold": "Integra",
-          "regular": "con escuelas, aplicaciones y fuentes de datos"
-        },
-        "slide3": {
-          "bold": "Administra",
-          "regular": "tu flujo de datos de extremo a extremo"
-        },
-        "slide4": {
-          "bold": "Diseña",
-          "regular": "experiencias de usuario modulares y personalizadas"
-        }
-      }
-    },
-    "country": {
-      "search": "Buscar países",
-      "title": "Seleccionar país"
-    }
-  },
-  "profile": {
-    "title": "Mi cuenta",
-    "editProfile": "Editar perfil",
-    "exportSeedPhrase": "Exportar frase inicial",
-    "deleteAccount": "Eliminar cuenta",
-    "connectingHandler": "Conectar controlador",
-    "save": "Ahorrar",
-    "saving": "Ahorro...",
-    "close": "Cerca",
-    "back": "Atrás",
-    "fullName": "Nombre completo",
-    "userId": "ID de usuario",
-    "emailAddress": "Dirección de correo electrónico",
-    "phoneNumber": "Número de teléfono",
-    "country": "País",
-    "dateOfBirth": "Fecha de nacimiento",
-    "disabled": "(desactivado)",
-    "age": "Edad:",
-    "didLabel": "{{marca}} Número (DID)",
-    "didCopied": "DID copiado al portapapeles",
-    "didCopyFailed": "No se puede copiar DID al portapapeles",
-    "getAnAdult": "conseguir un adulto",
-    "needParentGuardian": "Necesitarás que un padre o tutor configure una cuenta familiar antes de poder unirte.",
-    "imAnAdult": "soy un adulto",
-    "notifications": "Notificaciones",
-    "delete": {
-      "title": "¿Eliminar cuenta?",
-      "warning": "Al eliminar su cuenta, se eliminará permanentemente su identidad en {{brand}} y todas sus credenciales. <0>¡Advertencia, esta acción no se puede deshacer!</0>",
-      "confirmByTyping": "Confirmar escribiendo",
-      "below": "abajo.",
-      "deleteForever": "Eliminar para siempre",
-      "loading": "Cargando...",
-      "deleting": "Eliminando cuenta...",
-      "recentLoginRequired": "¡Se requiere un inicio de sesión reciente!",
-      "reauthenticateHere": "Volver a autenticarse aquí"
-    },
-    "export": {
-      "title": "Exportar frase inicial",
-      "warning": "¡Advertencia!",
-      "masterKeyWarning": "Esta es la clave maestra de tu {{marca}}. Cualquiera que tenga acceso a esta frase puede controlar su {{marca}} y su identidad. - NO lo compartas. - NO lo almacene en línea ni tome capturas de pantalla. - Anótelo y guárdelo sin conexión. - Si lo pierdes, es posible que pierdas el acceso de forma permanente. <0>¿Está seguro de que desea continuar?</0>",
-      "confirmByTyping": "Confirmar escribiendo",
-      "below": "abajo.",
-      "phonePlaceholder": "Número de teléfono...",
-      "emailPlaceholder": "Correo electrónico...",
-      "button": "Exportar frase inicial",
-      "revealPrompt": "Entiendo - Revela Mi Semilla",
-      "confirm": "Confirmar",
-      "cancel": "Cancelar"
-    },
-    "email": {
-      "header": "Direcciones de correo electrónico",
-      "placeholder": "Correo electrónico",
-      "noEmails": "Aún no se han agregado correos electrónicos.",
-      "invalidEmail": "Correo electrónico faltante o no válido",
-      "primary": "Primario",
-      "setAsPrimary": "Establecer como principal",
-      "remove": "Eliminar",
-      "unverified": "Inconfirmado",
-      "resendVerification": "Reenviar correo electrónico de verificación",
-      "sending": "Envío...",
-      "setPrimaryConfirm": {
-        "title": "Establecer método de contacto principal",
-        "text": "¿Está seguro de que desea configurar este correo electrónico como principal?",
-        "yes": "Sí",
-        "no": "No"
-      },
-      "removeConfirm": {
-        "title": "Eliminar método de contacto",
-        "text": "¿Estás seguro de que deseas eliminar este correo electrónico?",
-        "yes": "Sí",
-        "no": "No"
-      }
-    },
-    "phone": {
-      "header": "Teléfono",
-      "placeholder": "Teléfono",
-      "setAsPrimary": "Establecer como principal"
-    },
-    "verify": {
-      "verifying": "Verificando tu correo electrónico...",
-      "pleaseWait": "Un momento mientras completamos su verificación.",
-      "success": "Su correo electrónico ha sido verificado exitosamente.",
-      "failed": "Verificación fallida",
-      "failedDesc": "No pudimos verificar su correo electrónico. El token puede no ser válido o haber caducado. Inténtelo de nuevo o solicite un nuevo correo electrónico de verificación.",
-      "returnHome": "Regresar a casa"
-    },
-    "seed": {
-      "yourSeedPhrase": "Your Seed Phrase:",
-      "copyConfirm": "Are you sure you want to copy this to clipboard?",
-      "copiedToast": "Seed Phrase copied to clipboard",
-      "copyFailedToast": "Unable to copy seed phrase to clipboard",
-      "reveal": "Reveal My Seed",
-      "hide": "Hide My Seed",
-      "howToStore": "How to store your seed phrase safely?"
-    },
-    "setupTitle": "Configura tu perfil"
-  },
-  "settings": {
-    "privacyTitle": "Privacidad y datos",
-    "minorWarning": "Algunas funciones están restringidas para usuarios menores de 18 años.",
-    "aiFeatures": "Funciones de IA",
-    "aiFeaturesDesc": "Sesiones de tutoría, conocimientos y personalización de IA",
-    "analytics": "Análisis e información",
-    "analyticsDesc": "Ayude a mejorar {{brand}} con datos de uso anónimos",
-    "bugReports": "Informes de errores",
-    "bugReportsDesc": "Envíe automáticamente informes de fallos para ayudar a solucionar problemas",
-    "goBack": "Volver",
-    "notifications": {
-      "title": "Editar configuración de notificaciones",
-      "connectionRequests": {
-        "title": "Nuevas solicitudes de conexión",
-        "description": "Cuando alguien escanea su código o hace clic en sus enlaces de usuario, iniciará una solicitud de red que puede aceptar o rechazar."
-      },
-      "newBoosts": {
-        "title": "Nuevos aumentos",
-        "description": "Los aumentos incluyen todo tipo de credenciales, incluidas: habilidades, identificaciones, logros, historial de aprendizaje, historial laboral, moneda e insignias."
-      },
-      "prompt": {
-        "title": "¿Permanecer informado?",
-        "description": "Reciba notificaciones automáticas para:",
-        "details": "Nuevas solicitudes de conexión, nuevos impulsos (como logros, credenciales e insignias).",
+    "consentFlow": {
+        "title": "Consentimiento",
+        "accept": "Aceptar",
+        "acceptAndSync": "Aceptar y sincronizar",
+        "accepted": "Aceptado",
+        "acceptingContract": "Aceptando contrato...",
+        "back": "Volver",
+        "cancel": "Cancelar",
+        "close": "Cerrar",
         "continue": "Continuar",
-        "notYet": "Aún no",
-        "privacyPolicy": "política de privacidad",
-        "termsOfService": "Términos de servicio"
-      }
+        "continuePlaying": "Seguir jugando",
+        "continueToGame": "Continuar al juego",
+        "launchGame": "Iniciar juego",
+        "deny": "Denegar",
+        "denyAccess": "Denegar acceso",
+        "allowAccess": "Permitir acceso",
+        "allow": "Permitir",
+        "allowing": "Permitiendo...",
+        "disconnecting": "Desconectando...",
+        "disconnect": "Desconectar",
+        "saving": "Guardando...",
+        "save": "Guardar",
+        "syncing": "Sincronizando...",
+        "synced": "Sincronizado",
+        "withdraw": "Retirar",
+        "update": "Actualizar",
+        "write": "Escribir",
+        "hidden": "Oculto",
+        "anonymized": "Anonimizado",
+        "selectPlayer": "Seleccionar jugador",
+        "shareInsights": "Compartir información",
+        "networkError": "Error de red",
+        "tryAgain": "Intentar de nuevo",
+        "nothingFound": "No se encontró nada",
+        "unknown": "Desconocido",
+        "errorLoading": "Hubo un problema al cargar este flujo de consentimiento.",
+        "notExists": "Este flujo de consentimiento no existe o ya no está disponible.",
+        "receivedCredential": "Has recibido una credencial.",
+        "updatedTerms": "Has actualizado tus términos.",
+        "credentialType.achievement": "Logro",
+        "credentialType.skill": "Habilidad",
+        "credentialType.membership": "Membresía",
+        "credentialType.socialBadge": "Insignia social",
+        "credentialType.workHistory": "Historial laboral",
+        "credentialType.teacher": "Profesor",
+        "credentialType.profilePicture": "Foto de perfil",
+        "credentialType.duration": "Duración",
+        "insight.tutoringOverview": "Resúmenes breves de tus conversaciones de tutoría",
+        "insight.progressEvaluations": "Evaluaciones de tu progreso durante la tutoría",
+        "insight.sessionOverviews": "Resúmenes de tus sesiones de tutoría con IA",
+        "sync.liveSyncing": "Sincronización en vivo",
+        "sync.selectiveSharing": "Compartir selectivo",
+        "status.active": "Activo",
+        "status.off": "Desactivado",
+        "status.on": "Activado",
+        "shareCredential": "Compartir",
+        "privacyAndData": "Privacidad y datos",
+        "gameAccess.title": "Acceso al juego",
+        "gameAccess.success": "¡Ya tienes acceso!",
+        "addGame.title": "Agregar juego",
+        "addGame.subtitle": "Conecta tu cuenta",
+        "transactionHistory.title": "Historial de transacciones",
+        "testContract": "Contrato de prueba",
+        "testUser": "Usuario de prueba",
+        "testSubtitle": "Subtítulo de prueba"
     },
-    "privacy": {
-      "profilePrivacy": "Privacidad del perfil",
-      "profilePrivacyDesc": "Controla cómo aparece tu perfil de {{brand}} ante otros en la red.",
-      "profileVisibility": "Visibilidad del perfil",
-      "profileVisibilityDesc": "Elige quién puede ver los detalles de tu perfil.",
-      "visibilityPublic": "Público",
-      "visibilityConnectionsOnly": "Solo contactos",
-      "visibilityPrivate": "Privado",
-      "showEmail": "Mostrar correo a los contactos",
-      "showEmailDesc": "Permite que los usuarios conectados vean tu correo electrónico en tu perfil.",
-      "connectionRequests": "Solicitudes de conexión",
-      "connectionRequestsDesc": "Decide quién puede enviarte nuevas solicitudes de conexión.",
-      "connectionRequestsAnyone": "Cualquiera",
-      "connectionRequestsInviteOnly": "Solo por invitación",
-      "unableToUpdate": "No se pudo actualizar la configuración de privacidad."
+    "recovery": {
+        "protectAccount": "Protege tu cuenta",
+        "accountRecovery": "Recuperación de cuenta",
+        "restoreAccess": "Restaurar acceso",
+        "recoverAccount": "Recuperar cuenta",
+        "setupBefore": "Configura la recuperación antes de irte",
+        "setupRecovery": "Configura un método de recuperación para poder volver si pierdes acceso a este dispositivo.",
+        "setupRecoveryDevice": "Configura la recuperación para poder volver si pierdes este dispositivo.",
+        "temporarySession": "Esta es una sesión temporal. Cerrar la pestaña cerrará tu sesión permanentemente a menos que configures un método de recuperación.",
+        "recommendTwo": "Recomendamos configurar al menos dos métodos de recuperación.",
+        "addingMethod": "Agregar otro método mejora tu seguridad.",
+        "done": "Listo",
+        "skipForNow": "Omitir por ahora",
+        "generating": "Generando...",
+        "sending": "Enviando...",
+        "verifying": "Verificando...",
+        "verifyIdentity": "Verifica tu identidad",
+        "verifyCode": "Verificar código",
+        "verifyPasskey": "Verificar con clave de acceso",
+        "sendVerificationCode": "Enviar código de verificación",
+        "sendRecoveryKey": "Enviar clave de recuperación",
+        "enterPassword": "Introduce la contraseña de tu archivo de respaldo.",
+        "selectBackupFile": "Selecciona tu archivo de respaldo.",
+        "validEmail": "Introduce un correo electrónico válido.",
+        "incorrectCode": "Código incorrecto. Inténtalo de nuevo.",
+        "incorrectPassword": "Contraseña incorrecta o datos corruptos. Inténtalo de nuevo.",
+        "somethingWrong": "Algo salió mal. Inténtalo de nuevo.",
+        "connectionIssue": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+        "couldNotSave": "No se pudo guardar el archivo. Inténtalo de nuevo.",
+        "noPasskey": "No se encontró una clave de acceso en este dispositivo.",
+        "securityUpdated": "La seguridad de tu cuenta se actualizó recientemente en otro dispositivo. Verifica para continuar.",
+        "recoveryEmailSent": "Enviamos un correo de recuperación a tu dirección. Abre ese correo y sigue los pasos a continuación.",
+        "copyToClipboard": "Copiar al portapapeles",
+        "backupCreated": "Archivo de respaldo creado",
+        "saveBackupFile": "Guarda tu archivo de respaldo",
+        "learnCardBackup": "Respaldo de {{brand}}",
+        "replacePasskey": "Esto reemplazará tu clave de acceso actual.",
+        "replaceEmail": "Esto reemplazará tu correo de recuperación actual.",
+        "generateNewPhrase": "Esto generará una nueva frase. Tu frase anterior ya no funcionará.",
+        "generateNewBackup": "Esto generará un nuevo archivo de respaldo. Tu archivo anterior ya no funcionará.",
+        "method.passkey": "Passkey",
+        "method.passkeyDesc": "Use Face ID, Touch ID, or similar",
+        "method.passkeySetup": "Passkey is set up",
+        "method.passkeyNotSetup": "Not set up",
+        "method.setEmail": "Email Recovery Key",
+        "method.emailDesc": "Paste the key sent to your email",
+        "method.emailSetup": "Email recovery is set up",
+        "method.phrase": "Recovery Phrase",
+        "method.phraseSaved": "Phrase is saved",
+        "method.backup": "Backup File",
+        "method.backupDesc": "Upload your backup file",
+        "action.setUpPasskey": "Set Up Passkey",
+        "action.replacePasskey": "Replace Passkey",
+        "action.settingUp": "Setting up...",
+        "action.generatePhrase": "Generate Recovery Phrase",
+        "action.generateNewPhrase": "Generate New Phrase",
+        "action.generateBackup": "Generate Backup File",
+        "action.generateNewBackup": "Generate New Backup",
+        "action.downloadBackup": "Download Backup File",
+        "action.downloadAgain": "Download Again",
+        "action.tapToChoose": "Tap to choose backup file",
+        "action.fileSelected": "File selected",
+        "action.enter": "Enter",
+        "method": {
+            "passkey": "Clave de acceso",
+            "passkeyDesc": "Usa Face ID, Touch ID o similar",
+            "passkeySetup": "Clave de acceso configurada",
+            "passkeyNotSetup": "No configurada",
+            "setEmail": "Clave de recuperación por correo",
+            "emailDesc": "Pega la clave enviada a tu correo",
+            "emailSetup": "Recuperación por correo configurada",
+            "phrase": "Frase de recuperación",
+            "phraseSaved": "Frase guardada",
+            "backup": "Archivo de respaldo",
+            "backupDesc": "Sube tu archivo de respaldo"
+        },
+        "action": {
+            "setUpPasskey": "Configurar clave de acceso",
+            "replacePasskey": "Reemplazar clave de acceso",
+            "settingUp": "Configurando...",
+            "generatePhrase": "Generar frase de recuperación",
+            "generateNewPhrase": "Generar nueva frase",
+            "generateBackup": "Generar archivo de respaldo",
+            "generateNewBackup": "Generar nuevo respaldo",
+            "downloadBackup": "Descargar archivo de respaldo",
+            "downloadAgain": "Descargar de nuevo",
+            "tapToChoose": "Toca para elegir el archivo de respaldo",
+            "fileSelected": "Archivo seleccionado",
+            "enter": "Ingresar"
+        }
+    },
+    "alerts": {
+        "title": "Alertas",
+        "notifications": "Notificaciones",
+        "markAllRead": "Marcar todo como leído",
+        "noAlerts": "Aún no hay alertas",
+        "active": "Activas",
+        "archived": "Archivadas",
+        "loading": "Cargando...",
+        "reviewRequired": "Revisión requerida",
+        "newSubmission": "Nuevo envío",
+        "appApproved": "Aplicación aprobada",
+        "claimed": "Reclamada",
+        "accepted": "Aceptada",
+        "approve": "Aprobar",
+        "approving": "Aprobando...",
+        "reject": "Rechazar",
+        "rejecting": "Rechazando...",
+        "approved": "Aprobada",
+        "notApproved": "No aprobada",
+        "claim": "Reclamar",
+        "accept": "Aceptar",
+        "alreadyConnected": "Ya están conectados.",
+        "alreadyConnectedShort": "Los perfiles ya están conectados",
+        "emptyActive": "¡Estás al día!",
+        "emptyArchived": "No hay alertas archivadas",
+        "connectionRequest": "Solicitud de conexión",
+        "newBoost": "Nuevo Boost",
+        "archive": "Archivar",
+        "delete": "Eliminar",
+        "confirmDelete": "¿Eliminar esta notificación?"
+    },
+    "share": {
+        "title": "Compartir",
+        "addContact": "Agregar contacto",
+        "generateLinkFailed": "Error al generar enlace de invitación",
+        "inviteLinkCopied": "Enlace de invitación copiado al portapapeles",
+        "inviteLinkCopyFailed": "No se pudo copiar el enlace de invitación al portapapeles",
+        "profileLinkCopied": "Enlace de perfil copiado al portapapeles",
+        "profileLinkCopyFailed": "No se pudo copiar el enlace de perfil al portapapeles",
+        "linkExpires": "El enlace expira en {{time}}",
+        "neverExpires": "Nunca expira",
+        "link": "Enlace"
+    },
+    "scanner": {
+        "title": "Escanear código QR",
+        "scanning": "Escaneando...",
+        "noCamera": "Cámara no disponible",
+        "cameraPermission": "Se requiere permiso de cámara",
+        "invalidCode": "Código QR inválido",
+        "scanAnother": "Escanear otro",
+        "done": "Listo",
+        "openCamera": "Abrir cámara",
+        "close": "Cerrar",
+        "scanQR": "Escanear código QR",
+        "importFromLink": "Importar desde enlace",
+        "pasteLink": "Pega el enlace aquí...",
+        "importCredential": "Importar credencial",
+        "processing": "Procesando...",
+        "success": "¡Credencial importada exitosamente!",
+        "failed": "Error al importar la credencial"
+    },
+    "error": {
+        "generic": "Algo salió mal. Inténtalo de nuevo.",
+        "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+        "notFound": "Página no encontrada.",
+        "unauthorized": "No tienes permiso para hacer esto.",
+        "sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo.",
+        "retry": "Intentar de nuevo",
+        "goHome": "Ir al inicio",
+        "back": "Volver"
+    },
+    "issue": {
+        "title": "Emitir credenciales",
+        "issued": "Emitidas",
+        "pending": "Pendientes",
+        "revoked": "Revocadas",
+        "suspended": "Suspendidas",
+        "allStatuses": "Todas",
+        "revoke": "Revocar",
+        "suspend": "Suspender",
+        "unsuspend": "Reactivar",
+        "revoking": "Revocando...",
+        "suspending": "Suspendiendo...",
+        "noIssuances": "Aún no hay credenciales emitidas",
+        "confirmRevoke": "¿Estás seguro de que deseas revocar esta credencial? Esta acción no se puede deshacer.",
+        "confirmSuspend": "¿Estás seguro de que deseas suspender esta credencial?",
+        "confirmUnsuspend": "¿Estás seguro de que deseas reactivar esta credencial?",
+        "managedTab": "Gestionadas",
+        "dashboardTab": "Panel",
+        "searchPlaceholder": "Buscar por nombre o destinatario...",
+        "totalIssued": "Total emitidas",
+        "totalRevoked": "Total revocadas",
+        "totalPending": "Total pendientes",
+        "details": "Detalles",
+        "recipient": "Destinatario",
+        "issuedDate": "Emitida",
+        "status": "Estado",
+        "actions": "Acciones"
+    },
+    "ai": {
+        "title": "IA",
+        "newSession": "Nuevo tema",
+        "browseTopics": "Explorar sesiones...",
+        "searchSkills": "Elige una habilidad, objetivo o trabajo...",
+        "clearSearch": "Buscar",
+        "noResults": "Sin resultados",
+        "noSharedInsights": "Sin Insights compartidos",
+        "loading": "Cargando...",
+        "loadingRoles": "Cargando roles...",
+        "generating": "Generando...",
+        "error": "Ocurrió un error",
+        "failedToAddExperience": "Error al agregar experiencia",
+        "failedToResolve": "Error al resolver la credencial del camino",
+        "loginToRequest": "Inicia sesión para solicitar",
+        "getPermission": "Obtener permiso",
+        "expired": "Expirada",
+        "insightsAccepted": "La solicitud de Insights ya fue aceptada.",
+        "insightsPending": "La solicitud de Insights ya está pendiente.",
+        "manageSkills": "Gestiona tus habilidades actuales",
+        "chooseSkills": "Elige tus habilidades actuales",
+        "addExperience": "Agregar experiencia",
+        "adding": "Agregando...",
+        "matchingSkill": "Habilidad coincidente",
+        "matchingSkills": "Habilidades coincidentes",
+        "newSessionTitle": "Iniciar una nueva sesión",
+        "sessionHistory": "Historial de sesiones",
+        "noSessions": "Aún no hay sesiones",
+        "continueSession": "Continuar",
+        "deleteSession": "Eliminar",
+        "renameSession": "Renombrar",
+        "shareSession": "Compartir"
+    },
+    "pathways": {
+        "title": "Caminos",
+        "career": "Carrera",
+        "careerGoals": "Metas profesionales",
+        "jobSatisfaction": "Satisfacción laboral",
+        "currentPosition": "Posición actual",
+        "addTitle": "Agrega un título profesional para ver datos de carrera aquí.",
+        "exploreCourses": "Explorar programas",
+        "exploreCoursesAlt": "Explorar cursos",
+        "courses": "Cursos",
+        "growth": "Crecimiento en el mercado laboral",
+        "decline": "Declive en el mercado laboral",
+        "noEducationRequired": "No requiere educación formal",
+        "noExperienceRequired": "No requiere experiencia previa",
+        "alignment": "Alineación",
+        "estimated": "Estimado",
+        "excellent": "Excelente",
+        "great": "Genial",
+        "good": "Suficiente",
+        "average": "Promedio",
+        "belowAverage": "Por debajo del promedio",
+        "confident": "Confiado",
+        "institution": "Institución",
+        "media": "Medios",
+        "missingFields": "Campos requeridos faltantes",
+        "skillProfile": "Perfil de habilidades",
+        "workHistory": "Historial laboral",
+        "salary": "Salario",
+        "goals": "Objetivos",
+        "saveProfile": "Guardar perfil",
+        "next": "Siguiente",
+        "back": "Volver",
+        "skipForNow": "Omitir por ahora",
+        "addSkill": "Agregar habilidad",
+        "removeSkill": "Eliminar",
+        "noSkills": "Aún no hay habilidades agregadas"
+    },
+    "boost": {
+        "title": "Boosts",
+        "createBoost": "Crear Boost",
+        "editBoost": "Editar Boost",
+        "deleteBoost": "Eliminar Boost",
+        "claimBoost": "Reclamar",
+        "sendBoost": "Enviar",
+        "manageBoost": "Gestionar",
+        "boostDetails": "Detalles del Boost",
+        "recipients": "Destinatarios",
+        "recipientCount": "{{count}} destinatario(s)",
+        "noRecipients": "Aún no hay destinatarios",
+        "searchRecipients": "Buscar destinatarios...",
+        "confirmDelete": "¿Estás seguro de que deseas eliminar este boost?",
+        "image": "Imagen",
+        "name": "Nombre",
+        "description": "Descripción",
+        "category": "Categoría",
+        "requirements": "Requisitos",
+        "evidence": "Evidencia",
+        "preview": "Vista previa",
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "saved": "¡Guardado!",
+        "publish": "Publicar",
+        "publishing": "Publicando...",
+        "unpublish": "Despublicar",
+        "draft": "Borrador",
+        "published": "Publicado",
+        "expired": "Expirado",
+        "revoked": "Revocado",
+        "pending": "Pendiente",
+        "earned": "Obtenido",
+        "earnedTab": "Obtenidos",
+        "managedTab": "Gestionados",
+        "searchBoosts": "Buscar boosts...",
+        "noBoosts": "No se encontraron boosts",
+        "boostTemplates": "Plantillas de Boost",
+        "selectTemplate": "Seleccionar plantilla",
+        "fromScratch": "Crear desde cero",
+        "socialBadge": "Insignia social",
+        "achievement": "Logro",
+        "skill": "Habilidad",
+        "workHistory": "Historial laboral",
+        "learningHistory": "Historial de aprendizaje",
+        "accomplishment": "Hazaña",
+        "id": "Identificación",
+        "noImage": "Sin imagen",
+        "uploadImage": "Subir imagen",
+        "changeImage": "Cambiar imagen"
+    },
+    "legal": {
+        "termsOfService": "Términos de servicio",
+        "privacyPolicy": "Política de privacidad",
+        "consentLayer": "Capa de consentimiento",
+        "consentLayerDefinition": "Tú decides qué datos se conectan con qué aplicaciones y por cuánto tiempo.",
+        "appEcosystem": "Ecosistema de aplicaciones",
+        "selfCustodial": "Inicio de sesión autocustodiado.",
+        "dataOwnership": "Tus datos te pertenecen."
+    },
+    "family": {
+        "title": "Familias",
+        "joinFamily": "Unirse a la familia",
+        "addFamilyMember": "Agregar miembro de la familia",
+        "familyAccount": "Cuenta familiar",
+        "switchProfile": "Cambiar perfil",
+        "childProfile": "Perfil del niño",
+        "parentProfile": "Perfil del padre"
+    },
+    "membership": {
+        "title": "Membresía",
+        "editNetwork": "Editar red",
+        "adminPanel": "Panel de administración",
+        "myHub": "Mi hub",
+        "network": "Red",
+        "globalNetwork": "Red global",
+        "nationalNetwork": "Red nacional",
+        "globalNetworkAdmin": "Administrador de red global",
+        "nationalNetworkAdmin": "Administrador de red nacional"
     }
-  },
-  "contacts": {
-    "title": "Contactos",
-    "addContact": "Agregar contacto",
-    "addContactDesc": "Agregar contacto",
-    "scanCode": "Escanear código",
-    "showCode": "Mostrar código",
-    "shareCode": "Compartir código",
-    "search": "Buscar",
-    "back": "Volver",
-    "cancel": "Cancelar",
-    "confirm": "Confirmar",
-    "connect": "Conectar",
-    "accept": "Aceptar",
-    "acceptRequest": "Aceptar solicitud",
-    "requestConnection": "Solicitar conexión",
-    "sendRequest": "Enviar solicitud",
-    "cancelRequest": "Cancelar solicitud",
-    "connectionSent": "Solicitud de conexión enviada",
-    "connectedSuccessfully": "Conectado exitosamente",
-    "connectionPending": "Solicitud pendiente",
-    "connectionAlreadyRequested": "Conexión ya solicitada",
-    "inviteExpired": "¡El enlace de invitación ha expirado!",
-    "inviteNotFound": "Invitación no encontrada o expirada",
-    "loading": "Cargando...",
-    "returnHome": "Volver al inicio",
-    "contact": "Contacto",
-    "removeContact": "Eliminar contacto",
-    "unblock": "Desbloquear",
-    "unblockContact": "Desbloquear contacto",
-    "noBlockedUsers": "No hay usuarios bloqueados",
-    "noPendingConnections": "No hay conexiones pendientes",
-    "linkCopied": "Enlace de contacto copiado al portapapeles",
-    "linkCopyFailed": "No se pudo copiar el enlace de contacto",
-    "didCopyFailed": "No se pudo copiar el DID al portapapeles",
-    "connectionRequests": "Solicitudes de conexión",
-    "pendingConnections": "Pendientes",
-    "blockedContacts": "Bloqueados",
-    "allContacts": "Todos",
-    "boost": "Boost",
-    "claimed": "Reclamado",
-    "joined": "Unido",
-    "saving": "Guardando...",
-    "joining": "Uniéndose...",
-    "acceptBoost": "Aceptar",
-    "joinBoost": "Unirse",
-    "notification": "Notificación",
-    "okay": "Aceptar",
-    "results": "Resultados",
-    "result": "Resultado",
-    "confirmSendRequest": "¿Estás seguro de que quieres enviar una solicitud de conexión?",
-    "confirmCancelRequest": "¿Estás seguro de que quieres cancelar tu solicitud de conexión?",
-    "confirmAcceptRequest": "¿Estás seguro de que quieres aceptar la solicitud de conexión?",
-    "confirmUnblock": "¿Estás seguro de que quieres desbloquear a este usuario?",
-    "confirmRemoveConnection": "¿Estás seguro de que quieres eliminar esta conexión?",
-    "confirmBlock": "¿Estás seguro de que quieres bloquear a este usuario?"
-  },
-  "consentFlow": {
-    "title": "Consentimiento",
-    "accept": "Aceptar",
-    "acceptAndSync": "Aceptar y sincronizar",
-    "accepted": "Aceptado",
-    "acceptingContract": "Aceptando contrato...",
-    "back": "Volver",
-    "cancel": "Cancelar",
-    "close": "Cerrar",
-    "continue": "Continuar",
-    "continuePlaying": "Seguir jugando",
-    "continueToGame": "Continuar al juego",
-    "launchGame": "Iniciar juego",
-    "deny": "Denegar",
-    "denyAccess": "Denegar acceso",
-    "allowAccess": "Permitir acceso",
-    "allow": "Permitir",
-    "allowing": "Permitiendo...",
-    "disconnecting": "Desconectando...",
-    "disconnect": "Desconectar",
-    "saving": "Guardando...",
-    "save": "Guardar",
-    "syncing": "Sincronizando...",
-    "synced": "Sincronizado",
-    "withdraw": "Retirar",
-    "update": "Actualizar",
-    "write": "Escribir",
-    "hidden": "Oculto",
-    "anonymized": "Anonimizado",
-    "selectPlayer": "Seleccionar jugador",
-    "shareInsights": "Compartir información",
-    "networkError": "Error de red",
-    "tryAgain": "Intentar de nuevo",
-    "nothingFound": "No se encontró nada",
-    "unknown": "Desconocido",
-    "errorLoading": "Hubo un problema al cargar este flujo de consentimiento.",
-    "notExists": "Este flujo de consentimiento no existe o ya no está disponible.",
-    "receivedCredential": "Has recibido una credencial.",
-    "updatedTerms": "Has actualizado tus términos.",
-    "credentialType.achievement": "Logro",
-    "credentialType.skill": "Habilidad",
-    "credentialType.membership": "Membresía",
-    "credentialType.socialBadge": "Insignia social",
-    "credentialType.workHistory": "Historial laboral",
-    "credentialType.teacher": "Profesor",
-    "credentialType.profilePicture": "Foto de perfil",
-    "credentialType.duration": "Duración",
-    "insight.tutoringOverview": "Resúmenes breves de tus conversaciones de tutoría",
-    "insight.progressEvaluations": "Evaluaciones de tu progreso durante la tutoría",
-    "insight.sessionOverviews": "Resúmenes de tus sesiones de tutoría con IA",
-    "sync.liveSyncing": "Sincronización en vivo",
-    "sync.selectiveSharing": "Compartir selectivo",
-    "status.active": "Activo",
-    "status.off": "Desactivado",
-    "status.on": "Activado",
-    "shareCredential": "Compartir",
-    "privacyAndData": "Privacidad y datos",
-    "gameAccess.title": "Acceso al juego",
-    "gameAccess.success": "¡Ya tienes acceso!",
-    "addGame.title": "Agregar juego",
-    "addGame.subtitle": "Conecta tu cuenta",
-    "transactionHistory.title": "Historial de transacciones",
-    "testContract": "Contrato de prueba",
-    "testUser": "Usuario de prueba",
-    "testSubtitle": "Subtítulo de prueba"
-  },
-  "recovery": {
-    "protectAccount": "Protect Your Account",
-    "accountRecovery": "Account Recovery",
-    "restoreAccess": "Restore Access",
-    "recoverAccount": "Recover Account",
-    "setupBefore": "Set up recovery before you leave",
-    "setupRecovery": "Set up a recovery method so you can get back in if you lose access to this device.",
-    "setupRecoveryDevice": "Set up recovery so you can get back in if you lose this device.",
-    "temporarySession": "This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.",
-    "recommendTwo": "We recommend setting up at least two recovery methods.",
-    "addingMethod": "Adding another method improves your security.",
-    "done": "Done",
-    "skipForNow": "Skip for Now",
-    "generating": "Generating...",
-    "sending": "Sending...",
-    "verifying": "Verifying...",
-    "verifyIdentity": "Verify Your Identity",
-    "verifyCode": "Verify Code",
-    "verifyPasskey": "Verify with Passkey",
-    "sendVerificationCode": "Send Verification Code",
-    "sendRecoveryKey": "Send Recovery Key",
-    "enterPassword": "Please enter the password for your backup file.",
-    "selectBackupFile": "Please select your backup file.",
-    "validEmail": "Please enter a valid email address.",
-    "incorrectCode": "Incorrect code. Please try again.",
-    "incorrectPassword": "Incorrect password or corrupted data. Please try again.",
-    "somethingWrong": "Something went wrong. Please try again.",
-    "connectionIssue": "Connection issue. Please check your internet and try again.",
-    "couldNotSave": "Could not save the file. Please try again.",
-    "noPasskey": "No passkey found on this device.",
-    "securityUpdated": "Your account security was recently updated on another device. Please verify to continue.",
-    "recoveryEmailSent": "We previously sent a recovery email to your recovery address. Open that email and follow the steps below.",
-    "copyToClipboard": "Copy to Clipboard",
-    "backupCreated": "Backup file created",
-    "saveBackupFile": "Save your backup file",
-    "learnCardBackup": "{{brand}} Backup",
-    "replacePasskey": "This will replace your current passkey.",
-    "replaceEmail": "This will replace your current recovery email.",
-    "generateNewPhrase": "This will generate a new phrase. Your previous phrase will no longer work.",
-    "generateNewBackup": "This will generate a new backup file. Your previous backup file will no longer work.",
-    "method.passkey": "Passkey",
-    "method.passkeyDesc": "Use Face ID, Touch ID, or similar",
-    "method.passkeySetup": "Passkey is set up",
-    "method.passkeyNotSetup": "Not set up",
-    "method.setEmail": "Email Recovery Key",
-    "method.emailDesc": "Paste the key sent to your email",
-    "method.emailSetup": "Email recovery is set up",
-    "method.phrase": "Recovery Phrase",
-    "method.phraseSaved": "Phrase is saved",
-    "method.backup": "Backup File",
-    "method.backupDesc": "Upload your backup file",
-    "action.setUpPasskey": "Set Up Passkey",
-    "action.replacePasskey": "Replace Passkey",
-    "action.settingUp": "Setting up...",
-    "action.generatePhrase": "Generate Recovery Phrase",
-    "action.generateNewPhrase": "Generate New Phrase",
-    "action.generateBackup": "Generate Backup File",
-    "action.generateNewBackup": "Generate New Backup",
-    "action.downloadBackup": "Download Backup File",
-    "action.downloadAgain": "Download Again",
-    "action.tapToChoose": "Tap to choose backup file",
-    "action.fileSelected": "File selected",
-    "action.enter": "Enter"
-  },
-  "alerts": {
-    "title": "Alerts",
-    "notifications": "Notifications",
-    "markAllRead": "Mark all as read",
-    "noAlerts": "No alerts yet",
-    "active": "Active",
-    "archived": "Archived",
-    "loading": "Loading...",
-    "reviewRequired": "Review Required",
-    "newSubmission": "New Submission",
-    "appApproved": "App Approved",
-    "claimed": "Claimed",
-    "accepted": "Accepted",
-    "approve": "Approve",
-    "approving": "Approving...",
-    "reject": "Reject",
-    "rejecting": "Rejecting...",
-    "approved": "Approved",
-    "notApproved": "Not Approved",
-    "claim": "Claim",
-    "accept": "Accept",
-    "alreadyConnected": "You are already connected.",
-    "alreadyConnectedShort": "Profiles are already connected",
-    "emptyActive": "You're all caught up!",
-    "emptyArchived": "No archived alerts",
-    "connectionRequest": "Connection Request",
-    "newBoost": "New Boost",
-    "archive": "Archive",
-    "delete": "Delete",
-    "confirmDelete": "Delete this notification?"
-  },
-  "share": {
-    "title": "Share",
-    "addContact": "Add contact",
-    "generateLinkFailed": "Failed to generate invite link",
-    "inviteLinkCopied": "Invite link copied to clipboard",
-    "inviteLinkCopyFailed": "Unable to copy Invite link to clipboard",
-    "profileLinkCopied": "Profile link copied to clipboard",
-    "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
-    "linkExpires": "Link expires in {{time}}",
-    "neverExpires": "Never expires",
-    "link": "Link"
-  },
-  "scanner": {
-    "title": "Scan QR Code",
-    "scanning": "Scanning...",
-    "noCamera": "No camera available",
-    "cameraPermission": "Camera permission required",
-    "invalidCode": "Invalid QR code",
-    "scanAnother": "Scan Another",
-    "done": "Done",
-    "openCamera": "Open Camera",
-    "close": "Close",
-    "scanQR": "Scan QR Code",
-    "importFromLink": "Import from Link",
-    "pasteLink": "Paste link here...",
-    "importCredential": "Import Credential",
-    "processing": "Processing...",
-    "success": "Credential imported successfully!",
-    "failed": "Failed to import credential"
-  },
-  "error": {
-    "generic": "Something went wrong. Please try again.",
-    "network": "Connection issue. Please check your internet and try again.",
-    "notFound": "Page not found.",
-    "unauthorized": "You don't have permission to do this.",
-    "sessionExpired": "Your session has expired. Please sign in again.",
-    "retry": "Try Again",
-    "goHome": "Go Home",
-    "back": "Go Back"
-  },
-  "issue": {
-    "title": "Issue Credentials",
-    "issued": "Issued",
-    "pending": "Pending",
-    "revoked": "Revoked",
-    "suspended": "Suspended",
-    "allStatuses": "All",
-    "revoke": "Revoke",
-    "suspend": "Suspend",
-    "unsuspend": "Unsuspend",
-    "revoking": "Revoking...",
-    "suspending": "Suspending...",
-    "noIssuances": "No credentials issued yet",
-    "confirmRevoke": "Are you sure you want to revoke this credential? This action cannot be undone.",
-    "confirmSuspend": "Are you sure you want to suspend this credential?",
-    "confirmUnsuspend": "Are you sure you want to reactivate this credential?",
-    "managedTab": "Managed",
-    "dashboardTab": "Dashboard",
-    "searchPlaceholder": "Search by name or recipient...",
-    "totalIssued": "Total Issued",
-    "totalRevoked": "Total Revoked",
-    "totalPending": "Total Pending",
-    "details": "Details",
-    "recipient": "Recipient",
-    "issuedDate": "Issued",
-    "status": "Status",
-    "actions": "Actions"
-  },
-  "ai": {
-    "title": "AI",
-    "newSession": "New Topic",
-    "browseTopics": "Browse sessions...",
-    "searchSkills": "Choose a skill, goal, or job...",
-    "clearSearch": "Search",
-    "noResults": "No Search Results",
-    "noSharedInsights": "No Shared Insights",
-    "loading": "Loading...",
-    "loadingRoles": "Loading roles...",
-    "generating": "Generating...",
-    "error": "An error occurred",
-    "failedToAddExperience": "Failed to add experience",
-    "failedToResolve": "Failed to resolve pathway credential",
-    "loginToRequest": "Login to Request",
-    "getPermission": "Get Permission",
-    "expired": "Expired",
-    "insightsAccepted": "Insights request already accepted.",
-    "insightsPending": "Insights request already pending.",
-    "manageSkills": "Manage your current skills",
-    "chooseSkills": "Choose your current skills",
-    "addExperience": "Add Experience",
-    "adding": "Adding...",
-    "matchingSkill": "Matching Skill",
-    "matchingSkills": "Matching Skills",
-    "newSessionTitle": "Start a new session",
-    "sessionHistory": "Session History",
-    "noSessions": "No sessions yet",
-    "continueSession": "Continue",
-    "deleteSession": "Delete",
-    "renameSession": "Rename",
-    "shareSession": "Share"
-  },
-  "pathways": {
-    "title": "Pathways",
-    "career": "Career",
-    "careerGoals": "Career Goals",
-    "jobSatisfaction": "Job Satisfaction",
-    "currentPosition": "Current position",
-    "addTitle": "Add a professional title to see career data here.",
-    "exploreCourses": "Explore Programs",
-    "exploreCoursesAlt": "Explore Courses",
-    "courses": "Courses",
-    "growth": "Growth in the Job Market",
-    "decline": "Decline in the Job Market",
-    "noEducationRequired": "No formal education required",
-    "noExperienceRequired": "No prior experience required",
-    "alignment": "Alignment",
-    "estimated": "Estimated",
-    "excellent": "Excellent",
-    "great": "Great",
-    "good": "Good Enough",
-    "average": "Average",
-    "belowAverage": "Below Average",
-    "confident": "Confident",
-    "institution": "Institution",
-    "media": "Media",
-    "missingFields": "Missing required fields",
-    "skillProfile": "Skills Profile",
-    "workHistory": "Work History",
-    "salary": "Salary",
-    "goals": "Goals",
-    "saveProfile": "Save Profile",
-    "next": "Next",
-    "back": "Back",
-    "skipForNow": "Skip for Now",
-    "addSkill": "Add Skill",
-    "removeSkill": "Remove",
-    "noSkills": "No skills added yet"
-  },
-  "boost": {
-    "title": "Boosts",
-    "createBoost": "Create Boost",
-    "editBoost": "Edit Boost",
-    "deleteBoost": "Delete Boost",
-    "claimBoost": "Claim",
-    "sendBoost": "Send",
-    "manageBoost": "Manage",
-    "boostDetails": "Boost Details",
-    "recipients": "Recipients",
-    "recipientCount": "{{count}} recipient(s)",
-    "noRecipients": "No recipients yet",
-    "searchRecipients": "Search recipients...",
-    "confirmDelete": "Are you sure you want to delete this boost?",
-    "image": "Image",
-    "name": "Name",
-    "description": "Description",
-    "category": "Category",
-    "requirements": "Requirements",
-    "evidence": "Evidence",
-    "preview": "Preview",
-    "save": "Save",
-    "saving": "Saving...",
-    "saved": "Saved!",
-    "publish": "Publish",
-    "publishing": "Publishing...",
-    "unpublish": "Unpublish",
-    "draft": "Draft",
-    "published": "Published",
-    "expired": "Expired",
-    "revoked": "Revoked",
-    "pending": "Pending",
-    "earned": "Earned",
-    "earnedTab": "Earned",
-    "managedTab": "Managed",
-    "searchBoosts": "Search boosts...",
-    "noBoosts": "No boosts found",
-    "boostTemplates": "Boost Templates",
-    "selectTemplate": "Select a template",
-    "fromScratch": "Start from scratch",
-    "socialBadge": "Social Badge",
-    "achievement": "Achievement",
-    "skill": "Skill",
-    "workHistory": "Work History",
-    "learningHistory": "Learning History",
-    "accomplishment": "Accomplishment",
-    "id": "ID",
-    "noImage": "No image set",
-    "uploadImage": "Upload Image",
-    "changeImage": "Change Image"
-  },
-  "legal": {
-    "termsOfService": "Terms of Service",
-    "privacyPolicy": "Privacy Policy",
-    "consentLayer": "Consent Layer",
-    "consentLayerDefinition": "You decide what data connects to which apps, and for how long.",
-    "appEcosystem": "App Ecosystem",
-    "selfCustodial": "Self-custodial login.",
-    "dataOwnership": "You own your own data."
-  },
-  "family": {
-    "title": "Families",
-    "joinFamily": "Join Family",
-    "addFamilyMember": "Add Family Member",
-    "familyAccount": "Family Account",
-    "switchProfile": "Switch Profile",
-    "childProfile": "Child Profile",
-    "parentProfile": "Parent Profile"
-  },
-  "membership": {
-    "title": "Membership",
-    "editNetwork": "Edit Network",
-    "adminPanel": "Admin Panel",
-    "myHub": "My Hub",
-    "network": "Network",
-    "globalNetwork": "Global Network",
-    "nationalNetwork": "National Network",
-    "globalNetworkAdmin": "Global Network Admin",
-    "nationalNetworkAdmin": "National Network Admin"
-  }
 }

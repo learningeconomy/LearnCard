@@ -1,1084 +1,1111 @@
 {
-  "sidemenu": {
-    "addTo": "Add to {{brand}}",
-    "newAiSession": "New AI Session",
-    "footer": {
-      "poweredBy": "Powered by <0>Consent Flow</0>",
-      "ownYourData": "You own your own data.",
-      "connectionsEncrypted": "All connections are <0>encrypted.</0>",
-      "privacyPolicy": "Privacy Policy",
-      "termsOfService": "Terms of Service",
-      "copyright": "© {{year}} Learning Economy",
-      "close": "Close"
+    "sidemenu": {
+        "addTo": "{{brand}}에 추가",
+        "newAiSession": "새 AI 세션",
+        "footer": {
+            "poweredBy": "<0>Consent Flow</0> 제공",
+            "ownYourData": "나의 데이터는 나의 것입니다.",
+            "connectionsEncrypted": "모든 연결은 <0>암호화</0>되어 있습니다.",
+            "privacyPolicy": "개인정보 처리방침",
+            "termsOfService": "서비스 약관",
+            "copyright": "© {{year}} Learning Economy",
+            "close": "닫기"
+        },
+        "links": {
+            "launchPad": "앱",
+            "contacts": "연락처",
+            "alerts": "알림",
+            "personalize": "맞춤 설정",
+            "adminTools": "관리 도구",
+            "wallet": "지갑",
+            "passport": "여권",
+            "aiTopics": "AI 세션",
+            "aiInsights": "AI 인사이트",
+            "aiPathways": "AI 경로",
+            "skills": "기술",
+            "socialBadges": "부스트",
+            "achievements": "성과",
+            "studies": "학습",
+            "portfolio": "포트폴리오",
+            "assistance": "지원",
+            "experiences": "경험",
+            "families": "가족",
+            "ids": "신분증",
+            "pathways": "경로"
+        }
     },
-    "links": {
-      "launchPad": "Apps",
-      "contacts": "Contacts",
-      "alerts": "Alerts",
-      "personalize": "Personalize",
-      "adminTools": "Admin Tools",
-      "wallet": "Wallet",
-      "passport": "Passport",
-      "aiTopics": "AI Sessions",
-      "aiInsights": "AI Insights",
-      "aiPathways": "AI Pathways",
-      "skills": "Skills",
-      "socialBadges": "Boosts",
-      "achievements": "Achievements",
-      "studies": "Studies",
-      "portfolio": "Portfolio",
-      "assistance": "Assistance",
-      "experiences": "Experiences",
-      "families": "Families",
-      "ids": "IDs",
-      "pathways": "Journeys"
-    }
-  },
-  "passport": {
-    "buildMyLearnCard": {
-      "title": "Build My {{brand}}",
-      "progress": "{{percent}}% optimized",
-      "processing": "Processing documents…",
-      "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
-      "pendingReview": "{{count}} credential(s) ready for review"
+    "passport": {
+        "buildMyLearnCard": {
+            "title": "내 {{brand}} 만들기",
+            "progress": "{{percent}}% 최적화됨",
+            "processing": "문서 처리 중…",
+            "stepsCompleted": "총 <1>{{total}}</1>단계 중 <0>{{completed}}</0>단계 완료",
+            "pendingReview": "검토 대기 중인 자격증명 {{count}}개"
+        },
+        "resumeBuilder": {
+            "title": "이력서 작성기",
+            "subtitle": "{{brand}} 자격증명으로 이력서를 작성하세요.",
+            "yourResume": "내 이력서",
+            "buildYourResume": "이력서 작성하기",
+            "updatedToday": "<0>오늘</0> 업데이트됨",
+            "tagline": "맞춤형 이력서로 두각을 나타내세요"
+        },
+        "explore": "탐색"
     },
-    "resumeBuilder": {
-      "title": "Resume Builder",
-      "subtitle": "Build your resume with {{brand}} credentials.",
-      "yourResume": "Your Resume",
-      "buildYourResume": "Build Your Resume",
-      "updatedToday": "Updated <0>today</0>",
-      "tagline": "Stand out with a tailored resume"
+    "launchpad": {
+        "title": "앱",
+        "header": {
+            "contacts": "연락처",
+            "aiSessions": "AI 세션",
+            "alerts": "알림"
+        },
+        "tabs": {
+            "myApps": "내 앱",
+            "ai": "AI",
+            "learning": "학습",
+            "games": "게임",
+            "tools": "도구",
+            "employment": "취업",
+            "credentials": "자격증명",
+            "other": "기타",
+            "plugins": "플러그인",
+            "all": "전체"
+        },
+        "sections": {
+            "suggestedApps": "추천 앱",
+            "installedApps": "설치된 앱",
+            "allApps": "모든 앱",
+            "allCategory": "모든 {{category}}"
+        },
+        "emptyStates": {
+            "noInstalledApps": "앱이 여기에 표시됩니다",
+            "noAppsAvailable": "현재 사용 가능한 앱이 없습니다",
+            "nothingInCategory": "{{category}}에 아직 아무것도 없습니다",
+            "installSomething": "앱 스토어에서 설치하여 시작하세요.",
+            "checkBackLater": "나중에 다시 확인하세요 — 새로운 앱이 계속 추가됩니다.",
+            "checkBackSoon": "곧 다시 확인하거나 모든 앱을 탐색하세요."
+        },
+        "aiDisabledMinor": "만 18세 미만 사용자는 AI 기능을 사용할 수 없습니다.",
+        "aiDisabledPrivacy": "AI 기능이 현재 비활성화되어 있습니다. 프로필의 개인정보 및 데이터에서 활성화할 수 있습니다."
     },
-    "explore": "Explore"
-  },
-  "launchpad": {
-    "title": "Apps",
-    "header": {
-      "contacts": "Contacts",
-      "aiSessions": "AI Sessions",
-      "alerts": "Alerts"
+    "wallet": {
+        "categories": {
+            "aiSessions": "AI 세션",
+            "aiPathways": "AI 경로",
+            "aiInsights": "AI 인사이트",
+            "skills": "기술",
+            "socialBadges": "부스트",
+            "achievements": "성과",
+            "studies": "학습",
+            "portfolio": "포트폴리오",
+            "assistance": "지원",
+            "experiences": "경험",
+            "families": "가족",
+            "ids": "신분증"
+        },
+        "emptyState": "아직 자격증명이 없습니다",
+        "credentialCount": "자격증명 {{count}}개",
+        "viewMode": "보기",
+        "listView": "목록",
+        "gridView": "그리드",
+        "earned": "취득",
+        "managed": "관리",
+        "noManaged": "관리 중인 자격증명 없음",
+        "search": "자격증명 검색...",
+        "expired": "만료됨",
+        "invalid": "유효하지 않은 ID",
+        "expiredId": "만료된 ID",
+        "noTitle": "제목 없음",
+        "issuedBy": "발급 기관:",
+        "evidence": "증빙",
+        "issuance": "발급",
+        "issued": "발급됨",
+        "details": "상세",
+        "filter": "필터",
+        "credentialDetail": "자격증명 상세",
+        "shareCredential": "공유",
+        "deleteCredential": "삭제",
+        "confirmDelete": "이 자격증명을 삭제하시겠습니까?",
+        "addToWallet": "지갑에 추가",
+        "viewCredential": "자격증명 보기",
+        "issuer": "발급자",
+        "subject": "대상",
+        "issueDate": "발급일",
+        "expirationDate": "만료일",
+        "status": "상태",
+        "actions": "작업",
+        "openSyllabus": "강의계획서 열기",
+        "certificate": "인증서",
+        "meritBadge": "공로 배지",
+        "meritBadges": "공로 배지",
+        "evidenceFile": "증빙 파일",
+        "courseSyllabus": "강의계획서"
     },
-    "tabs": {
-      "myApps": "My Apps",
-      "ai": "AI",
-      "learning": "Learning",
-      "games": "Games",
-      "tools": "Tools",
-      "employment": "Employment",
-      "credentials": "Credentials",
-      "other": "Other",
-      "plugins": "Plugins",
-      "all": "All"
+    "theme": {
+        "title": "테마 선택",
+        "subtitleColorfulFormal": "시그니처 컬러풀 경험과 클래식 포멀 스타일 사이를 전환하세요.",
+        "subtitleGeneric": "원하는 시각적 스타일을 선택하세요.",
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        }
     },
-    "sections": {
-      "suggestedApps": "Suggested Apps",
-      "installedApps": "Installed Apps",
-      "allApps": "All Apps",
-      "allCategory": "All {{category}}"
+    "language": {
+        "select": "언어 선택",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية",
+        "french": "Français",
+        "korean": "한국어"
     },
-    "emptyStates": {
-      "noInstalledApps": "Your apps will live here",
-      "noAppsAvailable": "No apps available right now",
-      "nothingInCategory": "Nothing in {{category}} yet",
-      "installSomething": "Install something from the App Store to get started.",
-      "checkBackLater": "Check back later — new apps are added all the time.",
-      "checkBackSoon": "Check back soon, or browse all apps."
+    "login": {
+        "welcome": {
+            "heading": "{{brand}}에 오신 것을 환영합니다",
+            "subtitle": "로그인하여 자격 증명, 성취도 등에 액세스하세요.",
+            "pills": {
+                "credentials": "자격 증명",
+                "achievements": "성취도",
+                "skills": "기술"
+            }
+        },
+        "sharedComputer": "공유 또는 공용 컴퓨터",
+        "signInFromAnotherDevice": "다른 기기에서 로그인",
+        "qrApproved": {
+            "heading": "모두 준비되었습니다!",
+            "withHint": "<0>{{hint}}</0>(으)로 로그인하여 계정에 액세스하세요.",
+            "noHint": "아래에서 로그인하여 계정에 액세스하세요.",
+            "continueButton": "로그인 계속하기"
+        },
+        "linkedBanner": {
+            "withHint": "<0>{{hint}}</0>(으)로 로그인하여 완료하세요",
+            "noHint": "기기 연결됨 — 로그인하여 완료하세요"
+        },
+        "installIntent": {
+            "banner": "로그인 후 <0>{{appName}}</0>(으)로 돌아갑니다"
+        },
+        "footer": {
+            "terms": "이용약관",
+            "privacy": "개인정보",
+            "learnMore": "더 알아보기",
+            "explorePathways": "경로 탐색",
+            "selfCustodialLogin": "자체 보관 로그인.",
+            "haveSeedPhrase": "자체 <0>시드 구문</0>이 있으신가요?"
+        },
+        "email": {
+            "placeholder": "이메일 주소",
+            "button": "이메일로 로그인",
+            "sendingCode": "코드 전송 중...",
+            "verification": {
+                "title": "인증 코드를 입력하거나 <0>다시 시작</0>하세요",
+                "verify": "확인",
+                "verifying": "확인 중...",
+                "error": "코드를 확인할 수 없습니다. 다시 시도해 주세요."
+            },
+            "password": {
+                "placeholder": "비밀번호",
+                "login": "로그인",
+                "create": "계정 만들기",
+                "existingAccount": "이미 계정이 있으신가요?",
+                "differentEmail": "다른 이메일 사용",
+                "staySignedIn": "로그인 상태 유지",
+                "agreeToTerms": "<0>이용약관</0>에 동의합니다"
+            },
+            "resend": "코드 재전송",
+            "resending": "코드 전송 중...",
+            "resendIn": "{{seconds}}초 후 재전송",
+            "error": {
+                "invalidEmail": "이메일이 누락되었거나 유효하지 않습니다",
+                "invalidCode": "유효하지 않은 코드"
+            }
+        },
+        "phone": {
+            "placeholder": "전화번호",
+            "button": "SMS로 로그인",
+            "loading": "로딩 중...",
+            "verification": {
+                "title": "인증 코드를 입력하거나 <0>다시 시작</0>하세요",
+                "verify": "확인",
+                "verifying": "확인 중..."
+            },
+            "password": {
+                "placeholder": "비밀번호",
+                "login": "로그인",
+                "create": "계정 만들기",
+                "existingAccount": "이미 계정이 있으신가요?",
+                "differentEmail": "다른 이메일 사용",
+                "staySignedIn": "로그인 상태 유지",
+                "agreeToTerms": "<0>이용약관</0>에 동의합니다"
+            },
+            "resend": "코드 재전송",
+            "resending": "코드 전송 중...",
+            "resendIn": "{{seconds}}초 후 재전송",
+            "smsSent": "인증 코드가 전송되었습니다",
+            "error": {
+                "invalidPhone": "전화번호가 필요합니다!",
+                "invalidCode": "유효하지 않은 코드"
+            }
+        },
+        "social": {
+            "or": "또는"
+        },
+        "seedPhrase": {
+            "title": "시드 구문을 사용하여 패스포트 가져오기",
+            "description": "기존 {{brand}} 패스포트에 다시 액세스하려면 아래에 <0>64자 시드</0> 또는 <2>단어 구문 시드</2>를 입력하세요.",
+            "advancedOption": "이것은 패스포트 생성 중에 이미 시드를 저장한 사용자를 위한 고급 옵션입니다. 시드가 없으면 돌아가서 <0>새 패스포트 만들기</0>를 대신 선택해야 합니다.",
+            "placeholder": "시드 구문 또는 키를 여기에 붙여넣으세요...",
+            "important": {
+                "heading": "중요!",
+                "rule1": "시드를 안전하게 오프라인으로 보관하세요.",
+                "rule2": "절대 다른 사람과 공유하지 마세요.",
+                "rule3": "다른 사람이 시드를 가지고 있으면 패스포트를 제어할 수 있습니다."
+            },
+            "back": "뒤로",
+            "import": "패스포트 가져오기",
+            "error": {
+                "invalidChars": "시드는 숫자와 문자(a–f)만 포함해야 합니다.",
+                "tooShort": "시드 구문은 64자여야 합니다.",
+                "generic": "문제가 발생했습니다. 다시 시도해 주세요."
+            }
+        },
+        "loader": {
+            "messages": {
+                "0": "자격 증명이 곧 도착합니다!",
+                "1": "마법의 자격 증명 지팡이를 흔드는 중!",
+                "2": "배지의 광채를 가져오는 중!",
+                "3": "비밀 별가루 잠금 해제 중!",
+                "4": "디지털 즐거움을 준비하는 중!",
+                "5": "자격 증명 초능력 소환 중!",
+                "6": "디지털 보물이 가까이 있습니다!",
+                "7": "배지 보물창고 준비 중!",
+                "8": "자격 증명을 화려하게 로딩 중!",
+                "9": "자격 증명의 불꽃을 준비하세요!"
+            }
+        },
+        "logout": "로그아웃 중..."
     },
-    "aiDisabledMinor": "AI features are not available for users under 18.",
-    "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile."
-  },
-  "wallet": {
-    "categories": {
-      "aiSessions": "AI Sessions",
-      "aiPathways": "AI Pathways",
-      "aiInsights": "AI Insights",
-      "skills": "Skills",
-      "socialBadges": "Boosts",
-      "achievements": "Achievements",
-      "studies": "Studies",
-      "portfolio": "Portfolio",
-      "assistance": "Assistance",
-      "experiences": "Experiences",
-      "families": "Families",
-      "ids": "IDs"
-    },
-    "emptyState": "No credentials yet",
-    "credentialCount": "{{count}} credential(s)",
-    "viewMode": "View",
-    "listView": "List",
-    "gridView": "Grid",
-    "earned": "Earned",
-    "managed": "Managed",
-    "noManaged": "No managed credentials",
-    "search": "Search credentials...",
-    "expired": "Expired",
-    "invalid": "Invalid ID",
-    "expiredId": "Expired ID",
-    "noTitle": "No title",
-    "issuedBy": "Issued by:",
-    "evidence": "Evidence",
-    "issuance": "Issuance",
-    "issued": "Issued",
-    "details": "Details",
-    "filter": "Filter",
-    "credentialDetail": "Credential Detail",
-    "shareCredential": "Share",
-    "deleteCredential": "Delete",
-    "confirmDelete": "Are you sure you want to delete this credential?",
-    "addToWallet": "Add to Wallet",
-    "viewCredential": "View Credential",
-    "issuer": "Issuer",
-    "subject": "Subject",
-    "issueDate": "Issue Date",
-    "expirationDate": "Expiration Date",
-    "status": "Status",
-    "actions": "Actions",
-    "openSyllabus": "Open Syllabus",
-    "certificate": "Certificate",
-    "meritBadge": "Merit Badge",
-    "meritBadges": "Merit Badges",
-    "evidenceFile": "Evidence File",
-    "courseSyllabus": "Course Syllabus"
-  },
-  "theme": {
-    "title": "Choose Your Theme",
-    "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
-    "subtitleGeneric": "Choose your preferred visual style.",
-    "names": {
-      "colorful": "Colorful",
-      "formal": "Formal",
-      "vetpass": "VetPass"
-    }
-  },
-  "language": {
-    "select": "Select language",
-    "english": "English",
-    "spanish": "Español",
-    "german": "Deutsch",
-    "arabic": "العربية",
-    "french": "Français",
-    "korean": "한국어"
-  },
-  "login": {
-    "welcome": {
-      "heading": "{{brand}}에 오신 것을 환영합니다",
-      "subtitle": "로그인하여 자격 증명, 성취도 등에 액세스하세요.",
-      "pills": {
-        "credentials": "자격 증명",
-        "achievements": "성취도",
-        "skills": "기술"
-      }
-    },
-    "sharedComputer": "공유 또는 공용 컴퓨터",
-    "signInFromAnotherDevice": "다른 기기에서 로그인",
-    "qrApproved": {
-      "heading": "모두 준비되었습니다!",
-      "withHint": "<0>{{hint}}</0>(으)로 로그인하여 계정에 액세스하세요.",
-      "noHint": "아래에서 로그인하여 계정에 액세스하세요.",
-      "continueButton": "로그인 계속하기"
-    },
-    "linkedBanner": {
-      "withHint": "<0>{{hint}}</0>(으)로 로그인하여 완료하세요",
-      "noHint": "기기 연결됨 — 로그인하여 완료하세요"
-    },
-    "installIntent": {
-      "banner": "로그인 후 <0>{{appName}}</0>(으)로 돌아갑니다"
-    },
-    "footer": {
-      "terms": "이용약관",
-      "privacy": "개인정보",
-      "learnMore": "더 알아보기",
-      "explorePathways": "경로 탐색",
-      "selfCustodialLogin": "자체 보관 로그인.",
-      "haveSeedPhrase": "자체 <0>시드 구문</0>이 있으신가요?"
-    },
-    "email": {
-      "placeholder": "이메일 주소",
-      "button": "이메일로 로그인",
-      "sendingCode": "코드 전송 중...",
-      "verification": {
-        "title": "인증 코드를 입력하거나 <0>다시 시작</0>하세요",
-        "verify": "확인",
-        "verifying": "확인 중...",
-        "error": "코드를 확인할 수 없습니다. 다시 시도해 주세요."
-      },
-      "password": {
-        "placeholder": "비밀번호",
-        "login": "로그인",
-        "create": "계정 만들기",
-        "existingAccount": "이미 계정이 있으신가요?",
-        "differentEmail": "다른 이메일 사용",
-        "staySignedIn": "로그인 상태 유지",
-        "agreeToTerms": "<0>이용약관</0>에 동의합니다"
-      },
-      "resend": "코드 재전송",
-      "resending": "코드 전송 중...",
-      "resendIn": "{{seconds}}초 후 재전송",
-      "error": {
-        "invalidEmail": "이메일이 누락되었거나 유효하지 않습니다",
-        "invalidCode": "유효하지 않은 코드"
-      }
-    },
-    "phone": {
-      "placeholder": "전화번호",
-      "button": "SMS로 로그인",
-      "loading": "로딩 중...",
-      "verification": {
-        "title": "인증 코드를 입력하거나 <0>다시 시작</0>하세요",
-        "verify": "확인",
-        "verifying": "확인 중..."
-      },
-      "password": {
-        "placeholder": "비밀번호",
-        "login": "로그인",
-        "create": "계정 만들기",
-        "existingAccount": "이미 계정이 있으신가요?",
-        "differentEmail": "다른 이메일 사용",
-        "staySignedIn": "로그인 상태 유지",
-        "agreeToTerms": "<0>이용약관</0>에 동의합니다"
-      },
-      "resend": "코드 재전송",
-      "resending": "코드 전송 중...",
-      "resendIn": "{{seconds}}초 후 재전송",
-      "smsSent": "인증 코드가 전송되었습니다",
-      "error": {
-        "invalidPhone": "전화번호가 필요합니다!",
-        "invalidCode": "유효하지 않은 코드"
-      }
-    },
-    "social": {
-      "or": "또는"
-    },
-    "seedPhrase": {
-      "title": "시드 구문을 사용하여 패스포트 가져오기",
-      "description": "기존 {{brand}} 패스포트에 다시 액세스하려면 아래에 <0>64자 시드</0> 또는 <2>단어 구문 시드</2>를 입력하세요.",
-      "advancedOption": "이것은 패스포트 생성 중에 이미 시드를 저장한 사용자를 위한 고급 옵션입니다. 시드가 없으면 돌아가서 <0>새 패스포트 만들기</0>를 대신 선택해야 합니다.",
-      "placeholder": "시드 구문 또는 키를 여기에 붙여넣으세요...",
-      "important": {
-        "heading": "중요!",
-        "rule1": "시드를 안전하게 오프라인으로 보관하세요.",
-        "rule2": "절대 다른 사람과 공유하지 마세요.",
-        "rule3": "다른 사람이 시드를 가지고 있으면 패스포트를 제어할 수 있습니다."
-      },
-      "back": "뒤로",
-      "import": "패스포트 가져오기",
-      "error": {
-        "invalidChars": "시드는 숫자와 문자(a–f)만 포함해야 합니다.",
-        "tooShort": "시드 구문은 64자여야 합니다.",
-        "generic": "문제가 발생했습니다. 다시 시도해 주세요."
-      }
-    },
-    "loader": {
-      "messages": {
-        "0": "자격 증명이 곧 도착합니다!",
-        "1": "마법의 자격 증명 지팡이를 흔드는 중!",
-        "2": "배지의 광채를 가져오는 중!",
-        "3": "비밀 별가루 잠금 해제 중!",
-        "4": "디지털 즐거움을 준비하는 중!",
-        "5": "자격 증명 초능력 소환 중!",
-        "6": "디지털 보물이 가까이 있습니다!",
-        "7": "배지 보물창고 준비 중!",
-        "8": "자격 증명을 화려하게 로딩 중!",
-        "9": "자격 증명의 불꽃을 준비하세요!"
-      }
-    },
-    "logout": "로그아웃 중..."
-  },
-  "onboarding": {
-    "selectRole": {
-      "header": "자신을 가장 잘 설명하는 것을 선택하세요!"
+    "onboarding": {
+        "selectRole": {
+            "header": "자신을 가장 잘 설명하는 것을 선택하세요!"
+        },
+        "profile": {
+            "header": "시작하려면 프로필을 설정하세요!",
+            "imA": "저는 ",
+            "selectRole": "역할 선택",
+            "fullName": "전체 이름",
+            "dateOfBirth": "생년월일",
+            "age": "나이: {{age}}",
+            "countryOfResidence": "거주 국가",
+            "userId": {
+                "placeholder": "사용자 ID",
+                "charLength": "3~25자 사이여야 합니다.",
+                "format": "문자, 숫자 및 대시(-)만 사용 가능합니다."
+            },
+            "privacyNotice": "개인정보 보호법을 준수하고 안전을 보장하기 위해 연령과 국가를 요청합니다.",
+            "joiningNetwork": "네트워크 참여 중...",
+            "installBanner": "계정을 만든 후 <0>{{appName}}</0>을(를) 설치할 수 있습니다",
+            "error": {
+                "nameRequired": "이름이 필요합니다.",
+                "countryRequired": "국가가 필요합니다.",
+                "createFailed": "프로필을 만드는 중 오류가 발생했습니다",
+                "generic": "프로필을 만들 수 없습니다. 지금도 부모 동의를 요청할 수 있습니다. 나중에 프로필 설정을 다시 시도해 주세요.",
+                "firebase": "Firebase 오류 발생: {{error}}"
+            }
+        },
+        "welcome": "환영합니다",
+        "continue": "계속",
+        "back": "뒤로",
+        "skipForNow": "지금은 건너뛰기",
+        "close": "닫기",
+        "save": "저장",
+        "role": {
+            "learner": {
+                "title": "학습자",
+                "description": "프로필을 구축하고 진행 상황을 추적하는 학생입니다."
+            },
+            "guardian": {
+                "title": "보호자",
+                "description": "학습자를 지원하는 부모 또는 보호자입니다."
+            },
+            "teacher": {
+                "title": "교사",
+                "description": "학습자와 직접 일하는 교육자입니다."
+            },
+            "admin": {
+                "title": "관리자",
+                "description": "조직의 시스템, 데이터 또는 사용자 액세스를 관리합니다."
+            },
+            "counselor": {
+                "title": "진로 상담사",
+                "description": "학습자의 교육 또는 진로 경로 계획을 지원합니다."
+            },
+            "developer": {
+                "title": "개발자",
+                "description": "조직의 시스템, 데이터 및 기술을 관리합니다."
+            }
+        },
+        "consent": {
+            "underage": {
+                "heading": "성인에게 문의하세요",
+                "description": "참여하려면 부모 또는 보호자가 가족 계정에 추가해야 합니다.",
+                "schoolCode": {
+                    "heading": "학교 코드 입력",
+                    "description": "부모 계정 없이 참여하려면 학교에서 제공한 특별 코드를 입력하세요.",
+                    "cta": "학교 코드가 있나요?",
+                    "placeholder": "코드 입력",
+                    "verify": "확인",
+                    "error": "유효하지 않은 학교 코드입니다. 다시 시도해 주세요."
+                },
+                "adultButton": "저는 성인입니다",
+                "or": "또는",
+                "loggingOut": {
+                    "heading": "로그아웃 중...",
+                    "description": "부모 또는 보호자가 로그인하여 가족 계정을 만들도록 요청하세요."
+                },
+                "addChild": {
+                    "heading": "{{brand}}에 자녀를 추가하세요!",
+                    "description": "로그인 또는 가입하여 가족 계정 내에서 프로필을 만드세요."
+                }
+            },
+            "eu": {
+                "heading": "부모 동의 필요",
+                "description": "부모의 이메일을 입력하여 동의 요청을 보내주세요.",
+                "placeholder": "부모님 이메일",
+                "sendRequest": "요청 보내기",
+                "sending": "전송 중...",
+                "sent": {
+                    "heading": "요청 전송됨",
+                    "description": "<0>{{email}}</0>님께 동의 요청을 보냈습니다. 승인되면 알려드리겠습니다."
+                },
+                "done": "완료",
+                "error": {
+                    "invalidEmail": "유효한 이메일을 입력하세요.",
+                    "sendFailed": "동의 요청을 보내지 못했습니다. 다시 시도해 주세요."
+                }
+            },
+            "us": {
+                "heading": "동의 안내",
+                "description": "학습 진행 상황과 자격 증명을 수집합니다. 이는 귀하, 교사 또는 인증된 조직과 공유될 수 있습니다."
+            },
+            "parentInvite": {
+                "heading": "부모님을 {{brand}}에 초대하세요!",
+                "description": "<0>초대 공유</0> 버튼을 클릭하거나 이메일을 입력하고 <1>초대 보내기</1> 버튼을 클릭하세요.",
+                "shareInvite": "초대 공유",
+                "sendInvite": "초대 보내기",
+                "placeholder": "email@email.com",
+                "or": "또는"
+            }
+        },
+        "guardianLinked": {
+            "heading": "모두 설정되었습니다!",
+            "description": "이제 <0>{{name}}</0>의 자격 증명을 관리할 수 있습니다. 향후 승인은 앱에서 직접 표시됩니다.",
+            "gotIt": "확인했습니다"
+        },
+        "slides": {
+            "next": "다음",
+            "getStarted": "시작하기",
+            "learner": {
+                "slide1": {
+                    "bold": "캡처",
+                    "regular": "어디서든 학습을 캡처하세요",
+                    "over13": "학습 및 업무 경험"
+                },
+                "slide2": {
+                    "bold": "수집",
+                    "regular": "교육 경험을 패스포트에 수집하세요"
+                },
+                "slide3": {
+                    "bold": "학습",
+                    "regular": "기술 및 경험에 대해 알아보세요"
+                },
+                "slide4": {
+                    "bold": "레벨업",
+                    "regular": "성장하는 AI 튜터로 학습을 향상시키세요"
+                }
+            },
+            "guardian": {
+                "slide1": {
+                    "bold": "자녀 안내",
+                    "regular": "학습 경험을 통해"
+                },
+                "slide2": {
+                    "bold": "보호",
+                    "regular": "동의 기반의 안전한 데이터 도구로 자녀의 개인정보 보호"
+                },
+                "slide3": {
+                    "bold": "향상",
+                    "regular": "AI 튜터와 학습 앱으로 자녀의 학습 향상"
+                },
+                "slide4": {
+                    "bold": "통찰력 확보",
+                    "regular": "자녀의 학습 여정에 대한 통찰력"
+                }
+            },
+            "teacher": {
+                "slide1": {
+                    "bold": "모든 학생과 학습 데이터 정리",
+                    "regular": "하나의 대시보드에서"
+                },
+                "slide2": {
+                    "bold": "맞춤형 자격 증명",
+                    "regular": "생성 및 관리"
+                },
+                "slide3": {
+                    "bold": "수여",
+                    "regular": "학습 경험에 대한 실제 증명을 학습자에게"
+                },
+                "slide4": {
+                    "bold": "평가",
+                    "regular": "학생의 진행 상황을 실시간으로"
+                }
+            },
+            "admin": {
+                "slide1": {
+                    "bold": "생성",
+                    "regular": "기술 프레임워크 및 자격 증명"
+                },
+                "slide2": {
+                    "bold": "정리",
+                    "regular": "학습자, 교사 및 학습 경험"
+                },
+                "slide3": {
+                    "bold": "배포",
+                    "regular": "사용하기 쉬운 앱으로 학습 자료 배포"
+                },
+                "slide4": {
+                    "bold": "관리",
+                    "regular": "데이터 공유 등을 위한 고급 도구"
+                }
+            },
+            "developer": {
+                "slide1": {
+                    "bold": "구성",
+                    "regular": "발급자, 동의 프로토콜 및 연결된 시스템"
+                },
+                "slide2": {
+                    "bold": "통합",
+                    "regular": "학교, 애플리케이션 및 데이터 소스와"
+                },
+                "slide3": {
+                    "bold": "관리",
+                    "regular": "엔드투엔드 데이터 흐름"
+                },
+                "slide4": {
+                    "bold": "설계",
+                    "regular": "맞춤형 모듈식 사용자 경험"
+                }
+            }
+        },
+        "country": {
+            "search": "국가 검색",
+            "title": "국가 선택"
+        }
     },
     "profile": {
-      "header": "시작하려면 프로필을 설정하세요!",
-      "imA": "저는 ",
-      "selectRole": "역할 선택",
-      "fullName": "전체 이름",
-      "dateOfBirth": "생년월일",
-      "age": "나이: {{age}}",
-      "countryOfResidence": "거주 국가",
-      "userId": {
-        "placeholder": "사용자 ID",
-        "charLength": "3~25자 사이여야 합니다.",
-        "format": "문자, 숫자 및 대시(-)만 사용 가능합니다."
-      },
-      "privacyNotice": "개인정보 보호법을 준수하고 안전을 보장하기 위해 연령과 국가를 요청합니다.",
-      "joiningNetwork": "네트워크 참여 중...",
-      "installBanner": "계정을 만든 후 <0>{{appName}}</0>을(를) 설치할 수 있습니다",
-      "error": {
-        "nameRequired": "이름이 필요합니다.",
-        "countryRequired": "국가가 필요합니다.",
-        "createFailed": "프로필을 만드는 중 오류가 발생했습니다",
-        "generic": "프로필을 만들 수 없습니다. 지금도 부모 동의를 요청할 수 있습니다. 나중에 프로필 설정을 다시 시도해 주세요.",
-        "firebase": "Firebase 오류 발생: {{error}}"
-      }
-    },
-    "welcome": "환영합니다",
-    "continue": "계속",
-    "back": "뒤로",
-    "skipForNow": "지금은 건너뛰기",
-    "close": "닫기",
-    "save": "저장",
-    "role": {
-      "learner": {
-        "title": "학습자",
-        "description": "프로필을 구축하고 진행 상황을 추적하는 학생입니다."
-      },
-      "guardian": {
-        "title": "보호자",
-        "description": "학습자를 지원하는 부모 또는 보호자입니다."
-      },
-      "teacher": {
-        "title": "교사",
-        "description": "학습자와 직접 일하는 교육자입니다."
-      },
-      "admin": {
-        "title": "관리자",
-        "description": "조직의 시스템, 데이터 또는 사용자 액세스를 관리합니다."
-      },
-      "counselor": {
-        "title": "진로 상담사",
-        "description": "학습자의 교육 또는 진로 경로 계획을 지원합니다."
-      },
-      "developer": {
-        "title": "개발자",
-        "description": "조직의 시스템, 데이터 및 기술을 관리합니다."
-      }
-    },
-    "consent": {
-      "underage": {
-        "heading": "성인에게 문의하세요",
-        "description": "참여하려면 부모 또는 보호자가 가족 계정에 추가해야 합니다.",
-        "schoolCode": {
-          "heading": "학교 코드 입력",
-          "description": "부모 계정 없이 참여하려면 학교에서 제공한 특별 코드를 입력하세요.",
-          "cta": "학교 코드가 있나요?",
-          "placeholder": "코드 입력",
-          "verify": "확인",
-          "error": "유효하지 않은 학교 코드입니다. 다시 시도해 주세요."
+        "title": "내 계정",
+        "editProfile": "프로필 편집",
+        "exportSeedPhrase": "시드 문구 내보내기",
+        "deleteAccount": "계정 삭제",
+        "connectingHandler": "핸들러 연결",
+        "save": "구하다",
+        "saving": "절약...",
+        "close": "닫다",
+        "back": "뒤쪽에",
+        "fullName": "성명",
+        "userId": "사용자 ID",
+        "emailAddress": "이메일 주소",
+        "phoneNumber": "전화 번호",
+        "country": "국가",
+        "dateOfBirth": "생일",
+        "disabled": "(장애가 있는)",
+        "age": "나이:",
+        "didLabel": "{{브랜드}} 번호(DID)",
+        "didCopied": "DID가 클립보드에 복사되었습니다.",
+        "didCopyFailed": "DID를 클립보드에 복사할 수 없습니다.",
+        "getAnAdult": "어른을 구하라",
+        "needParentGuardian": "가족 계정에 가입하려면 먼저 부모나 보호자가 있어야 가족 계정을 설정할 수 있습니다.",
+        "imAnAdult": "나는 성인이다",
+        "notifications": "알림",
+        "delete": {
+            "title": "계정을 삭제하시겠습니까?",
+            "warning": "계정을 삭제하면 {{brand}}의 신원과 모든 자격 증명이 영구적으로 삭제됩니다. <0>경고, 이 작업은 취소할 수 없습니다!</0>",
+            "confirmByTyping": "입력하여 확인하세요.",
+            "below": "아래에.",
+            "deleteForever": "영원히 삭제",
+            "loading": "로드 중...",
+            "deleting": "계정 삭제 중...",
+            "recentLoginRequired": "최근 로그인이 필요합니다!",
+            "reauthenticateHere": "여기서 재인증하세요"
         },
-        "adultButton": "저는 성인입니다",
-        "or": "또는",
-        "loggingOut": {
-          "heading": "로그아웃 중...",
-          "description": "부모 또는 보호자가 로그인하여 가족 계정을 만들도록 요청하세요."
+        "export": {
+            "title": "시드 문구 내보내기",
+            "warning": "경고!",
+            "masterKeyWarning": "이것은 귀하의 {{brand}}의 마스터 키입니다. 이 문구에 액세스할 수 있는 사람은 누구나 귀하의 {{brand}}와 귀하의 신원을 제어할 수 있습니다. - 공유하지 마세요. - 온라인에 저장하거나 스크린샷을 찍지 마세요. - 적어서 오프라인에 보관하세요. - 분실 시 영구적으로 접속이 불가능할 수 있습니다. <0>계속하시겠습니까?</0>",
+            "confirmByTyping": "입력하여 확인하세요.",
+            "below": "아래에.",
+            "phonePlaceholder": "전화 번호...",
+            "emailPlaceholder": "이메일...",
+            "button": "시드 문구 내보내기",
+            "revealPrompt": "이해합니다 - 내 씨앗을 공개하세요",
+            "confirm": "확인하다",
+            "cancel": "취소"
         },
-        "addChild": {
-          "heading": "{{brand}}에 자녀를 추가하세요!",
-          "description": "로그인 또는 가입하여 가족 계정 내에서 프로필을 만드세요."
+        "email": {
+            "header": "이메일 주소",
+            "placeholder": "이메일",
+            "noEmails": "아직 추가된 이메일이 없습니다.",
+            "invalidEmail": "이메일이 없거나 유효하지 않습니다.",
+            "primary": "주요한",
+            "setAsPrimary": "기본으로 설정",
+            "remove": "제거하다",
+            "unverified": "확인되지 않음",
+            "resendVerification": "확인 이메일 다시 보내기",
+            "sending": "배상...",
+            "setPrimaryConfirm": {
+                "title": "기본 연락 방법 설정",
+                "text": "이 이메일을 기본 이메일로 설정하시겠습니까?",
+                "yes": "예",
+                "no": "아니요"
+            },
+            "removeConfirm": {
+                "title": "연락 방법 삭제",
+                "text": "이 이메일을 삭제하시겠습니까?",
+                "yes": "예",
+                "no": "아니요"
+            }
+        },
+        "phone": {
+            "header": "핸드폰",
+            "placeholder": "핸드폰",
+            "setAsPrimary": "기본으로 설정"
+        },
+        "verify": {
+            "verifying": "이메일 확인 중...",
+            "pleaseWait": "확인을 완료하는 동안 잠시만 기다려 주세요.",
+            "success": "귀하의 이메일이 성공적으로 확인되었습니다.",
+            "failed": "확인 실패",
+            "failedDesc": "이메일을 확인할 수 없습니다. 토큰이 유효하지 않거나 만료되었을 수 있습니다. 다시 시도하거나 새 확인 이메일을 요청하세요.",
+            "returnHome": "집으로 돌아가기"
+        },
+        "seed": {
+            "yourSeedPhrase": "시드 구문:",
+            "copyConfirm": "이 항목을 클립보드에 복사하시겠습니까?",
+            "copiedToast": "시드 구문이 클립보드에 복사되었습니다",
+            "copyFailedToast": "시드 구문을 클립보드에 복사할 수 없습니다",
+            "reveal": "내 시드 공개",
+            "hide": "내 시드 숨기기",
+            "howToStore": "시드 구문을 안전하게 보관하는 방법?"
+        },
+        "setupTitle": "프로필 설정"
+    },
+    "settings": {
+        "privacyTitle": "개인정보 보호 및 데이터",
+        "minorWarning": "18세 미만 사용자에게는 일부 기능이 제한됩니다.",
+        "aiFeatures": "AI 기능",
+        "aiFeaturesDesc": "AI 튜터링 세션, 통찰력 및 개인화",
+        "analytics": "분석 및 통찰력",
+        "analyticsDesc": "익명의 사용 데이터를 통해 {{brand}} 개선에 참여해 주세요.",
+        "bugReports": "버그 보고서",
+        "bugReportsDesc": "문제 해결에 도움이 되는 충돌 보고서를 자동으로 보냅니다.",
+        "goBack": "돌아가기",
+        "notifications": {
+            "title": "알림 설정 편집",
+            "connectionRequests": {
+                "title": "새로운 연결 요청",
+                "description": "누군가 귀하의 코드를 스캔하거나 귀하의 사용자 링크를 클릭하면 귀하가 수락하거나 거부할 수 있는 네트워크 요청이 시작됩니다."
+            },
+            "newBoosts": {
+                "title": "새로운 부스트",
+                "description": "부스트에는 기술, ID, 업적, 학습 기록, 작업 기록, 통화 및 배지를 포함한 모든 유형의 자격 증명이 포함됩니다."
+            },
+            "prompt": {
+                "title": "최신 소식을 확인하시겠습니까?",
+                "description": "다음에 대한 푸시 알림 수신:",
+                "details": "새로운 연결 요청, 새로운 부스트(업적, 자격증명, 배지 등).",
+                "continue": "계속하다",
+                "notYet": "아직 아님",
+                "privacyPolicy": "개인 정보 보호 정책",
+                "termsOfService": "서비스 약관"
+            }
+        },
+        "privacy": {
+            "profilePrivacy": "프로필 개인정보",
+            "profilePrivacyDesc": "네트워크의 다른 사용자에게 {{brand}} 프로필이 표시되는 방식을 관리하세요.",
+            "profileVisibility": "프로필 공개 범위",
+            "profileVisibilityDesc": "프로필 세부정보를 볼 수 있는 사람을 선택하세요.",
+            "visibilityPublic": "공개",
+            "visibilityConnectionsOnly": "연결된 사람만",
+            "visibilityPrivate": "비공개",
+            "showEmail": "연결에 이메일 표시",
+            "showEmailDesc": "연결된 사용자가 프로필에서 이메일 주소를 볼 수 있도록 허용합니다.",
+            "connectionRequests": "연결 요청",
+            "connectionRequestsDesc": "새 연결 요청을 보낼 수 있는 사람을 결정하세요.",
+            "connectionRequestsAnyone": "모든 사람",
+            "connectionRequestsInviteOnly": "초대만 가능",
+            "unableToUpdate": "개인정보 설정을 업데이트할 수 없습니다."
         }
-      },
-      "eu": {
-        "heading": "부모 동의 필요",
-        "description": "부모의 이메일을 입력하여 동의 요청을 보내주세요.",
-        "placeholder": "부모님 이메일",
+    },
+    "contacts": {
+        "title": "연락처",
+        "addContact": "연락처 추가",
+        "addContactDesc": "연락처 추가",
+        "scanCode": "코드 스캔",
+        "showCode": "코드 표시",
+        "shareCode": "코드 공유",
+        "search": "검색",
+        "back": "뒤로",
+        "cancel": "취소",
+        "confirm": "확인",
+        "connect": "연결",
+        "accept": "수락",
+        "acceptRequest": "요청 수락",
+        "requestConnection": "연결 요청",
         "sendRequest": "요청 보내기",
-        "sending": "전송 중...",
-        "sent": {
-          "heading": "요청 전송됨",
-          "description": "<0>{{email}}</0>님께 동의 요청을 보냈습니다. 승인되면 알려드리겠습니다."
-        },
+        "cancelRequest": "요청 취소",
+        "connectionSent": "연결 요청이 전송되었습니다",
+        "connectedSuccessfully": "성공적으로 연결됨",
+        "connectionPending": "요청 대기 중",
+        "connectionAlreadyRequested": "이미 연결을 요청했습니다",
+        "inviteExpired": "초대 링크가 만료되었습니다!",
+        "inviteNotFound": "초대를 찾을 수 없거나 만료되었습니다",
+        "loading": "로딩...",
+        "returnHome": "홈으로 돌아가기",
+        "contact": "연락처",
+        "removeContact": "연락처 삭제",
+        "unblock": "차단 해제",
+        "unblockContact": "연락처 차단 해제",
+        "noBlockedUsers": "차단된 사용자가 없습니다",
+        "noPendingConnections": "대기 중인 연결이 없습니다",
+        "linkCopied": "연락처 링크가 클립보드에 복사되었습니다",
+        "linkCopyFailed": "연락처 링크를 복사할 수 없습니다",
+        "didCopyFailed": "DID를 클립보드에 복사할 수 없습니다",
+        "connectionRequests": "연결 요청",
+        "pendingConnections": "대기 중",
+        "blockedContacts": "차단됨",
+        "allContacts": "전체",
+        "boost": "부스트",
+        "claimed": "획득함",
+        "joined": "가입함",
+        "saving": "저장 중...",
+        "joining": "가입 중...",
+        "acceptBoost": "수락",
+        "joinBoost": "가입",
+        "notification": "알림",
+        "okay": "확인",
+        "results": "결과",
+        "result": "결과",
+        "confirmSendRequest": "연결 요청을 보내시겠습니까?",
+        "confirmCancelRequest": "연결 요청을 취소하시겠습니까?",
+        "confirmAcceptRequest": "연결 요청을 수락하시겠습니까?",
+        "confirmUnblock": "이 사용자의 차단을 해제하시겠습니까?",
+        "confirmRemoveConnection": "이 연결을 삭제하시겠습니까?",
+        "confirmBlock": "이 사용자를 차단하시겠습니까?"
+    },
+    "consentFlow": {
+        "title": "동의",
+        "accept": "수락",
+        "acceptAndSync": "수락 및 동기화",
+        "accepted": "수락됨",
+        "acceptingContract": "계약 수락 중...",
+        "back": "뒤로",
+        "cancel": "취소",
+        "close": "닫기",
+        "continue": "계속",
+        "continuePlaying": "계속하기",
+        "continueToGame": "게임으로 계속",
+        "launchGame": "게임 시작",
+        "deny": "거부",
+        "denyAccess": "액세스 거부",
+        "allowAccess": "액세스 허용",
+        "allow": "허용",
+        "allowing": "허용 중...",
+        "disconnecting": "연결 해제 중...",
+        "disconnect": "연결 해제",
+        "saving": "저장 중...",
+        "save": "저장",
+        "syncing": "동기화 중...",
+        "synced": "동기화됨",
+        "withdraw": "철회",
+        "update": "업데이트",
+        "write": "쓰기",
+        "hidden": "숨김",
+        "anonymized": "익명화됨",
+        "selectPlayer": "플레이어 선택",
+        "shareInsights": "인사이트 공유",
+        "networkError": "네트워크 오류",
+        "tryAgain": "다시 시도",
+        "nothingFound": "결과 없음",
+        "unknown": "알 수 없음",
+        "errorLoading": "이 동의 흐름을 로드하는 중 문제가 발생했습니다.",
+        "notExists": "이 동의 흐름이 존재하지 않거나 더 이상 사용할 수 없습니다.",
+        "receivedCredential": "자격 증명을 받았습니다.",
+        "updatedTerms": "약관을 업데이트했습니다.",
+        "credentialType.achievement": "성취",
+        "credentialType.skill": "기술",
+        "credentialType.membership": "멤버십",
+        "credentialType.socialBadge": "소셜 뱃지",
+        "credentialType.workHistory": "경력",
+        "credentialType.teacher": "교사",
+        "credentialType.profilePicture": "프로필 사진",
+        "credentialType.duration": "기간",
+        "insight.tutoringOverview": "튜터링 대화에 대한 간략한 개요",
+        "insight.progressEvaluations": "튜터링 중 귀하의 진행 상황 평가",
+        "insight.sessionOverviews": "AI 튜터링 세션에 대한 서면 개요",
+        "sync.liveSyncing": "실시간 동기화",
+        "sync.selectiveSharing": "선택적 공유",
+        "status.active": "활성",
+        "status.off": "꺼짐",
+        "status.on": "켜짐",
+        "shareCredential": "공유",
+        "privacyAndData": "개인정보 및 데이터",
+        "gameAccess.title": "게임 액세스",
+        "gameAccess.success": "이제 액세스할 수 있습니다!",
+        "addGame.title": "게임 추가",
+        "addGame.subtitle": "계정 연결",
+        "transactionHistory.title": "거래 내역",
+        "testContract": "테스트 계약",
+        "testUser": "테스트 사용자",
+        "testSubtitle": "테스트 부제목"
+    },
+    "recovery": {
+        "protectAccount": "계정 보호하기",
+        "accountRecovery": "계정 복구",
+        "restoreAccess": "접근 복원",
+        "recoverAccount": "계정 복구",
+        "setupBefore": "떠나기 전에 복구를 설정하세요",
+        "setupRecovery": "이 기기에 대한 접근을 잃은 경우 돌아올 수 있도록 복구 방법을 설정하세요.",
+        "setupRecoveryDevice": "이 기기를 잃은 경우 돌아올 수 있도록 복구를 설정하세요.",
+        "temporarySession": "임시 세션입니다. 복구 방법을 설정하지 않으면 탭을 닫을 때 영구적으로 로그아웃됩니다.",
+        "recommendTwo": "최소 두 가지 복구 방법을 설정하는 것을 권장합니다.",
+        "addingMethod": "다른 방법을 추가하면 보안이 강화됩니다.",
         "done": "완료",
-        "error": {
-          "invalidEmail": "유효한 이메일을 입력하세요.",
-          "sendFailed": "동의 요청을 보내지 못했습니다. 다시 시도해 주세요."
+        "skipForNow": "지금은 건너뛰기",
+        "generating": "생성 중...",
+        "sending": "전송 중...",
+        "verifying": "확인 중...",
+        "verifyIdentity": "신원 확인",
+        "verifyCode": "코드 확인",
+        "verifyPasskey": "패스키로 확인",
+        "sendVerificationCode": "확인 코드 전송",
+        "sendRecoveryKey": "복구 키 전송",
+        "enterPassword": "백업 파일의 비밀번호를 입력하세요.",
+        "selectBackupFile": "백업 파일을 선택하세요.",
+        "validEmail": "유효한 이메일 주소를 입력하세요.",
+        "incorrectCode": "잘못된 코드입니다. 다시 시도해 주세요.",
+        "incorrectPassword": "비밀번호가 틀렸거나 데이터가 손상되었습니다. 다시 시도해 주세요.",
+        "somethingWrong": "문제가 발생했습니다. 다시 시도해 주세요.",
+        "connectionIssue": "연결 문제입니다. 인터넷을 확인하고 다시 시도해 주세요.",
+        "couldNotSave": "파일을 저장할 수 없습니다. 다시 시도해 주세요.",
+        "noPasskey": "이 기기에서 패스키를 찾을 수 없습니다.",
+        "securityUpdated": "다른 기기에서 계정 보안이 최근 업데이트되었습니다. 계속하려면 확인해 주세요.",
+        "recoveryEmailSent": "이전에 복구 이메일을 복구 주소로 보냈습니다. 해당 이메일을 열고 아래 단계를 따르세요.",
+        "copyToClipboard": "클립보드에 복사",
+        "backupCreated": "백업 파일이 생성되었습니다",
+        "saveBackupFile": "백업 파일 저장",
+        "learnCardBackup": "{{brand}} 백업",
+        "replacePasskey": "현재 패스키가 교체됩니다.",
+        "replaceEmail": "현재 복구 이메일이 교체됩니다.",
+        "generateNewPhrase": "새 구문이 생성됩니다. 이전 구문은 더 이상 작동하지 않습니다.",
+        "generateNewBackup": "새 백업 파일이 생성됩니다. 이전 백업 파일은 더 이상 작동하지 않습니다.",
+        "method.passkey": "Passkey",
+        "method.passkeyDesc": "Use Face ID, Touch ID, or similar",
+        "method.passkeySetup": "Passkey is set up",
+        "method.passkeyNotSetup": "Not set up",
+        "method.setEmail": "Email Recovery Key",
+        "method.emailDesc": "Paste the key sent to your email",
+        "method.emailSetup": "Email recovery is set up",
+        "method.phrase": "Recovery Phrase",
+        "method.phraseSaved": "Phrase is saved",
+        "method.backup": "Backup File",
+        "method.backupDesc": "Upload your backup file",
+        "action.setUpPasskey": "Set Up Passkey",
+        "action.replacePasskey": "Replace Passkey",
+        "action.settingUp": "Setting up...",
+        "action.generatePhrase": "Generate Recovery Phrase",
+        "action.generateNewPhrase": "Generate New Phrase",
+        "action.generateBackup": "Generate Backup File",
+        "action.generateNewBackup": "Generate New Backup",
+        "action.downloadBackup": "Download Backup File",
+        "action.downloadAgain": "Download Again",
+        "action.tapToChoose": "Tap to choose backup file",
+        "action.fileSelected": "File selected",
+        "action.enter": "Enter",
+        "method": {
+            "passkey": "패스키",
+            "passkeyDesc": "Face ID, Touch ID 등 사용",
+            "passkeySetup": "패스키가 설정됨",
+            "passkeyNotSetup": "설정되지 않음",
+            "setEmail": "이메일 복구 키",
+            "emailDesc": "이메일로 받은 키를 붙여넣기",
+            "emailSetup": "이메일 복구가 설정됨",
+            "phrase": "복구 구문",
+            "phraseSaved": "구문이 저장됨",
+            "backup": "백업 파일",
+            "backupDesc": "백업 파일 업로드"
+        },
+        "action": {
+            "setUpPasskey": "패스키 설정",
+            "replacePasskey": "패스키 교체",
+            "settingUp": "설정 중...",
+            "generatePhrase": "복구 구문 생성",
+            "generateNewPhrase": "새 구문 생성",
+            "generateBackup": "백업 파일 생성",
+            "generateNewBackup": "새 백업 생성",
+            "downloadBackup": "백업 파일 다운로드",
+            "downloadAgain": "다시 다운로드",
+            "tapToChoose": "탭하여 백업 파일 선택",
+            "fileSelected": "파일 선택됨",
+            "enter": "입력"
         }
-      },
-      "us": {
-        "heading": "동의 안내",
-        "description": "학습 진행 상황과 자격 증명을 수집합니다. 이는 귀하, 교사 또는 인증된 조직과 공유될 수 있습니다."
-      },
-      "parentInvite": {
-        "heading": "부모님을 {{brand}}에 초대하세요!",
-        "description": "<0>초대 공유</0> 버튼을 클릭하거나 이메일을 입력하고 <1>초대 보내기</1> 버튼을 클릭하세요.",
-        "shareInvite": "초대 공유",
-        "sendInvite": "초대 보내기",
-        "placeholder": "email@email.com",
-        "or": "또는"
-      }
     },
-    "guardianLinked": {
-      "heading": "모두 설정되었습니다!",
-      "description": "이제 <0>{{name}}</0>의 자격 증명을 관리할 수 있습니다. 향후 승인은 앱에서 직접 표시됩니다.",
-      "gotIt": "확인했습니다"
+    "alerts": {
+        "title": "알림",
+        "notifications": "알림",
+        "markAllRead": "모두 읽음으로 표시",
+        "noAlerts": "알림이 없습니다",
+        "active": "활성",
+        "archived": "보관됨",
+        "loading": "로딩...",
+        "reviewRequired": "검토 필요",
+        "newSubmission": "새 제출",
+        "appApproved": "앱 승인됨",
+        "claimed": "수령됨",
+        "accepted": "수락됨",
+        "approve": "승인",
+        "approving": "승인 중...",
+        "reject": "거부",
+        "rejecting": "거부 중...",
+        "approved": "승인됨",
+        "notApproved": "승인되지 않음",
+        "claim": "수령",
+        "accept": "수락",
+        "alreadyConnected": "이미 연결되어 있습니다.",
+        "alreadyConnectedShort": "프로필이 이미 연결됨",
+        "emptyActive": "모두 확인했습니다!",
+        "emptyArchived": "보관된 알림 없음",
+        "connectionRequest": "연결 요청",
+        "newBoost": "새 부스트",
+        "archive": "보관",
+        "delete": "삭제",
+        "confirmDelete": "이 알림을 삭제하시겠습니까?"
     },
-    "slides": {
-      "next": "다음",
-      "getStarted": "시작하기",
-      "learner": {
-        "slide1": {
-          "bold": "캡처",
-          "regular": "어디서든 학습을 캡처하세요",
-          "over13": "학습 및 업무 경험"
-        },
-        "slide2": {
-          "bold": "수집",
-          "regular": "교육 경험을 패스포트에 수집하세요"
-        },
-        "slide3": {
-          "bold": "학습",
-          "regular": "기술 및 경험에 대해 알아보세요"
-        },
-        "slide4": {
-          "bold": "레벨업",
-          "regular": "성장하는 AI 튜터로 학습을 향상시키세요"
-        }
-      },
-      "guardian": {
-        "slide1": {
-          "bold": "자녀 안내",
-          "regular": "학습 경험을 통해"
-        },
-        "slide2": {
-          "bold": "보호",
-          "regular": "동의 기반의 안전한 데이터 도구로 자녀의 개인정보 보호"
-        },
-        "slide3": {
-          "bold": "향상",
-          "regular": "AI 튜터와 학습 앱으로 자녀의 학습 향상"
-        },
-        "slide4": {
-          "bold": "통찰력 확보",
-          "regular": "자녀의 학습 여정에 대한 통찰력"
-        }
-      },
-      "teacher": {
-        "slide1": {
-          "bold": "모든 학생과 학습 데이터 정리",
-          "regular": "하나의 대시보드에서"
-        },
-        "slide2": {
-          "bold": "맞춤형 자격 증명",
-          "regular": "생성 및 관리"
-        },
-        "slide3": {
-          "bold": "수여",
-          "regular": "학습 경험에 대한 실제 증명을 학습자에게"
-        },
-        "slide4": {
-          "bold": "평가",
-          "regular": "학생의 진행 상황을 실시간으로"
-        }
-      },
-      "admin": {
-        "slide1": {
-          "bold": "생성",
-          "regular": "기술 프레임워크 및 자격 증명"
-        },
-        "slide2": {
-          "bold": "정리",
-          "regular": "학습자, 교사 및 학습 경험"
-        },
-        "slide3": {
-          "bold": "배포",
-          "regular": "사용하기 쉬운 앱으로 학습 자료 배포"
-        },
-        "slide4": {
-          "bold": "관리",
-          "regular": "데이터 공유 등을 위한 고급 도구"
-        }
-      },
-      "developer": {
-        "slide1": {
-          "bold": "구성",
-          "regular": "발급자, 동의 프로토콜 및 연결된 시스템"
-        },
-        "slide2": {
-          "bold": "통합",
-          "regular": "학교, 애플리케이션 및 데이터 소스와"
-        },
-        "slide3": {
-          "bold": "관리",
-          "regular": "엔드투엔드 데이터 흐름"
-        },
-        "slide4": {
-          "bold": "설계",
-          "regular": "맞춤형 모듈식 사용자 경험"
-        }
-      }
+    "share": {
+        "title": "공유",
+        "addContact": "연락처 추가",
+        "generateLinkFailed": "초대 링크 생성 실패",
+        "inviteLinkCopied": "초대 링크가 클립보드에 복사됨",
+        "inviteLinkCopyFailed": "초대 링크를 클립보드에 복사할 수 없음",
+        "profileLinkCopied": "프로필 링크가 클립보드에 복사됨",
+        "profileLinkCopyFailed": "프로필 링크를 클립보드에 복사할 수 없음",
+        "linkExpires": "링크가 {{time}} 후에 만료됩니다",
+        "neverExpires": "만료 없음",
+        "link": "링크"
     },
-    "country": {
-      "search": "국가 검색",
-      "title": "국가 선택"
+    "scanner": {
+        "title": "QR 코드 스캔",
+        "scanning": "스캔 중...",
+        "noCamera": "사용 가능한 카메라 없음",
+        "cameraPermission": "카메라 권한이 필요합니다",
+        "invalidCode": "유효하지 않은 QR 코드",
+        "scanAnother": "다시 스캔",
+        "done": "완료",
+        "openCamera": "카메라 열기",
+        "close": "닫기",
+        "scanQR": "QR 코드 스캔",
+        "importFromLink": "링크에서 가져오기",
+        "pasteLink": "여기에 링크 붙여넣기...",
+        "importCredential": "자격증명 가져오기",
+        "processing": "처리 중...",
+        "success": "자격증명을 성공적으로 가져왔습니다!",
+        "failed": "자격증명 가져오기 실패"
+    },
+    "error": {
+        "generic": "문제가 발생했습니다. 다시 시도해 주세요.",
+        "network": "연결 문제입니다. 인터넷을 확인하고 다시 시도해 주세요.",
+        "notFound": "페이지를 찾을 수 없습니다.",
+        "unauthorized": "이 작업을 수행할 권한이 없습니다.",
+        "sessionExpired": "세션이 만료되었습니다. 다시 로그인해 주세요.",
+        "retry": "다시 시도",
+        "goHome": "홈으로",
+        "back": "뒤로"
+    },
+    "issue": {
+        "title": "자격증명 발급",
+        "issued": "발급됨",
+        "pending": "대기 중",
+        "revoked": "취소됨",
+        "suspended": "정지됨",
+        "allStatuses": "전체",
+        "revoke": "취소",
+        "suspend": "정지",
+        "unsuspend": "재활성화",
+        "revoking": "취소 중...",
+        "suspending": "정지 중...",
+        "noIssuances": "아직 발급된 자격증명 없음",
+        "confirmRevoke": "이 자격증명을 취소하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+        "confirmSuspend": "이 자격증명을 정지하시겠습니까?",
+        "confirmUnsuspend": "이 자격증명을 재활성화하시겠습니까?",
+        "managedTab": "관리",
+        "dashboardTab": "대시보드",
+        "searchPlaceholder": "이름 또는 수령인으로 검색...",
+        "totalIssued": "총 발급",
+        "totalRevoked": "총 취소",
+        "totalPending": "총 대기 중",
+        "details": "상세",
+        "recipient": "수령인",
+        "issuedDate": "발급됨",
+        "status": "상태",
+        "actions": "작업"
+    },
+    "ai": {
+        "title": "AI",
+        "newSession": "새 주제",
+        "browseTopics": "세션 탐색...",
+        "searchSkills": "기술, 목표 또는 직업을 선택하세요...",
+        "clearSearch": "검색",
+        "noResults": "검색 결과 없음",
+        "noSharedInsights": "공유된 인사이트 없음",
+        "loading": "로딩...",
+        "loadingRoles": "역할 로딩 중...",
+        "generating": "생성 중...",
+        "error": "오류가 발생했습니다",
+        "failedToAddExperience": "경험 추가 실패",
+        "failedToResolve": "경로 자격증명 해결 실패",
+        "loginToRequest": "요청하려면 로그인하세요",
+        "getPermission": "권한 얻기",
+        "expired": "만료됨",
+        "insightsAccepted": "인사이트 요청이 이미 수락되었습니다.",
+        "insightsPending": "인사이트 요청이 이미 대기 중입니다.",
+        "manageSkills": "현재 기술 관리",
+        "chooseSkills": "현재 기술 선택",
+        "addExperience": "경험 추가",
+        "adding": "추가 중...",
+        "matchingSkill": "일치하는 기술",
+        "matchingSkills": "일치하는 기술",
+        "newSessionTitle": "새 세션 시작",
+        "sessionHistory": "세션 기록",
+        "noSessions": "아직 세션 없음",
+        "continueSession": "계속",
+        "deleteSession": "삭제",
+        "renameSession": "이름 변경",
+        "shareSession": "공유"
+    },
+    "pathways": {
+        "title": "경로",
+        "career": "경력",
+        "careerGoals": "경력 목표",
+        "jobSatisfaction": "직업 만족도",
+        "currentPosition": "현재 직위",
+        "addTitle": "전문 직함을 추가하면 여기에 경력 데이터가 표시됩니다.",
+        "exploreCourses": "프로그램 탐색",
+        "exploreCoursesAlt": "과정 탐색",
+        "courses": "과정",
+        "growth": "취업 시장 성장",
+        "decline": "취업 시장 감소",
+        "noEducationRequired": "정규 교육 불필요",
+        "noExperienceRequired": "이전 경험 불필요",
+        "alignment": "정렬",
+        "estimated": "예상",
+        "excellent": "우수",
+        "great": "매우 좋음",
+        "good": "충분함",
+        "average": "보통",
+        "belowAverage": "평균 미만",
+        "confident": "자신 있음",
+        "institution": "기관",
+        "media": "미디어",
+        "missingFields": "필수 항목 누락",
+        "skillProfile": "기술 프로필",
+        "workHistory": "근무 이력",
+        "salary": "급여",
+        "goals": "목표",
+        "saveProfile": "프로필 저장",
+        "next": "다음",
+        "back": "이전",
+        "skipForNow": "지금은 건너뛰기",
+        "addSkill": "기술 추가",
+        "removeSkill": "삭제",
+        "noSkills": "아직 추가된 기술 없음"
+    },
+    "boost": {
+        "title": "부스트",
+        "createBoost": "부스트 만들기",
+        "editBoost": "부스트 편집",
+        "deleteBoost": "부스트 삭제",
+        "claimBoost": "수령",
+        "sendBoost": "보내기",
+        "manageBoost": "관리",
+        "boostDetails": "부스트 상세",
+        "recipients": "수령인",
+        "recipientCount": "수령인 {{count}}명",
+        "noRecipients": "아직 수령인 없음",
+        "searchRecipients": "수령인 검색...",
+        "confirmDelete": "이 부스트를 삭제하시겠습니까?",
+        "image": "이미지",
+        "name": "이름",
+        "description": "설명",
+        "category": "카테고리",
+        "requirements": "요구사항",
+        "evidence": "증빙",
+        "preview": "미리보기",
+        "save": "저장",
+        "saving": "저장 중...",
+        "saved": "저장됨!",
+        "publish": "게시",
+        "publishing": "게시 중...",
+        "unpublish": "게시 취소",
+        "draft": "초안",
+        "published": "게시됨",
+        "expired": "만료됨",
+        "revoked": "취소됨",
+        "pending": "대기 중",
+        "earned": "취득",
+        "earnedTab": "취득",
+        "managedTab": "관리",
+        "searchBoosts": "부스트 검색...",
+        "noBoosts": "부스트를 찾을 수 없음",
+        "boostTemplates": "부스트 템플릿",
+        "selectTemplate": "템플릿 선택",
+        "fromScratch": "처음부터 만들기",
+        "socialBadge": "소셜 배지",
+        "achievement": "성과",
+        "skill": "기술",
+        "workHistory": "근무 이력",
+        "learningHistory": "학습 이력",
+        "accomplishment": "성취",
+        "id": "신분증",
+        "noImage": "이미지 없음",
+        "uploadImage": "이미지 업로드",
+        "changeImage": "이미지 변경"
+    },
+    "legal": {
+        "termsOfService": "서비스 약관",
+        "privacyPolicy": "개인정보 처리방침",
+        "consentLayer": "동의 레이어",
+        "consentLayerDefinition": "어떤 데이터를 어떤 앱에 얼마나 오래 연결할지 직접 결정합니다.",
+        "appEcosystem": "앱 생태계",
+        "selfCustodial": "셀프 커스토디얼 로그인.",
+        "dataOwnership": "나의 데이터는 나의 것입니다."
+    },
+    "family": {
+        "title": "가족",
+        "joinFamily": "가족 참여",
+        "addFamilyMember": "가족 구성원 추가",
+        "familyAccount": "가족 계정",
+        "switchProfile": "프로필 전환",
+        "childProfile": "자녀 프로필",
+        "parentProfile": "학부모 프로필"
+    },
+    "membership": {
+        "title": "멤버십",
+        "editNetwork": "네트워크 편집",
+        "adminPanel": "관리 패널",
+        "myHub": "내 허브",
+        "network": "네트워크",
+        "globalNetwork": "글로벌 네트워크",
+        "nationalNetwork": "국가 네트워크",
+        "globalNetworkAdmin": "글로벌 네트워크 관리자",
+        "nationalNetworkAdmin": "국가 네트워크 관리자"
     }
-  },
-  "profile": {
-    "title": "내 계정",
-    "editProfile": "프로필 편집",
-    "exportSeedPhrase": "시드 문구 내보내기",
-    "deleteAccount": "계정 삭제",
-    "connectingHandler": "핸들러 연결",
-    "save": "구하다",
-    "saving": "절약...",
-    "close": "닫다",
-    "back": "뒤쪽에",
-    "fullName": "성명",
-    "userId": "사용자 ID",
-    "emailAddress": "이메일 주소",
-    "phoneNumber": "전화 번호",
-    "country": "국가",
-    "dateOfBirth": "생일",
-    "disabled": "(장애가 있는)",
-    "age": "나이:",
-    "didLabel": "{{브랜드}} 번호(DID)",
-    "didCopied": "DID가 클립보드에 복사되었습니다.",
-    "didCopyFailed": "DID를 클립보드에 복사할 수 없습니다.",
-    "getAnAdult": "어른을 구하라",
-    "needParentGuardian": "가족 계정에 가입하려면 먼저 부모나 보호자가 있어야 가족 계정을 설정할 수 있습니다.",
-    "imAnAdult": "나는 성인이다",
-    "notifications": "알림",
-    "delete": {
-      "title": "계정을 삭제하시겠습니까?",
-      "warning": "계정을 삭제하면 {{brand}}의 신원과 모든 자격 증명이 영구적으로 삭제됩니다. <0>경고, 이 작업은 취소할 수 없습니다!</0>",
-      "confirmByTyping": "입력하여 확인하세요.",
-      "below": "아래에.",
-      "deleteForever": "영원히 삭제",
-      "loading": "로드 중...",
-      "deleting": "계정 삭제 중...",
-      "recentLoginRequired": "최근 로그인이 필요합니다!",
-      "reauthenticateHere": "여기서 재인증하세요"
-    },
-    "export": {
-      "title": "시드 문구 내보내기",
-      "warning": "경고!",
-      "masterKeyWarning": "이것은 귀하의 {{brand}}의 마스터 키입니다. 이 문구에 액세스할 수 있는 사람은 누구나 귀하의 {{brand}}와 귀하의 신원을 제어할 수 있습니다. - 공유하지 마세요. - 온라인에 저장하거나 스크린샷을 찍지 마세요. - 적어서 오프라인에 보관하세요. - 분실 시 영구적으로 접속이 불가능할 수 있습니다. <0>계속하시겠습니까?</0>",
-      "confirmByTyping": "입력하여 확인하세요.",
-      "below": "아래에.",
-      "phonePlaceholder": "전화 번호...",
-      "emailPlaceholder": "이메일...",
-      "button": "시드 문구 내보내기",
-      "revealPrompt": "이해합니다 - 내 씨앗을 공개하세요",
-      "confirm": "확인하다",
-      "cancel": "취소"
-    },
-    "email": {
-      "header": "이메일 주소",
-      "placeholder": "이메일",
-      "noEmails": "아직 추가된 이메일이 없습니다.",
-      "invalidEmail": "이메일이 없거나 유효하지 않습니다.",
-      "primary": "주요한",
-      "setAsPrimary": "기본으로 설정",
-      "remove": "제거하다",
-      "unverified": "확인되지 않음",
-      "resendVerification": "확인 이메일 다시 보내기",
-      "sending": "배상...",
-      "setPrimaryConfirm": {
-        "title": "기본 연락 방법 설정",
-        "text": "이 이메일을 기본 이메일로 설정하시겠습니까?",
-        "yes": "예",
-        "no": "아니요"
-      },
-      "removeConfirm": {
-        "title": "연락 방법 삭제",
-        "text": "이 이메일을 삭제하시겠습니까?",
-        "yes": "예",
-        "no": "아니요"
-      }
-    },
-    "phone": {
-      "header": "핸드폰",
-      "placeholder": "핸드폰",
-      "setAsPrimary": "기본으로 설정"
-    },
-    "verify": {
-      "verifying": "이메일 확인 중...",
-      "pleaseWait": "확인을 완료하는 동안 잠시만 기다려 주세요.",
-      "success": "귀하의 이메일이 성공적으로 확인되었습니다.",
-      "failed": "확인 실패",
-      "failedDesc": "이메일을 확인할 수 없습니다. 토큰이 유효하지 않거나 만료되었을 수 있습니다. 다시 시도하거나 새 확인 이메일을 요청하세요.",
-      "returnHome": "집으로 돌아가기"
-    },
-    "seed": {
-      "yourSeedPhrase": "Your Seed Phrase:",
-      "copyConfirm": "Are you sure you want to copy this to clipboard?",
-      "copiedToast": "Seed Phrase copied to clipboard",
-      "copyFailedToast": "Unable to copy seed phrase to clipboard",
-      "reveal": "Reveal My Seed",
-      "hide": "Hide My Seed",
-      "howToStore": "How to store your seed phrase safely?"
-    },
-    "setupTitle": "프로필 설정"
-  },
-  "settings": {
-    "privacyTitle": "개인정보 보호 및 데이터",
-    "minorWarning": "18세 미만 사용자에게는 일부 기능이 제한됩니다.",
-    "aiFeatures": "AI 기능",
-    "aiFeaturesDesc": "AI 튜터링 세션, 통찰력 및 개인화",
-    "analytics": "분석 및 통찰력",
-    "analyticsDesc": "익명의 사용 데이터를 통해 {{brand}} 개선에 참여해 주세요.",
-    "bugReports": "버그 보고서",
-    "bugReportsDesc": "문제 해결에 도움이 되는 충돌 보고서를 자동으로 보냅니다.",
-    "goBack": "돌아가기",
-    "notifications": {
-      "title": "알림 설정 편집",
-      "connectionRequests": {
-        "title": "새로운 연결 요청",
-        "description": "누군가 귀하의 코드를 스캔하거나 귀하의 사용자 링크를 클릭하면 귀하가 수락하거나 거부할 수 있는 네트워크 요청이 시작됩니다."
-      },
-      "newBoosts": {
-        "title": "새로운 부스트",
-        "description": "부스트에는 기술, ID, 업적, 학습 기록, 작업 기록, 통화 및 배지를 포함한 모든 유형의 자격 증명이 포함됩니다."
-      },
-      "prompt": {
-        "title": "최신 소식을 확인하시겠습니까?",
-        "description": "다음에 대한 푸시 알림 수신:",
-        "details": "새로운 연결 요청, 새로운 부스트(업적, 자격증명, 배지 등).",
-        "continue": "계속하다",
-        "notYet": "아직 아님",
-        "privacyPolicy": "개인 정보 보호 정책",
-        "termsOfService": "서비스 약관"
-      }
-    },
-    "privacy": {
-      "profilePrivacy": "프로필 개인정보",
-      "profilePrivacyDesc": "네트워크의 다른 사용자에게 {{brand}} 프로필이 표시되는 방식을 관리하세요.",
-      "profileVisibility": "프로필 공개 범위",
-      "profileVisibilityDesc": "프로필 세부정보를 볼 수 있는 사람을 선택하세요.",
-      "visibilityPublic": "공개",
-      "visibilityConnectionsOnly": "연결된 사람만",
-      "visibilityPrivate": "비공개",
-      "showEmail": "연결에 이메일 표시",
-      "showEmailDesc": "연결된 사용자가 프로필에서 이메일 주소를 볼 수 있도록 허용합니다.",
-      "connectionRequests": "연결 요청",
-      "connectionRequestsDesc": "새 연결 요청을 보낼 수 있는 사람을 결정하세요.",
-      "connectionRequestsAnyone": "모든 사람",
-      "connectionRequestsInviteOnly": "초대만 가능",
-      "unableToUpdate": "개인정보 설정을 업데이트할 수 없습니다."
-    }
-  },
-  "contacts": {
-    "title": "연락처",
-    "addContact": "연락처 추가",
-    "addContactDesc": "연락처 추가",
-    "scanCode": "코드 스캔",
-    "showCode": "코드 표시",
-    "shareCode": "코드 공유",
-    "search": "검색",
-    "back": "뒤로",
-    "cancel": "취소",
-    "confirm": "확인",
-    "connect": "연결",
-    "accept": "수락",
-    "acceptRequest": "요청 수락",
-    "requestConnection": "연결 요청",
-    "sendRequest": "요청 보내기",
-    "cancelRequest": "요청 취소",
-    "connectionSent": "연결 요청이 전송되었습니다",
-    "connectedSuccessfully": "성공적으로 연결됨",
-    "connectionPending": "요청 대기 중",
-    "connectionAlreadyRequested": "이미 연결을 요청했습니다",
-    "inviteExpired": "초대 링크가 만료되었습니다!",
-    "inviteNotFound": "초대를 찾을 수 없거나 만료되었습니다",
-    "loading": "로딩...",
-    "returnHome": "홈으로 돌아가기",
-    "contact": "연락처",
-    "removeContact": "연락처 삭제",
-    "unblock": "차단 해제",
-    "unblockContact": "연락처 차단 해제",
-    "noBlockedUsers": "차단된 사용자가 없습니다",
-    "noPendingConnections": "대기 중인 연결이 없습니다",
-    "linkCopied": "연락처 링크가 클립보드에 복사되었습니다",
-    "linkCopyFailed": "연락처 링크를 복사할 수 없습니다",
-    "didCopyFailed": "DID를 클립보드에 복사할 수 없습니다",
-    "connectionRequests": "연결 요청",
-    "pendingConnections": "대기 중",
-    "blockedContacts": "차단됨",
-    "allContacts": "전체",
-    "boost": "부스트",
-    "claimed": "획득함",
-    "joined": "가입함",
-    "saving": "저장 중...",
-    "joining": "가입 중...",
-    "acceptBoost": "수락",
-    "joinBoost": "가입",
-    "notification": "알림",
-    "okay": "확인",
-    "results": "결과",
-    "result": "결과",
-    "confirmSendRequest": "연결 요청을 보내시겠습니까?",
-    "confirmCancelRequest": "연결 요청을 취소하시겠습니까?",
-    "confirmAcceptRequest": "연결 요청을 수락하시겠습니까?",
-    "confirmUnblock": "이 사용자의 차단을 해제하시겠습니까?",
-    "confirmRemoveConnection": "이 연결을 삭제하시겠습니까?",
-    "confirmBlock": "이 사용자를 차단하시겠습니까?"
-  },
-  "consentFlow": {
-    "title": "동의",
-    "accept": "수락",
-    "acceptAndSync": "수락 및 동기화",
-    "accepted": "수락됨",
-    "acceptingContract": "계약 수락 중...",
-    "back": "뒤로",
-    "cancel": "취소",
-    "close": "닫기",
-    "continue": "계속",
-    "continuePlaying": "계속하기",
-    "continueToGame": "게임으로 계속",
-    "launchGame": "게임 시작",
-    "deny": "거부",
-    "denyAccess": "액세스 거부",
-    "allowAccess": "액세스 허용",
-    "allow": "허용",
-    "allowing": "허용 중...",
-    "disconnecting": "연결 해제 중...",
-    "disconnect": "연결 해제",
-    "saving": "저장 중...",
-    "save": "저장",
-    "syncing": "동기화 중...",
-    "synced": "동기화됨",
-    "withdraw": "철회",
-    "update": "업데이트",
-    "write": "쓰기",
-    "hidden": "숨김",
-    "anonymized": "익명화됨",
-    "selectPlayer": "플레이어 선택",
-    "shareInsights": "인사이트 공유",
-    "networkError": "네트워크 오류",
-    "tryAgain": "다시 시도",
-    "nothingFound": "결과 없음",
-    "unknown": "알 수 없음",
-    "errorLoading": "이 동의 흐름을 로드하는 중 문제가 발생했습니다.",
-    "notExists": "이 동의 흐름이 존재하지 않거나 더 이상 사용할 수 없습니다.",
-    "receivedCredential": "자격 증명을 받았습니다.",
-    "updatedTerms": "약관을 업데이트했습니다.",
-    "credentialType.achievement": "성취",
-    "credentialType.skill": "기술",
-    "credentialType.membership": "멤버십",
-    "credentialType.socialBadge": "소셜 뱃지",
-    "credentialType.workHistory": "경력",
-    "credentialType.teacher": "교사",
-    "credentialType.profilePicture": "프로필 사진",
-    "credentialType.duration": "기간",
-    "insight.tutoringOverview": "튜터링 대화에 대한 간략한 개요",
-    "insight.progressEvaluations": "튜터링 중 귀하의 진행 상황 평가",
-    "insight.sessionOverviews": "AI 튜터링 세션에 대한 서면 개요",
-    "sync.liveSyncing": "실시간 동기화",
-    "sync.selectiveSharing": "선택적 공유",
-    "status.active": "활성",
-    "status.off": "꺼짐",
-    "status.on": "켜짐",
-    "shareCredential": "공유",
-    "privacyAndData": "개인정보 및 데이터",
-    "gameAccess.title": "게임 액세스",
-    "gameAccess.success": "이제 액세스할 수 있습니다!",
-    "addGame.title": "게임 추가",
-    "addGame.subtitle": "계정 연결",
-    "transactionHistory.title": "거래 내역",
-    "testContract": "테스트 계약",
-    "testUser": "테스트 사용자",
-    "testSubtitle": "테스트 부제목"
-  },
-  "recovery": {
-    "protectAccount": "Protect Your Account",
-    "accountRecovery": "Account Recovery",
-    "restoreAccess": "Restore Access",
-    "recoverAccount": "Recover Account",
-    "setupBefore": "Set up recovery before you leave",
-    "setupRecovery": "Set up a recovery method so you can get back in if you lose access to this device.",
-    "setupRecoveryDevice": "Set up recovery so you can get back in if you lose this device.",
-    "temporarySession": "This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.",
-    "recommendTwo": "We recommend setting up at least two recovery methods.",
-    "addingMethod": "Adding another method improves your security.",
-    "done": "Done",
-    "skipForNow": "Skip for Now",
-    "generating": "Generating...",
-    "sending": "Sending...",
-    "verifying": "Verifying...",
-    "verifyIdentity": "Verify Your Identity",
-    "verifyCode": "Verify Code",
-    "verifyPasskey": "Verify with Passkey",
-    "sendVerificationCode": "Send Verification Code",
-    "sendRecoveryKey": "Send Recovery Key",
-    "enterPassword": "Please enter the password for your backup file.",
-    "selectBackupFile": "Please select your backup file.",
-    "validEmail": "Please enter a valid email address.",
-    "incorrectCode": "Incorrect code. Please try again.",
-    "incorrectPassword": "Incorrect password or corrupted data. Please try again.",
-    "somethingWrong": "Something went wrong. Please try again.",
-    "connectionIssue": "Connection issue. Please check your internet and try again.",
-    "couldNotSave": "Could not save the file. Please try again.",
-    "noPasskey": "No passkey found on this device.",
-    "securityUpdated": "Your account security was recently updated on another device. Please verify to continue.",
-    "recoveryEmailSent": "We previously sent a recovery email to your recovery address. Open that email and follow the steps below.",
-    "copyToClipboard": "Copy to Clipboard",
-    "backupCreated": "Backup file created",
-    "saveBackupFile": "Save your backup file",
-    "learnCardBackup": "{{brand}} Backup",
-    "replacePasskey": "This will replace your current passkey.",
-    "replaceEmail": "This will replace your current recovery email.",
-    "generateNewPhrase": "This will generate a new phrase. Your previous phrase will no longer work.",
-    "generateNewBackup": "This will generate a new backup file. Your previous backup file will no longer work.",
-    "method.passkey": "Passkey",
-    "method.passkeyDesc": "Use Face ID, Touch ID, or similar",
-    "method.passkeySetup": "Passkey is set up",
-    "method.passkeyNotSetup": "Not set up",
-    "method.setEmail": "Email Recovery Key",
-    "method.emailDesc": "Paste the key sent to your email",
-    "method.emailSetup": "Email recovery is set up",
-    "method.phrase": "Recovery Phrase",
-    "method.phraseSaved": "Phrase is saved",
-    "method.backup": "Backup File",
-    "method.backupDesc": "Upload your backup file",
-    "action.setUpPasskey": "Set Up Passkey",
-    "action.replacePasskey": "Replace Passkey",
-    "action.settingUp": "Setting up...",
-    "action.generatePhrase": "Generate Recovery Phrase",
-    "action.generateNewPhrase": "Generate New Phrase",
-    "action.generateBackup": "Generate Backup File",
-    "action.generateNewBackup": "Generate New Backup",
-    "action.downloadBackup": "Download Backup File",
-    "action.downloadAgain": "Download Again",
-    "action.tapToChoose": "Tap to choose backup file",
-    "action.fileSelected": "File selected",
-    "action.enter": "Enter"
-  },
-  "alerts": {
-    "title": "Alerts",
-    "notifications": "Notifications",
-    "markAllRead": "Mark all as read",
-    "noAlerts": "No alerts yet",
-    "active": "Active",
-    "archived": "Archived",
-    "loading": "Loading...",
-    "reviewRequired": "Review Required",
-    "newSubmission": "New Submission",
-    "appApproved": "App Approved",
-    "claimed": "Claimed",
-    "accepted": "Accepted",
-    "approve": "Approve",
-    "approving": "Approving...",
-    "reject": "Reject",
-    "rejecting": "Rejecting...",
-    "approved": "Approved",
-    "notApproved": "Not Approved",
-    "claim": "Claim",
-    "accept": "Accept",
-    "alreadyConnected": "You are already connected.",
-    "alreadyConnectedShort": "Profiles are already connected",
-    "emptyActive": "You're all caught up!",
-    "emptyArchived": "No archived alerts",
-    "connectionRequest": "Connection Request",
-    "newBoost": "New Boost",
-    "archive": "Archive",
-    "delete": "Delete",
-    "confirmDelete": "Delete this notification?"
-  },
-  "share": {
-    "title": "Share",
-    "addContact": "Add contact",
-    "generateLinkFailed": "Failed to generate invite link",
-    "inviteLinkCopied": "Invite link copied to clipboard",
-    "inviteLinkCopyFailed": "Unable to copy Invite link to clipboard",
-    "profileLinkCopied": "Profile link copied to clipboard",
-    "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
-    "linkExpires": "Link expires in {{time}}",
-    "neverExpires": "Never expires",
-    "link": "Link"
-  },
-  "scanner": {
-    "title": "Scan QR Code",
-    "scanning": "Scanning...",
-    "noCamera": "No camera available",
-    "cameraPermission": "Camera permission required",
-    "invalidCode": "Invalid QR code",
-    "scanAnother": "Scan Another",
-    "done": "Done",
-    "openCamera": "Open Camera",
-    "close": "Close",
-    "scanQR": "Scan QR Code",
-    "importFromLink": "Import from Link",
-    "pasteLink": "Paste link here...",
-    "importCredential": "Import Credential",
-    "processing": "Processing...",
-    "success": "Credential imported successfully!",
-    "failed": "Failed to import credential"
-  },
-  "error": {
-    "generic": "Something went wrong. Please try again.",
-    "network": "Connection issue. Please check your internet and try again.",
-    "notFound": "Page not found.",
-    "unauthorized": "You don't have permission to do this.",
-    "sessionExpired": "Your session has expired. Please sign in again.",
-    "retry": "Try Again",
-    "goHome": "Go Home",
-    "back": "Go Back"
-  },
-  "issue": {
-    "title": "Issue Credentials",
-    "issued": "Issued",
-    "pending": "Pending",
-    "revoked": "Revoked",
-    "suspended": "Suspended",
-    "allStatuses": "All",
-    "revoke": "Revoke",
-    "suspend": "Suspend",
-    "unsuspend": "Unsuspend",
-    "revoking": "Revoking...",
-    "suspending": "Suspending...",
-    "noIssuances": "No credentials issued yet",
-    "confirmRevoke": "Are you sure you want to revoke this credential? This action cannot be undone.",
-    "confirmSuspend": "Are you sure you want to suspend this credential?",
-    "confirmUnsuspend": "Are you sure you want to reactivate this credential?",
-    "managedTab": "Managed",
-    "dashboardTab": "Dashboard",
-    "searchPlaceholder": "Search by name or recipient...",
-    "totalIssued": "Total Issued",
-    "totalRevoked": "Total Revoked",
-    "totalPending": "Total Pending",
-    "details": "Details",
-    "recipient": "Recipient",
-    "issuedDate": "Issued",
-    "status": "Status",
-    "actions": "Actions"
-  },
-  "ai": {
-    "title": "AI",
-    "newSession": "New Topic",
-    "browseTopics": "Browse sessions...",
-    "searchSkills": "Choose a skill, goal, or job...",
-    "clearSearch": "Search",
-    "noResults": "No Search Results",
-    "noSharedInsights": "No Shared Insights",
-    "loading": "Loading...",
-    "loadingRoles": "Loading roles...",
-    "generating": "Generating...",
-    "error": "An error occurred",
-    "failedToAddExperience": "Failed to add experience",
-    "failedToResolve": "Failed to resolve pathway credential",
-    "loginToRequest": "Login to Request",
-    "getPermission": "Get Permission",
-    "expired": "Expired",
-    "insightsAccepted": "Insights request already accepted.",
-    "insightsPending": "Insights request already pending.",
-    "manageSkills": "Manage your current skills",
-    "chooseSkills": "Choose your current skills",
-    "addExperience": "Add Experience",
-    "adding": "Adding...",
-    "matchingSkill": "Matching Skill",
-    "matchingSkills": "Matching Skills",
-    "newSessionTitle": "Start a new session",
-    "sessionHistory": "Session History",
-    "noSessions": "No sessions yet",
-    "continueSession": "Continue",
-    "deleteSession": "Delete",
-    "renameSession": "Rename",
-    "shareSession": "Share"
-  },
-  "pathways": {
-    "title": "Pathways",
-    "career": "Career",
-    "careerGoals": "Career Goals",
-    "jobSatisfaction": "Job Satisfaction",
-    "currentPosition": "Current position",
-    "addTitle": "Add a professional title to see career data here.",
-    "exploreCourses": "Explore Programs",
-    "exploreCoursesAlt": "Explore Courses",
-    "courses": "Courses",
-    "growth": "Growth in the Job Market",
-    "decline": "Decline in the Job Market",
-    "noEducationRequired": "No formal education required",
-    "noExperienceRequired": "No prior experience required",
-    "alignment": "Alignment",
-    "estimated": "Estimated",
-    "excellent": "Excellent",
-    "great": "Great",
-    "good": "Good Enough",
-    "average": "Average",
-    "belowAverage": "Below Average",
-    "confident": "Confident",
-    "institution": "Institution",
-    "media": "Media",
-    "missingFields": "Missing required fields",
-    "skillProfile": "Skills Profile",
-    "workHistory": "Work History",
-    "salary": "Salary",
-    "goals": "Goals",
-    "saveProfile": "Save Profile",
-    "next": "Next",
-    "back": "Back",
-    "skipForNow": "Skip for Now",
-    "addSkill": "Add Skill",
-    "removeSkill": "Remove",
-    "noSkills": "No skills added yet"
-  },
-  "boost": {
-    "title": "Boosts",
-    "createBoost": "Create Boost",
-    "editBoost": "Edit Boost",
-    "deleteBoost": "Delete Boost",
-    "claimBoost": "Claim",
-    "sendBoost": "Send",
-    "manageBoost": "Manage",
-    "boostDetails": "Boost Details",
-    "recipients": "Recipients",
-    "recipientCount": "{{count}} recipient(s)",
-    "noRecipients": "No recipients yet",
-    "searchRecipients": "Search recipients...",
-    "confirmDelete": "Are you sure you want to delete this boost?",
-    "image": "Image",
-    "name": "Name",
-    "description": "Description",
-    "category": "Category",
-    "requirements": "Requirements",
-    "evidence": "Evidence",
-    "preview": "Preview",
-    "save": "Save",
-    "saving": "Saving...",
-    "saved": "Saved!",
-    "publish": "Publish",
-    "publishing": "Publishing...",
-    "unpublish": "Unpublish",
-    "draft": "Draft",
-    "published": "Published",
-    "expired": "Expired",
-    "revoked": "Revoked",
-    "pending": "Pending",
-    "earned": "Earned",
-    "earnedTab": "Earned",
-    "managedTab": "Managed",
-    "searchBoosts": "Search boosts...",
-    "noBoosts": "No boosts found",
-    "boostTemplates": "Boost Templates",
-    "selectTemplate": "Select a template",
-    "fromScratch": "Start from scratch",
-    "socialBadge": "Social Badge",
-    "achievement": "Achievement",
-    "skill": "Skill",
-    "workHistory": "Work History",
-    "learningHistory": "Learning History",
-    "accomplishment": "Accomplishment",
-    "id": "ID",
-    "noImage": "No image set",
-    "uploadImage": "Upload Image",
-    "changeImage": "Change Image"
-  },
-  "legal": {
-    "termsOfService": "Terms of Service",
-    "privacyPolicy": "Privacy Policy",
-    "consentLayer": "Consent Layer",
-    "consentLayerDefinition": "You decide what data connects to which apps, and for how long.",
-    "appEcosystem": "App Ecosystem",
-    "selfCustodial": "Self-custodial login.",
-    "dataOwnership": "You own your own data."
-  },
-  "family": {
-    "title": "Families",
-    "joinFamily": "Join Family",
-    "addFamilyMember": "Add Family Member",
-    "familyAccount": "Family Account",
-    "switchProfile": "Switch Profile",
-    "childProfile": "Child Profile",
-    "parentProfile": "Parent Profile"
-  },
-  "membership": {
-    "title": "Membership",
-    "editNetwork": "Edit Network",
-    "adminPanel": "Admin Panel",
-    "myHub": "My Hub",
-    "network": "Network",
-    "globalNetwork": "Global Network",
-    "nationalNetwork": "National Network",
-    "globalNetworkAdmin": "Global Network Admin",
-    "nationalNetworkAdmin": "National Network Admin"
-  }
 }
