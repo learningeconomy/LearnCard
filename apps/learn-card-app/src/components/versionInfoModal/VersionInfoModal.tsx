@@ -25,7 +25,7 @@
  * CapacitorUpdater plugin are hidden rather than rendered as "—".
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     chevronDownOutline,
@@ -770,7 +770,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
         }
     };
 
-    const loadChannels = async (force = false): Promise<void> => {
+    const loadChannels = useCallback(async (force = false): Promise<void> => {
         setChannelsLoading(true);
         setChannelsError(null);
 
@@ -792,13 +792,13 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
         } finally {
             setChannelsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (!showChannelPicker || channels !== null || channelsLoading) return;
 
         void loadChannels();
-    }, [showChannelPicker, channels, channelsLoading]);
+    }, [showChannelPicker, channels, channelsLoading, loadChannels]);
 
     /**
      * Switch the device to a different Capgo channel.

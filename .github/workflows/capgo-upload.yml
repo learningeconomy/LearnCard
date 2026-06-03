@@ -139,23 +139,35 @@ jobs:
                   VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
                   VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-            # Ensure the channel exists. Capgo's `channel add` is idempotent — it
-            # returns success if the channel already exists. Without this, the
-            # very first PR-preview upload for a fresh `pr-<n>` channel fails.
+            # Ensure the channel exists before uploading. `channel add` errors if
+            # the channel already exists, so swallow only that case — auth, network,
+            # and invalid-id errors must still fail the job. Secret is passed via env
+            # (CAPGO_TOKEN) rather than --apikey to keep it out of process listings.
             - name: Ensure CapGo channel exists
-              run: >-
-                  npx @capgo/cli@latest channel add
-                  ${{ inputs.channel }}
-                  ${{ inputs.app_id }}
-                  --apikey ${{ secrets.CAPGO_TOKEN }}
-                  || true
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+              run: |
+                  set -o pipefail
+                  if ! OUTPUT=$(npx @capgo/cli@latest channel add \
+                      "${{ inputs.channel }}" \
+                      "${{ inputs.app_id }}" 2>&1); then
+                      echo "$OUTPUT"
+                      if echo "$OUTPUT" | grep -qiE 'already exist'; then
+                          echo "Channel already exists — continuing."
+                      else
+                          exit 1
+                      fi
+                  else
+                      echo "$OUTPUT"
+                  fi
 
             - name: Upload bundle (CapGo)
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
               run: >-
                   npx @capgo/cli@latest bundle upload
                   ${{ inputs.app_id }}
                   --delta
-                  --apikey ${{ secrets.CAPGO_TOKEN }}
                   --path ${{ inputs.build_path }}
                   --channel ${{ inputs.channel }}
                   --bundle ${{ inputs.version }}
@@ -164,9 +176,10 @@ jobs:
 
             - name: Set channel default (CapGo)
               if: inputs.self_assign == 'true'
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
               run: >-
                   npx @capgo/cli@latest channel set ${{ inputs.channel }}
-                  --apikey ${{ secrets.CAPGO_TOKEN }}
                   --bundle ${{ inputs.version }}
                   --self-assign
                   ${{ inputs.app_id }}
