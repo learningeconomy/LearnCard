@@ -77,6 +77,7 @@ export default async (request: Request, context: Context) => {
 
     // If the client is an interoperable wallet asking for JSON data
     if (acceptHeader?.includes('application/json')) {
+        // Interoperable wallet requested JSON — return VC-API protocol endpoint
         console.log(
             `Fetching protocols for interaction ID: ${interactionId} (tenant: ${tenantOrigin})`
         );
