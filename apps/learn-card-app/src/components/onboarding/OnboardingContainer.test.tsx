@@ -38,7 +38,7 @@ const createDeferred = <T,>() => {
     return { promise, resolve, reject };
 };
 
-const setupNewKeyDeferred = createDeferred<boolean>();
+let setupNewKeyDeferred = createDeferred<boolean>();
 
 vi.mock('learn-card-base', () => ({
     ModalTypes: { FullScreen: 'full-screen', Center: 'center' },
@@ -167,6 +167,7 @@ describe('OnboardingContainer school-code bypass', () => {
         mockAuthState = { status: 'needs_setup' };
         mockCurrentLCNUser = null;
         mockCurrentLCNUserLoading = false;
+        setupNewKeyDeferred = createDeferred<boolean>();
 
         vi.stubGlobal('localStorage', {
             getItem: vi.fn(() => null),
@@ -242,6 +243,32 @@ describe('OnboardingContainer school-code bypass', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('onboarding-network-form')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByTestId('age-gate')).toBeNull();
+    });
+
+    it('keeps a freshly keyed user on selectRole when no LCN profile exists yet', async () => {
+        mockCalculateAge.mockReturnValue(18);
+
+        render(<OnboardingContainer />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'set dob' }));
+        fireEvent.click(screen.getByRole('button', { name: 'set country' }));
+        fireEvent.click(screen.getByRole('button', { name: 'continue' }));
+
+        await waitFor(() => {
+            expect(mockGenerateEd25519PrivateKey).toHaveBeenCalledTimes(1);
+            expect(mockSetupNewKey).toHaveBeenCalledTimes(1);
+        });
+
+        await act(async () => {
+            mockAuthState = { status: 'ready' };
+            setupNewKeyDeferred.resolve(true);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
         });
 
         expect(screen.queryByTestId('age-gate')).toBeNull();

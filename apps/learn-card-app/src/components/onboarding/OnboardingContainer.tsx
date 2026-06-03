@@ -100,6 +100,10 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             return;
         }
 
+        if (!currentLCNUser) {
+            return;
+        }
+
         if (!currentLCNUserDob || !currentLCNUserCountry) {
             setStep(OnboardingStepsEnum.ageGate);
         }
