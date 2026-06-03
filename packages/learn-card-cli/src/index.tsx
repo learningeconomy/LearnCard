@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import dns from 'node:dns';
+import { createInterface } from 'node:readline/promises';
+import { Writable } from 'node:stream';
 
 import repl from 'pretty-repl';
 import { getTestCache } from '@learncard/core';
@@ -17,6 +19,17 @@ import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
 import { getRenderMethodPlugin } from '@learncard/render-method-plugin';
 
 import { generateRandomSeed } from './random';
+import {
+    createLearnCardBundle,
+    exportLearnCardBundle as writeLearnCardBundle,
+    importLearnCardBundle,
+    readLearnCardBundle,
+    restoreLearnCardFromBundle as restoreBundle,
+} from '@learncard/holder-continuity';
+import {
+    createExportLearnCardBundleHelper,
+    createRestoreLearnCardFromBundleHelper,
+} from './replHelpers';
 
 import packageJson from '../package.json';
 
@@ -30,7 +43,13 @@ const g = {
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
     types: gradient(['cyan', 'green'])('types'),
+    getLearnCardBundlePassword: gradient(['cyan', 'green'])('getLearnCardBundlePassword'),
     copy: gradient(['cyan', 'green'])('copy'),
+    exportLearnCardBundle: gradient(['cyan', 'green'])('exportLearnCardBundle'),
+    importLearnCardBundle: gradient(['cyan', 'green'])('importLearnCardBundle'),
+    createLearnCardBundle: gradient(['cyan', 'green'])('createLearnCardBundle'),
+    readLearnCardBundle: gradient(['cyan', 'green'])('readLearnCardBundle'),
+    restoreLearnCardFromBundle: gradient(['cyan', 'green'])('restoreLearnCardFromBundle'),
 };
 
 const copyFunction = (text: string | object | number) => {
@@ -44,7 +63,28 @@ const copyFunction = (text: string | object | number) => {
         clipboard.writeSync(text);
         console.log('Copied to clipboard!');
     } catch (error) {
-        console.error('Failed to copy to clipboard:', error instanceof Error ? error.message : 'Unknown error');
+        console.error(
+            'Failed to copy to clipboard:',
+            error instanceof Error ? error.message : 'Unknown error'
+        );
+    }
+};
+
+const getLearnCardBundlePassword = async (prompt = 'Bundle password: '): Promise<string> => {
+    process.stdout.write(prompt);
+
+    const mutedOutput = new Writable({
+        write(_chunk, _encoding, callback) {
+            callback();
+        },
+    });
+    const rl = createInterface({ input: process.stdin, output: mutedOutput, terminal: true });
+
+    try {
+        return await rl.question('');
+    } finally {
+        rl.close();
+        process.stdout.write('\n');
     }
 };
 
@@ -69,13 +109,15 @@ program
         globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
 
+        const didkit = fs.readFile(
+            require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+        );
+
         const _learnCard = await initLearnCard({
             seed,
             network: true,
             allowRemoteContexts: true,
-            didkit: fs.readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
-            ),
+            didkit,
         });
 
         const simpleSigningLc = await _learnCard.addPlugin(
@@ -102,6 +144,23 @@ program
         globalThis.getTestCache = getTestCache;
 
         globalThis.copy = copyFunction;
+        globalThis.getLearnCardBundlePassword = getLearnCardBundlePassword;
+        globalThis.exportLearnCardBundle = createExportLearnCardBundleHelper(
+            writeLearnCardBundle,
+            globalThis.learnCard
+        );
+
+        globalThis.restoreLearnCardFromBundle = createRestoreLearnCardFromBundleHelper(
+            restoreBundle,
+            {
+                network: true,
+                allowRemoteContexts: true,
+                didkit,
+            }
+        );
+        globalThis.importLearnCardBundle = importLearnCardBundle;
+        globalThis.createLearnCardBundle = createLearnCardBundle;
+        globalThis.readLearnCardBundle = readLearnCardBundle;
 
         // delete 'Creating wallet...' message
         process.stdout.moveCursor?.(0, -1);
@@ -109,18 +168,22 @@ program
 
         console.log('Wallet created!\n');
 
-        console.log('┌────────────────────────────────────────────────────┐');
-        console.log('│                Variables Available                 │');
-        console.log('├────────────────────┬───────────────────────────────┤');
-        console.log('│      Variable      │           Description         │');
-        console.log('├────────────────────┼───────────────────────────────┤');
-        console.log(`│          ${g.learnCard} │ Learn Card Wallet             │`);
-        console.log(`│      ${g.initLearnCard} │ Wallet Instantiation Function │`);
-        console.log(`│               ${g.seed} │ Seed used to generate wallet  │`);
-        console.log(`│ ${g.generateRandomSeed} │ Generates a random seed       │`);
-        console.log(`│              ${g.types} │ Helpful zod validators        │`);
-        console.log(`│              ${g.copy}  │ Copy text to clipboard        │`);
-        console.log('└────────────────────┴───────────────────────────────┘');
+        console.log('┌───────────────────────────────────────────────────────────────┐');
+        console.log('│                        Variables Available                    │');
+        console.log('├────────────────────────────┬──────────────────────────────────┤');
+        console.log('│      Variable              │             Description          │');
+        console.log('├────────────────────────────┼──────────────────────────────────┤');
+        console.log(`│                  ${g.learnCard} │ Learn Card Wallet                │`);
+        console.log(`│              ${g.initLearnCard} │ Wallet Instantiation Function    │`);
+        console.log(`│                       ${g.seed} │ Seed used to generate wallet     │`);
+        console.log(`│         ${g.generateRandomSeed} │ Generates a random seed          │`);
+        console.log(`│                      ${g.types} │ Helpful zod validators           │`);
+        console.log(`│                       ${g.copy} │ Copy text to clipboard           │`);
+        console.log(`│ ${g.getLearnCardBundlePassword} │ Prompt for bundle password      │`);
+        console.log(`│      ${g.exportLearnCardBundle} │ Export wallet continuity ZIP     │`);
+        console.log(`│      ${g.importLearnCardBundle} │ Import continuity ZIP            │`);
+        console.log(`│ ${g.restoreLearnCardFromBundle} │ Restore original wallet from ZIP │`);
+        console.log('└────────────────────────────┴──────────────────────────────────┘');
 
         console.log('');
 
@@ -132,28 +195,45 @@ program
 
         console.log("To get a feel for what's possible, try some of the following commands\n");
 
-        console.log('┌─────────────────────────┬────────────────────────────────────────────────┐');
-        console.log('│        Description      │                    Command                     │');
-        console.log('├─────────────────────────┼────────────────────────────────────────────────┤');
         console.log(
-            `│           View your did │ ${g.learnCard}.id.did();                            │`
+            '┌─────────────────────────┬───────────────────────────────────────────────────────────────────────────────────┐'
         );
         console.log(
-            `│ Generate an unsigned VC │ ${g.learnCard}.invoke.getTestVc();                  │`
+            '│        Description      │                       Command                                                     │'
         );
         console.log(
-            `│       Issue a signed VC │ await ${g.learnCard}.invoke.issueCredential(uvc);   │`
+            '├─────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤'
         );
         console.log(
-            `│      Verify a signed VC │ await ${g.learnCard}.invoke.verifyCredential(vc);   │`
+            `│           View your did │ ${g.learnCard}.id.did();                                                               │`
         );
         console.log(
-            `│       Issue a signed VP │ await ${g.learnCard}.invoke.issuePresentation(vc);  │`
+            `│ Generate an unsigned VC │ ${g.learnCard}.invoke.getTestVc();                                                     │`
         );
         console.log(
-            `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp); │`
+            `│       Issue a signed VC │ await ${g.learnCard}.invoke.issueCredential(uvc);                                      │`
         );
-        console.log('└─────────────────────────┴────────────────────────────────────────────────┘');
+        console.log(
+            `│      Verify a signed VC │ await ${g.learnCard}.invoke.verifyCredential(vc);                                      │`
+        );
+        console.log(
+            `│       Issue a signed VP │ await ${g.learnCard}.invoke.issuePresentation(vc);                                     │`
+        );
+        console.log(
+            `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp);                                    │`
+        );
+        console.log(
+            `│  Prompt bundle password │ const password = await ${g.getLearnCardBundlePassword}();                         │`
+        );
+        console.log(
+            `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password }); │`
+        );
+        console.log(
+            `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password });                │`
+        );
+        console.log(
+            '└─────────────────────────┴───────────────────────────────────────────────────────────────────────────────────┘'
+        );
 
         console.log('');
 
@@ -166,7 +246,13 @@ program
                     .replace('learnCard', g.learnCard)
                     .replace('seed', g.seed)
                     .replace('generateRandomSeed', g.generateRandomSeed)
-                    .replace('copy', g.copy);
+                    .replace('copy', g.copy)
+                    .replace('getLearnCardBundlePassword', g.getLearnCardBundlePassword)
+                    .replace('exportLearnCardBundle', g.exportLearnCardBundle)
+                    .replace('importLearnCardBundle', g.importLearnCardBundle)
+                    .replace('createLearnCardBundle', g.createLearnCardBundle)
+                    .replace('readLearnCardBundle', g.readLearnCardBundle)
+                    .replace('restoreLearnCardFromBundle', g.restoreLearnCardFromBundle);
             },
         });
     })

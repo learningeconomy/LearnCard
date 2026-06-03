@@ -1476,6 +1476,37 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@22.19.1)(happy-dom@20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(jsdom@25.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
 
+  packages/holder-continuity-bundle:
+    dependencies:
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../learn-card-init
+      '@learncard/sss-key-manager':
+        specifier: workspace:*
+        version: link:../sss-key-manager
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../learn-card-types
+      jszip:
+        specifier: ^3.10.1
+        version: 3.10.1
+    devDependencies:
+      '@types/node':
+        specifier: ^18.19.68
+        version: 18.19.130
+      esbuild:
+        specifier: ^0.27.1
+        version: 0.27.4
+      shx:
+        specifier: ^0.3.4
+        version: 0.3.4
+      typescript:
+        specifier: 5.6.2
+        version: 5.6.2
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@18.19.130)(happy-dom@20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(jsdom@25.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
+
   packages/lca-api-client:
     dependencies:
       '@trpc/client':
@@ -1805,6 +1836,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../plugins/didkit
+      '@learncard/holder-continuity':
+        specifier: workspace:*
+        version: link:../holder-continuity-bundle
       '@learncard/init':
         specifier: workspace:^
         version: link:../learn-card-init
@@ -1869,6 +1903,9 @@ importers:
       ts-node:
         specifier: ^10.8.1
         version: 10.9.2(@swc/core@1.15.2(@swc/helpers@0.5.17))(@types/node@18.19.130)(typescript@5.6.2)
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@18.19.130)(happy-dom@20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(jsdom@25.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
 
   packages/learn-card-core:
     dependencies:
@@ -4666,6 +4703,9 @@ importers:
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../../packages/learn-card-helpers
+      '@learncard/holder-continuity':
+        specifier: workspace:*
+        version: link:../../packages/holder-continuity-bundle
       '@learncard/init':
         specifier: workspace:*
         version: link:../../packages/learn-card-init
@@ -9847,9 +9887,11 @@ packages:
 
   '@metamask/sdk-analytics@0.0.5':
     resolution: {integrity: sha512-fDah+keS1RjSUlC8GmYXvx6Y26s3Ax1U9hGpWb6GSY5SAdmTSIqp2CvYy6yW0WgLhnYhW+6xERuD0eVqV63QIQ==}
+    deprecated: No longer maintained, superseded by @metamask/connect-analytics
 
   '@metamask/sdk-communication-layer@0.33.1':
     resolution: {integrity: sha512-0bI9hkysxcfbZ/lk0T2+aKVo1j0ynQVTuB3sJ5ssPWlz+Z3VwveCkP1O7EVu1tsVVCb0YV5WxK9zmURu2FIiaA==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
     peerDependencies:
       cross-fetch: ^4.0.0
       eciesjs: '*'
@@ -9859,9 +9901,11 @@ packages:
 
   '@metamask/sdk-install-modal-web@0.32.1':
     resolution: {integrity: sha512-MGmAo6qSjf1tuYXhCu2EZLftq+DSt5Z7fsIKr2P+lDgdTPWgLfZB1tJKzNcwKKOdf6q9Qmmxn7lJuI/gq5LrKw==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/sdk@0.33.1':
     resolution: {integrity: sha512-1mcOQVGr9rSrVcbKPNVzbZ8eCl1K0FATsYH3WJ/MH4WcZDWGECWrXJPNMZoEAkLxWiMe8jOQBumg2pmcDa9zpQ==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/snap-types@0.21.0':
     resolution: {integrity: sha512-wyamdpiZqVfrHjAysnplVQexEisH8b00XTv6F8kTyKd4pbRTBswmOOc1DhBbi2+7Fw2J5a7pdLb9+/MRMwnztg==}
@@ -15077,7 +15121,7 @@ packages:
   basic-ftp@5.0.5:
     resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
     engines: {node: '>=10.0.0'}
-    deprecated: Security vulnerability fixed in 5.2.0, please upgrade
+    deprecated: Security vulnerability fixed in 5.2.1, please upgrade
 
   batch@0.6.1:
     resolution: {integrity: sha512-x+VAiMRL6UPkx+kudNvxTl6hB2XNNCG2r+7wixVfIYwu/2HKRXimwQyaumLjMveWvT2Hkd/cAJw+QBMfJ/EKVw==}
