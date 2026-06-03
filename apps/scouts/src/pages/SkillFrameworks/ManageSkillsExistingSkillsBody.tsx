@@ -9,6 +9,8 @@ import ManageSkillsUploadJsonButton from './ManageSkillsUploadJsonButton';
 import { SkillFramework } from '../../components/boost/boost';
 import SkillPreview from './SkillPreview';
 import { useWallet, useModal, ModalTypes } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-skills-existing-skills-body');
 import {
     ApiSkillNode,
     convertApiSkillFrameworkToSkillFramework,
@@ -51,14 +53,14 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
 
             downloadFramework(frameworkToExport);
         } catch (error) {
-            console.error('Error exporting framework:', error);
+            log.error('Error exporting framework:', error);
         } finally {
             setIsExporting(false);
         }
     };
 
     const openViewFrameworkModal = () => {
-        console.log('TODO open view framework modal');
+        log.debug('TODO open view framework modal');
 
         // const frameworkToPreview: SkillFramework =
         //     convertApiFrameworkToSkillFramework(skillFramework);
@@ -68,7 +70,7 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
         //         framework={frameworkToPreview}
         //         successButtonText="Save"
         //         onSuccess={() => {
-        //             console.log('TODO handle save');
+        //             log.debug('TODO handle save');
         //             // TODO save the framework / enable save button
         //         }}
         //     />,

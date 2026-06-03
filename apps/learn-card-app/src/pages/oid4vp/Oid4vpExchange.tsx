@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { IonContent, IonPage } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('oid4vp-exchange');
 
 import {
     ExchangeErrorDisplay,
@@ -185,7 +187,7 @@ const Oid4vpExchange: React.FC = () => {
                     pool,
                 });
             } catch (error) {
-                console.error('OID4VP: failed to resolve request', error);
+                log.error('OID4VP: failed to resolve request', error);
                 // No `clientInfo` here — we failed before resolving the
                 // request, so we don't yet know who the verifier was.
                 // The error screen falls back to a clean kind-themed
@@ -252,7 +254,7 @@ const Oid4vpExchange: React.FC = () => {
                 sharedCredentials,
             });
         } catch (error) {
-            console.error('OID4VP: presentation failed', error);
+            log.error('OID4VP: presentation failed', error);
             // Carry `clientInfo` through to the error phase so the
             // failure screen still renders the branded `VerifierHeader`
             // — the user keeps brand context even when the share fails.

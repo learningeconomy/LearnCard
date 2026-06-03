@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('family-invite-guardian');
 
 import {
     BoostCategoryOptionsEnum,
@@ -91,7 +93,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                 }
             } catch (hookError) {
                 // Hook may already exist or user may not have permission, continue with link generation
-                console.log('Claim hook check/creation skipped:', hookError);
+                log.info('Claim hook check/creation skipped:', hookError);
             }
 
             const rsas = await wallet?.invoke?.getRegisteredSigningAuthorities();
@@ -179,7 +181,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
             }
         } catch (error) {
             setIsLinkLoading(false);
-            console.log('error:generateBoostClaimLink', error);
+            log.info('error:generateBoostClaimLink', error);
         }
     });
 

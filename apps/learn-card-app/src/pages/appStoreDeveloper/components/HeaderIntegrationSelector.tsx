@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('header-integration-selector');
 
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 
@@ -94,7 +96,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
             setIsCreating(false);
             setIsOpen(false);
         } catch (error) {
-            console.error('Failed to create integration:', error);
+            log.error('Failed to create integration:', error);
         }
     };
 

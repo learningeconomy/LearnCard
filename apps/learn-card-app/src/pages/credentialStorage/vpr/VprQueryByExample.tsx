@@ -3,6 +3,8 @@ import BoostEarnedCard from 'apps/learn-card-app/src/components/boost/boost-earn
 import VCToShare from '../VCToShare';
 import './VprQueryByExample.scss';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('vpr-query-by-example');
 
 import {
     CredentialCategoryEnum,
@@ -162,7 +164,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
             setError('Error rejecting credentials. Please try again.');
         }
         if (event) {

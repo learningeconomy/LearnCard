@@ -38,6 +38,8 @@ import { VERIFIER_STATES } from '@learncard/react';
 import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/components/boost/boost';
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
+import { getLogger } from '../logging/logger';
+const log = getLogger('credential-helpers');
 
 type CredentialType =
     | 'MovieTicketCredential'
@@ -551,7 +553,7 @@ export const getDefaultCategoryForCredential = (
         if ('learningPathway' in _credential) return 'AI Pathway';
         if ('assessment' in _credential) return 'AI Assessment';
     } catch (error) {
-        console.log(error);
+        log.debug(error);
     }
 
     const _isClrCredential = isClrCredential(_credential);

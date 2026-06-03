@@ -15,6 +15,8 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-pending-connections');
 
 const AddressBookPendingConnections: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -69,7 +71,7 @@ const AddressBookPendingConnections: React.FC<{
         );
         try {
         } catch (err) {
-            console.log('canceledConnectionReq::error', err);
+            log.debug('canceledConnectionReq::error', err);
             presentToast(err?.message || 'An error occurred, unable to cancel request', {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
@@ -102,7 +104,7 @@ const AddressBookPendingConnections: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.debug('blockProfile::error', err);
             presentToast(err?.message || 'An error occurred, unable to block user', {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,

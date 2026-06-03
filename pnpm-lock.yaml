@@ -413,8 +413,8 @@ importers:
         specifier: ^10.1.1
         version: 10.2.0
       ionicons:
-        specifier: ^5.5.4
-        version: 5.5.4
+        specifier: 8.0.13
+        version: 8.0.13
       json-stringify-deterministic:
         specifier: ^1.0.12
         version: 1.0.12
@@ -834,8 +834,8 @@ importers:
         specifier: ^10.1.1
         version: 10.2.0
       ionicons:
-        specifier: ^5.5.4
-        version: 5.5.4
+        specifier: 8.0.13
+        version: 8.0.13
       json-stringify-deterministic:
         specifier: ^1.0.12
         version: 1.0.12
@@ -1439,6 +1439,37 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@22.19.1)(happy-dom@20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(jsdom@25.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
 
+  packages/holder-continuity-bundle:
+    dependencies:
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../learn-card-init
+      '@learncard/sss-key-manager':
+        specifier: workspace:*
+        version: link:../sss-key-manager
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../learn-card-types
+      jszip:
+        specifier: ^3.10.1
+        version: 3.10.1
+    devDependencies:
+      '@types/node':
+        specifier: ^18.19.68
+        version: 18.19.130
+      esbuild:
+        specifier: ^0.27.1
+        version: 0.27.4
+      shx:
+        specifier: ^0.3.4
+        version: 0.3.4
+      typescript:
+        specifier: 5.6.2
+        version: 5.6.2
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@18.19.130)(happy-dom@20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(jsdom@25.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
+
   packages/lca-api-client:
     dependencies:
       '@trpc/client':
@@ -1528,7 +1559,7 @@ importers:
         version: 1.0.2(@types/react@18.3.27)(react@18.3.1)
       '@udecode/zustood':
         specifier: 1.1.1
-        version: 1.1.1(react-dom@18.3.1(react@18.3.1))(react-native@0.82.1(@babel/core@7.29.0)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(scheduler@0.26.0)(zustand@3.7.2(react@18.3.1))
+        version: 1.1.1(react-dom@18.3.1(react@18.3.1))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(scheduler@0.26.0)(zustand@3.7.2(react@18.3.1))
       '@web3auth/base':
         specifier: ^9.7.0
         version: 9.7.0(@babel/runtime@7.28.4)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -1768,6 +1799,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../plugins/didkit
+      '@learncard/holder-continuity':
+        specifier: workspace:*
+        version: link:../holder-continuity-bundle
       '@learncard/init':
         specifier: workspace:^
         version: link:../learn-card-init
@@ -1832,6 +1866,9 @@ importers:
       ts-node:
         specifier: ^10.8.1
         version: 10.9.2(@swc/core@1.15.2(@swc/helpers@0.5.17))(@types/node@18.19.130)(typescript@5.6.2)
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@18.19.130)(happy-dom@20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(jsdom@25.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
 
   packages/learn-card-core:
     dependencies:
@@ -4103,7 +4140,7 @@ importers:
         version: 1.4.0
       openai:
         specifier: ^4.55.7
-        version: 4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
+        version: 4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
@@ -4641,6 +4678,9 @@ importers:
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../../packages/learn-card-helpers
+      '@learncard/holder-continuity':
+        specifier: workspace:*
+        version: link:../../packages/holder-continuity-bundle
       '@learncard/init':
         specifier: workspace:*
         version: link:../../packages/learn-card-init
@@ -9987,9 +10027,11 @@ packages:
 
   '@metamask/sdk-analytics@0.0.5':
     resolution: {integrity: sha512-fDah+keS1RjSUlC8GmYXvx6Y26s3Ax1U9hGpWb6GSY5SAdmTSIqp2CvYy6yW0WgLhnYhW+6xERuD0eVqV63QIQ==}
+    deprecated: No longer maintained, superseded by @metamask/connect-analytics
 
   '@metamask/sdk-communication-layer@0.33.1':
     resolution: {integrity: sha512-0bI9hkysxcfbZ/lk0T2+aKVo1j0ynQVTuB3sJ5ssPWlz+Z3VwveCkP1O7EVu1tsVVCb0YV5WxK9zmURu2FIiaA==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
     peerDependencies:
       cross-fetch: ^4.0.0
       eciesjs: '*'
@@ -9999,9 +10041,11 @@ packages:
 
   '@metamask/sdk-install-modal-web@0.32.1':
     resolution: {integrity: sha512-MGmAo6qSjf1tuYXhCu2EZLftq+DSt5Z7fsIKr2P+lDgdTPWgLfZB1tJKzNcwKKOdf6q9Qmmxn7lJuI/gq5LrKw==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/sdk@0.33.1':
     resolution: {integrity: sha512-1mcOQVGr9rSrVcbKPNVzbZ8eCl1K0FATsYH3WJ/MH4WcZDWGECWrXJPNMZoEAkLxWiMe8jOQBumg2pmcDa9zpQ==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/snap-types@0.21.0':
     resolution: {integrity: sha512-wyamdpiZqVfrHjAysnplVQexEisH8b00XTv6F8kTyKd4pbRTBswmOOc1DhBbi2+7Fw2J5a7pdLb9+/MRMwnztg==}
@@ -12649,11 +12693,6 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
-
-  '@stencil/core@2.10.0':
-    resolution: {integrity: sha512-15rWMTPQ/sp0lSV82HVCXkIya3QLN+uBl7pqK4JnTrp4HiLrzLmNbWjbvgCs55gw0lULbCIGbRIEsFz+Pe/Q+A==}
-    engines: {node: '>=12.10.0', npm: '>=6.0.0'}
-    hasBin: true
 
   '@stencil/core@4.36.2':
     resolution: {integrity: sha512-PRFSpxNzX9Oi0Wfh02asztN9Sgev/MacfZwmd+VVyE6ZxW+a/kEpAYZhzGAmE+/aKVOGYuug7R9SulanYGxiDQ==}
@@ -15625,7 +15664,7 @@ packages:
   basic-ftp@5.0.5:
     resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
     engines: {node: '>=10.0.0'}
-    deprecated: Security vulnerability fixed in 5.2.0, please upgrade
+    deprecated: Security vulnerability fixed in 5.2.1, please upgrade
 
   batch@0.6.1:
     resolution: {integrity: sha512-x+VAiMRL6UPkx+kudNvxTl6hB2XNNCG2r+7wixVfIYwu/2HKRXimwQyaumLjMveWvT2Hkd/cAJw+QBMfJ/EKVw==}
@@ -20755,9 +20794,6 @@ packages:
   iobuffer@5.4.0:
     resolution: {integrity: sha512-DRebOWuqDvxunfkNJAlc3IzWIPD5xVxwUNbHr7xKB8E6aLJxIPfNX3CoMJghcFjpv6RWQsrcJbghtEwSPoJqMA==}
 
-  ionicons@5.5.4:
-    resolution: {integrity: sha512-3ph8X9my3inhabWEZ7N0XRA0MnnNQ1v9a602mLNgWsIXnxE9G5BybIZ/pws/OZZ/hoNlvSjk801N03yL9/FNgQ==}
-
   ionicons@8.0.13:
     resolution: {integrity: sha512-2QQVyG2P4wszne79jemMjWYLp0DBbDhr4/yFroPCxvPP1wtMxgdIV3l5n+XZ5E9mgoXU79w7yTWpm2XzJsISxQ==}
 
@@ -25516,6 +25552,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qr-scanner@1.4.2:
@@ -42526,8 +42563,6 @@ snapshots:
 
   '@standard-schema/utils@0.3.0': {}
 
-  '@stencil/core@2.10.0': {}
-
   '@stencil/core@4.36.2':
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.34.9
@@ -54260,13 +54295,9 @@ snapshots:
 
   iobuffer@5.4.0: {}
 
-  ionicons@5.5.4:
-    dependencies:
-      '@stencil/core': 2.10.0
-
   ionicons@8.0.13:
     dependencies:
-      '@stencil/core': 4.38.0
+      '@stencil/core': 4.38.3
 
   ioredis-mock@8.13.1(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(ioredis@5.8.2):
     dependencies:
@@ -59525,7 +59556,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
+  openai@4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -59535,7 +59566,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
     transitivePeerDependencies:
       - encoding

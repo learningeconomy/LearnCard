@@ -3,6 +3,8 @@ import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
 import type { UnsignedVC } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-verifiable-data');
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
 
@@ -161,7 +163,7 @@ const getVerifiableData = async <T>(
                 };
             }
         } catch (e) {
-            console.warn('Failed to read verifiable data credential:', e);
+            log.warn('Failed to read verifiable data credential:', e);
         }
     }
 

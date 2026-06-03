@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('resume-self-attest-modal');
 
 import { IonSpinner } from '@ionic/react';
 import {
@@ -109,7 +111,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             }
             closeModal();
         } catch (error) {
-            console.error('resume self issue error', error);
+            log.error('resume self issue error', error);
             presentToast('Unable to self issue credential', {
                 duration: 3000,
                 type: ToastTypeEnum.Error,

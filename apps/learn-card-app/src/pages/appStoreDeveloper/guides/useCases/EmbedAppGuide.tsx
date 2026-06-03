@@ -50,6 +50,9 @@ import {
     Layout,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-app-guide');
+
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { StepProgress, CodeOutputPanel, GoLiveStep, StatusIndicator } from '../shared';
@@ -464,7 +467,7 @@ const GettingStartedStep: React.FC<{
             setNewListingName('');
             setIsCreatingListing(false);
         } catch (err) {
-            console.error('Failed to create listing:', err);
+            log.error('Failed to create listing:', err);
         }
     };
 
@@ -482,7 +485,7 @@ const learnCard = createPartnerConnect();
 
 // Get user identity (SSO - no login needed!)
 const identity = await learnCard.requestIdentity();
-console.log('User:', identity.profile.displayName);`;
+log.info('User:', identity.profile.displayName);`;
 
     const isReady = !!selectedIntegration && !!selectedListing;
 
@@ -788,7 +791,7 @@ const SigningAuthorityStep: React.FC<{
                 setPrimarySA(null);
             }
         } catch (err) {
-            console.error('Failed to fetch signing authority:', err);
+            log.error('Failed to fetch signing authority:', err);
             setPrimarySA(null);
         } finally {
             setLoading(false);
@@ -826,7 +829,7 @@ const SigningAuthorityStep: React.FC<{
             presentToast('Signing authority created!', { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
+            log.error('Failed to create signing authority:', err);
             presentToast('Failed to create signing authority', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -1663,8 +1666,8 @@ const learnCard = createPartnerConnect();
 // Request user identity (like SSO)
 const identity = await learnCard.requestIdentity();
 
-console.log('User DID:', identity.did);
-console.log('User Profile:', identity.profile);
+log.info('User DID:', identity.did);
+log.info('User Profile:', identity.profile);
 // profile contains: displayName, profileId, image, etc.`;
 
     return (
@@ -1832,7 +1835,7 @@ const TemplateManager: React.FC<{
                 }
             })
             .catch(err => {
-                console.error('Failed to fetch templates:', err);
+                log.error('Failed to fetch templates:', err);
                 if (!cancelled) {
                     setTemplates([]);
                 }
@@ -1858,7 +1861,7 @@ const TemplateManager: React.FC<{
             const boostTemplates = await fetchTemplatesForListing(appListingId);
             setTemplates(boostTemplates);
         } catch (err) {
-            console.error('Failed to refresh templates:', err);
+            log.error('Failed to refresh templates:', err);
         } finally {
             setIsLoading(false);
         }
@@ -1881,7 +1884,7 @@ const TemplateManager: React.FC<{
             const vc = await wallet.invoke.issueCredential(
                 credential as Parameters<typeof wallet.invoke.issueCredential>[0]
             );
-            console.log('Issued credential:', vc);
+            log.info('Issued credential:', vc);
             // Create the boost with public issuance permission
             const boostMetadata = {
                 name: (credential.name as string) || 'Template',
@@ -1909,7 +1912,7 @@ const TemplateManager: React.FC<{
 
             setShowCredentialBuilder(false);
         } catch (err) {
-            console.error('Failed to create template:', err);
+            log.error('Failed to create template:', err);
             presentToast('Failed to create template', { type: ToastTypeEnum.Error });
         } finally {
             setIsCreating(false);
@@ -1926,7 +1929,7 @@ const TemplateManager: React.FC<{
             presentToast('Template deleted', { type: ToastTypeEnum.Success });
             await refreshTemplates();
         } catch (err) {
-            console.error('Failed to delete template:', err);
+            log.error('Failed to delete template:', err);
             presentToast('Failed to delete template', { type: ToastTypeEnum.Error });
         } finally {
             setDeletingUri(null);
@@ -1951,7 +1954,7 @@ const result = await learnCard.invoke.send({
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
 });
 
-console.log('Credential synced:', result);`;
+log.info('Credential synced:', result);`;
         }
 
         // Default: initiateTemplateIssue style
@@ -1961,7 +1964,7 @@ const result = await learnCard.initiateTemplateIssue({
 });
 
 if (result.success) {
-    console.log('Credential issued to user!');
+    log.info('Credential issued to user!');
 }`;
     };
 
@@ -2015,7 +2018,7 @@ async function getAppBoostTemplates(appListingId: string) {
 
 // Usage
 const templates = await getAppBoostTemplates('${appListingId}');
-console.log('Available templates:', templates);`;
+log.info('Available templates:', templates);`;
 
     if (!appListingId) {
         return (
@@ -2344,7 +2347,7 @@ const UseApiStep: React.FC<{
             setIsCreatingIntegration(false);
             refetchIntegrations();
         } catch (err) {
-            console.error('Failed to create integration:', err);
+            log.error('Failed to create integration:', err);
         }
     };
 
@@ -2366,7 +2369,7 @@ const UseApiStep: React.FC<{
             setIsCreatingListing(false);
             refetchListings();
         } catch (err) {
-            console.error('Failed to create listing:', err);
+            log.error('Failed to create listing:', err);
         }
     };
 
@@ -2409,8 +2412,8 @@ const learnCard = createPartnerConnect();
 const identity = await learnCard.requestIdentity();
 
 // Use the identity in your app
-console.log('Welcome,', identity.profile.displayName);
-console.log('User DID:', identity.did);
+log.info('Welcome,', identity.profile.displayName);
+log.info('User DID:', identity.did);
 
 // You can use the DID as a unique user identifier
 const userId = identity.did;`,
@@ -2512,15 +2515,15 @@ const result = await learnCard.askCredentialSearch({
 
 // User selects which credentials to share
 if (result.credentials.length > 0) {
-    console.log('User shared', result.credentials.length, 'credentials');
+    log.info('User shared', result.credentials.length, 'credentials');
     
     // Process the shared credentials
     for (const cred of result.credentials) {
-        console.log('Credential:', cred.name);
+        log.info('Credential:', cred.name);
         // Verify, display, or store the credential
     }
 } else {
-    console.log('User declined or has no matching credentials');
+    log.info('User declined or has no matching credentials');
 }`,
             tips: [
                 'Users control what they share — respect their privacy',
@@ -2562,7 +2565,7 @@ const credentialId = 'urn:uuid:abc123-def456-...';
 const result = await learnCard.askCredentialSpecific(credentialId);
 
 if (result.credential) {
-    console.log('Got credential:', result.credential.name);
+    log.info('Got credential:', result.credential.name);
     
     // Verify the credential is still valid
     const isValid = await verifyCredential(result.credential);
@@ -2571,7 +2574,7 @@ if (result.credential) {
         grantAccess();
     }
 } else {
-    console.log('User declined or credential not found');
+    log.info('User declined or credential not found');
 }`,
             tips: [
                 'Store credential IDs to re-verify later',
@@ -2619,7 +2622,7 @@ const result = await learnCard.initiateTemplateIssue({
 });
 
 if (result.success) {
-    console.log('Credential issued:', result.credentialId);
+    log.info('Credential issued:', result.credentialId);
     showSuccess('Achievement unlocked!');
 }`,
             tips: [
@@ -2718,7 +2721,7 @@ const result = await learnCard.requestConsent('lc:contract:your-app:data-access'
 });
 
 if (result.granted) {
-    console.log('Consent granted! ID:', result.consentId);
+    log.info('Consent granted! ID:', result.consentId);
     
     // Store the consent ID for future reference
     await saveUserConsent(userId, result.consentId);
@@ -2726,7 +2729,7 @@ if (result.granted) {
     // Now you can access data per the contract terms
     enablePremiumFeatures();
 } else {
-    console.log('User declined consent');
+    log.info('User declined consent');
     showLimitedFeatures();
 }`,
             tips: [
@@ -3503,7 +3506,7 @@ const IssueCredentialsSetup: React.FC<{
                     setPrimarySA(null);
                 }
             } catch (err) {
-                console.error('Failed to fetch signing authority:', err);
+                log.error('Failed to fetch signing authority:', err);
                 setPrimarySA(null);
             } finally {
                 setSigningAuthorityLoading(false);
@@ -3547,7 +3550,7 @@ const IssueCredentialsSetup: React.FC<{
 
             presentToast('Signing authority created!', { hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
+            log.error('Failed to create signing authority:', err);
             presentToast('Failed to create signing authority', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -3614,7 +3617,7 @@ const credential = {
 const result = await learnCard.sendCredential({ credential: issuedVC });
 
 if (result.success) {
-    console.log('Credential claimed!');
+    log.info('Credential claimed!');
 }`;
 
     const syncWalletCode = `// 1. Request consent for writing credentials
@@ -3623,7 +3626,7 @@ const consentResult = await learnCard.requestConsent({
 });
 
 if (!consentResult.accepted) {
-    console.log('User declined consent');
+    log.info('User declined consent');
     return;
 }
 
@@ -3640,7 +3643,7 @@ const result = await learnCard.invoke.send({
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
 });
 
-console.log('Credential synced:', result);`;
+log.info('Credential synced:', result);`;
 
     return (
         <div className="space-y-6">
@@ -4094,15 +4097,15 @@ if (response?.verifiablePresentation) {
     const vp = response.verifiablePresentation;
     const credentials = vp.verifiableCredential || [];
 
-    console.log(\`User shared \${credentials.length} credential(s)\`);
+    log.info(\`User shared \${credentials.length} credential(s)\`);
 
     // Process each credential
     for (const credential of credentials) {
-        console.log('Credential:', credential.name);
+        log.info('Credential:', credential.name);
         // Verify and use the credential
     }
 } else {
-    console.log('User declined to share credentials');
+    log.info('User declined to share credentials');
 }`;
 
     // Code for Specific mode
@@ -4114,21 +4117,21 @@ try {
     const response = await learnCard.askCredentialSpecific(credentialId);
 
     if (response.credential) {
-        console.log('Received credential:', response.credential);
+        log.info('Received credential:', response.credential);
 
         // The credential is now available for verification
         const credType = response.credential.type?.join(', ') || 'Unknown';
-        console.log('Credential type:', credType);
+        log.info('Credential type:', credType);
     } else {
-        console.log('Credential not returned');
+        log.info('Credential not returned');
     }
 } catch (error) {
     if (error.code === 'CREDENTIAL_NOT_FOUND') {
-        console.log('Credential not found in user wallet');
+        log.info('Credential not found in user wallet');
     } else if (error.code === 'USER_REJECTED') {
-        console.log('User declined to share');
+        log.info('User declined to share');
     } else {
-        console.error('Error:', error.message);
+        log.error('Error:', error.message);
     }
 }`;
 
@@ -4402,7 +4405,7 @@ const result = await learnCard.requestConsent({
 });
 
 if (result.granted) {
-    console.log('User granted consent!');
+    log.info('User granted consent!');
     
     // Send the consent confirmation to your server
     await fetch('/api/consent-granted', {
@@ -4413,7 +4416,7 @@ if (result.granted) {
         })
     });
 } else {
-    console.log('User declined consent');
+    log.info('User declined consent');
 }`;
 
     // Server-side: Read and write data using consent
@@ -4435,7 +4438,7 @@ const credentials = await learnCard.invoke.getCredentialsForContract(
     contractUri,
     { limit: 50 }
 );
-console.log('User shared credentials:', credentials.records);
+log.info('User shared credentials:', credentials.records);
 
 // WRITING: Send a credential to the user via consent
 const result = await learnCard.invoke.send({
@@ -4444,7 +4447,7 @@ const result = await learnCard.invoke.send({
     templateUri: 'urn:lc:boost:your-template-uri',
     contractUri: contractUri, // Routes via consent terms
 });
-console.log('Credential sent:', result);`;
+log.info('Credential sent:', result);`;
 
     return (
         <div className="space-y-6">
@@ -5488,11 +5491,11 @@ const YourAppStep: React.FC<{
                                     variables: extractVariables(credential),
                                 });
                             } catch (e) {
-                                console.warn('Failed to fetch boost:', link.boostUri, e);
+                                log.warn('Failed to fetch boost:', link.boostUri, e);
                             }
                         }
                     } catch (e) {
-                        console.warn('Failed to fetch app boosts:', e);
+                        log.warn('Failed to fetch app boosts:', e);
                     }
 
                     // Fetch peer-badges templates via featureType metadata
@@ -5525,11 +5528,11 @@ const YourAppStep: React.FC<{
                                     category: fullBoost?.category as string,
                                 });
                             } catch (e) {
-                                console.warn('Failed to fetch peer boost:', boost.uri, e);
+                                log.warn('Failed to fetch peer boost:', boost.uri, e);
                             }
                         }
                     } catch (e) {
-                        console.warn('Failed to fetch peer badges:', e);
+                        log.warn('Failed to fetch peer badges:', e);
                     }
                 }
 
@@ -5538,7 +5541,7 @@ const YourAppStep: React.FC<{
                     setIssueCredentialTemplates(issueTemplates);
                 }
             } catch (err) {
-                console.error('Failed to fetch templates:', err);
+                log.error('Failed to fetch templates:', err);
 
                 if (!cancelled) {
                     setPeerBadgeTemplates([]);
@@ -5703,7 +5706,7 @@ const YourAppStep: React.FC<{
             presentToast('App configuration updated!', { hasDismissButton: true });
             setShowConfigMismatchPrompt(false);
         } catch (error) {
-            console.error('Failed to update config:', error);
+            log.error('Failed to update config:', error);
             presentToast('Failed to update configuration', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -5736,7 +5739,7 @@ const YourAppStep: React.FC<{
             presentToast('App configuration saved!', { hasDismissButton: true });
             setShowConfigEditor(false);
         } catch (error) {
-            console.error('Failed to save config:', error);
+            log.error('Failed to save config:', error);
             presentToast('Failed to save configuration', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -5924,13 +5927,13 @@ async function getUserIdentity() {
     try {
         const identity = await learnCard.requestIdentity();
         
-        console.log('User DID:', identity.did);
-        console.log('Display Name:', identity.profile.displayName);
-        console.log('Profile ID:', identity.profile.profileId);
+        log.info('User DID:', identity.did);
+        log.info('Display Name:', identity.profile.displayName);
+        log.info('Profile ID:', identity.profile.profileId);
         
         return identity;
     } catch (error) {
-        console.error('Failed to get user identity:', error);
+        log.error('Failed to get user identity:', error);
         throw error;
     }
 }`);
@@ -6000,7 +6003,7 @@ async function issueCredentialToUser() {
     const result = await learnCard.sendCredential({ credential: issuedVC });
 
     if (result.success) {
-        console.log('Credential claimed!');
+        log.info('Credential claimed!');
     }
 }`);
             } else {
@@ -6046,7 +6049,7 @@ async function issue${
     });
     
     if (result.credentialUri) {
-        console.log('Credential issued:', result.credentialUri);
+        log.info('Credential issued:', result.credentialUri);
     }
     return result;
 }
@@ -6070,7 +6073,7 @@ async function issue${
     });
     
     if (result.credentialUri) {
-        console.log('Credential issued:', result.credentialUri);
+        log.info('Credential issued:', result.credentialUri);
     }
     return result;
 }`;
@@ -6101,7 +6104,7 @@ async function issueCredentialByAlias(templateAlias: string, templateData?: Reco
     });
     
     if (result.credentialUri) {
-        console.log('Credential issued:', result.credentialUri);
+        log.info('Credential issued:', result.credentialUri);
     }
     return result;
 }`);
@@ -6176,9 +6179,9 @@ async function sendPeerBadge(templateUri: string) {
     try {
         await learnCard.initiateTemplateIssue(templateUri);
         
-        console.log('Peer badge flow initiated with template:', templateUri);
+        log.info('Peer badge flow initiated with template:', templateUri);
     } catch (error) {
-        console.error('Failed to initiate peer badge:', error);
+        log.error('Failed to initiate peer badge:', error);
         throw error;
     }
 }
@@ -6240,25 +6243,25 @@ async function requestCredentialsBySearch() {
 
         if (response.presentation) {
             // User shared credentials - verify the presentation
-            console.log('Received presentation:', response.presentation);
+            log.info('Received presentation:', response.presentation);
             
             // Extract credentials from the presentation
             const credentials = response.presentation.verifiableCredential || [];
-            console.log('Shared credentials:', credentials.length);
+            log.info('Shared credentials:', credentials.length);
             
             // TODO: Send to your server for verification
             // await verifyPresentation(response.presentation);
             
             return credentials;
         } else {
-            console.log('User did not share any credentials');
+            log.info('User did not share any credentials');
             return [];
         }
     } catch (error) {
         if (error.code === 'USER_REJECTED') {
-            console.log('User declined to share credentials');
+            log.info('User declined to share credentials');
         } else {
-            console.error('Error requesting credentials:', error);
+            log.error('Error requesting credentials:', error);
         }
         throw error;
     }
@@ -6280,23 +6283,23 @@ async function requestCredentialById(credentialId: string) {
         });
 
         if (response.credential) {
-            console.log('Received credential:', response.credential);
+            log.info('Received credential:', response.credential);
             
             // TODO: Send to your server for verification
             // await verifyCredential(response.credential);
             
             return response.credential;
         } else {
-            console.log('Credential not returned');
+            log.info('Credential not returned');
             return null;
         }
     } catch (error) {
         if (error.code === 'CREDENTIAL_NOT_FOUND') {
-            console.log('Credential not found in user wallet');
+            log.info('Credential not found in user wallet');
         } else if (error.code === 'USER_REJECTED') {
-            console.log('User declined to share');
+            log.info('User declined to share');
         } else {
-            console.error('Error:', error);
+            log.error('Error:', error);
         }
         throw error;
     }
@@ -6332,8 +6335,8 @@ async function requestDataConsent() {
         });
 
         if (result.granted) {
-            console.log('User granted consent!');
-            console.log('User ID:', result.userId);
+            log.info('User granted consent!');
+            log.info('User ID:', result.userId);
             
             // Notify your server that consent was granted
             await fetch('/api/consent-granted', {
@@ -6347,11 +6350,11 @@ async function requestDataConsent() {
             
             return true;
         } else {
-            console.log('User declined consent');
+            log.info('User declined consent');
             return false;
         }
     } catch (error) {
-        console.error('Failed to request consent:', error);
+        log.error('Failed to request consent:', error);
         throw error;
     }
 }
@@ -6457,13 +6460,13 @@ async function initializeApp() {
     try {
         // 1. Get user identity on app load
         const identity = await getUserIdentity();
-        console.log('App initialized for user:', identity.profile.displayName);
+        log.info('App initialized for user:', identity.profile.displayName);
         
         // 2. Your app logic here...
         // Call the feature functions above based on user actions
         
     } catch (error) {
-        console.error('App initialization failed:', error);
+        log.error('App initialization failed:', error);
     }
 }
 
@@ -6974,7 +6977,7 @@ initializeApp();`);
                                     },
                                 });
                             } catch (error) {
-                                console.error('Failed to save config before continuing:', error);
+                                log.error('Failed to save config before continuing:', error);
                                 presentToast('Failed to save configuration. Please try again.', {
                                     type: ToastTypeEnum.Error,
                                     hasDismissButton: true,
