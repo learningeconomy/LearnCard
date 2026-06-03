@@ -31,6 +31,27 @@ jobs:
       id-token: write
       actions: read
     steps:
+      # Mint a GitHub App installation token scoped to pull-requests:write.
+      # This is what actually lets Claude APPROVE PRs: claude-code-action@v1's
+      # built-in GitHub tooling deliberately cannot submit/approve reviews, so
+      # approval must go through `gh pr review --approve` (Bash) — and the
+      # default GITHUB_TOKEN / github-actions[bot] is NOT permitted to approve
+      # PRs. The app identity is allowed to approve.
+      #
+      # Requires repo configuration:
+      #   - Variable  CLAUDE_APP_CLIENT_ID   (GitHub App Client ID)
+      #   - Secret    CLAUDE_APP_PRIVATE_KEY (GitHub App private key, PEM)
+      # The app must be installed on this repo with Pull requests: Read & write.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.CLAUDE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CLAUDE_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+          permission-contents: read
+          permission-issues: write
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -58,8 +79,13 @@ jobs:
 
       - name: Run Claude PR Action
         uses: anthropics/claude-code-action@v1
+        env:
+          # Exposed to the Bash tool so `gh` authenticates as the GitHub App
+          # (which CAN approve PRs) instead of github-actions[bot] (which cannot).
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app-token.outputs.token }}
           timeout_minutes: "60"
           additional_permissions: |
             actions: read
@@ -225,6 +251,11 @@ jobs:
             When you encounter these, say so clearly: "This PR needs manual review because [reason], but nothing concerning was found."
 
             ### Decision (3-state model)
+
+            Approvals and review comments are submitted by running the `gh` CLI
+            in the Bash tool — `gh` is pre-authenticated as a GitHub App that is
+            permitted to approve PRs. Always cast the decision with the exact
+            command shown; do not rely on any built-in review tool.
 
             **Approve** — PR matches a lane, passes all hard-stop checks, and is within LOC limits:
             `gh pr review $PR_NUMBER --approve --body "Auto-approved (Lane N — <lane name>): <one-line reason>"`
