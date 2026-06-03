@@ -70,7 +70,10 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
     return (
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
-                <OnboardingHeader text="We ask for your age and country to make sure we comply with privacy laws and keep you safe" />
+                <OnboardingHeader
+                    text="Please enter your age and country to continue"
+                    secondaryText="We ask for this information to make sure we comply with privacy laws and keep you safe"
+                />
 
                 {error && (
                     <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl">
