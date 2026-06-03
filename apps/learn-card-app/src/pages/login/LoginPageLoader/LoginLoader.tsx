@@ -21,7 +21,8 @@ export const LoginLoadingPage: React.FC = () => {
         m['login.loader.messages.7'](),
         m['login.loader.messages.8'](),
         m['login.loader.messages.9'](),
-    ]), [t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Paraglide messages are static at runtime; shuffle on mount only
+    ]), []);
     const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;

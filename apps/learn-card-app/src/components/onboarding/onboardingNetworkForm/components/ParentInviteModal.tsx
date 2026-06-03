@@ -43,7 +43,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             }&profileId=${generated?.profileId}`;
             setInviteLink(_inviteLink);
         } catch (e) {
-            presentToasm['Failed to generate invite link']();
+            presentToast('Failed to generate invite link');
         } finally {
             setLoading(false);
         }
@@ -56,9 +56,9 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
     const copyInviteLinkToClipboard = async () => {
         try {
             await Clipboard.write({ string: inviteLink });
-            presentToasm['Invite link copied to clipboard']();
+            presentToast('Invite link copied to clipboard');
         } catch (e) {
-            presentToasm['Unable to copy Invite link']();
+            presentToast('Unable to copy Invite link');
         }
     };
 
@@ -79,7 +79,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
     const handleSendEmailInvite = async () => {
         if (!inviteLink) return;
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            presentToasm['Please enter a valid email']();
+            presentToast('Please enter a valid email');
             return;
         }
 
