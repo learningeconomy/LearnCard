@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
@@ -24,32 +25,32 @@ interface RecoveryFlowModalProps {
 
 const friendlyError = (e: unknown): string => {
     if (e instanceof Error) {
-        if (e.message.includes('decrypt')) return 'Incorrect password or corrupted data. Please try again.';
-        if (e.message.includes('network') || e.message.includes('fetch')) return 'Connection issue. Please check your internet and try again.';
+        if (e.message.includes('decrypt')) return m['recovery.incorrectPassword']();
+        if (e.message.includes('network') || e.message.includes('fetch')) return m['recovery.connectionIssue']();
         if (e.message.includes('phrase') || e.message.includes('mnemonic')) return 'The recovery phrase doesn\'t look right. Please check for typos.';
         return e.message;
     }
 
-    return 'Something went wrong. Please try again.';
+    return m['recovery.somethingWrong']();
 };
 
 const RECOVERY_COPY: Record<RecoveryReason, { title: string; description: string }> = {
     new_device: {
-        title: 'Verify Your Identity',
+        title: m['recovery.verifyIdentity'](),
         description: 'This device hasn\u2019t been set up for your account yet. Choose a method to sign in.',
     },
     stale_local_key: {
-        title: 'Verify Your Identity',
+        title: m['recovery.verifyIdentity'](),
         description: 'Your account security was recently updated on another device. Please verify to continue.',
     },
     missing_server_data: {
-        title: 'Restore Access',
+        title: m['recovery.restoreAccess'](),
         description: 'Choose how you\u2019d like to restore access to your account.',
     },
 };
 
 const DEFAULT_COPY = {
-    title: 'Restore Access',
+    title: m['recovery.restoreAccess'](),
     description: 'Choose how you\u2019d like to restore access.',
 };
 
@@ -80,7 +81,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
 
         if (!passkeyMethod?.credentialId) {
-            setError('No passkey found on this device.');
+            setError(m['recovery.noPasskey']());
             return;
         }
 
@@ -116,7 +117,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const handleBackupRecovery = async () => {
         if (!backupFile) {
-            setError('Please select your backup file.');
+            setError(m['recovery.selectBackupFile']());
             return;
         }
 

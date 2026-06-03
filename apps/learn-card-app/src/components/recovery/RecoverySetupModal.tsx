@@ -15,6 +15,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
+import * as m from '../../paraglide/messages.js';
 
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
@@ -115,7 +116,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setShowUpdateForm(false);
         } catch (e) {
             console.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -130,7 +131,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setRecoveryPhrase(phrase);
         } catch (e) {
             console.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -152,7 +153,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const handleBackupSetup = async () => {
         if (backupPassword.length < 8) {
-            setError('Password must be at least 8 characters.');
+            setError(m['recovery.somethingWrong']());
             return;
         }
 
@@ -169,7 +170,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setBackupFileJson(fileJson);
         } catch (e) {
             console.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -190,15 +191,15 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 });
 
                 await Share.share({
-                    title: 'LearnCard Backup',
+                    title: m['recovery.learnCardBackup']({ brand: 'LearnCard' }),
                     url: result.uri,
-                    dialogTitle: 'Save your backup file',
+                    dialogTitle: m['recovery.saveBackupFile'](),
                 });
 
                 setBackupDownloaded(true);
             } catch (e) {
                 console.error('[RecoverySetupModal] Native file download failed:', e);
-                setError('Could not save the file. Please try again.');
+                setError(m['recovery.couldNotSave']());
             }
         } else {
             const blob = new Blob([backupFileJson], { type: 'application/json' });
@@ -227,7 +228,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const handleSendEmailCode = async () => {
         if (!emailInput.includes('@')) {
-            setError('Please enter a valid email address.');
+            setError(m['recovery.validEmail']());
             return;
         }
 
@@ -239,7 +240,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setEmailCodeSent(true);
         } catch (e) {
             console.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -247,7 +248,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const handleVerifyEmailCode = async () => {
         if (emailCode.length !== 6) {
-            setError('Please enter the 6-digit code.');
+            setError(m['recovery.somethingWrong']());
             return;
         }
 
@@ -260,7 +261,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setEmailMasked(maskedEmail);
         } catch (e) {
             console.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Incorrect code. Please try again.');
+            setError(e instanceof Error ? e.message : m['recovery.incorrectCode']());
         } finally {
             setLoading(false);
         }
@@ -278,7 +279,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setShowUpdateForm(false);
         } catch (e) {
             console.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
