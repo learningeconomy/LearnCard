@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tool-api-token-item');
 
 import X from 'learn-card-base/svgs/X';
 import { ThreeDotVertical } from '@learncard/react';
@@ -39,7 +41,7 @@ export const AdminToolApiTokenItem: React.FC<{
             setToken(token);
             setTokenStatus('active');
         } catch (err) {
-            console.error('Failed to get API token:', err);
+            log.error('Failed to get API token:', err);
 
             if (err?.message.includes('expired')) {
                 setTokenStatus('expired');
@@ -66,7 +68,7 @@ export const AdminToolApiTokenItem: React.FC<{
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
+            log.error('Failed to copy to clipboard:', err);
             closeModal();
             presentToast('Unable to copy API Token to clipboard', {
                 type: ToastTypeEnum.Error,

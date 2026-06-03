@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-error-reporter');
 /**
  * Generic "user-reported error" fan-out for feature screens.
  *
@@ -130,7 +132,7 @@ export const useErrorReporter = <E extends AnalyticsEventName>(config: {
                 });
             } catch (sentryFailure) {
                 // eslint-disable-next-line no-console
-                console.error('[useErrorReporter] Sentry capture failed', sentryFailure);
+                log.error('[useErrorReporter] Sentry capture failed', sentryFailure);
             }
 
             // ----- Product surface: analytics event -----
@@ -142,7 +144,7 @@ export const useErrorReporter = <E extends AnalyticsEventName>(config: {
                 await track(analyticsEvent, options.analyticsPayload);
             } catch (analyticsFailure) {
                 // eslint-disable-next-line no-console
-                console.error('[useErrorReporter] analytics track failed', analyticsFailure);
+                log.error('[useErrorReporter] analytics track failed', analyticsFailure);
             }
         },
         [feature, analyticsEvent, track]

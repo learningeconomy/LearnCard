@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-setup-listener');
 import {
     SocialLoginTypes,
     authStore,
@@ -64,7 +66,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
                     history.replace({ search: 'profileSetup=true' });
                     presentCenterModal();
                 }
-                console.log('getLCNeworkProfile::err', err);
+                log.debug('getLCNeworkProfile::err', err);
             }
         };
 

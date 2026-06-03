@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('my-learn-card-modal');
 
 import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
@@ -381,7 +383,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 caretText: '',
                 onClick: async () => {
                     if (!currentUser?.privateKey) {
-                        console.error('No private key available');
+                        log.error('No private key available');
                         return;
                     }
 

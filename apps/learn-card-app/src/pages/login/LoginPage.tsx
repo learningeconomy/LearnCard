@@ -22,6 +22,9 @@ import {
     getSSSConfig,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('login-page');
+
 import { Capacitor } from '@capacitor/core';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -95,7 +98,7 @@ export const LoginContent: React.FC = () => {
                 authStore.set.pinTokenExpire(result.tokenExpire);
             }
         } catch (e) {
-            console.error('///error handleGeneratePinUpdateToken', e);
+            log.error('///error handleGeneratePinUpdateToken', e);
         }
     }, [generatePinUpdateToken]);
 
@@ -143,7 +146,7 @@ export const LoginContent: React.FC = () => {
                 );
             }
         } catch (e) {
-            console.error('///error handlePromptOnboarding', e);
+            log.error('///error handlePromptOnboarding', e);
         }
     }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, openOnboardingModal]);
 
@@ -208,7 +211,7 @@ export const LoginContent: React.FC = () => {
                 void handlePromptOnboarding();
             }
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
     }, [
         currentUser,
@@ -287,7 +290,7 @@ export const LoginContent: React.FC = () => {
                         <QrLoginRequester
                             serverUrl={getSSSConfig().serverUrl}
                             onApproved={(deviceShare, _approverDid, hint, version) => {
-                                console.debug(
+                                log.debug(
                                     '[QR Login] approved — share:',
                                     deviceShare.substring(0, 8) + '...',
                                     '| hint:',
@@ -490,7 +493,7 @@ export const LoginContent: React.FC = () => {
                                                 : indexedDBLocalPersistence
                                         );
                                     } catch (e) {
-                                        console.warn('Failed to set Firebase persistence', e);
+                                        log.warn('Failed to set Firebase persistence', e);
                                     }
                                 }}
                                 className={`

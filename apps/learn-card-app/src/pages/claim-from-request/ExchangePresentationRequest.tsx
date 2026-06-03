@@ -20,6 +20,9 @@ import VprQueryByExample from '../credentialStorage/vpr/VprQueryByExample';
 import { useCurrentUser } from 'learn-card-base';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('exchange-presentation-request');
+
 interface ExchangePresentationRequestProps {
     verifiablePresentationRequest: any; // Contains the verifiablePresentationRequest from the server
     strategy?: VCAPIRequestStrategy;
@@ -44,7 +47,7 @@ const ExchangePresentationRequest: React.FC<ExchangePresentationRequestProps> = 
     };
 
     const handleReject = () => {
-        console.log('reject');
+        log.info('reject');
     };
 
     return (

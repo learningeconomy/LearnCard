@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-auth-coordinator-auto-setup');
 /**
  * useAuthCoordinatorAutoSetup
  *
@@ -79,7 +81,7 @@ export const useAuthCoordinatorAutoSetup = (
                 await actionsRef.current.setupNewKey(privateKey, did);
             } catch (e) {
                 const msg = e instanceof Error ? e.message : 'Auto-setup failed';
-                console.error('useAuthCoordinatorAutoSetup: setup failed', msg);
+                log.error('useAuthCoordinatorAutoSetup: setup failed', msg);
                 configRef.current.onError?.(msg);
             } finally {
                 handlingRef.current = false;
@@ -113,7 +115,7 @@ export const useAuthCoordinatorAutoSetup = (
                 await actionsRef.current.migrate(migrationKey, did);
             } catch (e) {
                 const msg = e instanceof Error ? e.message : 'Auto-migration failed';
-                console.error('useAuthCoordinatorAutoSetup: migration failed', msg);
+                log.error('useAuthCoordinatorAutoSetup: migration failed', msg);
                 configRef.current.onError?.(msg);
             } finally {
                 handlingRef.current = false;

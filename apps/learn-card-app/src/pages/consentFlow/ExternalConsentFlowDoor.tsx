@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('external-consent-flow-door');
 
 import queryString from 'query-string';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -210,7 +212,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 try {
                     await FirebaseAuthentication?.signOut?.();
                 } catch (e) {
-                    console.log('firebase::signout::error', e);
+                    log.info('firebase::signout::error', e);
                 }
             }
 

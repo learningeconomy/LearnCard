@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('candidate-pool');
 /**
  * Build the candidate-credential pool the OpenID4VP plugin matches the
  * verifier's request against.
@@ -102,7 +104,7 @@ export const loadCandidatePool = async (
                 // A single broken read shouldn\u2019t poison the whole pool;
                 // surfacing it would prevent the user from sharing
                 // unrelated credentials.
-                console.warn('OID4VP candidate read failed', entry.uri, err);
+                log.warn('OID4VP candidate read failed', entry.uri, err);
                 return null;
             }
         })

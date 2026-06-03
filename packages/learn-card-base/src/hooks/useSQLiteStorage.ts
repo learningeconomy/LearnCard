@@ -13,6 +13,9 @@ import { clearUserData } from '../SQL/clearUserData';
 
 export { clearUserData, PRESERVED_TABLES } from '../SQL/clearUserData';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-sqlite-storage');
+
 export const ensureUserTableExists = async (db: SQLiteDBConnection) => {
     await db.open();
 
@@ -198,37 +201,39 @@ export const sqliteInit = () => {
         try {
             if (nativeSqlite.isAvailable) {
                 const sqlite = Capacitor.getPlatform() === 'web' ? webSqlite : nativeSqlite;
-                initDB(sqlite).then(db => {
-                    sqliteStore.set.db(db);
-                    sqliteStore.set.sqlite(sqlite);
-                    
-                    // Mark SQLite as ready so wallet initialization can proceed
-                    try {
-                        markSQLiteReady();
-                    } catch (e) {
-                        console.warn('markSQLiteReady (native) failed', e);
-                    }
-                }).catch(error => {
-                    console.error('Failed to initialize SQLite database:', error);
-                    // Mark ready even on error so app doesn't hang
-                    try {
-                        markSQLiteReady();
-                    } catch (e) {
-                        console.warn('markSQLiteReady (native, on error) failed', e);
-                    }
-                });
+                initDB(sqlite)
+                    .then(db => {
+                        sqliteStore.set.db(db);
+                        sqliteStore.set.sqlite(sqlite);
+
+                        // Mark SQLite as ready so wallet initialization can proceed
+                        try {
+                            markSQLiteReady();
+                        } catch (e) {
+                            log.warn('markSQLiteReady (native) failed', e);
+                        }
+                    })
+                    .catch(error => {
+                        log.error('Failed to initialize SQLite database:', error);
+                        // Mark ready even on error so app doesn't hang
+                        try {
+                            markSQLiteReady();
+                        } catch (e) {
+                            log.warn('markSQLiteReady (native, on error) failed', e);
+                        }
+                    });
             } else {
                 nativeSqlite.getPlatform().then(async (ret: { platform: string }) => {
-                    console.debug('\n* Not available for ' + ret.platform + ' platform *\n');
+                    log.debug('\n* Not available for ' + ret.platform + ' platform *\n');
                 });
             }
         } catch (error) {
-            console.warn(error);
+            log.warn(error);
             // Mark ready on exception to prevent app from hanging
             try {
                 markSQLiteReady();
             } catch (e) {
-                console.warn('markSQLiteReady (native, on exception) failed', e);
+                log.warn('markSQLiteReady (native, on exception) failed', e);
             }
         }
     }, [nativeSqlite.isAvailable]);
@@ -266,7 +271,7 @@ export const sqliteInit = () => {
             setExistConnection(true);
             return db;
         } catch (error) {
-            console.debug('initDB::error', (error as any).message);
+            log.debug('initDB::error', (error as any).message);
             return false;
         }
     };
@@ -338,7 +343,7 @@ export const useSQLiteStorage = () => {
                 await db.close();
             }
         } catch (e) {
-            console.warn('😵 useSQLiteStorage::setCurrentUser', e);
+            log.warn('😵 useSQLiteStorage::setCurrentUser', e);
         } finally {
             if (db && (await db?.isDBOpen())?.result) {
                 await db?.close();
@@ -362,7 +367,7 @@ export const useSQLiteStorage = () => {
 
             return null;
         } catch (e) {
-            console.warn('😵 useSQLiteStorage::getCurrentUser', e);
+            log.warn('😵 useSQLiteStorage::getCurrentUser', e);
 
             return null;
         } finally {
@@ -370,10 +375,7 @@ export const useSQLiteStorage = () => {
                 try {
                     await db?.close();
                 } catch (closeError) {
-                    console.warn(
-                        '😵 useSQLiteStorage::getCurrentUser:await db?.close()',
-                        closeError
-                    );
+                    log.warn('😵 useSQLiteStorage::getCurrentUser:await db?.close()', closeError);
                     return null;
                 }
             }
@@ -411,7 +413,7 @@ export const useSQLiteStorage = () => {
                 return;
             }
         } catch (e) {
-            console.warn('😵 useSQLiteStorage::getCurrentUser', e);
+            log.warn('😵 useSQLiteStorage::getCurrentUser', e);
         } finally {
             if (db && (await db?.isDBOpen())?.result) {
                 await db?.close();
@@ -444,7 +446,7 @@ export const useSQLiteStorage = () => {
                 }
             }
         } catch (e) {
-            console.warn('😵 useSQLiteStorage::setProviderAuthToken::error', e);
+            log.warn('😵 useSQLiteStorage::setProviderAuthToken::error', e);
         } finally {
             if (db && (await db?.isDBOpen())?.result) {
                 await db?.close();
@@ -469,7 +471,7 @@ export const useSQLiteStorage = () => {
                 return results?.values?.[0];
             }
         } catch (error) {
-            console.warn('😵 useSQLiteStorage::getProviderAuthToken::error', error);
+            log.warn('😵 useSQLiteStorage::getProviderAuthToken::error', error);
         } finally {
             if (db && (await db?.isDBOpen())?.result) {
                 await db?.close();

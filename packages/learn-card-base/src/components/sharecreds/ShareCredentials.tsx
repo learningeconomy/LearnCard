@@ -12,6 +12,8 @@ import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
 import 'swiper/css/navigation';
 import ShareCredentialCards from './ShareCredentialCards';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('share-credentials');
 
 type ShareCredentialsProps = {
     onSubmit?: (payload: SelectedCredsStoreState) => void;
@@ -47,7 +49,7 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
             const selectedState = selectedCredsStore.get.state();
             onSubmit?.(selectedState);
         } catch (e) {
-            console.log('///handleSubmit create credential bundle Error', e);
+            log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
                 header: 'Error',
                 subHeader: 'Create Boost Bundle error',

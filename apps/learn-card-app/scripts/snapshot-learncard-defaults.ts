@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
+
 /**
  * snapshot-learncard-defaults.ts
  *
@@ -86,7 +89,7 @@ const copyFromSrc = (srcRel: string, destPath: string): boolean => {
 // iOS assets
 // ---------------------------------------------------------------------------
 
-console.log('\n📸 Snapshotting LearnCard default assets...\n');
+log.info('\n📸 Snapshotting LearnCard default assets...\n');
 
 let count = 0;
 
@@ -102,10 +105,10 @@ for (const rel of iosFiles) {
     const dest = join(OUT, 'ios', filename);
 
     if (extractFromGit(rel, dest)) {
-        console.log(`   ✓ ios/${filename}`);
+        log.info(`   ✓ ios/${filename}`);
         count++;
     } else {
-        console.warn(`   ⚠ ios/${filename} — not found in git HEAD`);
+        log.warn(`   ⚠ ios/${filename} — not found in git HEAD`);
     }
 }
 
@@ -126,12 +129,16 @@ const SPLASH_DIRS = [
 
 // Mipmap icons
 for (const density of MIPMAP_DENSITIES) {
-    for (const file of ['ic_launcher.webp', 'ic_launcher_foreground.webp', 'ic_launcher_round.webp']) {
+    for (const file of [
+        'ic_launcher.webp',
+        'ic_launcher_foreground.webp',
+        'ic_launcher_round.webp',
+    ]) {
         const rel = `${ANDROID_RES}/mipmap-${density}/${file}`;
         const dest = join(OUT, 'android', `mipmap-${density}`, file);
 
         if (extractFromGit(rel, dest)) {
-            console.log(`   ✓ android/mipmap-${density}/${file}`);
+            log.info(`   ✓ android/mipmap-${density}/${file}`);
             count++;
         }
     }
@@ -143,7 +150,7 @@ for (const dir of SPLASH_DIRS) {
     const dest = join(OUT, 'android', dir, 'splash.9.png');
 
     if (extractFromGit(rel, dest)) {
-        console.log(`   ✓ android/${dir}/splash.9.png`);
+        log.info(`   ✓ android/${dir}/splash.9.png`);
         count++;
     }
 }
@@ -157,7 +164,7 @@ for (const xmlRel of [
     const dest = join(OUT, 'android', parts);
 
     if (extractFromGit(xmlRel, dest)) {
-        console.log(`   ✓ android/${parts}`);
+        log.info(`   ✓ android/${parts}`);
         count++;
     }
 }
@@ -171,7 +178,7 @@ for (const file of ['favicon.png', 'icon.png']) {
     const dest = join(OUT, 'web', file);
 
     if (extractFromGit(rel, dest)) {
-        console.log(`   ✓ web/${file}`);
+        log.info(`   ✓ web/${file}`);
         count++;
     }
 }
@@ -202,10 +209,10 @@ for (const { gitPath, dest: destName } of CONFIG_MAP) {
     const dest = join(OUT, destName);
 
     if (extractFromGit(gitPath, dest)) {
-        console.log(`   ✓ ${destName}`);
+        log.info(`   ✓ ${destName}`);
         count++;
     } else {
-        console.warn(`   ⚠ ${destName} — not found in git HEAD`);
+        log.warn(`   ⚠ ${destName} — not found in git HEAD`);
     }
 }
 
@@ -213,10 +220,10 @@ for (const { src, dest: destName } of BRANDING_MAP) {
     const dest = join(OUT, 'branding', destName);
 
     if (copyFromSrc(src, dest)) {
-        console.log(`   ✓ branding/${destName}`);
+        log.info(`   ✓ branding/${destName}`);
         count++;
     } else {
-        console.warn(`   ⚠ branding/${destName} — source not found: ${src}`);
+        log.warn(`   ⚠ branding/${destName} — source not found: ${src}`);
     }
 }
 
@@ -224,11 +231,13 @@ for (const { src, dest: destName } of BRANDING_MAP) {
 // Done
 // ---------------------------------------------------------------------------
 
-console.log(`\n✅ Snapshotted ${count} files into:`);
-console.log(`   ${OUT}\n`);
-console.log('Next steps:');
-console.log('  1. Review the snapshotted files');
-console.log('  2. Commit the new environments/learncard/assets/ directory');
-console.log('  3. The .gitignore entries will prevent platform output files from polluting git status');
-console.log('  4. Run: git rm -r --cached <paths>   to untrack the now-gitignored files');
-console.log('  5. Commit the gitignore + untrack changes\n');
+log.info(`\n✅ Snapshotted ${count} files into:`);
+log.info(`   ${OUT}\n`);
+log.info('Next steps:');
+log.info('  1. Review the snapshotted files');
+log.info('  2. Commit the new environments/learncard/assets/ directory');
+log.info(
+    '  3. The .gitignore entries will prevent platform output files from polluting git status'
+);
+log.info('  4. Run: git rm -r --cached <paths>   to untrack the now-gitignored files');
+log.info('  5. Commit the gitignore + untrack changes\n');

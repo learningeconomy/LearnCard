@@ -1,5 +1,7 @@
 import React from 'react';
 import { Loader2, ShieldAlert, BookOpen, PenTool, Eye } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-contract-preview');
 
 import { useModal, ModalTypes, useWallet, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
@@ -25,7 +27,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                 const wallet = await initWallet();
                 return await wallet.invoke.getContract(contractUri);
             } catch (error) {
-                console.error('Failed to fetch contract:', error);
+                log.error('Failed to fetch contract:', error);
                 return null;
             }
         },

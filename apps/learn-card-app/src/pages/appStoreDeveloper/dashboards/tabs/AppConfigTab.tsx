@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-config-tab');
 /**
  * AppConfigTab - App Configuration for Embedded Apps
  * 
@@ -330,7 +332,7 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
 
             presentToast('Configuration saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to save config:', err);
+            log.error('Failed to save config:', err);
             presentToast('Failed to save configuration', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };

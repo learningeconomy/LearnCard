@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-autosave');
 
 const DEFAULT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 const DEFAULT_DEBOUNCE_MS = 2000;
@@ -78,7 +80,7 @@ export function useAutosave<T, E = unknown>({
                 setHasRecoveredState(true);
             }
         } catch (err) {
-            console.warn(`[useAutosave] Failed to load from ${storageKey}:`, err);
+            log.warn(`[useAutosave] Failed to load from ${storageKey}:`, err);
         }
     }, [enabled, maxAgeMs, storageKey]);
 
@@ -105,7 +107,7 @@ export function useAutosave<T, E = unknown>({
 
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useAutosave] Failed to save to localStorage:', err);
+                    log.warn('[useAutosave] Failed to save to localStorage:', err);
                 }
             }, debounceMs);
         },
@@ -120,7 +122,7 @@ export function useAutosave<T, E = unknown>({
             currentStateRef.current = null;
             setHasUnsavedChanges(false);
         } catch (err) {
-            console.warn('[useAutosave] Failed to clear local save:', err);
+            log.warn('[useAutosave] Failed to clear local save:', err);
         }
     }, [storageKey]);
 
@@ -143,7 +145,7 @@ export function useAutosave<T, E = unknown>({
 
             localStorage.setItem(storageKey, JSON.stringify(wrapper));
         } catch (err) {
-            console.warn('[useAutosave] Failed to save immediately:', err);
+            log.warn('[useAutosave] Failed to save immediately:', err);
         }
     }, [enabled, storageKey]);
 
@@ -179,7 +181,7 @@ export function useAutosave<T, E = unknown>({
 
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useAutosave] Failed to save on visibility change:', err);
+                    log.warn('[useAutosave] Failed to save on visibility change:', err);
                 }
             }
         };
@@ -204,7 +206,7 @@ export function useAutosave<T, E = unknown>({
 
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useAutosave] Failed to save on beforeunload:', err);
+                    log.warn('[useAutosave] Failed to save on beforeunload:', err);
                 }
 
                 e.preventDefault();
@@ -235,7 +237,7 @@ export function useAutosave<T, E = unknown>({
 
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useAutosave] Failed to save on unmount:', err);
+                    log.warn('[useAutosave] Failed to save on unmount:', err);
                 }
             }
         };

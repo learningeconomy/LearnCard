@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { IonInput } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('e-u-parental-consent-modal-content');
 
 // Basic email validation via native input + simple regex handled via UI
 const EMAIL_REGEX = /[^@\s]+@[^@\s]+\.[^@\s]+/;
@@ -53,7 +55,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
 
             setSent(true);
         } catch (e) {
-            console.error('Failed to send guardian approval email:', e);
+            log.error('Failed to send guardian approval email:', e);
             setError(' Failed to send consent request. Please try again.');
         } finally {
             setLoading(false);

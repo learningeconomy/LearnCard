@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('auth-coordinator');
 /**
  * Auth Coordinator
  * 
@@ -114,7 +116,7 @@ export class AuthCoordinator {
                                 } catch (e) {
                                     // Server check failed — proceed to ready.
                                     // Migration will be caught on the next full init.
-                                    console.warn('Server key verification failed on pk-first path, proceeding to ready', e);
+                                    log.warn('Server key verification failed on pk-first path, proceeding to ready', e);
                                 }
                             }
 
@@ -130,7 +132,7 @@ export class AuthCoordinator {
                         }
                     }
                 } catch (e) {
-                    console.warn('Cached private key check failed, falling through to auth flow', e);
+                    log.warn('Cached private key check failed, falling through to auth flow', e);
                 }
             }
 
@@ -225,7 +227,7 @@ export class AuthCoordinator {
                 const derivedDid = await this.config.didFromPrivateKey(privateKey);
 
                 if (derivedDid !== serverStatus.primaryDid) {
-                    console.warn('DID mismatch - stale local key detected');
+                    log.warn('DID mismatch - stale local key detected');
                     await this.keyDerivation.clearLocalKeys();
 
                     this.setState({
@@ -257,7 +259,7 @@ export class AuthCoordinator {
         } catch (e) {
             // Typed auth session errors → idle (not error)
             if (e instanceof AuthSessionError) {
-                console.warn('Auth session expired or missing — returning to idle');
+                log.warn('Auth session expired or missing — returning to idle');
                 this.setState({ status: 'idle' });
                 return this.state;
             }
@@ -302,7 +304,7 @@ export class AuthCoordinator {
             // Fire-and-forget: send email backup share if the strategy supports it
             if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
                 this.keyDerivation.sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => console.warn('Email backup share failed (non-fatal):', e));
+                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
             }
 
             this.setState({
@@ -377,7 +379,7 @@ export class AuthCoordinator {
             // Fire-and-forget: send email backup share if the strategy supports it
             if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
                 this.keyDerivation.sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => console.warn('Email backup share failed (non-fatal):', e));
+                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
             }
 
             this.setState({
@@ -492,7 +494,7 @@ export class AuthCoordinator {
 
             return derivedDid === serverStatus.primaryDid;
         } catch (e) {
-            console.error('Key integrity verification failed', e);
+            log.error('Key integrity verification failed', e);
             return false;
         }
     }
