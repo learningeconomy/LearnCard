@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useIsLoggedIn } from 'learn-card-base';
 
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
@@ -33,6 +34,87 @@ export type SemanticSearchSkillRecord = {
 
 export type SemanticSearchResult = {
     records: SemanticSearchSkillRecord[];
+};
+
+const SEEDED_SKILL_FRAMEWORK_SOURCE_PREFIX = 'learncard://seed/skill-frameworks/';
+
+const isProductionEnvironment = (): boolean =>
+    typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
+
+const fetchAllAvailableFrameworks = async (
+    wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
+        ...args: any[]
+    ) => Promise<infer T>
+        ? T
+        : never
+) => {
+    const records: Array<{
+        id: string;
+        name: string;
+        image?: string;
+        description?: string;
+        sourceURI?: string;
+        isPublic?: boolean;
+        status: string;
+    }> = [];
+    let cursor: string | null | undefined = null;
+
+    for (let i = 0; i < 40; i += 1) {
+        const page = (await wallet.invoke.getAllAvailableFrameworks({
+            limit: 100,
+            cursor,
+        })) as {
+            records: typeof records;
+            hasMore: boolean;
+            cursor?: string | null;
+        };
+
+        records.push(...page.records);
+
+        if (!page.hasMore || !page.cursor) {
+            break;
+        }
+
+        cursor = page.cursor;
+    }
+
+    return records;
+};
+
+const fetchSeededGlobalSkillFrameworks = async (
+    wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
+        ...args: any[]
+    ) => Promise<infer T>
+        ? T
+        : never
+): Promise<GlobalSkillFrameworkConfig[]> => {
+    const availableFrameworks = await fetchAllAvailableFrameworks(wallet);
+    const seededFrameworks = availableFrameworks.filter(
+        framework =>
+            framework.isPublic &&
+            framework.sourceURI?.startsWith(SEEDED_SKILL_FRAMEWORK_SOURCE_PREFIX)
+    );
+
+    const frameworkConfigs = await Promise.all(
+        seededFrameworks.map(async framework => {
+            const frameworkDetails = (await wallet.invoke.getSkillFrameworkById(framework.id, {
+                limit: 200,
+                childrenLimit: 200,
+            })) as {
+                skills?: { records?: Array<{ id: string }> };
+            };
+
+            return {
+                frameworkId: framework.id,
+                name: framework.name,
+                defaultSkillIds: frameworkDetails.skills?.records?.map(skill => skill.id) ?? [],
+            } satisfies GlobalSkillFrameworkConfig;
+        })
+    );
+
+    return frameworkConfigs.filter(
+        framework => framework.frameworkId && framework.name && framework.defaultSkillIds
+    );
 };
 
 export const normalizeGlobalSkillFrameworks = (
@@ -67,10 +149,29 @@ export const normalizeGlobalSkillFrameworks = (
 
 export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const flags = useFlags<GlobalSkillFrameworkFlags>();
+    const { initWallet } = useWallet();
+    const isLoggedIn = useIsLoggedIn();
+    const useSeededFrameworks = !isProductionEnvironment();
+
+    const { data: seededFrameworks = [] } = useQuery({
+        queryKey: ['seededGlobalSkillFrameworks', isLoggedIn],
+        queryFn: async () => {
+            try {
+                const wallet = await initWallet();
+                return fetchSeededGlobalSkillFrameworks(wallet);
+            } catch {
+                return [];
+            }
+        },
+        enabled: useSeededFrameworks && isLoggedIn,
+    });
 
     return useMemo(
-        () => normalizeGlobalSkillFrameworks(flags?.globalSkillFrameworks?.frameworks),
-        [flags?.globalSkillFrameworks]
+        () =>
+            useSeededFrameworks
+                ? seededFrameworks
+                : normalizeGlobalSkillFrameworks(flags?.globalSkillFrameworks?.frameworks),
+        [flags?.globalSkillFrameworks, seededFrameworks, useSeededFrameworks]
     );
 };
 

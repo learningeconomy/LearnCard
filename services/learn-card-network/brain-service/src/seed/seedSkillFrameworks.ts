@@ -3,6 +3,7 @@ import {
     DEFAULT_SKILL_FRAMEWORKS,
     type SeedSkillNode,
 } from './skill-frameworks.fixtures';
+import { upsertSkillEmbeddings } from '@helpers/skill-embedding.helpers';
 
 type QueryRunnerLike = {
     run: (
@@ -35,6 +36,45 @@ const toBoolean = (value: string | undefined): boolean => {
 
 const unique = (values: string[]): string[] =>
     Array.from(new Set(values.map(value => value.trim()).filter(Boolean)));
+
+const flattenSkillNodes = (
+    nodes: SeedSkillNode[],
+    frameworkId: string,
+    parentId?: string
+): Array<{
+    id: string;
+    frameworkId: string;
+    statement: string;
+    description?: string;
+    code?: string;
+    parentId?: string;
+}> => {
+    const flattened: Array<{
+        id: string;
+        frameworkId: string;
+        statement: string;
+        description?: string;
+        code?: string;
+        parentId?: string;
+    }> = [];
+
+    for (const node of nodes) {
+        flattened.push({
+            id: node.id,
+            frameworkId,
+            statement: node.statement,
+            description: node.description,
+            code: node.code,
+            ...(parentId ? { parentId } : {}),
+        });
+
+        if (node.children?.length) {
+            flattened.push(...flattenSkillNodes(node.children, frameworkId, node.id));
+        }
+    }
+
+    return flattened;
+};
 
 const normalizeProfileId = (profileId: string): string =>
     profileId.toLowerCase().replace(':', '%3A');
@@ -194,6 +234,15 @@ export const seedSkillFrameworkFixtures = async (
 
         for (const rootSkill of framework.skills) {
             await upsertSkillNode(run, framework, rootSkill);
+        }
+
+        try {
+            await upsertSkillEmbeddings(flattenSkillNodes(framework.skills, framework.id));
+        } catch (error) {
+            options.log?.warn?.(
+                `Failed to backfill skill embeddings for seeded framework ${framework.id}`,
+                error
+            );
         }
 
         seededFrameworkIds.push(framework.id);
