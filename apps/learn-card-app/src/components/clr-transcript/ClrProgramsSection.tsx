@@ -11,6 +11,18 @@ const ClrProgramsSection: React.FC<{
 }> = ({ programs, onSelectProgram }) => {
     const primaryType = programs[0]?.achievementType.value ?? 'Program';
     const countLabel = achievementTypeLabel(primaryType, programs.length);
+    const formatEarnedAt = (earnedAt?: string): string => {
+        if (!earnedAt) return '';
+
+        const date = new Date(earnedAt);
+        if (Number.isNaN(date.getTime())) return ` • ${earnedAt}`;
+
+        return ` • ${date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        })}`;
+    };
 
     return (
         <>
@@ -37,7 +49,7 @@ const ClrProgramsSection: React.FC<{
                                 </p>
                                 <p className="text-xs text-grayscale-500">
                                     {formatAchievementType(p.achievementType.value)}
-                                    {p.earnedAt?.value && ` • ${p.earnedAt.value}`}
+                                    {formatEarnedAt(p.earnedAt?.value)}
                                 </p>
                                 {p.description?.value && (
                                     <p className="text-xs text-grayscale-600 leading-relaxed pt-1 break-words">
