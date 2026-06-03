@@ -6,7 +6,7 @@ description: How users recover access to their keys when they lose a device
 
 ## What is this section about?
 
-This section explains how LearnCard users recover access to their private key when they lose their device, clear their browser storage, or sign in on a new device. Recovery is built on the [SSS key management](key-management-sss.md) system — specifically, the ability to reconstruct the private key from any two of its three shares.
+This section explains how LearnCard users recover access to their private key when they lose their device, clear their browser storage, or sign in on a new device. Recovery is built on the [SSS key management](key-management-sss.md) system — specifically, the ability to reconstruct the private key from any two of its four shares.
 
 ## Why is this important?
 
@@ -27,7 +27,7 @@ This typically means the user is on a new device or has cleared their browser da
 
 ## Recovery Methods
 
-Each method provides a different way to supply the **recovery share** (the third SSS share). Combined with the **auth share** from the server, these two shares reconstruct the private key.
+Each method provides a different way to supply the **recovery share** or **email share**. Combined with the **auth share** from the server, these two shares reconstruct the private key.
 
 ### Passkey (WebAuthn PRF)
 
@@ -38,10 +38,10 @@ Each method provides a different way to supply the **recovery share** (the third
 
 ### Recovery Phrase
 
-- **How it works:** The recovery share is encoded as a **24-word mnemonic** (BIP39-style). The user writes down the phrase and stores it somewhere safe. During recovery, the user enters the 24 words, which are decoded back into the share.
-- **Security:** As secure as the user's physical storage of the phrase. Anyone who obtains the 24 words can use them for recovery.
+- **How it works:** The recovery share is encoded as a BIP39-style mnemonic. The user writes down the phrase and stores it somewhere safe. During recovery, the user enters the phrase, which is decoded back into the share.
+- **Security:** As secure as the user's physical storage of the phrase. Anyone who obtains the phrase can use it for recovery.
 - **Best for:** Users who want an offline, hardware-independent backup.
-- **Limitation:** Requires the user to accurately transcribe and safeguard 24 words.
+- **Limitation:** Requires the user to accurately transcribe and safeguard the phrase.
 
 ### Backup File
 
@@ -69,10 +69,10 @@ flowchart TD
     D --> E[Show available recovery methods]
     E --> F{User chooses method}
     F -- Passkey --> G[Authenticate with passkey → decrypt share]
-    F -- Phrase --> H[Enter 24-word mnemonic → decode share]
+    F -- Phrase --> H[Enter recovery phrase → decode share]
     F -- Backup File --> I[Upload file + enter password → decrypt share]
     F -- Email Backup --> J[Retrieve share from email → decrypt share]
-    G & H & I & J --> K[Combine recovery share + auth share → reconstruct key]
+    G & H & I & J --> K[Combine chosen recovery share + auth share → reconstruct key]
     K --> L[Generate new device share for this device]
     L --> M[Re-split key → store fresh shares]
     M --> N[Ready]
@@ -82,7 +82,7 @@ After recovery:
 
 1. The private key is reconstructed from the recovery share + auth share.
 2. A **new device share** is created and stored locally.
-3. The key is **re-split** so that all three shares are refreshed.
+3. The key is **re-split** so that all four shares are refreshed.
 4. Share versioning on the server ensures that existing recovery methods remain valid against their original share version.
 
 ---
