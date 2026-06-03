@@ -9,6 +9,7 @@ import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory } from 'learn-card-base';
 
 import { curriedStateSlice } from '@learncard/helpers';
+import { useTranslation } from 'react-i18next';
 
 const vcDisplayWord: Record<CredentialCategory, string> = {
     ID: 'ID',

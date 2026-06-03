@@ -7,6 +7,7 @@ import ConsentFlowErrorFooter from './ConsentFlowErrorFooter';
 
 import { useHistory } from 'react-router-dom';
 import { useModal } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 type ConsentFlowErrorProps = {
     errorType: number;
@@ -16,6 +17,7 @@ type ConsentFlowErrorProps = {
 const ConsentFlowError: React.FC<ConsentFlowErrorProps> = ({ errorType, uri }) => {
     const history = useHistory();
     const { closeModal } = useModal();
+    const { t } = useTranslation();
 
     const handleRetry = () => {
         closeModal();
@@ -30,15 +32,15 @@ const ConsentFlowError: React.FC<ConsentFlowErrorProps> = ({ errorType, uri }) =
             case 404:
                 return {
                     Icon: SadCloud,
-                    title: 'Nothing Found',
-                    message: 'This Consent Flow does not or no longer exists.',
+                    title: t('consentFlow.nothingFound', 'Nothing Found'),
+                    message: t('consentFlow.notExists', 'This Consent Flow does not or no longer exists.'),
                     hideRetry: true,
                 };
             case 500:
                 return {
                     Icon: CloudWarning,
-                    title: 'Network Error',
-                    message: 'There was a problem loading this Consent Flow.',
+                    title: t('consentFlow.networkError', 'Network Error'),
+                    message: t('consentFlow.errorLoading', 'There was a problem loading this Consent Flow.'),
                     hideRetry: false,
                 };
             default:
