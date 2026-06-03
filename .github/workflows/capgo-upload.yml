@@ -57,8 +57,10 @@ on:
             self_assign:
                 description: |
                     If 'true', run `channel set ... --self-assign` after upload so this
-                    bundle becomes the default for the channel. Set to 'false' for PR
-                    previews where users opt in explicitly.
+                    bundle becomes the default for the channel. PR previews pass 'true'
+                    so the in-app switcher (CapacitorUpdater.setChannel) can opt into the
+                    latest PR bundle. Set to 'false' only for channels that should not be
+                    self-settable.
                 required: false
                 type: string
                 default: 'true'
@@ -161,25 +163,37 @@ jobs:
                       echo "$OUTPUT"
                   fi
 
+            # Inputs are passed through env and referenced as quoted shell vars so
+            # a crafted value (e.g. a version string read from a fork PR's
+            # package.json) can't break out into shell injection.
             - name: Upload bundle (CapGo)
               env:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  APP_ID: ${{ inputs.app_id }}
+                  BUILD_PATH: ${{ inputs.build_path }}
+                  CHANNEL: ${{ inputs.channel }}
+                  VERSION: ${{ inputs.version }}
+                  PACKAGE_JSON: ${{ inputs.package_json }}
+                  NODE_MODULES_PATH: ${{ inputs.node_modules_path }}
               run: >-
                   npx @capgo/cli@latest bundle upload
-                  ${{ inputs.app_id }}
+                  "$APP_ID"
                   --delta
-                  --path ${{ inputs.build_path }}
-                  --channel ${{ inputs.channel }}
-                  --bundle ${{ inputs.version }}
-                  --package-json ${{ inputs.package_json }}
-                  --node-modules ${{ inputs.node_modules_path }}
+                  --path "$BUILD_PATH"
+                  --channel "$CHANNEL"
+                  --bundle "$VERSION"
+                  --package-json "$PACKAGE_JSON"
+                  --node-modules "$NODE_MODULES_PATH"
 
             - name: Set channel default (CapGo)
               if: inputs.self_assign == 'true'
               env:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  APP_ID: ${{ inputs.app_id }}
+                  CHANNEL: ${{ inputs.channel }}
+                  VERSION: ${{ inputs.version }}
               run: >-
-                  npx @capgo/cli@latest channel set ${{ inputs.channel }}
-                  --bundle ${{ inputs.version }}
+                  npx @capgo/cli@latest channel set "$CHANNEL"
+                  --bundle "$VERSION"
                   --self-assign
-                  ${{ inputs.app_id }}
+                  "$APP_ID"
