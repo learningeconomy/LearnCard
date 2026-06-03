@@ -150,6 +150,29 @@ const fetchChannelsCached = async (force = false): Promise<{ name: string }[]> =
     return data;
 };
 
+// The native Capgo plugin (iOS) can't decode the channel list when the backend
+// returns numeric channel ids, surfacing as "could not be decoded" / "isn't in
+// the correct format" (Cap-go/capacitor-updater#706). We detect this to offer
+// manual channel entry instead of the (unavailable) list.
+const isChannelsDecodeError = (raw: string): boolean =>
+    /could not be decoded|isn't in the correct format|correct format/i.test(raw);
+
+const friendlyChannelsError = (raw: string): string => {
+    if (/rate.?limit/i.test(raw)) {
+        return 'Channel list is temporarily rate-limited — showing known channels. Try again in a minute.';
+    }
+
+    if (isChannelsDecodeError(raw)) {
+        return "Couldn't load the channel list on this device. You can still switch by entering a channel name below.";
+    }
+
+    if (/network|timeout|offline|failed to fetch/i.test(raw)) {
+        return 'Connection issue loading channels — showing known channels. Check your internet and try again.';
+    }
+
+    return "Couldn't load the full channel list — showing known channels.";
+};
+
 type ChannelKind = 'production' | 'staging' | 'pr' | 'custom';
 
 interface ChannelOption {
@@ -638,6 +661,8 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const [channels, setChannels] = useState<{ name: string }[] | null>(null);
     const [channelsLoading, setChannelsLoading] = useState(false);
     const [channelsError, setChannelsError] = useState<string | null>(null);
+    const [channelsDecodeFailed, setChannelsDecodeFailed] = useState(false);
+    const [manualChannel, setManualChannel] = useState('');
 
     const appName = brandingConfig?.name ?? 'App';
     const tenantId = tenantConfig?.tenantId;
@@ -773,22 +798,18 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const loadChannels = useCallback(async (force = false): Promise<void> => {
         setChannelsLoading(true);
         setChannelsError(null);
+        setChannelsDecodeFailed(false);
 
         try {
             setChannels(await fetchChannelsCached(force));
         } catch (err) {
             const msg = (err as { message?: string } | null)?.message ?? 'unknown error';
-            const rateLimited = /rate.?limit/i.test(msg);
 
             // Degrade gracefully: keep whatever we already have (cache or prior
             // state) so Production/Staging from the build-time define still show.
-            // Only surface a hard error when we have nothing to display.
             setChannels(prev => prev ?? channelsCache?.data ?? []);
-            setChannelsError(
-                rateLimited
-                    ? 'Channel list is temporarily rate-limited — showing known channels. Try again in a minute.'
-                    : msg,
-            );
+            setChannelsError(friendlyChannelsError(msg));
+            setChannelsDecodeFailed(isChannelsDecodeError(msg));
         } finally {
             setChannelsLoading(false);
         }
@@ -846,6 +867,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             });
 
             setShowChannelPicker(false);
+            setManualChannel('');
             await refreshInfo();
         } catch (err) {
             const msg = (err as { message?: string } | null)?.message ?? 'unknown error';
@@ -1177,6 +1199,46 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                                 </div>
                                             ) : null}
 
+                                            {channelsDecodeFailed ? (
+                                                <ChannelPickerSection title="Enter channel manually">
+                                                    <div className="flex flex-col gap-2 px-1 py-1">
+                                                        <input
+                                                            type="text"
+                                                            value={manualChannel}
+                                                            onChange={e =>
+                                                                setManualChannel(e.target.value)
+                                                            }
+                                                            placeholder="e.g. staging or pr-123"
+                                                            autoCapitalize="none"
+                                                            autoCorrect="off"
+                                                            spellCheck={false}
+                                                            disabled={switchingChannel !== null}
+                                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:opacity-50"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleSwitchChannel(manualChannel)
+                                                            }
+                                                            disabled={
+                                                                switchingChannel !== null ||
+                                                                manualChannel.trim() === ''
+                                                            }
+                                                            className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        >
+                                                            {switchingChannel !== null ? (
+                                                                <span className="flex items-center justify-center gap-2">
+                                                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                    Switching…
+                                                                </span>
+                                                            ) : (
+                                                                'Switch to this channel'
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </ChannelPickerSection>
+                                            ) : null}
+
                                             {grouped.productionLatest ? (
                                                 <ChannelPickerSection title="Production">
                                                     <ChannelRow
@@ -1257,7 +1319,10 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
 
                                     <button
                                         type="button"
-                                        onClick={() => setShowChannelPicker(false)}
+                                        onClick={() => {
+                                            setShowChannelPicker(false);
+                                            setManualChannel('');
+                                        }}
                                         className="w-full py-2.5 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                                     >
                                         Close
