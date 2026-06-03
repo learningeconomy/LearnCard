@@ -42,13 +42,25 @@ const DOCKER_NETWORK_NEO4J_FALLBACK = {
 const buildNeo4jConnectionCandidates = (): Neo4jConnectionCandidate[] => {
     const candidates: Neo4jConnectionCandidate[] = [];
 
-    if (process.env.NEO4J_URI || process.env.NEO4J_USERNAME || process.env.NEO4J_PASSWORD) {
+    const envUri = process.env.NEO4J_URI?.trim();
+    const envUsername = process.env.NEO4J_USERNAME?.trim();
+    const envPassword = process.env.NEO4J_PASSWORD?.trim();
+
+    if (envUri && envUsername && envPassword) {
         candidates.push({
             label: 'environment variables',
-            url: process.env.NEO4J_URI ?? LOCAL_NEO4J_FALLBACK.url,
-            username: process.env.NEO4J_USERNAME ?? LOCAL_NEO4J_FALLBACK.username,
-            password: process.env.NEO4J_PASSWORD ?? LOCAL_NEO4J_FALLBACK.password,
+            url: envUri,
+            username: envUsername,
+            password: envPassword,
             hint: 'Uses the NEO4J_* values already set in your shell or .env file.',
+        });
+    } else if (envUri || envUsername || envPassword) {
+        candidates.push({
+            label: 'incomplete environment variables',
+            url: envUri ?? LOCAL_NEO4J_FALLBACK.url,
+            username: envUsername ?? '',
+            password: envPassword ?? '',
+            hint: 'Set NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD together for staging or custom databases.',
         });
     }
 
@@ -113,8 +125,8 @@ const resolveNeo4jConnection = async (): Promise<{
     for (const candidate of candidates) {
         const connection = new Neogma({
             url: candidate.url,
-            username: candidate.username,
-            password: candidate.password,
+            username: candidate.username ?? '',
+            password: candidate.password ?? '',
         });
 
         try {

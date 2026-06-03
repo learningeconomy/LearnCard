@@ -80,7 +80,7 @@ const buildSkillNode = (node: SeedSkillInput): SeedSkillNode => ({
     description: node.description,
     code: node.code,
     icon: node.icon,
-    type: node.role === 'tier' ? 'container' : 'skill',
+    type: node.role === 'tier' ? 'container' : 'competency',
     status: 'active',
     children: node.children?.map(buildSkillNode) ?? [],
 });
@@ -102,6 +102,7 @@ const WEF_GLOBAL_SKILLS_TAXONOMY: SeedFrameworkInput = {
     description:
         'The World Economic Forum Global Skills Taxonomy creates a shared language that clarifies in-demand skills, helps employers identify the right talent, guides educators in designing relevant training programmes, and helps jobseekers showcase their skills.',
     sourceURI: 'learncard://seed/skill-frameworks/wef-global-skills-taxonomy',
+    image: 'https://cdn.filestackcontent.com/MLseH895Tia5SpY5iOz2',
     skills: [
         tier(
             'wef-skills-knowledge-abilities',
@@ -763,6 +764,7 @@ const PATHSMITH_DURABLE_SKILLS_STARTER_EDITION: SeedFrameworkInput = {
     description:
         'A durable-skills framework for early-career learners, translating employer demand into a clear guide for growth, assessment, and economic mobility.',
     sourceURI: 'learncard://seed/skill-frameworks/pathsmith-durable-skills-starter-edition',
+    image: 'https://cdn.filestackcontent.com/lFafCT74SS6dgB0xWCMo',
     skills: [
         tier(
             'pathsmith-leadership-domain',
