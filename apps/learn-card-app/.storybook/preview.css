@@ -7,3 +7,12 @@
 :root {
     font-family: 'Poppins', 'Lucida Sans', Geneva, Verdana, sans-serif;
 }
+
+/* Storybook's fullscreen layout pins the body with position:fixed and clips
+   overflow, so tall stories like DashboardView can't scroll. Unpin it and let
+   the body own the scroll. */
+.sb-main-fullscreen {
+    position: static !important;
+    overflow-y: auto !important;
+    height: 100vh !important;
+}

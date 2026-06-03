@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import type { AppStoreListing, InstalledApp, VC } from '@learncard/types';
 import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import type { ResolvedAction, SlotName } from './quickActions/types';
@@ -12,6 +12,59 @@ import type {
 } from './DashboardView.types';
 
 const noop = () => undefined;
+
+const PORTRAIT = {
+    jordan: 'https://i.pravatar.cc/160?img=12',
+    maya: 'https://i.pravatar.cc/160?img=45',
+    sam: 'https://i.pravatar.cc/160?img=33',
+    acme: 'https://api.dicebear.com/7.x/initials/svg?seed=Acme%20Corp&backgroundColor=18224E',
+} as const;
+
+const ISSUER_LOGO = {
+    university: 'https://api.dicebear.com/7.x/initials/svg?seed=State%20University&backgroundColor=0B6E4F',
+    pmi: 'https://api.dicebear.com/7.x/initials/svg?seed=PMI&backgroundColor=1F6FEB',
+    redCross: 'https://api.dicebear.com/7.x/initials/svg?seed=Red%20Cross&backgroundColor=C81E1E',
+} as const;
+
+const ACHIEVEMENT_IMG = {
+    degree: 'https://cdn.filestackcontent.com/Y9DCbjt6Q0CccrCDX46I',
+    certificate: 'https://cdn.filestackcontent.com/OSTqZlxSCe6B62jwPm7O',
+    award: 'https://cdn.filestackcontent.com/F9yva92WQ0CPisIeQRmr',
+} as const;
+
+const makeCredentialVC = (opts: {
+    uri: string;
+    title: string;
+    issuerName: string;
+    issuerImage: string;
+    achievementImage: string;
+    achievementType: string;
+    issuedAt: string;
+}): VC =>
+    ({
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        id: opts.uri,
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: { id: 'did:web:network.learncard.com:users:demo-issuer', name: opts.issuerName, image: opts.issuerImage },
+        issuanceDate: opts.issuedAt,
+        name: opts.title,
+        credentialSubject: {
+            id: 'did:web:network.learncard.com:users:chad-rivera',
+            type: ['AchievementSubject'],
+            achievement: {
+                id: `${opts.uri}#achievement`,
+                type: ['Achievement'],
+                achievementType: opts.achievementType,
+                name: opts.title,
+                description: `${opts.title}, issued by ${opts.issuerName}.`,
+                image: opts.achievementImage,
+                criteria: { narrative: `Awarded for completing ${opts.title}.` },
+            },
+        },
+    }) as unknown as VC;
 
 const DotIcon: React.FC<{ className?: string }> = ({ className }) =>
     React.createElement(
@@ -64,32 +117,67 @@ const makeNotification = (id: string, type: string, title: string): Notification
         sent: new Date().toISOString(),
     }) as unknown as NotificationType;
 
-const credentialRecords: DashboardActivityRecord[] = [
+const daysAgo = (n: number): string => new Date(Date.now() - n * 86_400_000).toISOString();
+
+const credentialSeeds = [
     {
         id: 'rec-1',
         uri: 'lc:cloud:rec-1',
-        title: 'Bachelor of Science',
+        title: 'Bachelor of Science, Computer Science',
         from: 'State University',
-        date: new Date().toISOString(),
+        issuerImage: ISSUER_LOGO.university,
+        achievementImage: ACHIEVEMENT_IMG.degree,
+        achievementType: 'Degree',
+        date: daysAgo(2),
         category: 'achievement',
     },
     {
         id: 'rec-2',
         uri: 'lc:cloud:rec-2',
-        title: 'Project Management Certificate',
-        from: 'PMI',
-        date: new Date().toISOString(),
+        title: 'Project Management Professional (PMP)',
+        from: 'Project Management Institute',
+        issuerImage: ISSUER_LOGO.pmi,
+        achievementImage: ACHIEVEMENT_IMG.certificate,
+        achievementType: 'ext:ProfessionalCertification',
+        date: daysAgo(9),
         category: 'achievement',
     },
     {
         id: 'rec-3',
         uri: 'lc:cloud:rec-3',
-        title: 'Volunteer of the Year',
-        from: 'Red Cross',
-        date: new Date().toISOString(),
+        title: 'Volunteer of the Year 2025',
+        from: 'American Red Cross',
+        issuerImage: ISSUER_LOGO.redCross,
+        achievementImage: ACHIEVEMENT_IMG.award,
+        achievementType: 'CommunityService',
+        date: daysAgo(21),
         category: 'achievement',
     },
-];
+] as const;
+
+const credentialRecords: DashboardActivityRecord[] = credentialSeeds.map(s => ({
+    id: s.id,
+    uri: s.uri,
+    title: s.title,
+    from: s.from,
+    date: s.date,
+    category: s.category,
+}));
+
+export const personaCredentials: Record<string, VC> = Object.fromEntries(
+    credentialSeeds.map(s => [
+        s.uri,
+        makeCredentialVC({
+            uri: s.uri,
+            title: s.title,
+            issuerName: s.from,
+            issuerImage: s.issuerImage,
+            achievementImage: s.achievementImage,
+            achievementType: s.achievementType,
+            issuedAt: s.date,
+        }),
+    ])
+);
 
 const meanwhileTips: DashboardEmptyTip[] = [
     {
@@ -116,14 +204,14 @@ const meanwhileTips: DashboardEmptyTip[] = [
 ];
 
 const suggestedApps: AppStoreListing[] = [
-    makeApp('app-1', 'Learn about LearnCard', 'Learn how LearnCard can work for you'),
+    makeApp('app-1', 'Learn about LearnCard', 'See how LearnCard works for you'),
     makeApp('app-2', 'Venture Academy', 'An entrepreneurial challenge for students'),
-    makeApp('app-3', 'ChatGPT', 'AI tutoring by OpenAI'),
+    makeApp('app-3', 'Khan Academy', 'Free world-class lessons and practice'),
 ];
 
 const baseHeader = {
-    displayName: 'Chad',
-    profileImage: '',
+    displayName: 'Chad Rivera',
+    profileImage: 'https://i.pravatar.cc/160?img=68',
     profileRole: undefined,
     shortBio: undefined,
     onSkillPillClick: noop,
@@ -220,16 +308,20 @@ export const activeLearner: DashboardViewModel = {
         navigate: makeAction('navigate', 'browse-pathways', 'Explore journeys', 'Browse other pathways'),
     },
     activity: {
-        notifications: [makeNotification('n1', 'CONNECTION_REQUEST', 'Jackson Smith wants to connect')],
+        notifications: [
+            makeNotification('n1', 'BOOST_RECEIVED', 'State University sent you a credential'),
+        ],
         pendingContractRequests: [],
-        pendingConnections: [{ profileId: 'jackson', displayName: 'Jackson Smith', image: '' }],
+        pendingConnections: [
+            { profileId: 'jordan-lee', displayName: 'Jordan Lee', image: PORTRAIT.jordan },
+        ],
         records: credentialRecords,
         isLoading: false,
         emptyTips: meanwhileTips,
     },
     apps: {
         installedApps: [
-            makeInstalledApp('app-3', 'ChatGPT', 'AI tutoring by OpenAI'),
+            makeInstalledApp('app-3', 'Khan Academy', 'Free world-class lessons and practice'),
             makeInstalledApp('app-2', 'SXSW EDU', 'Earn credentials and issue badges at SXSW'),
         ],
         suggestedApps,
@@ -262,13 +354,17 @@ export const pendingOnly: DashboardViewModel = {
     ...activeLearner,
     activity: {
         notifications: [
-            makeNotification('n1', 'CONNECTION_REQUEST', 'Jackson Smith wants to connect'),
             makeNotification('n2', 'PRESENTATION_REQUEST', 'Acme Corp requested your transcript'),
         ],
         pendingContractRequests: [
-            { profile: { profileId: 'acme', displayName: 'Acme Corp', image: '' }, contract: { name: 'Hiring data' } },
+            {
+                profile: { profileId: 'acme', displayName: 'Acme Corp', image: PORTRAIT.acme },
+                contract: { name: 'Employment verification' },
+            },
         ],
-        pendingConnections: [{ profileId: 'jackson', displayName: 'Jackson Smith', image: '' }],
+        pendingConnections: [
+            { profileId: 'maya-chen', displayName: 'Maya Chen', image: PORTRAIT.maya },
+        ],
         records: [],
         isLoading: false,
         emptyTips: meanwhileTips,

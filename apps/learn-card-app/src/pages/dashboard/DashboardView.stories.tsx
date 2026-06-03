@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import DashboardView from './DashboardView';
 import {
@@ -8,12 +9,22 @@ import {
     returningNoActivity,
     pendingOnly,
     loadingState,
+    personaCredentials,
 } from './dashboard.personas';
+
+const SeedCredentials: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const queryClient = useQueryClient();
+    for (const [uri, vc] of Object.entries(personaCredentials)) {
+        queryClient.setQueryData(['useGetResolvedCredential', uri], vc);
+    }
+    return <>{children}</>;
+};
 
 const meta: Meta<typeof DashboardView> = {
     title: 'Dashboard/DashboardView',
     component: DashboardView,
     parameters: { layout: 'fullscreen' },
+    decorators: [Story => <SeedCredentials><Story /></SeedCredentials>],
 };
 
 export default meta;
