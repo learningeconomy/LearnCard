@@ -9,7 +9,8 @@
         "nx-run-command",
         "types",
         "init",
-        "open-badge-v2-plugin"
+        "open-badge-v2-plugin",
+        "holder-continuity"
     ],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
@@ -21,6 +22,13 @@
             "inputs": ["source"],
             "options": {
                 "script": "build"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "test"
             }
         },
         "start": {

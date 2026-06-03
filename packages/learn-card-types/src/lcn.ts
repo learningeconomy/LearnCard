@@ -828,6 +828,28 @@ export const ConsentFlowTransactionValidator = z.object({
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
+export const HolderExportConsentRecordValidator = z.object({
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    contract: ConsentFlowContractDetailsValidator,
+    terms: ConsentFlowTermsValidator,
+    transactions: ConsentFlowTransactionValidator.array(),
+});
+export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
+
+export const HolderExportMetadataValidator = z.object({
+    consentRecords: HolderExportConsentRecordValidator.array(),
+    truncated: z.boolean().optional(),
+    warnings: z.string().array().optional(),
+    limits: z
+        .object({
+            maxConsentRecords: z.number(),
+            maxTransactionsPerConsentRecord: z.number(),
+        })
+        .optional(),
+});
+export type HolderExportMetadata = z.infer<typeof HolderExportMetadataValidator>;
+
 export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowTransactionValidator.array(),
 });
@@ -946,10 +968,7 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
     to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    from: z.union([
-        z.string(),
-        LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    ]),
+    from: z.union([z.string(), LCNProfileValidator.partial().and(z.object({ did: z.string() }))]),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.iso.datetime().optional(),
