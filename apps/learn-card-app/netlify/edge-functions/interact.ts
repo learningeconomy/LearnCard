@@ -1,7 +1,5 @@
 import type { Config, Context } from '@netlify/edge-functions';
 
-import { getLogger } from 'learn-card-base';
-const log = getLogger('interact');
 
 import { resolveTenantConfig, getTenantOrigin } from './shared/tenant-resolver.ts';
 
@@ -79,7 +77,7 @@ export default async (request: Request, context: Context) => {
 
     // If the client is an interoperable wallet asking for JSON data
     if (acceptHeader?.includes('application/json')) {
-        log.info(
+        console.log(
             `Fetching protocols for interaction ID: ${interactionId} (tenant: ${tenantOrigin})`
         );
         const protocols = {
