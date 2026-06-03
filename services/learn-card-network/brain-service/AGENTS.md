@@ -8,6 +8,15 @@
 -   Start on port 4000: `pnpm start-p-4000`
 -   Deploy: `pnpm serverless-deploy`
 
+### Skill Framework Seeding
+
+-   Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
+-   Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
+-   Re-seed manually with `pnpm seed:skill-frameworks` from `services/learn-card-network/brain-service`.
+-   Grant framework admin access to an existing profile with `pnpm seed:skill-frameworks --add-admin <profileId>`.
+-   Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
+-   The seed command is idempotent and will not duplicate framework or skill nodes.
+
 ## Test Commands
 
 -   Run all tests: `pnpm test`

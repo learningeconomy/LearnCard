@@ -66,7 +66,11 @@ const discoverTenants = (): string[] => {
         const full = join(ENVIRONMENTS_DIR, name);
 
         // Must have config.json; skip the legacy "local" directory (now learncard/config.local.json)
-        return statSync(full).isDirectory() && existsSync(join(full, 'config.json')) && name !== 'local';
+        return (
+            statSync(full).isDirectory() &&
+            existsSync(join(full, 'config.json')) &&
+            name !== 'local'
+        );
     });
 };
 
@@ -160,7 +164,7 @@ const launchCredentialViewer = () => {
         'pnpm nx dev credential-viewer',
         'Launching Credential Viewer',
         'pnpm lc viewer',
-        MONOREPO_ROOT,
+        MONOREPO_ROOT
     );
 };
 
@@ -185,10 +189,24 @@ const seedAppStoreListing = async () => {
         { flag: '--app-name', label: 'App name', defaultVal: 'Dev Partner App' },
         { flag: '--app-url', label: 'App URL', defaultVal: 'http://localhost:4321' },
         { flag: '--profile', label: 'Owner profile ID', defaultVal: 'dev-owner' },
-        { flag: '--install-for', label: 'Install for profile', defaultVal: '', hint: 'skip to not auto-install' },
+        {
+            flag: '--install-for',
+            label: 'Install for profile',
+            defaultVal: '',
+            hint: 'skip to not auto-install',
+        },
         { flag: '--app-image', label: 'App image URL', defaultVal: '', hint: 'skip for no image' },
-        { flag: '--promotion', label: 'Promotion level', defaultVal: 'FEATURED_CAROUSEL', hint: 'FEATURED_CAROUSEL | CURATED_LIST | NONE' },
-        { flag: '--sa-endpoint', label: 'Signing authority endpoint', defaultVal: 'http://localhost:5100/api' },
+        {
+            flag: '--promotion',
+            label: 'Promotion level',
+            defaultVal: 'FEATURED_CAROUSEL',
+            hint: 'FEATURED_CAROUSEL | CURATED_LIST | NONE',
+        },
+        {
+            flag: '--sa-endpoint',
+            label: 'Signing authority endpoint',
+            defaultVal: 'http://localhost:5100/api',
+        },
         { flag: '--template-alias', label: 'Template alias', defaultVal: 'default' },
     ];
 
@@ -216,7 +234,7 @@ const seedAppStoreListing = async () => {
         cmd,
         'Seeding app store listing into local database',
         `pnpm lc seed app${flagStr ? ` ${flagStr}` : ''}`,
-        BRAIN_SERVICE_ROOT,
+        BRAIN_SERVICE_ROOT
     );
 };
 
@@ -262,7 +280,7 @@ const seedPathwayDemoBundle = async () => {
         cmd,
         'Seeding Pathways demo bundle into local database',
         `pnpm lc seed pathway-demo${ownerProfileId ? ` --profile ${ownerProfileId}` : ''}`,
-        BRAIN_SERVICE_ROOT,
+        BRAIN_SERVICE_ROOT
     );
 };
 
@@ -271,8 +289,16 @@ const seedTestData = async () => {
     console.log(bold('  🌱 Seed Test Data'));
     console.log(dim('   Populate your local database with dev data.'));
     console.log('');
-    console.log(`  ${cyan('a')}  ${bold('App store listing')}       ${dim('— dev partner app + profile + listing')}`);
-    console.log(`  ${cyan('b')}  ${bold('Pathways demo bundle')}    ${dim('— 3 listings for the AWS Cloud Practitioner pathway')}`);
+    console.log(
+        `  ${cyan('a')}  ${bold('App store listing')}       ${dim(
+            '— dev partner app + profile + listing'
+        )}`
+    );
+    console.log(
+        `  ${cyan('b')}  ${bold('Pathways demo bundle')}    ${dim(
+            '— 3 listings for the AWS Cloud Practitioner pathway'
+        )}`
+    );
     console.log('');
     console.log(dim('  Press Enter to go back'));
     console.log('');
@@ -310,14 +336,18 @@ const pickStage = async (tenantId: string): Promise<string> => {
     console.log('');
     console.log(`  ${cyan('1')}  ${bold('local')} — local dev ${dim('(default)')}`);
 
-    stages.filter(s => s !== 'local').forEach((s, i) => {
-        console.log(`  ${cyan(`${i + 2}`)}  ${bold(s)}`);
-    });
+    stages
+        .filter(s => s !== 'local')
+        .forEach((s, i) => {
+            console.log(`  ${cyan(`${i + 2}`)}  ${bold(s)}`);
+        });
 
     console.log(`  ${cyan(`${stages.length + 1}`)}  ${bold('production')} — no stage overlay`);
     console.log('');
 
-    const choice = await ask(`Pick a stage [1-${stages.length + 1}] ${dim('(default: 1 / local)')}: `);
+    const choice = await ask(
+        `Pick a stage [1-${stages.length + 1}] ${dim('(default: 1 / local)')}: `
+    );
 
     if (!choice || choice === '1') return 'local';
 
@@ -364,7 +394,7 @@ const startDev = async (
     tenantId?: string,
     stageId?: string,
     devMode?: DevMode,
-    noBuild?: boolean,
+    noBuild?: boolean
 ) => {
     const tenants = discoverTenants();
 
@@ -384,7 +414,9 @@ const startDev = async (
 
         console.log('');
 
-        const choice = await ask(`Pick a tenant [1-${tenants.length}] or name ${dim('(default: learncard)')}: `);
+        const choice = await ask(
+            `Pick a tenant [1-${tenants.length}] or name ${dim('(default: learncard)')}: `
+        );
 
         if (!choice) {
             tenantId = 'learncard';
@@ -416,9 +448,21 @@ const startDev = async (
         console.log('');
         console.log(bold('How do you want to run?'));
         console.log('');
-        console.log(`  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim('(pnpm dev)')}`);
-        console.log(`  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim('(assumes services are running)')}`);
-        console.log(`  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim('(pnpm dev:services)')}`);
+        console.log(
+            `  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim(
+                '(pnpm dev)'
+            )}`
+        );
+        console.log(
+            `  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim(
+                '(assumes services are running)'
+            )}`
+        );
+        console.log(
+            `  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim(
+                '(pnpm dev:services)'
+            )}`
+        );
         console.log('');
 
         const modeChoice = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
@@ -432,7 +476,9 @@ const startDev = async (
 
     if (usesDocker && noBuild === undefined) {
         console.log('');
-        console.log(dim('  Tip: skip --build to start ~10× faster when nothing in Docker has changed.'));
+        console.log(
+            dim('  Tip: skip --build to start ~10× faster when nothing in Docker has changed.')
+        );
         const buildAns = await ask(`Rebuild Docker images? ${dim('(Y/n)')}: `);
 
         noBuild = buildAns.trim().toLowerCase() === 'n';
@@ -448,7 +494,7 @@ const startDev = async (
             runCommand(
                 `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
                 `Starting ${displayName}${stageLabel} — app only`,
-                `pnpm lc dev ${tenantId}${stageArg} app`,
+                `pnpm lc dev ${tenantId}${stageArg} app`
             );
             break;
 
@@ -456,7 +502,7 @@ const startDev = async (
             runCommand(
                 `docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
                 `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
-                `pnpm lc dev ${tenantId}${stageArg} services${fastArg}`,
+                `pnpm lc dev ${tenantId}${stageArg} services${fastArg}`
             );
             break;
 
@@ -464,8 +510,10 @@ const startDev = async (
         default:
             runCommand(
                 `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
-                `Starting ${displayName}${stageLabel} — full stack${noBuild ? ' (skipping rebuild)' : ''}`,
-                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}${fastArg}`,
+                `Starting ${displayName}${stageLabel} — full stack${
+                    noBuild ? ' (skipping rebuild)' : ''
+                }`,
+                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}${fastArg}`
             );
             break;
     }
@@ -506,7 +554,7 @@ const pickTenantAndPrepare = async () => {
     runCommand(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         `Preparing config for ${getTenantDisplayName(tenantId)} (${tenantId}, ${stageId})`,
-        `pnpm lc switch ${tenantId}${stageArg}`,
+        `pnpm lc switch ${tenantId}${stageArg}`
     );
 };
 
@@ -514,7 +562,7 @@ const runValidators = () => {
     runCommand(
         'npx tsx scripts/validate-tenant-configs.ts && npx tsx scripts/validate-theme-schemas.ts',
         'Validating all tenant configs + theme schemas',
-        'pnpm lc validate',
+        'pnpm lc validate'
     );
 };
 
@@ -555,8 +603,16 @@ const generateAssets = async () => {
         console.log('');
         console.log(bold('This tenant already has assets. How do you want to generate?'));
         console.log('');
-        console.log(`  ${cyan('1')}  ${bold('Fill missing')} — only generate assets that don\'t exist yet ${dim('(safe)')}`);
-        console.log(`  ${cyan('2')}  ${bold('Full regen')}  — regenerate all assets (overwrites existing) ${dim('(config/ preserved)')}`);
+        console.log(
+            `  ${cyan('1')}  ${bold(
+                'Fill missing'
+            )} — only generate assets that don\'t exist yet ${dim('(safe)')}`
+        );
+        console.log(
+            `  ${cyan('2')}  ${bold(
+                'Full regen'
+            )}  — regenerate all assets (overwrites existing) ${dim('(config/ preserved)')}`
+        );
         console.log('');
 
         const modeChoice = await ask(`Pick a mode [1-2] ${dim('(default: 1 / fill)')}: `);
@@ -584,7 +640,8 @@ const generateAssets = async () => {
 
     // 3b. Display name
     const configName = getTenantDisplayName(tenantId);
-    const nameDefault = configName !== tenantId ? configName : tenantId.charAt(0).toUpperCase() + tenantId.slice(1);
+    const nameDefault =
+        configName !== tenantId ? configName : tenantId.charAt(0).toUpperCase() + tenantId.slice(1);
 
     console.log('');
 
@@ -599,7 +656,9 @@ const generateAssets = async () => {
     const bgHex = bgInput || '#FFFFFF';
 
     // 5. Splash background color
-    const splashInput = await ask(`Splash background color ${dim(`(default: same as bg ${bgHex})`)}: `);
+    const splashInput = await ask(
+        `Splash background color ${dim(`(default: same as bg ${bgHex})`)}: `
+    );
     const splashHex = splashInput || '';
 
     // 6. Optional: skip splash?
@@ -611,45 +670,59 @@ const generateAssets = async () => {
     // 7. Logo variant overrides
     console.log('');
     console.log(bold('Logo variant overrides'));
-    console.log(dim('  If you have Figma exports for different logo variants, provide them below.'));
+    console.log(
+        dim('  If you have Figma exports for different logo variants, provide them below.')
+    );
     console.log(dim('  Press Enter to skip any variant — it will be auto-generated.'));
     console.log('');
 
     // -- Icon for dark backgrounds --
     console.log(dim('  Icon / brand mark — light/white version for dark backgrounds.'));
     console.log(dim('  (e.g. white version of your icon for use on dark/colored surfaces)'));
-    const iconLightInput = await ask(`Icon for dark backgrounds ${dim('(Enter to auto-generate)')}: `);
+    const iconLightInput = await ask(
+        `Icon for dark backgrounds ${dim('(Enter to auto-generate)')}: `
+    );
 
     console.log('');
 
     // -- Wordmark for dark backgrounds --
     console.log(dim('  Wordmark (text only, no icon) — white/light text for dark backgrounds.'));
     console.log(dim('  (Used on: loading page, intro slides, login page)'));
-    const wordmarkInput = await ask(`Wordmark for dark backgrounds ${dim('(Enter to auto-generate)')}: `);
+    const wordmarkInput = await ask(
+        `Wordmark for dark backgrounds ${dim('(Enter to auto-generate)')}: `
+    );
 
     // -- Wordmark for light backgrounds --
     console.log(dim('  Wordmark (text only, no icon) — dark text for light backgrounds.'));
     console.log(dim('  (Used on: side menu header, AI sessions desktop header)'));
-    const wordmarkLightInput = await ask(`Wordmark for light backgrounds ${dim('(Enter to auto-generate)')}: `);
+    const wordmarkLightInput = await ask(
+        `Wordmark for light backgrounds ${dim('(Enter to auto-generate)')}: `
+    );
 
     console.log('');
 
     // -- Full lockup for light backgrounds --
     console.log(dim('  Full lockup (icon + wordmark combined) — dark logo for light backgrounds.'));
     console.log(dim('  (Used for: og:image, share cards, external embeds)'));
-    const fullLogoInput = await ask(`Full lockup for light backgrounds ${dim('(Enter to skip)')}: `);
+    const fullLogoInput = await ask(
+        `Full lockup for light backgrounds ${dim('(Enter to skip)')}: `
+    );
 
     // -- Full lockup for dark backgrounds --
     console.log(dim('  Full lockup (icon + wordmark combined) — light logo for dark backgrounds.'));
     console.log(dim('  (Used for: splash screens, share cards on dark surfaces)'));
-    const fullLogoDarkInput = await ask(`Full lockup for dark backgrounds ${dim('(Enter to skip)')}: `);
+    const fullLogoDarkInput = await ask(
+        `Full lockup for dark backgrounds ${dim('(Enter to skip)')}: `
+    );
 
     console.log('');
 
     // -- Desktop backgrounds --
     console.log(dim('  Desktop login background images (optional overrides).'));
     const desktopBgInput = await ask(`Desktop login BG file ${dim('(Enter to auto-generate)')}: `);
-    const desktopBgAltInput = await ask(`Desktop login BG alt file ${dim('(Enter to auto-generate)')}: `);
+    const desktopBgAltInput = await ask(
+        `Desktop login BG alt file ${dim('(Enter to auto-generate)')}: `
+    );
 
     // Build command
     let cmd = `npx tsx scripts/generate-tenant-assets.ts ${tenantId} ${JSON.stringify(logoPath)}`;
@@ -765,11 +838,7 @@ const generateAssets = async () => {
         return;
     }
 
-    runCommand(
-        cmd,
-        `Generating assets for ${displayName} (${tenantId})`,
-        shortcut,
-    );
+    runCommand(cmd, `Generating assets for ${displayName} (${tenantId})`, shortcut);
 };
 
 // ---------------------------------------------------------------------------
@@ -792,7 +861,9 @@ const pickTenant = async (defaultTenant = 'learncard'): Promise<string> => {
 
     console.log('');
 
-    const choice = await ask(`Pick a tenant [1-${tenants.length}] or name ${dim(`(default: ${defaultTenant})`)}: `);
+    const choice = await ask(
+        `Pick a tenant [1-${tenants.length}] or name ${dim(`(default: ${defaultTenant})`)}: `
+    );
 
     if (!choice) return defaultTenant;
 
@@ -852,11 +923,13 @@ const patchCapConfigSource = (serverUrl: string): void => {
     // Insert before the final `};` that closes the config object
     let patched = content.replace(
         /(\n};\s*\nexport default config;)/,
-        `\n${serverBlock}};\n\nexport default config;`,
+        `\n${serverBlock}};\n\nexport default config;`
     );
 
     if (patched === content) {
-        console.warn(`   ⚠️  Could not find insertion point in capacitor.config.ts — patching failed`);
+        console.warn(
+            `   ⚠️  Could not find insertion point in capacitor.config.ts — patching failed`
+        );
         return;
     }
 
@@ -874,11 +947,11 @@ const patchCapConfigSource = (serverUrl: string): void => {
 
     if (capgoDisabled) {
         console.log(
-            `   ${green('✓')} Patched capacitor.config.ts → CapacitorUpdater.autoUpdate = false`,
+            `   ${green('✓')} Patched capacitor.config.ts → CapacitorUpdater.autoUpdate = false`
         );
     } else {
         console.warn(
-            `   ⚠️  Could not find \`autoUpdate: true\` in CapacitorUpdater — Capgo may still poll during the session`,
+            `   ⚠️  Could not find \`autoUpdate: true\` in CapacitorUpdater — Capgo may still poll during the session`
         );
     }
 };
@@ -894,7 +967,11 @@ const unpatchCapConfigSource = (): void => {
     writeFileSync(CAP_CONFIG_TS, original, 'utf-8');
 
     // Remove the backup file
-    try { execSync(`rm -f "${CAP_CONFIG_BACKUP}"`, { cwd: APP_ROOT }); } catch { /* ignore */ }
+    try {
+        execSync(`rm -f "${CAP_CONFIG_BACKUP}"`, { cwd: APP_ROOT });
+    } catch {
+        /* ignore */
+    }
 
     console.log(`   ${green('✓')} Restored capacitor.config.ts from backup`);
 };
@@ -990,7 +1067,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     // 1. Populate public/ with tenant config + assets (so vite build picks them up)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-        'Preparing tenant config (public/)',
+        'Preparing tenant config (public/)'
     );
 
     // 2. Build web app with correct tenant data
@@ -1003,12 +1080,14 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-        'Patching native projects with tenant config',
+        'Patching native projects with tenant config'
     );
 
     console.log('');
     console.log(green('✅ Native sync complete.'));
-    console.log(dim('   Run `pnpm lc native open ios` or `pnpm lc native open android` to open the IDE.'));
+    console.log(
+        dim('   Run `pnpm lc native open ios` or `pnpm lc native open android` to open the IDE.')
+    );
     console.log('');
 
     rl.close();
@@ -1034,7 +1113,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         // 1. Populate public/ with tenant config + assets
         execBlocking(
             `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-            'Preparing tenant config (public/)',
+            'Preparing tenant config (public/)'
         );
 
         // 2. Build web app with correct tenant data
@@ -1047,7 +1126,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
         execBlocking(
             `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-            'Patching native projects with tenant config',
+            'Patching native projects with tenant config'
         );
     }
 
@@ -1055,7 +1134,9 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
 
     const label = platform === 'ios' ? 'Opening Xcode' : 'Opening Android Studio';
     const hint = tenantId
-        ? `pnpm lc native open ${platform} ${tenantId}${stageId && stageId !== 'local' ? ` ${stageId}` : ''}`
+        ? `pnpm lc native open ${platform} ${tenantId}${
+              stageId && stageId !== 'local' ? ` ${stageId}` : ''
+          }`
         : `pnpm lc native open ${platform}`;
 
     runCommand(`npx cap open ${platform}`, label, hint);
@@ -1079,7 +1160,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     // 1. Populate public/ with tenant config + assets
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-        'Preparing tenant config (public/)',
+        'Preparing tenant config (public/)'
     );
 
     // 2. Build web app with correct tenant data
@@ -1092,7 +1173,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-        'Patching native projects with tenant config',
+        'Patching native projects with tenant config'
     );
 
     const runFlag = platform === 'android' ? ' --target' : '';
@@ -1102,7 +1183,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     runCommand(
         `npx cap run ${platform}${runFlag}`,
         `Running on ${platform}`,
-        `pnpm lc native run ${tenantId} ${platform}`,
+        `pnpm lc native run ${tenantId} ${platform}`
     );
 };
 
@@ -1153,7 +1234,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
-        'Step 4/6 — Patching native projects with tenant config',
+        'Step 4/6 — Patching native projects with tenant config'
     );
 
     // Step 5: Re-apply live-reload patches directly to the platform JSONs
@@ -1166,7 +1247,11 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     console.log('');
     console.log(green('🚀 Starting Vite dev server + opening native IDE'));
     console.log('');
-    console.log(`   The app on your ${platform === 'ios' ? 'iOS Simulator / device' : 'Android device'} will`);
+    console.log(
+        `   The app on your ${
+            platform === 'ios' ? 'iOS Simulator / device' : 'Android device'
+        } will`
+    );
     console.log(`   load from ${bold(serverUrl)} with live-reload.`);
     console.log('');
     console.log(dim('   Press Ctrl+C to stop the Vite dev server.'));
@@ -1198,28 +1283,45 @@ const pickFastlaneLane = async (platform: Platform): Promise<FastlaneLane> => {
     console.log('');
 
     if (platform === 'ios') {
-        console.log(`  ${cyan('1')}  ${bold('beta')}       ${dim('— build + upload to TestFlight')}`);
-        console.log(`  ${cyan('2')}  ${bold('release')}    ${dim('— build + submit to App Store review')}`);
-        console.log(`  ${cyan('3')}  ${bold('appetize')}   ${dim('— simulator build + upload to Appetize.io')}`);
+        console.log(
+            `  ${cyan('1')}  ${bold('beta')}       ${dim('— build + upload to TestFlight')}`
+        );
+        console.log(
+            `  ${cyan('2')}  ${bold('release')}    ${dim('— build + submit to App Store review')}`
+        );
+        console.log(
+            `  ${cyan('3')}  ${bold('appetize')}   ${dim(
+                '— simulator build + upload to Appetize.io'
+            )}`
+        );
         console.log('');
 
         const choice = await ask(`Pick a build type [1-3] ${dim('(default: 1 / beta)')}: `);
 
         switch (choice) {
-            case '2': return 'release';
-            case '3': return 'upload_to_appetize';
-            default: return 'beta';
+            case '2':
+                return 'release';
+            case '3':
+                return 'upload_to_appetize';
+            default:
+                return 'beta';
         }
     } else {
-        console.log(`  ${cyan('1')}  ${bold('release')}    ${dim('— build AAB + upload to Play Store')}`);
-        console.log(`  ${cyan('2')}  ${bold('appetize')}   ${dim('— build APK + upload to Appetize.io')}`);
+        console.log(
+            `  ${cyan('1')}  ${bold('release')}    ${dim('— build AAB + upload to Play Store')}`
+        );
+        console.log(
+            `  ${cyan('2')}  ${bold('appetize')}   ${dim('— build APK + upload to Appetize.io')}`
+        );
         console.log('');
 
         const choice = await ask(`Pick a build type [1-2] ${dim('(default: 1 / release)')}: `);
 
         switch (choice) {
-            case '2': return 'upload_to_appetize';
-            default: return 'release';
+            case '2':
+                return 'upload_to_appetize';
+            default:
+                return 'release';
         }
     }
 };
@@ -1269,7 +1371,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     // Step 1: Populate public/ with tenant config + assets
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
-        `Preparing tenant config (${stage})`,
+        `Preparing tenant config (${stage})`
     );
 
     // Step 2: Build web app with correct tenant data
@@ -1282,7 +1384,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     // Step 4: Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
-        `Patching native projects with tenant config (${stage})`,
+        `Patching native projects with tenant config (${stage})`
     );
 
     // Step 5: Derive env vars from tenant config (override .env values)
@@ -1330,15 +1432,11 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     rl.close();
 
     // Spawn fastlane — derived env vars override .env, secrets from .env load normally
-    const child = spawn(
-        'bundle',
-        ['exec', 'fastlane', platform, lane],
-        {
-            cwd: FASTLANE_ROOT,
-            stdio: 'inherit',
-            env: { ...process.env, ...derivedEnv },
-        },
-    );
+    const child = spawn('bundle', ['exec', 'fastlane', platform, lane], {
+        cwd: FASTLANE_ROOT,
+        stdio: 'inherit',
+        env: { ...process.env, ...derivedEnv },
+    });
 
     child.on('exit', code => process.exit(code ?? 0));
 };
@@ -1347,13 +1445,35 @@ const nativeMenu = async () => {
     console.log('');
     console.log(bold('📱 Native / Capacitor'));
     console.log('');
-    console.log(`  ${cyan('1')}  ${bold('Live-reload dev')}   ${dim('— Vite --host + cap sync + open IDE (auto LAN IP)')}`);
-    console.log(`  ${cyan('2')}  ${bold('Sync')}              ${dim('— cap sync + tenant config patching')}`);
-    console.log(`  ${cyan('3')}  ${bold('Open IDE')}           ${dim('— (optional: sync tenant) + open Xcode / Android Studio')}`);
-    console.log(`  ${cyan('4')}  ${bold('Run')}               ${dim('— build + sync + run on device/simulator')}`);
-    console.log(`  ${cyan('5')}  ${bold('Build & Ship')}       ${dim('— sync + fastlane (beta, release, appetize)')}`);
+    console.log(
+        `  ${cyan('1')}  ${bold('Live-reload dev')}   ${dim(
+            '— Vite --host + cap sync + open IDE (auto LAN IP)'
+        )}`
+    );
+    console.log(
+        `  ${cyan('2')}  ${bold('Sync')}              ${dim('— cap sync + tenant config patching')}`
+    );
+    console.log(
+        `  ${cyan('3')}  ${bold('Open IDE')}           ${dim(
+            '— (optional: sync tenant) + open Xcode / Android Studio'
+        )}`
+    );
+    console.log(
+        `  ${cyan('4')}  ${bold('Run')}               ${dim(
+            '— build + sync + run on device/simulator'
+        )}`
+    );
+    console.log(
+        `  ${cyan('5')}  ${bold('Build & Ship')}       ${dim(
+            '— sync + fastlane (beta, release, appetize)'
+        )}`
+    );
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'));
+    console.log(
+        dim(
+            '  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'
+        )
+    );
     console.log('');
 
     const choice = await ask('Pick an option [1-5]: ');
@@ -1417,12 +1537,11 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             const allArgs = [arg1, arg2];
 
             const stage = allArgs.reduce<string | undefined>(
-                (found, a) => found ?? asStage(a), undefined,
+                (found, a) => found ?? asStage(a),
+                undefined
             );
 
-            const tenant = allArgs.find(
-                a => a && !asPlatform(a) && !asStage(a),
-            );
+            const tenant = allArgs.find(a => a && !asPlatform(a) && !asStage(a));
 
             await nativeSync(tenant, stage);
             return true;
@@ -1434,16 +1553,16 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             const allArgs = [arg1, arg2, arg3];
 
             const platform = allArgs.reduce<Platform | undefined>(
-                (found, a) => found ?? asPlatform(a), undefined,
+                (found, a) => found ?? asPlatform(a),
+                undefined
             );
 
             const stage = allArgs.reduce<string | undefined>(
-                (found, a) => found ?? asStage(a), undefined,
+                (found, a) => found ?? asStage(a),
+                undefined
             );
 
-            const tenant = allArgs.find(
-                a => a && !asPlatform(a) && !asStage(a),
-            );
+            const tenant = allArgs.find(a => a && !asPlatform(a) && !asStage(a));
 
             await nativeOpen(platform, tenant, stage);
             return true;
@@ -1466,16 +1585,16 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             const allArgs = [arg1, arg2, arg3];
 
             const platform = allArgs.reduce<Platform | undefined>(
-                (found, a) => found ?? asPlatform(a), undefined,
+                (found, a) => found ?? asPlatform(a),
+                undefined
             );
 
             const lane = allArgs.reduce<FastlaneLane | undefined>(
-                (found, a) => found ?? parseLaneArg(a), undefined,
+                (found, a) => found ?? parseLaneArg(a),
+                undefined
             );
 
-            const tenant = allArgs.find(
-                a => a && !asPlatform(a) && !parseLaneArg(a),
-            );
+            const tenant = allArgs.find(a => a && !asPlatform(a) && !parseLaneArg(a));
 
             await nativeBuild(tenant, platform, lane);
             return true;
@@ -1514,7 +1633,7 @@ const handleShortcuts = async (): Promise<boolean> => {
 
             runCommand(
                 `npx tsx scripts/prepare-native-config.ts ${switchTenant}${switchStageFlag}`,
-                `Preparing config for ${switchTenant} (${switchStage})`,
+                `Preparing config for ${switchTenant} (${switchStage})`
             );
             return true;
         }
@@ -1524,25 +1643,24 @@ const handleShortcuts = async (): Promise<boolean> => {
             const devAllArgs = [arg, arg2, args[3], args[4]];
 
             const devModeArg = devAllArgs.reduce<DevMode | undefined>(
-                (found, a) => found ?? asDevMode(a), undefined,
+                (found, a) => found ?? asDevMode(a),
+                undefined
             );
 
             const devNoBuildArg = devAllArgs.reduce<boolean | undefined>(
-                (found, a) => found ?? asNoBuild(a), undefined,
+                (found, a) => found ?? asNoBuild(a),
+                undefined
             );
 
-            const devStageArg = devAllArgs.reduce<string | undefined>(
-                (found, a) => {
-                    if (found !== undefined) return found;
-                    if (asDevMode(a) || asNoBuild(a) !== undefined) return undefined;
+            const devStageArg = devAllArgs.reduce<string | undefined>((found, a) => {
+                if (found !== undefined) return found;
+                if (asDevMode(a) || asNoBuild(a) !== undefined) return undefined;
 
-                    return asStage(a);
-                },
-                undefined,
-            );
+                return asStage(a);
+            }, undefined);
 
             const devTenantArg = devAllArgs.find(
-                a => a && !asDevMode(a) && !asStage(a) && asNoBuild(a) === undefined,
+                a => a && !asDevMode(a) && !asStage(a) && asNoBuild(a) === undefined
             );
 
             await startDev(devTenantArg, devStageArg, devModeArg, devNoBuildArg);
@@ -1554,12 +1672,11 @@ const handleShortcuts = async (): Promise<boolean> => {
             const syncAllArgs = [arg, arg2];
 
             const syncStage = syncAllArgs.reduce<string | undefined>(
-                (found, a) => found ?? asStage(a), undefined,
+                (found, a) => found ?? asStage(a),
+                undefined
             );
 
-            const syncTenant = syncAllArgs.find(
-                a => a && !asStage(a),
-            );
+            const syncTenant = syncAllArgs.find(a => a && !asStage(a));
 
             await nativeSync(syncTenant, syncStage);
             return true;
@@ -1576,16 +1693,16 @@ const handleShortcuts = async (): Promise<boolean> => {
             };
 
             const openPlatform = openAllArgs.reduce<Platform | undefined>(
-                (found, a) => found ?? asPlatformLocal(a), undefined,
+                (found, a) => found ?? asPlatformLocal(a),
+                undefined
             );
 
             const openStage = openAllArgs.reduce<string | undefined>(
-                (found, a) => found ?? asStage(a), undefined,
+                (found, a) => found ?? asStage(a),
+                undefined
             );
 
-            const openTenant = openAllArgs.find(
-                a => a && !asPlatformLocal(a) && !asStage(a),
-            );
+            const openTenant = openAllArgs.find(a => a && !asPlatformLocal(a) && !asStage(a));
 
             await nativeOpen(openPlatform, openTenant, openStage);
             return true;
@@ -1598,7 +1715,7 @@ const handleShortcuts = async (): Promise<boolean> => {
 
             runCommand(
                 `npx tsx scripts/prepare-native-config.ts ${tenant}${stageFlag} && vite --host`,
-                `Starting ${tenant} (${stage}) — app only`,
+                `Starting ${tenant} (${stage}) — app only`
             );
             return true;
         }
@@ -1615,12 +1732,24 @@ const handleShortcuts = async (): Promise<boolean> => {
 
                 runCommand(
                     `npx tsx scripts/generate-tenant-assets.ts ${passthrough}`,
-                    `Generating assets for ${arg}`,
+                    `Generating assets for ${arg}`
                 );
             } else {
                 await generateAssets();
             }
 
+            return true;
+        }
+
+        case 'seed:skill-frameworks': {
+            const passthrough = args.slice(1).join(' ');
+
+            runCommand(
+                `pnpm seed:skill-frameworks${passthrough ? ` ${passthrough}` : ''}`,
+                'Seeding default skill frameworks',
+                undefined,
+                BRAIN_SERVICE_ROOT
+            );
             return true;
         }
 
@@ -1647,7 +1776,9 @@ const handleShortcuts = async (): Promise<boolean> => {
 
             runCommand(
                 `npx tsx scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
-                `Resolving final config for ${resolveTenant}${resolveStage ? ` (${resolveStage})` : ''}`,
+                `Resolving final config for ${resolveTenant}${
+                    resolveStage ? ` (${resolveStage})` : ''
+                }`
             );
             return true;
         }
@@ -1670,7 +1801,7 @@ const handleShortcuts = async (): Promise<boolean> => {
                 'Bump Capgo defaultChannel in capacitor.config.ts',
                 arg
                     ? `pnpm lc bump-default-capgo-channel ${arg}`
-                    : 'pnpm lc bump-default-capgo-channel',
+                    : 'pnpm lc bump-default-capgo-channel'
             );
             return true;
         }
@@ -1688,11 +1819,20 @@ const handleShortcuts = async (): Promise<boolean> => {
                     `npx tsx scripts/seed-dev-app.ts${passthrough ? ` ${passthrough}` : ''}`,
                     'Seeding app store listing into local database',
                     undefined,
-                    BRAIN_SERVICE_ROOT,
+                    BRAIN_SERVICE_ROOT
+                );
+            } else if (arg === 'skill-frameworks') {
+                const passthrough = args.slice(2).join(' ');
+
+                runCommand(
+                    `pnpm seed:skill-frameworks${passthrough ? ` ${passthrough}` : ''}`,
+                    'Seeding default skill frameworks',
+                    undefined,
+                    BRAIN_SERVICE_ROOT
                 );
             } else if (arg) {
                 console.log(yellow(`Unknown seed subcommand: ${arg}`));
-                console.log(dim('  Available: app'));
+                console.log(dim('  Available: app, skill-frameworks'));
                 rl.close();
             } else {
                 await seedTestData();
@@ -1710,13 +1850,23 @@ const handleShortcuts = async (): Promise<boolean> => {
                 const stages = discoverStages(t);
                 const domain = (() => {
                     try {
-                        return JSON.parse(readFileSync(join(ENVIRONMENTS_DIR, t, 'config.json'), 'utf-8')).domain ?? '';
-                    } catch { return ''; }
+                        return (
+                            JSON.parse(
+                                readFileSync(join(ENVIRONMENTS_DIR, t, 'config.json'), 'utf-8')
+                            ).domain ?? ''
+                        );
+                    } catch {
+                        return '';
+                    }
                 })();
 
                 const stageList = stages.length > 0 ? dim(` stages: [${stages.join(', ')}]`) : '';
 
-                console.log(`  ${green('•')} ${bold(t)} — ${name}${domain ? dim(` (${domain})`) : ''}${stageList}`);
+                console.log(
+                    `  ${green('•')} ${bold(t)} — ${name}${
+                        domain ? dim(` (${domain})`) : ''
+                    }${stageList}`
+                );
             }
 
             console.log('');
@@ -1747,37 +1897,92 @@ const printHelp = () => {
     console.log('');
     console.log(bold('  ⚡ Start'));
     console.log('');
-    console.log(`  ${cyan('pnpm lc dev <tenant> [stage] [mode] [fast]')}  ${dim('Web dev server (mode: full|app|services)')}`);
-    console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}              ${dim('Cap sync + tenant config patching')}`);
-    console.log(`  ${cyan('pnpm lc open <tenant> [platform]')}           ${dim('Sync tenant + open Xcode / Android Studio')}`);
+    console.log(
+        `  ${cyan('pnpm lc dev <tenant> [stage] [mode] [fast]')}  ${dim(
+            'Web dev server (mode: full|app|services)'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc sync <tenant> [stage]')}              ${dim(
+            'Cap sync + tenant config patching'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc open <tenant> [platform]')}           ${dim(
+            'Sync tenant + open Xcode / Android Studio'
+        )}`
+    );
     console.log('');
     console.log(dim('  Examples:'));
-    console.log(dim('    pnpm lc dev vetpass alpha                # prompts for run mode + rebuild'));
+    console.log(
+        dim('    pnpm lc dev vetpass alpha                # prompts for run mode + rebuild')
+    );
     console.log(dim('    pnpm lc dev vetpass alpha app            # app only, no prompt'));
     console.log(dim('    pnpm lc dev vetpass alpha full           # full stack, no prompt'));
-    console.log(dim('    pnpm lc dev vetpass alpha full fast      # full stack, skip docker --build'));
-    console.log(dim('    pnpm lc dev vetpass alpha services fast  # services only, skip docker --build'));
+    console.log(
+        dim('    pnpm lc dev vetpass alpha full fast      # full stack, skip docker --build')
+    );
+    console.log(
+        dim('    pnpm lc dev vetpass alpha services fast  # services only, skip docker --build')
+    );
     console.log(dim('    pnpm lc sync vetpass alpha'));
     console.log(dim('    pnpm lc open vetpass ios'));
     console.log('');
     console.log(bold('  \ud83d\udee0 Tools'));
     console.log('');
-    console.log(`  ${cyan('pnpm lc viewer')}                     ${dim('Launch the Credential Viewer')}`);
-    console.log(`  ${cyan('pnpm lc seed app [flags]')}           ${dim('Seed app store listing into local DB')}`);
-    console.log(`  ${cyan('pnpm lc native')}                     ${dim('Full native menu (dev, run, build)')}`);
+    console.log(
+        `  ${cyan('pnpm lc viewer')}                     ${dim('Launch the Credential Viewer')}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc seed app [flags]')}           ${dim(
+            'Seed app store listing into local DB'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc seed:skill-frameworks [flags]')} ${dim(
+            'Seed default skill frameworks into local DB'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc native')}                     ${dim(
+            'Full native menu (dev, run, build)'
+        )}`
+    );
     console.log('');
     console.log(bold('  🔧 Setup'));
     console.log('');
     console.log(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
     console.log(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
-    console.log(`  ${cyan('pnpm lc bump-default-capgo-channel')} ${dim('Bump Capgo OTA channel (native compat break)')}`);
-    console.log(`  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim('Generate icons/splash from a logo')}`);
-    console.log(`  ${cyan('pnpm lc validate')}                   ${dim('Run all config + theme validators')}`);
-    console.log(`  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`);
-    console.log(`  ${cyan('pnpm lc editor')}                     ${dim('Visual config editor on :4400')}`);
-    console.log(`  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`);
+    console.log(
+        `  ${cyan('pnpm lc bump-default-capgo-channel')} ${dim(
+            'Bump Capgo OTA channel (native compat break)'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim(
+            'Generate icons/splash from a logo'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc validate')}                   ${dim(
+            'Run all config + theme validators'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc editor')}                     ${dim('Visual config editor on :4400')}`
+    );
+    console.log(
+        `  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`
+    );
     console.log(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
-    console.log(`  ${cyan('pnpm lc tenants')}                    ${dim('List all tenants, stages, and themes')}`);
+    console.log(
+        `  ${cyan('pnpm lc tenants')}                    ${dim(
+            'List all tenants, stages, and themes'
+        )}`
+    );
     console.log('');
     console.log(dim(`  Available tenants: ${tenants.join(', ')}`));
     console.log('');
@@ -1793,13 +1998,37 @@ const configAndScaffoldingMenu = async () => {
     console.log('');
     console.log(bold('  🔧 Config & Scaffolding'));
     console.log('');
-    console.log(`  ${cyan('a')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`);
-    console.log(`  ${cyan('b')}  ${bold('Create a new theme')}      ${dim('— interactive theme scaffolding')}`);
-    console.log(`  ${cyan('c')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
-    console.log(`  ${cyan('d')}  ${bold('Validate configs')}        ${dim('— run all config + theme validators')}`);
-    console.log(`  ${cyan('e')}  ${bold('Switch tenant config')}    ${dim('— prepare config without starting')}`);
-    console.log(`  ${cyan('f')}  ${bold('Config editor')}           ${dim('— visual config editor on :4400')}`);
-    console.log(`  ${cyan('g')}  ${bold('Resolve config')}          ${dim('— print final merged config')}`);
+    console.log(
+        `  ${cyan('a')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`
+    );
+    console.log(
+        `  ${cyan('b')}  ${bold('Create a new theme')}      ${dim(
+            '— interactive theme scaffolding'
+        )}`
+    );
+    console.log(
+        `  ${cyan('c')}  ${bold('Generate tenant assets')}  ${dim(
+            '— create icons/splash from a logo'
+        )}`
+    );
+    console.log(
+        `  ${cyan('d')}  ${bold('Validate configs')}        ${dim(
+            '— run all config + theme validators'
+        )}`
+    );
+    console.log(
+        `  ${cyan('e')}  ${bold('Switch tenant config')}    ${dim(
+            '— prepare config without starting'
+        )}`
+    );
+    console.log(
+        `  ${cyan('f')}  ${bold('Config editor')}           ${dim(
+            '— visual config editor on :4400'
+        )}`
+    );
+    console.log(
+        `  ${cyan('g')}  ${bold('Resolve config')}          ${dim('— print final merged config')}`
+    );
     console.log('');
     console.log(dim('  Press Enter to go back'));
     console.log('');
@@ -1812,7 +2041,11 @@ const configAndScaffoldingMenu = async () => {
             break;
 
         case 'b':
-            runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme', 'pnpm lc create-theme');
+            runCommand(
+                'npx tsx scripts/create-theme.ts',
+                'Create a new theme',
+                'pnpm lc create-theme'
+            );
             break;
 
         case 'c':
@@ -1839,7 +2072,7 @@ const configAndScaffoldingMenu = async () => {
             runCommand(
                 `npx tsx scripts/resolve-tenant-config.ts ${tenant}${stageFlag}`,
                 `Resolving final config for ${tenant}${stage !== 'local' ? ` (${stage})` : ''}`,
-                `pnpm lc resolve ${tenant}${stage !== 'local' ? ` ${stage}` : ''}`,
+                `pnpm lc resolve ${tenant}${stage !== 'local' ? ` ${stage}` : ''}`
             );
             break;
         }
@@ -1859,20 +2092,48 @@ const main = async () => {
 
     console.log('');
     console.log(bold('🃏 LearnCard Developer Tools'));
-    console.log(dim(`   ${tenants.length} tenant(s): ${tenants.join(', ')}  •  ${themes.length} theme(s): ${themes.join(', ')}`));
+    console.log(
+        dim(
+            `   ${tenants.length} tenant(s): ${tenants.join(', ')}  •  ${
+                themes.length
+            } theme(s): ${themes.join(', ')}`
+        )
+    );
     console.log('');
     console.log(bold('  ⚡ Start'));
-    console.log(`  ${cyan('1')}  ${bold('Dev server')}              ${dim('— web dev for a tenant')}`);
-    console.log(`  ${cyan('2')}  ${bold('Native sync')}             ${dim('— sync + patch tenant config')}`);
-    console.log(`  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— Xcode / Android Studio')}`);
+    console.log(
+        `  ${cyan('1')}  ${bold('Dev server')}              ${dim('— web dev for a tenant')}`
+    );
+    console.log(
+        `  ${cyan('2')}  ${bold('Native sync')}             ${dim('— sync + patch tenant config')}`
+    );
+    console.log(
+        `  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— Xcode / Android Studio')}`
+    );
     console.log('');
     console.log(bold('  � Tools'));
-    console.log(`  ${cyan('4')}  ${bold('Credential Viewer')}       ${dim('— browse & test credential fixtures')}`);
-    console.log(`  ${cyan('5')}  ${bold('Seed test data')}          ${dim('— populate local DB with dev app + profiles')}`);
-    console.log(`  ${cyan('6')}  ${bold('Native menu')}             ${dim('— full Capacitor menu (dev, run, build, ship)')}`);
+    console.log(
+        `  ${cyan('4')}  ${bold('Credential Viewer')}       ${dim(
+            '— browse & test credential fixtures'
+        )}`
+    );
+    console.log(
+        `  ${cyan('5')}  ${bold('Seed test data')}          ${dim(
+            '— populate local DB with dev app + profiles'
+        )}`
+    );
+    console.log(
+        `  ${cyan('6')}  ${bold('Native menu')}             ${dim(
+            '— full Capacitor menu (dev, run, build, ship)'
+        )}`
+    );
     console.log('');
     console.log(bold('  🔧 Setup'));
-    console.log(`  ${cyan('7')}  ${bold('Config & scaffolding')}    ${dim('— create, validate, edit, generate...')}`);
+    console.log(
+        `  ${cyan('7')}  ${bold('Config & scaffolding')}    ${dim(
+            '— create, validate, edit, generate...'
+        )}`
+    );
     console.log('');
     console.log(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
     console.log('');
