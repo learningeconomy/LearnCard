@@ -58,6 +58,16 @@ const ClrTranscriptRendererDemo = () => {
 
     const currentModel = normalizeClrTranscriptDisplayModel(FIXTURES[fixture]);
 
+    // return (
+    //     <div className="bg-grayscale-10 h-screen overflow-y-auto font-poppins flex flex-col">
+    //         <ClrTranscriptFullPage
+    //             model={currentModel}
+    //             credential={FIXTURES[fixture] as any}
+    //             options={{ viewer, surface }}
+    //         />
+    //     </div>
+    // );
+
     return (
         <div className="bg-grayscale-10 h-screen overflow-y-auto font-poppins flex flex-col">
             {/* Controls header */}
@@ -120,7 +130,7 @@ const ClrTranscriptRendererDemo = () => {
                     </IonPopover>
 
                     {/* Viewer picker */}
-                    <button
+                    {/* <button
                         type="button"
                         onClick={e => {
                             setViewerPopoverEvent(e.nativeEvent);
@@ -130,7 +140,7 @@ const ClrTranscriptRendererDemo = () => {
                     >
                         {VIEWER_LABELS[viewer]}
                         <span className="text-grayscale-400 text-xs">▾</span>
-                    </button>
+                    </button> */}
 
                     <IonPopover
                         isOpen={viewerPopoverOpen}
@@ -169,7 +179,7 @@ const ClrTranscriptRendererDemo = () => {
                 </div>
 
                 {/* Surface tabs */}
-                <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
+                {/* <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
                     {(
                         [
                             ClrTranscriptSurface.Full,
@@ -188,7 +198,7 @@ const ClrTranscriptRendererDemo = () => {
                             {s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                     ))}
-                </div>
+                </div> */}
             </div>
 
             {/* Content */}
@@ -196,7 +206,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}
-                        credential={FIXTURES[fixture] as any}
+                        boost={FIXTURES[fixture] as any}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
@@ -206,7 +216,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage
                         model={currentModel}
-                        credential={FIXTURES[fixture] as any}
+                        boost={FIXTURES[fixture] as any}
                         options={{ viewer, surface }}
                     />
                 )}
