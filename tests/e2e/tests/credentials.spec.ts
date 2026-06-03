@@ -274,7 +274,7 @@ describe('Credentials', () => {
             // Verify the credential has the expected DataIntegrity proof structure
             expect(vc.proof).toBeDefined();
             expect(vc.proof.type).toBe('DataIntegrityProof');
-            expect(vc.proof.cryptosuite).toBeDefined(); // Should be auto-determined (e.g., 'eddsa-2022' for Ed25519)
+            expect(vc.proof.cryptosuite).toBe('eddsa-rdfc-2022');
             expect(vc.proof.proofPurpose).toBe('assertionMethod');
             expect(vc.proof.verificationMethod).toBeDefined();
             expect(vc.proof.created).toBeDefined();
@@ -322,7 +322,7 @@ describe('Credentials', () => {
             // Verify DataIntegrity proof structure
             expect(vc.proof).toBeDefined();
             expect(vc.proof.type).toBe('DataIntegrityProof');
-            expect(vc.proof.cryptosuite).toBeDefined(); // Should be auto-determined
+            expect(vc.proof.cryptosuite).toBe('eddsa-rdfc-2022');
 
             // Send the DataIntegrity credential via LCN
             const uri = await a.invoke.sendCredential('testb', vc);
@@ -336,7 +336,7 @@ describe('Credentials', () => {
 
             // Verify the received DataIntegrity credential maintains its proof structure
             expect(resolvedVc.proof.type).toBe('DataIntegrityProof');
-            expect(resolvedVc.proof.cryptosuite).toBeDefined(); // Should be auto-determined
+            expect(resolvedVc.proof.cryptosuite).toBe('eddsa-rdfc-2022');
 
             await b.invoke.acceptCredential(uri);
 
@@ -384,7 +384,7 @@ describe('Credentials', () => {
             const retrievedVc = await a.read.get(uri);
             expect(retrievedVc).toEqual(vc);
             expect(retrievedVc.proof.type).toBe('DataIntegrityProof');
-            expect(retrievedVc.proof.cryptosuite).toBeDefined(); // Should be auto-determined
+            expect(retrievedVc.proof.cryptosuite).toBe('eddsa-rdfc-2022');
 
             // Ensure privacy: other users cannot access the stored credential
             const bRecords = await b.index.LearnCloud.get();
@@ -479,7 +479,7 @@ describe('Credentials', () => {
             // Verify DataIntegrity proof follows W3C spec
             expect(vc.proof).toBeDefined();
             expect(vc.proof.type).toBe('DataIntegrityProof');
-            expect(vc.proof.cryptosuite).toBeDefined(); // Should be auto-determined (e.g., 'eddsa-2022' for Ed25519)
+            expect(vc.proof.cryptosuite).toBe('eddsa-rdfc-2022');
             expect(vc.proof.proofPurpose).toBe('assertionMethod');
             expect(vc.proof.verificationMethod).toMatch(/^did:/); // Should be a DID URL
             expect(vc.proof.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/); // ISO 8601 format
