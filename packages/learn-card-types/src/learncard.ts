@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CredentialSubjectValidator, ProfileValidator } from './vc';
+import { CredentialFormatValidator, type CredentialFormat } from './credential-format';
 
 /**
  * Per-entry result for the credentialStatus check.
@@ -85,9 +86,38 @@ export type CredentialInfo = z.infer<typeof CredentialInfoValidator>;
 export type CredentialRecord<Metadata extends Record<string, any> = Record<never, never>> = {
     id: string;
     uri: string;
+    /**
+     * Wire-format discriminator for the credential. Optional — when
+     * absent, legacy readers infer it from `vc` shape (see
+     * `toStoredCredential` in `@learncard/helpers`). Populated on new
+     * writes once the consumer is format-aware.
+     *
+     * Added in ADR-0001 Phase 1 as additive metadata; existing
+     * records without this field continue to work unchanged.
+     */
+    format?: CredentialFormat;
+    /**
+     * Optional semantic type hint for fast filtering without parsing
+     * the full credential — `vct` for SD-JWT-VC, last-non-VC type for
+     * W3C VCs, doctype for mDoc. Added in ADR-0001 Phase 1.
+     */
+    semanticType?: string;
+    /**
+     * On-the-wire representation for formats whose `vc` field cannot
+     * hold the canonical form (SD-JWT compact, JWT-VC compact, base64
+     * mDoc CBOR). Undefined for W3C VCs (`vc` IS the wire form). Added
+     * in ADR-0001 Phase 1.
+     */
+    rawWireForm?: string;
     [key: string]: any;
 } & Metadata;
 
 export const CredentialRecordValidator = z
-    .object({ id: z.string(), uri: z.string() })
+    .object({
+        id: z.string(),
+        uri: z.string(),
+        format: CredentialFormatValidator.optional(),
+        semanticType: z.string().optional(),
+        rawWireForm: z.string().optional(),
+    })
     .catchall(z.any()) satisfies z.ZodType<CredentialRecord>;
