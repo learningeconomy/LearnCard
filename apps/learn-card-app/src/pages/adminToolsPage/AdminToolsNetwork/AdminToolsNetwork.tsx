@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
 import _ from 'lodash-es';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-network');
 
 import GenericLoader from '../../../components/generic/GenericLoader';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
@@ -132,7 +134,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
             closeAllModals();
         } catch (error) {
             closeModal();
-            console.error(error);
+            log.error(error);
         }
     };
 

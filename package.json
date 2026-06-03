@@ -8,6 +8,8 @@
     },
     "scripts": {
         "preinstall": "npx only-allow pnpm",
+        "prepare": "husky install",
+        "lint:staged": "lint-staged",
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test",
@@ -35,9 +37,11 @@
         "eslint-plugin-import": "^2.27.5",
         "eslint-plugin-prettier": "^4.2.1",
         "eslint-plugin-react": "^7.32.2",
+        "husky": "8.0.3",
         "jest": "^29.5.0",
         "jest-environment-jsdom": "^29.5.0",
         "jest-silent-reporter": "^0.5.0",
+        "lint-staged": "13.3.0",
         "node-gyp": "^12.2.0",
         "nx": "16.1.4",
         "prettier": "^2.8.4",
@@ -93,5 +97,10 @@
             "@types/minimatch": "5.1.2"
         }
     },
-    "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
+    "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee",
+    "lint-staged": {
+        "*.{ts,tsx,js,jsx,json,md,yml,yaml,css,html}": [
+            "prettier --write"
+        ]
+    }
 }

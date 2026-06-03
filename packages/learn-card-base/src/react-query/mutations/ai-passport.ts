@@ -8,6 +8,8 @@ import {
     setAiInsightRefreshError,
     setAiInsightRefreshPending,
 } from '../../stores/aiInsightRefreshStore';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
 const AI_INSIGHT_REFRESH_DEBOUNCE_MS = 1000;
@@ -19,9 +21,9 @@ const logAiInsightRefresh = (message: string, data?: Record<string, unknown>) =>
 
     try {
         if (data) {
-            console.log(`[AiInsightRefresh] ${message}`, data);
+            log.debug(`[AiInsightRefresh] ${message}`, data);
         } else {
-            console.log(`[AiInsightRefresh] ${message}`);
+            log.debug(`[AiInsightRefresh] ${message}`);
         }
     } catch {
         // logging should never break refresh flow
@@ -36,7 +38,7 @@ const logAiInsightRefreshError = (
     if (!ENABLE_AI_INSIGHT_REFRESH_LOGS) return;
 
     try {
-        console.error(`[AiInsightRefresh] ${message}`, data ?? {}, err);
+        log.error(`[AiInsightRefresh] ${message}`, data ?? {}, err);
     } catch {
         // logging should never break refresh flow
     }
@@ -147,7 +149,7 @@ export const usePreloadAssessment = () => {
             queryClient.setQueryData(['assessment', boostId], assessment);
         },
         onError: error => {
-            console.error('Failed to preload assessment:', error);
+            log.error('Failed to preload assessment:', error);
         },
     });
 };
@@ -212,7 +214,7 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
 
                 return responseJson;
             } catch (error) {
-                console.error('Failed to upload resume:', error);
+                log.error('Failed to upload resume:', error);
                 throw new Error(error as string);
             }
         },

@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('web-secure-storage');
 /*
  Web secure storage for sensitive secrets (e.g., Web3Auth private key)
  - AES-GCM 256 encryption with a non-extractable CryptoKey stored in IndexedDB
@@ -87,7 +89,7 @@ async function getOrCreateMasterKey(version = KEY_VERSION): Promise<CryptoKey> {
     try {
         await putStoredCryptoKey(db, key, keyId);
     } catch (e) {
-        console.warn('WebSecureStorage: CryptoKey persistence failed', e);
+        log.warn('WebSecureStorage: CryptoKey persistence failed', e);
         db.close();
         throw new Error(
             'Secure key persistence unsupported in this browser (CryptoKey not storable).'
@@ -164,7 +166,7 @@ async function getSecret(id: string): Promise<string | null> {
         try {
             return await decryptString(payload, id);
         } catch (e) {
-            console.warn('WebSecureStorage: decryption failed (tampered or wrong key)', e);
+            log.warn('WebSecureStorage: decryption failed (tampered or wrong key)', e);
             return null;
         }
     } finally {

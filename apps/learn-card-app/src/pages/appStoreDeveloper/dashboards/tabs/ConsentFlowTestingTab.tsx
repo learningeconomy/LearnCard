@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-flow-testing-tab');
 /**
  * ConsentFlowTestingTab - Test consent redirect and credential sending
  *
@@ -113,7 +115,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
             presentToast('Test credential sent!', { type: ToastTypeEnum.Success });
         } catch (err) {
-            console.error('Test send failed:', err);
+            log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
                 error: err instanceof Error ? err.message : 'Failed to send credential',

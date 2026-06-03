@@ -3,6 +3,8 @@ import { cloneDeep } from 'lodash-es';
 import { v4 as uuidv4 } from 'uuid';
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-create-profile-simple');
 
 import ChildInviteModalSimple from '../../../components/familyCMS/FamilyCMSInviteModal/ChildInviteModal/ChildInviteModalSimple';
 import AdminToolsFamilySelectorButton from './AdminToolsFamilySelectorButton';
@@ -334,8 +336,8 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
             presentToast(`Failed to create "${name}": ${e?.message}`, {
                 type: ToastTypeEnum.Error,
             });
-            console.log('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
-            console.error(e);
+            log.info('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
+            log.error(e);
         } finally {
             setIsLoading(false);
         }
@@ -363,7 +365,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                 presentToast(`Failed to create "${name}": ${e?.message}`, {
                     type: ToastTypeEnum.Error,
                 });
-                console.error(e);
+                log.error(e);
             } finally {
                 setIsLoading(false);
             }

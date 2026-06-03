@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
+
 /**
  * validate-tenant-configs.ts
  *
@@ -41,7 +44,7 @@ const tenantDirs = readdirSync(ENVIRONMENTS_DIR).filter(name => {
 });
 
 if (tenantDirs.length === 0) {
-    console.log('⚠  No tenant directories found in environments/');
+    log.info('⚠  No tenant directories found in environments/');
     process.exit(0);
 }
 
@@ -73,16 +76,18 @@ const TENANT_UNIQUE_FIELDS: UniqueFieldCheck[] = [
 ];
 
 const getNestedValue = (obj: Record<string, unknown>, path: string): unknown =>
-    path.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
+    path
+        .split('.')
+        .reduce<unknown>(
+            (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+            obj
+        );
 
 /**
  * Check if a non-learncard tenant's merged config still has LearnCard default
  * values for fields that should be tenant-specific.
  */
-const checkInheritedDefaults = (
-    tenant: string,
-    merged: Record<string, unknown>,
-): string[] => {
+const checkInheritedDefaults = (tenant: string, merged: Record<string, unknown>): string[] => {
     if (tenant === 'learncard') return [];
 
     const inheritedWarnings: string[] = [];
@@ -98,7 +103,9 @@ const checkInheritedDefaults = (
             JSON.stringify(mergedVal) === JSON.stringify(defaultVal)
         ) {
             inheritedWarnings.push(
-                `${field.path} (${field.label}) — inherits LearnCard default: ${JSON.stringify(defaultVal)}`
+                `${field.path} (${field.label}) — inherits LearnCard default: ${JSON.stringify(
+                    defaultVal
+                )}`
             );
         }
     }
@@ -145,11 +152,11 @@ const validateConfig = (
     label: string,
     tenant: string,
     overrides: Record<string, unknown>,
-    stageOverrides?: Record<string, unknown>,
+    stageOverrides?: Record<string, unknown>
 ): void => {
     let merged = deepMerge(
         DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-        overrides,
+        overrides
     );
 
     if (stageOverrides) {
@@ -164,34 +171,36 @@ const validateConfig = (
         const todos = findTodoSentinels(result.data);
 
         if (todos.length > 0) {
-            console.log(`✓  ${label} — valid (${todos.length} TODO placeholder(s)):`);
+            log.info(`✓  ${label} — valid (${todos.length} TODO placeholder(s)):`);
 
             for (const t of todos) {
-                console.log(`      ⚠  ${t}`);
+                log.info(`      ⚠  ${t}`);
             }
 
             warnings += todos.length;
         } else {
-            console.log(`✓  ${label} — valid`);
+            log.info(`✓  ${label} — valid`);
         }
 
         // Check for inherited LearnCard defaults on fields that should be tenant-unique
         const inherited = checkInheritedDefaults(tenant, merged);
 
         if (inherited.length > 0) {
-            console.log(`      ⚠  ${inherited.length} field(s) inherit LearnCard defaults — override these for production:`);
+            log.info(
+                `      ⚠  ${inherited.length} field(s) inherit LearnCard defaults — override these for production:`
+            );
 
             for (const w of inherited) {
-                console.log(`         → ${w}`);
+                log.info(`         → ${w}`);
             }
 
             warnings += inherited.length;
         }
     } else {
-        console.error(`✗  ${label} — INVALID:`);
+        log.error(`✗  ${label} — INVALID:`);
 
         for (const issue of result.error.issues) {
-            console.error(`      ${issue.path.join('.')}: ${issue.message}`);
+            log.error(`      ${issue.path.join('.')}: ${issue.message}`);
         }
 
         failures++;
@@ -209,7 +218,7 @@ for (const tenant of tenantDirs) {
     const configPath = join(tenantDir, 'config.json');
 
     if (!existsSync(configPath)) {
-        console.log(`⚠  ${tenant}/ — no config.json (assets-only tenant)`);
+        log.info(`⚠  ${tenant}/ — no config.json (assets-only tenant)`);
         continue;
     }
 
@@ -232,12 +241,12 @@ for (const tenant of tenantDirs) {
                 validateConfig(`${tenant}/${stage}`, tenant, overrides, stageOverrides);
                 totalConfigs++;
             } catch (err) {
-                console.error(`✗  ${tenant}/${stage} — failed to parse config.${stage}.json: ${err}`);
+                log.error(`✗  ${tenant}/${stage} — failed to parse config.${stage}.json: ${err}`);
                 failures++;
             }
         }
     } catch (err) {
-        console.error(`✗  ${tenant} — failed to parse config.json: ${err}`);
+        log.error(`✗  ${tenant} — failed to parse config.json: ${err}`);
         failures++;
     }
 }
@@ -246,15 +255,17 @@ for (const tenant of tenantDirs) {
 // Summary
 // ---------------------------------------------------------------------------
 
-console.log('');
+log.info('');
 
 if (failures > 0) {
-    console.error(`❌ ${failures} config(s) failed validation out of ${totalConfigs} checked.`);
+    log.error(`❌ ${failures} config(s) failed validation out of ${totalConfigs} checked.`);
     process.exit(1);
 }
 
 if (warnings > 0) {
-    console.log(`⚠️  ${warnings} TODO placeholder(s) found — fill these before deploying to production.`);
+    log.info(
+        `⚠️  ${warnings} TODO placeholder(s) found — fill these before deploying to production.`
+    );
 }
 
-console.log(`✅ All ${totalConfigs} config(s) valid.`);
+log.info(`✅ All ${totalConfigs} config(s) valid.`);

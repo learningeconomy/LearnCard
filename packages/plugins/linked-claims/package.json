@@ -1,6 +1,6 @@
 {
     "name": "@learncard/linked-claims-plugin",
-    "version": "0.2.19",
+    "version": "0.2.20",
     "description": "LinkedClaims plugin to create, verify, store, and query endorsement credentials.",
     "type": "module",
     "main": "./dist/index.cjs",

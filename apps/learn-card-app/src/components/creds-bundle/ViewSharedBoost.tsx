@@ -39,6 +39,9 @@ import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 const websiteLink = `${getAppBaseUrl()}/login`;
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-shared-boost');
+
 const ViewSharedBoost: React.FC<{
     showEndorsementRequest?: boolean;
     showDraftSuccess?: boolean;
@@ -134,7 +137,7 @@ const ViewSharedBoost: React.FC<{
                         text: 'Cancel',
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.info('Cancel clicked');
                         },
                     },
                 ],

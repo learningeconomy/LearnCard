@@ -49,6 +49,9 @@ interface UseCaseCardProps {
     onClick: () => void;
 }
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-hub');
+
 const UseCaseCard: React.FC<UseCaseCardProps> = ({
     title,
     subtitle,
@@ -187,7 +190,7 @@ const IntegrationHub: React.FC = () => {
                 updates: { guideType: useCaseId },
             });
         } catch (error) {
-            console.error('Failed to save guide selection:', error);
+            log.error('Failed to save guide selection:', error);
         }
 
         // Navigate to guide
@@ -201,7 +204,7 @@ const IntegrationHub: React.FC = () => {
             await createIntegration(newProjectName.trim());
             setNewProjectName('');
         } catch (error) {
-            console.error('Failed to create project:', error);
+            log.error('Failed to create project:', error);
         }
     };
 

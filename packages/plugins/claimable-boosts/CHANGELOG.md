@@ -1,5 +1,13 @@
 # @learncard/claimable-boosts-plugin
 
+## 1.1.20
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
+    -   @learncard/types@5.17.0
+    -   @learncard/core@9.4.20
+
 ## 1.1.19
 
 ### Patch Changes

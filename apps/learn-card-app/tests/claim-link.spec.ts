@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-link.spec');
 
 test.describe('Claimable Boost', () => {
     test.beforeEach(async ({ page }) => {
@@ -38,7 +40,7 @@ test.describe('Claimable Boost', () => {
         try {
             await page2.waitForURL('/wallet');
         } catch (error) {
-            console.error('The page often crashes here when trying to issue the VC =(', error);
+            log.error('The page often crashes here when trying to issue the VC =(', error);
             return;
         }
         await page2.getByRole('button', { name: /social badges/i }).click();
@@ -78,7 +80,7 @@ test.describe('Claimable Boost', () => {
         try {
             await page.waitForURL('/wallet');
         } catch (error) {
-            console.error('The page often crashes here when trying to issue the VC =(', error);
+            log.error('The page often crashes here when trying to issue the VC =(', error);
             return;
         }
         await page.getByRole('button', { name: /social badges/i }).click();

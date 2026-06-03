@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('auth-debug-events');
 /**
  * Auth/SSS Debug Event Logger
  * 
@@ -108,7 +110,7 @@ export const emitAuthDebugEvent = (
         try {
             listener(event);
         } catch (e) {
-            console.error('[AuthDebug] Listener error:', e);
+            log.error('Listener error', e);
         }
     });
 };

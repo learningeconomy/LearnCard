@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-    FileSearch, 
-    Code, 
-    Shield, 
-    Rocket, 
-    ArrowRight, 
-    ArrowLeft, 
+import {
+    FileSearch,
+    Code,
+    Shield,
+    Rocket,
+    ArrowRight,
+    ArrowLeft,
     ExternalLink,
     CheckCircle2,
     AlertCircle,
@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('verify-credentials-guide');
 
 import { useWallet } from 'learn-card-base';
 
@@ -33,11 +36,14 @@ const UnderstandStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Understanding Verifiable Credentials</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Understanding Verifiable Credentials
+                </h3>
 
                 <p className="text-gray-600">
-                    Verifiable Credentials (VCs) are digital documents that prove something about a person — 
-                    like a badge, certificate, or ID — that can be cryptographically verified.
+                    Verifiable Credentials (VCs) are digital documents that prove something about a
+                    person — like a badge, certificate, or ID — that can be cryptographically
+                    verified.
                 </p>
             </div>
 
@@ -69,7 +75,7 @@ const UnderstandStep: React.FC<{
                 <h4 className="font-medium text-gray-800 mb-2">Example Credential Structure</h4>
 
                 <pre className="text-xs text-gray-600 bg-white p-3 rounded-lg overflow-x-auto">
-{`{
+                    {`{
   "@context": ["https://www.w3.org/2018/credentials/v1"],
   "type": ["VerifiableCredential", "Achievement"],
   "issuer": "did:web:university.edu",
@@ -109,13 +115,16 @@ const RequestStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Requesting Credentials</h3>
 
                 <p className="text-gray-600">
-                    You can request credentials from users in different ways depending on your integration type.
+                    You can request credentials from users in different ways depending on your
+                    integration type.
                 </p>
             </div>
 
             <div className="space-y-4">
                 <div className="p-4 border border-gray-200 rounded-xl">
-                    <h4 className="font-medium text-gray-800 mb-2">Option 1: Embedded App (Partner Connect)</h4>
+                    <h4 className="font-medium text-gray-800 mb-2">
+                        Option 1: Embedded App (Partner Connect)
+                    </h4>
 
                     <CodeOutputPanel
                         title="Request via SDK"
@@ -131,14 +140,16 @@ const credentials = result.credentials;
 // Verify each credential
 for (const vc of credentials) {
     const verification = await verifyCredential(vc);
-    console.log('Valid:', verification.valid);
+    log.info('Valid:', verification.valid);
 }`,
                         }}
                     />
                 </div>
 
                 <div className="p-4 border border-gray-200 rounded-xl">
-                    <h4 className="font-medium text-gray-800 mb-2">Option 2: Direct Presentation</h4>
+                    <h4 className="font-medium text-gray-800 mb-2">
+                        Option 2: Direct Presentation
+                    </h4>
 
                     <p className="text-sm text-gray-600 mb-3">
                         Accept credentials posted directly to your API endpoint.
@@ -212,11 +223,11 @@ const credential = { /* received from user */ };
 const result = await verifyCredential(credential);
 
 if (result.valid) {
-    console.log('Credential is valid!');
-    console.log('Issuer:', credential.issuer);
-    console.log('Subject:', credential.credentialSubject);
+    log.info('Credential is valid!');
+    log.info('Issuer:', credential.issuer);
+    log.info('Subject:', credential.credentialSubject);
 } else {
-    console.log('Verification failed:', result.errors);
+    log.info('Verification failed:', result.errors);
 }`;
 
     const checksExplanation = `// What gets checked:
@@ -237,7 +248,8 @@ if (result.valid) {
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Verifying Credentials</h3>
 
                 <p className="text-gray-600">
-                    Use the LearnCard SDK to cryptographically verify credentials. No API key required for verification.
+                    Use the LearnCard SDK to cryptographically verify credentials. No API key
+                    required for verification.
                 </p>
             </div>
 
@@ -321,7 +333,7 @@ const TestStep: React.FC<{
                 errors: verifyResult.errors,
             });
         } catch (err) {
-            console.error('Verification failed:', err);
+            log.error('Verification failed:', err);
             setResult({
                 valid: false,
                 checks: [],
@@ -368,7 +380,7 @@ const TestStep: React.FC<{
 
                 <textarea
                     value={testInput}
-                    onChange={(e) => setTestInput(e.target.value)}
+                    onChange={e => setTestInput(e.target.value)}
                     placeholder='{"@context": [...], "type": [...], ...}'
                     rows={8}
                     className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
@@ -397,28 +409,43 @@ const TestStep: React.FC<{
 
             {/* Result */}
             {result && (
-                <div className={`p-4 rounded-xl border ${result.valid ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                <div
+                    className={`p-4 rounded-xl border ${
+                        result.valid
+                            ? 'bg-emerald-50 border-emerald-200'
+                            : 'bg-red-50 border-red-200'
+                    }`}
+                >
                     <div className="flex items-center gap-2 mb-3">
                         {result.valid ? (
                             <>
                                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                <span className="font-medium text-emerald-800">Credential is valid!</span>
+                                <span className="font-medium text-emerald-800">
+                                    Credential is valid!
+                                </span>
                             </>
                         ) : (
                             <>
                                 <AlertCircle className="w-5 h-5 text-red-600" />
-                                <span className="font-medium text-red-800">Verification failed</span>
+                                <span className="font-medium text-red-800">
+                                    Verification failed
+                                </span>
                             </>
                         )}
                     </div>
 
                     {result.checks.length > 0 && (
                         <div className="mb-2">
-                            <span className="text-xs font-medium text-gray-600">Checks passed:</span>
+                            <span className="text-xs font-medium text-gray-600">
+                                Checks passed:
+                            </span>
 
                             <div className="flex flex-wrap gap-1 mt-1">
                                 {result.checks.map((check, i) => (
-                                    <span key={i} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                                    <span
+                                        key={i}
+                                        className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full"
+                                    >
                                         {check}
                                     </span>
                                 ))}

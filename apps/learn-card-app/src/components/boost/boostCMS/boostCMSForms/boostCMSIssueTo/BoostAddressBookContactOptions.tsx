@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-address-book-contact-options');
 
 import {
     IonCol,
@@ -250,7 +252,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 handleCloseModal();
                 // closeModal();
             } catch (e) {
-                console.log('///Add yourself error', e);
+                log.info('///Add yourself error', e);
                 throw new Error('There was an error', e);
             }
         }

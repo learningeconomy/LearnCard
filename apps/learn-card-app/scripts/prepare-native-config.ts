@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
+
 /**
  * prepare-native-config.ts
  *
@@ -41,7 +44,16 @@
  * so schema violations are caught before deploy, not at runtime.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync } from 'fs';
+import {
+    readFileSync,
+    writeFileSync,
+    mkdirSync,
+    existsSync,
+    cpSync,
+    readdirSync,
+    statSync,
+    rmSync,
+} from 'fs';
 import { createRequire } from 'module';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -88,7 +100,7 @@ const parseArgs = (): { tenant: string; stage: Stage | undefined } => {
     // Backward compat: `prepare-native-config.ts local` → learncard --stage local
     // Only applies when there's no explicit --stage and the tenant name matches a known stage
     if (!stage && KNOWN_STAGES.includes(tenant as Stage) && tenant !== 'production') {
-        console.log(`ℹ️  Interpreting "${tenant}" as: learncard --stage ${tenant}`);
+        log.info(`ℹ️  Interpreting "${tenant}" as: learncard --stage ${tenant}`);
 
         stage = tenant as Stage;
         tenant = 'learncard';
@@ -109,7 +121,7 @@ const { tenant: tenantArg, stage: stageArg } = parseArgs();
 // ---------------------------------------------------------------------------
 
 if (tenantArg === '--reset') {
-    console.log('\n🔄 Cleaning all platform output files...\n');
+    log.info('\n🔄 Cleaning all platform output files...\n');
 
     // All output paths that prepare-native-config.ts populates (gitignored).
     // These are removed so the next `prepare-native-config.ts <tenant>` starts clean.
@@ -182,17 +194,17 @@ if (tenantArg === '--reset') {
 
         if (existsSync(absPath)) {
             rmSync(absPath, { recursive: true, force: true });
-            console.log(`   ✓ Removed ${relPath}`);
+            log.info(`   ✓ Removed ${relPath}`);
             removed++;
         }
     }
 
     if (removed === 0) {
-        console.log('   Nothing to clean — already reset.');
+        log.info('   Nothing to clean — already reset.');
     }
 
-    console.log(`\n✅ Cleaned ${removed} file(s). To restore defaults, run:`);
-    console.log('   npx tsx scripts/prepare-native-config.ts learncard\n');
+    log.info(`\n✅ Cleaned ${removed} file(s). To restore defaults, run:`);
+    log.info('   npx tsx scripts/prepare-native-config.ts learncard\n');
     process.exit(0);
 }
 
@@ -204,10 +216,12 @@ const envFilePath = resolve(APP_ROOT, 'environments', tenantArg, 'config.json');
 let tenantOverrides: Record<string, unknown> = {};
 
 if (existsSync(envFilePath)) {
-    console.log(`📦 Loading tenant overrides from: environments/${tenantArg}/config.json`);
+    log.info(`📦 Loading tenant overrides from: environments/${tenantArg}/config.json`);
     tenantOverrides = JSON.parse(readFileSync(envFilePath, 'utf-8'));
 } else {
-    console.log(`ℹ️  No override file found at environments/${tenantArg}/config.json — using defaults.`);
+    log.info(
+        `ℹ️  No override file found at environments/${tenantArg}/config.json — using defaults.`
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -220,10 +234,14 @@ if (stageArg) {
     const stageFilePath = resolve(APP_ROOT, 'environments', tenantArg, `config.${stageArg}.json`);
 
     if (existsSync(stageFilePath)) {
-        console.log(`🔧 Loading stage overlay from: environments/${tenantArg}/config.${stageArg}.json`);
+        log.info(
+            `🔧 Loading stage overlay from: environments/${tenantArg}/config.${stageArg}.json`
+        );
         stageOverrides = JSON.parse(readFileSync(stageFilePath, 'utf-8'));
     } else {
-        console.log(`⚠️  No stage overlay at environments/${tenantArg}/config.${stageArg}.json — using base config only.`);
+        log.info(
+            `⚠️  No stage overlay at environments/${tenantArg}/config.${stageArg}.json — using base config only.`
+        );
     }
 }
 
@@ -234,9 +252,9 @@ if (stageArg) {
 const merged = deepMerge(
     deepMerge(
         DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-        tenantOverrides,
+        tenantOverrides
     ),
-    stageOverrides,
+    stageOverrides
 );
 
 // Add build metadata
@@ -251,13 +269,13 @@ merged['_stage'] = stageArg ?? 'production';
 const validation = tenantConfigSchema.safeParse(merged);
 
 if (!validation.success) {
-    console.error('\n❌ Merged tenant config failed schema validation:\n');
+    log.error('\n❌ Merged tenant config failed schema validation:\n');
 
     for (const issue of validation.error.issues) {
-        console.error(`   ${issue.path.join('.')}: ${issue.message}`);
+        log.error(`   ${issue.path.join('.')}: ${issue.message}`);
     }
 
-    console.error('\nFix the environment file or update the schema, then re-run.\n');
+    log.error('\nFix the environment file or update the schema, then re-run.\n');
     process.exit(1);
 }
 
@@ -276,7 +294,7 @@ if (!existsSync(publicDir)) {
 const assetsDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets');
 
 if (existsSync(assetsDir)) {
-    console.log(`\n📸 Copying tenant assets from environments/${tenantArg}/assets/...`);
+    log.info(`\n📸 Copying tenant assets from environments/${tenantArg}/assets/...`);
 
     let copiedCount = 0;
 
@@ -310,7 +328,11 @@ if (existsSync(assetsDir)) {
             copiedCount++;
         }
 
-        for (const splashFile of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
+        for (const splashFile of [
+            'splash-2732x2732.png',
+            'splash-2732x2732-1.png',
+            'splash-2732x2732-2.png',
+        ]) {
             const src = join(iosSrc, splashFile);
 
             if (existsSync(src)) {
@@ -320,7 +342,7 @@ if (existsSync(assetsDir)) {
             }
         }
 
-        console.log('   ✓ iOS assets');
+        log.info('   ✓ iOS assets');
     }
 
     // Android assets → android/app/src/main/res/
@@ -329,7 +351,7 @@ if (existsSync(assetsDir)) {
     if (existsSync(androidSrc)) {
         const androidResDest = resolve(APP_ROOT, 'android/app/src/main/res');
         copyRecursive(androidSrc, androidResDest);
-        console.log('   ✓ Android assets');
+        log.info('   ✓ Android assets');
     }
 
     // Web assets → public/assets/icon/
@@ -348,12 +370,14 @@ if (existsSync(assetsDir)) {
             }
         }
 
-        console.log('   ✓ Web assets');
+        log.info('   ✓ Web assets');
     }
 
-    console.log(`   Copied ${copiedCount} asset files.`);
+    log.info(`   Copied ${copiedCount} asset files.`);
 } else {
-    console.log(`\nℹ️  No tenant assets found at environments/${tenantArg}/assets/ — skipping asset copy.`);
+    log.info(
+        `\nℹ️  No tenant assets found at environments/${tenantArg}/assets/ — skipping asset copy.`
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -378,7 +402,10 @@ if (existsSync(assetsDir)) {
 // auto-set to "/branding/<filename>" (relative URL) unless the tenant
 // config already specifies an explicit URL for that field.
 
-const BRANDING_FILE_MAP: Array<{ prefix: string; configKey: keyof typeof validatedConfig.branding }> = [
+const BRANDING_FILE_MAP: Array<{
+    prefix: string;
+    configKey: keyof typeof validatedConfig.branding;
+}> = [
     { prefix: 'text-logo-dark', configKey: 'textLogoDarkUrl' },
     { prefix: 'text-logo', configKey: 'textLogoUrl' },
     { prefix: 'brand-mark-light', configKey: 'brandMarkLightUrl' },
@@ -393,12 +420,16 @@ const BRANDING_FILE_MAP: Array<{ prefix: string; configKey: keyof typeof validat
 const brandingDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets', 'branding');
 
 if (existsSync(brandingDir)) {
-    console.log(`\n🎨 Processing in-app branding images from environments/${tenantArg}/assets/branding/...`);
+    log.info(
+        `\n🎨 Processing in-app branding images from environments/${tenantArg}/assets/branding/...`
+    );
 
     const brandingDest = resolve(publicDir, 'branding');
     mkdirSync(brandingDest, { recursive: true });
 
-    const brandingFiles = readdirSync(brandingDir).filter(f => statSync(join(brandingDir, f)).isFile());
+    const brandingFiles = readdirSync(brandingDir).filter(f =>
+        statSync(join(brandingDir, f)).isFile()
+    );
 
     let brandingCopied = 0;
 
@@ -415,21 +446,27 @@ if (existsSync(brandingDir)) {
             const currentValue = validatedConfig.branding[configKey];
 
             if (!currentValue) {
-                (validatedConfig.branding as Record<string, unknown>)[configKey] = `/branding/${match}`;
-                console.log(`   ✓ ${match} → branding.${configKey} = /branding/${match}`);
+                (validatedConfig.branding as Record<string, unknown>)[
+                    configKey
+                ] = `/branding/${match}`;
+                log.info(`   ✓ ${match} → branding.${configKey} = /branding/${match}`);
             } else {
-                console.log(`   ✓ ${match} copied (branding.${configKey} already set to "${currentValue}")`);
+                log.info(
+                    `   ✓ ${match} copied (branding.${configKey} already set to "${currentValue}")`
+                );
             }
         }
     }
 
     if (brandingCopied === 0) {
-        console.log('   No matching branding files found.');
+        log.info('   No matching branding files found.');
     } else {
-        console.log(`   Copied ${brandingCopied} branding image(s).`);
+        log.info(`   Copied ${brandingCopied} branding image(s).`);
     }
 } else {
-    console.log(`\nℹ️  No branding images at environments/${tenantArg}/assets/branding/ — using bundled defaults.`);
+    log.info(
+        `\nℹ️  No branding images at environments/${tenantArg}/assets/branding/ — using bundled defaults.`
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -478,9 +515,9 @@ const outPath = resolve(publicDir, 'tenant-config.json');
 
 writeFileSync(outPath, JSON.stringify(validatedConfig, null, 2) + '\n', 'utf-8');
 
-console.log(`\n✅ Wrote validated tenant config to: ${outPath}`);
-console.log(`   Tenant: ${tenantArg}`);
-console.log(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
+log.info(`\n✅ Wrote validated tenant config to: ${outPath}`);
+log.info(`   Tenant: ${tenantArg}`);
+log.info(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
 
 // ---------------------------------------------------------------------------
 // 7. Patch Capacitor native config JSON files with tenant values
@@ -498,16 +535,16 @@ const defaultCapgoChannel = readDefaultChannel(resolve(APP_ROOT, 'capacitor.conf
 
 if (nativeConfig) {
     if (!defaultCapgoChannel) {
-        console.error('❌ Failed to read CapacitorUpdater.defaultChannel from capacitor.config.ts.');
-        console.error('   Aborting: writing platform JSONs without a Capgo channel would silently');
-        console.error('   diverge from CI (tools/capgo/getCapgoChannel.js reads the same SSOT for');
-        console.error('   the upload channel — installed binaries would fall back to the plugin');
-        console.error('   default and miss every OTA bundle).');
+        log.error('❌ Failed to read CapacitorUpdater.defaultChannel from capacitor.config.ts.');
+        log.error('   Aborting: writing platform JSONs without a Capgo channel would silently');
+        log.error('   diverge from CI (tools/capgo/getCapgoChannel.js reads the same SSOT for');
+        log.error('   the upload channel — installed binaries would fall back to the plugin');
+        log.error('   default and miss every OTA bundle).');
         process.exit(1);
     }
 
-    console.log('\n⚙️  Patching Capacitor config with tenant native settings...');
-    console.log(`   Capgo defaultChannel (from capacitor.config.ts): ${defaultCapgoChannel}`);
+    log.info('\n⚙️  Patching Capacitor config with tenant native settings...');
+    log.info(`   Capgo defaultChannel (from capacitor.config.ts): ${defaultCapgoChannel}`);
 
     const patchCapacitorConfigJson = (jsonPath: string): void => {
         if (!existsSync(jsonPath)) return;
@@ -524,15 +561,17 @@ if (nativeConfig) {
             }
 
             writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
-            console.log(`   ✓ Patched ${jsonPath}`);
+            log.info(`   ✓ Patched ${jsonPath}`);
         } catch (err) {
-            console.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
+            log.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
         }
     };
 
     // Patch the native project capacitor config JSON files (generated by `npx cap sync`)
     patchCapacitorConfigJson(resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'));
-    patchCapacitorConfigJson(resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json'));
+    patchCapacitorConfigJson(
+        resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json')
+    );
 
     // Also patch the iOS Info.plist deep link domains via a JSON sidecar
     // that the Fastlane/Xcode build can consume.
@@ -540,19 +579,23 @@ if (nativeConfig) {
 
     writeFileSync(
         deepLinkDomainsPath,
-        JSON.stringify({
-            bundleId: nativeConfig.bundleId,
-            displayName: nativeConfig.displayName,
-            deepLinkDomains: nativeConfig.deepLinkDomains,
-            customSchemes: nativeConfig.customSchemes ?? [],
-        }, null, 2) + '\n',
-        'utf-8',
+        JSON.stringify(
+            {
+                bundleId: nativeConfig.bundleId,
+                displayName: nativeConfig.displayName,
+                deepLinkDomains: nativeConfig.deepLinkDomains,
+                customSchemes: nativeConfig.customSchemes ?? [],
+            },
+            null,
+            2
+        ) + '\n',
+        'utf-8'
     );
 
-    console.log(`   ✓ Wrote deep link domains sidecar: ${deepLinkDomainsPath}`);
-    console.log(`   Bundle ID: ${nativeConfig.bundleId}`);
-    console.log(`   Display Name: ${nativeConfig.displayName}`);
-    console.log(`   Deep Link Domains: ${nativeConfig.deepLinkDomains.join(', ')}`);
+    log.info(`   ✓ Wrote deep link domains sidecar: ${deepLinkDomainsPath}`);
+    log.info(`   Bundle ID: ${nativeConfig.bundleId}`);
+    log.info(`   Display Name: ${nativeConfig.displayName}`);
+    log.info(`   Deep Link Domains: ${nativeConfig.deepLinkDomains.join(', ')}`);
 
     // Patch iOS Xcode project with tenant bundle ID
     const pbxprojPath = resolve(APP_ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
@@ -570,23 +613,23 @@ if (nativeConfig) {
 
             pbx = pbx.replace(
                 /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g,
-                `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`,
+                `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`
             );
 
             pbx = pbx.replace(
                 /PROVISIONING_PROFILE_SPECIFIER = "match AppStore [^"]+"/g,
-                `PROVISIONING_PROFILE_SPECIFIER = "match AppStore ${bundleId}"`,
+                `PROVISIONING_PROFILE_SPECIFIER = "match AppStore ${bundleId}"`
             );
 
             pbx = pbx.replace(
                 /"PROVISIONING_PROFILE_SPECIFIER\[sdk=iphoneos\*\]" = "match AppStore [^"]+"/g,
-                `"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore ${bundleId}"`,
+                `"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore ${bundleId}"`
             );
 
             writeFileSync(pbxprojPath, pbx, 'utf-8');
-            console.log(`   ✓ Patched project.pbxproj (PRODUCT_BUNDLE_IDENTIFIER → ${bundleId})`);
+            log.info(`   ✓ Patched project.pbxproj (PRODUCT_BUNDLE_IDENTIFIER → ${bundleId})`);
         } catch (err) {
-            console.warn('   ⚠️  Failed to patch project.pbxproj:', err);
+            log.warn('   ⚠️  Failed to patch project.pbxproj:', err);
         }
     }
 
@@ -607,7 +650,7 @@ if (nativeConfig) {
 
             plist = plist.replace(
                 /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
-                `$1${displayName}$2`,
+                `$1${displayName}$2`
             );
 
             // Replace bundle ID placeholders in custom URL scheme names
@@ -621,7 +664,7 @@ if (nativeConfig) {
 
                 const extractPlistValue = (key: string): string | undefined => {
                     const match = googlePlist.match(
-                        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`),
+                        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`)
                     );
                     return match?.[1];
                 };
@@ -631,21 +674,25 @@ if (nativeConfig) {
 
                 if (reversedClientId) {
                     plist = plist.replace('__REVERSED_CLIENT_ID__', reversedClientId);
-                    console.log(`   ✓ Patched Info.plist (REVERSED_CLIENT_ID → ${reversedClientId})`);
+                    log.info(`   ✓ Patched Info.plist (REVERSED_CLIENT_ID → ${reversedClientId})`);
                 } else {
-                    console.warn('   ⚠️  REVERSED_CLIENT_ID not found in GoogleService-Info.plist');
+                    log.warn('   ⚠️  REVERSED_CLIENT_ID not found in GoogleService-Info.plist');
                 }
 
                 if (googleAppId) {
                     // Convert GOOGLE_APP_ID "1:123:ios:abc" → Firebase URL scheme "app-1-123-ios-abc"
                     const firebaseAppUrlScheme = `app-${googleAppId.replace(/:/g, '-')}`;
                     plist = plist.replace('__FIREBASE_APP_URL_SCHEME__', firebaseAppUrlScheme);
-                    console.log(`   ✓ Patched Info.plist (Firebase URL scheme → ${firebaseAppUrlScheme})`);
+                    log.info(
+                        `   ✓ Patched Info.plist (Firebase URL scheme → ${firebaseAppUrlScheme})`
+                    );
                 } else {
-                    console.warn('   ⚠️  GOOGLE_APP_ID not found in GoogleService-Info.plist');
+                    log.warn('   ⚠️  GOOGLE_APP_ID not found in GoogleService-Info.plist');
                 }
             } else {
-                console.warn('   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced');
+                log.warn(
+                    '   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced'
+                );
             }
 
             // Replace the TENANT_CUSTOM_SCHEMES marker with generated <dict> entries for each scheme.
@@ -686,9 +733,9 @@ if (nativeConfig) {
             }
 
             writeFileSync(infoPlistPath, plist, 'utf-8');
-            console.log(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
+            log.info(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
         } catch (err) {
-            console.warn('   ⚠️  Failed to patch Info.plist:', err);
+            log.warn('   ⚠️  Failed to patch Info.plist:', err);
         }
     }
 
@@ -706,20 +753,14 @@ if (nativeConfig) {
             let gradle = readFileSync(buildGradlePath, 'utf-8');
             const bundleId = nativeConfig.bundleId;
 
-            gradle = gradle.replace(
-                /namespace = '[^']+'/,
-                `namespace = '${bundleId}'`,
-            );
+            gradle = gradle.replace(/namespace = '[^']+'/, `namespace = '${bundleId}'`);
 
-            gradle = gradle.replace(
-                /applicationId "[^"]+"/,
-                `applicationId "${bundleId}"`,
-            );
+            gradle = gradle.replace(/applicationId "[^"]+"/, `applicationId "${bundleId}"`);
 
             writeFileSync(buildGradlePath, gradle, 'utf-8');
-            console.log(`   ✓ Patched build.gradle (applicationId → ${bundleId})`);
+            log.info(`   ✓ Patched build.gradle (applicationId → ${bundleId})`);
         } catch (err) {
-            console.warn('   ⚠️  Failed to patch build.gradle:', err);
+            log.warn('   ⚠️  Failed to patch build.gradle:', err);
         }
     }
 
@@ -756,27 +797,31 @@ if (nativeConfig) {
             // Also add wildcard subdomains for each domain (e.g. *.vetpass.app)
             const wildcardFilters = domains
                 .filter(d => !d.startsWith('*.'))
-                .map(domain => [
-                    '            <intent-filter android:autoVerify="true">',
+                .map(domain =>
+                    [
+                        '            <intent-filter android:autoVerify="true">',
+                        '                <action android:name="android.intent.action.VIEW" />',
+                        '                <category android:name="android.intent.category.DEFAULT" />',
+                        '                <category android:name="android.intent.category.BROWSABLE" />',
+                        '',
+                        '                <data android:scheme="https" />',
+                        `                <data android:host="*.${domain}" />`,
+                        '            </intent-filter>',
+                    ].join('\n')
+                );
+
+            // Build custom scheme intent filters from tenant config
+            const schemeIntentFilters = customSchemes.map(scheme =>
+                [
+                    '            <intent-filter>',
                     '                <action android:name="android.intent.action.VIEW" />',
                     '                <category android:name="android.intent.category.DEFAULT" />',
                     '                <category android:name="android.intent.category.BROWSABLE" />',
                     '',
-                    '                <data android:scheme="https" />',
-                    `                <data android:host="*.${domain}" />`,
+                    `                <data android:scheme="${scheme}" />`,
                     '            </intent-filter>',
-                ].join('\n'));
-
-            // Build custom scheme intent filters from tenant config
-            const schemeIntentFilters = customSchemes.map(scheme => [
-                '            <intent-filter>',
-                '                <action android:name="android.intent.action.VIEW" />',
-                '                <category android:name="android.intent.category.DEFAULT" />',
-                '                <category android:name="android.intent.category.BROWSABLE" />',
-                '',
-                `                <data android:scheme="${scheme}" />`,
-                '            </intent-filter>',
-            ].join('\n'));
+                ].join('\n')
+            );
 
             const allIntentFilters = [
                 ...httpsIntentFilters,
@@ -788,17 +833,20 @@ if (nativeConfig) {
             // (i.e. replace the deep link + custom scheme intent filters block)
             manifest = manifest.replace(
                 /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?(        <\/activity>)/,
-                `<!-- HTTPS deep linking intent-filters -->\n${allIntentFilters}\n\n        </activity>`,
+                `<!-- HTTPS deep linking intent-filters -->\n${allIntentFilters}\n\n        </activity>`
             );
 
             writeFileSync(manifestPath, manifest, 'utf-8');
 
             const domainSummary = domains.join(', ');
-            const schemeSummary = customSchemes.length > 0 ? ` + schemes: ${customSchemes.join(', ')}` : '';
+            const schemeSummary =
+                customSchemes.length > 0 ? ` + schemes: ${customSchemes.join(', ')}` : '';
 
-            console.log(`   ✓ Patched AndroidManifest.xml (deep links → ${domainSummary}${schemeSummary})`);
+            log.info(
+                `   ✓ Patched AndroidManifest.xml (deep links → ${domainSummary}${schemeSummary})`
+            );
         } catch (err) {
-            console.warn('   ⚠️  Failed to patch AndroidManifest.xml:', err);
+            log.warn('   ⚠️  Failed to patch AndroidManifest.xml:', err);
         }
     }
 
@@ -819,28 +867,30 @@ if (nativeConfig) {
 
             strings = strings.replace(
                 /<string name="app_name">[^<]+<\/string>/,
-                `<string name="app_name">${displayName}</string>`,
+                `<string name="app_name">${displayName}</string>`
             );
 
             strings = strings.replace(
                 /<string name="title_activity_main">[^<]+<\/string>/,
-                `<string name="title_activity_main">${displayName}</string>`,
+                `<string name="title_activity_main">${displayName}</string>`
             );
 
             strings = strings.replace(
                 /<string name="package_name">[^<]+<\/string>/,
-                `<string name="package_name">${bundleId}</string>`,
+                `<string name="package_name">${bundleId}</string>`
             );
 
             strings = strings.replace(
                 /<string name="custom_url_scheme">[^<]+<\/string>/,
-                `<string name="custom_url_scheme">${bundleId}</string>`,
+                `<string name="custom_url_scheme">${bundleId}</string>`
             );
 
             writeFileSync(stringsPath, strings, 'utf-8');
-            console.log(`   ✓ Patched strings.xml (app_name → ${displayName}, package_name → ${bundleId})`);
+            log.info(
+                `   ✓ Patched strings.xml (app_name → ${displayName}, package_name → ${bundleId})`
+            );
         } catch (err) {
-            console.warn('   ⚠️  Failed to patch strings.xml:', err);
+            log.warn('   ⚠️  Failed to patch strings.xml:', err);
         }
     }
 }
@@ -862,22 +912,30 @@ const patchManifest = (filePath: string): void => {
         raw.short_name = manifestShortName;
 
         // Ensure the 192×192 icon entry exists (required for Chrome "Add to Home Screen")
-        const icons: Array<{ src: string; sizes: string; type: string; purpose?: string }> = raw.icons ?? [];
+        const icons: Array<{ src: string; sizes: string; type: string; purpose?: string }> =
+            raw.icons ?? [];
         const has192 = icons.some((i: { sizes: string }) => i.sizes.includes('192'));
 
         if (!has192) {
-            icons.push({ src: 'assets/icon/icon-192.png', type: 'image/png', sizes: '192x192', purpose: 'any' });
+            icons.push({
+                src: 'assets/icon/icon-192.png',
+                type: 'image/png',
+                sizes: '192x192',
+                purpose: 'any',
+            });
             raw.icons = icons;
         }
 
         writeFileSync(filePath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
-        console.log(`   ✓ Patched ${filePath} (name="${manifestName}", short_name="${manifestShortName}")`);
+        log.info(
+            `   ✓ Patched ${filePath} (name="${manifestName}", short_name="${manifestShortName}")`
+        );
     } catch (err) {
-        console.warn(`   ⚠️  Failed to patch ${filePath}:`, err);
+        log.warn(`   ⚠️  Failed to patch ${filePath}:`, err);
     }
 };
 
-console.log('\n📋 Patching web manifests with tenant branding name...');
+log.info('\n📋 Patching web manifests with tenant branding name...');
 patchManifest(resolve(publicDir, 'manifest.json'));
 patchManifest(resolve(publicDir, 'manifest.webmanifest'));
 
@@ -890,7 +948,7 @@ const FIREBASE_CONFIG_MAP: Array<{ src: string; dest: string }> = [
     { src: 'config/GoogleService-Info.plist', dest: 'ios/App/App/GoogleService-Info.plist' },
 ];
 
-console.log('\n🔥 Copying Firebase config files...');
+log.info('\n🔥 Copying Firebase config files...');
 
 for (const { src, dest } of FIREBASE_CONFIG_MAP) {
     const fileName = src.replace('config/', '');
@@ -901,14 +959,14 @@ for (const { src, dest } of FIREBASE_CONFIG_MAP) {
     }
 
     if (!existsSync(srcPath)) {
-        console.log(`   ⚠️  No ${fileName} found — skipping.`);
+        log.info(`   ⚠️  No ${fileName} found — skipping.`);
         continue;
     }
 
     const destPath = resolve(APP_ROOT, dest);
     mkdirSync(dirname(destPath), { recursive: true });
     cpSync(srcPath, destPath);
-    console.log(`   ✓ ${dest}`);
+    log.info(`   ✓ ${dest}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -916,7 +974,7 @@ for (const { src, dest } of FIREBASE_CONFIG_MAP) {
 // ---------------------------------------------------------------------------
 
 if (nativeConfig?.deepLinkDomains?.length) {
-    console.log('\n🔗 Patching iOS entitlements with deep link domains...');
+    log.info('\n🔗 Patching iOS entitlements with deep link domains...');
 
     const entitlementFiles = [
         'ios/App/App/App.entitlements',
@@ -945,20 +1003,23 @@ if (nativeConfig?.deepLinkDomains?.length) {
             //   <array>
             //       <string>applinks:example.com</string>
             //   </array>
-            const domainRegex = /(<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>)([\s\S]*?)(<\/array>)/;
+            const domainRegex =
+                /(<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>)([\s\S]*?)(<\/array>)/;
             const match = content.match(domainRegex);
 
             if (match) {
-                const newEntries = applinks.map((link: string) => `\n\t\t<string>${link}</string>`).join('');
+                const newEntries = applinks
+                    .map((link: string) => `\n\t\t<string>${link}</string>`)
+                    .join('');
                 content = content.replace(domainRegex, `$1${newEntries}\n\t$3`);
 
                 writeFileSync(absPath, content, 'utf-8');
-                console.log(`   ✓ Patched ${relPath} → [${applinks.join(', ')}]`);
+                log.info(`   ✓ Patched ${relPath} → [${applinks.join(', ')}]`);
             } else {
-                console.log(`   ⚠️  No associated-domains key found in ${relPath} — skipping.`);
+                log.info(`   ⚠️  No associated-domains key found in ${relPath} — skipping.`);
             }
         } catch (err) {
-            console.warn(`   ⚠️  Failed to patch ${relPath}:`, err);
+            log.warn(`   ⚠️  Failed to patch ${relPath}:`, err);
         }
     }
 }
@@ -976,7 +1037,7 @@ if (existsSync(indexTemplatePath)) {
 }
 
 if (existsSync(indexHtmlPath)) {
-    console.log('\n📄 Patching index.html with tenant branding...');
+    log.info('\n📄 Patching index.html with tenant branding...');
 
     try {
         let html = readFileSync(indexHtmlPath, 'utf-8');
@@ -987,23 +1048,23 @@ if (existsSync(indexHtmlPath)) {
         // Patch apple-mobile-web-app-title
         html = html.replace(
             /(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/,
-            `$1${manifestShortName}$2`,
+            `$1${manifestShortName}$2`
         );
 
         // Add apple-touch-icon link if missing
         if (!html.includes('apple-touch-icon')) {
             html = html.replace(
                 /(<link rel="shortcut icon"[^>]*>)/,
-                '$1\n        <link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png" />',
+                '$1\n        <link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png" />'
             );
         }
 
         writeFileSync(indexHtmlPath, html, 'utf-8');
-        console.log(`   ✓ <title>${manifestName}</title>`);
-        console.log(`   ✓ apple-mobile-web-app-title="${manifestShortName}"`);
-        console.log('   ✓ apple-touch-icon link');
+        log.info(`   ✓ <title>${manifestName}</title>`);
+        log.info(`   ✓ apple-mobile-web-app-title="${manifestShortName}"`);
+        log.info('   ✓ apple-touch-icon link');
     } catch (err) {
-        console.warn('   ⚠️  Failed to patch index.html:', err);
+        log.warn('   ⚠️  Failed to patch index.html:', err);
     }
 }
 
@@ -1033,7 +1094,7 @@ const SYNC_ITEMS = [
 const activeNativeDirs = NATIVE_PUBLIC_DIRS.filter(d => existsSync(d));
 
 if (activeNativeDirs.length > 0) {
-    console.log('\n📲 Syncing runtime files into native asset directories...');
+    log.info('\n📲 Syncing runtime files into native asset directories...');
 
     let syncCount = 0;
 
@@ -1058,7 +1119,7 @@ if (activeNativeDirs.length > 0) {
 
                 syncCount++;
             } catch (err) {
-                console.warn(`   ⚠️  Failed to sync ${item} → ${nativeDir}:`, err);
+                log.warn(`   ⚠️  Failed to sync ${item} → ${nativeDir}:`, err);
             }
         }
     }
@@ -1067,5 +1128,5 @@ if (activeNativeDirs.length > 0) {
         .map(d => (d.includes('android') ? 'Android' : 'iOS'))
         .join(' + ');
 
-    console.log(`   ✓ Synced ${syncCount} item(s) into ${platforms} native assets`);
+    log.info(`   ✓ Synced ${syncCount} item(s) into ${platforms} native assets`);
 }
