@@ -464,5 +464,132 @@
       "search": "Buscar países",
       "title": "Seleccionar país"
     }
+  },
+  "profile": {
+    "title": "Mi cuenta",
+    "editProfile": "Editar perfil",
+    "exportSeedPhrase": "Exportar frase inicial",
+    "deleteAccount": "Eliminar cuenta",
+    "connectingHandler": "Conectar controlador",
+    "save": "Ahorrar",
+    "saving": "Ahorro...",
+    "close": "Cerca",
+    "back": "Atrás",
+    "fullName": "Nombre completo",
+    "userId": "ID de usuario",
+    "emailAddress": "Dirección de correo electrónico",
+    "phoneNumber": "Número de teléfono",
+    "country": "País",
+    "dateOfBirth": "Fecha de nacimiento",
+    "disabled": "(desactivado)",
+    "age": "Edad:",
+    "didLabel": "{{marca}} Número (DID)",
+    "didCopied": "DID copiado al portapapeles",
+    "didCopyFailed": "No se puede copiar DID al portapapeles",
+    "getAnAdult": "conseguir un adulto",
+    "needParentGuardian": "Necesitarás que un padre o tutor configure una cuenta familiar antes de poder unirte.",
+    "imAnAdult": "soy un adulto",
+    "notifications": "Notificaciones",
+    "delete": {
+      "title": "¿Eliminar cuenta?",
+      "warning": "Al eliminar su cuenta, se eliminará permanentemente su identidad en {{brand}} y todas sus credenciales. <0>¡Advertencia, esta acción no se puede deshacer!</0>",
+      "confirmByTyping": "Confirmar escribiendo",
+      "below": "abajo.",
+      "deleteForever": "Eliminar para siempre",
+      "loading": "Cargando...",
+      "deleting": "Eliminando cuenta...",
+      "recentLoginRequired": "¡Se requiere un inicio de sesión reciente!",
+      "reauthenticateHere": "Volver a autenticarse aquí"
+    },
+    "export": {
+      "title": "Exportar frase inicial",
+      "warning": "¡Advertencia!",
+      "masterKeyWarning": "Esta es la clave maestra de tu {{marca}}. Cualquiera que tenga acceso a esta frase puede controlar su {{marca}} y su identidad. - NO lo compartas. - NO lo almacene en línea ni tome capturas de pantalla. - Anótelo y guárdelo sin conexión. - Si lo pierdes, es posible que pierdas el acceso de forma permanente. <0>¿Está seguro de que desea continuar?</0>",
+      "confirmByTyping": "Confirmar escribiendo",
+      "below": "abajo.",
+      "phonePlaceholder": "Número de teléfono...",
+      "emailPlaceholder": "Correo electrónico...",
+      "button": "Exportar frase inicial",
+      "revealPrompt": "Entiendo - Revela Mi Semilla",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar"
+    },
+    "email": {
+      "header": "Direcciones de correo electrónico",
+      "placeholder": "Correo electrónico",
+      "noEmails": "Aún no se han agregado correos electrónicos.",
+      "invalidEmail": "Correo electrónico faltante o no válido",
+      "primary": "Primario",
+      "setAsPrimary": "Establecer como principal",
+      "remove": "Eliminar",
+      "unverified": "Inconfirmado",
+      "resendVerification": "Reenviar correo electrónico de verificación",
+      "sending": "Envío...",
+      "setPrimaryConfirm": {
+        "title": "Establecer método de contacto principal",
+        "text": "¿Está seguro de que desea configurar este correo electrónico como principal?",
+        "yes": "Sí",
+        "no": "No"
+      },
+      "removeConfirm": {
+        "title": "Eliminar método de contacto",
+        "text": "¿Estás seguro de que deseas eliminar este correo electrónico?",
+        "yes": "Sí",
+        "no": "No"
+      }
+    },
+    "phone": {
+      "header": "Teléfono",
+      "placeholder": "Teléfono",
+      "setAsPrimary": "Establecer como principal"
+    },
+    "verify": {
+      "verifying": "Verificando tu correo electrónico...",
+      "pleaseWait": "Un momento mientras completamos su verificación.",
+      "success": "Su correo electrónico ha sido verificado exitosamente.",
+      "failed": "Verificación fallida",
+      "failedDesc": "No pudimos verificar su correo electrónico. El token puede no ser válido o haber caducado. Inténtelo de nuevo o solicite un nuevo correo electrónico de verificación.",
+      "returnHome": "Regresar a casa"
+    },
+    "seed": {
+      "yourSeedPhrase": "Your Seed Phrase:",
+      "copyConfirm": "Are you sure you want to copy this to clipboard?",
+      "copiedToast": "Seed Phrase copied to clipboard",
+      "copyFailedToast": "Unable to copy seed phrase to clipboard",
+      "reveal": "Reveal My Seed",
+      "hide": "Hide My Seed",
+      "howToStore": "How to store your seed phrase safely?"
+    }
+  },
+  "settings": {
+    "privacyTitle": "Privacidad y datos",
+    "minorWarning": "Algunas funciones están restringidas para usuarios menores de 18 años.",
+    "aiFeatures": "Funciones de IA",
+    "aiFeaturesDesc": "Sesiones de tutoría, conocimientos y personalización de IA",
+    "analytics": "Análisis e información",
+    "analyticsDesc": "Ayude a mejorar {{brand}} con datos de uso anónimos",
+    "bugReports": "Informes de errores",
+    "bugReportsDesc": "Envíe automáticamente informes de fallos para ayudar a solucionar problemas",
+    "goBack": "Volver",
+    "notifications": {
+      "title": "Editar configuración de notificaciones",
+      "connectionRequests": {
+        "title": "Nuevas solicitudes de conexión",
+        "description": "Cuando alguien escanea su código o hace clic en sus enlaces de usuario, iniciará una solicitud de red que puede aceptar o rechazar."
+      },
+      "newBoosts": {
+        "title": "Nuevos aumentos",
+        "description": "Los aumentos incluyen todo tipo de credenciales, incluidas: habilidades, identificaciones, logros, historial de aprendizaje, historial laboral, moneda e insignias."
+      },
+      "prompt": {
+        "title": "¿Permanecer informado?",
+        "description": "Reciba notificaciones automáticas para:",
+        "details": "Nuevas solicitudes de conexión, nuevos impulsos (como logros, credenciales e insignias).",
+        "continue": "Continuar",
+        "notYet": "Aún no",
+        "privacyPolicy": "política de privacidad",
+        "termsOfService": "Términos de servicio"
+      }
+    }
   }
 }

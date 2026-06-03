@@ -464,5 +464,132 @@
       "search": "Länder suchen",
       "title": "Land auswählen"
     }
+  },
+  "profile": {
+    "title": "Mein Konto",
+    "editProfile": "Profil bearbeiten",
+    "exportSeedPhrase": "Seed-Phrase exportieren",
+    "deleteAccount": "Konto löschen",
+    "connectingHandler": "Handler verbinden",
+    "save": "Speichern",
+    "saving": "Sparen...",
+    "close": "Schließen",
+    "back": "Zurück",
+    "fullName": "Vollständiger Name",
+    "userId": "Benutzer-ID",
+    "emailAddress": "E-Mail-Adresse",
+    "phoneNumber": "Telefonnummer",
+    "country": "Land",
+    "dateOfBirth": "Geburtsdatum",
+    "disabled": "(deaktiviert)",
+    "age": "Alter:",
+    "didLabel": "{{brand}} Nummer (DID)",
+    "didCopied": "DID in die Zwischenablage kopiert",
+    "didCopyFailed": "DID kann nicht in die Zwischenablage kopiert werden",
+    "getAnAdult": "Holen Sie sich einen Erwachsenen",
+    "needParentGuardian": "Bevor Sie beitreten können, benötigen Sie einen Elternteil oder Erziehungsberechtigten, der ein Familienkonto einrichtet.",
+    "imAnAdult": "Ich bin ein Erwachsener",
+    "notifications": "Benachrichtigungen",
+    "delete": {
+      "title": "Konto löschen?",
+      "warning": "Durch das Löschen Ihres Kontos werden Ihre Identität bei {{brand}} und alle Ihre Anmeldeinformationen dauerhaft gelöscht. <0>Achtung, diese Aktion kann nicht rückgängig gemacht werden!</0>",
+      "confirmByTyping": "Bestätigen Sie durch Eingabe",
+      "below": "unten.",
+      "deleteForever": "Für immer löschen",
+      "loading": "Laden...",
+      "deleting": "Konto wird gelöscht...",
+      "recentLoginRequired": "Ein aktueller Login ist erforderlich!",
+      "reauthenticateHere": "Hier erneut authentifizieren"
+    },
+    "export": {
+      "title": "Seed-Phrase exportieren",
+      "warning": "Warnung!",
+      "masterKeyWarning": "Dies ist der Hauptschlüssel Ihres {{brand}}. Jeder, der Zugriff auf diesen Satz hat, kann Ihr {{brand}} und Ihre Identität kontrollieren. - Teilen Sie es NICHT. - Speichern Sie es NICHT online und machen Sie keine Screenshots. - Notieren Sie es und speichern Sie es offline. - Wenn Sie diese verlieren, können Sie den Zugriff dauerhaft verlieren. <0>Sind Sie sicher, dass Sie fortfahren möchten?</0>",
+      "confirmByTyping": "Bestätigen Sie durch Eingabe",
+      "below": "unten.",
+      "phonePlaceholder": "Telefonnummer...",
+      "emailPlaceholder": "E-Mail...",
+      "button": "Seed-Phrase exportieren",
+      "revealPrompt": "Ich verstehe – offenbare meinen Samen",
+      "confirm": "Bestätigen",
+      "cancel": "Stornieren"
+    },
+    "email": {
+      "header": "E-Mail-Adressen",
+      "placeholder": "E-Mail",
+      "noEmails": "Noch keine E-Mails hinzugefügt.",
+      "invalidEmail": "Fehlende oder ungültige E-Mail",
+      "primary": "Primär",
+      "setAsPrimary": "Als primär festlegen",
+      "remove": "Entfernen",
+      "unverified": "Nicht bestätigt",
+      "resendVerification": "Bestätigungs-E-Mail erneut senden",
+      "sending": "Senden...",
+      "setPrimaryConfirm": {
+        "title": "Legen Sie die primäre Kontaktmethode fest",
+        "text": "Sind Sie sicher, dass Sie diese E-Mail-Adresse als primäre E-Mail-Adresse festlegen möchten?",
+        "yes": "Ja",
+        "no": "NEIN"
+      },
+      "removeConfirm": {
+        "title": "Kontaktmethode entfernen",
+        "text": "Sind Sie sicher, dass Sie diese E-Mail entfernen möchten?",
+        "yes": "Ja",
+        "no": "NEIN"
+      }
+    },
+    "phone": {
+      "header": "Telefon",
+      "placeholder": "Telefon",
+      "setAsPrimary": "Als primär festlegen"
+    },
+    "verify": {
+      "verifying": "Ihre E-Mail-Adresse wird überprüft...",
+      "pleaseWait": "Nur einen Moment, während wir Ihre Verifizierung abschließen.",
+      "success": "Ihre E-Mail-Adresse wurde erfolgreich bestätigt.",
+      "failed": "Überprüfung fehlgeschlagen",
+      "failedDesc": "Wir konnten Ihre E-Mail-Adresse nicht bestätigen. Der Token ist möglicherweise ungültig oder abgelaufen. Bitte versuchen Sie es erneut oder fordern Sie eine neue Bestätigungs-E-Mail an.",
+      "returnHome": "Heimkehr"
+    },
+    "seed": {
+      "yourSeedPhrase": "Your Seed Phrase:",
+      "copyConfirm": "Are you sure you want to copy this to clipboard?",
+      "copiedToast": "Seed Phrase copied to clipboard",
+      "copyFailedToast": "Unable to copy seed phrase to clipboard",
+      "reveal": "Reveal My Seed",
+      "hide": "Hide My Seed",
+      "howToStore": "How to store your seed phrase safely?"
+    }
+  },
+  "settings": {
+    "privacyTitle": "Datenschutz und Daten",
+    "minorWarning": "Einige Funktionen sind für Benutzer unter 18 Jahren eingeschränkt.",
+    "aiFeatures": "KI-Funktionen",
+    "aiFeaturesDesc": "KI-Nachhilfesitzungen, Einblicke und Personalisierung",
+    "analytics": "Analysen und Einblicke",
+    "analyticsDesc": "Helfen Sie mit, {{brand}} mit anonymen Nutzungsdaten zu verbessern",
+    "bugReports": "Fehlerberichte",
+    "bugReportsDesc": "Senden Sie automatisch Absturzberichte, um bei der Behebung von Problemen zu helfen",
+    "goBack": "Geh zurück",
+    "notifications": {
+      "title": "Bearbeiten Sie die Benachrichtigungseinstellungen",
+      "connectionRequests": {
+        "title": "Neue Verbindungsanfragen",
+        "description": "Wenn jemand Ihren Code scannt oder auf Ihre Benutzerlinks klickt, wird eine Netzwerkanfrage initiiert, die Sie akzeptieren oder ablehnen können."
+      },
+      "newBoosts": {
+        "title": "Neue Boosts",
+        "description": "Boosts umfassen alle Arten von Anmeldeinformationen, einschließlich: Fähigkeiten, Ausweise, Erfolge, Lernhistorie, Arbeitshistorie, Währung und Abzeichen."
+      },
+      "prompt": {
+        "title": "Auf dem Laufenden bleiben?",
+        "description": "Erhalten Sie Push-Benachrichtigungen für:",
+        "details": "Neue Verbindungsanfragen, neue Boosts (wie Erfolge, Anmeldeinformationen und Abzeichen).",
+        "continue": "Weitermachen",
+        "notYet": "Noch nicht",
+        "privacyPolicy": "Datenschutzrichtlinie",
+        "termsOfService": "Nutzungsbedingungen"
+      }
+    }
   }
 }

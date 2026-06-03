@@ -464,5 +464,132 @@
       "search": "Search countries",
       "title": "Select Country"
     }
+  },
+  "profile": {
+    "title": "My Account",
+    "editProfile": "Edit Profile",
+    "exportSeedPhrase": "Export Seed Phrase",
+    "deleteAccount": "Delete Account",
+    "connectingHandler": "Connect Handler",
+    "save": "Save",
+    "saving": "Saving...",
+    "close": "Close",
+    "back": "Back",
+    "fullName": "Full Name",
+    "userId": "User ID",
+    "emailAddress": "Email Address",
+    "phoneNumber": "Phone Number",
+    "country": "Country",
+    "dateOfBirth": "Date of Birth",
+    "disabled": "(disabled)",
+    "age": "Age:",
+    "didLabel": "{{brand}} Number (DID)",
+    "didCopied": "DID copied to clipboard",
+    "didCopyFailed": "Unable to copy DID to clipboard",
+    "getAnAdult": "Get an Adult",
+    "needParentGuardian": "You'll need a parent or guardian to set up a Family Account before you can join.",
+    "imAnAdult": "I'm an Adult",
+    "notifications": "Notifications",
+    "delete": {
+      "title": "Delete Account?",
+      "warning": "Deleting your account will permanently delete your identity on {{brand}} and all of your credentials. <0>Warning, this action cannot be undone!</0>",
+      "confirmByTyping": "Confirm by typing",
+      "below": "below.",
+      "deleteForever": "Delete Forever",
+      "loading": "Loading...",
+      "deleting": "Deleting Account...",
+      "recentLoginRequired": "A recent login is required!",
+      "reauthenticateHere": "Reauthenticate here"
+    },
+    "export": {
+      "title": "Export Seed Phrase",
+      "warning": "Warning!",
+      "masterKeyWarning": "This is your {{brand}}'s master key. Anyone with access to this phrase can control your {{brand}} and your identity. - Do NOT share it. - Do NOT store it online or take screenshots. - Write it down and store it offline. - If you lose this, you may permanently lose access. <0>Are you sure you want to proceed?</0>",
+      "confirmByTyping": "Confirm by typing",
+      "below": "below.",
+      "phonePlaceholder": "Phone Number...",
+      "emailPlaceholder": "Email...",
+      "button": "Export Seed Phrase",
+      "revealPrompt": "I understand - Reveal My Seed",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "email": {
+      "header": "Email Addresses",
+      "placeholder": "Email",
+      "noEmails": "No emails added yet.",
+      "invalidEmail": "Missing or Invalid Email",
+      "primary": "Primary",
+      "setAsPrimary": "Set as Primary",
+      "remove": "Remove",
+      "unverified": "Unverified",
+      "resendVerification": "Resend verification email",
+      "sending": "Sending...",
+      "setPrimaryConfirm": {
+        "title": "Set Primary Contact Method",
+        "text": "Are you sure you want to set this email as primary?",
+        "yes": "Yes",
+        "no": "No"
+      },
+      "removeConfirm": {
+        "title": "Remove Contact Method",
+        "text": "Are you sure you want to remove this email?",
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
+    "phone": {
+      "header": "Phone",
+      "placeholder": "Phone",
+      "setAsPrimary": "Set as Primary"
+    },
+    "verify": {
+      "verifying": "Verifying your email...",
+      "pleaseWait": "Just a moment while we complete your verification.",
+      "success": "Your email has successfully been verified.",
+      "failed": "Verification Failed",
+      "failedDesc": "We couldn't verify your email. The token may be invalid or expired. Please try again or request a new verification email.",
+      "returnHome": "Return Home"
+    },
+    "seed": {
+      "yourSeedPhrase": "Your Seed Phrase:",
+      "copyConfirm": "Are you sure you want to copy this to clipboard?",
+      "copiedToast": "Seed Phrase copied to clipboard",
+      "copyFailedToast": "Unable to copy seed phrase to clipboard",
+      "reveal": "Reveal My Seed",
+      "hide": "Hide My Seed",
+      "howToStore": "How to store your seed phrase safely?"
+    }
+  },
+  "settings": {
+    "privacyTitle": "Privacy & Data",
+    "minorWarning": "Some features are restricted for users under 18.",
+    "aiFeatures": "AI Features",
+    "aiFeaturesDesc": "AI tutoring sessions, insights, and personalization",
+    "analytics": "Analytics & Insights",
+    "analyticsDesc": "Help improve {{brand}} with anonymous usage data",
+    "bugReports": "Bug Reports",
+    "bugReportsDesc": "Automatically send crash reports to help fix issues",
+    "goBack": "Go back",
+    "notifications": {
+      "title": "Edit Notification Settings",
+      "connectionRequests": {
+        "title": "New Connection Requests",
+        "description": "When someone scans your code or clicks your user links it will initiate a network request that you can accept or deny."
+      },
+      "newBoosts": {
+        "title": "New Boosts",
+        "description": "Boosts include all types of credentials including:  Skills, IDs, Achievements, Learning History, Work History, Currency, and Badges."
+      },
+      "prompt": {
+        "title": "Stay in the Loop?",
+        "description": "Receive push notifications for:",
+        "details": "New connection requests, New boosts (like achievements, credentials, and badges).",
+        "continue": "Continue",
+        "notYet": "Not Yet",
+        "privacyPolicy": "Privacy Policy",
+        "termsOfService": "Terms of Service"
+      }
+    }
   }
 }

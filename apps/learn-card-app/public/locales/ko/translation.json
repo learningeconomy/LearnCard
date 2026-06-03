@@ -464,5 +464,132 @@
       "search": "국가 검색",
       "title": "국가 선택"
     }
+  },
+  "profile": {
+    "title": "내 계정",
+    "editProfile": "프로필 편집",
+    "exportSeedPhrase": "시드 문구 내보내기",
+    "deleteAccount": "계정 삭제",
+    "connectingHandler": "핸들러 연결",
+    "save": "구하다",
+    "saving": "절약...",
+    "close": "닫다",
+    "back": "뒤쪽에",
+    "fullName": "성명",
+    "userId": "사용자 ID",
+    "emailAddress": "이메일 주소",
+    "phoneNumber": "전화 번호",
+    "country": "국가",
+    "dateOfBirth": "생일",
+    "disabled": "(장애가 있는)",
+    "age": "나이:",
+    "didLabel": "{{브랜드}} 번호(DID)",
+    "didCopied": "DID가 클립보드에 복사되었습니다.",
+    "didCopyFailed": "DID를 클립보드에 복사할 수 없습니다.",
+    "getAnAdult": "어른을 구하라",
+    "needParentGuardian": "가족 계정에 가입하려면 먼저 부모나 보호자가 있어야 가족 계정을 설정할 수 있습니다.",
+    "imAnAdult": "나는 성인이다",
+    "notifications": "알림",
+    "delete": {
+      "title": "계정을 삭제하시겠습니까?",
+      "warning": "계정을 삭제하면 {{brand}}의 신원과 모든 자격 증명이 영구적으로 삭제됩니다. <0>경고, 이 작업은 취소할 수 없습니다!</0>",
+      "confirmByTyping": "입력하여 확인하세요.",
+      "below": "아래에.",
+      "deleteForever": "영원히 삭제",
+      "loading": "로드 중...",
+      "deleting": "계정 삭제 중...",
+      "recentLoginRequired": "최근 로그인이 필요합니다!",
+      "reauthenticateHere": "여기서 재인증하세요"
+    },
+    "export": {
+      "title": "시드 문구 내보내기",
+      "warning": "경고!",
+      "masterKeyWarning": "이것은 귀하의 {{brand}}의 마스터 키입니다. 이 문구에 액세스할 수 있는 사람은 누구나 귀하의 {{brand}}와 귀하의 신원을 제어할 수 있습니다. - 공유하지 마세요. - 온라인에 저장하거나 스크린샷을 찍지 마세요. - 적어서 오프라인에 보관하세요. - 분실 시 영구적으로 접속이 불가능할 수 있습니다. <0>계속하시겠습니까?</0>",
+      "confirmByTyping": "입력하여 확인하세요.",
+      "below": "아래에.",
+      "phonePlaceholder": "전화 번호...",
+      "emailPlaceholder": "이메일...",
+      "button": "시드 문구 내보내기",
+      "revealPrompt": "이해합니다 - 내 씨앗을 공개하세요",
+      "confirm": "확인하다",
+      "cancel": "취소"
+    },
+    "email": {
+      "header": "이메일 주소",
+      "placeholder": "이메일",
+      "noEmails": "아직 추가된 이메일이 없습니다.",
+      "invalidEmail": "이메일이 없거나 유효하지 않습니다.",
+      "primary": "주요한",
+      "setAsPrimary": "기본으로 설정",
+      "remove": "제거하다",
+      "unverified": "확인되지 않음",
+      "resendVerification": "확인 이메일 다시 보내기",
+      "sending": "배상...",
+      "setPrimaryConfirm": {
+        "title": "기본 연락 방법 설정",
+        "text": "이 이메일을 기본 이메일로 설정하시겠습니까?",
+        "yes": "예",
+        "no": "아니요"
+      },
+      "removeConfirm": {
+        "title": "연락 방법 삭제",
+        "text": "이 이메일을 삭제하시겠습니까?",
+        "yes": "예",
+        "no": "아니요"
+      }
+    },
+    "phone": {
+      "header": "핸드폰",
+      "placeholder": "핸드폰",
+      "setAsPrimary": "기본으로 설정"
+    },
+    "verify": {
+      "verifying": "이메일 확인 중...",
+      "pleaseWait": "확인을 완료하는 동안 잠시만 기다려 주세요.",
+      "success": "귀하의 이메일이 성공적으로 확인되었습니다.",
+      "failed": "확인 실패",
+      "failedDesc": "이메일을 확인할 수 없습니다. 토큰이 유효하지 않거나 만료되었을 수 있습니다. 다시 시도하거나 새 확인 이메일을 요청하세요.",
+      "returnHome": "집으로 돌아가기"
+    },
+    "seed": {
+      "yourSeedPhrase": "Your Seed Phrase:",
+      "copyConfirm": "Are you sure you want to copy this to clipboard?",
+      "copiedToast": "Seed Phrase copied to clipboard",
+      "copyFailedToast": "Unable to copy seed phrase to clipboard",
+      "reveal": "Reveal My Seed",
+      "hide": "Hide My Seed",
+      "howToStore": "How to store your seed phrase safely?"
+    }
+  },
+  "settings": {
+    "privacyTitle": "개인정보 보호 및 데이터",
+    "minorWarning": "18세 미만 사용자에게는 일부 기능이 제한됩니다.",
+    "aiFeatures": "AI 기능",
+    "aiFeaturesDesc": "AI 튜터링 세션, 통찰력 및 개인화",
+    "analytics": "분석 및 통찰력",
+    "analyticsDesc": "익명의 사용 데이터를 통해 {{brand}} 개선에 참여해 주세요.",
+    "bugReports": "버그 보고서",
+    "bugReportsDesc": "문제 해결에 도움이 되는 충돌 보고서를 자동으로 보냅니다.",
+    "goBack": "돌아가기",
+    "notifications": {
+      "title": "알림 설정 편집",
+      "connectionRequests": {
+        "title": "새로운 연결 요청",
+        "description": "누군가 귀하의 코드를 스캔하거나 귀하의 사용자 링크를 클릭하면 귀하가 수락하거나 거부할 수 있는 네트워크 요청이 시작됩니다."
+      },
+      "newBoosts": {
+        "title": "새로운 부스트",
+        "description": "부스트에는 기술, ID, 업적, 학습 기록, 작업 기록, 통화 및 배지를 포함한 모든 유형의 자격 증명이 포함됩니다."
+      },
+      "prompt": {
+        "title": "최신 소식을 확인하시겠습니까?",
+        "description": "다음에 대한 푸시 알림 수신:",
+        "details": "새로운 연결 요청, 새로운 부스트(업적, 자격증명, 배지 등).",
+        "continue": "계속하다",
+        "notYet": "아직 아님",
+        "privacyPolicy": "개인 정보 보호 정책",
+        "termsOfService": "서비스 약관"
+      }
+    }
   }
 }

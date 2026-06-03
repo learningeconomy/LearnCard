@@ -464,5 +464,132 @@
       "search": "Rechercher des pays",
       "title": "Sélectionner le pays"
     }
+  },
+  "profile": {
+    "title": "Mon compte",
+    "editProfile": "Modifier le profil",
+    "exportSeedPhrase": "Phrase d'exportation de semences",
+    "deleteAccount": "Supprimer le compte",
+    "connectingHandler": "Gestionnaire de connexion",
+    "save": "Sauvegarder",
+    "saving": "Économie...",
+    "close": "Fermer",
+    "back": "Dos",
+    "fullName": "Nom et prénom",
+    "userId": "ID de l'utilisateur",
+    "emailAddress": "Adresse email",
+    "phoneNumber": "Numéro de téléphone",
+    "country": "Pays",
+    "dateOfBirth": "Date de naissance",
+    "disabled": "(désactivé)",
+    "age": "Âge:",
+    "didLabel": "{{brand}} Numéro (DID)",
+    "didCopied": "DID copié dans le presse-papiers",
+    "didCopyFailed": "Impossible de copier le DID dans le presse-papiers",
+    "getAnAdult": "Obtenez un adulte",
+    "needParentGuardian": "Vous aurez besoin d'un parent ou d'un tuteur pour créer un compte familial avant de pouvoir vous inscrire.",
+    "imAnAdult": "je suis un adulte",
+    "notifications": "Notifications",
+    "delete": {
+      "title": "Delete Account?",
+      "warning": "La suppression de votre compte supprimera définitivement votre identité sur {{brand}} et toutes vos informations d'identification. <0>Attention, cette action est irréversible !</0>",
+      "confirmByTyping": "Confirmez en tapant",
+      "below": "ci-dessous.",
+      "deleteForever": "Supprimer pour toujours",
+      "loading": "Chargement...",
+      "deleting": "Suppression du compte...",
+      "recentLoginRequired": "Une connexion récente est requise !",
+      "reauthenticateHere": "Réauthentifiez-vous ici"
+    },
+    "export": {
+      "title": "Phrase d'exportation de semences",
+      "warning": "Avertissement!",
+      "masterKeyWarning": "Il s'agit de la clé principale de votre {{brand}}. Toute personne ayant accès à cette phrase peut contrôler votre {{marque}} et votre identité. - Ne le partagez PAS. - Ne le stockez PAS en ligne et ne prenez pas de captures d'écran. - Notez-le et stockez-le hors ligne. - Si vous le perdez, vous risquez de perdre définitivement l'accès. <0>Êtes-vous sûr de vouloir continuer ?</0>",
+      "confirmByTyping": "Confirmez en tapant",
+      "below": "ci-dessous.",
+      "phonePlaceholder": "Numéro de téléphone...",
+      "emailPlaceholder": "E-mail...",
+      "button": "Phrase d'exportation de semences",
+      "revealPrompt": "Je comprends - Révéler ma graine",
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
+    },
+    "email": {
+      "header": "Adresses e-mail",
+      "placeholder": "E-mail",
+      "noEmails": "Aucun e-mail ajouté pour l'instant.",
+      "invalidEmail": "E-mail manquant ou invalide",
+      "primary": "Primaire",
+      "setAsPrimary": "Définir comme principal",
+      "remove": "Retirer",
+      "unverified": "Non vérifié",
+      "resendVerification": "Renvoyer l'e-mail de vérification",
+      "sending": "Envoi...",
+      "setPrimaryConfirm": {
+        "title": "Définir la méthode de contact principal",
+        "text": "Êtes-vous sûr de vouloir définir cette adresse e-mail comme adresse principale ?",
+        "yes": "Oui",
+        "no": "Non"
+      },
+      "removeConfirm": {
+        "title": "Supprimer la méthode de contact",
+        "text": "Êtes-vous sûr de vouloir supprimer cet e-mail ?",
+        "yes": "Oui",
+        "no": "Non"
+      }
+    },
+    "phone": {
+      "header": "Téléphone",
+      "placeholder": "Téléphone",
+      "setAsPrimary": "Définir comme principal"
+    },
+    "verify": {
+      "verifying": "Vérification de votre e-mail...",
+      "pleaseWait": "Juste un instant pendant que nous terminons votre vérification.",
+      "success": "Votre email a été vérifié avec succès.",
+      "failed": "Échec de la vérification",
+      "failedDesc": "Nous n'avons pas pu vérifier votre adresse e-mail. Le jeton est peut-être invalide ou expiré. Veuillez réessayer ou demander un nouvel e-mail de vérification.",
+      "returnHome": "Retour à la maison"
+    },
+    "seed": {
+      "yourSeedPhrase": "Your Seed Phrase:",
+      "copyConfirm": "Are you sure you want to copy this to clipboard?",
+      "copiedToast": "Seed Phrase copied to clipboard",
+      "copyFailedToast": "Unable to copy seed phrase to clipboard",
+      "reveal": "Reveal My Seed",
+      "hide": "Hide My Seed",
+      "howToStore": "How to store your seed phrase safely?"
+    }
+  },
+  "settings": {
+    "privacyTitle": "Confidentialité et données",
+    "minorWarning": "Certaines fonctionnalités sont réservées aux utilisateurs de moins de 18 ans.",
+    "aiFeatures": "Fonctionnalités IA",
+    "aiFeaturesDesc": "Séances de tutorat en IA, informations et personnalisation",
+    "analytics": "Analyses et informations",
+    "analyticsDesc": "Aidez-nous à améliorer {{brand}} grâce à des données d'utilisation anonymes",
+    "bugReports": "Rapports de bogues",
+    "bugReportsDesc": "Envoyez automatiquement des rapports d'erreur pour aider à résoudre les problèmes",
+    "goBack": "Retourner",
+    "notifications": {
+      "title": "Modifier les paramètres de notification",
+      "connectionRequests": {
+        "title": "Nouvelles demandes de connexion",
+        "description": "Lorsque quelqu'un scanne votre code ou clique sur vos liens utilisateur, une requête réseau est lancée que vous pouvez accepter ou refuser."
+      },
+      "newBoosts": {
+        "title": "Nouveaux boosts",
+        "description": "Les boosts incluent tous les types d'informations d'identification, notamment : les compétences, les identifiants, les réalisations, l'historique d'apprentissage, l'historique de travail, la devise et les badges."
+      },
+      "prompt": {
+        "title": "Rester au courant ?",
+        "description": "Recevez des notifications push pour :",
+        "details": "Nouvelles demandes de connexion, nouveaux boosts (comme les réalisations, les informations d'identification et les badges).",
+        "continue": "Continuer",
+        "notYet": "Pas encore",
+        "privacyPolicy": "politique de confidentialité",
+        "termsOfService": "Conditions d'utilisation"
+      }
+    }
   }
 }
