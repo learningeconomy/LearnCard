@@ -24,6 +24,7 @@ import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNG
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -98,7 +99,7 @@ export const AddContactView: React.FC<{
         try {
             const connectionReq = await wallet?.invoke?.connectWith(profileId);
             if (connectionReq) {
-                presentToast('Connection Request sent', {
+                presentToast(m['contacts.connectionSent'](), {
                     hasDismissButton: true,
                 });
             }
@@ -136,7 +137,7 @@ export const AddContactView: React.FC<{
                 profileId
             );
             if (connectionReq) {
-                presentToast('Connection Request sent', {
+                presentToast(m['contacts.connectionSent'](), {
                     hasDismissButton: true,
                 });
             }
@@ -172,7 +173,7 @@ export const AddContactView: React.FC<{
         try {
             const connectionReq = await wallet?.invoke?.connectWithInvite(profileId, challenge);
             if (connectionReq) {
-                presentToast('Connected Successfully', {
+                presentToast(m['contacts.connectedSuccessfully'](), {
                     hasDismissButton: true,
                 });
             }
@@ -184,7 +185,7 @@ export const AddContactView: React.FC<{
         } catch (err) {
             let _errMessage = err?.message;
             if (_errMessage.includes('Challenge not found'))
-                _errMessage = 'Invite link has expired!';
+                _errMessage = m['contacts.inviteExpired']();
             if (err?.message === 'Invite not found or has expired') {
                 handleCancel?.();
                 newModal(
@@ -295,7 +296,7 @@ export const AddContactView: React.FC<{
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                {loading ? 'loading...' : 'Request Connection'}
+                                {loading ? m['contacts.loading']() : m['contacts.requestConnection']()}
                             </button>
                         ) : (
                             <button
@@ -332,7 +333,7 @@ export const AddContactView: React.FC<{
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {loading ? 'loading...' : 'Connect'}
+                        {(loading || acceptConnectionLoading) ? m['contacts.loading']() : m['contacts.connect']()}
                     </button>
                 )}
             </IonCol>
@@ -359,7 +360,7 @@ export const AddContactView: React.FC<{
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {acceptConnectionLoading ? 'loading...' : 'Connect'}
+                        {acceptConnectionLoading ? m['contacts.loading']() : m['contacts.connect']()}
                     </button>
                 ) : (
                     <button
@@ -441,7 +442,7 @@ export const AddContactView: React.FC<{
                 </IonRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
-                        {isLoggedIn ? 'Cancel' : 'Return home'}
+                        {isLoggedIn ? m['contacts.cancel']() : m['contacts.returnHome']()}
                     </button>
                 </div>
             </IonRow>

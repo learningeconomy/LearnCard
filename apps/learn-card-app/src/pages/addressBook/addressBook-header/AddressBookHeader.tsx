@@ -14,6 +14,7 @@ import { useIsCurrentUserLCNUser } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
+import * as m from '../../../paraglide/messages.js';
 
 export const AddressBookHeader: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -41,12 +42,12 @@ export const AddressBookHeader: React.FC<{
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
 
-    let headerTitle = 'Contacts';
+    let headerTitle = m['contacts.title']();
 
     if (activeTab === AddressBookTabsEnum.Search) {
-        headerTitle = connectionCount === 1 ? 'Result' : 'Results';
+        headerTitle = connectionCount === 1 ? m['contacts.result']() : m['contacts.results']();
     } else {
-        headerTitle = connectionCount === 1 ? 'Contact' : 'Contacts';
+        headerTitle = connectionCount === 1 ? m['contacts.contact']() : m['contacts.title']();
     }
 
     const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {

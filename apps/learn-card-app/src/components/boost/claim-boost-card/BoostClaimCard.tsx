@@ -48,6 +48,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -232,7 +233,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     header: `There was an error: ${err?.message}`,
                     buttons: [
                         {
-                            text: 'Okay',
+                            text: m['contacts.okay'](),
                             role: 'cancel',
                             handler: () => {
                                 dismissAlert();
@@ -257,17 +258,17 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
-        claimStatusText = 'Claimed';
-        if (isFamily) claimStatusText = 'Joined';
+        claimStatusText = m['contacts.claimed']();
+        if (isFamily) claimStatusText = m['contacts.joined']();
     }
     if (isClaimLoading && isLoggedIn) {
-        claimStatusText = 'Saving...';
-        if (isFamily) claimStatusText = 'Joining...';
+        claimStatusText = m['contacts.saving']();
+        if (isFamily) claimStatusText = m['contacts.joining']();
     }
 
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
-        claimStatusText = 'Accept';
-        if (isFamily) claimStatusText = 'Join';
+        claimStatusText = m['contacts.acceptBoost']();
+        if (isFamily) claimStatusText = m['contacts.joinBoost']();
     }
 
     useEffect(() => {
