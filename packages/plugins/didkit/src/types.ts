@@ -16,19 +16,28 @@ export type DidMethod =
     | 'key'
     | 'tz'
     | 'ethr'
-    | `pkh:${| 'tz'
-    | 'tezos'
-    | 'sol'
-    | 'solana'
-    | 'eth'
-    | 'celo'
-    | 'poly'
-    | 'btc'
-    | 'doge'
-    | 'eip155'
-    | 'bip122'}`
+    | `pkh:${
+          | 'tz'
+          | 'tezos'
+          | 'sol'
+          | 'solana'
+          | 'eth'
+          | 'celo'
+          | 'poly'
+          | 'btc'
+          | 'doge'
+          | 'eip155'
+          | 'bip122'}`
     | `pkh:eip155:${string}`
     | `pkh:bip122:${string}`;
+
+/** @group DIDKit Plugin */
+export type DataIntegrityCryptosuite =
+    | 'eddsa-rdfc-2022'
+    | 'eddsa-2022'
+    | 'json-eddsa-2022'
+    | 'ecdsa-2019'
+    | 'jcs-ecdsa-2019';
 
 /** @group DIDKit Plugin */
 export type ProofOptions = {
@@ -40,6 +49,7 @@ export type ProofOptions = {
     challenge?: string;
     domain?: string;
     checks?: ('proof' | 'JWS' | 'credentialStatus' | 'credentialSchema')[];
+    cryptosuite?: DataIntegrityCryptosuite;
 };
 
 /** @group DIDKit Plugin */
