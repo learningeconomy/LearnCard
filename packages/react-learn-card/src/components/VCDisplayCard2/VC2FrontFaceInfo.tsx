@@ -226,23 +226,19 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                         {createdAt}
                                     </span>
                                     {!issuerDisplay.isMissing && (
-                                        <span className="issued-by flex flex-wrap items-baseline justify-center gap-x-1 max-w-full break-words text-center text-[14px]">
-                                            <span className="font-medium text-grayscale-900">
-                                                By
-                                            </span>
+                                        <span className="issued-by max-w-full break-words text-center line-clamp-2 text-[14px]">
+                                            <span className="font-medium text-grayscale-900">By</span>{' '}
                                             {issuerDisplay.isDidValue ? (
-                                                <>
-                                                    <span className="flex flex-wrap items-baseline justify-center gap-x-1 leading-normal font-[600] font-poppins max-w-full break-words">
-                                                        <span className="text-grayscale-900">
-                                                            Digital ID:
-                                                        </span>
-                                                        <span className="text-grayscale-500 underline">
-                                                            {issuerDisplay.displayName}
-                                                        </span>
+                                                <span className="font-[600] font-poppins break-words">
+                                                    <span className="text-grayscale-900">
+                                                        Digital ID:
+                                                    </span>{' '}
+                                                    <span className="text-grayscale-500 underline">
+                                                        {issuerDisplay.displayName}
                                                     </span>
-                                                </>
+                                                </span>
                                             ) : (
-                                                <strong className="font-bold text-grayscale-900 break-words min-w-0">
+                                                <strong className="font-bold text-grayscale-900 break-words">
                                                     {issuerDisplay.displayName}
                                                 </strong>
                                             )}

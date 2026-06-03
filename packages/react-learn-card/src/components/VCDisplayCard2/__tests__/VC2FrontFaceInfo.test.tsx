@@ -97,7 +97,7 @@ describe('VC2FrontFaceInfo', () => {
         expect(issuerFingerprint?.classList.contains('w-[22px]')).toBe(true);
     });
 
-    test('wraps long issuer names instead of forcing a single overflowing line', () => {
+    test('wraps and clamps long issuer names instead of overflowing the card', () => {
         const longIssuerName = 'Versace Academy of Leadership and Entrepreneurship';
         const credential = {
             issuer: { name: longIssuerName },
@@ -125,6 +125,10 @@ describe('VC2FrontFaceInfo', () => {
         // The bug was whitespace-nowrap forcing one line that overflowed the card.
         expect(issuedBy?.className).not.toContain('whitespace-nowrap');
         expect(issuedBy?.className).toContain('break-words');
+        // line-clamp-2 only clamps on a block/-webkit-box, not a flex container,
+        // so the container must NOT be `flex` (the original review-miss).
+        expect(issuedBy?.className).toContain('line-clamp-2');
+        expect(issuedBy?.className).not.toContain('flex');
         expect(getByText(longIssuerName)).not.toBeNull();
     });
 });
