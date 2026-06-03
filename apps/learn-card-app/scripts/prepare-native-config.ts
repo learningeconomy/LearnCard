@@ -590,7 +590,7 @@ if (nativeConfig) {
         }
     }
 
-    // Patch iOS Info.plist with tenant display name + Google/Firebase URL schemes
+    // Patch iOS Info.plist with tenant display name, Google/Firebase URL schemes, and tenant custom schemes
     const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
     const infoPlistTemplatePath = infoPlistPath + '.template';
 
@@ -603,6 +603,7 @@ if (nativeConfig) {
             let plist = readFileSync(infoPlistPath, 'utf-8');
             const displayName = nativeConfig.displayName;
             const bundleId = nativeConfig.bundleId;
+            const customSchemes = nativeConfig.customSchemes ?? [];
 
             plist = plist.replace(
                 /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
@@ -645,6 +646,43 @@ if (nativeConfig) {
                 }
             } else {
                 console.warn('   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced');
+            }
+
+            // Replace the TENANT_CUSTOM_SCHEMES marker with generated <dict> entries for each scheme.
+            // Marker-based replacement (mirrors the Android approach) avoids ambiguity with the
+            // nested CFBundleURLSchemes <array> tags inside CFBundleURLTypes.
+            const TENANT_SCHEMES_MARKER = '<!-- TENANT_CUSTOM_SCHEMES -->';
+
+            if (plist.includes(TENANT_SCHEMES_MARKER)) {
+                const customSchemeEntries = customSchemes
+                    .map(scheme => {
+                        // CFBundleURLName must be a reverse-DNS identifier; replace dashes with
+                        // underscores so e.g. "openid-credential-offer" → "openid_credential_offer"
+                        const schemeIdentifier = scheme.replace(/-/g, '_');
+                        return [
+                            '\t\t<dict>',
+                            '\t\t\t<key>CFBundleTypeRole</key>',
+                            '\t\t\t<string>Editor</string>',
+                            '\t\t\t<key>CFBundleURLName</key>',
+                            `\t\t\t<string>${bundleId}.${schemeIdentifier}</string>`,
+                            '\t\t\t<key>CFBundleURLSchemes</key>',
+                            '\t\t\t<array>',
+                            `\t\t\t\t<string>${scheme}</string>`,
+                            '\t\t\t</array>',
+                            '\t\t</dict>',
+                        ].join('\n');
+                    })
+                    .join('\n');
+
+                plist = plist.replace(TENANT_SCHEMES_MARKER, customSchemeEntries);
+
+                console.log(
+                    `   ✓ Patched Info.plist (custom schemes → [${customSchemes.join(', ')}])`,
+                );
+            } else if (customSchemes.length > 0) {
+                console.warn(
+                    '   ⚠️  TENANT_CUSTOM_SCHEMES marker not found in Info.plist.template — custom schemes not added',
+                );
             }
 
             writeFileSync(infoPlistPath, plist, 'utf-8');
