@@ -19,6 +19,7 @@
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/holder-continuity": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

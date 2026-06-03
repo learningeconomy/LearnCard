@@ -29,6 +29,7 @@ import {
     ConsentFlowContractDetails,
     PaginatedConsentFlowTransactions,
     ConsentFlowTransactionsQuery,
+    HolderExportMetadata,
     PaginatedConsentFlowData,
     ConsentFlowDataQuery,
     BoostRecipientInfo,
@@ -504,6 +505,7 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
+    getHolderExportMetadata: () => Promise<HolderExportMetadata>;
     getCredentialsForContract: (
         termsUri: string,
         options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
