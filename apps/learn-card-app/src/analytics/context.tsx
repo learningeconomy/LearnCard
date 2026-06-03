@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('context');
 
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
@@ -36,7 +38,7 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     switch (providerName) {
         case 'posthog': {
             if (!posthogKey) {
-                console.warn(
+                log.warn(
                     '[Analytics] PostHog selected but no posthogKey configured, falling back to noop'
                 );
                 return new NoopProvider();
@@ -115,7 +117,7 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
                 setSendCredentialFlowProvider(loadedProvider);
             })
             .catch(error => {
-                console.error('[Analytics] Failed to load provider', error);
+                log.error('[Analytics] Failed to load provider', error);
 
                 if (mounted) {
                     setIsReady(true);

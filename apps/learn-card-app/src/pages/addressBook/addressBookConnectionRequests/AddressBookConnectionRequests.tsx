@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch, useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-connection-requests');
 
 import { IonSpinner, useIonModal } from '@ionic/react';
 
@@ -82,7 +84,7 @@ const AddressBookConnectionRequests: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.info('blockProfile::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',

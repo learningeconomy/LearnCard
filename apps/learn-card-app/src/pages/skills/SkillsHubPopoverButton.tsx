@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skills-hub-popover-button');
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useModal, ModalTypes, useDeviceTypeByWidth, useWallet } from 'learn-card-base';
@@ -86,7 +88,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
 
                         return frameworkAndSkills.framework;
                     } catch (error) {
-                        console.error(`Failed to fetch framework ${frameworkId}:`, error);
+                        log.error(`Failed to fetch framework ${frameworkId}:`, error);
                         return null;
                     }
                 })

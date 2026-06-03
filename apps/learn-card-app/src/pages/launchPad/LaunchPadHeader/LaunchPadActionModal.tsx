@@ -88,6 +88,9 @@ import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
 import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('launch-pad-action-modal');
+
 const getIconForActionButton = (
     label: string,
     opts?: { buildMyLCIcon?: string; AiInsightsIcon?: React.FC<{ className?: string }> }
@@ -492,7 +495,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         try {
             await refetchProfile();
         } catch (e) {
-            console.error('Failed to refresh profile cache after role change', e);
+            log.error('Failed to refresh profile cache after role change', e);
         }
 
         const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
@@ -855,8 +858,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                         setRole={handleRoleChange}
                                     />,
                                     {
-                                        sectionClassName:
-                                            '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                        sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]',
                                     },
                                     {
                                         mobile: ModalTypes.BottomSheet,

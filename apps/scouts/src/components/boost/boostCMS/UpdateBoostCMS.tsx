@@ -77,6 +77,8 @@ import {
 } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('update-boost-cms');
 
 type UpdateBoostCMSProps = {
     boostCategoryType?: BoostCategoryOptionsEnum;
@@ -493,7 +495,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.debug('error::savingBoost', e);
             presentToast('Unable to save boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -531,7 +533,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 }
             } catch (e) {
                 setIsPublishLoading(false);
-                console.log('error::boosting::someone', e);
+                log.debug('error::boosting::someone', e);
                 presentToast('Error issuing boost', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -613,7 +615,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.debug('error::boosting::someone', e);
             presentToast('Error issuing boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

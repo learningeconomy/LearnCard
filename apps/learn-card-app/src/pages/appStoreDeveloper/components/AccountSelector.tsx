@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { cloneDeep } from 'lodash-es';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-    Building,
-    Plus,
-    Check,
-    Loader2,
-    AlertCircle,
-    ChevronDown,
-    ChevronUp,
-} from 'lucide-react';
+import { Building, Plus, Check, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 import {
     useWallet,
@@ -68,11 +60,14 @@ const ProfileIDValidator = z.object({
 
 type SetupMode = 'select' | 'create';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('account-selector');
+
 // Avatar component that ensures image fills the circle
-const Avatar: React.FC<{ image?: string; name?: string; size?: string }> = ({ 
-    image, 
-    name, 
-    size = 'w-10 h-10' 
+const Avatar: React.FC<{ image?: string; name?: string; size?: string }> = ({
+    image,
+    name,
+    size = 'w-10 h-10',
 }) => {
     if (image) {
         return (
@@ -85,7 +80,9 @@ const Avatar: React.FC<{ image?: string; name?: string; size?: string }> = ({
     }
 
     return (
-        <div className={`${size} rounded-full bg-cyan-500 flex items-center justify-center text-white font-medium flex-shrink-0`}>
+        <div
+            className={`${size} rounded-full bg-cyan-500 flex items-center justify-center text-white font-medium flex-shrink-0`}
+        >
             {name?.charAt(0)?.toUpperCase() || '?'}
         </div>
     );
@@ -130,7 +127,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: profiles, isLoading: profilesLoading } = useGetAvailableProfiles();
-    const { handleSwitchAccount, handleSwitchBackToParentAccount, isSwitching } = useSwitchProfile();
+    const { handleSwitchAccount, handleSwitchBackToParentAccount, isSwitching } =
+        useSwitchProfile();
 
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
@@ -141,7 +139,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
 
     const [mode, setMode] = useState<SetupMode>('select');
-    const [selectedProfile, setSelectedProfile] = useState<AccountProfile | null>(externalSelectedAccount || null);
+    const [selectedProfile, setSelectedProfile] = useState<AccountProfile | null>(
+        externalSelectedAccount || null
+    );
 
     // Create organization form state
     const [orgName, setOrgName] = useState('');
@@ -157,10 +157,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     const [isFormatValid, setIsFormatValid] = useState(false);
     const [isUniqueValid, setIsUniqueValid] = useState(false);
 
-    const {
-        data: uniqueProfile,
-        isFetching: uniqueProfileFetching,
-    } = useGetProfile(profileId ?? '');
+    const { data: uniqueProfile, isFetching: uniqueProfileFetching } = useGetProfile(
+        profileId ?? ''
+    );
 
     const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
         fileType: IMAGE_MIME_TYPES,
@@ -367,9 +366,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     );
 
                     if (sentBoost && sentBoostUri) {
-                        const issuedVcUri = await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(
-                            sentBoost
-                        );
+                        const issuedVcUri =
+                            await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                         if (issuedVcUri) {
                             await addCredentialToWallet({ uri: issuedVcUri, didOverride: true });
@@ -427,7 +425,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                 );
 
                 if (sentBoost) {
-                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
+                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
+                        sentBoost
+                    );
                     if (issuedVcUri) {
                         await addCredentialToWallet({ uri: issuedVcUri });
                     }
@@ -472,7 +472,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             presentToast(`Failed to create organization: ${e?.message}`, {
                 type: ToastTypeEnum.Error,
             });
-            console.error('Error creating organization:', e);
+            log.error('Error creating organization:', e);
         } finally {
             setIsCreating(false);
         }
@@ -498,7 +498,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     <div className="text-sm text-blue-800">
                         <p className="font-medium mb-1">Select Account</p>
                         <p>
-                            Choose which account to use. This determines the DID, API keys, and branding.
+                            Choose which account to use. This determines the DID, API keys, and
+                            branding.
                         </p>
                     </div>
                 </div>
@@ -507,82 +508,87 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             {mode === 'select' ? (
                 <>
                     {/* Current Account Option */}
-            <div className="space-y-3">
-                <h3 className="font-medium text-gray-800 text-sm">Current Account</h3>
+                    <div className="space-y-3">
+                        <h3 className="font-medium text-gray-800 text-sm">Current Account</h3>
 
-                <button
-                    onClick={handleUseCurrentAccount}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                        selectedProfile?.did === currentLCNUser?.did
-                            ? 'border-cyan-500 bg-cyan-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                >
-                    <Avatar image={currentLCNUser?.image} name={currentLCNUser?.displayName} />
+                        <button
+                            onClick={handleUseCurrentAccount}
+                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                                selectedProfile?.did === currentLCNUser?.did
+                                    ? 'border-cyan-500 bg-cyan-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                            <Avatar
+                                image={currentLCNUser?.image}
+                                name={currentLCNUser?.displayName}
+                            />
 
-                    <div className="flex-1 text-left">
-                        <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-800 text-sm">
-                                {currentLCNUser?.displayName}
-                            </p>
+                            <div className="flex-1 text-left">
+                                <div className="flex items-center gap-2">
+                                    <p className="font-medium text-gray-800 text-sm">
+                                        {currentLCNUser?.displayName}
+                                    </p>
 
-                            {isCurrentUserServiceProfile && (
-                                <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                    Organization
-                                </span>
-                            )}
-                        </div>
+                                    {isCurrentUserServiceProfile && (
+                                        <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
+                                            Organization
+                                        </span>
+                                    )}
+                                </div>
 
-                        <p className="text-xs text-gray-500">@{currentLCNUser?.profileId}</p>
-                    </div>
-
-                    {selectedProfile?.did === currentLCNUser?.did && (
-                        <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
-                        </div>
-                    )}
-                </button>
-            </div>
-
-            {/* Root Personal Account Option (when on a service profile) */}
-            {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
-                <div className="space-y-3">
-                    <h3 className="font-medium text-gray-800 text-sm">Personal Account</h3>
-
-                    <button
-                        onClick={handleUseParentAccount}
-                        disabled={isSwitching}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                            selectedProfile?.did === parentUserDid
-                                ? 'border-cyan-500 bg-cyan-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                    >
-                        <Avatar image={parentUser.profileImage} name={parentUser.name} />
-
-                        <div className="flex-1 text-left">
-                            <div className="flex items-center gap-2">
-                                <p className="font-medium text-gray-800 text-sm">
-                                    {parentUser.name ?? 'Personal Account'}
+                                <p className="text-xs text-gray-500">
+                                    @{currentLCNUser?.profileId}
                                 </p>
-
-                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                                    Personal
-                                </span>
                             </div>
 
-                            <p className="text-xs text-gray-500">Your root account</p>
-                        </div>
-
-                        {isSwitching && selectedProfile?.did === parentUserDid ? (
-                            <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />
-                        ) : selectedProfile?.did === parentUserDid ? (
-                            <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
-                                <Check className="w-3 h-3 text-white" />
-                            </div>
-                        ) : null}
-                    </button>
+                            {selectedProfile?.did === currentLCNUser?.did && (
+                                <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                </div>
+                            )}
+                        </button>
                     </div>
+
+                    {/* Root Personal Account Option (when on a service profile) */}
+                    {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
+                        <div className="space-y-3">
+                            <h3 className="font-medium text-gray-800 text-sm">Personal Account</h3>
+
+                            <button
+                                onClick={handleUseParentAccount}
+                                disabled={isSwitching}
+                                className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                                    selectedProfile?.did === parentUserDid
+                                        ? 'border-cyan-500 bg-cyan-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <Avatar image={parentUser.profileImage} name={parentUser.name} />
+
+                                <div className="flex-1 text-left">
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-medium text-gray-800 text-sm">
+                                            {parentUser.name ?? 'Personal Account'}
+                                        </p>
+
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                                            Personal
+                                        </span>
+                                    </div>
+
+                                    <p className="text-xs text-gray-500">Your root account</p>
+                                </div>
+
+                                {isSwitching && selectedProfile?.did === parentUserDid ? (
+                                    <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />
+                                ) : selectedProfile?.did === parentUserDid ? (
+                                    <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
+                                        <Check className="w-3 h-3 text-white" />
+                                    </div>
+                                ) : null}
+                            </button>
+                        </div>
                     )}
 
                     {/* Existing Organization Accounts */}
@@ -593,40 +599,55 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                             </h3>
 
                             <div className="space-y-2">
-                                {serviceProfiles.map(({ profile, manager }: { profile: LCNProfile; manager: LCNProfile }, index: number) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => handleSelectExistingProfile(profile, manager)}
-                                        disabled={isSwitching}
-                                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                                            selectedProfile?.did === profile.did
-                                                ? 'border-cyan-500 bg-cyan-50'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <Avatar image={profile.image} name={profile.displayName} />
+                                {serviceProfiles.map(
+                                    (
+                                        {
+                                            profile,
+                                            manager,
+                                        }: { profile: LCNProfile; manager: LCNProfile },
+                                        index: number
+                                    ) => (
+                                        <button
+                                            key={index}
+                                            onClick={() =>
+                                                handleSelectExistingProfile(profile, manager)
+                                            }
+                                            disabled={isSwitching}
+                                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                                                selectedProfile?.did === profile.did
+                                                    ? 'border-cyan-500 bg-cyan-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <Avatar
+                                                image={profile.image}
+                                                name={profile.displayName}
+                                            />
 
-                                        <div className="flex-1 text-left">
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-medium text-gray-800 text-sm">
-                                                    {profile.displayName}
+                                            <div className="flex-1 text-left">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-gray-800 text-sm">
+                                                        {profile.displayName}
+                                                    </p>
+                                                    <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
+                                                        Organization
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                    @{profile.profileId}
                                                 </p>
-                                                <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                                    Organization
-                                                </span>
                                             </div>
-                                            <p className="text-xs text-gray-500">@{profile.profileId}</p>
-                                        </div>
 
-                                        {isSwitching && selectedProfile?.did === profile.did ? (
-                                            <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />
-                                        ) : selectedProfile?.did === profile.did ? (
-                                            <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
-                                                <Check className="w-3 h-3 text-white" />
-                                            </div>
-                                        ) : null}
-                                    </button>
-                                ))}
+                                            {isSwitching && selectedProfile?.did === profile.did ? (
+                                                <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />
+                                            ) : selectedProfile?.did === profile.did ? (
+                                                <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
+                                                    <Check className="w-3 h-3 text-white" />
+                                                </div>
+                                            ) : null}
+                                        </button>
+                                    )
+                                )}
                             </div>
                         </div>
                     )}
@@ -676,7 +697,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                         <input
                             type="text"
                             value={orgName}
-                            onChange={(e) => {
+                            onChange={e => {
                                 setOrgName(e.target.value);
                                 setNameError('');
                             }}
@@ -730,7 +751,11 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                         onClick={() => setShowAdvanced(!showAdvanced)}
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
                     >
-                        {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {showAdvanced ? (
+                            <ChevronUp className="w-4 h-4" />
+                        ) : (
+                            <ChevronDown className="w-4 h-4" />
+                        )}
                         Advanced Settings
                     </button>
 
@@ -745,21 +770,45 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 <input
                                     type="text"
                                     value={profileId}
-                                    onChange={(e) => handleProfileIdInput(e.target.value)}
+                                    onChange={e => handleProfileIdInput(e.target.value)}
                                     placeholder="organization-id"
                                     className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm text-gray-800"
                                 />
                             </div>
 
                             <div className="flex flex-wrap gap-2 mt-2">
-                                <span className={`text-xs px-2 py-1 rounded ${isLengthValid ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                        isLengthValid
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                >
                                     3-25 characters
                                 </span>
-                                <span className={`text-xs px-2 py-1 rounded ${isFormatValid ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                        isFormatValid
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                >
                                     Letters, numbers, dashes only
                                 </span>
-                                <span className={`text-xs px-2 py-1 rounded ${isUniqueValid ? 'bg-emerald-100 text-emerald-700' : uniqueProfileFetching ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
-                                    {uniqueProfileFetching ? 'Checking...' : isUniqueValid ? 'Available' : 'Must be unique'}
+                                <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                        isUniqueValid
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : uniqueProfileFetching
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                >
+                                    {uniqueProfileFetching
+                                        ? 'Checking...'
+                                        : isUniqueValid
+                                        ? 'Available'
+                                        : 'Must be unique'}
                                 </span>
                             </div>
 

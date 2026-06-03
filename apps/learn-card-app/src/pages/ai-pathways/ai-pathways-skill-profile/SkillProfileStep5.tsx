@@ -27,6 +27,9 @@ type SkillProfileStep5Props = {
     handleBack: () => void;
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-profile-step5');
+
 const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handleBack }) => {
     const { presentToast } = useToast();
 
@@ -66,7 +69,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 sasBoostSkills.map(
                     (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
                         id: s.id,
-                        frameworkId: s.frameworkId ?? globalSkillFrameworks[0]?.frameworkId ?? "",
+                        frameworkId: s.frameworkId ?? globalSkillFrameworks[0]?.frameworkId ?? '',
                         proficiency: s.proficiencyLevel,
                     })
                 )
@@ -121,7 +124,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
             handleNext();
         } catch (error: any) {
-            console.error('Error creating or updating skills:', error);
+            log.error('Error creating or updating skills:', error);
             presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
             });

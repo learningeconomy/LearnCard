@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-api-token-modal');
 
 import {
     IonInput,
@@ -175,7 +177,7 @@ const CreateAPITokenModal: React.FC<{
                     try {
                         await getRegisteredSigningAuthority(wallet);
                     } catch (err) {
-                        console.error('Failed to add signing authority:', err);
+                        log.error('Failed to add signing authority:', err);
                     }
                 }
             }
@@ -186,7 +188,7 @@ const CreateAPITokenModal: React.FC<{
                 closeModal();
             }, 500);
         } catch (err) {
-            console.error('Failed to create API Token:', err);
+            log.error('Failed to create API Token:', err);
             setErrorMessage('Something went wrong creating the API Token.');
         } finally {
             setIsLoading(false);

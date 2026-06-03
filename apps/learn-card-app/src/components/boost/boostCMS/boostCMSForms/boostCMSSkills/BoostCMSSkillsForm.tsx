@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-c-m-s-skills-form');
 
 import {
     IonRow,
@@ -240,7 +242,7 @@ export const BoostCMSSkillsForm: React.FC<{
     };
 
     const handleRemoveSubSkill = (skill: BoostCMSSkill | string, subskill: string) => {
-        console.log('clicking me here!!');
+        log.info('clicking me here!!');
 
         setState(prevState => {
             return {

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('partner-onboarding-wizard');
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
@@ -183,7 +185,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                         };
                     }
                 } catch (err) {
-                    console.warn('Could not load profile:', err);
+                    log.warn('Could not load profile:', err);
                 }
 
                 // Check integration status from server to determine if we should show wizard or dashboard
@@ -208,7 +210,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (guideState?.setupStep ?? 0),
                 }));
             } catch (err) {
-                console.error('Failed to load integration:', err);
+                log.error('Failed to load integration:', err);
                 presentToast('Failed to load integration', { type: ToastTypeEnum.Error, hasDismissButton: true });
                 history.push('/app-store/developer/guides');
             } finally {
@@ -241,7 +243,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     },
                     {
                         onError: (error) => {
-                            console.error('Failed to save setup progress:', error);
+                            log.error('Failed to save setup progress:', error);
                             // Don't block navigation - local state is still updated
                         },
                     }
@@ -311,7 +313,7 @@ const PartnerOnboardingWizard: React.FC = () => {
             // Redirect to the integration dashboard
             history.push(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
-            console.error('Failed to activate integration:', error);
+            log.error('Failed to activate integration:', error);
             presentToast('Failed to go live. Please try again.', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     }, [state.project?.id, history, currentIntegration?.guideState, updateIntegrationMutation, presentToast]);
@@ -563,7 +565,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
                         };
                     }
                 } catch (err) {
-                    console.warn('Could not load profile:', err);
+                    log.warn('Could not load profile:', err);
                 }
 
                 const integrationData = await wallet.invoke.getIntegration(integrationId);
@@ -587,7 +589,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
                     currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (guideState?.setupStep ?? 0),
                 }));
             } catch (err) {
-                console.error('Failed to load integration:', err);
+                log.error('Failed to load integration:', err);
                 presentToast('Failed to load integration', { type: ToastTypeEnum.Error, hasDismissButton: true });
             } finally {
                 setIsLoadingIntegration(false);
@@ -619,7 +621,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
                     },
                     {
                         onError: (error) => {
-                            console.error('Failed to save setup progress:', error);
+                            log.error('Failed to save setup progress:', error);
                         },
                     }
                 );
@@ -688,7 +690,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             history.push(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
-            console.error('Failed to activate integration:', error);
+            log.error('Failed to activate integration:', error);
             presentToast('Failed to go live. Please try again.', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     }, [state.project?.id, history, currentIntegration?.guideState, updateIntegrationMutation, presentToast]);

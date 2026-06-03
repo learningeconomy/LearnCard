@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-flow-code-tab');
 /**
  * ConsentFlowCodeTab - Code snippets & configuration for ConsentFlow integrations
  *
@@ -296,7 +298,7 @@ const result = await learnCard.invoke.send({
     templateUri: '${templateUri || 'YOUR_TEMPLATE_URI'}',${integration.id ? `\n    integrationId: '${integration.id}',` : ''}
 });
 
-console.log('Credential sent:', result.credentialUri);`,
+log.info('Credential sent:', result.credentialUri);`,
                         curl: `curl -X POST 'https://api.learncard.com/trpc/boost.send' \\
   -H 'Authorization: Bearer YOUR_API_TOKEN' \\
   -H 'Content-Type: application/json' \\
@@ -342,10 +344,10 @@ const consentData = await learnCard.invoke.getConsentFlowData(
     { limit: 50 }
 );
 
-console.log('Consented users:', consentData.records.length);
+log.info('Consented users:', consentData.records.length);
 consentData.records.forEach(record => {
-    console.log('  DID:', record.did);
-    console.log('  Consented at:', record.date);
+    log.info('  DID:', record.did);
+    log.info('  Consented at:', record.date);
 });`,
                     }}
                 />
@@ -359,7 +361,7 @@ const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
     { limit: 10 }
 );
 
-console.log('User consent records:', userConsentData.records);`,
+log.info('User consent records:', userConsentData.records);`,
                     }}
                 />
             </Section>

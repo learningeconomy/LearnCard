@@ -28,6 +28,8 @@ import {
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
 const globalProcessedCredentials = new Set<string>();
@@ -128,7 +130,7 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                     })),
                 };
             } catch (error: any) {
-                console.error(error);
+                log.error(error);
                 return Promise.reject(error);
             }
         },
@@ -258,7 +260,7 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
 
                 return credentialsCount;
             } catch (error) {
-                console.error(error);
+                log.error(error);
                 return Promise.reject(new Error(error));
             }
         },
@@ -705,7 +707,7 @@ async function fetchCredentials(
                 const vc = credentialWithEditsHelper(_vc, boost);
                 return vc ? (returnUri ? { vc, uri: record.uri } : vc) : null;
             } catch (error) {
-                console.error(`Error resolving credential ${record.uri}:`, error);
+                log.error(`Error resolving credential ${record.uri}:`, error);
                 return null;
             }
         })
@@ -869,7 +871,7 @@ export const useSyncConsentFlow = (enabled = true) => {
                             category = await getCategoryForCredential(vc, learnCard, false);
                         }
                     } catch (e) {
-                        console.warn('Failed to resolve category for credential', credentialUri, e);
+                        log.warn('Failed to resolve category for credential', credentialUri, e);
                         // keep default fallback
                     }
 
@@ -1086,10 +1088,10 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                         if (records && records.length > 0) {
                             // Remove the record from the index
                             await wallet.index.LearnCloud.remove?.(records[0]!.id);
-                            console.log('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
+                            log.debug('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
                         }
                     } catch (e) {
-                        console.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);
+                        log.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);
                     }
                 }
 

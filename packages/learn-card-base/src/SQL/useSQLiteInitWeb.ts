@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { sqliteStore } from '../stores/sqliteStore';
 import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-sqlite-init-web');
 
 const INIT_WEBSTORE_TIMEOUT_MS = 3000;
 
@@ -52,24 +54,24 @@ export const useSQLiteInitWeb = () => {
                         try {
                             markSQLiteReady();
                         } catch (e) {
-                            console.warn('markSQLiteReady (web) failed', e);
+                            log.warn('markSQLiteReady (web) failed', e);
                         }
                     } catch (e) {
-                        console.error('SQL Lite DB could not be initialized', e);
+                        log.error('SQL Lite DB could not be initialized', e);
                         // Still mark readiness so app can proceed without DB on web
                         try {
                             markSQLiteReady();
                         } catch (e2) {
-                            console.warn('markSQLiteReady (web, on error) failed', e2);
+                            log.warn('markSQLiteReady (web, on error) failed', e2);
                         }
                     }
                 }
             } catch (err: unknown) {
                 const message = typeof err === 'object' && err && 'message' in err ? String((err as any).message) : '';
                 if (message.includes('Sqlite could not init web store in')) {
-                    console.warn(`Error: ${message}`);
+                    log.warn(`Error: ${message}`);
                 } else {
-                    console.error('Error:', err);
+                    log.error('Error:', err);
                 }
                 // Ensure readiness is marked even on unexpected errors
                 try {

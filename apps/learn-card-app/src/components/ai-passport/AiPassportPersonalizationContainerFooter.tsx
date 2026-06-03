@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-passport-personalization-container-footer');
 
 import { IonFooter } from '@ionic/react';
 
@@ -44,7 +46,7 @@ const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState;
             setIsLoading(false);
             closeModal();
         } catch (error) {
-            console.log('handleIssueQACredential::error', error);
+            log.info('handleIssueQACredential::error', error);
             setIsLoading(false);
         }
     };

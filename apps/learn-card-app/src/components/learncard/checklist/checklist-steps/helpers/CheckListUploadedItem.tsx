@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-uploaded-item');
 
 import TrashBin from '../../../../svgs/TrashBin';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
@@ -54,7 +56,7 @@ export const CheckListUploadRawVC: React.FC<{
                     onSuccess();
                 },
                 onError: error => {
-                    console.error('Failed to delete credential', error);
+                    log.error('Failed to delete credential', error);
                     onDeleteFailed();
                     presentToast('Failed to delete. Please try again.', {
                         title: 'Delete failed',

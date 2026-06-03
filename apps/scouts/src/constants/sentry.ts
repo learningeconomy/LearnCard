@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('sentry');
 
 export type UseSentryIdentifyOptions = {
     debug?: boolean;
@@ -79,20 +81,20 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
 
         if (isSentryEnabled) {
             if (currentUser) {
-                if (options.debug) console.debug('Identify user! 🎸', currentUser);
+                if (options.debug) log.debug('Identify user! 🎸', { uid: currentUser.uid });
                 getDID()
                     .then(did => {
                         const user = {
                             id: did,
                         };
-                        if (options.debug) console.debug('🔍 Sentry User Context Identified', user);
+                        if (options.debug) log.debug('🔍 Sentry User Context Identified', user);
 
                         Sentry.setUser(user);
                         Sentry.setTag('packageVersion', __PACKAGE_VERSION__);
                     })
                     .catch(e => {
                         if (options.debug) {
-                            console.error(
+                            log.error(
                                 '❌ Unable to identify Sentry User because DID could not be generated.',
                                 e
                             );
