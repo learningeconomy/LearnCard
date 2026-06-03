@@ -17,6 +17,8 @@ import {
     useVerifiableData,
 } from 'learn-card-base';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
 export type SkillProfileWorkHistoryData = {
     selectedCredentialUris: string[];
@@ -65,6 +67,12 @@ const emptyExperience: WorkExperience = {
 };
 
 const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handleBack }) => {
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(2, () => {
+        const fields: string[] = [];
+        if (selectedCredentialUris.length > 0) fields.push('selectedCredentialUris');
+        return fields;
+    });
     const { isMobile } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -291,6 +299,8 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
     const handleSaveAndNext = async () => {
         await saveWorkHistory({ selectedCredentialUris });
+        trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 

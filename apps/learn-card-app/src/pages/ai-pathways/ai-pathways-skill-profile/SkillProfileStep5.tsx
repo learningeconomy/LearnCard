@@ -11,6 +11,16 @@ import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
 import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
+import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
+import { useSkillProfileStepFunnel, trackSkillProfileCompleted } from './useSkillProfileStepFunnel';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -24,6 +34,19 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
+    const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    // LC-1784 fix: this file references `globalSkillFrameworks[0]?.frameworkId`
+    // below (for the default-framework fallback when an existing skill has no
+    // frameworkId on it), but the original LC-1784 PR forgot to import + call
+    // the hook. Restoring the call so the fallback resolves to a real
+    // frameworkId instead of `undefined.frameworkId` at runtime.
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const { markStepCompleted } = useSkillProfileStepFunnel(5, () => {
+        const fields: string[] = [];
+        if (selectedSkills.length > 0) fields.push('selectedSkills');
+        return fields;
+    });
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
@@ -55,6 +78,14 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
     const handleFinish = async () => {
         setIsUpdating(true);
+        // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+        capture();
+        // LC-1853 (review): only fire PROFILE_ITEM_ADDED for skills NEWLY added in
+        // this session. Re-saving an unchanged list (or removing skills) shouldn't
+        // inflate the analytics — `totalItemsAfter` represents items now in the
+        // profile that weren't there before this mutation.
+        const existingIds = new Set((sasBoostSkills ?? []).map((s: { id: string }) => s.id));
+        const newlyAddedSkills = selectedSkills.filter(s => !existingIds.has(s.id));
         try {
             await createOrUpdateSkills({
                 skills: selectedSkills.map(s => ({
@@ -67,6 +98,26 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
             presentToast('Skills saved successfully!', {
                 type: ToastTypeEnum.Success,
             });
+
+            // LC-1853 (review): fire profile_item_added per *newly added* skill,
+            // using skillsCount (not credentialCount) so totalItemsAfter matches
+            // the itemType.
+            const now = Date.now();
+            const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+            const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+            for (let i = 0; i < newlyAddedSkills.length; i++) {
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.SelfArticulation,
+                    itemType: 'skill',
+                    itemCount: 1,
+                    totalItemsAfter: snapshotRef.current.skillsCount + 1 + i,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
+                });
+            }
+
+            markStepCompleted();
+            trackSkillProfileCompleted(track);
 
             handleNext();
         } catch (error: any) {

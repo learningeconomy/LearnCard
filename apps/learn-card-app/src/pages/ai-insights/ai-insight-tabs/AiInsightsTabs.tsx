@@ -4,7 +4,7 @@ import { AiInsightsTabsEnum, aiInsightsTabs } from './ai-insights-tabs.helpers';
 
 import { useGetCurrentUserRole, useContractSentRequests, useGetContracts } from 'learn-card-base';
 import { LearnCardRolesEnum } from 'apps/learn-card-app/src/components/onboarding/onboarding.helpers';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, useEngagementSignal } from '@analytics';
 
 export const AiInsightsTabs: React.FC<{
     className?: string;
@@ -30,9 +30,16 @@ export const AiInsightsTabs: React.FC<{
     const newInsightsCount = requests.filter(r => r.readStatus === 'unseen').length ?? 0;
 
     const { track } = useAnalytics();
+    const fireEngagement = useEngagementSignal();
 
     const handleSetSelectedTab = (tab: AiInsightsTabsEnum) => {
         track(AnalyticsEvents.AI_INSIGHTS_TAB_SWITCHED, { tab });
+
+        // LC-1853 (review #7): per-session gate. Subsequent tab switches in
+        // the same session won't re-fire — only the first AI Insights view
+        // counts as an engagement signal for Q4 activation-threshold analysis.
+        fireEngagement('ai_insights');
+
         setSelectedTab?.(tab);
     };
 
