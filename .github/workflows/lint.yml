@@ -45,7 +45,7 @@ jobs:
               if: steps.changed.outputs.has_files == 'true'
               run: |
                   # Respects .prettierignore; fails the job if any changed file is mis-formatted.
-                  echo "${{ steps.changed.outputs.files }}" | xargs pnpm exec prettier --check
+                  echo "${{ steps.changed.outputs.files }}" | xargs -d '\n' pnpm exec prettier --check
 
             - name: No files to check
               if: steps.changed.outputs.has_files != 'true'
