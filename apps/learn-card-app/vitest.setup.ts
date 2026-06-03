@@ -6,6 +6,14 @@ import { TextEncoder, TextDecoder as NodeTextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
 
+if (typeof globalThis.TextDecoder !== 'function') {
+    globalThis.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
+}
+
+if (typeof globalThis.TextEncoder !== 'function') {
+    globalThis.TextEncoder = TextEncoder;
+}
+
 // Define global constants that are normally set by webpack DefinePlugin
 (global as any).LCN_API_URL = 'http://localhost:4000/api';
 (global as any).LCN_URL = 'http://localhost:4000/trpc';
