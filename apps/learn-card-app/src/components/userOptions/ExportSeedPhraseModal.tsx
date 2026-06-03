@@ -8,6 +8,8 @@ import { useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { auth } from '../../firebase/firebase';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 const ExportSeedPhraseModal: React.FC<{}> = () => {
     const { newModal, closeModal } = useModal({
@@ -23,7 +25,7 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
         currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
     );
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
-    const placeholderSource = currentFirebaseUser?.phoneNumber ? 'Phone Number...' : 'Email...';
+    const placeholderSource = currentFirebaseUser?.phoneNumber ? m['profile.export.phonePlaceholder']() : m['profile.export.emailPlaceholder']();
     const canExportPhrase = phrase === confirmationPhrase;
 
     const handleExportSeed = () => {
@@ -38,32 +40,32 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
         <div>
             <IonRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-5">
                 <h1 className="ion-text-center text-black font-medium text-2xl tracking-wider bg-white delete-user-header-title">
-                    Export Seed Phrase
+                    {m['profile.export.title']()}
                 </h1>
                 <IonRow className="flex flex-col items-center justify-center bg-white text-black delete-user-icon-wrap">
                     <WarningIcon className="h-[48px] w-[48px]" />
                 </IonRow>
                 <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                     <h3 className="ion-text-center mt-2 font-bold text-2xl tracking-wider bg-white">
-                        Warning!
+                        {m['profile.export.warning']()}
                     </h3>
                 </IonRow>
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
-                    This is your {brandingConfig?.name}'s master key. Anyone with access to this
-                    phrase can control your {brandingConfig?.name} and your identity. - Do NOT share
-                    it. - Do NOT store it online or take screenshots. - Write it down and store it
-                    offline. - If you lose this, you may permanently lose access.{' '}
-                    <b>Are you sure you want to proceed?</b>
+                    <TransP
+                        m={m['profile.export.masterKeyWarning']}
+                        values={{ brand: brandingConfig?.name }}
+                        components={[<b key="w" />]}
+                    />
                 </p>
                 <h2 className="ion-text-center text-lg font-semibold text-2x mt-4">
-                    Confirm by typing
+                    {m['profile.export.confirmByTyping']()}
                 </h2>
                 <p className="ion-text-center text-base font-bold">
                     <span className="text-rose-500">{phrase}</span>
                     <br />
-                    below.
+                    {m['profile.export.below']()}
                 </p>
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
@@ -88,20 +90,20 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
                             newModal(
                                 <div className="p-[20px]">
                                     <p className="text-[16px] font-poppins font-medium text-grayscale-900">
-                                        I understand - Reveal My Seed
+                                        {m['profile.export.revealPrompt']()}
                                     </p>
                                     <div className="flex justify-end items-end">
                                         <button
                                             className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
                                             onClick={handleExportSeed}
                                         >
-                                            Confirm
+                                            {m['profile.export.confirm']()}
                                         </button>
                                         <button
                                             className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
                                             onClick={closeModal}
                                         >
-                                            Cancel
+                                            {m['profile.export.cancel']()}
                                         </button>
                                     </div>
                                 </div>,
@@ -112,7 +114,7 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
                             canExportPhrase ? 'bg-rose-500' : 'bg-grayscale-400'
                         }`}
                     >
-                        Export Seed Phrase
+                        {m['profile.export.button']()}
                     </button>
                 </IonCol>
             </IonRow>

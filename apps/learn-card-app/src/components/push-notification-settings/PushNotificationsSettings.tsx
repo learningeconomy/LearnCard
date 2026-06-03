@@ -8,13 +8,24 @@ import {
     PushNotificationsSettingsState,
     PushNotificationSettingsEnum,
 } from './pushNotifications.helpers';
+import * as m from '../../paraglide/messages.js';
 
 const PushNotificationsSettings: React.FC<{
     handleCloseModal: () => void;
     settings: PushNotificationsSettingsState;
     handleStateChange: (settingsType: PushNotificationSettingsEnum, settingState: boolean) => void;
 }> = ({ handleCloseModal, settings, handleStateChange }) => {
-    const settingsList = pushNotificationSettingOptions.map(setting => {
+    const translatedSettingOptions = pushNotificationSettingOptions.map(setting => ({
+        ...setting,
+        title: setting.type === PushNotificationSettingsEnum.connectionRequests
+            ? m['settings.notifications.connectionRequests.title']()
+            : m['settings.notifications.newBoosts.title'](),
+        description: setting.type === PushNotificationSettingsEnum.connectionRequests
+            ? m['settings.notifications.connectionRequests.description']()
+            : m['settings.notifications.newBoosts.description'](),
+    }));
+
+    const settingsList = translatedSettingOptions.map(setting => {
         return (
             <div key={setting.id} className="w-full px-6">
                 <div className="w-full py-4 border-b border-grayscale-200">
@@ -51,7 +62,7 @@ const PushNotificationsSettings: React.FC<{
                     <CaretLeft className="h-auto w-3 text-grayscale-900" />
                 </button>
                 <p className="font-bold text-black font-poppins text-xl">
-                    Edit Notification Settings
+                    {m['settings.notifications.title']()}
                 </p>
             </div>
             {settingsList}

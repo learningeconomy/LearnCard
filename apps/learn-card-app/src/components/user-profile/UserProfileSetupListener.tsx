@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
+import * as m from '../../paraglide/messages.js';
 
 import {
     SocialLoginTypes,
@@ -69,7 +70,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
             onDidDismiss={() => history.replace({ search: undefined })}
         >
             <NewJoinNetworkPrompt
-                title="Setup Your Profile"
+                title={m['profile.setupTitle']()}
                 handleCloseModal={() => setIsModalOpen(false)}
                 handleLogout={() => { }}
                 showCancelButton={false}

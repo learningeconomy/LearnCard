@@ -559,7 +559,8 @@
       "reveal": "Reveal My Seed",
       "hide": "Hide My Seed",
       "howToStore": "How to store your seed phrase safely?"
-    }
+    },
+    "setupTitle": "Configura tu perfil"
   },
   "settings": {
     "privacyTitle": "Privacidad y datos",
@@ -590,6 +591,22 @@
         "privacyPolicy": "política de privacidad",
         "termsOfService": "Términos de servicio"
       }
+    },
+    "privacy": {
+      "profilePrivacy": "Privacidad del perfil",
+      "profilePrivacyDesc": "Controla cómo aparece tu perfil de {{brand}} ante otros en la red.",
+      "profileVisibility": "Visibilidad del perfil",
+      "profileVisibilityDesc": "Elige quién puede ver los detalles de tu perfil.",
+      "visibilityPublic": "Público",
+      "visibilityConnectionsOnly": "Solo contactos",
+      "visibilityPrivate": "Privado",
+      "showEmail": "Mostrar correo a los contactos",
+      "showEmailDesc": "Permite que los usuarios conectados vean tu correo electrónico en tu perfil.",
+      "connectionRequests": "Solicitudes de conexión",
+      "connectionRequestsDesc": "Decide quién puede enviarte nuevas solicitudes de conexión.",
+      "connectionRequestsAnyone": "Cualquiera",
+      "connectionRequestsInviteOnly": "Solo por invitación",
+      "unableToUpdate": "No se pudo actualizar la configuración de privacidad."
     }
   }
 }

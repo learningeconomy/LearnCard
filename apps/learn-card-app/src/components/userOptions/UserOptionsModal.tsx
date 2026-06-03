@@ -14,6 +14,7 @@ import {
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
+import * as m from '../../paraglide/messages.js';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;
@@ -47,7 +48,7 @@ const UserOptions: React.FC<{
     const userOptions = [
         {
             id: 1,
-            title: 'Delete Account',
+            title: m['profile.deleteAccount'](),
             onClick: () => {},
         },
     ];

@@ -3,6 +3,7 @@ import React from 'react';
 import UserContactHeader from './UserContactHeader';
 import UserEmailContacts from './UserEmailContacts';
 
+// i18n: no user-facing strings — composition-only component
 export const UserContact: React.FC = () => {
     return (
         <div className="h-full min-h-[400px] scrollbar-hide">

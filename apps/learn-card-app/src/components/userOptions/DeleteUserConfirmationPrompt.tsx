@@ -15,6 +15,8 @@ import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 import DeleteAccountModal from './DeleteAccountModal';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 const DeleteUserConfirmationPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -93,7 +95,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     setIsLoading(false);
                 } else {
                     if (userDeleted.message === 'auth/requires-recent-login') {
-                        setError(`A recent login is required!`);
+                        setError(m['profile.delete.recentLoginRequired']());
                     } else {
                         setError(userDeleted.message);
                     }
@@ -118,23 +120,25 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 </IonRow>
                 <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                     <h3 className="ion-text-center mt-2 font-bold text-2xl tracking-wider bg-white">
-                        Delete Account?
+                        {m['profile.delete.title']()}
                     </h3>
                 </IonRow>
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
-                    Deleting your account will permanently delete your identity on{' '}
-                    {brandingConfig?.name} and all of your credentials.{' '}
-                    <b>Warning, this action cannot be undone!</b>
+                    <TransP
+                        m={m['profile.delete.warning']}
+                        values={{ brand: brandingConfig?.name }}
+                        components={[<b key="w" />]}
+                    />
                 </p>
                 <h2 className="ion-text-center text-lg font-semibold text-2x mt-4">
-                    Confirm by typing
+                    {m['profile.delete.confirmByTyping']()}
                 </h2>
                 <p className="ion-text-center text-base font-bold">
                     <span className="text-rose-500">{phrase} </span>
                     <br />
-                    below.
+                    {m['profile.delete.below']()}
                 </p>
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
@@ -155,7 +159,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                             onClick={handleReAuthenticateRedirect}
                             className="text-mv_blue-700 font-bold mt-2"
                         >
-                            Reauthenticate here
+                            {m['profile.delete.reauthenticateHere']()}
                         </button>
                     </p>
                 )}
@@ -172,7 +176,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                             canDelete ? 'bg-rose-500' : 'bg-grayscale-400'
                         }`}
                     >
-                        {isLoading ? 'Loading... ' : 'Delete Forever'}
+                        {isLoading ? m['profile.delete.loading']() : m['profile.delete.deleteForever']()}
                     </button>
                 </IonCol>
             </IonRow>

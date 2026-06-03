@@ -559,7 +559,8 @@
       "reveal": "Reveal My Seed",
       "hide": "Hide My Seed",
       "howToStore": "How to store your seed phrase safely?"
-    }
+    },
+    "setupTitle": "프로필 설정"
   },
   "settings": {
     "privacyTitle": "개인정보 보호 및 데이터",
@@ -590,6 +591,22 @@
         "privacyPolicy": "개인 정보 보호 정책",
         "termsOfService": "서비스 약관"
       }
+    },
+    "privacy": {
+      "profilePrivacy": "프로필 개인정보",
+      "profilePrivacyDesc": "네트워크의 다른 사용자에게 {{brand}} 프로필이 표시되는 방식을 관리하세요.",
+      "profileVisibility": "프로필 공개 범위",
+      "profileVisibilityDesc": "프로필 세부정보를 볼 수 있는 사람을 선택하세요.",
+      "visibilityPublic": "공개",
+      "visibilityConnectionsOnly": "연결된 사람만",
+      "visibilityPrivate": "비공개",
+      "showEmail": "연결에 이메일 표시",
+      "showEmailDesc": "연결된 사용자가 프로필에서 이메일 주소를 볼 수 있도록 허용합니다.",
+      "connectionRequests": "연결 요청",
+      "connectionRequestsDesc": "새 연결 요청을 보낼 수 있는 사람을 결정하세요.",
+      "connectionRequestsAnyone": "모든 사람",
+      "connectionRequestsInviteOnly": "초대만 가능",
+      "unableToUpdate": "개인정보 설정을 업데이트할 수 없습니다."
     }
   }
 }

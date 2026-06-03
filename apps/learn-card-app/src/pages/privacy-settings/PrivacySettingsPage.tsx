@@ -14,6 +14,7 @@ import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+import * as m from '../../paraglide/messages.js';
 
 const PrivacySettingsPage: React.FC = () => {
     const history = useHistory();
@@ -70,7 +71,7 @@ const PrivacySettingsPage: React.FC = () => {
                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                         </button>
                         <h1 className="text-[17px] font-semibold text-grayscale-900">
-                            Privacy & Data
+                            {m['settings.privacyTitle']()}
                         </h1>
                     </div>
                 </IonToolbar>
@@ -81,7 +82,7 @@ const PrivacySettingsPage: React.FC = () => {
                     {isMinor && (
                         <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
                             <p className="text-sm text-amber-800">
-                                Some features are restricted for users under 18.
+                                {m['settings.minorWarning']()}
                             </p>
                         </div>
                     )}
@@ -91,10 +92,10 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    AI Features
+                                    {m['settings.aiFeatures']()}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    AI tutoring sessions, insights, and personalization
+                                    {m['settings.aiFeaturesDesc']()}
                                 </p>
                             </div>
                             <IonToggle
@@ -113,10 +114,10 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Analytics & Insights
+                                    {m['settings.analytics']()}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Help improve {brandingConfig?.name} with anonymous usage data
+                                    {m['settings.analyticsDesc']({ brand: brandingConfig?.name })}
                                 </p>
                             </div>
                             <IonToggle
@@ -135,10 +136,10 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Bug Reports
+                                    {m['settings.bugReports']()}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Automatically send crash reports to help fix issues
+                                    {m['settings.bugReportsDesc']()}
                                 </p>
                             </div>
                             <IonToggle
