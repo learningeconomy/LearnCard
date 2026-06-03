@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 1.9.0
+
+### Minor Changes
+
+-   [#1273](https://github.com/learningeconomy/LearnCard/pull/1273) [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add OBv3 Data Integrity proof issuance using `eddsa-rdfc-2022` by default, while allowing callers to select a Data Integrity `cryptosuite` through proof options.
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
+    -   @learncard/types@5.17.0
+    -   @learncard/core@9.4.20
+
 ## 1.8.10
 
 ### Patch Changes
