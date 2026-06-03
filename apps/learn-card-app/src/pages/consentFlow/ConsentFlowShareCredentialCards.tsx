@@ -9,15 +9,16 @@ import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory } from 'learn-card-base';
 
 import { curriedStateSlice } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
 
 const vcDisplayWord: Record<CredentialCategory, string> = {
     ID: 'ID',
-    Achievement: 'Achievement',
-    Skill: 'Skill',
-    Membership: 'Membership',
-    'Work History': 'Work History',
+    Achievement: m['consentFlow.credentialType.achievement'](),
+    Skill: m['consentFlow.credentialType.skill'](),
+    Membership: m['consentFlow.credentialType.membership'](),
+    'Work History': m['consentFlow.credentialType.workHistory'](),
     'Learning History': 'Learning History',
-    'Social Badge': 'Social Badge',
+    'Social Badge': m['consentFlow.credentialType.socialBadge'](),
     Hidden: '',
 };
 

@@ -33,6 +33,7 @@ import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiP
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -213,8 +214,8 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         </span>
                     </div>
                 ),
-                confirmText: 'Yes',
-                cancelText: 'No',
+                confirmText: m['contacts.confirm'](),
+                cancelText: m['contacts.cancel'](),
                 onConfirm: () => handleWithdrawConsent({ deleteContractCredentials: true }),
                 onCancel: () => handleWithdrawConsent({ deleteContractCredentials: false }),
             });
@@ -224,8 +225,8 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     const handleDisconnect = async () => {
         await confirm({
             text: `Are you sure you want to disconnect from "${contractDetails.name}"?`,
-            confirmText: 'Yes',
-            cancelText: 'No',
+            confirmText: m['contacts.confirm'](),
+            cancelText: m['contacts.cancel'](),
             onConfirm: handleWithdrawConsentWithBoostCheck,
         });
     };
@@ -238,21 +239,21 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     let secondaryButtonText: string | undefined = isPostConsent ? 'Close' : 'Cancel';
 
     if (!isPostConsent) {
-        mainFooterButtonText = 'Accept';
+        mainFooterButtonText = m['consentFlow.accept']();
         mainFooterButtonAction = () => handleAccept(terms, shareDuration);
     } else if (
         isPostConsent &&
         contractDetails.needsGuardianConsent &&
         contractDetails.redirectUrl
     ) {
-        mainFooterButtonText = 'Launch Game';
+        mainFooterButtonText = m['consentFlow.launchGame']();
         mainFooterButtonAction = () => {
             window.location.href = contractDetails.redirectUrl as string;
         };
     }
 
     if (insightsProfile) {
-        mainFooterButtonText = 'Share Insights';
+        mainFooterButtonText = m['consentFlow.shareInsights']();
         mainFooterButtonAction = () => handleAccept(terms, shareDuration);
         showBackButton = true;
         showCloseButtonAlt = true && !showFullBackButton;

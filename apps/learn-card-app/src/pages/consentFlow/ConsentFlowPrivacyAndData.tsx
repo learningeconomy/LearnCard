@@ -24,6 +24,7 @@ import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import { curriedStateSlice } from '@learncard/helpers';
 import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowPrivacyAndDataProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -188,7 +189,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const { name, image, appStyles } = getPrivacyAndDataInfo(contractDetails, app);
 
-    const saveWord = updatingTerms ? 'Saving...' : 'Save';
+    const saveWord = updatingTerms ? m['consentFlow.saving']() : m['consentFlow.save']();
 
     return (
         <div className="h-full">
@@ -225,7 +226,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                     : 'text-grayscale-500'
                                             }`}
                                         >
-                                            {allReadToggle ? 'Active' : 'Off'}
+                                            {allReadToggle ? m['consentFlow.status.active']() : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
                                             Live Sync All
@@ -279,7 +280,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                 : 'text-grayscale-500'
                                         }`}
                                     >
-                                        {terms.read.anonymize ? 'On' : 'Off'}
+                                        {terms.read.anonymize ? m['consentFlow.status.on']() : m['consentFlow.status.off']()}
                                     </output>
                                     <p className="font-notoSans text-grayscale-900 text-[20px]">
                                         Anonymize
@@ -331,7 +332,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                     : 'text-grayscale-500'
                                             }`}
                                         >
-                                            {allWriteToggle ? 'Active' : 'Off'}
+                                            {allWriteToggle ? m['consentFlow.status.active']() : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
                                             Allow All
@@ -387,7 +388,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                         }
                     }
                 }}
-                secondaryButtonText={isPostConsent ? 'Cancel' : 'Back'}
+                secondaryButtonText={isPostConsent ? m['consentFlow.cancel']() : m['consentFlow.back']()}
                 onSecondaryButtonClick={async () => {
                     saveTerms?.(terms);
                     closeModal();
