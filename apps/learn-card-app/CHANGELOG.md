@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.95.14
+
+### Patch Changes
+
+-   [#1261](https://github.com/learningeconomy/LearnCard/pull/1261) [`57d7724515a064256037827dffc3e79b72b9186f`](https://github.com/learningeconomy/LearnCard/commit/57d7724515a064256037827dffc3e79b72b9186f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1844 - Central Logging System (LCA/ScoutPass)
+
+-   [#1260](https://github.com/learningeconomy/LearnCard/pull/1260) [`8014ca6408ac30f9c356f3978cbbf9c3174b8e1d`](https://github.com/learningeconomy/LearnCard/commit/8014ca6408ac30f9c356f3978cbbf9c3174b8e1d) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for multiple global skills frameworks (specifically Pathsmith for now)
+
+-   [#1263](https://github.com/learningeconomy/LearnCard/pull/1263) [`77dfa030ed2e4f994feb1bf1f1a5992705007af9`](https://github.com/learningeconomy/LearnCard/commit/77dfa030ed2e4f994feb1bf1f1a5992705007af9) Thanks [@goblincore](https://github.com/goblincore)! - test(e2e): scope launcher-modal Add to LearnCard click instead of .nth(1)
+
+-   [#1253](https://github.com/learningeconomy/LearnCard/pull/1253) [`a8c92c4af29fba3759f58bc6cc23bc8e9d5db9cd`](https://github.com/learningeconomy/LearnCard/commit/a8c92c4af29fba3759f58bc6cc23bc8e9d5db9cd) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1853] Profile-building analytics — PostHog event instrumentation
+
+    Adds profile-building analytics instrumentation to answer PM questions about time-to-build, method attribution, per-method duration, AI activation threshold, and Skills Profile funnel timing.
+
+    New events: `account_created`, `profile_item_added`, `engagement_signal`, `skill_profile_step_started`, `skill_profile_step_completed`, `skill_profile_completed`, `skill_profile_abandoned`.
+
+    New types: `ProfileBuildMethod` enum (10 values), `ProfileSnapshot` interface.
+
+    Retrofitted optional `msSinceMethodStarted` field on `CLAIM_BOOST`, `SELF_BOOST`, `SEND_BOOST`, `ONBOARDING_COMPLETED`.
+
+    All analytics code lives in `apps/learn-card-app/src/analytics/` — no shared-package changes.
+
+-   [#1243](https://github.com/learningeconomy/LearnCard/pull/1243) [`dd5872914236a7f0a089a76292c792bb949dd4ca`](https://github.com/learningeconomy/LearnCard/commit/dd5872914236a7f0a089a76292c792bb949dd4ca) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1843] Replace horizontal role scroller
+
+-   [#1262](https://github.com/learningeconomy/LearnCard/pull/1262) [`16406f4ce69f11b84b03bd43766db03d816e54a5`](https://github.com/learningeconomy/LearnCard/commit/16406f4ce69f11b84b03bd43766db03d816e54a5) Thanks [@goblincore](https://github.com/goblincore)! - fix: test(e2e): drill through LaunchPadActionModal in wallet-credentials
+
+-   [#1241](https://github.com/learningeconomy/LearnCard/pull/1241) [`5ffb1f605440c7b3dfb5259e27694936fb755eab`](https://github.com/learningeconomy/LearnCard/commit/5ffb1f605440c7b3dfb5259e27694936fb755eab) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1802] App Store tabs
+
 ## 1.95.13
 
 ### Patch Changes

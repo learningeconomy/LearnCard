@@ -43,36 +43,7 @@
 				<string>__FIREBASE_APP_URL_SCHEME__</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>__BUNDLE_ID__.dccrequest</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>dccrequest</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>__BUNDLE_ID__.msprequest</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>msprequest</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>__BUNDLE_ID__.asuprequest</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>asuprequest</string>
-			</array>
-		</dict>
+		<!-- TENANT_CUSTOM_SCHEMES -->
 	</array>
 	<key>CFBundleVersion</key>
 	<string>8.3</string>
