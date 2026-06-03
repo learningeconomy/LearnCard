@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
@@ -54,6 +55,7 @@ const DEFAULT_COPY = {
 };
 
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
+    // added below
     availableMethods,
     recoveryReason,
     maskedRecoveryEmail,
