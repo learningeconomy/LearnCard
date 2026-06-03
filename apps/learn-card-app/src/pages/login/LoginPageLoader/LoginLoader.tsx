@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
+import { useTranslation } from 'react-i18next';
 import _ from 'lodash-es';
 
 import { IonContent, IonPage, IonRow } from '@ionic/react';
