@@ -5,6 +5,7 @@ import { UserProfilePicture, useWallet, useUpdateNotification } from 'learn-card
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import * as m from '../../../paraglide/messages.js';
 
 type NotificationGuardianApprovalCardProps = {
     notification: NotificationType;
@@ -139,7 +140,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     onClick={handleApprove}
                                     disabled={isProcessing}
                                 >
-                                    {actionState === 'approving' ? 'Approving...' : 'Approve'}
+                                    {actionState === 'approving' ? 'Approving...' : m['alerts.approve']()}
                                 </button>
                                 <button
                                     className={`notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide text-[13px] transition-colors ${
@@ -150,7 +151,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     onClick={handleReject}
                                     disabled={isProcessing}
                                 >
-                                    {actionState === 'rejecting' ? 'Rejecting...' : 'Reject'}
+                                    {actionState === 'rejecting' ? 'Rejecting...' : m['alerts.reject']()}
                                 </button>
                             </div>
                         )}

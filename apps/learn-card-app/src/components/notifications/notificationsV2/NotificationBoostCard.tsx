@@ -35,6 +35,7 @@ import { NotificationTypeStyles, CATEGORY_TO_NOTIFICATION_ENUM } from './types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 import { useGetVCInfo } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -205,7 +206,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     if (isClaimed) {
         buttonText = 'Claimed';
     } else if (!isClaimed) {
-        buttonText = 'Claim';
+        buttonText = m['alerts.claim']();
     }
 
     const handleCardClick = () => {
@@ -386,7 +387,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                     onClick={handleButtonClick}
                                     name="notification-claim-button"
                                 >
-                                    {isLoading ? 'Loading...' : buttonText}
+                                    {isLoading ? m['alerts.loading']() : buttonText}
                                     {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                                 </button>
 
