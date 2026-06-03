@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
+import { useTranslation } from 'react-i18next';
 
 import {
     SocialLoginTypes,
@@ -15,6 +16,7 @@ import {
 export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loading }) => {
     const history = useHistory();
     const { initWallet } = useWallet();
+    const { t } = useTranslation();
     const currentUser = useCurrentUser();
     const { data: currentUserIsLCNUser, isLoading: currentLCNUserLoading } =
         useIsCurrentUserLCNUser();
@@ -69,7 +71,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
             onDidDismiss={() => history.replace({ search: undefined })}
         >
             <NewJoinNetworkPrompt
-                title="Setup Your Profile"
+                title={t('profile.setupTitle', 'Setup Your Profile')}
                 handleCloseModal={() => setIsModalOpen(false)}
                 handleLogout={() => { }}
                 showCancelButton={false}

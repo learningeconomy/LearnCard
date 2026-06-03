@@ -559,7 +559,8 @@
       "reveal": "Reveal My Seed",
       "hide": "Hide My Seed",
       "howToStore": "How to store your seed phrase safely?"
-    }
+    },
+    "setupTitle": "إعداد ملفك الشخصي"
   },
   "settings": {
     "privacyTitle": "الخصوصية والبيانات",
@@ -590,6 +591,22 @@
         "privacyPolicy": "سياسة الخصوصية",
         "termsOfService": "شروط الخدمة"
       }
+    },
+    "privacy": {
+      "profilePrivacy": "خصوصية الملف الشخصي",
+      "profilePrivacyDesc": "تحكم في كيفية ظهور ملفك الشخصي على {{brand}} للآخرين في الشبكة.",
+      "profileVisibility": "ظهور الملف الشخصي",
+      "profileVisibilityDesc": "اختر من يمكنه مشاهدة تفاصيل ملفك الشخصي.",
+      "visibilityPublic": "عام",
+      "visibilityConnectionsOnly": "جهات الاتصال فقط",
+      "visibilityPrivate": "خاص",
+      "showEmail": "إظهار البريد الإلكتروني لجهات الاتصال",
+      "showEmailDesc": "اسمح للمستخدمين المتصلين بمشاهدة بريدك الإلكتروني على ملفك الشخصي.",
+      "connectionRequests": "طلبات الاتصال",
+      "connectionRequestsDesc": "حدد من يمكنه إرسال طلبات اتصال جديدة إليك.",
+      "connectionRequestsAnyone": "الجميع",
+      "connectionRequestsInviteOnly": "بدعوة فقط",
+      "unableToUpdate": "تعذر تحديث إعدادات الخصوصية."
     }
   }
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Capacitor } from '@capacitor/core';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 const UserProfileSetupHeader: React.FC<{
     showNetworkSettings?: boolean;
@@ -12,6 +13,7 @@ const UserProfileSetupHeader: React.FC<{
     handleNetworkPrompt = () => {},
     handleNotificationsPrompt = () => {},
 }) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -24,7 +26,7 @@ const UserProfileSetupHeader: React.FC<{
                             onClick={() => handleNotificationsPrompt?.()}
                             className={`mr-1 text-${primaryColor} font-semibold text-lg text-center`}
                         >
-                            Notifications
+                            {t('profile.notifications', 'Notifications')}
                         </button>
                     )}
                     {/* {!currentLCNUser && (

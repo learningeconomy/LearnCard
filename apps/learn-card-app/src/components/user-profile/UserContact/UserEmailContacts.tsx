@@ -9,6 +9,7 @@ import { EMAIL_REGEX, useGetMyContactMethods, useAddContactMethod } from 'learn-
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
+import { useTranslation } from 'react-i18next';
 
 type ContactMethodType =
     | {
@@ -35,6 +36,7 @@ const StateValidator = z.object({
 });
 
 export const UserEmailContacts: React.FC = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState<string | null | undefined>(null);
     const [emails, setEmails] = useState<ContactMethodType[]>([]);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -116,7 +118,7 @@ export const UserEmailContacts: React.FC = () => {
                                     setErrors({});
                                 }}
                                 value={email}
-                                placeholder="Email"
+                                placeholder={t('profile.email.placeholder', 'Email')}
                                 type="text"
                             />
                         </div>
@@ -138,7 +140,7 @@ export const UserEmailContacts: React.FC = () => {
                     </div>
                     {errors.email && (
                         <p className="text-rose-500 text-sm w-full text-left mt-1 ml-2">
-                            {errors.email}
+                            {errors.email || t('profile.email.invalidEmail', 'Missing or Invalid Email')}
                         </p>
                     )}
                 </div>
@@ -155,7 +157,7 @@ export const UserEmailContacts: React.FC = () => {
                     <section className="w-full flex flex-col items-center justify-center my-[30px]">
                         <FloatingBottleIcon />
                         <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                            No emails added yet.
+                            {t('profile.email.noEmails', 'No emails added yet.')}
                         </p>
                     </section>
                 )}

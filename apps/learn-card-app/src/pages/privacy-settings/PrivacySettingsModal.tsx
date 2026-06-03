@@ -19,6 +19,7 @@ import { getAiFeatureAgeGateState } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+import { useTranslation } from 'react-i18next';
 
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
@@ -33,6 +34,7 @@ const PrivacySettingsModal: React.FC = () => {
     const { presentToast } = useToast();
     const { name: brandName } = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
+    const { t } = useTranslation();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
@@ -67,19 +69,19 @@ const PrivacySettingsModal: React.FC = () => {
 
     const visibilityOptions = useMemo(
         () => [
-            { value: ProfileVisibilityEnum.enum.public, label: 'Public' },
-            { value: ProfileVisibilityEnum.enum.connections_only, label: 'Connections only' },
-            { value: ProfileVisibilityEnum.enum.private, label: 'Private' },
+            { value: ProfileVisibilityEnum.enum.public, label: t('settings.privacy.visibilityPublic', 'Public') },
+            { value: ProfileVisibilityEnum.enum.connections_only, label: t('settings.privacy.visibilityConnectionsOnly', 'Connections only') },
+            { value: ProfileVisibilityEnum.enum.private, label: t('settings.privacy.visibilityPrivate', 'Private') },
         ],
-        []
+        [t]
     );
 
     const connectionRequestOptions = useMemo(
         () => [
-            { value: AllowConnectionRequestsEnum.enum.anyone, label: 'Anyone' },
-            { value: AllowConnectionRequestsEnum.enum.invite_only, label: 'Invite only' },
+            { value: AllowConnectionRequestsEnum.enum.anyone, label: t('settings.privacy.connectionRequestsAnyone', 'Anyone') },
+            { value: AllowConnectionRequestsEnum.enum.invite_only, label: t('settings.privacy.connectionRequestsInviteOnly', 'Invite only') },
         ],
-        []
+        [t]
     );
 
     const handleProfileUpdate = useCallback(
@@ -90,7 +92,7 @@ const PrivacySettingsModal: React.FC = () => {
                 await wallet?.invoke?.updateProfile(updates);
                 await refetch?.();
             } catch (error: any) {
-                presentToast(error?.message ?? 'Unable to update privacy settings.', {
+                presentToast(error?.message ?? t('settings.privacy.unableToUpdate', 'Unable to update privacy settings.'), {
                     type: ToastTypeEnum.Error,
                 });
             } finally {
@@ -145,14 +147,14 @@ const PrivacySettingsModal: React.FC = () => {
                 <button onClick={() => closeModal()} className="p-1 -ml-1">
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
                 </button>
-                <h1 className="text-xl font-semibold text-grayscale-900">Privacy & Data</h1>
+                <h1 className="text-xl font-semibold text-grayscale-900">{t('settings.privacyTitle', 'Privacy & Data')}</h1>
             </div>
 
             <div className="modal-scrollable flex flex-col gap-4">
                 {isMinor && (
                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
                         <p className="text-sm text-amber-800">
-                            Some features are restricted for users under 18.
+                            {t('settings.minorWarning', 'Some features are restricted for users under 18.')}
                         </p>
                     </div>
                 )}
@@ -160,20 +162,20 @@ const PrivacySettingsModal: React.FC = () => {
                 <div className="bg-white rounded-[16px] overflow-hidden shadow-sm p-5">
                     <div className="mb-4">
                         <p className="text-[15px] font-medium text-grayscale-900">
-                            Profile Privacy
+                            {t('settings.privacy.profilePrivacy', 'Profile Privacy')}
                         </p>
                         <p className="text-sm text-grayscale-500 mt-0.5">
-                            Control how your {brandName} profile appears to others in the network.
+                            {t('settings.privacy.profilePrivacyDesc', 'Control how your {{brand}} profile appears to others in the network.', { brand: brandName })}
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-5">
                         <div className="flex flex-col gap-2">
                             <p className="text-[14px] font-medium text-grayscale-900">
-                                Profile visibility
+                                {t('settings.privacy.profileVisibility', 'Profile visibility')}
                             </p>
                             <p className="text-sm text-grayscale-500">
-                                Choose who can view the details on your profile.
+                                {t('settings.privacy.profileVisibilityDesc', 'Choose who can view the details on your profile.')}
                             </p>
                             <RadioGroup
                                 name="profile-visibility"
@@ -191,10 +193,10 @@ const PrivacySettingsModal: React.FC = () => {
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Show email to connections
+                                    {t('settings.privacy.showEmail', 'Show email to connections')}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Let connected users see your email address on your profile.
+                                    {t('settings.privacy.showEmailDesc', 'Let connected users see your email address on your profile.')}
                                 </p>
                             </div>
                             <IonToggle
@@ -209,10 +211,10 @@ const PrivacySettingsModal: React.FC = () => {
 
                         <div className="flex flex-col gap-2">
                             <p className="text-[14px] font-medium text-grayscale-900">
-                                Connection requests
+                                {t('settings.privacy.connectionRequests', 'Connection requests')}
                             </p>
                             <p className="text-sm text-grayscale-500">
-                                Decide who can send you new connection requests.
+                                {t('settings.privacy.connectionRequestsDesc', 'Decide who can send you new connection requests.')}
                             </p>
                             <RadioGroup
                                 name="allow-connection-requests"
@@ -232,10 +234,10 @@ const PrivacySettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
-                                AI Features
+                                {t('settings.aiFeatures', 'AI Features')}
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                AI tutoring sessions, insights, and personalization
+                                {t('settings.aiFeaturesDesc', 'AI tutoring sessions, insights, and personalization')}
                             </p>
                         </div>
                         <IonToggle
@@ -254,10 +256,10 @@ const PrivacySettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
-                                Analytics & Insights
+                                {t('settings.analytics', 'Analytics & Insights')}
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                Help improve {brandName} with anonymous usage data
+                                {t('settings.analyticsDesc', 'Help improve {{brand}} with anonymous usage data', { brand: brandName })}
                             </p>
                         </div>
                         <IonToggle
@@ -274,10 +276,10 @@ const PrivacySettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
-                                Bug Reports
+                                {t('settings.bugReports', 'Bug Reports')}
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                Automatically send crash reports to help fix issues
+                                {t('settings.bugReportsDesc', 'Automatically send crash reports to help fix issues')}
                             </p>
                         </div>
                         <IonToggle

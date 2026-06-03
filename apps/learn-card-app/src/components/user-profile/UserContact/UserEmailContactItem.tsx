@@ -14,11 +14,13 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 export const UserEmailContactItem: React.FC<{
     email: ContactMethodType;
     refetchContactMethods: () => void;
 }> = ({ email, refetchContactMethods }) => {
+    const { t } = useTranslation();
     const confirm = useConfirmation();
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
@@ -48,10 +50,10 @@ export const UserEmailContactItem: React.FC<{
     const handleSetPrimaryContactMethod = async (contactMethodId: string) => {
         try {
             const confirmResponse = await confirm({
-                title: 'Set Primary Contact Method',
-                text: 'Are you sure you want to set this email as primary?',
-                confirmText: 'Yes',
-                cancelText: 'No',
+                title: t('profile.email.setPrimaryConfirm.title', 'Set Primary Contact Method'),
+                text: t('profile.email.setPrimaryConfirm.text', 'Are you sure you want to set this email as primary?'),
+                confirmText: t('profile.email.setPrimaryConfirm.yes', 'Yes'),
+                cancelText: t('profile.email.setPrimaryConfirm.no', 'No'),
                 cancelButtonClassName:
                     'bg-grayscale-100 text-grayscale-900 font-semibold rounded-full px-4 py-3',
                 confirmButtonClassName:
@@ -69,10 +71,10 @@ export const UserEmailContactItem: React.FC<{
     const handleRemoveContactMethod = async (contactMethodId: string) => {
         try {
             const confirmResponse = await confirm({
-                title: 'Remove Contact Method',
-                text: 'Are you sure you want to remove this email?',
-                confirmText: 'Yes',
-                cancelText: 'No',
+                title: t('profile.email.removeConfirm.title', 'Remove Contact Method'),
+                text: t('profile.email.removeConfirm.text', 'Are you sure you want to remove this email?'),
+                confirmText: t('profile.email.removeConfirm.yes', 'Yes'),
+                cancelText: t('profile.email.removeConfirm.no', 'No'),
                 cancelButtonClassName:
                     'bg-grayscale-100 text-grayscale-900 font-semibold rounded-full px-4 py-3',
                 confirmButtonClassName:
@@ -103,7 +105,7 @@ export const UserEmailContactItem: React.FC<{
             {!email.isVerified && (
                 <div className="w-full flex items-center justify-start mt-2 mb-2">
                     <p className="text-amber-500 rounded-[15px] text-sm font-semibold">
-                        Unverified <span className="text-grayscale-900">•&nbsp;</span>
+                        {t('profile.email.unverified', 'Unverified')} <span className="text-grayscale-900">•&nbsp;</span>
                     </p>
                     <button
                         onClick={e => {
@@ -113,7 +115,7 @@ export const UserEmailContactItem: React.FC<{
                         }}
                         className={`text-${primaryColor} font-semibold text-sm cursor-pointer`}
                     >
-                        {isResendCodeLoading ? 'Sending...' : 'Resend verification email'}
+                        {isResendCodeLoading ? t('profile.email.sending', 'Sending...') : t('profile.email.resendVerification', 'Resend verification email')}
                     </button>
                 </div>
             )}
@@ -124,14 +126,14 @@ export const UserEmailContactItem: React.FC<{
                         onClick={() => handleSetPrimaryContactMethod(email.id)}
                         className="bg-emerald-201 text-emerald-601 font-semibold rounded-full px-6 py-3"
                     >
-                        Primary
+                        {t('profile.email.primary', 'Primary')}
                     </p>
                 ) : (
                     <button
                         onClick={() => handleSetPrimaryContactMethod(email.id)}
                         className="bg-grayscale-700 text-white font-semibold rounded-full px-4 py-3"
                     >
-                        Set as Primary
+                        {t('profile.email.setAsPrimary', 'Set as Primary')}
                     </button>
                 )}
                 <button

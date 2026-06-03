@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { IonFooter } from '@ionic/react';
 
 import { useModal, useWallet } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 const UserContactFooter: React.FC = () => {
     const { initWallet } = useWallet();
     const { closeModal } = useModal();
+    const { t } = useTranslation();
 
     return (
         <IonFooter
@@ -19,11 +21,11 @@ const UserContactFooter: React.FC = () => {
                         onClick={closeModal}
                         className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                     >
-                        Back
+                        {t('profile.back', 'Back')}
                     </button>
 
                     <button className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center">
-                        Save
+                        {t('profile.save', 'Save')}
                     </button>
                 </div>
             </div>

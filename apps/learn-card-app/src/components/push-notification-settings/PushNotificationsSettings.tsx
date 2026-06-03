@@ -8,18 +8,20 @@ import {
     PushNotificationsSettingsState,
     PushNotificationSettingsEnum,
 } from './pushNotifications.helpers';
+import { useTranslation } from 'react-i18next';
 
 const PushNotificationsSettings: React.FC<{
     handleCloseModal: () => void;
     settings: PushNotificationsSettingsState;
     handleStateChange: (settingsType: PushNotificationSettingsEnum, settingState: boolean) => void;
 }> = ({ handleCloseModal, settings, handleStateChange }) => {
+    const { t } = useTranslation();
     const settingsList = pushNotificationSettingOptions.map(setting => {
         return (
             <div key={setting.id} className="w-full px-6">
                 <div className="w-full py-4 border-b border-grayscale-200">
                     <div className="w-full flex items-center justify-between">
-                        <p className="text-grayscale-900 font-semibold w-10/12">{setting.title}</p>
+                        <p className="text-grayscale-900 font-semibold w-10/12">{t(`settings.notifications.${setting.type}.title`, setting.title)}</p>
                         <IonToggle
                             mode="ios"
                             checked={settings[PushNotificationSettingsEnum[setting.type]]}
@@ -32,8 +34,8 @@ const PushNotificationsSettings: React.FC<{
                             color="emerald-700"
                         />
                     </div>
-                    <p className="text-left p-0 pt-2 m-0 text-xs text-grayscale-600">
-                        {setting.description}
+                    <p className="text-start p-0 pt-2 m-0 text-xs text-grayscale-600">
+                        {t(`settings.notifications.${setting.type}.description`, setting.description)}
                     </p>
                 </div>
             </div>
@@ -51,7 +53,7 @@ const PushNotificationsSettings: React.FC<{
                     <CaretLeft className="h-auto w-3 text-grayscale-900" />
                 </button>
                 <p className="font-bold text-black font-poppins text-xl">
-                    Edit Notification Settings
+                    {t('settings.notifications.title', 'Edit Notification Settings')}
                 </p>
             </div>
             {settingsList}

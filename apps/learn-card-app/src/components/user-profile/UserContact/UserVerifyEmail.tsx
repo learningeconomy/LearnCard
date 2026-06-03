@@ -6,8 +6,10 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { usePathQuery, useVerifyContactMethod } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 const UserVerifyEmail: React.FC = () => {
+    const { t } = useTranslation();
     const { appIcon } = useTenantBrandingAssets();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -48,10 +50,10 @@ const UserVerifyEmail: React.FC = () => {
                 {(isVerified === null || verifyEmailLoading) && (
                     <>
                         <h1 className="text-grayscale-900 text-[22px] font-semibold font-notoSans text-center mb-2">
-                            Verifying your email...
+                            {t('profile.verify.verifying', 'Verifying your email...')}
                         </h1>
                         <p className="text-center text-grayscale-600 text-[15px] mb-6 font-notoSans">
-                            Just a moment while we complete your verification.
+                            {t('profile.verify.pleaseWait', 'Just a moment while we complete your verification.')}
                         </p>
                     </>
                 )}
@@ -59,13 +61,13 @@ const UserVerifyEmail: React.FC = () => {
                 {isVerified && (
                     <>
                         <h1 className="text-grayscale-900 text-[22px] font-semibold font-notoSans text-center mb-2 flex items-center justify-center">
-                            Your email has successfully been verified.{' '}
+                            {t('profile.verify.success', 'Your email has successfully been verified.')}{' '}
                         </h1>
                         <button
                             onClick={() => history.push('/')}
                             className={`mt-2 bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
-                            Return Home
+                            {t('profile.verify.returnHome', 'Return Home')}
                         </button>
                     </>
                 )}
@@ -73,17 +75,16 @@ const UserVerifyEmail: React.FC = () => {
                 {isVerified === false && (
                     <>
                         <h1 className="text-red-600 text-[22px] font-bold font-notoSans text-center mb-2">
-                            Verification Failed
+                            {t('profile.verify.failed', 'Verification Failed')}
                         </h1>
                         <p className="text-center text-grayscale-700 text-[16px] mb-6 font-notoSans leading-[1.4]">
-                            We couldn’t verify your email. The token may be invalid or expired.
-                            Please try again or request a new verification email.
+                            {t('profile.verify.failedDesc', "We couldn't verify your email. The token may be invalid or expired. Please try again or request a new verification email.")}
                         </p>
                         <button
                             onClick={() => history.push('/')}
                             className={`bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
-                            Return Home
+                            {t('profile.verify.returnHome', 'Return Home')}
                         </button>
                     </>
                 )}

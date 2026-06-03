@@ -14,6 +14,7 @@ import {
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
+import { useTranslation } from 'react-i18next';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;
@@ -30,6 +31,7 @@ const UserOptions: React.FC<{
     showFixedFooter = false,
     footer,
 }) => {
+    const { t } = useTranslation();
     const [presentCenterModal, dismissCenterModal] = useIonModal(DeleteUserConfirmationPrompt, {
         handleCloseModal: () => dismissCenterModal(),
         showCloseButton: true,
@@ -47,7 +49,7 @@ const UserOptions: React.FC<{
     const userOptions = [
         {
             id: 1,
-            title: 'Delete Account',
+            title: t('profile.deleteAccount', 'Delete Account'),
             onClick: () => {},
         },
     ];

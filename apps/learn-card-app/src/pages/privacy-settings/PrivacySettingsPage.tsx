@@ -14,8 +14,10 @@ import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+import { useTranslation } from 'react-i18next';
 
 const PrivacySettingsPage: React.FC = () => {
+    const { t } = useTranslation();
     const history = useHistory();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
@@ -65,12 +67,12 @@ const PrivacySettingsPage: React.FC = () => {
                         <button
                             onClick={() => history.goBack()}
                             className="p-1 -ml-1"
-                            aria-label="Go back"
+                            aria-label={t('settings.goBack', 'Go back')}
                         >
                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                         </button>
                         <h1 className="text-[17px] font-semibold text-grayscale-900">
-                            Privacy & Data
+                            {t('settings.privacyTitle', 'Privacy & Data')}
                         </h1>
                     </div>
                 </IonToolbar>
@@ -81,7 +83,7 @@ const PrivacySettingsPage: React.FC = () => {
                     {isMinor && (
                         <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
                             <p className="text-sm text-amber-800">
-                                Some features are restricted for users under 18.
+                                {t('settings.minorWarning', 'Some features are restricted for users under 18.')}
                             </p>
                         </div>
                     )}
@@ -91,10 +93,10 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    AI Features
+                                    {t('settings.aiFeatures', 'AI Features')}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    AI tutoring sessions, insights, and personalization
+                                    {t('settings.aiFeaturesDesc', 'AI tutoring sessions, insights, and personalization')}
                                 </p>
                             </div>
                             <IonToggle
@@ -103,7 +105,7 @@ const PrivacySettingsPage: React.FC = () => {
                                 onIonChange={e =>
                                     !ageGate.isAiAgeRestricted && handleAiToggle(e.detail.checked)
                                 }
-                                aria-label="AI Features"
+                                aria-label={t('settings.aiFeatures', 'AI Features')}
                             />
                         </div>
                     </div>
@@ -113,10 +115,10 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Analytics & Insights
+                                    {t('settings.analytics', 'Analytics & Insights')}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Help improve {brandingConfig?.name} with anonymous usage data
+                                    {t('settings.analyticsDesc', 'Help improve {{brand}} with anonymous usage data', { brand: brandingConfig?.name })}
                                 </p>
                             </div>
                             <IonToggle
@@ -125,7 +127,7 @@ const PrivacySettingsPage: React.FC = () => {
                                 onIonChange={e =>
                                     !isMinor && handleAnalyticsToggle(e.detail.checked)
                                 }
-                                aria-label="Analytics & Insights"
+                                aria-label={t('settings.analytics', 'Analytics & Insights')}
                             />
                         </div>
                     </div>
@@ -135,10 +137,10 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Bug Reports
+                                    {t('settings.bugReports', 'Bug Reports')}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Automatically send crash reports to help fix issues
+                                    {t('settings.bugReportsDesc', 'Automatically send crash reports to help fix issues')}
                                 </p>
                             </div>
                             <IonToggle
@@ -147,7 +149,7 @@ const PrivacySettingsPage: React.FC = () => {
                                 onIonChange={e =>
                                     !isMinor && handleBugReportsToggle(e.detail.checked)
                                 }
-                                aria-label="Bug Reports"
+                                aria-label={t('settings.bugReports', 'Bug Reports')}
                             />
                         </div>
                     </div>

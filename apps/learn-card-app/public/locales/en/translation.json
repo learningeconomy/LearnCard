@@ -559,7 +559,8 @@
       "reveal": "Reveal My Seed",
       "hide": "Hide My Seed",
       "howToStore": "How to store your seed phrase safely?"
-    }
+    },
+    "setupTitle": "Setup Your Profile"
   },
   "settings": {
     "privacyTitle": "Privacy & Data",
@@ -590,6 +591,22 @@
         "privacyPolicy": "Privacy Policy",
         "termsOfService": "Terms of Service"
       }
+    },
+    "privacy": {
+      "profilePrivacy": "Profile Privacy",
+      "profilePrivacyDesc": "Control how your {{brand}} profile appears to others in the network.",
+      "profileVisibility": "Profile visibility",
+      "profileVisibilityDesc": "Choose who can view the details on your profile.",
+      "visibilityPublic": "Public",
+      "visibilityConnectionsOnly": "Connections only",
+      "visibilityPrivate": "Private",
+      "showEmail": "Show email to connections",
+      "showEmailDesc": "Let connected users see your email address on your profile.",
+      "connectionRequests": "Connection requests",
+      "connectionRequestsDesc": "Decide who can send you new connection requests.",
+      "connectionRequestsAnyone": "Anyone",
+      "connectionRequestsInviteOnly": "Invite only",
+      "unableToUpdate": "Unable to update privacy settings."
     }
   }
 }
