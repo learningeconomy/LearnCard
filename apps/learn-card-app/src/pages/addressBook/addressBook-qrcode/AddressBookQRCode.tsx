@@ -40,12 +40,12 @@ const AddressBookQRCode: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(t('contacts.linkCopied', 'Contact link copied to clipboard'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(t('contacts.linkCopyFailed', 'Unable to copy Contact link to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -57,7 +57,7 @@ const AddressBookQRCode: React.FC<{
 
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: t('contacts.addContactDesc', 'Add contact'),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',

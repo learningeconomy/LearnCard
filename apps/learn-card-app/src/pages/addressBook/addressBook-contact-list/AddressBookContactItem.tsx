@@ -30,6 +30,7 @@ import BoostTemplateSelector from 'apps/learn-card-app/src/components/boost/boos
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 type AddressBookContactItemProps = {
     contact: LCNProfile;
@@ -88,6 +89,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const [presentAlert, dismissAlert] = useIonAlert();
 
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const { mutate, isPending: isLoading } = useConnectWithMutation();
@@ -132,7 +134,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
 
                         refetch?.();
 
-                        presentToast('Connection Request sent', {
+                        presentToast(t('contacts.connectionSent', 'Connection Request sent'), {
                             type: ToastTypeEnum.Success,
                             hasDismissButton: true,
                         });
@@ -371,7 +373,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     if (showRequestButton) {
         if (LCNProfileConnectionStatusEnum.enum.CONNECTED === (contact as any)?.connectionStatus) {
             actionButton = (
-                <button className="text-emerald-600 font-bold text-sm">Connected</button>
+                <button className="text-emerald-600 font-bold text-sm">{t('contacts.connect', 'Connected')}</button>
             );
         } else if (
             LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED === (contact as any)?.connectionStatus
@@ -383,10 +385,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         presentAlert({
                             backdropDismiss: false,
                             cssClass: 'boost-confirmation-alert',
-                            header: 'Are you sure you want to send a connection request?',
+                            header: t('contacts.confirmSendRequest', 'Are you sure you want to send a connection request?'),
                             buttons: [
                                 {
-                                    text: 'Confirm',
+                                    text: t('contacts.confirm', 'Confirm'),
                                     role: 'confirm',
                                     handler: async () => {
                                         handleConnectionRequest?.(e, contact?.profileId);
@@ -404,7 +406,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     }}
                     className={`text-${primaryColor} font-semibold text-sm font-notoSans`}
                 >
-                    {isLoading ? 'Loading...' : 'Request Connection'}
+                    {isLoading ? t('contacts.loading', 'loading...') : t('contacts.requestConnection', 'Request Connection')}
                 </button>
             );
         } else if (
@@ -418,10 +420,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         presentAlert({
                             backdropDismiss: false,
                             cssClass: 'boost-confirmation-alert',
-                            header: 'Are you sure you want to cancel your connection request?',
+                            header: t('contacts.confirmCancelRequest', 'Are you sure you want to cancel your connection request?'),
                             buttons: [
                                 {
-                                    text: 'Confirm',
+                                    text: t('contacts.confirm', 'Confirm'),
                                     role: 'confirm',
                                     handler: async () => {
                                         handleCancelConnectionRequest?.(e, contact?.profileId);
@@ -439,8 +441,8 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     }}
                     className={`text-${primaryColor} font-semibold text-sm text-[14px] font-notoSans`}
                 >
-                    <span className="text-grayscale-900 font-notoSans">Request Pending</span> •{' '}
-                    {cancelRequestLoading ? 'Loading...' : 'Cancel'}
+                    <span className="text-grayscale-900 font-notoSans">{t('contacts.connectionPending', 'Request Pending')}</span> •{' '}
+                    {cancelRequestLoading ? t('contacts.loading', 'loading...') : t('contacts.cancel', 'Cancel')}
                 </button>
             );
         } else if (
@@ -454,10 +456,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         presentAlert({
                             backdropDismiss: false,
                             cssClass: 'boost-confirmation-alert',
-                            header: 'Are you sure you want to accept the connection request?',
+                            header: t('contacts.confirmAcceptRequest', 'Are you sure you want to accept the connection request?'),
                             buttons: [
                                 {
-                                    text: 'Confirm',
+                                    text: t('contacts.confirm', 'Confirm'),
                                     role: 'confirm',
                                     handler: async () => {
                                         handleAcceptConnectionRequest?.(e, contact?.profileId);
@@ -475,7 +477,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     }}
                     className="text-emerald-600 font-bold text-sm"
                 >
-                    {acceptConnectionLoading ? 'Loading...' : 'Accept Request'}
+                    {acceptConnectionLoading ? t('contacts.loading', 'loading...') : t('contacts.acceptRequest', 'Accept Request')}
                 </button>
             );
         }
@@ -506,10 +508,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to accept the connection request?',
+                                header: t('contacts.confirmAcceptRequest', 'Are you sure you want to accept the connection request?'),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: t('contacts.confirm', 'Confirm'),
                                         role: 'confirm',
                                         handler: async () => {
                                             handleAcceptConnectionRequest?.(e, contact?.profileId);
@@ -527,7 +529,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-emerald-600 font-bold text-base"
                     >
-                        {acceptConnectionLoading ? 'Loading...' : 'Accept Request'}
+                        {acceptConnectionLoading ? t('contacts.loading', 'loading...') : t('contacts.acceptRequest', 'Accept Request')}
                     </button>
                 )}
                 {showUnblockButton && (
@@ -537,10 +539,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to unblock this user?',
+                                header: t('contacts.confirmUnblock', 'Are you sure you want to unblock this user?'),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: t('contacts.confirm', 'Confirm'),
                                         role: 'confirm',
                                         handler: async () => {
                                             handleUnblockUser?.(e, contact?.profileId);
@@ -558,7 +560,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className={`text-${primaryColor} font-semibold text-[14px] font-notoSans`}
                     >
-                        {unblockLoading ? 'Loading...' : 'Unblock'}
+                        {unblockLoading ? t('contacts.loading', 'loading...') : t('contacts.unblock', 'Unblock')}
                     </button>
                 )}
                 {/* {showDeleteButton && (
@@ -576,10 +578,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to cancel your connection request?',
+                                header: t('contacts.confirmCancelRequest', 'Are you sure you want to cancel your connection request?'),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: t('contacts.confirm', 'Confirm'),
                                         role: 'confirm',
                                         handler: async () => {
                                             handleCancelConnectionRequest?.(e, contact?.profileId);
@@ -597,7 +599,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-rose-600 font-bold text-base"
                     >
-                        {cancelRequestLoading ? 'Loading...' : 'Cancel Request'}
+                        {cancelRequestLoading ? t('contacts.loading', 'loading...') : t('contacts.cancelRequest', 'Cancel Request')}
                     </button>
                 )}
             </div>

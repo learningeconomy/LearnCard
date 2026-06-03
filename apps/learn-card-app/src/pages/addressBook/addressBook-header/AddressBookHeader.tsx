@@ -14,6 +14,7 @@ import { useIsCurrentUserLCNUser } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
+import { useTranslation } from 'react-i18next';
 
 export const AddressBookHeader: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -41,12 +42,12 @@ export const AddressBookHeader: React.FC<{
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
 
-    let headerTitle = 'Contacts';
+    let headerTitle = t('contacts.title', 'Contacts');
 
     if (activeTab === AddressBookTabsEnum.Search) {
-        headerTitle = connectionCount === 1 ? 'Result' : 'Results';
+        headerTitle = connectionCount === 1 ? t('contacts.result', 'Result') : t('contacts.results', 'Results');
     } else {
-        headerTitle = connectionCount === 1 ? 'Contact' : 'Contacts';
+        headerTitle = connectionCount === 1 ? t('contacts.contact', 'Contact') : t('contacts.title', 'Contacts');
     }
 
     const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {

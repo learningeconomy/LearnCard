@@ -17,6 +17,7 @@ import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { QRCodeScannerStore } from 'learn-card-base';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
@@ -24,6 +25,7 @@ const AddressBookContactOptions: React.FC<{
     handleShowSearch?: () => void;
 }> = ({ handleCloseModal, showSearch = true, handleShowSearch }) => {
     const { initWallet } = useWallet();
+    const { t } = useTranslation();
     const { presentToast } = useToast();
 
     const [walletDid, setWalletDid] = useState<string>('');
@@ -87,12 +89,12 @@ const AddressBookContactOptions: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(t('contacts.linkCopied', 'Contact link copied to clipboard'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(t('contacts.linkCopyFailed', 'Unable to copy Contact link to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -102,7 +104,7 @@ const AddressBookContactOptions: React.FC<{
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: t('contacts.addContactDesc', 'Add contact'),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
@@ -127,7 +129,7 @@ const AddressBookContactOptions: React.FC<{
     }[] = [
         {
             id: 1,
-            title: 'Show Code',
+            title: t('contacts.showCode', 'Show Code'),
             icon: <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />,
             onClick: () => {
                 presentCenterModal({
@@ -142,7 +144,7 @@ const AddressBookContactOptions: React.FC<{
     if (Capacitor.isNativePlatform()) {
         addressBookMenuOptions.push({
             id: 2,
-            title: 'Scan Code',
+            title: t('contacts.scanCode', 'Scan Code'),
             icon: <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />,
             onClick: () => {
                 handleScan();
@@ -152,7 +154,7 @@ const AddressBookContactOptions: React.FC<{
 
     addressBookMenuOptions.push({
         id: 3,
-        title: 'Share Code',
+        title: t('contacts.shareCode', 'Share Code'),
         icon: <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />,
         onClick: () => {
             handleShare();
@@ -161,7 +163,7 @@ const AddressBookContactOptions: React.FC<{
 
     addressBookMenuOptions.push({
         id: 4,
-        title: 'Search',
+        title: t('contacts.search', 'Search'),
         icon: <Search className="ml-[5px] h-[24px] w-[25px] mr-2" />,
         onClick: () => {
             onSearchClick();
