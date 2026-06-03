@@ -4,6 +4,8 @@ import { useModal, ModalTypes, BoostCategoryOptionsEnum } from 'learn-card-base'
 import { BoostCMSState } from '../components/boost/boost';
 import RecoveryPrompt from '../components/common/RecoveryPrompt';
 import { getFallBackImage } from 'learn-card-base/helpers/credentialHelpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-boost-recovery-check');
 
 const STORAGE_KEY = 'lc_boost_cms_autosave';
 const STORAGE_VERSION = 1;
@@ -110,7 +112,7 @@ export function useBoostRecoveryCheck() {
                 localStorage.removeItem(`${STORAGE_KEY}_${category}`);
             }
         } catch (err) {
-            console.warn('[useBoostRecoveryCheck] Failed to clear saved states:', err);
+            log.warn('[useBoostRecoveryCheck] Failed to clear saved states:', err);
         }
     }, []);
 
@@ -120,7 +122,7 @@ export function useBoostRecoveryCheck() {
         try {
             localStorage.removeItem(storageKey);
         } catch (err) {
-            console.warn('[useBoostRecoveryCheck] Failed to clear saved state:', err);
+            log.warn('[useBoostRecoveryCheck] Failed to clear saved state:', err);
         }
     }, []);
 

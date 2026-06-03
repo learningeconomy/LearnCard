@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-setup-listener');
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
@@ -54,7 +56,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
                     presentCenterModal();
                 }
 
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
             }
         };
 

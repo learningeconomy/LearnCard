@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('json-preview');
 /**
  * JsonPreview - Live JSON preview with bidirectional editing
  */
@@ -59,7 +61,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (e) {
-            console.error('Failed to copy:', e);
+            log.error('Failed to copy:', e);
         }
     }, [jsonFromTemplate]);
 
@@ -115,7 +117,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
 
             if (result.success) {
                 setTestIssueState('success');
-                console.log('Test issue successful:', result.result);
+                log.info('Test issue successful:', result.result);
                 setTimeout(() => setTestIssueState('idle'), 3000);
             } else {
                 setTestIssueState('error');

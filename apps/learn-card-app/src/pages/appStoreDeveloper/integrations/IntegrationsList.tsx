@@ -18,6 +18,9 @@ import {
     Pencil,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integrations-list');
+
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
@@ -31,7 +34,10 @@ interface IntegrationCardProps {
     onClick: () => void;
 }
 
-const STATUS_CONFIG: Record<IntegrationStatus, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+const STATUS_CONFIG: Record<
+    IntegrationStatus,
+    { label: string; color: string; bgColor: string; icon: React.ElementType }
+> = {
     setup: {
         label: 'Setup Required',
         color: 'text-amber-700',
@@ -52,7 +58,11 @@ const STATUS_CONFIG: Record<IntegrationStatus, { label: string; color: string; b
     },
 };
 
-const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, templateCount, onClick }) => {
+const IntegrationCard: React.FC<IntegrationCardProps> = ({
+    integration,
+    templateCount,
+    onClick,
+}) => {
     const status = integration.config?.status || 'setup';
     const statusConfig = STATUS_CONFIG[status];
     const StatusIcon = statusConfig.icon;
@@ -84,7 +94,9 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, template
                     </div>
                 </div>
 
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${statusConfig.bgColor}`}>
+                <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${statusConfig.bgColor}`}
+                >
                     <StatusIcon className={`w-3.5 h-3.5 ${statusConfig.color}`} />
 
                     <span className={`text-xs font-medium ${statusConfig.color}`}>
@@ -98,7 +110,8 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, template
                     <Award className="w-4 h-4 text-gray-400" />
 
                     <span className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">{stats.templates}</span> templates
+                        <span className="font-semibold text-gray-800">{stats.templates}</span>{' '}
+                        templates
                     </span>
                 </div>
 
@@ -175,7 +188,7 @@ const IntegrationsList: React.FC = () => {
 
                 setTemplateCounts(counts);
             } catch (err) {
-                console.warn('Failed to load template counts:', err);
+                log.warn('Failed to load template counts:', err);
             }
         };
 
@@ -186,7 +199,9 @@ const IntegrationsList: React.FC = () => {
         if (!newProjectName.trim()) return;
 
         try {
-            const integrationId = await createIntegrationMutation.mutateAsync(newProjectName.trim());
+            const integrationId = await createIntegrationMutation.mutateAsync(
+                newProjectName.trim()
+            );
 
             presentToast(`Created "${newProjectName.trim()}"`, {
                 type: ToastTypeEnum.Success,
@@ -199,7 +214,7 @@ const IntegrationsList: React.FC = () => {
             // Navigate to the new integration's guides hub to choose a guide
             history.push(`/app-store/developer/integrations/${integrationId}/guides`);
         } catch (error) {
-            console.error('Failed to create project:', error);
+            log.error('Failed to create project:', error);
 
             presentToast('Failed to create project', {
                 type: ToastTypeEnum.Error,
@@ -253,7 +268,9 @@ const IntegrationsList: React.FC = () => {
                         <div className="flex items-center justify-center py-20">
                             <div className="text-center">
                                 <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                                <p className="text-sm text-gray-500 mt-3">Loading integrations...</p>
+                                <p className="text-sm text-gray-500 mt-3">
+                                    Loading integrations...
+                                </p>
                             </div>
                         </div>
                     )}
@@ -270,8 +287,8 @@ const IntegrationsList: React.FC = () => {
                             </h2>
 
                             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                                Set up an integration to start issuing verifiable credentials from your platform.
-                                We'll guide you through every step.
+                                Set up an integration to start issuing verifiable credentials from
+                                your platform. We'll guide you through every step.
                             </p>
 
                             <button
@@ -323,7 +340,10 @@ const IntegrationsList: React.FC = () => {
 
                                     <button
                                         onClick={handleCreateProject}
-                                        disabled={!newProjectName.trim() || createIntegrationMutation.isPending}
+                                        disabled={
+                                            !newProjectName.trim() ||
+                                            createIntegrationMutation.isPending
+                                        }
                                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         {createIntegrationMutation.isPending ? (
@@ -352,7 +372,8 @@ const IntegrationsList: React.FC = () => {
                                 </h2>
 
                                 <span className="text-sm text-gray-500">
-                                    {integrationsWithConfig.length} integration{integrationsWithConfig.length !== 1 ? 's' : ''}
+                                    {integrationsWithConfig.length} integration
+                                    {integrationsWithConfig.length !== 1 ? 's' : ''}
                                 </span>
                             </div>
 
@@ -386,8 +407,12 @@ const IntegrationsList: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <p className="font-medium text-gray-800">Integration Guides</p>
-                                        <p className="text-sm text-gray-500">Step-by-step tutorials</p>
+                                        <p className="font-medium text-gray-800">
+                                            Integration Guides
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            Step-by-step tutorials
+                                        </p>
                                     </div>
                                 </button>
 
@@ -402,7 +427,9 @@ const IntegrationsList: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <p className="font-medium text-gray-800">API Documentation</p>
+                                        <p className="font-medium text-gray-800">
+                                            API Documentation
+                                        </p>
                                         <p className="text-sm text-gray-500">Full reference docs</p>
                                     </div>
                                 </a>

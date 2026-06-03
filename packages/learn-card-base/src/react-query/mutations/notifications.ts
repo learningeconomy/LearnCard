@@ -6,6 +6,8 @@ import {
     DEFAULT_ARCHIVE_OPTIONS,
     DEFAULT_ARCHIVE_FILTER,
 } from 'learn-card-base';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('notifications');
 
 /* Toggle a notification between "archived" state */
 
@@ -66,7 +68,7 @@ export const useMarkAllNotificationsRead = () => {
                     queryKey: ['useGetUnreadUserNotifications', switchedDid ?? ''],
                 });
             } catch (e) {
-                console.warn('error:OnSuccess:useMarkAllNotificationsRead', e);
+                log.warn('error:OnSuccess:useMarkAllNotificationsRead', e);
                 return false;
             }
         },

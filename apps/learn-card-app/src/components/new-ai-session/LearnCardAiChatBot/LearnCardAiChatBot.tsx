@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('learn-card-ai-chat-bot');
 
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
@@ -170,7 +172,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         const handleVisibility = () => {
             const threadId = currentThreadId.get();
             const { did } = auth.get();
-            console.debug('visibility change', document.visibilityState, threadId, did);
+            log.debug('visibility change', document.visibilityState, threadId, did);
 
             if (threadId && did) {
                 if (document.visibilityState === 'hidden') {
@@ -187,7 +189,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                 `${getBackendUrl()}/threads/visibility?did=${did}`,
                                 form
                             );
-                            console.debug('sent beacon after 5min hidden');
+                            log.debug('sent beacon after 5min hidden');
                             // After the timer fires, reset it to null so a new one can be created.
                             hiddenTimer = null;
                         }, 5 * 60 * 1000); // 5 minutes
@@ -204,7 +206,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
                     navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
-                    console.debug('sent beacon visible');
+                    log.debug('sent beacon visible');
                 }
             }
         };

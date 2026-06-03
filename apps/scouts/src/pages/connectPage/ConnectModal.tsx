@@ -8,6 +8,8 @@ import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('connect-modal');
 
 const ConnectModal: React.FC<{
     profileId: string;
@@ -39,7 +41,7 @@ const ConnectModal: React.FC<{
         }
 
         if (!profileId && !userDid) {
-            console.log('no handle or userDid detected!');
+            log.debug('no handle or userDid detected!');
             setLoading(false);
             return;
         }
@@ -53,7 +55,7 @@ const ConnectModal: React.FC<{
                 }
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.debug('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
@@ -77,7 +79,7 @@ const ConnectModal: React.FC<{
                     }
                     return;
                 } catch (err) {
-                    console.log('getLCNeworkProfile::err', err);
+                    log.debug('getLCNeworkProfile::err', err);
                     setLoading(false);
                     return;
                 }

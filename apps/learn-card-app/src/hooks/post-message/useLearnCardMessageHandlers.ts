@@ -46,6 +46,9 @@ interface UseLearnCardMessageHandlersOptions {
     debug?: boolean;
 }
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-learn-card-message-handlers');
+
 /**
  * Shared hook for creating LEARNCARD_V1 message handlers.
  * Used by both EmbedIframeModal and EmbedAppFullScreen to ensure consistent behavior.
@@ -70,14 +73,14 @@ export function useLearnCardMessageHandlers({
     // Debug logging helper
     const log = useCallback(
         (...args: unknown[]) => {
-            if (debug) console.log('[PostMessage]', ...args);
+            if (debug) log.info('[PostMessage]', ...args);
         },
         [debug]
     );
 
     const logError = useCallback(
         (...args: unknown[]) => {
-            if (debug) console.error('[PostMessage]', ...args);
+            if (debug) log.error('[PostMessage]', ...args);
         },
         [debug]
     );
@@ -262,7 +265,7 @@ export function useLearnCardMessageHandlers({
 
                             // Check if already trusted
                             // if (isOriginTrusted(origin)) {
-                            //     console.log('[PostMessage] Origin already trusted:', origin);
+                            //     log.info('[PostMessage] Origin already trusted:', origin);
                             //     resolve(true);
                             //     return;
                             // }
@@ -364,15 +367,15 @@ export function useLearnCardMessageHandlers({
                     const integration = await getIntegrationForListing(appId);
                     const guideState = integration?.guideState as
                         | {
-                            config?: {
-                                consentFlowConfig?: { contractUri?: string };
-                                embedAppConfig?: {
-                                    featureConfig?: {
-                                        'request-data-consent'?: { contractUri?: string };
-                                    };
-                                };
-                            };
-                        }
+                              config?: {
+                                  consentFlowConfig?: { contractUri?: string };
+                                  embedAppConfig?: {
+                                      featureConfig?: {
+                                          'request-data-consent'?: { contractUri?: string };
+                                      };
+                                  };
+                              };
+                          }
                         | undefined;
 
                     return (
@@ -938,144 +941,141 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                        const learnCard = await initWallet();
+                          const learnCard = await initWallet();
 
-                        if (!learnCard) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('Wallet not initialized');
-                        }
+                          if (!learnCard) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('Wallet not initialized');
+                          }
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                          if (!learnCard.invoke.sendAppEvent) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
 
-                        // LC-1644 perf telemetry — only the send-credential path triggers
-                        // the user-facing claim flow we want to time. Other event types
-                        // (check-credential, send-ai-session-credential) follow different paths.
-                        const isSendCredential = event.type === 'send-credential';
-                        if (isSendCredential) {
-                            startSendCredentialFlow({
-                                listingId,
-                                eventType: event.type,
-                            });
-                        }
+                          // LC-1644 perf telemetry — only the send-credential path triggers
+                          // the user-facing claim flow we want to time. Other event types
+                          // (check-credential, send-ai-session-credential) follow different paths.
+                          const isSendCredential = event.type === 'send-credential';
+                          if (isSendCredential) {
+                              startSendCredentialFlow({
+                                  listingId,
+                                  eventType: event.type,
+                              });
+                          }
 
-                        let result;
-                        try {
-                            result = await learnCard.invoke.sendAppEvent(listingId, event);
-                        } catch (err) {
-                            if (isSendCredential) {
-                                void flushSendCredentialFlowOnError({
-                                    phase: 'request',
-                                    message: err instanceof Error ? err.message : String(err),
-                                });
-                            }
-                            throw err;
-                        }
+                          let result;
+                          try {
+                              result = await learnCard.invoke.sendAppEvent(listingId, event);
+                          } catch (err) {
+                              if (isSendCredential) {
+                                  void flushSendCredentialFlowOnError({
+                                      phase: 'request',
+                                      message: err instanceof Error ? err.message : String(err),
+                                  });
+                              }
+                              throw err;
+                          }
 
-                        if (isSendCredential) {
-                            markSendCredentialResponseReceived({
-                                alreadyClaimed: !!result.alreadyClaimed,
-                            });
-                        }
+                          if (isSendCredential) {
+                              markSendCredentialResponseReceived({
+                                  alreadyClaimed: !!result.alreadyClaimed,
+                              });
+                          }
 
-                        // If a credential was issued via send-credential event, notify the parent component
-                        // Note: check-credential also returns credentialUri but should NOT trigger the modal
-                        if (
-                            event.type === 'send-credential' &&
-                            result.credentialUri &&
-                            !result.alreadyClaimed &&
-                            onCredentialIssued
-                        ) {
-                            onCredentialIssued(
-                                result.credentialUri as string,
-                                result.boostUri as string | undefined,
-                                result.credential as VC | VP | undefined
-                            );
-                        } else if (isSendCredential) {
-                            // alreadyClaimed branch (or send-credential without onCredentialIssued
-                            // wired) — the modal never mounts, so flush the flow as a terminal
-                            // event with whatever phases we captured. `already_claimed` outcome
-                            // surfaces in PostHog so we can filter it out of warm-path stats.
-                            void markSendCredentialClaimCompleted();
-                        }
+                          // If a credential was issued via send-credential event, notify the parent component
+                          // Note: check-credential also returns credentialUri but should NOT trigger the modal
+                          if (
+                              event.type === 'send-credential' &&
+                              result.credentialUri &&
+                              !result.alreadyClaimed &&
+                              onCredentialIssued
+                          ) {
+                              onCredentialIssued(
+                                  result.credentialUri as string,
+                                  result.boostUri as string | undefined,
+                                  result.credential as VC | VP | undefined
+                              );
+                          } else if (isSendCredential) {
+                              // alreadyClaimed branch (or send-credential without onCredentialIssued
+                              // wired) — the modal never mounts, so flush the flow as a terminal
+                              // event with whatever phases we captured. `already_claimed` outcome
+                              // surfaces in PostHog so we can filter it out of warm-path stats.
+                              void markSendCredentialClaimCompleted();
+                          }
 
-                        if (event.type === 'send-ai-session-credential') {
-                            const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
-                                result;
+                          if (event.type === 'send-ai-session-credential') {
+                              const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
+                                  result;
 
-                            if (topicCredentialUri && isNewTopic) {
-                                try {
-                                    const topicCredential = await learnCard.read.get(
-                                        topicCredentialUri as string
-                                    );
-                                    if (topicCredential) {
-                                        await storeAndAddVCToWallet(
-                                            topicCredential,
-                                            { title: topicCredential.name || 'AI Topic' },
-                                            'LearnCloud',
-                                            true
-                                        );
-                                    }
-                                } catch (e) {
-                                    console.error(
-                                        '[AI Topics] Failed to store topic credential:',
-                                        e
-                                    );
-                                }
-                            }
+                              if (topicCredentialUri && isNewTopic) {
+                                  try {
+                                      const topicCredential = await learnCard.read.get(
+                                          topicCredentialUri as string
+                                      );
+                                      if (topicCredential) {
+                                          await storeAndAddVCToWallet(
+                                              topicCredential,
+                                              { title: topicCredential.name || 'AI Topic' },
+                                              'LearnCloud',
+                                              true
+                                          );
+                                      }
+                                  } catch (e) {
+                                      log.error('[AI Topics] Failed to store topic credential:', e);
+                                  }
+                              }
 
-                            if (sessionCredentialUri) {
-                                try {
-                                    const sessionCredential = await learnCard.read.get(
-                                        sessionCredentialUri as string
-                                    );
-                                    if (sessionCredential) {
-                                        await storeAndAddVCToWallet(
-                                            sessionCredential,
-                                            { title: sessionCredential.name || 'AI Session' },
-                                            'LearnCloud',
-                                            true
-                                        );
-                                    }
-                                } catch (e) {
-                                    console.error(
-                                        '[AI Topics] Failed to store session credential:',
-                                        e
-                                    );
-                                }
-                            }
-                        }
+                              if (sessionCredentialUri) {
+                                  try {
+                                      const sessionCredential = await learnCard.read.get(
+                                          sessionCredentialUri as string
+                                      );
+                                      if (sessionCredential) {
+                                          await storeAndAddVCToWallet(
+                                              sessionCredential,
+                                              { title: sessionCredential.name || 'AI Session' },
+                                              'LearnCloud',
+                                              true
+                                          );
+                                      }
+                                  } catch (e) {
+                                      log.error(
+                                          '[AI Topics] Failed to store session credential:',
+                                          e
+                                      );
+                                  }
+                              }
+                          }
 
-                        // If a notification was sent, trigger the toast overlay
-                        if (
-                            event.type === 'send-notification' &&
-                            result.sent &&
-                            onAppNotification
-                        ) {
-                            onAppNotification({
-                                title: (event as Record<string, unknown>).title as
-                                    | string
-                                    | undefined,
-                                body: (event as Record<string, unknown>).body as
-                                    | string
-                                    | undefined,
-                                actionPath: (event as Record<string, unknown>).actionPath as
-                                    | string
-                                    | undefined,
-                                category: (event as Record<string, unknown>).category as
-                                    | string
-                                    | undefined,
-                                priority: (event as Record<string, unknown>).priority as
-                                    | string
-                                    | undefined,
-                            });
-                        }
+                          // If a notification was sent, trigger the toast overlay
+                          if (
+                              event.type === 'send-notification' &&
+                              result.sent &&
+                              onAppNotification
+                          ) {
+                              onAppNotification({
+                                  title: (event as Record<string, unknown>).title as
+                                      | string
+                                      | undefined,
+                                  body: (event as Record<string, unknown>).body as
+                                      | string
+                                      | undefined,
+                                  actionPath: (event as Record<string, unknown>).actionPath as
+                                      | string
+                                      | undefined,
+                                  category: (event as Record<string, unknown>).category as
+                                      | string
+                                      | undefined,
+                                  priority: (event as Record<string, unknown>).priority as
+                                      | string
+                                      | undefined,
+                              });
+                          }
 
-                        sdkActivityStore.set.endActivity();
-                        return result;
-                    }
+                          sdkActivityStore.set.endActivity();
+                          return result;
+                      }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
                 getIntegrationForListing: getIntegrationForListing,
@@ -1083,104 +1083,101 @@ export function useLearnCardMessageHandlers({
                 // Learner context - only available when appId is provided
                 requestLearnerContext: appId
                     ? async (options: {
-                        includeCredentials?: boolean;
-                        includePersonalData?: boolean;
-                        format?: string;
-                        instructions?: string;
-                        detailLevel?: string;
-                    }) => {
-                        const learnCard = await initWallet();
+                          includeCredentials?: boolean;
+                          includePersonalData?: boolean;
+                          format?: string;
+                          instructions?: string;
+                          detailLevel?: string;
+                      }) => {
+                          const learnCard = await initWallet();
 
-                        if (!learnCard) {
-                            throw new Error('Wallet not initialized');
-                        }
+                          if (!learnCard) {
+                              throw new Error('Wallet not initialized');
+                          }
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                          if (!learnCard.invoke.sendAppEvent) {
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
 
-                        const result = await learnCard.invoke.sendAppEvent(appId, {
-                            type: 'request-learner-context',
-                            includeCredentials: options.includeCredentials,
-                            includePersonalData: options.includePersonalData,
-                            instructions: options.instructions,
-                            detailLevel: options.detailLevel,
-                        });
+                          const result = await learnCard.invoke.sendAppEvent(appId, {
+                              type: 'request-learner-context',
+                              includeCredentials: options.includeCredentials,
+                              includePersonalData: options.includePersonalData,
+                              instructions: options.instructions,
+                              detailLevel: options.detailLevel,
+                          });
 
-                        // Only fetch and include credentials if requested
-                        let validCredentials: unknown[] = [];
-                        if (options.includeCredentials !== false) {
-                            const credentialUris = (result.credentialUris as string[]) || [];
+                          // Only fetch and include credentials if requested
+                          let validCredentials: unknown[] = [];
+                          if (options.includeCredentials !== false) {
+                              const credentialUris = (result.credentialUris as string[]) || [];
 
-                            const credentials = await Promise.all(
-                                credentialUris.map(async uri => {
-                                    try {
-                                        return await learnCard.read.get(uri);
-                                    } catch (error) {
-                                        console.error(
-                                            `Failed to resolve credential ${uri}:`,
-                                            error
-                                        );
-                                        return null;
-                                    }
-                                })
-                            );
+                              const credentials = await Promise.all(
+                                  credentialUris.map(async uri => {
+                                      try {
+                                          return await learnCard.read.get(uri);
+                                      } catch (error) {
+                                          log.error(`Failed to resolve credential ${uri}:`, error);
+                                          return null;
+                                      }
+                                  })
+                              );
 
-                            validCredentials = credentials.filter((c: unknown) => c !== null);
-                        }
+                              validCredentials = credentials.filter((c: unknown) => c !== null);
+                          }
 
-                        // Only include personal data if requested
-                        let personalData: Record<string, string> | undefined;
-                        if (options.includePersonalData) {
-                            personalData = (result.personalData as Record<string, string>) || {};
-                        }
+                          // Only include personal data if requested
+                          let personalData: Record<string, string> | undefined;
+                          if (options.includePersonalData) {
+                              personalData = (result.personalData as Record<string, string>) || {};
+                          }
 
-                        let prompt = '';
-                        if (options.format === 'prompt') {
-                            try {
-                                const promptizerResponse = await fetch(
-                                    `${LEARNCARD_AI_URL}/ai/learner-context/format`,
-                                    {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
+                          let prompt = '';
+                          if (options.format === 'prompt') {
+                              try {
+                                  const promptizerResponse = await fetch(
+                                      `${LEARNCARD_AI_URL}/ai/learner-context/format`,
+                                      {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                              credentials: validCredentials,
+                                              personalData,
+                                              instructions: options.instructions,
+                                              detailLevel: options.detailLevel,
+                                              includeStructuredContext: true,
+                                              maxCredentials: validCredentials.length,
+                                          }),
+                                      }
+                                  );
+
+                                  if (promptizerResponse.ok) {
+                                      const promptizerData = await promptizerResponse.json();
+                                      prompt = promptizerData.prompt || '';
+                                  } else {
+                                      prompt = `User has ${validCredentials.length} credentials.`;
+                                  }
+                              } catch (error) {
+                                  log.error('Failed to call promptizer:', error);
+                                  prompt = `User has ${validCredentials.length} credentials.`;
+                              }
+                          }
+
+                          return {
+                              prompt,
+                              raw:
+                                  options.format === 'structured'
+                                      ? {
                                             credentials: validCredentials,
                                             personalData,
-                                            instructions: options.instructions,
-                                            detailLevel: options.detailLevel,
-                                            includeStructuredContext: true,
-                                            maxCredentials: validCredentials.length,
-                                        }),
-                                    }
-                                );
-
-                                if (promptizerResponse.ok) {
-                                    const promptizerData = await promptizerResponse.json();
-                                    prompt = promptizerData.prompt || '';
-                                } else {
-                                    prompt = `User has ${validCredentials.length} credentials.`;
-                                }
-                            } catch (error) {
-                                console.error('Failed to call promptizer:', error);
-                                prompt = `User has ${validCredentials.length} credentials.`;
-                            }
-                        }
-
-                        return {
-                            prompt,
-                            raw:
-                                options.format === 'structured'
-                                    ? {
-                                        credentials: validCredentials,
-                                        personalData,
-                                    }
-                                    : undefined,
-                            did: (result.did as string) || '',
-                            displayName:
-                                personalData?.name ||
-                                (result.personalData as { displayName?: string })?.displayName,
-                        };
-                    }
+                                        }
+                                      : undefined,
+                              did: (result.did as string) || '',
+                              displayName:
+                                  personalData?.name ||
+                                  (result.personalData as { displayName?: string })?.displayName,
+                          };
+                      }
                     : undefined,
             }),
         [
