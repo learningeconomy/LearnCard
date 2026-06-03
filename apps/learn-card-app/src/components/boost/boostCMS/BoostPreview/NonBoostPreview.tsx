@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
@@ -206,12 +206,16 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const bgColor = isClrCredential ? 'bg-grayscale-100' : '';
 
-    const clrEvidence = isClrCredential
-        ? getDownloadableEvidence(
-              normalizeClrTranscriptDisplayModel(credential as unknown as Record<string, unknown>)
-                  .evidence
-          )
-        : [];
+    const clrModel = useMemo(
+        () =>
+            isClrCredential || isClrChildCredential
+                ? normalizeClrTranscriptDisplayModel(
+                      credential as unknown as Record<string, unknown>
+                  )
+                : null,
+        [credential, isClrCredential, isClrChildCredential]
+    );
+    const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
     const hasClrEvidence = clrEvidence.length > 0;
 
     const credentialDisplay = (
@@ -245,13 +249,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     );
 
     let credentialContent: React.ReactNode;
-    if (isClrCredential || isClrChildCredential) {
+    if ((isClrCredential || isClrChildCredential) && clrModel) {
         credentialContent = (
             <ClrTranscriptFullPage
-                model={normalizeClrTranscriptDisplayModel(
-                    credential as unknown as Record<string, unknown>
-                )}
+                model={clrModel}
                 boost={credential}
+                // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />

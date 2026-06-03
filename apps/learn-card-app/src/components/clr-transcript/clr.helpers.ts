@@ -19,34 +19,39 @@ export const toSafeFileName = (name: string | undefined, mimeType: string | unde
     return `${base}${ext}`;
 };
 
-export const downloadEvidence = async (item: EvidenceDisplayModel) => {
+export const downloadEvidence = async (item: EvidenceDisplayModel): Promise<boolean> => {
     const raw = item.id?.value;
-    if (!raw) return;
+    if (!raw) return false;
 
     const fileName = toSafeFileName(item.name?.value, item.mimeType);
 
-    if (item.isInlineDataUri) {
-        const base64 = raw.split(',')[1];
+    try {
+        if (item.isInlineDataUri) {
+            const base64 = raw.split(',')[1];
 
-        if (Capacitor.isNativePlatform()) {
-            await Filesystem.writeFile({
-                path: fileName,
-                data: base64,
-                directory: Directory.Documents,
-            });
-            const { uri } = await Filesystem.getUri({
-                path: fileName,
-                directory: Directory.Documents,
-            });
-            await FileViewer.openDocumentFromLocalPath({ path: uri });
+            if (Capacitor.isNativePlatform()) {
+                await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64,
+                    directory: Directory.Documents,
+                });
+                const { uri } = await Filesystem.getUri({
+                    path: fileName,
+                    directory: Directory.Documents,
+                });
+                await FileViewer.openDocumentFromLocalPath({ path: uri });
+            } else {
+                const a = document.createElement('a');
+                a.href = raw;
+                a.download = fileName;
+                a.click();
+            }
         } else {
-            const a = document.createElement('a');
-            a.href = raw;
-            a.download = fileName;
-            a.click();
+            window.open(raw, '_blank', 'noopener');
         }
-    } else {
-        window.open(raw, '_blank', 'noopener');
+        return true;
+    } catch {
+        return false;
     }
 };
 
