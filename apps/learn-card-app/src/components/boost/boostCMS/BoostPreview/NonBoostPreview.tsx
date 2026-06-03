@@ -18,7 +18,6 @@ import {
     ClrTranscriptSurface,
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
-import ClrEvidenceHeader from './ClrEvidenceHeader';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -273,7 +272,6 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     return (
         <IonPage>
             <div className={`flex h-full ${bgColor}`}>
-                {isClrCredential && hasClrEvidence && <ClrEvidenceHeader evidence={clrEvidence} />}
                 <section
                     className={`flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 ${
                         isClrCredential && hasClrEvidence ? 'pt-[57px]' : ''

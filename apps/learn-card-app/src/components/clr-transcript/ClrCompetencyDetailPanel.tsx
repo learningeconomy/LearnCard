@@ -108,7 +108,9 @@ const ClrCompetencyDetailPanel: React.FC<{
                                                         : 'bg-grayscale-100 text-grayscale-500'
                                                 }`}
                                             >
-                                                <Sparkles className="w-3.5 h-3.5" />
+                                                <FlatIcon>
+                                                    <SkillsIcon className="w-6 h-6 text-grayscale-600" />
+                                                </FlatIcon>
                                             </span>
                                             <span className="truncate">
                                                 {competency.name?.value ?? 'Competency'}

@@ -100,9 +100,9 @@ const ClrTranscriptFullPage: React.FC<{
                     )}
 
                     {/* Evidence */}
-                    {model.evidence.length > 0 && (
+                    {/* {model.evidence.length > 0 && (
                         <ClrTranscriptEvidenceList evidence={model.evidence} />
-                    )}
+                    )} */}
 
                     {/* Admin: verification detail footer */}
                     {adminMode && (
