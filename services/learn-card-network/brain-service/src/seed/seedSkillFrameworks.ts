@@ -3,7 +3,10 @@ import {
     DEFAULT_SKILL_FRAMEWORKS,
     type SeedSkillNode,
 } from './skill-frameworks.fixtures';
-import { upsertSkillEmbeddings } from '@helpers/skill-embedding.helpers';
+import {
+    upsertSkillEmbeddings,
+    type UpdateSkillEmbeddingFn,
+} from '@helpers/skill-embedding.helpers';
 
 type QueryRunnerLike = {
     run: (
@@ -37,43 +40,78 @@ const toBoolean = (value: string | undefined): boolean => {
 const unique = (values: string[]): string[] =>
     Array.from(new Set(values.map(value => value.trim()).filter(Boolean)));
 
-const flattenSkillNodes = (
-    nodes: SeedSkillNode[],
-    frameworkId: string,
-    parentId?: string
-): Array<{
-    id: string;
-    frameworkId: string;
-    statement: string;
-    description?: string;
-    code?: string;
-    parentId?: string;
-}> => {
-    const flattened: Array<{
+const buildSeedSkillEmbeddingUpdater = (run: QueryRunnerLike['run']): UpdateSkillEmbeddingFn => {
+    return async (skillId, embedding, frameworkId) => {
+        if (frameworkId) {
+            const result = await run(
+                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+                 SET s.embedding = $embedding
+                 RETURN count(s) AS count`,
+                { frameworkId, skillId, embedding }
+            );
+
+            return Number(result.records[0]?.get('count') ?? 0) > 0;
+        }
+
+        const result = await run(
+            `MATCH (s:Skill {id: $skillId})
+             SET s.embedding = $embedding
+             RETURN count(s) AS count`,
+            { skillId, embedding }
+        );
+
+        return Number(result.records[0]?.get('count') ?? 0) > 0;
+    };
+};
+
+const getSeedSkillsMissingEmbedding = async (
+    run: QueryRunnerLike['run'],
+    frameworkId: string
+): Promise<
+    Array<{
         id: string;
         frameworkId: string;
         statement: string;
         description?: string;
         code?: string;
-        parentId?: string;
-    }> = [];
+    }>
+> => {
+    const result = await run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+         WHERE s.embedding IS NULL
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS s, parent.id AS parentId
+         ORDER BY s.id`,
+        { frameworkId }
+    );
 
-    for (const node of nodes) {
-        flattened.push({
-            id: node.id,
+    return result.records.map(record => {
+        const node = record.get('s') as { properties?: Record<string, unknown> } | undefined;
+        const props = (node?.properties ?? {}) as Record<string, unknown>;
+
+        return {
+            id: String(props.id ?? ''),
             frameworkId,
-            statement: node.statement,
-            description: node.description,
-            code: node.code,
-            ...(parentId ? { parentId } : {}),
-        });
+            statement: String(props.statement ?? ''),
+            description: props.description as string | undefined,
+            code: props.code as string | undefined,
+        };
+    });
+};
 
-        if (node.children?.length) {
-            flattened.push(...flattenSkillNodes(node.children, frameworkId, node.id));
-        }
+const describeEmbeddingBackfillFailure = (error: unknown): string => {
+    const message = error instanceof Error ? error.message : String(error);
+    const normalized = message.toLowerCase();
+
+    if (normalized.includes('quota exceeded') || normalized.includes('resource_exhausted')) {
+        return 'Embedding quota was reached. The frameworks were seeded, but semantic search will stay limited until the Google embedding quota resets or you switch to a paid key.';
     }
 
-    return flattened;
+    if (normalized.includes('rate limits') || normalized.includes('too many requests')) {
+        return 'Google embedding requests were rate-limited. The frameworks were seeded, but some semantic search embeddings were skipped for now.';
+    }
+
+    return message;
 };
 
 const normalizeProfileId = (profileId: string): string =>
@@ -192,6 +230,7 @@ export const seedSkillFrameworkFixtures = async (
     await ensureSeedProfile(run, ownerProfileId);
 
     const seededFrameworkIds: string[] = [];
+    let embeddingBackfillFailureSummary: string | null = null;
 
     for (const framework of fixtures) {
         const now = new Date().toISOString();
@@ -236,16 +275,31 @@ export const seedSkillFrameworkFixtures = async (
             await upsertSkillNode(run, framework, rootSkill);
         }
 
-        try {
-            await upsertSkillEmbeddings(flattenSkillNodes(framework.skills, framework.id));
-        } catch (error) {
-            options.log?.warn?.(
-                `Failed to backfill skill embeddings for seeded framework ${framework.id}`,
-                error
-            );
+        if (!embeddingBackfillFailureSummary) {
+            const missingEmbeddingSkills = await getSeedSkillsMissingEmbedding(run, framework.id);
+
+            if (missingEmbeddingSkills.length > 0) {
+                try {
+                    await upsertSkillEmbeddings(
+                        missingEmbeddingSkills,
+                        buildSeedSkillEmbeddingUpdater(run)
+                    );
+                } catch (error) {
+                    embeddingBackfillFailureSummary = describeEmbeddingBackfillFailure(error);
+                }
+            }
         }
 
         seededFrameworkIds.push(framework.id);
+    }
+
+    if (embeddingBackfillFailureSummary) {
+        options.log?.warn?.(
+            `Embedding backfill was skipped after the first framework because Google rejected the request: ${embeddingBackfillFailureSummary}`
+        );
+        options.log?.warn?.(
+            'The frameworks were still seeded and admin access was granted. Semantic search will keep using whichever embeddings already exist.'
+        );
     }
 
     if (adminProfileIds.length > 0) {
