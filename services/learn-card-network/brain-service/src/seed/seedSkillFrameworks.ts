@@ -336,6 +336,7 @@ export const maybeAutoSeedSkillFrameworks = async (
 
     const existingCount = await countSkillFrameworks(run);
     if (existingCount > 0 && !options.force) {
+        options.log?.log('Global skill frameworks already exist!');
         return { seeded: false, seededFrameworkIds: [] };
     }
 

@@ -252,15 +252,16 @@ export const countSkillsInFramework = async (
     recursive: boolean = false,
     onlyCountCompetencies: boolean = false
 ): Promise<number> => {
-    const typeFilter = onlyCountCompetencies
-        ? `(s.type = 'competency' OR s.type = 'skill')`
-        : 'true';
+    const buildTypeFilter = (alias: string): string =>
+        onlyCountCompetencies
+            ? `(${alias}.type = 'competency' OR ${alias}.type = 'skill')`
+            : 'true';
 
     if (!skillId) {
         // Count all skills in the framework
         const result = await neogma.queryRunner.run(
             `MATCH (:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
-             WHERE ${typeFilter}
+             WHERE ${buildTypeFilter('s')}
              RETURN count(s) AS count`,
             { frameworkId }
         );
@@ -274,7 +275,7 @@ export const countSkillsInFramework = async (
              MATCH (f)-[:CONTAINS]->(parent:Skill {id: $skillId})
              MATCH (f)-[:CONTAINS]->(descendant:Skill)
              WHERE (descendant)-[:IS_CHILD_OF*1..]->(parent)
-             AND ${typeFilter}
+             AND ${buildTypeFilter('descendant')}
              RETURN count(descendant) AS count`,
             { frameworkId, skillId }
         );
@@ -296,7 +297,7 @@ export const countSkillsInFramework = async (
     const result = await neogma.queryRunner.run(
         `MATCH (:SkillFramework {id: $frameworkId})-[:CONTAINS]->(parent:Skill {id: $skillId})
          MATCH (parent)<-[:IS_CHILD_OF]-(child:Skill)
-         WHERE ${typeFilter}
+         WHERE ${buildTypeFilter('child')}
          RETURN count(child) AS count`,
         { frameworkId, skillId }
     );
