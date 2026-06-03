@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('template-list-manager');
 /**
  * TemplateListManager - Unified template management component
  * 
@@ -168,7 +170,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
                 builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         } catch (err) {
-            console.error('Failed to load template for editing:', err);
+            log.error('Failed to load template for editing:', err);
             presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
         }
     }, [presentToast]);
@@ -201,7 +203,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             setEditingTemplate(null);
             setCurrentBuildingTemplate(createBlankWithIssuer());
         } catch (err) {
-            console.error('Failed to save template:', err);
+            log.error('Failed to save template:', err);
             const errMsg = err instanceof Error ? err.message : String(err);
             setSaveError(errMsg);
             presentToast(`Failed to ${editingTemplate ? 'update' : 'create'} template`, { type: ToastTypeEnum.Error });
@@ -220,7 +222,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
                 setSelectedTemplateForCode(null);
             }
         } catch (err) {
-            console.error('Failed to delete template:', err);
+            log.error('Failed to delete template:', err);
             presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
         }
     }, [deleteTemplate, presentToast, selectedTemplateForCode]);
@@ -232,7 +234,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             setEditingAlias(null);
             presentToast('Alias updated!', { type: ToastTypeEnum.Success });
         } catch (err) {
-            console.error('Failed to update alias:', err);
+            log.error('Failed to update alias:', err);
             presentToast((err as Error).message || 'Failed to update alias', { type: ToastTypeEnum.Error });
         }
     }, [updateAlias, tempAliasValue, presentToast]);
@@ -274,7 +276,7 @@ ${templateDataLines}
 });
 
 if (result.credentialUri) {
-    console.log('Credential issued:', result.credentialUri);
+    log.info('Credential issued:', result.credentialUri);
 }`;
         }
 
@@ -284,7 +286,7 @@ ${templateRef}
 });
 
 if (result.credentialUri) {
-    console.log('Credential issued:', result.credentialUri);
+    log.info('Credential issued:', result.credentialUri);
 }`;
     };
 

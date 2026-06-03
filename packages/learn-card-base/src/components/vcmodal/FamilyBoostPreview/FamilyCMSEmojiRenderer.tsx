@@ -1,5 +1,7 @@
 import React from 'react';
 import { SkinTones, EmojiClickData } from 'emoji-picker-react';
+import { getLogger } from '../../../logging/logger';
+const log = getLogger('family-cmsemoji-renderer');
 
 interface EmojiRendererProps {
     data: EmojiClickData;
@@ -56,7 +58,7 @@ const EmojiRenderer: React.FC<EmojiRendererProps> = ({
             // Return basic emoji without skin tone
             return String.fromCodePoint(parseInt(unified || unifiedWithoutSkinTone, 16));
         } catch (error) {
-            console.warn('Failed to render emoji:', error);
+            log.warn('Failed to render emoji:', error);
             return '□'; // Return empty box as fallback
         }
     };

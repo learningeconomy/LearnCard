@@ -8,11 +8,23 @@ Central logger for all LearnCard apps. Provides structured, PII-safe logging wit
 import { getLogger } from 'learn-card-base';
 
 const log = getLogger('my-feature');
+```
+
+> **Node.js / tsx scripts** (e.g. `apps/learn-card-app/scripts/`): import from the specific file to avoid loading the full React barrel:
+> ```ts
+> import { getLogger } from 'learn-card-base/src/logging/logger';
+> ```
+
+```ts
+const log = getLogger('my-feature');
 
 log.debug('wallet ready');
 log.info('profile loaded', { profileId: '123' });
 log.warn('cache miss', { key });
-log.error('sign-in failed', err);
+log.error(err);  // just the error — uses error.message
+log.error('sign-in failed', err);  // message + error
+log.info(isEnabled);  // just a value
+log.info('feature', isEnabled, { userId: '123' });  // any combination
 ```
 
 ---
@@ -52,42 +64,68 @@ logger.info('app boot');
 
 ---
 
-## Second argument
+## Flexible arguments (like `console.log`)
 
-The second argument is flexible — pass whatever you have without wrapping:
+All methods accept **any number of arguments in any order** (rest-args). The logger classifies each one and slots it into the right place — nothing is silently dropped or char-spread into the metadata bag.
 
-| What you pass                             | Console output  | Sentry                        |
-| ----------------------------------------- | --------------- | ----------------------------- |
-| `Error` object                            | logged directly | `captureException(err)`       |
-| Plain object `{ key: value }`             | logged directly | attached as `extra`           |
-| Primitive — `boolean`, `number`, `string` | logged directly | wrapped as `{ value: x }`     |
-| Array                                     | logged directly | wrapped as `{ value: [...] }` |
-| Nothing                                   | empty `{}`      | no extra                      |
+| Argument type | Handling |
+| --- | --- |
+| **Error** object | First wins the `err` slot — sent to `captureException` (error level) or surfaced as `extra.error` (warn level). Additional Errors collect into `values`. |
+| **String** | First wins the log message. Additional strings collect into `values`. |
+| **Plain object** `{ key: value }` | Treated as metadata. Multiple objects merge into one `extra` bag (later wins on key conflicts). |
+| **Primitive** — `boolean`, `number`, `bigint` | Collected into `values`. Sentry sees `{ value: x }` for a single leftover or `{ values: [...] }` for multiple. |
+| **Array** | Same as a primitive — collected into `values`. |
+
+If a method is called with only an `Error` and no string, the log message falls back to `error.message`.
 
 ### Examples
 
 ```ts
-// Error object
-log.error('wallet init failed', err);
+// Just a message
+log.debug('wallet ready');
 
-// Plain object (structured context)
-log.warn('slow request', { ms: 450, endpoint: '/trpc/getProfile' });
-
-// Error + extra context together
-log.error('sign-in failed', err, { userId, provider: 'firebase' });
-
-// Primitives — no object wrapper needed
-const isEnabled = false;
-log.info('feature flag', isEnabled); // ✓ logs false directly
-log.info('retry count', 3); // ✓ logs 3 directly
-log.info('active flags', ['a', 'b']); // ✓ logs array directly
-
-// Raw catch block value — logger coerces it internally
+// Just an error (uses error.message as the log message)
 try {
     await riskyOperation();
 } catch (e) {
-    log.error('operation failed', e); // ✓ pass e directly, no wrapping needed
+    log.error(e);  // ✓ uses e.message; sends captureException
 }
+
+// Just a primitive — no wrapping needed
+const isEnabled = false;
+log.info(isEnabled);  // ✓ outputs false directly
+log.info(42);  // ✓ outputs 42 directly
+log.info(['a', 'b']);  // ✓ outputs array directly
+
+// Just an object
+log.debug({ userId: '123', code: 404 });
+
+// Message + error
+log.error('wallet init failed', err);  // ✓ message + captured exception
+
+// Message + metadata (object)
+log.warn('slow request', { ms: 450, endpoint: '/trpc/getProfile' });
+
+// Error + metadata
+log.error(err, { userId: '123', provider: 'firebase' });
+
+// Message + primitive
+log.info('retryCount', 3);
+log.info('flags', [true, false]);
+
+// All three: message, error, metadata
+log.error('sign-in failed', err, { userId, provider: 'firebase' });
+
+// Message + extra primitive + error (any order works — Error is recovered)
+log.warn('failed to fetch boost', boostUri, err);
+// console:  '[scope]' 'failed to fetch boost' Error('…') 'lc:boost:abc'
+// Sentry:   captureMessage('failed to fetch boost', 'warning', tags,
+//                          { value: 'lc:boost:abc', error: 'Error: …' })
+
+// Multi-key context — prefer a meta object over positional pairs
+log.warn('UID mismatch', { expected, got });
+// ✗ avoid: log.warn('UID mismatch — expected', expected, 'got', got);
+//   (still works — extras land in `values` — but the meta-object form makes Sentry easier to triage)
 ```
 
 ---
@@ -170,13 +208,13 @@ configureSentryTransport({
 
 ## Do / Don't
 
-| Do                                         | Don't                                                                                     |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `log.error('wallet.init.failed', err)`     | `console.error('wallet init failed', err)` in app src                                     |
-| `log.info('isEnabled', isEnabled)`         | `log.info('isEnabled', { isEnabled })` — primitives work directly                         |
-| `log.error('failed', e)` in catch blocks   | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
-| `log.warn('...', { key })`                 | `Sentry.captureException(err)` directly                                                   |
-| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag                                                       |
+| Do | Don't |
+| --- | --- |
+| `log.error(err)` or `log.error('msg', err)` | `console.error('wallet init failed', err)` in app src |
+| `log.info(isEnabled)` | `log.info('isEnabled', { isEnabled })` — primitives work directly |
+| In catch: `log.error(e)` or `log.error('context', e)` | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
+| `log.warn('...', { key })` | `Sentry.captureException(err)` directly |
+| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag |
 
 ---
 

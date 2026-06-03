@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FC } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('learner-context-prompt-test-page');
 
 import { IonSpinner } from '@ionic/react';
 import type { VC } from '@learncard/types';
@@ -191,7 +193,7 @@ const LearnerContextPromptTestPage: FC = () => {
                 } categories.`
             );
         } catch (error) {
-            console.error('Failed to load credentials:', error);
+            log.error('Failed to load credentials:', error);
             presentToast(
                 `Failed to load credentials: ${
                     error instanceof Error ? error.message : 'Unknown error'

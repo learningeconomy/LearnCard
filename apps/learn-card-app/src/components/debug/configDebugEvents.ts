@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('config-debug-events');
 /**
  * Config & Theme Debug Event Logger
  *
@@ -117,7 +119,7 @@ export const emitConfigDebugEvent = (
         try {
             listener(event);
         } catch (e) {
-            console.error('[ConfigDebug] Listener error:', e);
+            log.error('Listener error', e);
         }
     });
 };

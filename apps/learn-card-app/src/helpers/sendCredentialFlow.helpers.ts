@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('send-credential-flow.helpers');
 /**
  * LC-1644 frontend perf telemetry — captures the user-perceived sendCredential→claim flow.
  *
@@ -193,11 +195,11 @@ async function emit(payload: Iter): Promise<void> {
         return;
     }
     if (!analyticsProvider) {
-        console.warn('[sendCredentialFlow] emit skipped — no analytics provider wired', payload);
+        log.warn('[sendCredentialFlow] emit skipped — no analytics provider wired', payload);
         return;
     }
     try {
-        console.debug(
+        log.debug(
             '[sendCredentialFlow] emit',
             payload.run_id,
             payload.outcome,
@@ -207,7 +209,7 @@ async function emit(payload: Iter): Promise<void> {
         await analyticsProvider.track(AnalyticsEvents.FRONTEND_SENDCREDENTIAL_ITERATION, payload);
     } catch (err) {
         // Telemetry must never break the user flow.
-        console.warn('[sendCredentialFlow] failed to emit iteration event', err);
+        log.warn('[sendCredentialFlow] failed to emit iteration event', err);
     }
 }
 

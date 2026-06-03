@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('cap-go-update-modal');
 
 import { IonRow } from '@ionic/react';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -30,7 +32,7 @@ export const CapGoUpdateModal: React.FC<{
             }
         } catch (error) {
             closeModal();
-            console.log(error);
+            log.info(error);
         }
     };
 

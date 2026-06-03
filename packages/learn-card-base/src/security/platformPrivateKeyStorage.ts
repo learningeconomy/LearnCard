@@ -13,6 +13,9 @@ import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 // - Web: delegates to AES-GCM + IndexedDB secure storage
 // - Native (Capacitor): stores/reads from encrypted SQLite `users.privateKey`
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('platform-private-key-storage');
+
 export async function setPlatformPrivateKey(pk: string): Promise<void> {
     if (!pk) throw new Error('No private key provided');
 
@@ -75,7 +78,7 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
             }
         }
     } catch (e) {
-        console.warn('setPlatformPrivateKey: sqlite error', e);
+        log.warn('setPlatformPrivateKey: sqlite error', e);
         // Also set in memory to avoid blocking login
         currentUserStore.set.currentUserPK(pk);
     } finally {
@@ -128,7 +131,7 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
         if (typeof pk === 'string' && pk.length > 0) return pk;
         return null;
     } catch (e) {
-        console.warn('getPlatformPrivateKey: sqlite error', e);
+        log.warn('getPlatformPrivateKey: sqlite error', e);
         return null;
     } finally {
         try {
@@ -175,7 +178,7 @@ export async function clearPlatformPrivateKey(): Promise<void> {
             : `UPDATE users SET privateKey=NULL`;
         await db.execute(sql);
     } catch (e) {
-        console.warn('clearPlatformPrivateKey: sqlite error (likely db already cleared)', e);
+        log.warn('clearPlatformPrivateKey: sqlite error (likely db already cleared)', e);
     } finally {
         try {
             if ((await db?.isDBOpen())?.result) await db?.close();

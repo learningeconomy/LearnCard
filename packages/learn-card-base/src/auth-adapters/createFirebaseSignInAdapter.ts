@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('create-firebase-sign-in-adapter');
 /**
  * Firebase Sign-In Adapter
  *
@@ -292,7 +294,7 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
                     const credential = GoogleAuthProvider.credential(signInResult.credential.idToken);
                     await signInWithCredential(firebaseAuth as never, credential);
                 } catch (e) {
-                    console.warn('[FirebaseSignInAdapter] Web-layer Google credential failed:', e);
+                    log.warn('[FirebaseSignInAdapter] Web-layer Google credential failed:', e);
                 }
             }
 
@@ -376,7 +378,7 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
                 try {
                     await getNativeAuth!().signOut();
                 } catch (e) {
-                    console.warn('[FirebaseSignInAdapter] Native signOut failed:', e);
+                    log.warn('[FirebaseSignInAdapter] Native signOut failed:', e);
                 }
             }
         },

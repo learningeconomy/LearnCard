@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('device-link-modal');
 /**
  * DeviceLinkModal — approver UI for the logged-in device (Device A).
  *
@@ -48,7 +50,7 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
                 const requested = await BarcodeScanner.requestPermissions();
 
                 if (requested.camera !== 'granted') {
-                    console.warn('Camera permission denied');
+                    log.warn('Camera permission denied');
                     return null;
                 }
             }
@@ -66,7 +68,7 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
                 });
             });
         } catch (e) {
-            console.warn('QR scan failed:', e);
+            log.warn('QR scan failed:', e);
             await BarcodeScanner.removeAllListeners();
             await BarcodeScanner.stopScan();
             return null;

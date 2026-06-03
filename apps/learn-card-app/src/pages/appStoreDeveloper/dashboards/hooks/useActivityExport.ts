@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-activity-export');
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -396,7 +398,7 @@ export function useActivityExport(): {
                 return true;
             } catch (err) {
                 if (!signal.aborted) {
-                    console.error('[useActivityExport] Export failed:', err);
+                    log.error('Export failed', err);
                     setState({
                         isExporting: false,
                         progress: null,

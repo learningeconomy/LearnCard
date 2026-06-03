@@ -49,6 +49,9 @@ import { ExportDialog } from '../components/ExportDialog';
 import { useWallet } from 'learn-card-base';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('overview-tab');
+
 interface OverviewTabProps {
     integration: LCNIntegration;
     config: DashboardConfig;
@@ -104,7 +107,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                 const chain = await wallet.invoke.getActivityChain({ activityId: item.activityId });
                 setActivityChain(chain?.length > 0 ? chain : [item]);
             } catch (err) {
-                console.error('Failed to fetch activity chain:', err);
+                log.error('Failed to fetch activity chain:', err);
                 setChainError('Unable to load full activity timeline');
                 setActivityChain([item]);
             } finally {

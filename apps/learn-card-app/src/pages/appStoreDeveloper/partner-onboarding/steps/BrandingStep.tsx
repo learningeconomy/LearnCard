@@ -13,6 +13,9 @@ import {
     CreditCard,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('branding-step');
+
 import { useFilestack, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
@@ -50,19 +53,21 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
     const [shortBio, setShortBio] = useState(branding?.shortBio || '');
     const [bio, setBio] = useState(branding?.bio || '');
 
-    const [display, setDisplay] = useState<ProfileDisplay>(branding?.display || {
-        backgroundColor: '#ffffff',
-        backgroundImage: '',
-        fadeBackgroundImage: false,
-        repeatBackgroundImage: false,
-        fontColor: '#1f2937',
-        accentColor: '#2DD4BF',
-        accentFontColor: '#ffffff',
-        idBackgroundImage: '',
-        fadeIdBackgroundImage: true,
-        idBackgroundColor: '#2DD4BF',
-        repeatIdBackgroundImage: false,
-    });
+    const [display, setDisplay] = useState<ProfileDisplay>(
+        branding?.display || {
+            backgroundColor: '#ffffff',
+            backgroundImage: '',
+            fadeBackgroundImage: false,
+            repeatBackgroundImage: false,
+            fontColor: '#1f2937',
+            accentColor: '#2DD4BF',
+            accentFontColor: '#ffffff',
+            idBackgroundImage: '',
+            fadeIdBackgroundImage: true,
+            idBackgroundColor: '#2DD4BF',
+            repeatIdBackgroundImage: false,
+        }
+    );
 
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -87,7 +92,8 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     idBackgroundImage: currentLCNUser.display.idBackgroundImage || '',
                     fadeIdBackgroundImage: currentLCNUser.display.fadeIdBackgroundImage ?? true,
                     idBackgroundColor: currentLCNUser.display.idBackgroundColor || '#2DD4BF',
-                    repeatIdBackgroundImage: currentLCNUser.display.repeatIdBackgroundImage || false,
+                    repeatIdBackgroundImage:
+                        currentLCNUser.display.repeatIdBackgroundImage || false,
                 });
             }
 
@@ -97,26 +103,29 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
         }
     }, [currentLCNUser, branding]);
 
-    const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } = useFilestack({
-        fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => {
-            setImage(data?.url || '');
-        },
-    });
+    const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
+        useFilestack({
+            fileType: IMAGE_MIME_TYPES,
+            onUpload: (_url, _file, data) => {
+                setImage(data?.url || '');
+            },
+        });
 
-    const { handleFileSelect: handleBackgroundUpload, isLoading: backgroundUploading } = useFilestack({
-        fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => {
-            setDisplay(prev => ({ ...prev, backgroundImage: data?.url || '' }));
-        },
-    });
+    const { handleFileSelect: handleBackgroundUpload, isLoading: backgroundUploading } =
+        useFilestack({
+            fileType: IMAGE_MIME_TYPES,
+            onUpload: (_url, _file, data) => {
+                setDisplay(prev => ({ ...prev, backgroundImage: data?.url || '' }));
+            },
+        });
 
-    const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } = useFilestack({
-        fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => {
-            setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));
-        },
-    });
+    const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } =
+        useFilestack({
+            fileType: IMAGE_MIME_TYPES,
+            onUpload: (_url, _file, data) => {
+                setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));
+            },
+        });
 
     const handleColorSelect = (primary: string, accent: string) => {
         setDisplay(prev => ({
@@ -154,7 +163,10 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
             await refetchCurrentUser();
 
-            presentToast('Profile updated successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('Profile updated successfully!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
 
             const config: BrandingConfig = {
                 displayName,
@@ -166,8 +178,11 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
             onComplete(config);
         } catch (err) {
-            console.error('Failed to update profile:', err);
-            presentToast('Failed to update profile', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to update profile:', err);
+            presentToast('Failed to update profile', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setIsSaving(false);
         }
@@ -194,7 +209,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Profile Image</h3>
-                        <p className="text-sm text-gray-500">Your organization&apos;s logo or profile picture</p>
+                        <p className="text-sm text-gray-500">
+                            Your organization&apos;s logo or profile picture
+                        </p>
                     </div>
                 </div>
 
@@ -247,7 +264,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Profile Information</h3>
-                        <p className="text-sm text-gray-500">How your organization appears to others</p>
+                        <p className="text-sm text-gray-500">
+                            How your organization appears to others
+                        </p>
                     </div>
                 </div>
 
@@ -260,7 +279,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                         <input
                             type="text"
                             value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
+                            onChange={e => setDisplayName(e.target.value)}
                             placeholder="e.g., AARP Skills Builder"
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
@@ -274,7 +293,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                         <input
                             type="text"
                             value={shortBio}
-                            onChange={(e) => setShortBio(e.target.value)}
+                            onChange={e => setShortBio(e.target.value)}
                             placeholder="A brief tagline or description"
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
@@ -287,7 +306,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
                         <textarea
                             value={bio}
-                            onChange={(e) => setBio(e.target.value)}
+                            onChange={e => setBio(e.target.value)}
                             placeholder="A longer description of your organization..."
                             rows={3}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
@@ -305,12 +324,14 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Card Colors</h3>
-                        <p className="text-sm text-gray-500">Customize your contact card appearance</p>
+                        <p className="text-sm text-gray-500">
+                            Customize your contact card appearance
+                        </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                    {DEFAULT_COLORS.map((color) => (
+                    {DEFAULT_COLORS.map(color => (
                         <button
                             key={color.name}
                             onClick={() => handleColorSelect(color.primary, color.accent)}
@@ -338,14 +359,24 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                             <input
                                 type="color"
                                 value={display.idBackgroundColor || '#2DD4BF'}
-                                onChange={(e) => setDisplay(prev => ({ ...prev, idBackgroundColor: e.target.value }))}
+                                onChange={e =>
+                                    setDisplay(prev => ({
+                                        ...prev,
+                                        idBackgroundColor: e.target.value,
+                                    }))
+                                }
                                 className="w-10 h-10 rounded cursor-pointer"
                             />
 
                             <input
                                 type="text"
                                 value={display.idBackgroundColor || '#2DD4BF'}
-                                onChange={(e) => setDisplay(prev => ({ ...prev, idBackgroundColor: e.target.value }))}
+                                onChange={e =>
+                                    setDisplay(prev => ({
+                                        ...prev,
+                                        idBackgroundColor: e.target.value,
+                                    }))
+                                }
                                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
                             />
                         </div>
@@ -358,14 +389,18 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                             <input
                                 type="color"
                                 value={display.accentColor || '#2DD4BF'}
-                                onChange={(e) => setDisplay(prev => ({ ...prev, accentColor: e.target.value }))}
+                                onChange={e =>
+                                    setDisplay(prev => ({ ...prev, accentColor: e.target.value }))
+                                }
                                 className="w-10 h-10 rounded cursor-pointer"
                             />
 
                             <input
                                 type="text"
                                 value={display.accentColor || '#2DD4BF'}
-                                onChange={(e) => setDisplay(prev => ({ ...prev, accentColor: e.target.value }))}
+                                onChange={e =>
+                                    setDisplay(prev => ({ ...prev, accentColor: e.target.value }))
+                                }
                                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
                             />
                         </div>
@@ -382,7 +417,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Card Background</h3>
-                        <p className="text-sm text-gray-500">Optional background image for your card</p>
+                        <p className="text-sm text-gray-500">
+                            Optional background image for your card
+                        </p>
                     </div>
                 </div>
 
@@ -390,14 +427,20 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     {DEFAULT_WALLPAPERS.map((wallpaper, index) => (
                         <button
                             key={index}
-                            onClick={() => setDisplay(prev => ({ ...prev, idBackgroundImage: wallpaper }))}
+                            onClick={() =>
+                                setDisplay(prev => ({ ...prev, idBackgroundImage: wallpaper }))
+                            }
                             className={`w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
                                 display.idBackgroundImage === wallpaper
                                     ? 'border-cyan-500 shadow-md'
                                     : 'border-transparent hover:border-gray-300'
                             }`}
                         >
-                            <img src={wallpaper} alt={`Wallpaper ${index + 1}`} className="w-full h-full object-cover" />
+                            <img
+                                src={wallpaper}
+                                alt={`Wallpaper ${index + 1}`}
+                                className="w-full h-full object-cover"
+                            />
                         </button>
                     ))}
 
@@ -432,7 +475,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     className="p-4 rounded-xl relative overflow-hidden"
                     style={{
                         backgroundColor: display.idBackgroundColor || '#2DD4BF',
-                        backgroundImage: display.idBackgroundImage ? `url(${display.idBackgroundImage})` : undefined,
+                        backgroundImage: display.idBackgroundImage
+                            ? `url(${display.idBackgroundImage})`
+                            : undefined,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}

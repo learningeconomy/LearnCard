@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { BoostCMSState } from '../components/boost/boost';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-boost-c-m-s-autosave');
 
 const STORAGE_KEY = 'lc_boost_cms_autosave';
 const STORAGE_VERSION = 1;
@@ -212,7 +214,7 @@ export function useBoostCMSAutosave({
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                     lastSavedCategoryRef.current = stateCategoryType || null;
                 } catch (err) {
-                    console.warn('[useBoostCMSAutosave] Failed to save to localStorage:', err);
+                    log.warn('[useBoostCMSAutosave] Failed to save to localStorage:', err);
                 }
             }, DEBOUNCE_MS);
         },
@@ -229,7 +231,7 @@ export function useBoostCMSAutosave({
             currentStateRef.current = null;
             setHasUnsavedChanges(false);
         } catch (err) {
-            console.warn('[useBoostCMSAutosave] Failed to clear local save:', err);
+            log.warn('[useBoostCMSAutosave] Failed to clear local save:', err);
         }
     }, [getStorageKey]);
 
@@ -239,7 +241,7 @@ export function useBoostCMSAutosave({
                 try {
                     localStorage.removeItem(recoveredStorageKey);
                 } catch (err) {
-                    console.warn(
+                    log.warn(
                         '[useBoostCMSAutosave] Failed to clear recovered storage key:',
                         err
                     );
@@ -260,7 +262,7 @@ export function useBoostCMSAutosave({
                             localStorage.removeItem(`${STORAGE_KEY}_${category}`);
                         }
                     } catch (err) {
-                        console.warn(
+                        log.warn(
                             '[useBoostCMSAutosave] Failed to clear all saved states:',
                             err
                         );
@@ -290,7 +292,7 @@ export function useBoostCMSAutosave({
                     const storageKey = getStorageKey();
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useBoostCMSAutosave] Failed to save on visibility change:', err);
+                    log.warn('[useBoostCMSAutosave] Failed to save on visibility change:', err);
                 }
             }
         };
@@ -321,7 +323,7 @@ export function useBoostCMSAutosave({
                     const storageKey = getStorageKey();
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useBoostCMSAutosave] Failed to save on beforeunload:', err);
+                    log.warn('[useBoostCMSAutosave] Failed to save on beforeunload:', err);
                 }
 
                 // Show browser's built-in "unsaved changes" prompt
@@ -358,7 +360,7 @@ export function useBoostCMSAutosave({
 
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
                 } catch (err) {
-                    console.warn('[useBoostCMSAutosave] Failed to save on unmount:', err);
+                    log.warn('[useBoostCMSAutosave] Failed to save on unmount:', err);
                 }
             }
         };

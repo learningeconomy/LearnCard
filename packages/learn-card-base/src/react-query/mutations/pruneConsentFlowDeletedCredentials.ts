@@ -4,6 +4,9 @@ import { cloneDeep } from 'lodash';
 
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
+import { getLogger } from '../../logging/logger';
+const log = getLogger('prune-consent-flow-deleted-credentials');
+
 export type DeleteCredentialFromAllContractsResult = {
     contractsUpdated: number;
     removedSharedUris: number;
@@ -58,9 +61,9 @@ export const deleteCredentialFromAllContracts = async ({
 
         try {
             if (data) {
-                console.log(`[CredentialCleanup] ${message}`, data);
+                log.debug(`[CredentialCleanup] ${message}`, data);
             } else {
-                console.log(`[CredentialCleanup] ${message}`);
+                log.debug(`[CredentialCleanup] ${message}`);
             }
         } catch {
             // Logging should never break credential cleanup.
