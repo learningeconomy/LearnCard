@@ -1,1 +1,0 @@
-import"./index-C6th1qJj.js";import{fc as r}from"./mermaid-GHXKKRXX-6Qn97T64.js";const a=r("autoVerifyStore")({verifySuccessTick:0}).extendActions(e=>({markVerifySuccess:()=>{e.state(c=>{c.verifySuccessTick+=1})}}));a.useTracked.verifySuccessTick;const i=new Map,o=()=>{i.clear()};export{a,o as c};
