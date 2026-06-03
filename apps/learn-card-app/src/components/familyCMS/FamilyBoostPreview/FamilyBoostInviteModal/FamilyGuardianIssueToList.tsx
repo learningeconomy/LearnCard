@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('family-guardian-issue-to-list');
 
 import {
     IonCol,
@@ -83,7 +85,7 @@ const FamilyGuardianIssueToList: React.FC<{
                 presentAlert(e?.message);
             }
 
-            console.error('handleAddAdmins::error', e);
+            log.error('handleAddAdmins::error', e);
         }
     };
 

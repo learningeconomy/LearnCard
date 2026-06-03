@@ -2,6 +2,8 @@ import { Capacitor } from '@capacitor/core';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, deleteUser, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('firebase');
 
 import type { TenantFirebaseConfig } from 'learn-card-base';
 
@@ -64,7 +66,7 @@ export const initializeFirebaseFromTenant = (tenantFirebase?: TenantFirebaseConf
 
     _firebaseInitialized = true;
 
-    console.debug('learncard 🔥firebase init🔥');
+    log.debug('learncard 🔥firebase init🔥');
 };
 
 const auth = () => {

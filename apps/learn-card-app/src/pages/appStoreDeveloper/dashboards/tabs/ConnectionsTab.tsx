@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('connections-tab');
 /**
  * ConnectionsTab - View consent records for a ConsentFlow contract
  *
@@ -302,7 +304,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
     { limit: 50 }
 );
 
-console.log('Total records:', consentData.records.length);`,
+log.info('Total records:', consentData.records.length);`,
                     }}
                 />
             </div>

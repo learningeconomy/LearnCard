@@ -1798,6 +1798,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
             },
 
+            getHolderExportMetadata: async _learnCard => {
+                await ensureUser();
+
+                return client.credential.getHolderExportMetadata.query({});
+            },
+
             getCredentialsForContract: async (_learnCard, termsUri, options = {}) => {
                 await ensureUser();
 

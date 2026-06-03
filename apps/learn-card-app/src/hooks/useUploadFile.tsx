@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-upload-file');
 
 import {
     checklistStore,
@@ -168,7 +170,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { fileInfo, rawArtifactCredential };
         } catch (error) {
             setIsUploading(false);
-            console.log('getFile::error', error);
+            log.info('getFile::error', error);
         }
     };
 
@@ -202,7 +204,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { fileInfos, rawArtifactCredentials };
         } catch (error) {
             setIsUploading(false);
-            console.log('getFiles::error', error);
+            log.info('getFiles::error', error);
         }
     };
 
@@ -254,12 +256,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                                 throw new Error(result.error || 'Failed to upload file');
                             }
                         } catch (err) {
-                            console.error('Error uploading file:', err);
+                            log.error('Error uploading file:', err);
                             throw err;
                         }
                     } catch (innerErr) {
                         failedUploads++;
-                        console.error('❌ Error processing file:', innerErr);
+                        log.error('❌ Error processing file:', innerErr);
                         return null;
                     }
                 })
@@ -319,7 +321,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             }, TOAST_PAUSE_MS);
 
             refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
+                log.error('refetchCheckListStatus failed', err)
             );
             setIsUploading(false);
             checklistStore.set.updateIsParsing(uploadType, false);
@@ -343,7 +345,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     duration: 5000,
                 });
             }, 500);
-            console.error('getJsonFiles::error', error);
+            log.error('getJsonFiles::error', error);
         }
     };
 
@@ -380,7 +382,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { vc, credentialUri };
         } catch (error) {
             setIsSaving(false);
-            console.log('saveFile::error', error);
+            log.info('saveFile::error', error);
         }
     };
 
@@ -393,7 +395,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const wallet = await initWallet();
             const did = wallet?.id?.did();
             if (!base64Data) {
-                console.warn('fetchParsedCredentials: no file data, call getFile() first');
+                log.warn('fetchParsedCredentials: no file data, call getFile() first');
                 checklistStore.set.updateIsParsing(fileType, false);
                 return [];
             }
@@ -404,7 +406,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return results;
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('fetchParsedCredentials::error', error);
+            log.error('fetchParsedCredentials::error', error);
             throw error;
         }
     };
@@ -430,7 +432,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return allVcs;
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('fetchParsedCredentialsFromFiles::error', error);
+            log.error('fetchParsedCredentialsFromFiles::error', error);
             throw error;
         }
     };
@@ -483,7 +485,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             // Background sync — don't block toast on these
             refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
+                log.error('refetchCheckListStatus failed', err)
             );
             syncAll.mutate();
             aiInsightMutation.mutate();
@@ -519,7 +521,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
-            console.error('storeSelectedCredentials::error', error);
+            log.error('storeSelectedCredentials::error', error);
             setTimeout(() => {
                 presentToast(`Something went wrong saving your credentials.`, {
                     title: 'Error',
@@ -575,7 +577,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             // Background sync — don't block toast on these
             refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
+                log.error('refetchCheckListStatus failed', err)
             );
             syncAll.mutate();
             aiInsightMutation.mutate();
@@ -608,7 +610,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             }, TOAST_PAUSE_MS);
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('handleSaveResume::error', error);
+            log.error('handleSaveResume::error', error);
             setTimeout(() => {
                 presentToast(`Something went wrong uploading your ${fileType}.`, {
                     title: 'Error',
@@ -696,7 +698,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
                     onFileSettled();
                 } catch (error) {
-                    console.error('Error processing file:', error);
+                    log.error('Error processing file:', error);
                     onFileSettled();
                     // Continue with next file even if one fails
                 }
@@ -709,10 +711,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             // Background sync — don't block toast on these
             fetchNewContractCredentials().catch(err =>
-                console.error('fetchNewContractCredentials failed', err)
+                log.error('fetchNewContractCredentials failed', err)
             );
             refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
+                log.error('refetchCheckListStatus failed', err)
             );
             syncAll.mutate();
             aiInsightMutation.mutate();
@@ -749,7 +751,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
-            console.error('Error in parseFiles:', error);
+            log.error('Error in parseFiles:', error);
             checklistStore.set.updateIsParsing(fileType, false);
             setTimeout(() => {
                 presentToast(`Something went wrong uploading your ${fileType}.`, {

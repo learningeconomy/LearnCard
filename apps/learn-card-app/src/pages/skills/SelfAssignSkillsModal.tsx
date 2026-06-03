@@ -9,6 +9,9 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('self-assign-skills-modal');
+
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
 import { IonFooter, IonSpinner } from '@ionic/react';
@@ -93,7 +96,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 type: ToastTypeEnum.Success,
             });
         } catch (error: any) {
-            console.error('Error creating or updating skills:', error);
+            log.error('Error creating or updating skills:', error);
             presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
             });

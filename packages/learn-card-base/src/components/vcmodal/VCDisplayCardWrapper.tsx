@@ -19,6 +19,8 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('vcdisplay-card-wrapper');
 
 const DetailsDisplay: React.FC<VC> = ({ credential }) => {
     const renderDetails = getDetailsFromCredential(credential)?.map(
@@ -100,7 +102,7 @@ export const VCDisplayCardWrapper = ({
         const verify = async () => {
             const wallet = lc ?? (await initWallet());
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            console.log('//verifications', verifications);
+            log.debug('//verifications', verifications);
 
             setVCVerifications(verifications);
             setLoading(false);

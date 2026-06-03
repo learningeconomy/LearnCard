@@ -3,6 +3,8 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getCredentialSubject } from '../../IssueVC/helpers';
 import { VC } from '@learncard/types';
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { getLogger } from '../../../logging/logger';
+const log = getLogger('use-credential-profiles');
 
 interface Profile {
     name?: string;
@@ -26,7 +28,7 @@ const useCredentialProfiles = (credential: VC, lc?: BespokeLearnCard) => {
             const profile = await wallet.invoke.getProfile(profileId);
             return profile ? { ...profile, name: profile?.displayName } : {};
         } catch (error) {
-            console.warn('Error fetching profile:', error);
+            log.warn('Error fetching profile:', error);
             return {};
         }
     };
@@ -65,7 +67,7 @@ const useCredentialProfiles = (credential: VC, lc?: BespokeLearnCard) => {
         if (hasLCNetworkAcct) {
             const regex = /(users:)(.*)/;
             const profileId = credentialSubject?.id?.match?.(regex)?.[2];
-            // console.log('///issuee profile', credentialSubject);
+            // log.debug('///issuee profile', credentialSubject);
             if (profileId) {
                 const profile = await fetchProfile(wallet, profileId);
                 if (profile?.displayName) {

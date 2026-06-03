@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Key, Copy, Check, Trash2, Plus, Loader2, AlertTriangle, Code } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('api-tokens-tab');
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
@@ -51,7 +53,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
             setShowCreateForm(false);
             onRefresh();
         } catch (err) {
-            console.error('Failed to create token:', err);
+            log.error('Failed to create token:', err);
             presentToast('Failed to create token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setCreating(false);
@@ -69,7 +71,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
             setTimeout(() => setCopiedId(null), 2000);
             presentToast('Token copied!', { hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to copy token:', err);
+            log.error('Failed to copy token:', err);
             presentToast('Failed to copy token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setCopyingId(null);
@@ -84,7 +86,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
             presentToast('Token revoked', { hasDismissButton: true });
             onRefresh();
         } catch (err) {
-            console.error('Failed to revoke token:', err);
+            log.error('Failed to revoke token:', err);
             presentToast('Failed to revoke token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setRevokingId(null);

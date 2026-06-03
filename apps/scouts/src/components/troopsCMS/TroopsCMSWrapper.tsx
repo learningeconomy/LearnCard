@@ -24,6 +24,8 @@ import {
 } from './troopCMSState';
 import { VC } from '@learncard/types';
 import { MemberTabsEnum } from '../../pages/troop/TroopPageMembersBox';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troops-cms-wrapper');
 
 type TroopsCMSWrapperProps = {
     parentUri?: string;
@@ -140,7 +142,7 @@ export const TroopsCMSWrapper: React.FC<TroopsCMSWrapperProps> = ({
 
         if (network && Object.keys(network).length > 0) {
             if (process.env.NODE_ENV !== 'test') {
-                console.log('TroopsCMSWrapper::editingBoost.meta.network', network);
+                log.debug('TroopsCMSWrapper::editingBoost.meta.network', network);
             }
             setState(prev => ({
                 ...prev,

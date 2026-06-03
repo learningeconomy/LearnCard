@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImmer, Updater } from 'use-immer';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-install-consent-modal');
 
 import {
     useModal,
@@ -114,7 +116,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     const wallet = await initWallet();
                     return await wallet.invoke.getContract(contractUri);
                 } catch (error) {
-                    console.error('Failed to fetch contract:', error);
+                    log.error('Failed to fetch contract:', error);
                     return null;
                 }
             },
@@ -184,7 +186,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             sharedUris.push(sharedUri);
                         }
                     } catch (error) {
-                        console.error(
+                        log.error(
                             `Failed to generate shared URI for credential ${credential.uri}:`,
                             error
                         );
@@ -195,7 +197,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     categoryConfig.shared = sharedUris;
                 }
             } catch (error) {
-                console.error(
+                log.error(
                     `Failed to fetch credentials for category ${credentialCategory}:`,
                     error
                 );

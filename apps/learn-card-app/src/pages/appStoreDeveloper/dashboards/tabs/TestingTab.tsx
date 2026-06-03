@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('testing-tab');
 /**
  * TestingTab - Sandbox Test Credential Sender
  * 
@@ -190,7 +192,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
             presentToast('Test credential sent successfully!', { type: ToastTypeEnum.Success });
         } catch (err) {
-            console.error('Test send failed:', err);
+            log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
                 error: err instanceof Error ? err.message : 'Failed to send test credential',
