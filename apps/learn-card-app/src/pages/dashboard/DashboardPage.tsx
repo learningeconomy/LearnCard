@@ -16,20 +16,20 @@ import {
     useGetSelfAssignedSkillsBoost,
     useGetUnreadUserNotifications,
     useVerifiableData,
+    isVerifiableDataRecord,
 } from 'learn-card-base';
 import {
     getCredentialName,
     getIssuerName,
     unwrapBoostCredential,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME,
 } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
-import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes } from 'learn-card-base';
-import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -43,12 +43,8 @@ import {
     type SkillProfileProfileData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 
-import DashboardHeaderCard from './components/DashboardHeaderCard';
-import CurrentGoalCard from './components/CurrentGoalCard';
-import QuickActionsRow from './components/QuickActionsRow';
-import GetStartedChecklist from './components/GetStartedChecklist';
-import ActivityCard from './components/ActivityCard';
-import AppsCard from './components/AppsCard';
+import DashboardView from './DashboardView';
+import type { DashboardViewModel, DashboardEmptyTip } from './DashboardView.types';
 import { countReviewsDueToday } from './helpers/dueReviews';
 import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
@@ -86,11 +82,6 @@ const DashboardPage: React.FC = () => {
 
     const { data: allCredentials, isLoading: allCredentialsLoading } =
         useGetCredentialList(undefined);
-    const allCredentialRecords = useMemo(
-        () => allCredentials?.pages?.flatMap(p => p?.records ?? []) ?? [],
-        [allCredentials],
-    );
-    const totalCredentialCount = allCredentialRecords.length;
 
     const { data: idCredentials } = useGetCredentialList(CredentialCategoryEnum.id);
     const primaryId = useMemo(
@@ -121,6 +112,19 @@ const DashboardPage: React.FC = () => {
                 .map(s => ({ id: s.id, label: s.statement.trim() })),
         [selfAssignedSkills],
     );
+
+    const selfAssignedSkillsUri = selfAssignedSkillsBoost?.uri;
+    const allCredentialRecords = useMemo(
+        () =>
+            (allCredentials?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(record => {
+                if (isVerifiableDataRecord(record)) return false;
+                if (selfAssignedSkillsUri && record.uri === selfAssignedSkillsUri) return false;
+                if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
+                return true;
+            }),
+        [allCredentials, selfAssignedSkillsUri],
+    );
+    const totalCredentialCount = allCredentialRecords.length;
 
     const { data: unreadNotificationsData } = useGetUnreadUserNotifications();
     const unreadNotifications = unreadNotificationsData?.notifications ?? [];
@@ -355,125 +359,85 @@ const DashboardPage: React.FC = () => {
         DEFAULT_REGISTRY,
     );
 
+    const emptyTips: DashboardEmptyTip[] = [
+        ...(openScanQrCredential
+            ? [
+                  {
+                      key: 'scan-qr',
+                      title: 'Scan a QR code',
+                      subtitle: 'Claim a credential from a poster or screen',
+                      Icon: ScanIcon,
+                      onClick: openScanQrCredential,
+                  },
+              ]
+            : []),
+        {
+            key: 'claim-link',
+            title: 'Use a claim link',
+            subtitle: 'Paste or upload a credential link',
+            Icon: LinkOutlinedIcon,
+            onClick: openClaimLink,
+        },
+        {
+            key: 'issue-credential',
+            title: 'Issue a credential',
+            subtitle: 'Send a credential to someone',
+            Icon: AddCredentialIcon,
+            onClick: openIssueCredential,
+        },
+    ];
+
+    const viewModel: DashboardViewModel = {
+        header: {
+            displayName,
+            profileImage,
+            heroImage: currentLCNUser?.heroImage,
+            profileRole: currentLCNUser?.role,
+            shortBio: currentLCNUser?.shortBio,
+            affiliation,
+            stats: {
+                credentials: totalCredentialCount,
+                skills: skillsCount,
+                contacts: connections.length,
+            },
+            professionalTitle: skillProfileData?.professionalTitle,
+            experience: skillProfileData?.lifetimeExperience ?? null,
+            skills: headerSkillPills,
+            onSkillPillClick: () => history.push('/skills'),
+            onAvatarClick: openMyLearnCard,
+            onScanQrTopRight: openQrScanner,
+        },
+        heroSlot,
+        checklistItems,
+        onDismissGetStarted: dismissGetStarted,
+        goalSummary,
+        pathwaysEnabled,
+        reviewsDueToday: reviewSummary.total,
+        onContinueGoal: goToPathway,
+        onReviewGoal: goToReviews,
+        primaryButtonClass,
+        slots: resolvedSlots,
+        activity: {
+            notifications: unreadNotifications,
+            pendingContractRequests,
+            pendingConnections: receivedConnectionRequests,
+            records: allCredentialRecords,
+            isLoading: allCredentialsLoading,
+            emptyTips,
+        },
+        apps: {
+            installedApps,
+            suggestedApps,
+            unreadByListing,
+            onInstallSuccess: refetchInstalledApps,
+        },
+    };
+
     return (
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <IonContent fullscreen color="grayscale-100">
-
-                    <div className="flex justify-center w-full font-poppins">
-                        <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6">
-                            <GenericErrorBoundary>
-                                <DashboardHeaderCard
-                                    displayName={displayName}
-                                    profileImage={profileImage}
-                                    heroImage={currentLCNUser?.heroImage}
-                                    profileRole={currentLCNUser?.role}
-                                    shortBio={currentLCNUser?.shortBio}
-                                    affiliation={affiliation}
-                                    stats={{
-                                        credentials: totalCredentialCount,
-                                        skills: skillsCount,
-                                        contacts: connections.length,
-                                    }}
-                                    professionalTitle={skillProfileData?.professionalTitle}
-                                    experience={skillProfileData?.lifetimeExperience ?? null}
-                                    skills={headerSkillPills}
-                                    onSkillPillClick={() => history.push('/skills')}
-                                    onAvatarClick={openMyLearnCard}
-                                    topRightAction={
-                                        <button
-                                            type="button"
-                                            onClick={openQrScanner}
-                                            aria-label="Open QR scanner"
-                                            className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95"
-                                        >
-                                            <QRCodeScanner version="2" />
-                                        </button>
-                                    }
-                                />
-                            </GenericErrorBoundary>
-
-                            <div className="grid grid-cols-1 desktop:grid-cols-12 gap-5">
-                                <div className="flex flex-col gap-5 desktop:col-span-7 min-w-0">
-                                    {heroSlot === 'getStarted' ? (
-                                        <GenericErrorBoundary>
-                                            <GetStartedChecklist
-                                                items={checklistItems}
-                                                onDismiss={dismissGetStarted}
-                                                variant="hero"
-                                                primaryButtonClass={primaryButtonClass}
-                                            />
-                                        </GenericErrorBoundary>
-                                    ) : (
-                                        <GenericErrorBoundary>
-                                            <CurrentGoalCard
-                                                goalSummary={goalSummary}
-                                                pathwaysEnabled={pathwaysEnabled}
-                                                reviewsDueToday={reviewSummary.total}
-                                                onContinue={goToPathway}
-                                                onReview={goToReviews}
-                                                primaryButtonClass={primaryButtonClass}
-                                                variant="hero"
-                                            />
-                                        </GenericErrorBoundary>
-                                    )}
-                                </div>
-                                <div className="flex flex-col gap-5 desktop:col-span-5 min-w-0">
-                                    <GenericErrorBoundary>
-                                        <ActivityCard
-                                            notifications={unreadNotifications}
-                                            pendingContractRequests={pendingContractRequests}
-                                            pendingConnections={receivedConnectionRequests}
-                                            records={allCredentialRecords}
-                                            isLoading={allCredentialsLoading}
-                                            emptyTips={[
-                                                ...(openScanQrCredential
-                                                    ? [
-                                                          {
-                                                              key: 'scan-qr',
-                                                              title: 'Scan a QR code',
-                                                              subtitle:
-                                                                  'Claim a credential from a poster or screen',
-                                                              Icon: ScanIcon,
-                                                              onClick: openScanQrCredential,
-                                                          },
-                                                      ]
-                                                    : []),
-                                                {
-                                                    key: 'claim-link',
-                                                    title: 'Use a claim link',
-                                                    subtitle: 'Paste or upload a credential link',
-                                                    Icon: LinkOutlinedIcon,
-                                                    onClick: openClaimLink,
-                                                },
-                                                {
-                                                    key: 'issue-credential',
-                                                    title: 'Issue a credential',
-                                                    subtitle: 'Send a credential to someone',
-                                                    Icon: AddCredentialIcon,
-                                                    onClick: openIssueCredential,
-                                                },
-                                            ]}
-                                        />
-                                    </GenericErrorBoundary>
-                                </div>
-                            </div>
-
-                            <GenericErrorBoundary>
-                                <QuickActionsRow slots={resolvedSlots} />
-                            </GenericErrorBoundary>
-
-                            <GenericErrorBoundary>
-                                <AppsCard
-                                    installedApps={installedApps}
-                                    suggestedApps={suggestedApps}
-                                    unreadByListing={unreadByListing}
-                                    onInstallSuccess={refetchInstalledApps}
-                                    variant="featured"
-                                />
-                            </GenericErrorBoundary>
-                        </div>
-                    </div>
+                    <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>
         </IonPage>

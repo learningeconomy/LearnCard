@@ -1,0 +1,125 @@
+import type React from 'react';
+
+import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+
+import type { ResolvedAction } from './quickActions/types';
+import type { PathwayNode } from '../pathways/types';
+
+export type DashboardAffiliation = {
+    role: string;
+    from?: string;
+    issuedAt?: string;
+} | null;
+
+export type DashboardHeaderStats = {
+    credentials: number;
+    skills: number;
+    contacts: number;
+};
+
+export type DashboardExperience = {
+    years?: number | null;
+    months?: number | null;
+} | null;
+
+export type DashboardSkillPill = {
+    id: string;
+    label: string;
+};
+
+export type DashboardGoalSummary = {
+    title: string;
+    goal: string;
+    total: number;
+    completed: number;
+    nextNode: PathwayNode | null;
+    pathwayId: string;
+} | null;
+
+export type DashboardChecklistItem = {
+    key: string;
+    label: string;
+    done: boolean;
+    onClick: () => void;
+};
+
+export type DashboardActivityRecord = {
+    id: string;
+    uri: string;
+    title?: string;
+    from?: string;
+    date?: string;
+    category?: string;
+};
+
+export type DashboardLcnVisibleProfile = {
+    profileId?: string;
+    displayName?: string;
+    image?: string;
+};
+
+export type DashboardPendingContractRequest = {
+    profile?: DashboardLcnVisibleProfile;
+    contract?: { name?: string };
+};
+
+export type DashboardEmptyTip = {
+    key: string;
+    title: string;
+    subtitle: string;
+    Icon?: React.FC<{ className?: string; shadeColor?: string }>;
+    onClick: () => void;
+};
+
+export type DashboardSlots = Record<'collect' | 'understand' | 'navigate', ResolvedAction | null>;
+
+export type DashboardHeaderViewModel = {
+    displayName: string;
+    profileImage: string;
+    heroImage?: string;
+    profileRole?: string;
+    shortBio?: string;
+    affiliation: DashboardAffiliation;
+    stats: DashboardHeaderStats;
+    professionalTitle?: string;
+    experience?: DashboardExperience;
+    skills: DashboardSkillPill[];
+    onSkillPillClick: () => void;
+    onAvatarClick: () => void;
+    onScanQrTopRight: () => void;
+};
+
+export type DashboardActivityViewModel = {
+    notifications: NotificationType[];
+    pendingContractRequests: DashboardPendingContractRequest[];
+    pendingConnections: DashboardLcnVisibleProfile[];
+    records: DashboardActivityRecord[];
+    isLoading: boolean;
+    emptyTips: DashboardEmptyTip[];
+};
+
+export type DashboardAppsViewModel = {
+    installedApps: InstalledApp[];
+    suggestedApps: AppStoreListing[];
+    unreadByListing: Map<string, number>;
+    onInstallSuccess: () => void;
+};
+
+export type DashboardHeroSlot = 'getStarted' | 'goal';
+
+export type DashboardViewModel = {
+    header: DashboardHeaderViewModel;
+    heroSlot: DashboardHeroSlot;
+    checklistItems: DashboardChecklistItem[];
+    onDismissGetStarted: () => void;
+    goalSummary: DashboardGoalSummary;
+    pathwaysEnabled: boolean;
+    reviewsDueToday: number;
+    onContinueGoal: () => void;
+    onReviewGoal: () => void;
+    primaryButtonClass?: string;
+    slots: DashboardSlots;
+    activity: DashboardActivityViewModel;
+    apps: DashboardAppsViewModel;
+};
