@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-code-tab');
 /**
  * IntegrationCodeTab - Boost URI Reference + API Code Generator
  * 
@@ -111,7 +113,7 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
                 const active = grants.filter((g: AuthGrant) => g.status === 'active');
                 setAuthGrants(active);
             } catch (err) {
-                console.error('Failed to fetch auth grants:', err);
+                log.error('Failed to fetch auth grants:', err);
             } finally {
                 setLoadingGrants(false);
             }
@@ -127,7 +129,7 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
             setSelectedGrantId(grantId);
             setShowTokenSelector(false);
         } catch (err) {
-            console.error('Failed to get token:', err);
+            log.error('Failed to get token:', err);
         }
     };
 
@@ -190,7 +192,7 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
             try {
                 return extractDynamicVariables(selectedTemplate.obv3Template as OBv3CredentialTemplate);
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables:', e);
+                log.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
@@ -352,8 +354,8 @@ const INTEGRATION_ID = '${integrationId || 'YOUR_INTEGRATION_ID'}';
 //     templateData,
 // });
 //
-// console.log('Credential URI:', result.credentialUri);
-// console.log('Activity ID:', result.activityId);
+// log.info('Credential URI:', result.credentialUri);
+// log.info('Activity ID:', result.activityId);
 
 export default BOOST_TEMPLATES;
 export { INTEGRATION_ID };`;
@@ -442,9 +444,9 @@ ${templateDataCode}
     },${optionsCode}
 });
 
-console.log('Credential URI:', result.credentialUri);
-console.log('Boost URI:', result.uri);
-console.log('Activity ID:', result.activityId); // Use to track lifecycle
+log.info('Credential URI:', result.credentialUri);
+log.info('Boost URI:', result.uri);
+log.info('Activity ID:', result.activityId); // Use to track lifecycle
 
 // For email/phone recipients:
 // result.inbox?.issuanceId - tracking ID
@@ -541,7 +543,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                 const { dynamic } = extractVariablesByType(selectedTemplate.obv3Template as OBv3CredentialTemplate);
                 variableHeaders = dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()));
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+                log.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
             }
         }
 

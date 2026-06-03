@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Loader2, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('signing-tab');
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -31,7 +33,7 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                 setPrimarySA(null);
             }
         } catch (err) {
-            console.error('Failed to fetch signing authority:', err);
+            log.error('Failed to fetch signing authority:', err);
             setPrimarySA(null);
         } finally {
             setLoading(false);
@@ -68,7 +70,7 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
             presentToast('Signing authority created!', { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
+            log.error('Failed to create signing authority:', err);
             presentToast('Failed to create signing authority', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

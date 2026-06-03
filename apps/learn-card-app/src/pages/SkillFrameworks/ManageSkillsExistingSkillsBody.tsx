@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-skills-existing-skills-body');
 
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import FileExportIcon from 'learn-card-base/svgs/FileExportIcon';
@@ -51,14 +53,14 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
 
             downloadFramework(frameworkToExport);
         } catch (error) {
-            console.error('Error exporting framework:', error);
+            log.error('Error exporting framework:', error);
         } finally {
             setIsExporting(false);
         }
     };
 
     const openViewFrameworkModal = () => {
-        console.log('TODO open view framework modal');
+        log.info('TODO open view framework modal');
 
         // const frameworkToPreview: SkillFramework =
         //     convertApiFrameworkToSkillFramework(skillFramework);
@@ -68,7 +70,7 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
         //         framework={frameworkToPreview}
         //         successButtonText="Save"
         //         onSuccess={() => {
-        //             console.log('TODO handle save');
+        //             log.info('TODO handle save');
         //             // TODO save the framework / enable save button
         //         }}
         //     />,

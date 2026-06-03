@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
@@ -225,7 +227,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     }
                 );
             } catch (err) {
-                console.log('acceptCredential::error', err?.message);
+                log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',

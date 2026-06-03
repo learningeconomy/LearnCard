@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import z from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-signing-authority-modal');
 
 import { IonInput } from '@ionic/react';
 
@@ -69,7 +71,7 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
             fetchSigningAuthorities();
             closeModal();
         } catch (err) {
-            console.error('Registration error:', err);
+            log.error('Registration error:', err);
             setErrorMessage('Failed to create signing authority.');
         } finally {
             setLoading(false);

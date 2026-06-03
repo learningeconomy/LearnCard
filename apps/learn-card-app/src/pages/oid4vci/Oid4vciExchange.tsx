@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { IonContent, IonPage } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('oid4vci-exchange');
 
 import {
     ExchangeErrorDisplay,
@@ -212,7 +214,7 @@ const Oid4vciExchange: React.FC = () => {
                         persisted.flowHandle.issuer
                     );
                 } catch (metadataError) {
-                    console.warn(
+                    log.warn(
                         'OID4VCI auth-code return: failed to refetch metadata for success-screen branding',
                         metadataError
                     );
@@ -234,7 +236,7 @@ const Oid4vciExchange: React.FC = () => {
                     metadata,
                 });
             } catch (error) {
-                console.error('OID4VCI auth-code return failed', error);
+                log.error('OID4VCI auth-code return failed', error);
                 clearAuthCodeState();
                 // Best-effort: we know the issuer URL from the persisted
                 // flow handle even if metadata fetching failed mid-flight.
@@ -269,7 +271,7 @@ const Oid4vciExchange: React.FC = () => {
                 try {
                     metadata = await fetchCredentialIssuerMetadata(resolved.credential_issuer);
                 } catch (metadataError) {
-                    console.warn(
+                    log.warn(
                         'OID4VCI: failed to fetch issuer metadata, falling back to URL display',
                         metadataError
                     );
@@ -277,7 +279,7 @@ const Oid4vciExchange: React.FC = () => {
 
                 setPhase({ kind: 'consent', offer: resolved, metadata });
             } catch (error) {
-                console.error('OID4VCI: failed to resolve offer', error);
+                log.error('OID4VCI: failed to resolve offer', error);
                 // No issuer context here — we failed before resolving the
                 // offer so we don't yet know the issuer URL. Error screen
                 // falls back gracefully without an `IssuerHeader` slot.
@@ -389,7 +391,7 @@ const Oid4vciExchange: React.FC = () => {
                     result: authResult,
                 });
             } catch (error) {
-                console.error('OID4VCI: accept failed', error);
+                log.error('OID4VCI: accept failed', error);
                 // Carry issuer context forward so the error screen still
                 // renders a branded `IssuerHeader` — the user keeps brand
                 // context even when the exchange fails.

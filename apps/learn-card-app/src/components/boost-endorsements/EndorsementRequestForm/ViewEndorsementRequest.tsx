@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-endorsement-request');
 
 import { useIonAlert } from '@ionic/react';
 import EndorsementFormHeader from '../EndorsementForm/EndorsementFormHeader';
@@ -100,7 +102,7 @@ const ViewEndorsementRequest: React.FC<{
                         text: 'Cancel',
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.info('Cancel clicked');
                         },
                     },
                 ],

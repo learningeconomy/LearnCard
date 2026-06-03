@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-framework-modal');
 
 import {
     ModalTypes,
@@ -130,7 +132,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             }, 301);
         },
         onError: error => {
-            console.error('Failed to create framework:', error);
+            log.error('Failed to create framework:', error);
             alert('Failed to create framework. Please try again.');
         },
     });
@@ -257,7 +259,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             // }, 301);
         },
         onError: error => {
-            console.error('Failed to update framework:', error);
+            log.error('Failed to update framework:', error);
             alert('Failed to update framework. Please try again.');
         },
     });

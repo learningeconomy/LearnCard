@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-screen-width');
 
 /**
  * React hook for keeping track of screen width and re-rendering
@@ -7,8 +9,8 @@ import { useCallback, useEffect, useState } from 'react';
  *
  * const width = useScreenWidth(); // This will rerender the component when resizing the window
  *
- * if (width <= 991) console.log('Mobile width!');
- * else console.log('Not mobile width');
+ * if (width <= 991) log.debug('Mobile width!');
+ * else log.debug('Not mobile width');
  *
  * To skip re-rendering on resize, pass true like so:
  * useScreenWidth(doesNotNeedToReRenderOnResize);

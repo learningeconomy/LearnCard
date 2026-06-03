@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-listing-page');
 
 import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
 import {
@@ -203,7 +205,7 @@ const AppListingPage: React.FC = () => {
             closeModal();
             setShowCopiedToast(true);
         } catch (err) {
-            console.error('Failed to copy link:', err);
+            log.error('Failed to copy link:', err);
         }
     };
 
@@ -274,7 +276,7 @@ const AppListingPage: React.FC = () => {
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } catch (error) {
-            console.error('Failed to install app:', error);
+            log.error('Failed to install app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -329,14 +331,14 @@ const AppListingPage: React.FC = () => {
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                     // Continue with uninstall even if consent withdrawal fails
                 }
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         } finally {
             setIsProcessing(false);
         }

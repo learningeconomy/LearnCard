@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-service-worker');
 
 import { redirectStore, chapiStore } from 'learn-card-base';
 
@@ -12,16 +14,16 @@ const WalletServiceWorker = () => {
             const wallet = await initLearnCard();
             chapiStore.set.isChapiInteraction(true);
 
-            console.log('🪪 CHAPI Interaction Registering', chapiStore.get.isChapiInteraction());
+            log.info('🪪 CHAPI Interaction Registering', chapiStore.get.isChapiInteraction());
 
             wallet.invoke.activateChapiHandler({
                 get: async () => {
-                    console.log('activateChapiHandler::get::🎃');
+                    log.info('activateChapiHandler::get::🎃');
                     redirectStore.set.authRedirect('get');
                     return { type: 'redirect', url: `${window.location.origin}/get` };
                 },
                 store: async event => {
-                    console.log('activateChapiHandler::store::🛠', event);
+                    log.info('activateChapiHandler::store::🛠', event);
 
                     // TODO: Fix event.event weirdness here upstream
                     if (isExchangeRequest((event as any).event)) {

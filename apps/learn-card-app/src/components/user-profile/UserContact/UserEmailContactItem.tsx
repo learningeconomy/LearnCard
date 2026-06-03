@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Countdown from 'react-countdown';
 import { ContactMethodType } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-email-contact-item');
 
 import TrashBin from '../../svgs/TrashBin';
 import UnverifiedIcon from 'learn-card-base/svgs/UnverifiedIcon';
@@ -62,7 +64,7 @@ export const UserEmailContactItem: React.FC<{
             }
             await setPrimaryContactMethod({ contactMethodId });
         } catch (error) {
-            console.error('Failed to set primary contact method:', error);
+            log.error('Failed to set primary contact method:', error);
         }
     };
 
@@ -83,7 +85,7 @@ export const UserEmailContactItem: React.FC<{
             }
             await removeContactMethod({ id: contactMethodId });
         } catch (error) {
-            console.error('Failed to remove contact method:', error);
+            log.error('Failed to remove contact method:', error);
         }
     };
 

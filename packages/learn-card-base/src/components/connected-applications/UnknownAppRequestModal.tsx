@@ -5,6 +5,8 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
 
 import TRex from '../../assets/images/emptystate-dinocandle.png';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('unknown-app-request-modal');
 
 type UnknownAppRequestModalProps = {
     appProfileId: string;
@@ -47,7 +49,7 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
                 hasDismissButton: true,
             });
             // @ts-ignore
-            console.log('connectionReq::error', err?.message);
+            log.debug('connectionReq::error', err?.message);
             setLoading(false);
         }
     };

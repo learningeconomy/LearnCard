@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('tenant-config-schema');
 /**
  * TenantConfig Zod Schema — single source of truth for:
  *   - Runtime validation of config from edge functions, localStorage, baked JSON
@@ -267,7 +269,7 @@ export const parseTenantConfig = (raw: unknown, source: string): TenantConfig | 
         return result.data;
     }
 
-    console.warn(
+    log.warn(
         `[TenantConfig] Invalid config from ${source}:`,
         result.error.issues.map((i: ZodIssue) => `${i.path.join('.')}: ${i.message}`).join(', ')
     );
@@ -288,7 +290,7 @@ export const parsePartialTenantConfig = (raw: unknown, source: string): Partial<
         return result.data as Partial<TenantConfig>;
     }
 
-    console.warn(
+    log.warn(
         `[TenantConfig] Invalid partial config from ${source}:`,
         result.error.issues.map((i: ZodIssue) => `${i.path.join('.')}: ${i.message}`).join(', ')
     );

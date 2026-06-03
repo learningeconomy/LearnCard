@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('template-builder-step');
 /**
  * TemplateBuilderStep - Interactive OBv3 credential template builder
  *
@@ -194,7 +196,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         try {
                             obv3Template = jsonToTemplate(credential);
                         } catch (e) {
-                            console.warn('Failed to parse credential as OBv3:', e);
+                            log.warn('Failed to parse credential as OBv3:', e);
                         }
                     }
 
@@ -214,7 +216,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         isMasterTemplate: meta?.isMasterTemplate,
                     } as ExtendedTemplate;
                 } catch (e) {
-                    console.warn('Failed to fetch boost:', boostUri, e);
+                    log.warn('Failed to fetch boost:', boostUri, e);
                     return null;
                 }
             });
@@ -251,7 +253,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 try {
                                     childObv3Template = jsonToTemplate(childCredential);
                                 } catch (e) {
-                                    console.warn('Failed to parse child credential as OBv3:', e);
+                                    log.warn('Failed to parse child credential as OBv3:', e);
                                 }
                             }
 
@@ -274,7 +276,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 parentTemplateId: master.id,
                             } as ExtendedTemplate;
                         } catch (e) {
-                            console.warn('Failed to fetch child boost:', childUri, e);
+                            log.warn('Failed to fetch child boost:', childUri, e);
                             return null;
                         }
                     });
@@ -289,7 +291,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                     return { masterId: master.id, children, childUris };
                 } catch (e) {
-                    console.warn('Failed to fetch children for master template:', e);
+                    log.warn('Failed to fetch children for master template:', e);
                     return { masterId: master.id, children: [], childUris: [] };
                 }
             });
@@ -324,7 +326,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 fetchedTemplates.length > 0 ? fetchedTemplates : (templates as ExtendedTemplate[])
             );
         } catch (err) {
-            console.error('Failed to fetch templates:', err);
+            log.error('Failed to fetch templates:', err);
             setLocalTemplates((templates.length > 0 ? templates : []) as ExtendedTemplate[]);
         } finally {
             setIsLoading(false);
@@ -427,7 +429,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             return boostUri;
         } catch (err) {
-            console.error('Failed to save template as boost:', err);
+            log.error('Failed to save template as boost:', err);
             throw err;
         }
     };
@@ -438,7 +440,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             const wallet = await initWalletRef.current();
             await wallet.invoke.deleteBoost(boostUri);
         } catch (err) {
-            console.error('Failed to delete boost:', err);
+            log.error('Failed to delete boost:', err);
             throw err;
         }
     };
@@ -497,7 +499,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             return boostUri;
         } catch (err) {
-            console.error('Failed to save child template as boost:', err);
+            log.error('Failed to save child template as boost:', err);
             throw err;
         }
     };
@@ -534,7 +536,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 onTemplateChange?.();
             }
         } catch (err) {
-            console.error('Failed to save template:', err);
+            log.error('Failed to save template:', err);
             presentToast(`Failed to ${template.isNew ? 'create' : 'update'} template`, {
                 type: ToastTypeEnum.Error,
             });
@@ -612,7 +614,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 setShowImportModal(true);
             },
             error: error => {
-                console.error('CSV parse error:', error);
+                log.error('CSV parse error:', error);
                 presentToast('Failed to parse CSV file', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -673,7 +675,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 isDirty: false,
                             };
                         } catch (e) {
-                            console.error('Failed to save child boost:', e);
+                            log.error('Failed to save child boost:', e);
                             return child;
                         }
                     })
@@ -698,7 +700,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 onTemplateChange?.();
             }
         } catch (err) {
-            console.error('Failed to save imported templates:', err);
+            log.error('Failed to save imported templates:', err);
             // Fall back to adding unsaved to local state so user can retry
             setLocalTemplates(prev => [...prev, masterTemplate as ExtendedTemplate]);
             setExpandedId(masterTemplate.id);
@@ -765,12 +767,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     await Promise.all(
                         urisToDelete.map(uri =>
                             deleteBoost(uri).catch(e => {
-                                console.warn('Failed to delete boost:', uri, e);
+                                log.warn('Failed to delete boost:', uri, e);
                             })
                         )
                     );
                 } catch (err) {
-                    console.error('Failed to delete template:', err);
+                    log.error('Failed to delete template:', err);
                     presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
                     return;
                 }
@@ -921,7 +923,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     },
                 };
 
-                console.log('Test issuing credential:', testCredential);
+                log.info('Test issuing credential:', testCredential);
 
                 const result = await wallet.invoke.issueCredential?.(
                     testCredential as Parameters<typeof wallet.invoke.issueCredential>[0]

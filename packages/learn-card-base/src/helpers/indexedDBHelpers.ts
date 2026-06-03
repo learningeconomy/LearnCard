@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('indexed-dbhelpers');
 /**
  * IndexedDB helper utilities shared across apps.
  */
@@ -27,10 +29,10 @@ export const clearAllIndexedDB = async (strategy?: KeyDerivationStrategy): Promi
 
             const request = window.indexedDB.deleteDatabase(dbName);
 
-            request.onsuccess = () => console.log(`Deleted database: ${dbName}`);
-            request.onerror = (e) => console.log(`Couldn't delete: ${dbName}`, e);
+            request.onsuccess = () => log.debug(`Deleted database: ${dbName}`);
+            request.onerror = (e) => log.debug(`Couldn't delete: ${dbName}`, e);
         });
     } catch (e) {
-        console.error('Error clearing IndexedDB:', e);
+        log.error('Error clearing IndexedDB:', e);
     }
 };

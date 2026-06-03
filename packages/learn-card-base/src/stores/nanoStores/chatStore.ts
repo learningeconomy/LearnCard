@@ -25,6 +25,8 @@ export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 export const chatInputText = atom('');
+import { getLogger } from '../../logging/logger';
+const log = getLogger('chat-store');
 
 /**
  * The topic URI the current session was started against.
@@ -198,7 +200,7 @@ export async function loadThreads() {
         const threadList = await response.json();
         threads.set(threadList);
     } catch (error) {
-        console.error('Error loading threads:', error);
+        log.error('Error loading threads:', error);
     }
 }
 
@@ -230,7 +232,7 @@ export async function loadThread(threadId: string) {
         const hasSessionEnded = !!loadedThread?.summaries?.length;
         sessionEnded.set(hasSessionEnded);
 
-        console.debug(
+        log.debug(
             `Thread ${threadId} session ended: ${hasSessionEnded}, summaries:`,
             loadedThread?.summaries?.length
         );
@@ -240,14 +242,14 @@ export async function loadThread(threadId: string) {
             `${getBackendUrl()}/thread_credentials?did=${did}&threadId=${threadId}`
         );
         if (!credsResponse.ok) {
-            console.error('Failed to load thread credentials');
+            log.error('Failed to load thread credentials');
             topicCredentials.set([]);
         } else {
             const credsData: TopicCredential[] = await credsResponse.json();
             topicCredentials.set(credsData);
         }
     } catch (error) {
-        console.error('Error loading messages:', error);
+        log.error('Error loading messages:', error);
     }
 }
 
@@ -272,7 +274,7 @@ export async function createThread() {
         await loadThreads();
         return threadId;
     } catch (error) {
-        console.error('Error creating thread:', error);
+        log.error('Error creating thread:', error);
     }
 }
 
@@ -296,7 +298,7 @@ export async function deleteThread(threadId: string) {
 
         await loadThreads();
     } catch (error) {
-        console.error('Error deleting thread:', error);
+        log.error('Error deleting thread:', error);
     }
 }
 
@@ -304,7 +306,7 @@ export async function deleteThread(threadId: string) {
 export async function fetchLearningPathways(threadId: string): Promise<LearningPathway[]> {
     const { did } = auth.get();
     if (!did) {
-        console.error('Authentication required to fetch learning pathways');
+        log.error('Authentication required to fetch learning pathways');
         return [];
     }
 
@@ -319,11 +321,11 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
             const data = await response.json();
             return data.pathways || [];
         } else {
-            console.error('Failed to fetch learning pathways:', response.statusText);
+            log.error('Failed to fetch learning pathways:', response.statusText);
             return [];
         }
     } catch (error) {
-        console.error('Error fetching learning pathways:', error);
+        log.error('Error fetching learning pathways:', error);
         return [];
     }
 }
@@ -501,20 +503,20 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.event === 'debug') {
-                console.debug(`[Mongo] ${data.data.collection}`, data.data);
+                log.debug(`[Mongo] ${data.data.collection}`, data.data);
                 return;
             }
 
             // Handle session completed event
             if (data.event === 'session_completed') {
-                console.debug('Session already completed for this thread');
+                log.debug('Session already completed for this thread');
                 sessionEnded.set(true);
                 isTyping.set(false);
                 return;
             }
 
             if (data.error) {
-                console.error('Error:', data.error);
+                log.error('Error:', data.error);
                 isTyping.set(false);
                 return;
             }
@@ -635,7 +637,7 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'artifact_suggestion') {
-                console.log('artifact_suggestion', data.artifact);
+                log.debug('artifact_suggestion', data.artifact);
 
                 const existing = messages
                     .get()
@@ -653,7 +655,7 @@ export function connectWebSocket() {
                 ]);
             }
         } catch (err) {
-            console.error('WebSocket message error:', err);
+            log.error('WebSocket message error:', err);
         }
     };
 
@@ -693,7 +695,7 @@ export function connectWebSocket() {
 
     ws.onerror = err => {
         if (ws !== socket) return;
-        console.error('WebSocket error:', err);
+        log.error('WebSocket error:', err);
     };
 
     return ws;
@@ -725,7 +727,7 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
     // Check if session has ended before sending message
     const thread = threads.get().find(t => t.id === currentThreadId.get());
     if (thread?.summaries?.length) {
-        console.warn('Cannot send message: session has already ended');
+        log.warn('Cannot send message: session has already ended');
         sessionEnded.set(true);
         return;
     }
@@ -835,7 +837,7 @@ export async function startTopicWithUri(topicUri: string) {
 
     const { did } = auth.get();
     if (!did) {
-        console.error('Authentication required to start a topic with URI.');
+        log.error('Authentication required to start a topic with URI.');
         isTyping.set(false);
         isLoading.set(false);
         showErrorModal('Authentication Required', 'Please sign in to start a topic with a URI.');
@@ -855,7 +857,7 @@ export async function startTopicWithUri(topicUri: string) {
                 setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
             });
         } catch (error) {
-            console.error('WebSocket connection failed, cannot start topic with URI:', error);
+            log.error('WebSocket connection failed, cannot start topic with URI:', error);
             isTyping.set(false);
             isLoading.set(false);
             showErrorModal(
@@ -892,7 +894,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
 
     const { did } = auth.get();
     if (!did) {
-        console.error('Authentication required to start a learning pathway.');
+        log.error('Authentication required to start a learning pathway.');
         isTyping.set(false);
         isLoading.set(false);
         showErrorModal('Authentication Required', 'Please sign in to start a learning pathway.');
@@ -912,7 +914,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
                 setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
             });
         } catch (error) {
-            console.error('WebSocket connection failed, cannot start learning pathway:', error);
+            log.error('WebSocket connection failed, cannot start learning pathway:', error);
             isTyping.set(false);
             isLoading.set(false);
             showErrorModal(
@@ -944,7 +946,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     const { did } = auth.get();
 
     if (!did) {
-        console.error('Authentication required to start a topic.');
+        log.error('Authentication required to start a topic.');
         isTyping.set(false);
         isLoading.set(false);
         return;
@@ -955,7 +957,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             `${getBackendUrl()}/api/chat/active-session-status?did=${did}`
         );
         if (!activeSessionRes.ok) {
-            console.error('Failed to check active session status:', activeSessionRes.statusText);
+            log.error('Failed to check active session status:', activeSessionRes.statusText);
             // Potentially allow proceeding, or show a more specific error to the user.
             // For now, we'll log and proceed cautiously.
         } else {
@@ -978,7 +980,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             //         isTyping.set(false);
             //         isLoading.set(false);
             //         if (activeSessionData.activeThreadId) {
-            //             console.log(
+            //             log.debug(
             //                 `User cancelled. Redirecting to active session: ${activeSessionData.activeThreadId}`
             //             );
             //             currentThreadId.set(activeSessionData.activeThreadId);
@@ -1016,7 +1018,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             });
         }
     } catch (error) {
-        console.error('Error checking active session status:', error);
+        log.error('Error checking active session status:', error);
         // Decide if to proceed or block. For now, log and proceed.
     }
 
@@ -1033,7 +1035,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
                 setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
             });
         } catch (error) {
-            console.error('WebSocket connection failed, cannot start topic:', error);
+            log.error('WebSocket connection failed, cannot start topic:', error);
             isTyping.set(false);
             isLoading.set(false);
             // Optionally, show an error message to the user
@@ -1091,7 +1093,7 @@ export async function startInsightsSession(topic: string, initialText?: string) 
                 setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
             });
         } catch (err) {
-            console.error('WS connect failed:', err);
+            log.error('WS connect failed:', err);
             isTyping.set(false);
             isLoading.set(false);
             showErrorModal('Connection Error', 'Could not connect to chat service.');
@@ -1187,7 +1189,7 @@ export async function finishSession(onSuccess?: () => void) {
     } catch (err) {
         isEndingSession.set(false);
         showEndingSessionLoader.set(false);
-        console.error('Error finishing session: ', err);
+        log.error('Error finishing session: ', err);
     }
 }
 
@@ -1212,7 +1214,7 @@ export function disconnectWebSocket() {
         try {
             ws.close();
         } catch (e) {
-            console.error('WebSocket close error:', e);
+            log.error('WebSocket close error:', e);
         }
         ws = null;
     }
