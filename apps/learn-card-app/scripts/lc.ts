@@ -1741,18 +1741,6 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
         }
 
-        case 'seed:skill-frameworks': {
-            const passthrough = args.slice(1).join(' ');
-
-            runCommand(
-                `pnpm skill-frameworks seed${passthrough ? ` ${passthrough}` : ''}`,
-                'Seeding default skill frameworks',
-                undefined,
-                BRAIN_SERVICE_ROOT
-            );
-            return true;
-        }
-
         case 'native': {
             // pnpm lc native [dev|sync|open|run] [tenant] [ios|android]
             const nativeArgs = args.slice(1);
@@ -1821,18 +1809,9 @@ const handleShortcuts = async (): Promise<boolean> => {
                     undefined,
                     BRAIN_SERVICE_ROOT
                 );
-            } else if (arg === 'skill-frameworks') {
-                const passthrough = args.slice(2).join(' ');
-
-                runCommand(
-                    `pnpm skill-frameworks seed${passthrough ? ` ${passthrough}` : ''}`,
-                    'Seeding default skill frameworks',
-                    undefined,
-                    BRAIN_SERVICE_ROOT
-                );
             } else if (arg) {
                 console.log(yellow(`Unknown seed subcommand: ${arg}`));
-                console.log(dim('  Available: app, skill-frameworks'));
+                console.log(dim('  Available: app'));
                 rl.close();
             } else {
                 await seedTestData();
@@ -1939,9 +1918,7 @@ const printHelp = () => {
         )}`
     );
     console.log(
-        `  ${cyan('pnpm lc seed:skill-frameworks [stage]')} ${dim(
-            'Seed default skill frameworks into local DB'
-        )}`
+        `  ${cyan('pnpm skill-frameworks seed [stage]')} ${dim('Seed default skill frameworks')}`
     );
     console.log(
         `  ${cyan('pnpm skill-frameworks add-admin [stage] [profileId]')} ${dim(
