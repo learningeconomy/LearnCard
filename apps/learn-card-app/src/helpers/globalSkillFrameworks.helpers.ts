@@ -37,6 +37,10 @@ export type SemanticSearchResult = {
 };
 
 const SEEDED_SKILL_FRAMEWORK_SOURCE_PREFIX = 'learncard://seed/skill-frameworks/';
+const SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER = [
+    'wef-global-skills-taxonomy',
+    'pathsmith-durable-skills-starter-edition',
+];
 
 const isProductionEnvironment = (): boolean =>
     typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
@@ -169,7 +173,29 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     return useMemo(
         () =>
             useSeededFrameworks
-                ? seededFrameworks
+                ? // Sort WEF Global Skills Taxonomy before Pathsmith
+                  [...seededFrameworks].sort((left, right) => {
+                      const leftIndex = SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER.indexOf(
+                          left.frameworkId
+                      );
+                      const rightIndex = SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER.indexOf(
+                          right.frameworkId
+                      );
+
+                      if (leftIndex === -1 && rightIndex === -1) {
+                          return left.name.localeCompare(right.name);
+                      }
+
+                      if (leftIndex === -1) {
+                          return 1;
+                      }
+
+                      if (rightIndex === -1) {
+                          return -1;
+                      }
+
+                      return leftIndex - rightIndex;
+                  })
                 : normalizeGlobalSkillFrameworks(flags?.globalSkillFrameworks?.frameworks),
         [flags?.globalSkillFrameworks, seededFrameworks, useSeededFrameworks]
     );
