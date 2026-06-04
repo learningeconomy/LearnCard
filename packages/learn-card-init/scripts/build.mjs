@@ -50,6 +50,7 @@ const buildOptions = {
         '@learncard/learn-card-plugin',
         '@learncard/learn-cloud-plugin',
         '@learncard/network-plugin',
+        '@learncard/openid4vc-plugin',
         '@learncard/types',
         '@learncard/vc-api-plugin',
         '@learncard/vc-plugin',
@@ -116,6 +117,7 @@ await Promise.all(configurations.map(config => esbuild.build(config))).catch(err
     console.error('❌ Build failed');
     process.exit(1);
 });
+await fs.copyFile('./scripts/nodeEsmEntrypoint.mjs', './dist/node-esm.mjs');
 
 console.log('✔ Build successful');
 process.exit(0);
