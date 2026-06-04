@@ -12,8 +12,9 @@
 
 -   Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
 -   Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
--   Re-seed manually with `pnpm seed:skill-frameworks` from `services/learn-card-network/brain-service`.
--   Grant framework admin access to an existing profile with `pnpm seed:skill-frameworks --add-admin <profileId>`.
+-   Re-seed manually with `pnpm skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
+-   Grant framework admin access to an existing profile with `pnpm skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
+-   If no stage is provided, the CLI defaults to `local` and prints a note.
 -   Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
 -   The seed command is idempotent and will not duplicate framework or skill nodes.
 

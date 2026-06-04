@@ -1,3 +1,4 @@
+import { Neogma } from 'neogma';
 import {
     type SeedSkillFrameworkFixture,
     DEFAULT_SKILL_FRAMEWORKS,
@@ -27,9 +28,28 @@ type SeedSkillFrameworksOptions = {
     log?: SeedLogger;
 };
 
+type Neo4jConnectionCandidate = {
+    label: string;
+    url: string;
+    username?: string;
+    password?: string;
+    hint: string;
+};
+
 const DEFAULT_OWNER_PROFILE_ID = 'network-seed';
 const DEFAULT_OWNER_DISPLAY_NAME = 'Network Seed';
 const DEFAULT_OWNER_SHORT_BIO = 'System profile for seeded skill frameworks';
+const LOCAL_NEO4J_FALLBACK = {
+    url: 'bolt://localhost:7687',
+    username: 'neo4j',
+    password: 'this-is-the-password',
+};
+
+const DOCKER_NETWORK_NEO4J_FALLBACK = {
+    url: 'bolt://neo4j:7687',
+    username: 'neo4j',
+    password: 'this-is-the-password',
+};
 
 const toBoolean = (value: string | undefined): boolean => {
     if (!value) return false;
@@ -39,6 +59,166 @@ const toBoolean = (value: string | undefined): boolean => {
 
 const unique = (values: string[]): string[] =>
     Array.from(new Set(values.map(value => value.trim()).filter(Boolean)));
+
+const buildNeo4jErrorSummary = (error: unknown): string => {
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return String(error);
+};
+
+const explainNeo4jConnectionError = (error: string): string => {
+    const normalized = error.toLowerCase();
+
+    if (normalized.includes('no routing servers available')) {
+        return 'This URI points at a routing database, but the local seed script needs a direct Bolt connection. Try the local Docker default first.';
+    }
+
+    if (normalized.includes('failed to establish connection') || normalized.includes('timed out')) {
+        return 'Neo4j could not be reached on that host and port. Make sure the container is running and 7687 is published to your machine.';
+    }
+
+    if (normalized.includes('authentication') || normalized.includes('unauthorized')) {
+        return 'The Neo4j username or password looks wrong for that database.';
+    }
+
+    return error;
+};
+
+const buildNeo4jConnectionCandidates = (
+    stage: 'local' | 'staging' = 'local'
+): Neo4jConnectionCandidate[] => {
+    const envUri = process.env.NEO4J_URI?.trim();
+    const envUsername = process.env.NEO4J_USERNAME?.trim();
+    const envPassword = process.env.NEO4J_PASSWORD?.trim();
+
+    if (stage === 'staging' && envUri && envUsername && envPassword) {
+        return [
+            {
+                label: 'environment variables',
+                url: envUri,
+                username: envUsername,
+                password: envPassword,
+                hint: 'Uses the NEO4J_* values already set in your shell or .env file.',
+            },
+        ];
+    }
+
+    if (stage === 'staging') {
+        throw new Error(
+            'Staging skill-framework seeding requires NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD.'
+        );
+    }
+
+    const candidates: Neo4jConnectionCandidate[] = [
+        {
+            label: 'local Docker default',
+            ...LOCAL_NEO4J_FALLBACK,
+            hint: 'Matches the local compose default used when Neo4j is published on localhost:7687.',
+        },
+        {
+            label: 'Docker network hostname',
+            ...DOCKER_NETWORK_NEO4J_FALLBACK,
+            hint: 'Useful if you are running the script inside the same Docker network as Neo4j.',
+        },
+    ];
+
+    return candidates.filter(
+        (candidate, index, array) =>
+            index ===
+            array.findIndex(
+                other =>
+                    other.url === candidate.url &&
+                    other.username === candidate.username &&
+                    other.password === candidate.password
+            )
+    );
+};
+
+export const resolveSkillFrameworkNeo4jConnection = async (
+    stage: 'local' | 'staging' = 'local'
+): Promise<{
+    neogma: Neogma;
+    candidate: Neo4jConnectionCandidate;
+}> => {
+    const candidates = buildNeo4jConnectionCandidates(stage);
+    const failures: Array<{ candidate: Neo4jConnectionCandidate; error: string }> = [];
+
+    for (const candidate of candidates) {
+        const connection = new Neogma({
+            url: candidate.url,
+            username: candidate.username ?? '',
+            password: candidate.password ?? '',
+        });
+
+        try {
+            await connection.queryRunner.run('RETURN 1 AS ok');
+            return { neogma: connection, candidate };
+        } catch (error) {
+            failures.push({ candidate, error: buildNeo4jErrorSummary(error) });
+            await connection.driver.close().catch(() => undefined);
+        }
+    }
+
+    const failureLines = failures
+        .map(
+            ({ candidate, error }) =>
+                `- ${candidate.label} (${candidate.url}) — ${
+                    candidate.hint
+                }\n  ${explainNeo4jConnectionError(error)}`
+        )
+        .join('\n');
+
+    throw new Error(
+        [
+            'Unable to connect to Neo4j for skill-framework operations.',
+            '',
+            'Tried these connection settings:',
+            failureLines,
+            '',
+            'What to do next:',
+            '- If Neo4j is running in local Docker, make sure the container is up and port 7687 is published to localhost.',
+            '- If you are using a custom database URL, export NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD before running the command again.',
+            '- If you are running the script inside Docker, the fallback hostname is usually bolt://neo4j:7687.',
+        ].join('\n')
+    );
+};
+
+export const countSkillFrameworks = async (run: QueryRunnerLike['run']): Promise<number> => {
+    const result = await run(`MATCH (f:SkillFramework) RETURN count(f) AS c LIMIT 1`);
+    return Number(result.records[0]?.get('c') ?? 0);
+};
+
+export const frameworkExists = async (run: QueryRunnerLike['run']): Promise<boolean> => {
+    return (await countSkillFrameworks(run)) > 0;
+};
+
+export const addSkillFrameworkAdmin = async (
+    run: QueryRunnerLike['run'],
+    profileId: string
+): Promise<number> => {
+    const normalizedProfileId = normalizeProfileId(profileId);
+    const frameworksResult = await run(
+        `MATCH (f:SkillFramework) RETURN collect(f.id) AS frameworkIds, count(f) AS count`
+    );
+
+    const frameworkCount = Number(frameworksResult.records[0]?.get('count') ?? 0);
+    if (frameworkCount === 0) {
+        return 0;
+    }
+
+    const frameworkIds = (frameworksResult.records[0]?.get('frameworkIds') ?? []) as string[];
+    for (const frameworkId of frameworkIds) {
+        await run(
+            `MATCH (p:Profile {profileId: $profileId}), (f:SkillFramework {id: $frameworkId})
+             MERGE (p)-[:MANAGES]->(f)`,
+            { profileId: normalizedProfileId, frameworkId }
+        );
+    }
+
+    return frameworkCount;
+};
 
 const buildSeedSkillEmbeddingUpdater = (run: QueryRunnerLike['run']): UpdateSkillEmbeddingFn => {
     return async (skillId, embedding, frameworkId) => {
@@ -115,7 +295,7 @@ const describeEmbeddingBackfillFailure = (error: unknown): string => {
 };
 
 const normalizeProfileId = (profileId: string): string =>
-    profileId.toLowerCase().replace(':', '%3A');
+    profileId.trim().toLowerCase().replace(':', '%3A');
 
 const upsertSkillNode = async (
     run: QueryRunnerLike['run'],
@@ -180,11 +360,6 @@ const upsertSkillNode = async (
             await upsertSkillNode(run, framework, child, node.id);
         }
     }
-};
-
-export const countSkillFrameworks = async (run: QueryRunnerLike['run']): Promise<number> => {
-    const result = await run(`MATCH (f:SkillFramework) RETURN count(f) AS c LIMIT 1`);
-    return Number(result.records[0]?.get('c') ?? 0);
 };
 
 export const ensureSeedProfile = async (

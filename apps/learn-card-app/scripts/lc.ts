@@ -1745,7 +1745,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             const passthrough = args.slice(1).join(' ');
 
             runCommand(
-                `pnpm seed:skill-frameworks${passthrough ? ` ${passthrough}` : ''}`,
+                `pnpm skill-frameworks seed${passthrough ? ` ${passthrough}` : ''}`,
                 'Seeding default skill frameworks',
                 undefined,
                 BRAIN_SERVICE_ROOT
@@ -1825,7 +1825,7 @@ const handleShortcuts = async (): Promise<boolean> => {
                 const passthrough = args.slice(2).join(' ');
 
                 runCommand(
-                    `pnpm seed:skill-frameworks${passthrough ? ` ${passthrough}` : ''}`,
+                    `pnpm skill-frameworks seed${passthrough ? ` ${passthrough}` : ''}`,
                     'Seeding default skill frameworks',
                     undefined,
                     BRAIN_SERVICE_ROOT
@@ -1939,8 +1939,13 @@ const printHelp = () => {
         )}`
     );
     console.log(
-        `  ${cyan('pnpm lc seed:skill-frameworks [flags]')} ${dim(
+        `  ${cyan('pnpm lc seed:skill-frameworks [stage]')} ${dim(
             'Seed default skill frameworks into local DB'
+        )}`
+    );
+    console.log(
+        `  ${cyan('pnpm skill-frameworks add-admin [stage] [profileId]')} ${dim(
+            'Grant framework admin access to an existing profile'
         )}`
     );
     console.log(
