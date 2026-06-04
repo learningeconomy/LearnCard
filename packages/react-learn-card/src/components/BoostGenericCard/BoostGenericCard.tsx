@@ -89,9 +89,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                 {/* Details Section: grows to fill available space */}
                 <section
-                    className={`flex flex-col flex-grow items-center ${
-                        isCLR ? 'justify-start' : 'justify-end'
-                    } pt-1 w-full ${linkedCredentialsCount === 0 ? 'pb-[20px]' : ''}`}
+                    className={`flex flex-col flex-grow items-center justify-end pt-1 w-full ${
+                        linkedCredentialsCount === 0 ? 'pb-[20px]' : ''
+                    }`}
                 >
                     <div className="px-1 flex flex-col items-center justify-center w-full">
                         {/* Title - dynamically size based on length */}

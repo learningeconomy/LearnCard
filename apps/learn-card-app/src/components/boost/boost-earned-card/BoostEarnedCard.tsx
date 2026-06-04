@@ -414,7 +414,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     dateDisplay={issueDate}
                     issuerName={issuerName}
                     customIssuerName={
-                        <CustomIssuerName issuerName={issuerName} isLoading={showSkeleton} />
+                        <CustomIssuerName
+                            issuerName={issuerName}
+                            subjectName={issueeName}
+                            isLoading={showSkeleton}
+                            isClrCredential={isClrCredential}
+                        />
                     }
                     customThumbComponent={
                         <CredentialBadge
@@ -478,7 +483,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         dateDisplay={issueDate}
                         issuerName={issuerName}
                         customIssuerName={
-                            <CustomIssuerName issuerName={issuerName} isLoading={showSkeleton} />
+                            <CustomIssuerName
+                                issuerName={issuerName}
+                                subjectName={issueeName}
+                                isLoading={showSkeleton}
+                                isClrCredential={isClrCredential}
+                            />
                         }
                         customThumbComponent={
                             <>
@@ -567,7 +577,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }
                     issuerName={issuerName}
                     customIssuerName={
-                        <CustomIssuerName issuerName={issuerName} isLoading={showSkeleton} />
+                        <CustomIssuerName
+                            issuerName={issuerName}
+                            subjectName={issueeName}
+                            isLoading={showSkeleton}
+                            isClrCredential={isClrCredential}
+                        />
                     }
                     customThumbComponent={
                         showSkeleton ? (

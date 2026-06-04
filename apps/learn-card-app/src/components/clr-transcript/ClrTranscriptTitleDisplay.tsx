@@ -117,7 +117,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         return (
             <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
                 {model.summary.gpa && (
-                    <p className="mt-3 text-[14px] font-semibold text-grayscale-900 text-center">
+                    <p className="mt-2 text-[14px] font-semibold text-grayscale-900 text-center">
                         GPA: {formatClrGpa(model.summary.gpa.value)}
                     </p>
                 )}
@@ -160,7 +160,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
         return (
             <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
-                <p className="mt-3 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
+                <p className="mt-2 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
                     {courseName}
                 </p>
                 {grade && (
@@ -177,7 +177,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     return (
         <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
-            <p className="mt-3 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
+            <p className="mt-2 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
                 {degreeName}
             </p>
             {model.summary.explicitCompetencyCount > 0 && (

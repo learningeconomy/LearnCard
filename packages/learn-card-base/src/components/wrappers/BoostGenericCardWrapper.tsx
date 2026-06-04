@@ -124,7 +124,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             customDateDisplay={customDateDisplay}
             customIssuerName={customIssuerName}
             verifierBadge={
-                loading ? null : (
+                loading || isCLR ? null : (
                     <CredentialVerificationDisplay
                         credential={credential}
                         iconClassName="!w-[15px] !h-[15px] mr-1"
