@@ -8,11 +8,15 @@ import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import ScoutsGlobe from 'learn-card-base/svgs/ScoutsGlobe';
 import CertRibbon from 'learn-card-base/svgs/CertRibbon';
 import MeritBadgeRibbon from 'learn-card-base/svgs/MeritBadgeRibbon';
+import CredentialCLRBadge from './CredentialCLRBadge';
 
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { VC } from '@learncard/types';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
-import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getAchievementTypeDisplayText,
+    isClrCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 
 type CredentialBadgeProps = {
@@ -103,6 +107,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     const isMediaDisplayType = displayType === 'media';
 
     const isMeritBadge = boostType === BoostCategoryOptionsEnum.meritBadge;
+    const isCLR = isClrCredential(credential);
 
     const displayTypeStyles = isCertDisplayType
         ? `bg-white shadow-none w-[100px] h-[100px]`
@@ -216,37 +221,44 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
             className={`relative flex items-center justify-center w-full mt-8 mb-8 select-none ${badgeContainerCustomClass}`}
         >
             {badgeBackground}
-            <div
-                className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}
-            >
-                <div
-                    className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
-                >
-                    <img
-                        src={insertParamsToFilestackUrl(
-                            badgeThumbnail,
-                            'resize=width:200/quality=value:75/'
-                        )}
-                        alt="badge thumbnail"
-                        className={`h-full w-full object-cover ${badgeThumbnailCustomClass}`}
-                    />
-                </div>
-
-                <CircleWithText
-                    className="absolute text-white"
-                    textClassName="text-white fill-white font-bold tracking-wider uppercase"
-                    text={badgeCircleText ?? 'Achievement'}
+            {isCLR ? (
+                <CredentialCLRBadge
+                    credential={credential}
+                    badgeCircleCustomClass={badgeCircleCustomClass}
                 />
-
+            ) : (
                 <div
-                    className={`absolute flex items-center justify-center left-[37%] bottom-[-12%] ${badgeRibbonContainerCustomClass}`}
+                    className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}
                 >
-                    <Ribbon className={badgeRibbonCustomClass} />
-                    <IconComponentOverride
-                        className={`absolute text-${_colorOverride} h-[30px] mb-3 ${badgeRibbonIconCustomClass}`}
+                    <div
+                        className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
+                    >
+                        <img
+                            src={insertParamsToFilestackUrl(
+                                badgeThumbnail,
+                                'resize=width:200/quality=value:75/'
+                            )}
+                            alt="badge thumbnail"
+                            className={`h-full w-full object-cover ${badgeThumbnailCustomClass}`}
+                        />
+                    </div>
+
+                    <CircleWithText
+                        className="absolute text-white"
+                        textClassName="text-white fill-white font-bold tracking-wider uppercase"
+                        text={badgeCircleText ?? 'Achievement'}
                     />
+
+                    <div
+                        className={`absolute flex items-center justify-center left-[37%] bottom-[-12%] ${badgeRibbonContainerCustomClass}`}
+                    >
+                        <Ribbon className={badgeRibbonCustomClass} />
+                        <IconComponentOverride
+                            className={`absolute text-${_colorOverride} h-[30px] mb-3 ${badgeRibbonIconCustomClass}`}
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
