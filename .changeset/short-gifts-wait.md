@@ -1,5 +1,5 @@
 ---
-"learn-card-app": patch
+'learn-card-app': patch
 ---
 
 Fix playwright import
