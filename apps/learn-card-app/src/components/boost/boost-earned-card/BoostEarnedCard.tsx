@@ -448,7 +448,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     boostPageViewMode={boostPageViewMode}
                     credential={cred}
                     isInSkillsModal={isInSkillsModal}
-                    // linkedCredentialsCount={linkedCredentialCount}
+                    linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
                     linkedCredentialsClassName={`bg-${color}`}
                     displayType={
                         isClrCredential
@@ -518,7 +518,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         boostPageViewMode={boostPageViewMode}
                         credential={cred}
                         isInSkillsModal={isInSkillsModal}
-                        // linkedCredentialsCount={linkedCredentialCount}
+                        linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
                         linkedCredentialsClassName={`bg-${color}`}
                         displayType={
                             isClrCredential
@@ -627,7 +627,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     credential={cred}
                     loading={showSkeleton}
                     isInSkillsModal={isInSkillsModal}
-                    // linkedCredentialsCount={linkedCredentialCount}
+                    linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
                     linkedCredentialsClassName={`bg-${color}`}
                     displayType={
                         isClrCredential

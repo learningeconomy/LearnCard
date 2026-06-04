@@ -38,11 +38,7 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
     const hasExplicitIssuerData = logoSrc !== undefined || issuerName !== undefined;
     let issuerUser: React.ComponentProps<typeof UserProfilePicture>['user'] = issuerProfile;
 
-    if (hasExplicitIssuerData) {
-        issuerUser = issuerImage
-            ? { displayName: issuerLabel, image: issuerImage }
-            : { displayName: issuerLabel };
-    } else if (!issuerUser) {
+    if (hasExplicitIssuerData || !issuerUser) {
         issuerUser = issuerImage
             ? { displayName: issuerLabel, image: issuerImage }
             : { displayName: issuerLabel };

@@ -283,14 +283,14 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
-                                badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                                displayType={cred?.display?.displayType}
-                                credential={boostVC}
-                                clrIssuerName={clrTranscriptIssuerInfo.issuerName}
-                                clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
-                                clrBadgeKind={
-                                    clrBadgeKind !== 'unknown' ? clrBadgeKind : undefined
-                                }
+                                    badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
+                                    displayType={cred?.display?.displayType}
+                                    credential={boostVC}
+                                    clrIssuerName={clrTranscriptIssuerInfo.issuerName}
+                                    clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
+                                    clrBadgeKind={
+                                        clrBadgeKind !== 'unknown' ? clrBadgeKind : undefined
+                                    }
                                 />
                             )
                         }

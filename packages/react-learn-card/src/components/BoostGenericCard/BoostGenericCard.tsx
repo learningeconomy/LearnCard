@@ -32,7 +32,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     linkedCredentialsCount = 0,
     linkedCredentialsClassName = '',
     checkBtnClass = '',
-    isCLR = false,
 }) => {
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`

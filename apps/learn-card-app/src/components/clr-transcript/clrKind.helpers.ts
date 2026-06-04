@@ -25,10 +25,7 @@ const TITLE_HEURISTICS: Array<[InferredClrKind, RegExp[]]> = [
             /\bgrade report\b/i,
         ],
     ],
-    [
-        'course',
-        [/\bcourse\b/i, /\bclass\b/i, /\bmodule\b/i, /\bunit\b/i, /\blesson\b/i],
-    ],
+    ['course', [/\bcourse\b/i, /\bclass\b/i, /\bmodule\b/i, /\bunit\b/i, /\blesson\b/i]],
     [
         'degree',
         [
