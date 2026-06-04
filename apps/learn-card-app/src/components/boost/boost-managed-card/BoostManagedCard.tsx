@@ -7,9 +7,9 @@ import useManagedBoost from 'apps/learn-card-app/src/hooks/useManagedBoost';
 
 import { IonCol } from '@ionic/react';
 import Lottie from 'react-lottie-player';
+const HourGlass = '/lotties/hourglass.json';
 import { BoostSmallCard } from '@learncard/react';
 import { ErrorBoundary } from 'react-error-boundary';
-const HourGlass = '/lotties/hourglass.json';
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
 import CustomManagedBoostButton from './helpers/CustomManagedBoostButton';
@@ -18,6 +18,7 @@ import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody
 import CustomBoostTitleDisplay from '../boost-earned-card/helpers/CustomBoostTitleDisplay';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
+import { getClrTranscriptKind } from '../../clr-transcript';
 
 import {
     useModal,
@@ -83,6 +84,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         presentManagedBoostModal,
         handlePresentShortBoostModal,
     } = useManagedBoost(boost, { boostVC: _boostVC, categoryType, loading, defaultImg });
+    const clrBadgeKind = boostVC ? getClrTranscriptKind(boostVC) : 'unknown';
 
     const [issueLoading, setIssueLoading] = useState(false);
     const { handleSubmitExistingBoostOther } = useBoost(history);
@@ -168,12 +170,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         customBody = (
             <div className="relative w-full text-center flex flex-col items-center justify-center">
                 <div className="max-w-[50px]">
-                    <Lottie
-                        loop
-                        path={HourGlass}
-                        play
-                        style={{ width: '100%', height: '100%' }}
-                    />
+                    <Lottie loop path={HourGlass} play style={{ width: '100%', height: '100%' }} />
                 </div>
             </div>
         );
@@ -286,6 +283,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                                     displayType={cred?.display?.displayType}
                                     credential={boostVC}
+                                    clrBadgeKind={
+                                        clrBadgeKind !== 'unknown' ? clrBadgeKind : undefined
+                                    }
                                 />
                             )
                         }

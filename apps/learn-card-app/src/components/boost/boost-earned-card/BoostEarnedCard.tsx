@@ -40,6 +40,7 @@ import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
+import { getClrTranscriptKind } from '../../clr-transcript';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
@@ -181,6 +182,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const { getThemedCategory } = useTheme();
     const colors = getThemedCategory(categoryType as CredentialCategoryEnum)?.colors;
     const indicatorColor = colors?.indicatorColor;
+    const clrBadgeKind = cred ? getClrTranscriptKind(cred) : 'unknown';
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
@@ -440,7 +442,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     boostPageViewMode={boostPageViewMode}
                     credential={cred}
                     isInSkillsModal={isInSkillsModal}
-                    linkedCredentialsCount={linkedCredentialCount}
+                    // linkedCredentialsCount={linkedCredentialCount}
                     linkedCredentialsClassName={`bg-${color}`}
                     displayType={
                         isClrCredential
@@ -504,7 +506,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         boostPageViewMode={boostPageViewMode}
                         credential={cred}
                         isInSkillsModal={isInSkillsModal}
-                        linkedCredentialsCount={linkedCredentialCount}
+                        // linkedCredentialsCount={linkedCredentialCount}
                         linkedCredentialsClassName={`bg-${color}`}
                         displayType={
                             isClrCredential
@@ -589,6 +591,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                                 displayType={displayType}
                                 credential={cred}
+                                clrBadgeKind={
+                                    isClrCredential && clrBadgeKind !== 'unknown'
+                                        ? clrBadgeKind
+                                        : undefined
+                                }
                             />
                         )
                     }
@@ -600,7 +607,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     credential={cred}
                     loading={showSkeleton}
                     isInSkillsModal={isInSkillsModal}
-                    linkedCredentialsCount={linkedCredentialCount}
+                    // linkedCredentialsCount={linkedCredentialCount}
                     linkedCredentialsClassName={`bg-${color}`}
                     displayType={
                         isClrCredential
