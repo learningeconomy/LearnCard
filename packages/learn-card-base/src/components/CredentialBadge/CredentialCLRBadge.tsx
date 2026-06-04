@@ -73,7 +73,7 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
             </div>
 
             <div
-                className={`absolute bottom-[25%] left-[40%] flex h-[24px] w-[24px] items-center justify-center rounded-full border-grayscale-600 border-solid border-[3px] z-2 bg-white shadow-[0_8px_16px_rgba(24,34,78,0.16)]`}
+                className={`absolute bottom-[25%] left-[40%] flex h-[24px] w-[24px] items-center justify-center rounded-full border-grayscale-600 border-solid border-[3px] z-[2] bg-white shadow-[0_8px_16px_rgba(24,34,78,0.16)]`}
             >
                 <TrustedCertIcon className="h-full w-full" />
             </div>
