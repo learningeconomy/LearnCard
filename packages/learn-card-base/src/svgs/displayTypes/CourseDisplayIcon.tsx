@@ -27,19 +27,6 @@ export const CourseDisplayIcon: React.FC<{ className?: string; version?: string 
                         />
                     </g>
                 </g>
-                <defs>
-                    <clipPath id="clip0_2803_60702">
-                        <rect width="25" height="25" fill="#353E64" transform="translate(0.75)" />
-                    </clipPath>
-                    <clipPath id="clip1_2803_60702">
-                        <rect
-                            width="25"
-                            height="22.5801"
-                            fill="#353E64"
-                            transform="translate(0.75 1.42773)"
-                        />
-                    </clipPath>
-                </defs>
             </svg>
         );
     }
@@ -66,19 +53,6 @@ export const CourseDisplayIcon: React.FC<{ className?: string; version?: string 
                     />
                 </g>
             </g>
-            <defs>
-                <clipPath id="clip0_2803_60702">
-                    <rect width="25" height="25" fill="white" transform="translate(0.75)" />
-                </clipPath>
-                <clipPath id="clip1_2803_60702">
-                    <rect
-                        width="25"
-                        height="22.5801"
-                        fill="white"
-                        transform="translate(0.75 1.42773)"
-                    />
-                </clipPath>
-            </defs>
         </svg>
     );
 };

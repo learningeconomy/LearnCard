@@ -51,6 +51,7 @@ export const CertificateDisplayIcon: React.FC<{ className?: string; version?: st
             viewBox="0 0 20 20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            className={className}
         >
             <g clip-path="url(#clip0_1980_73213)">
                 <path
