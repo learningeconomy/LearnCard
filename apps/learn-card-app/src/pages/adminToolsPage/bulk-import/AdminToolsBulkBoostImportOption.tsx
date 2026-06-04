@@ -1,6 +1,8 @@
 import React, { useRef, useState, useMemo } from 'react';
 import Papa from 'papaparse';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-bulk-boost-import-option');
 
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
 import AdminToolsBulkBoostImportUploadStep from './AdminToolsBulkBoostImportUploadStep';
@@ -297,7 +299,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error('Error extracting ZIP file:', error);
+            log.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
                 type: ToastTypeEnum.Error,
             });
@@ -358,7 +360,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                                     50 + Math.floor((completedUploads / totalUploads) * 100 * 0.5)
                                 ); // Last 50% is Filestack upload
                             } catch (error) {
-                                console.error(`Failed to upload image ${filename}:`, error);
+                                log.error(`Failed to upload image ${filename}:`, error);
                                 newRowMap.set(key, {
                                     originalValue: info.originalValue,
                                     status: ImageStatus.missing,
@@ -528,7 +530,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 type: ToastTypeEnum.Success,
             });
         } catch (e) {
-            console.error('Failed to bulk import boosts: ', e?.message);
+            log.error('Failed to bulk import boosts: ', e?.message);
 
             presentToast(`Bulk boost import failed! ${e?.message}`, {
                 duration: 5000,

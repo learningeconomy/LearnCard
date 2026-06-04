@@ -30,6 +30,9 @@ import { DashboardLayout, QuickStats, StatItem } from './shared';
 import { AppDidUpgradeDialog } from '../components/AppDidUpgradeDialog';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('unified-integration-dashboard');
+
 // Lazy load tab components for better code splitting
 // Only the active tab is loaded, reducing initial bundle by ~250KB
 const OverviewTab = lazy(() =>
@@ -239,7 +242,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     }
                 }
             } catch (error) {
-                console.warn('Failed to check listing signing authorities:', error);
+                log.warn('Failed to check listing signing authorities:', error);
             }
         };
 
@@ -263,7 +266,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             });
             return true;
         } catch (error) {
-            console.error('Upgrade failed:', error);
+            log.error('Upgrade failed:', error);
             presentToast('Failed to upgrade app', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -300,7 +303,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         setAuthGrants(validGrants);
                         activeTokenCount = validGrants.filter(g => g.status === 'active').length;
                     } catch (err) {
-                        console.warn('Could not load auth grants:', err);
+                        log.warn('Could not load auth grants:', err);
                     }
                 }
 
@@ -355,7 +358,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                             });
                         }
                     } catch (err) {
-                        console.warn('Could not load profile:', err);
+                        log.warn('Could not load profile:', err);
                     }
                 }
 
@@ -366,12 +369,17 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         const guideState = integration?.guideState as any;
                         const contractUri = guideState?.config?.consentFlowConfig?.contractUri;
                         if (contractUri) {
-                            const consentData = await wallet.invoke.getConsentFlowData(contractUri, { limit: 100 });
-                            const records = Array.isArray(consentData) ? consentData : consentData?.records || [];
+                            const consentData = await wallet.invoke.getConsentFlowData(
+                                contractUri,
+                                { limit: 100 }
+                            );
+                            const records = Array.isArray(consentData)
+                                ? consentData
+                                : consentData?.records || [];
                             connectionCount = records.length;
                         }
                     } catch (err) {
-                        console.warn('Could not load consent flow data:', err);
+                        log.warn('Could not load consent flow data:', err);
                     }
                 }
 
@@ -385,7 +393,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     totalConnections: connectionCount,
                 }));
             } catch (err) {
-                console.error('Failed to load dashboard data:', err);
+                log.error('Failed to load dashboard data:', err);
                 presentToast('Failed to load dashboard data', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -443,67 +451,68 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     };
 
     // Build stats bar — consent-flow uses connection-based metrics, others use credential metrics
-    const quickStats: StatItem[] = integration.guideType === 'consent-flow'
-        ? [
-            {
-                label: 'Connections',
-                value: mergedStats.totalConnections,
-                icon: Users,
-                iconBgColor: 'bg-blue-100',
-                iconColor: 'text-blue-600',
-            },
-            {
-                label: 'Contracts',
-                value: mergedStats.activeContracts,
-                icon: FileText,
-                iconBgColor: 'bg-emerald-100',
-                iconColor: 'text-emerald-600',
-            },
-            {
-                label: 'API Tokens',
-                value: mergedStats.activeTokens,
-                icon: Key,
-                iconBgColor: 'bg-cyan-100',
-                iconColor: 'text-cyan-600',
-            },
-            {
-                label: 'Templates',
-                value: mergedStats.templateCount,
-                icon: Award,
-                iconBgColor: 'bg-violet-100',
-                iconColor: 'text-violet-600',
-            },
-        ]
-        : [
-            {
-                label: 'Credentials Sent',
-                value: mergedStats.totalIssued,
-                icon: Zap,
-                iconBgColor: 'bg-cyan-100',
-                iconColor: 'text-cyan-600',
-            },
-            {
-                label: 'Claimed',
-                value: mergedStats.totalClaimed,
-                icon: CheckCircle2,
-                iconBgColor: 'bg-emerald-100',
-                iconColor: 'text-emerald-600',
-            },
-            {
-                label: 'Pending',
-                value: mergedStats.pendingClaims,
-                icon: AlertCircle,
-                iconBgColor: 'bg-amber-100',
-                iconColor: 'text-amber-600',
-            },
-            {
-                label: 'Claim Rate',
-                value: `${mergedStats.claimRate.toFixed(1)}%`,
-                icon: BarChart3,
-                iconBgColor: 'bg-violet-100',
-                iconColor: 'text-violet-600',
-            },
-        ];
+    const quickStats: StatItem[] =
+        integration.guideType === 'consent-flow'
+            ? [
+                  {
+                      label: 'Connections',
+                      value: mergedStats.totalConnections,
+                      icon: Users,
+                      iconBgColor: 'bg-blue-100',
+                      iconColor: 'text-blue-600',
+                  },
+                  {
+                      label: 'Contracts',
+                      value: mergedStats.activeContracts,
+                      icon: FileText,
+                      iconBgColor: 'bg-emerald-100',
+                      iconColor: 'text-emerald-600',
+                  },
+                  {
+                      label: 'API Tokens',
+                      value: mergedStats.activeTokens,
+                      icon: Key,
+                      iconBgColor: 'bg-cyan-100',
+                      iconColor: 'text-cyan-600',
+                  },
+                  {
+                      label: 'Templates',
+                      value: mergedStats.templateCount,
+                      icon: Award,
+                      iconBgColor: 'bg-violet-100',
+                      iconColor: 'text-violet-600',
+                  },
+              ]
+            : [
+                  {
+                      label: 'Credentials Sent',
+                      value: mergedStats.totalIssued,
+                      icon: Zap,
+                      iconBgColor: 'bg-cyan-100',
+                      iconColor: 'text-cyan-600',
+                  },
+                  {
+                      label: 'Claimed',
+                      value: mergedStats.totalClaimed,
+                      icon: CheckCircle2,
+                      iconBgColor: 'bg-emerald-100',
+                      iconColor: 'text-emerald-600',
+                  },
+                  {
+                      label: 'Pending',
+                      value: mergedStats.pendingClaims,
+                      icon: AlertCircle,
+                      iconBgColor: 'bg-amber-100',
+                      iconColor: 'text-amber-600',
+                  },
+                  {
+                      label: 'Claim Rate',
+                      value: `${mergedStats.claimRate.toFixed(1)}%`,
+                      icon: BarChart3,
+                      iconBgColor: 'bg-violet-100',
+                      iconColor: 'text-violet-600',
+                  },
+              ];
 
     if (isLoading) {
         return (
@@ -608,20 +617,19 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 {activeTab === 'app-config' && <AppConfigTab integration={integration} />}
 
-                {activeTab === 'code' && (
-                    integration.guideType === 'consent-flow' ? (
+                {activeTab === 'code' &&
+                    (integration.guideType === 'consent-flow' ? (
                         <ConsentFlowCodeTab integration={integration} templates={templates} />
                     ) : (
                         <IntegrationCodeTab integration={integration} templates={templates} />
-                    )
-                )}
+                    ))}
 
                 {activeTab === 'csv-upload' && (
                     <CsvUploadTab integration={integration} templates={templates} />
                 )}
 
-                {activeTab === 'testing' && (
-                    integration.guideType === 'consent-flow' ? (
+                {activeTab === 'testing' &&
+                    (integration.guideType === 'consent-flow' ? (
                         <ConsentFlowTestingTab integration={integration} templates={templates} />
                     ) : (
                         <TestingTab
@@ -629,8 +637,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                             templates={templates}
                             branding={branding}
                         />
-                    )
-                )}
+                    ))}
 
                 {/* Analytics tab hidden for now
                 {activeTab === 'analytics' && (

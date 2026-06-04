@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notifications-list');
 
 import { IonItem, IonList, useIonModal } from '@ionic/react';
 
@@ -50,12 +52,12 @@ export const NotificationItem: React.FC<{
                         dismissModal?.();
 
                         setIsClaimed(true);
-                        console.log('acceptCredential::success', data);
+                        log.info('acceptCredential::success', data);
                     },
                 }
             );
         } catch (err) {
-            console.log('acceptCredential::error', err?.message);
+            log.info('acceptCredential::error', err?.message);
         }
     };
 

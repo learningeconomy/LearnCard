@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2, Sparkles, Award } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-guide-panel');
 
 import { OBv3CredentialBuilder } from '../../../components/credentials/OBv3CredentialBuilder';
 import { Clipboard } from '@capacitor/clipboard';
@@ -83,7 +85,7 @@ const InlineAPITokenManager: React.FC = () => {
             const grants = await wallet.invoke.getAuthGrants();
             setAuthGrants(grants || []);
         } catch (err) {
-            console.error('Failed to fetch auth grants:', err);
+            log.error('Failed to fetch auth grants:', err);
         } finally {
             setLoading(false);
         }
@@ -110,7 +112,7 @@ const InlineAPITokenManager: React.FC = () => {
             setShowCreateForm(false);
             fetchAuthGrants();
         } catch (err) {
-            console.error('Failed to create token:', err);
+            log.error('Failed to create token:', err);
             presentToast('Failed to create API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setCreating(false);
@@ -126,7 +128,7 @@ const InlineAPITokenManager: React.FC = () => {
             setTimeout(() => setCopiedId(null), 2000);
             presentToast('API Token copied to clipboard', { hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to copy token:', err);
+            log.error('Failed to copy token:', err);
             presentToast('Failed to copy API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };
@@ -154,7 +156,7 @@ const InlineAPITokenManager: React.FC = () => {
 
             fetchAuthGrants();
         } catch (err) {
-            console.error('Failed to revoke/delete token:', err);
+            log.error('Failed to revoke/delete token:', err);
             presentToast('Failed to update API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };
@@ -304,7 +306,7 @@ const InlineSigningAuthoritySetup: React.FC = () => {
             const primary = await wallet.invoke.getPrimaryRegisteredSigningAuthority();
             setPrimarySAName(primary?.relationship?.name ?? null);
         } catch (err) {
-            console.error('Failed to fetch signing authority:', err);
+            log.error('Failed to fetch signing authority:', err);
             setPrimarySAName(null);
         } finally {
             setLoading(false);
@@ -342,7 +344,7 @@ const InlineSigningAuthoritySetup: React.FC = () => {
             presentToast('Signing authority created successfully', { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
+            log.error('Failed to create signing authority:', err);
             presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setCreating(false);
@@ -518,8 +520,8 @@ const learnCard = createPartnerConnect({
 
 // Request user identity (SSO)
 const identity = await learnCard.requestIdentity();
-console.log('User DID:', identity.did);
-console.log('User Profile:', identity.profile);`}
+log.info('User DID:', identity.did);
+log.info('User Profile:', identity.profile);`}
             />
         </StepCard>
 
@@ -822,7 +824,7 @@ const learnCard = await initLearnCard({
     network: true 
 });
 
-console.log('LearnCard DID:', learnCard.id.did());`}
+log.info('LearnCard DID:', learnCard.id.did());`}
             />
         </StepCard>
 
@@ -889,7 +891,7 @@ const consentData = await learnCard.invoke.getConsentFlowData(
     queryOptions
 );
 
-console.log('Consented records:', consentData.records);`}
+log.info('Consented records:', consentData.records);`}
                     />
                 </div>
 
@@ -902,7 +904,7 @@ const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
     queryOptions
 );
 
-console.log('User consent records:', userConsentData.records);`}
+log.info('User consent records:', userConsentData.records);`}
                     />
                 </div>
             </div>
@@ -1016,7 +1018,7 @@ const result = await learnCard.invoke.inbox.issue({
 });
 
 // Response
-console.log(result);
+log.info(result);
 // {
 //   issuanceId: 'abc123',
 //   status: 'ISSUED' | 'PENDING',
@@ -1045,7 +1047,7 @@ app.post('/webhooks/learncard', (req, res) => {
     
     switch (type) {
         case 'ISSUANCE_DELIVERED':
-            console.log('Credential delivered!', {
+            log.info('Credential delivered!', {
                 issuanceId: data.inbox.issuanceId,
                 status: data.inbox.status,
                 recipient: data.inbox.recipient
@@ -1169,7 +1171,7 @@ const userDid = urlParams.get('did');
 
 if (userDid) {
     // User is authenticated via LearnCard
-    console.log('User DID:', userDid);
+    log.info('User DID:', userDid);
 }`}
                 />
             </StepCard>
@@ -1186,7 +1188,7 @@ const learnCard = await initLearnCard({ network: true });
 
 // Resolve the user's DID document
 const didDocument = await learnCard.invoke.resolveDid(userDid);
-console.log('User Profile:', didDocument);`}
+log.info('User Profile:', didDocument);`}
                 />
             </StepCard>
 
@@ -1248,7 +1250,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const userDid = urlParams.get('did');
 const topic = urlParams.get('topic');
 
-console.log('Starting session for:', { userDid, topic });
+log.info('Starting session for:', { userDid, topic });
 
 // Initialize your AI tutor with the topic
 initTutorSession({

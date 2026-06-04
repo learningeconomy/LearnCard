@@ -9,6 +9,9 @@ import {
 import { TEST_USER_2_SEED, TEST_USER_PROFILE_ID, TEST_USER_2_PROFILE_ID } from './constants';
 import { mockDidKitWasmForContext } from './route.helpers';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-credentials.spec');
+
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
         // Create a network profile so the LCN gate lets `Add to LearnCard`
@@ -116,7 +119,7 @@ test.describe('Wallet Credentials', () => {
 
         // Log any console errors for debugging if the test fails later
         if (consoleErrors.length > 0) {
-            console.log('Console errors during credential issuance:', consoleErrors);
+            log.info('Console errors during credential issuance:', consoleErrors);
         }
 
         // User 2: Navigate to alerts and accept the credential

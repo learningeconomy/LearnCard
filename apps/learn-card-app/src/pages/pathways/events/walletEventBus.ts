@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-event-bus');
 /**
  * walletEventBus — the single publish/subscribe seam for every
  * completion-relevant event in the app.
@@ -179,7 +181,7 @@ export const createWalletEventBus = (
                 // analytics pipeline is where it belongs rather
                 // than a crash.
                 // eslint-disable-next-line no-console
-                console.error('[walletEventBus] listener threw:', err);
+                log.error('[walletEventBus] listener threw:', err);
             }
         }
     };
@@ -199,7 +201,7 @@ export const createWalletEventBus = (
                     listener(event);
                 } catch (err) {
                     // eslint-disable-next-line no-console
-                    console.error('[walletEventBus] replay listener threw:', err);
+                    log.error('[walletEventBus] replay listener threw:', err);
                 }
             }
         }

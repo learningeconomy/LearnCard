@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('build-bundle');
 /**
  * buildBundle — shared assembler for showcase bundles.
  *
@@ -195,7 +197,7 @@ const defaultGenerateId: IdFactory = () => {
     // Node-less fallback — in practice we always have crypto.randomUUID
     // in the browser and jsdom/vitest test environment.
     // eslint-disable-next-line no-console
-    console.warn('[showcase] crypto.randomUUID unavailable; falling back to Math.random id');
+    log.warn('[showcase] crypto.randomUUID unavailable; falling back to Math.random id');
     const part = () => Math.random().toString(16).slice(2, 10);
     return `${part()}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part()}${part().slice(0, 4)}`;
 };

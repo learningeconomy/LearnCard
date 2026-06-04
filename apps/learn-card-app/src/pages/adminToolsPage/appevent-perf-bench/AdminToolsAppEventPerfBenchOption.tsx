@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { FC } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-app-event-perf-bench-option');
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import type { VC, VP } from '@learncard/types';
@@ -153,12 +155,12 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                             recipientProfileId: recipientProfileId.trim(),
                         });
                     } else {
-                        console.warn(
+                        log.warn(
                             '[bench] cleanup skipped: bench routes not enabled on this server'
                         );
                     }
                 } catch (cleanupErr) {
-                    console.warn('[bench] auto-cleanup failed (continuing)', cleanupErr);
+                    log.warn('[bench] auto-cleanup failed (continuing)', cleanupErr);
                 }
             }
 

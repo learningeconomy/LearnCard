@@ -3,6 +3,8 @@ import useWallet from 'learn-card-base/hooks/useWallet';
 import { VC } from '@learncard/types';
 import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
 import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troop-analytics-embed');
 
 export interface AnalyticsPayload {
     resource: {
@@ -90,7 +92,7 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
                 const token = await wallet.invoke.generateAnalyticsAccessToken(payload);
                 setAnalyticsToken(token);
             } catch (err) {
-                console.error(err);
+                log.error(err);
 
                 setError('Failed to load analytics');
             }

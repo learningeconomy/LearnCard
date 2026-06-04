@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-upload-resume');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -125,7 +127,7 @@ export const CheckListUploadResume: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetResume::error', error);
+            log.error('handleSetResume::error', error);
         }
     };
 
@@ -144,7 +146,7 @@ export const CheckListUploadResume: React.FC = () => {
                 await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
                 refetchCheckListStatus();
             } catch (error) {
-                console.error('handleDeleteResume::error', error);
+                log.error('handleDeleteResume::error', error);
                 setResume(previous);
                 presentToast('Failed to delete. Please try again.', {
                     title: 'Delete failed',

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('qr-code-user-card-basic-info');
 
 import ChainLink from 'learn-card-base/svgs/LinkChain';
 
@@ -42,7 +44,7 @@ const QrCodeUserCardBasicInfo: React.FC<{
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
+            log.error('Failed to copy to clipboard:', err);
             presentToast('Unable to copy link to clipboard', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react';
 import type { SkillFramework } from '../components/boost/boost';
 import { annotateFrameworkWithIcons } from '../helpers/skillIconHelpers';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-skill-icon-annotation');
+
 export type UseSkillIconAnnotationOptions = {
     onError?: (error: Error) => void;
 };
@@ -21,7 +24,7 @@ export type UseSkillIconAnnotationReturn = {
  * @example
  * ```tsx
  * const { isGenerating, annotateWithIcons } = useSkillIconAnnotation({
- *     onError: (e) => console.error('Icon generation failed:', e),
+ *     onError: (e) => log.error('Icon generation failed:', e),
  * });
  *
  * const handleAnnotate = async () => {

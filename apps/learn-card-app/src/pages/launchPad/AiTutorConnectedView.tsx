@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-tutor-connected-view');
 
 import { IonSpinner, IonFooter } from '@ionic/react';
 import { Sparkles, History, Send, ChevronLeft, Settings } from 'lucide-react';
@@ -85,7 +87,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
             window.open(url.toString(), '_blank');
             closeAllModals();
         } catch (error) {
-            console.error('Failed to launch AI tutor:', error);
+            log.error('Failed to launch AI tutor:', error);
         } finally {
             setIsLaunching(false);
         }
@@ -112,14 +114,14 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                 }
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
             closeAllModals();
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         }
     };
 

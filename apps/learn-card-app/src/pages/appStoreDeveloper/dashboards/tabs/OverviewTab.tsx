@@ -27,7 +27,6 @@ interface OverviewTabProps {
     refreshKey?: number;
 }
 
-
 export const OverviewTab: React.FC<OverviewTabProps> = ({
     integration,
     config,

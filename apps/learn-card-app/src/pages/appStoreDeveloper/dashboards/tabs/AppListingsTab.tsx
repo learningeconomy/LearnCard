@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-listings-tab');
 /**
  * AppListingsTab - Manage App Store Listings
  * 
@@ -103,7 +105,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             setIsCreating(false);
             presentToast('App listing created!', { type: ToastTypeEnum.Success, hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to create listing:', err);
+            log.error('Failed to create listing:', err);
             presentToast('Failed to create app listing', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };
@@ -152,7 +154,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             setEditingListing(null);
             presentToast('App listing updated!', { type: ToastTypeEnum.Success, hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to update listing:', err);
+            log.error('Failed to update listing:', err);
             presentToast('Failed to update app listing', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };
@@ -171,7 +173,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
             presentToast('App listing deleted', { type: ToastTypeEnum.Success, hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to delete listing:', err);
+            log.error('Failed to delete listing:', err);
             presentToast('Failed to delete app listing', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };

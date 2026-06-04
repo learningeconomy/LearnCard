@@ -36,6 +36,8 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-address-book-contact-options');
 
 const BoostAddressBookContactOptions: React.FC<{
     state: BoostCMSState;
@@ -232,7 +234,7 @@ const BoostAddressBookContactOptions: React.FC<{
 
                 handleCloseModal();
             } catch (e: any) {
-                console.log('///Add yourself error', e);
+                log.debug('///Add yourself error', e);
                 throw new Error('There was an error', e);
             }
         }

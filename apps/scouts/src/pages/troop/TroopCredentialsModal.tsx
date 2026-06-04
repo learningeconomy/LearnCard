@@ -18,6 +18,8 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { IonRow, IonCol, IonInput, IonContent } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troop-credentials-modal');
 
 type TroopCredentialsModalProps = {
     credentialType: CredentialCategoryEnum.meritBadge | CredentialCategoryEnum.socialBadge;
@@ -125,7 +127,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
     const { title, icon, color, count } = getCredentialMeta();
 
     const handleNewCredential = () => {
-        // console.log('///create credential');
+        // log.debug('///create credential');
         // closeAllModals();
         handlePresentBoostCMSModal();
     };

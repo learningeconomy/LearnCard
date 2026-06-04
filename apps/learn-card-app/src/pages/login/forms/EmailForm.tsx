@@ -4,6 +4,8 @@ import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('email-form');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -228,7 +230,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 // window.location.href = '/wallet';
             }
         } catch (e) {
-            console.log('///login error');
+            log.info('///login error');
         } finally {
             setIsLoading(false);
         }
@@ -262,7 +264,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendSignInLink error', e);
+                            log.info('///sendSignInLink error', e);
                         }
                     } else {
                         try {
@@ -273,7 +275,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendLoginVerificationCode error', e);
+                            log.info('///sendLoginVerificationCode error', e);
                         }
                     }
 
@@ -296,7 +298,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
-            console.log('///sendLoginVerificationCode error', e);
+            log.info('///sendLoginVerificationCode error', e);
         }
     };
 

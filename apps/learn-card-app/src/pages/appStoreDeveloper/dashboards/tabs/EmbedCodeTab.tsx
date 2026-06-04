@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award, ChevronDown } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-code-tab');
 
 import { useToast } from 'learn-card-base/hooks/useToast';
 import type { CredentialTemplate } from '../types';
@@ -62,7 +64,7 @@ function buildHtmlSnippet(
 ${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: function(details) {
-        console.log('Claimed!', details.credentialId);
+        log.info('Claimed!', details.credentialId);
       },
     });
   });
@@ -94,7 +96,7 @@ function ClaimButton() {
 ${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: (details) => {
-        console.log('Claimed!', details.credentialId);
+        log.info('Claimed!', details.credentialId);
       },
     });
   }, []);

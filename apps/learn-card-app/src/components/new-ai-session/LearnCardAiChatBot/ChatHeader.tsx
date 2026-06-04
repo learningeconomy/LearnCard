@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-header');
 
 import {
     LaunchPadAppListItem,
@@ -118,7 +120,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             });
         } catch (err) {
             // eslint-disable-next-line no-console
-            console.error(
+            log.error(
                 '[ChatHeader] failed to publish ai-session-completed:',
                 err,
             );

@@ -1,5 +1,7 @@
 import React from 'react';
 import './DemoSchoolBox.css';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('demo-school-box');
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -89,7 +91,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
-            console.error(error);
+            log.error(error);
         }
     };
 

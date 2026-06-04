@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-bot-app-list');
 
 import { useConsentFlowByUri } from 'apps/learn-card-app/src/pages/consentFlow/useConsentFlow';
 
@@ -61,7 +63,7 @@ export const ChatBotAppListItem: React.FC<{
                             oneTime: false,
                         });
                     } catch (error) {
-                        console.error('Failed to consent to LearnCard AI contract:', error);
+                        log.error('Failed to consent to LearnCard AI contract:', error);
 
                         const message =
                             error instanceof Error ? error.message : String(error);

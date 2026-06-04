@@ -7,6 +7,8 @@ import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import moment from 'moment';
 import DatePickerInput from '../../date-picker/DatePickerInput';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('onboarding-network-form');
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -319,7 +321,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         authToken = user ? await user.getIdToken(false) : undefined;
                     }
                 } catch (e) {
-                    console.warn('Could not get Firebase ID token (non-fatal):', e);
+                    log.warn('Could not get Firebase ID token (non-fatal):', e);
                 }
 
                 const didWeb = await wallet.invoke.createProfile({
@@ -356,7 +358,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             preferencesInitialized = true;
                         })
                         .catch(err => {
-                            console.error(
+                            log.error(
                                 'Failed to initialize preferences (non-blocking):',
                                 err
                             );
@@ -384,7 +386,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     try {
                         claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
                     } catch (err) {
-                        console.error('claimPendingGuardianLinks failed (non-blocking):', err);
+                        log.error('claimPendingGuardianLinks failed (non-blocking):', err);
                     }
 
                     await refetchIsCurrentUserLCNUser();
@@ -405,7 +407,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 },
                             });
                         } catch (err) {
-                            console.error(
+                            log.error(
                                 'Failed to auto-consent LearnCard AI after onboarding:',
                                 err
                             );
@@ -448,11 +450,11 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
                 if (role === LearnCardRolesEnum.teacher) {
                     getAiInsightsContractUri().catch(err => {
-                        console.log('getAiInsightsContractUri::error', err);
+                        log.info('getAiInsightsContractUri::error', err);
                     });
                 }
             } catch (err) {
-                console.log('createProfile::error', err);
+                log.info('createProfile::error', err);
                 const message =
                     (err as any)?.message ??
                     (typeof err === 'string' ? err : 'There was an error creating your profile');
@@ -478,7 +480,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
-                    console.log('getAiInsightsContractUri::error', err);
+                    log.info('getAiInsightsContractUri::error', err);
                 });
             }
         } else {
@@ -644,7 +646,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleUsMinorConsentToggle(true);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
-                    console.log('///onContinue');
+                    log.info('///onContinue');
                 }}
             />,
             {
@@ -679,7 +681,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         bypassAgeCheck?: boolean;
     }) => {
         const typeOfLogin = authStore.get.typeOfLogin();
-        console.log('//handleUpdateUser');
+        log.info('//handleUpdateUser');
 
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
@@ -720,7 +722,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 }
                             );
                     } catch (e) {
-                        console.log('ensureProfileApprovedFalse::error', e);
+                        log.info('ensureProfileApprovedFalse::error', e);
                     } finally {
                         setIsLoading(false);
                     }
@@ -776,7 +778,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     }
                                 );
                         } catch (e) {
-                            console.log('ensureProfileApprovedFalse::error', e);
+                            log.info('ensureProfileApprovedFalse::error', e);
                         } finally {
                             setIsLoading(false);
                         }
@@ -829,7 +831,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.info('updateProfile::error', error);
                 }
             }
         }
