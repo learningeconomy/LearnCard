@@ -3,6 +3,8 @@ import moment from 'moment';
 import base64url from 'base64url';
 import { createPortal } from 'react-dom';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-shareable-code');
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
@@ -250,7 +252,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             }
         } catch (error) {
             setIsLinkLoading(false);
-            console.log('error:generateBoostClaimLink', error);
+            log.info('error:generateBoostClaimLink', error);
         }
     });
 
@@ -288,7 +290,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                     setCanViewEnabled(true);
                 }
             } catch (error) {
-                console.error('Failed to load boost permissions for claim links', error);
+                log.error('Failed to load boost permissions for claim links', error);
                 setCanViewEnabled(true);
             } finally {
                 setIsPermissionsLoading(false);
@@ -369,7 +371,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                 hasDismissButton: true,
             });
         } catch (error) {
-            console.error('Failed to update boost canView permission', error);
+            log.error('Failed to update boost canView permission', error);
             presentToast('Unable to update permissions. Please try again.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

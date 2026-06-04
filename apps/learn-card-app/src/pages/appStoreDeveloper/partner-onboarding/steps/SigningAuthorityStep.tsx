@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Shield, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('signing-authority-step');
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
@@ -32,7 +34,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                 setPrimarySA(null);
             }
         } catch (err) {
-            console.error('Failed to fetch signing authority:', err);
+            log.error('Failed to fetch signing authority:', err);
             setPrimarySA(null);
         } finally {
             setLoading(false);
@@ -68,7 +70,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
             presentToast('Signing authority created!', { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
+            log.error('Failed to create signing authority:', err);
             presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setCreating(false);

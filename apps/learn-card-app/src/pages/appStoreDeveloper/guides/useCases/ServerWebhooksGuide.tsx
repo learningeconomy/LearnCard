@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { 
-    Key, 
-    Webhook, 
-    Server, 
-    Rocket, 
-    ArrowRight, 
-    ArrowLeft, 
+import {
+    Key,
+    Webhook,
+    Server,
+    Rocket,
+    ArrowRight,
+    ArrowLeft,
     ExternalLink,
     CheckCircle2,
     Plus,
@@ -15,6 +15,9 @@ import {
     Loader2,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('server-webhooks-guide');
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
@@ -60,7 +63,7 @@ const ApiTokenStep: React.FC<{
             const grants = await wallet.invoke.getAuthGrants();
             setAuthGrants(grants || []);
         } catch (err) {
-            console.error('Failed to fetch auth grants:', err);
+            log.error('Failed to fetch auth grants:', err);
         } finally {
             setLoading(false);
         }
@@ -88,8 +91,11 @@ const ApiTokenStep: React.FC<{
             setShowCreateForm(false);
             fetchAuthGrants();
         } catch (err) {
-            console.error('Failed to create token:', err);
-            presentToast('Failed to create token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to create token:', err);
+            presentToast('Failed to create token', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setCreating(false);
         }
@@ -106,7 +112,7 @@ const ApiTokenStep: React.FC<{
             setTimeout(() => setCopiedId(null), 2000);
             presentToast('Token copied!', { hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to copy token:', err);
+            log.error('Failed to copy token:', err);
         }
     };
 
@@ -119,21 +125,31 @@ const ApiTokenStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Create an API Token</h3>
 
                 <p className="text-gray-600">
-                    You'll need an API token to authenticate webhook requests and make API calls from your server.
+                    You'll need an API token to authenticate webhook requests and make API calls
+                    from your server.
                 </p>
             </div>
 
             <StatusIndicator
                 status={loading ? 'loading' : hasActiveToken ? 'ready' : 'warning'}
-                label={loading ? 'Checking...' : hasActiveToken ? `${activeGrants.length} token${activeGrants.length > 1 ? 's' : ''} ready` : 'No tokens found'}
+                label={
+                    loading
+                        ? 'Checking...'
+                        : hasActiveToken
+                        ? `${activeGrants.length} token${activeGrants.length > 1 ? 's' : ''} ready`
+                        : 'No tokens found'
+                }
                 description={hasActiveToken ? 'Copy a token to use' : 'Create one to continue'}
             />
 
             {/* Token list */}
             {!loading && activeGrants.length > 0 && (
                 <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
-                    {activeGrants.map((grant) => (
-                        <div key={grant.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                    {activeGrants.map(grant => (
+                        <div
+                            key={grant.id}
+                            className="flex items-center justify-between p-4 hover:bg-gray-50"
+                        >
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-gray-800">{grant.name}</p>
 
@@ -146,7 +162,11 @@ const ApiTokenStep: React.FC<{
                                 onClick={() => copyToken(grant.id!)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg transition-colors"
                             >
-                                {copiedId === grant.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                {copiedId === grant.id ? (
+                                    <Check className="w-4 h-4" />
+                                ) : (
+                                    <Copy className="w-4 h-4" />
+                                )}
                                 Copy
                             </button>
                         </div>
@@ -158,12 +178,14 @@ const ApiTokenStep: React.FC<{
             {showCreateForm && (
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Token Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Token Name
+                        </label>
 
                         <input
                             type="text"
                             value={newTokenName}
-                            onChange={(e) => setNewTokenName(e.target.value)}
+                            onChange={e => setNewTokenName(e.target.value)}
                             placeholder="e.g., Webhook Server"
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -179,7 +201,10 @@ const ApiTokenStep: React.FC<{
                         </button>
 
                         <button
-                            onClick={() => { setShowCreateForm(false); setNewTokenName(''); }}
+                            onClick={() => {
+                                setShowCreateForm(false);
+                                setNewTokenName('');
+                            }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
                             Cancel
@@ -220,20 +245,25 @@ const WebhookEndpointStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Your Webhook Endpoint</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Create Your Webhook Endpoint
+                </h3>
 
                 <p className="text-gray-600">
-                    Create an HTTPS endpoint on your server that can receive POST requests from LearnCard.
+                    Create an HTTPS endpoint on your server that can receive POST requests from
+                    LearnCard.
                 </p>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Webhook URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Webhook URL
+                </label>
 
                 <input
                     type="url"
                     value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    onChange={e => setWebhookUrl(e.target.value)}
                     placeholder="https://your-server.com/webhooks/learncard"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
@@ -277,7 +307,7 @@ app.post('${webhookUrl || '/webhooks/learncard'}', (req, res) => {
     
     // Handle the event
     const event = req.body;
-    console.log('Received event:', event.type);
+    log.info('Received event:', event.type);
     
     // Always respond quickly
     res.status(200).json({ received: true });
@@ -374,7 +404,7 @@ const HandleEventsStep: React.FC<{
 
             {/* Event types */}
             <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
-                {eventTypes.map((event) => (
+                {eventTypes.map(event => (
                     <div key={event.type} className="flex items-center gap-3 p-3">
                         <code className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-mono">
                             {event.type}
@@ -411,7 +441,7 @@ const HandleEventsStep: React.FC<{
             break;
             
         default:
-            console.log('Unknown event type:', event.type);
+            log.info('Unknown event type:', event.type);
     }
 }
 
@@ -459,7 +489,9 @@ const TestStep: React.FC<{
     apiToken: string;
 }> = ({ onBack, webhookUrl, apiToken }) => {
     const [testing, setTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
+        null
+    );
 
     const handleTest = async () => {
         if (!webhookUrl) {
@@ -505,18 +537,42 @@ const TestStep: React.FC<{
 
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${apiToken ? 'text-emerald-600' : 'text-gray-300'}`} />
-                        <span className={apiToken ? 'text-gray-800' : 'text-gray-400'}>API token created</span>
+                        <CheckCircle2
+                            className={`w-4 h-4 ${apiToken ? 'text-emerald-600' : 'text-gray-300'}`}
+                        />
+                        <span className={apiToken ? 'text-gray-800' : 'text-gray-400'}>
+                            API token created
+                        </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${webhookUrl ? 'text-emerald-600' : 'text-gray-300'}`} />
-                        <span className={webhookUrl ? 'text-gray-800' : 'text-gray-400'}>Webhook URL configured</span>
+                        <CheckCircle2
+                            className={`w-4 h-4 ${
+                                webhookUrl ? 'text-emerald-600' : 'text-gray-300'
+                            }`}
+                        />
+                        <span className={webhookUrl ? 'text-gray-800' : 'text-gray-400'}>
+                            Webhook URL configured
+                        </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${webhookUrl?.startsWith('https://') ? 'text-emerald-600' : 'text-gray-300'}`} />
-                        <span className={webhookUrl?.startsWith('https://') ? 'text-gray-800' : 'text-gray-400'}>HTTPS enabled</span>
+                        <CheckCircle2
+                            className={`w-4 h-4 ${
+                                webhookUrl?.startsWith('https://')
+                                    ? 'text-emerald-600'
+                                    : 'text-gray-300'
+                            }`}
+                        />
+                        <span
+                            className={
+                                webhookUrl?.startsWith('https://')
+                                    ? 'text-gray-800'
+                                    : 'text-gray-400'
+                            }
+                        >
+                            HTTPS enabled
+                        </span>
                     </div>
                 </div>
             </div>
@@ -527,7 +583,9 @@ const TestStep: React.FC<{
                     <div>
                         <h4 className="font-medium text-gray-800">Send Test Event</h4>
 
-                        <p className="text-sm text-gray-500">{webhookUrl || 'No webhook URL set'}</p>
+                        <p className="text-sm text-gray-500">
+                            {webhookUrl || 'No webhook URL set'}
+                        </p>
                     </div>
 
                     <button
@@ -550,7 +608,13 @@ const TestStep: React.FC<{
                 </div>
 
                 {testResult && (
-                    <div className={`p-3 rounded-lg ${testResult.success ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
+                    <div
+                        className={`p-3 rounded-lg ${
+                            testResult.success
+                                ? 'bg-emerald-50 text-emerald-800'
+                                : 'bg-red-50 text-red-800'
+                        }`}
+                    >
                         {testResult.message}
                     </div>
                 )}

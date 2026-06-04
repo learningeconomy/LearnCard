@@ -1,13 +1,17 @@
 {
     "name": "@learncard/init",
-    "version": "2.3.15",
-    "description": "",
+    "version": "2.3.20",
+    "description": "Primary initialization of LearnCard SDK",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/init.esm.js",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
+            "node": {
+                "import": "./dist/node-esm.mjs",
+                "require": "./dist/index.cjs"
+            },
             "import": "./dist/init.esm.js",
             "require": "./dist/index.cjs"
         }
@@ -53,7 +57,6 @@
         "@learncard/crypto-plugin": "workspace:*",
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
-        "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/dynamic-loader-plugin": "workspace:*",
         "@learncard/encryption-plugin": "workspace:*",
@@ -63,11 +66,15 @@
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/network-plugin": "workspace:^",
+        "@learncard/openid4vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-api-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
+    },
+    "optionalDependencies": {
+        "@learncard/didkit-plugin-node": "workspace:*"
     },
     "sideEffects": false
 }

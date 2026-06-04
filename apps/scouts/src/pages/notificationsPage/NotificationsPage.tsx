@@ -6,6 +6,8 @@ import { IonContent, IonPage, IonCol, IonRow } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import NewNotificationsList from '../../components/notifications/notificationsV2/NewNotificationsList';
 import NotificationsSubHeader from '../../components/notifications/notifications-subheader/NotificationsSubheader';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notifications-page');
 
 import {
     DEFAULT_ACTIVE_OPTIONS,
@@ -44,7 +46,7 @@ const NotificationNavTabsContainer: React.FC<{
                 });
             }
         } catch (e) {
-            console.warn('Error checking user notifications endpoint', e);
+            log.warn('Error checking user notifications endpoint', e);
         }
     };
 

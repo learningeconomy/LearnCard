@@ -24,6 +24,10 @@ import type { InfiniteData } from '@tanstack/react-query';
 import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
+import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
 
@@ -52,7 +56,7 @@ export const getCategoryForCredential = async (
                     boost.category) as CredentialCategory;
             }
         } catch (error) {
-            console.warn('Failed to resolve boost for categorization:', error);
+            log.warn('Failed to resolve boost for categorization:', error);
             // Fall back to default categorization if boost resolution fails
         }
     }
@@ -85,6 +89,46 @@ export const useWallet = () => {
     const isLoggedIn = useIsLoggedIn();
     const queryClient = useQueryClient();
 
+    const logWalletSync = (message: string, data?: Record<string, unknown>) => {
+        try {
+            if (data) {
+                log.debug(`[WalletSync] ${message}`, data);
+            } else {
+                log.debug(`[WalletSync] ${message}`);
+            }
+        } catch {
+            // logging should never break wallet sync
+        }
+    };
+
+    const logWalletSyncError = (message: string, err: unknown, data?: Record<string, unknown>) => {
+        try {
+            log.error(`[WalletSync] ${message}`, data ?? {}, err);
+        } catch {
+            // logging should never break wallet sync
+        }
+    };
+
+    const queueAiInsightRefreshAfterWalletRemoval = async (
+        reason: string,
+        data?: Record<string, unknown>
+    ) => {
+        try {
+            logWalletSync(`Queueing AI Passport refresh after ${reason}`, data);
+
+            const wallet = await getWallet();
+
+            await queueAiInsightCredentialRefresh({
+                wallet,
+                queryClient,
+            });
+
+            logWalletSync(`Queued AI Passport refresh after ${reason}`, data);
+        } catch (error) {
+            logWalletSyncError(`Failed to queue AI Passport refresh after ${reason}`, error, data);
+        }
+    };
+
     const getWallet = async (
         _privateKey?: string,
         didOverride?: string | true // true for parent user's did
@@ -95,7 +139,7 @@ export const useWallet = () => {
                 try {
                     await waitForSQLiteReady();
                 } catch (readyErr) {
-                    console.warn(
+                    log.warn(
                         'Waiting for SQLite readiness failed; continuing anyway',
                         readyErr
                     );
@@ -139,9 +183,9 @@ export const useWallet = () => {
             generating = false;
 
             if (e instanceof Error && e.message.includes('Error, no valid private key found')) {
-                console.debug('No private key — expected before login.');
+                log.debug('No private key — expected before login.');
             } else {
-                console.warn('Could not initialize wallet', e);
+                log.warn('Could not initialize wallet', e);
             }
 
             throw e instanceof Error ? e : new Error(String(e));
@@ -158,12 +202,28 @@ export const useWallet = () => {
         const learnCard = await getWallet();
         // Fetch and cache all consented contracts for the user
         const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
+        logWalletSync('Starting credential sync to contracts', {
+            recordUri: record.uri,
+            category,
+            contractCount: allContracts.length,
+        });
         // Batch sync credentials to contracts, respecting share settings
         await Promise.allSettled(
             allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
                 if (status !== 'live') return;
 
                 const categoryInfo = terms.read.credentials.categories[category];
+
+                logWalletSync('Evaluating contract', {
+                    ownerDid: contract.owner.did,
+                    contractUri: contract.uri,
+                    termsUri,
+                    category,
+                    shareAll: categoryInfo?.shareAll,
+                    sharing: categoryInfo?.sharing,
+                    shareUntil: categoryInfo?.shareUntil,
+                    status,
+                });
 
                 if (
                     categoryInfo?.shareAll &&
@@ -181,16 +241,63 @@ export const useWallet = () => {
                     );
 
                     if (sharedUri) {
+                        logWalletSync('Syncing credential to contract', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            category,
+                            sharedUri,
+                        });
                         await learnCard.invoke.syncCredentialsToContract(termsUri, {
                             [category]: [sharedUri],
                         });
+                        logWalletSync('syncCredentialsToContract completed', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            category,
+                        });
+
+                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                            logWalletSync('Queueing AI Passport refresh', {
+                                ownerDid: contract.owner.did,
+                                contractUri: contract.uri,
+                                termsUri,
+                                category,
+                            });
+                            await queueAiInsightCredentialRefresh({
+                                wallet: learnCard,
+                                queryClient,
+                            });
+                        }
+
                         queryClient.invalidateQueries({
                             queryKey: ['useTermsTransactions', termsUri],
                         });
+                    } else {
+                        logWalletSync('No shared URI available for contract', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            category,
+                            recordUri: record.uri,
+                        });
                     }
+                } else {
+                    logWalletSync('Contract not eligible for sync', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                        category,
+                        recordUri: record.uri,
+                    });
                 }
             })
         );
+        logWalletSync('Finished credential sync to contracts', {
+            recordUri: record.uri,
+            category,
+        });
         return true;
     };
 
@@ -368,7 +475,7 @@ export const useWallet = () => {
                 category,
             };
         } catch (e) {
-            console.error(vc, e);
+            log.error(vc, e);
             throw e instanceof Error ? e : new Error(String(e));
         }
     };
@@ -402,6 +509,13 @@ export const useWallet = () => {
 
             const category = await getCategoryForCredential(vc as VC, wallet);
             const boostUri = vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
+
+            logWalletSync('Adding credential to wallet', {
+                uri,
+                contractUri,
+                category,
+                skipSync: Boolean(skipSync),
+            });
 
             const record = {
                 id: _id,
@@ -466,12 +580,27 @@ export const useWallet = () => {
                 });
 
                 if (!skipSync) {
+                    logWalletSync('Triggering automatic credential sync after add', {
+                        uri,
+                        contractUri,
+                        category,
+                    });
                     await syncCredentialToContracts({ record, category });
+                } else {
+                    logWalletSync('Skipping automatic credential sync after add', {
+                        uri,
+                        contractUri,
+                        category,
+                    });
                 }
             }
             return result;
         } catch (e) {
-            console.error(input, e);
+            logWalletSyncError('ERROR', e, {
+                uri,
+                contractUri,
+                skipSync: Boolean(skipSync),
+            });
             const msg = 'There was an error adding to the wallet';
             throw e instanceof Error
                 ? new Error(`${msg}: ${e.message}`)
@@ -497,7 +626,7 @@ export const useWallet = () => {
             const res = await wallet.index[location].addMany?.(mappedInput);
             return res;
         } catch (e) {
-            console.log('//Adding to wallet error', e);
+            log.debug('//Adding to wallet error', e);
             throw e;
         }
     };
@@ -578,6 +707,11 @@ export const useWallet = () => {
         const wallet = await getWallet();
 
         await wallet.index[location].remove(id);
+
+        await queueAiInsightRefreshAfterWalletRemoval('credential removal', {
+            credentialId: id,
+            location,
+        });
     };
 
     // Remove all credentials
@@ -590,9 +724,13 @@ export const useWallet = () => {
                 wallet.index.LearnCloud.removeAll?.(),
             ]);
 
+            await queueAiInsightRefreshAfterWalletRemoval('bulk credential removal', {
+                location: 'all',
+            });
+
             return true;
         } catch (e) {
-            console.log('removeAllVCsFromWallet::error', e);
+            log.debug('removeAllVCsFromWallet::error', e);
             return false;
         }
     };
@@ -644,7 +782,7 @@ export const useWallet = () => {
         try {
             return wallet.id.did();
         } catch (e) {
-            console.log('getDID::error', e);
+            log.debug('getDID::error', e);
             return false;
         }
     };
@@ -654,7 +792,7 @@ export const useWallet = () => {
             try {
                 return await getWallet();
             } catch (e) {
-                console.log('getWalletOrFallback::error', e);
+                log.debug('getWalletOrFallback::error', e);
             }
         }
         return getBespokeLearnCard('a');

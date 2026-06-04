@@ -17,6 +17,8 @@ import {
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-upload-file');
 
 export type RawArtifactType = {
     id: string;
@@ -115,7 +117,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { fileInfo, rawArtifactCredential };
         } catch (error) {
             setIsUploading(false);
-            console.log('getFile::error', error);
+            log.debug('getFile::error', error);
         }
     };
 
@@ -147,7 +149,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { fileInfos, rawArtifactCredentials };
         } catch (error) {
             setIsUploading(false);
-            console.log('getFiles::error', error);
+            log.debug('getFiles::error', error);
         }
     };
 
@@ -199,12 +201,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                                 throw new Error(result.error || 'Failed to upload file');
                             }
                         } catch (err) {
-                            console.error('Error uploading file:', err);
+                            log.error('Error uploading file:', err);
                             throw err;
                         }
                     } catch (innerErr) {
                         failedUploads++;
-                        console.error('❌ Error processing file:', innerErr);
+                        log.error('❌ Error processing file:', innerErr);
                         return null;
                     }
                 })
@@ -273,7 +275,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     duration: 5000,
                 });
             }, 500);
-            console.error('getJsonFiles::error', error);
+            log.error('getJsonFiles::error', error);
         }
     };
 
@@ -310,7 +312,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { vc, credentialUri };
         } catch (error) {
             setIsSaving(false);
-            console.log('saveFile::error', error);
+            log.debug('saveFile::error', error);
         }
     };
 
@@ -337,7 +339,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             checklistStore.set.updateIsParsing(fileType, false);
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('handleSaveResume::error', error);
+            log.error('handleSaveResume::error', error);
         }
     };
 
@@ -370,7 +372,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         );
                     }
                 } catch (error) {
-                    console.error('Error processing file:', error);
+                    log.error('Error processing file:', error);
                     // Continue with next file even if one fails
                 }
             }
@@ -379,7 +381,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             await fetchNewContractCredentials();
             await refetchCheckListStatus();
         } catch (error) {
-            console.error('Error in parseFiles:', error);
+            log.error('Error in parseFiles:', error);
             throw error;
         } finally {
             checklistStore.set.updateIsParsing(fileType, false);

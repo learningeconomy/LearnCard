@@ -29,6 +29,7 @@ import {
     ConsentFlowContractDetails,
     PaginatedConsentFlowTransactions,
     ConsentFlowTransactionsQuery,
+    HolderExportMetadata,
     PaginatedConsentFlowData,
     ConsentFlowDataQuery,
     BoostRecipientInfo,
@@ -106,10 +107,14 @@ import {
     CredentialActivityRecord,
     PaginatedCredentialActivities,
     CredentialActivityStats,
+    BitstringCredentialStatusPurpose,
+    BitstringCredentialStatusEntry,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
+
+export type { BitstringCredentialStatusPurpose, BitstringCredentialStatusEntry };
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -126,7 +131,9 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }) => Promise<string>;
+    createProfile: (
+        profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }
+    ) => Promise<string>;
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -394,7 +401,13 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
+    allocateCredentialStatus: (options?: {
+        statusPurposes?: BitstringCredentialStatusPurpose[];
+        listSize?: number;
+    }) => Promise<BitstringCredentialStatusEntry[]>;
     revokeBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
+    suspendBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
+    unsuspendBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
     sendBoost: (
         profileId: string,
         boostUri: string,
@@ -405,6 +418,7 @@ export type LearnCardNetworkPluginMethods = {
                   overideFn?: (boost: UnsignedVC) => UnsignedVC;
                   skipNotification?: boolean;
                   templateData?: Record<string, unknown>;
+                  statusPurposes?: BitstringCredentialStatusPurpose[];
               }
     ) => Promise<string>;
 
@@ -491,6 +505,7 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
+    getHolderExportMetadata: () => Promise<HolderExportMetadata>;
     getCredentialsForContract: (
         termsUri: string,
         options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
@@ -505,6 +520,11 @@ export type LearnCardNetworkPluginMethods = {
         termsUri: string,
         categories: Record<string, string[]>
     ) => Promise<boolean>;
+
+    deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
+        contractsUpdated: number;
+        removedSharedUris: number;
+    }>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -618,7 +638,10 @@ export type LearnCardNetworkPluginMethods = {
         canApproveInApp: boolean;
     }>;
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
-    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
+    approveGuardianCredential: (
+        token: string,
+        otpCode: string
+    ) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
     approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
     rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
@@ -781,7 +804,7 @@ export type LearnCardNetworkPluginMethods = {
             credentialId: string;
             credentialUri: string;
             date: string;
-            status: 'pending' | 'claimed' | 'revoked';
+            status: 'pending' | 'claimed' | 'revoked' | 'suspended';
             boostName?: string;
             boostCategory?: string;
             activityId?: string;

@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-boost-menu');
 
 import {
     useDeleteCredentialRecord,
@@ -6,6 +8,8 @@ import {
     ModalTypes,
     useDeleteManagedBoostMutation,
     useGetRecordForUri,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
 import BoostOptionsMenu from '../boost-options-menu/BoostOptionsMenu';
@@ -54,6 +58,7 @@ const useBoostMenu = ({
     const { mutateAsync: deleteManagedBoost } = useDeleteManagedBoostMutation();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
+    const { presentToast } = useToast();
 
     const { data: retrievedRecord } = useGetRecordForUri(
         _record?.uri,
@@ -67,11 +72,14 @@ const useBoostMenu = ({
             await deleteManagedBoost({ boostUri, category: categoryType });
             onDelete?.();
         } else if (record?.id && record.uri) {
-            console.log('deleting record', record);
+            log.info('deleting record', record);
             await deleteCredentialRecord(record as LCR);
             onDelete?.();
         } else {
-            console.error("Couldn't delete boost: missing credential record data");
+            presentToast("Error deleting credential: unable to locate record ID.", {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 

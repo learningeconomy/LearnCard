@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -7,6 +7,8 @@ import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import moment from 'moment';
 import DatePickerInput from '../../date-picker/DatePickerInput';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('onboarding-network-form');
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -65,7 +67,12 @@ import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    NEW_SIGNUP_FLAG_KEY,
+    ONBOARDING_STARTED_AT_KEY,
+} from '@analytics';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
@@ -112,6 +119,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
+    // LC-1853 (review #8): prefer the onboarding-entry timestamp set by
+    // OnboardingContainer; fall back to this form's mount time if missing
+    // (e.g. user lands directly on the network form).
+    const flowStartedAt = useRef(
+        Number(localStorage.getItem(ONBOARDING_STARTED_AT_KEY) ?? Date.now())
+    );
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
@@ -308,7 +321,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         authToken = user ? await user.getIdToken(false) : undefined;
                     }
                 } catch (e) {
-                    console.warn('Could not get Firebase ID token (non-fatal):', e);
+                    log.warn('Could not get Firebase ID token (non-fatal):', e);
                 }
 
                 const didWeb = await wallet.invoke.createProfile({
@@ -345,7 +358,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             preferencesInitialized = true;
                         })
                         .catch(err => {
-                            console.error(
+                            log.error(
                                 'Failed to initialize preferences (non-blocking):',
                                 err
                             );
@@ -354,14 +367,26 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
                         country: country ?? undefined,
+                        msSinceMethodStarted: Date.now() - flowStartedAt.current,
                     });
+
+                    // LC-1853 (review #4): this is the unambiguous "new account
+                    // created" moment. Flag it so the next AppRouter mount fires
+                    // ACCOUNT_CREATED with method:'new_signup' instead of
+                    // defaulting to 'returning_user'. The flag is consumed-once
+                    // (deleted after read) so subsequent logins don't trip it.
+                    localStorage.setItem(NEW_SIGNUP_FLAG_KEY, '1');
+                    // Onboarding-entry timestamp has served its purpose; clear it
+                    // so a future onboarding flow (e.g. account re-creation) gets
+                    // a fresh start time.
+                    localStorage.removeItem(ONBOARDING_STARTED_AT_KEY);
 
                     // Check for pending guardian approvals linked to this email (non-blocking)
                     let claimedChildren: Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }> = [];
                     try {
                         claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
                     } catch (err) {
-                        console.error('claimPendingGuardianLinks failed (non-blocking):', err);
+                        log.error('claimPendingGuardianLinks failed (non-blocking):', err);
                     }
 
                     await refetchIsCurrentUserLCNUser();
@@ -382,7 +407,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 },
                             });
                         } catch (err) {
-                            console.error(
+                            log.error(
                                 'Failed to auto-consent LearnCard AI after onboarding:',
                                 err
                             );
@@ -425,11 +450,11 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
                 if (role === LearnCardRolesEnum.teacher) {
                     getAiInsightsContractUri().catch(err => {
-                        console.log('getAiInsightsContractUri::error', err);
+                        log.info('getAiInsightsContractUri::error', err);
                     });
                 }
             } catch (err) {
-                console.log('createProfile::error', err);
+                log.info('createProfile::error', err);
                 const message =
                     (err as any)?.message ??
                     (typeof err === 'string' ? err : 'There was an error creating your profile');
@@ -455,7 +480,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
-                    console.log('getAiInsightsContractUri::error', err);
+                    log.info('getAiInsightsContractUri::error', err);
                 });
             }
         } else {
@@ -621,7 +646,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleUsMinorConsentToggle(true);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
-                    console.log('///onContinue');
+                    log.info('///onContinue');
                 }}
             />,
             {
@@ -656,7 +681,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         bypassAgeCheck?: boolean;
     }) => {
         const typeOfLogin = authStore.get.typeOfLogin();
-        console.log('//handleUpdateUser');
+        log.info('//handleUpdateUser');
 
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
@@ -697,7 +722,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 }
                             );
                     } catch (e) {
-                        console.log('ensureProfileApprovedFalse::error', e);
+                        log.info('ensureProfileApprovedFalse::error', e);
                     } finally {
                         setIsLoading(false);
                     }
@@ -753,7 +778,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     }
                                 );
                         } catch (e) {
-                            console.log('ensureProfileApprovedFalse::error', e);
+                            log.info('ensureProfileApprovedFalse::error', e);
                         } finally {
                             setIsLoading(false);
                         }
@@ -806,7 +831,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.info('updateProfile::error', error);
                 }
             }
         }

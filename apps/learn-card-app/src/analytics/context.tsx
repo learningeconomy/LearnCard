@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('context');
 
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import {
+    setAnalyticsProvider as setSendCredentialFlowProvider,
+    setSendCredentialTelemetryEnabled,
+} from '../helpers/sendCredentialFlow.helpers';
 
 /**
  * Lazily load and instantiate the appropriate analytics provider.
@@ -31,7 +38,7 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     switch (providerName) {
         case 'posthog': {
             if (!posthogKey) {
-                console.warn(
+                log.warn(
                     '[Analytics] PostHog selected but no posthogKey configured, falling back to noop'
                 );
                 return new NoopProvider();
@@ -90,6 +97,8 @@ interface AnalyticsProviderProps {
 export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
     const [provider, setProvider] = useState<AnalyticsProvider>(() => new NoopProvider());
     const [isReady, setIsReady] = useState(false);
+    const flags = useFlags();
+    const sendCredentialTelemetryFlag = !!flags.enableSendCredentialPosthogTelemetry;
 
     useEffect(() => {
         let mounted = true;
@@ -104,9 +113,11 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
 
                 setProvider(loadedProvider);
                 setIsReady(true);
+                // LC-1644: wire frontend perf telemetry helper to the same provider
+                setSendCredentialFlowProvider(loadedProvider);
             })
             .catch(error => {
-                console.error('[Analytics] Failed to load provider', error);
+                log.error('[Analytics] Failed to load provider', error);
 
                 if (mounted) {
                     setIsReady(true);
@@ -117,6 +128,12 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
             mounted = false;
         };
     }, []);
+
+    // LC-1644: gate natural send-credential telemetry on the LD flag.
+    // Bench-triggered events bypass the gate inside sendCredentialFlow.helpers.
+    useEffect(() => {
+        setSendCredentialTelemetryEnabled(sendCredentialTelemetryFlag);
+    }, [sendCredentialTelemetryFlag]);
 
     const value = useMemo(() => ({ provider, isReady }), [provider, isReady]);
 

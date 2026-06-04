@@ -1,5 +1,7 @@
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { getPlatformPrivateKey } from 'learn-card-base/security/platformPrivateKeyStorage';
+import { getLogger } from '../logging/logger';
+const log = getLogger('private-key-helpers');
 
 /**
  * Centralized helper to retrieve the current user's private key.
@@ -26,7 +28,7 @@ export const getCurrentUserPrivateKey = async (
         const pk = await getPlatformPrivateKey();
         if (pk && pk.length > 0) return pk;
     } catch (e) {
-        console.warn('getCurrentUserPrivateKey::secureStorage', e);
+        log.warn('getCurrentUserPrivateKey::secureStorage', e);
     }
 
     return null;

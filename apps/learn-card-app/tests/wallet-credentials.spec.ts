@@ -2,15 +2,21 @@ import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import {
     issueCredentialToSelf,
+    openAddToLearnCardMenu,
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
 } from './test.helpers';
 import { TEST_USER_2_SEED, TEST_USER_PROFILE_ID, TEST_USER_2_PROFILE_ID } from './constants';
 import { mockDidKitWasmForContext } from './route.helpers';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-credentials.spec');
+
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
-        await waitForAuthenticatedState(page);
+        // Create a network profile so the LCN gate lets `Add to LearnCard`
+        // open AddToLearnCardMenu instead of OnboardingContainer.
+        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
     });
 
     test('Issue credential to yourself', async ({ page }) => {
@@ -67,7 +73,7 @@ test.describe('Wallet Credentials', () => {
         // (waitForAuthenticatedState already lands on /wallet)
 
         // User 1: Create a credential and send to user 2
-        await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+        await openAddToLearnCardMenu(page);
         await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
 
         // Select the first available template
@@ -113,7 +119,7 @@ test.describe('Wallet Credentials', () => {
 
         // Log any console errors for debugging if the test fails later
         if (consoleErrors.length > 0) {
-            console.log('Console errors during credential issuance:', consoleErrors);
+            log.info('Console errors during credential issuance:', consoleErrors);
         }
 
         // User 2: Navigate to alerts and accept the credential

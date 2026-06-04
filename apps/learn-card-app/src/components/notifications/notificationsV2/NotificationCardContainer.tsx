@@ -44,6 +44,9 @@ export const NOTIFICATION_TYPES = {
     APP_NOTIFICATION: 'APP_NOTIFICATION',
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notification-card-container');
+
 export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
@@ -90,7 +93,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             },
             {
                 onError: error => {
-                    console.error('Error archiving notification:', error);
+                    log.error('Error archiving notification:', error);
                 },
             }
         );
@@ -166,9 +169,9 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                     return true;
                 },
                 async onError(err, variables, context) {
-                    console.log('///ON ERROR CONNECTION REQUEST', err);
+                    log.info('///ON ERROR CONNECTION REQUEST', err);
                     if (err?.toString()?.includes('Profiles are already connected')) {
-                        console.log('//profiles already connected mutation firing');
+                        log.info('//profiles already connected mutation firing');
                         await updateNotification({
                             notificationId: notification?._id,
                             payload: { actionStatus: 'COMPLETED', read: true },
@@ -236,7 +239,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                             ],
                         });
 
-                        console.log('//profiles already connected mutation firing complete');
+                        log.info('//profiles already connected mutation firing complete');
                         return true;
                     }
                     return false;

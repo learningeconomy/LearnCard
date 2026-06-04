@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-logout');
 
 import authStore from 'learn-card-base/stores/authStore';
 
@@ -57,7 +59,7 @@ const useLogout = () => {
                     try {
                         await pushUtilities.revokePushToken(initWallet, deviceToken);
                     } catch (e) {
-                        console.error('Error revoking push token', e);
+                        log.error('Error revoking push token', e);
                     }
                 }
 
@@ -72,7 +74,7 @@ const useLogout = () => {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {
-                        console.warn('firebase::signout::error', e);
+                        log.warn('firebase::signout::error', e);
                     }
                 }
 
@@ -86,7 +88,7 @@ const useLogout = () => {
                 // land on a white screen. A full page reload reinitializes cleanly.
                 window.location.href = '/login';
             } catch (e) {
-                console.error('There was an issue logging out', e);
+                log.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
                 presentToast(`Oops, we had an issue logging out.`, {
                     type: ToastTypeEnum.Error,

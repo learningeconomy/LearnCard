@@ -5,6 +5,8 @@ import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('phone-form');
 
 import {
     authStore,
@@ -83,7 +85,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
 
     useEffect(() => {
         FirebaseAuthentication.addListener('phoneCodeSent', e => {
-            console.log('📞📞📞 phoneCodeSent::res 📞📞📞', e);
+            log.info('📞📞📞 phoneCodeSent::res 📞📞📞', e);
 
             const verificationId = e?.verificationId;
 
@@ -101,7 +103,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         });
 
         FirebaseAuthentication.addListener('phoneVerificationCompleted', e => {
-            console.log('📞📞📞 phoneVerificationCompleted::res 📞📞📞', e);
+            log.info('📞📞📞 phoneVerificationCompleted::res 📞📞📞', e);
             loginAfterAutoVerifiedSMS(
                 e?.verificationCode,
                 () => {

@@ -1,5 +1,99 @@
 # learn-card-core
 
+## 2.3.20
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3), [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/types@5.17.0
+    -   @learncard/network-plugin@2.13.0
+    -   @learncard/didkit-plugin@1.9.0
+    -   @learncard/vc-plugin@1.5.0
+    -   @learncard/core@9.4.20
+    -   @learncard/chapi-plugin@1.1.20
+    -   @learncard/did-web-plugin@1.1.20
+    -   @learncard/didkey-plugin@1.1.20
+    -   @learncard/encryption-plugin@1.1.20
+    -   @learncard/learn-card-plugin@1.2.20
+    -   @learncard/learn-cloud-plugin@2.3.25
+    -   @learncard/openid4vc-plugin@0.1.1
+    -   @learncard/vc-api-plugin@1.1.20
+    -   @learncard/vc-templates-plugin@1.1.20
+    -   @learncard/vpqr-plugin@1.1.20
+    -   @learncard/crypto-plugin@1.1.20
+    -   @learncard/dynamic-loader-plugin@1.1.20
+    -   @learncard/ethereum-plugin@1.1.21
+    -   @learncard/expiration-plugin@1.2.20
+
+## 2.3.19
+
+### Patch Changes
+
+-   [#1201](https://github.com/learningeconomy/LearnCard/pull/1201) [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b) Thanks [@Custard7](https://github.com/Custard7)! - Initial release of `@learncard/openid4vc-plugin` (OpenID4VCI + OpenID4VP + SIOPv2 + DCQL + JARM holder support). Auto-wired into every seed-based initializer in `@learncard/init`, so hosts pick it up on upgrade without code changes.
+
+    -   PEX matching uses the platform's native `RegExp` behind `safe-regex` + a 512-char pattern cap, keeping the plugin bundleable into browser wallets without polyfills.
+    -   Bitstring Status List revocation/suspension checking is delegated to `@learncard/didkit-plugin` — `lc.invoke.verifyCredential(vc)` automatically validates `BitstringStatusListEntry` / `StatusList2021Entry` / `RevocationList2020` entries when the credential carries a `credentialStatus`.
+
+-   Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/types@5.16.0
+    -   @learncard/openid4vc-plugin@0.1.0
+    -   @learncard/core@9.4.19
+    -   @learncard/helpers@1.3.1
+    -   @learncard/chapi-plugin@1.1.19
+    -   @learncard/did-web-plugin@1.1.19
+    -   @learncard/didkey-plugin@1.1.19
+    -   @learncard/didkit-plugin@1.8.10
+    -   @learncard/encryption-plugin@1.1.19
+    -   @learncard/learn-card-plugin@1.2.19
+    -   @learncard/network-plugin@2.12.1
+    -   @learncard/learn-cloud-plugin@2.3.24
+    -   @learncard/vc-plugin@1.4.15
+    -   @learncard/vc-api-plugin@1.1.19
+    -   @learncard/vc-templates-plugin@1.1.19
+    -   @learncard/vpqr-plugin@1.1.19
+    -   @learncard/crypto-plugin@1.1.19
+    -   @learncard/dynamic-loader-plugin@1.1.19
+    -   @learncard/ethereum-plugin@1.1.20
+    -   @learncard/expiration-plugin@1.2.19
+
+## 2.3.18
+
+### Patch Changes
+
+-   [#1233](https://github.com/learningeconomy/LearnCard/pull/1233) [`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344) Thanks [@Custard7](https://github.com/Custard7)! - chore: Update CLI & Init Packages
+
+-   Updated dependencies [[`773bbd425d2e87796d5d713450397723e3c21c71`](https://github.com/learningeconomy/LearnCard/commit/773bbd425d2e87796d5d713450397723e3c21c71), [`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7), [`5d402748c33bbe4f23aa38f45953d03274f38b65`](https://github.com/learningeconomy/LearnCard/commit/5d402748c33bbe4f23aa38f45953d03274f38b65)]:
+    -   @learncard/network-plugin@2.12.0
+    -   @learncard/types@5.15.0
+    -   @learncard/helpers@1.3.0
+    -   @learncard/vc-plugin@1.4.14
+    -   @learncard/learn-card-plugin@1.2.18
+    -   @learncard/core@9.4.18
+    -   @learncard/chapi-plugin@1.1.18
+    -   @learncard/did-web-plugin@1.1.18
+    -   @learncard/didkey-plugin@1.1.18
+    -   @learncard/didkit-plugin@1.8.9
+    -   @learncard/encryption-plugin@1.1.18
+    -   @learncard/learn-cloud-plugin@2.3.23
+    -   @learncard/vc-api-plugin@1.1.18
+    -   @learncard/vc-templates-plugin@1.1.18
+    -   @learncard/vpqr-plugin@1.1.18
+    -   @learncard/crypto-plugin@1.1.18
+    -   @learncard/dynamic-loader-plugin@1.1.18
+    -   @learncard/ethereum-plugin@1.1.19
+    -   @learncard/expiration-plugin@1.2.18
+
+## 2.3.16
+
+### Patch Changes
+
+-   Updated dependencies [[`81482ce6a60c9c8c8218ee51016671488a2bfeae`](https://github.com/learningeconomy/LearnCard/commit/81482ce6a60c9c8c8218ee51016671488a2bfeae)]:
+    -   @learncard/didkit-plugin@1.8.8
+    -   @learncard/didkit-plugin-node@0.2.14
+    -   @learncard/learn-cloud-plugin@2.3.22
+    -   @learncard/network-plugin@2.11.5
+
 ## 2.3.15
 
 ### Patch Changes

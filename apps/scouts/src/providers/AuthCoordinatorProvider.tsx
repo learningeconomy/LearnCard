@@ -43,6 +43,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
+    getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
@@ -86,6 +87,8 @@ import {
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
+
+const log = getLogger('scouts/auth-coordinator');
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches device share then renders the approver modal
@@ -178,7 +181,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 const requested = await BarcodeScanner.requestPermissions();
 
                 if (requested.camera !== 'granted') {
-                    console.warn('[ScoutPass] Camera permission denied');
+                    log.warn('Camera permission denied');
                     return null;
                 }
             }
@@ -196,7 +199,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 });
             });
         } catch (e) {
-            console.warn('[ScoutPass] QR scan failed:', e);
+            log.warn('QR scan failed', e);
             await BarcodeScanner.removeAllListeners();
             await BarcodeScanner.stopScan();
             return null;
@@ -264,7 +267,7 @@ registerAuthProviderFactory('firebase', () =>
                         const { user } = await FirebaseAuthentication.getCurrentUser();
 
                         if (user) {
-                            console.debug('[Auth] Native Firebase user found — using NATIVE token');
+                            log.debug('[Auth] Native Firebase user found — using NATIVE token');
                             const result = await FirebaseAuthentication.getIdToken({ forceRefresh: forceRefresh ?? false });
                             return result.token;
                         }
@@ -293,7 +296,7 @@ registerAuthProviderFactory('firebase', () =>
                 try {
                     await FirebaseAuthentication.signOut();
                 } catch (e) {
-                    console.warn('[ScoutPass] Native FirebaseAuthentication.signOut failed', e);
+                    log.warn('Native FirebaseAuthentication.signOut failed', e);
                 }
             }
 
@@ -514,7 +517,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                 await coordinator.initialize();
             } catch (e) {
-                console.warn('[ScoutPass] QR login device share pickup failed', e);
+                log.warn('QR login device share pickup failed', e);
             }
         };
 
@@ -572,13 +575,13 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
             if (!vpJwt || typeof vpJwt !== 'string') {
-                console.error('[ScoutPass][signDidAuthVp] getDidAuthVp returned non-string:', typeof vpJwt, vpJwt);
+                log.error('[signDidAuthVp] getDidAuthVp returned non-string', { type: typeof vpJwt });
                 throw new Error('Failed to sign DID-Auth VP JWT');
             }
 
             return vpJwt;
         } catch (e) {
-            console.error('[ScoutPass][signDidAuthVp] error:', e);
+            log.error('[signDidAuthVp] error', e);
             throw e instanceof Error ? e : new Error(String(e));
         }
     }, []);
@@ -722,7 +725,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 const newWallet = await getBespokeLearnCard(privateKey);
 
                 if (!newWallet) {
-                    console.error('[ScoutPass] Failed to initialize wallet from private key');
+                    log.error('Failed to initialize wallet from private key');
                     return;
                 }
 
@@ -735,7 +738,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                     try {
                         await setPlatformPrivateKey(privateKey);
                     } catch (e) {
-                        console.warn('[ScoutPass] Failed to persist private key to secure storage', e);
+                        log.warn('Failed to persist private key to secure storage', e);
                     }
                 }
 
@@ -754,7 +757,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 try {
                     await pushUtilities.syncPushToken();
                 } catch (e) {
-                    console.warn('[ScoutPass] Push token sync failed', e);
+                    log.warn('Push token sync failed', e);
                 }
 
                 setWallet(newWallet);
@@ -790,7 +793,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                     }
                 }
             } catch (e) {
-                console.error('[ScoutPass] Wallet initialization failed', e);
+                log.error('Wallet initialization failed', e);
                 walletInitRef.current = false;
             }
         };
@@ -851,7 +854,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 setLcnProfile(cachedProfile ?? null);
             }
         } catch (e) {
-            console.warn('[ScoutPass] LCN profile fetch failed', e);
+            log.warn('LCN profile fetch failed', e);
             setLcnProfile(null);
         } finally {
             setLcnProfileLoading(false);
@@ -970,10 +973,10 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                             await keyDerivation.storeLocalKey(deviceShare);
 
                             if (shareVersion != null) {
-                                console.debug('[ScoutPass][Recovery via Device] storing shareVersion:', shareVersion);
+                                log.debug('[Recovery via Device] storing shareVersion', { shareVersion });
                                 await keyDerivation.storeLocalShareVersion?.(shareVersion);
                             } else {
-                                console.warn('[ScoutPass][Recovery via Device] no shareVersion received from approver device');
+                                log.warn('[Recovery via Device] no shareVersion received from approver device');
                             }
 
                             await coordinator.initialize();
@@ -1091,7 +1094,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                                     freshToken, authProvider.getProviderType(), pk, newEmail
                                 );
                             } catch (e) {
-                                console.warn('Email backup share after upgrade failed (non-fatal):', e);
+                                log.warn('Email backup share after upgrade failed (non-fatal)', e);
                             }
                         }
 
@@ -1179,7 +1182,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 const currentPrivateKey = coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
 
                 const setupMethod = async (input: RecoverySetupInput, authUser?: { id: string; email?: string; phone?: string; providerType: string } | null) => {
-                    console.debug('[ScoutPass][setupMethod] starting, privateKey length:', currentPrivateKey?.length, 'method:', input.method);
+                    log.debug('[setupMethod] starting', { privateKeyLength: currentPrivateKey?.length, method: input.method });
 
                     let token: string;
 
@@ -1191,7 +1194,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                     const providerType = authProvider.getProviderType();
 
-                    console.debug('[ScoutPass][setupMethod] got token, providerType:', providerType, 'calling setupRecoveryMethod');
+                    log.debug('[setupMethod] got token, calling setupRecoveryMethod', { providerType });
 
                     return keyDerivation.setupRecoveryMethod!({
                         token,
@@ -1299,7 +1302,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
     try {
         return await getCurrentUserPrivateKey();
     } catch (e) {
-        console.warn('[ScoutPass] getCachedPrivateKey failed', e);
+        log.warn('getCachedPrivateKey failed', e);
         return null;
     }
 };
@@ -1364,7 +1367,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
 
     // Unified logout cleanup — called by the coordinator after its own signOut + clearLocalKeys.
     const handleAppLogout = useCallback(async () => {
-        try { await queryClient.clear(); } catch (e) { console.warn('[ScoutPass] Failed to clear query cache', e); }
+        try { await queryClient.clear(); } catch (e) { log.warn('Failed to clear query cache', e); }
 
         walletStore.set.wallet(null);
         web3AuthStore.set.web3Auth(null);
@@ -1378,7 +1381,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         clearAuthServiceProvider();
         unsetAuthToken();
 
-        try { await clearDBRef.current(); } catch (e) { console.warn('[ScoutPass] Failed to clear SQLite DB', e); }
+        try { await clearDBRef.current(); } catch (e) { log.warn('Failed to clear SQLite DB', e); }
 
         currentUserStore.set.currentUser(null);
         currentUserStore.set.currentUserPK(null);
@@ -1390,11 +1393,11 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         firstStartupStore.set.introSlidesCompleted(true);
         firstStartupStore.set.firstStart(false);
 
-        try { await clearPlatformPrivateKey(); } catch (e) { console.warn('[ScoutPass] Failed to clear platform private key', e); }
+        try { await clearPlatformPrivateKey(); } catch (e) { log.warn('Failed to clear platform private key', e); }
 
-        try { await clearWebSecureAll(); } catch (e) { console.warn('[ScoutPass] Failed to clear secure storage', e); }
+        try { await clearWebSecureAll(); } catch (e) { log.warn('Failed to clear secure storage', e); }
 
-        try { await clearAllIndexedDB(keyDerivation); } catch (e) { console.warn('[ScoutPass] Failed to clear IndexedDB', e); }
+        try { await clearAllIndexedDB(keyDerivation); } catch (e) { log.warn('Failed to clear IndexedDB', e); }
     }, [queryClient, keyDerivation]);
 
     return (

@@ -1,0 +1,429 @@
+name: Smoketest Published NPM Packages
+
+# Verifies that the @learncard packages most exposed to external consumers
+# (@learncard/cli, @learncard/init, @learncard/partner-connect) are installable
+# from the public npm registry — in a clean directory, with no monorepo or
+# .npmrc context — and that their entry points load and export what we expect.
+#
+# Background: this exists because @learncard/didkit-plugin-node@0.2.14 was
+# published with literal "workspace:*" strings in its dependencies field,
+# breaking `npx @learncard/cli` for every external user the moment that version
+# hit the registry. None of our internal CI caught it, because internal builds
+# run inside the monorepo where pnpm resolves workspace: protocol fine.
+#
+# Triggers:
+#   • workflow_call  — invoked by deploy.yml right after publish-npm succeeds.
+#                       Acts as a post-publish canary on every release.
+#   • schedule       — nightly run at 09:17 UTC (~04:17 ET, ~01:17 PT) catches
+#                       regressions that emerge after publish (CDN propagation
+#                       lag, dist-tag mistakes, latent activations of formerly-
+#                       unresolvable optional deps, etc.).
+#   • workflow_dispatch — manual runs for debugging or testing pre-release
+#                          versions via dist-tag (e.g. `next`, `beta`).
+
+on:
+    workflow_call:
+        inputs:
+            cli-version:
+                description: '@learncard/cli version or dist-tag to install'
+                type: string
+                required: false
+                default: 'latest'
+            init-version:
+                description: '@learncard/init version or dist-tag to install'
+                type: string
+                required: false
+                default: 'latest'
+            partner-connect-version:
+                description: '@learncard/partner-connect version or dist-tag to install'
+                type: string
+                required: false
+                default: 'latest'
+            registry-wait-seconds:
+                description: 'Seconds to wait for npm CDN propagation before installing'
+                type: string
+                required: false
+                default: '60'
+    schedule:
+        # 09:17 UTC daily. Avoids the top of the hour (heavy shared-CI window)
+        # and is overnight in both US Eastern and Pacific.
+        - cron: '17 9 * * *'
+    workflow_dispatch:
+        inputs:
+            cli-version:
+                description: '@learncard/cli version or dist-tag to install'
+                required: false
+                default: 'latest'
+            init-version:
+                description: '@learncard/init version or dist-tag to install'
+                required: false
+                default: 'latest'
+            partner-connect-version:
+                description: '@learncard/partner-connect version or dist-tag to install'
+                required: false
+                default: 'latest'
+            registry-wait-seconds:
+                description: 'Seconds to wait for npm CDN propagation before installing'
+                required: false
+                default: '0'
+
+jobs:
+    smoketest:
+        name: Smoketest (${{ matrix.package-manager }} on Node ${{ matrix.node-version }})
+        runs-on: ubuntu-latest
+        timeout-minutes: 8
+        env:
+            # Yarn 4 defaults to PnP, but this workflow intentionally verifies
+            # node_modules-style consumers and checks the generated .bin link.
+            YARN_NODE_LINKER: node-modules
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    # npm is the package manager that broke us in the incident
+                    # this workflow was created to prevent. Test across all
+                    # currently supported LTS Node versions.
+                    - { package-manager: npm,  node-version: '18' }
+                    - { package-manager: npm,  node-version: '20' }
+                    - { package-manager: npm,  node-version: '22' }
+                    # pnpm and yarn have their own resolution algorithms and
+                    # handle optional/workspace deps differently — test on
+                    # current LTS to catch other bug classes.
+                    - { package-manager: pnpm, node-version: '20' }
+                    - { package-manager: yarn, node-version: '20' }
+        steps:
+            - name: Set up Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+
+            - name: Set up pnpm
+              if: matrix.package-manager == 'pnpm'
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Set up yarn (via corepack)
+              if: matrix.package-manager == 'yarn'
+              run: |
+                  corepack enable
+                  corepack prepare yarn@stable --activate
+
+            - name: Wait for npm CDN propagation
+              env:
+                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
+              run: |
+                  if [ "${WAIT:-0}" -gt 0 ]; then
+                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
+                      sleep "${WAIT}"
+                  fi
+
+            - name: Create clean test workspace (outside the monorepo)
+              run: |
+                  set -euo pipefail
+                  TESTDIR=$(mktemp -d -t lc-smoketest-XXXXXX)
+                  echo "TESTDIR=$TESTDIR" >> "$GITHUB_ENV"
+                  cd "$TESTDIR"
+                  cat > package.json <<'EOF'
+                  {
+                      "name": "learncard-smoketest",
+                      "version": "0.0.0",
+                      "private": true,
+                      "description": "Verifies external consumers can install + load @learncard packages."
+                  }
+                  EOF
+                  echo "Test workspace: $TESTDIR"
+
+            - name: Install @learncard packages via ${{ matrix.package-manager }}
+              working-directory: ${{ env.TESTDIR }}
+              env:
+                  CLI_VER: ${{ inputs.cli-version || 'latest' }}
+                  INIT_VER: ${{ inputs.init-version || 'latest' }}
+                  PC_VER: ${{ inputs.partner-connect-version || 'latest' }}
+              run: |
+                  set -euo pipefail
+                  CLI="@learncard/cli@${CLI_VER}"
+                  INIT="@learncard/init@${INIT_VER}"
+                  PC="@learncard/partner-connect@${PC_VER}"
+                  echo "::group::Installing ${CLI} ${INIT} ${PC} via ${{ matrix.package-manager }}"
+                  case "${{ matrix.package-manager }}" in
+                      npm)
+                          npm install --no-fund --no-audit "$CLI" "$INIT" "$PC"
+                          ;;
+                      pnpm)
+                          pnpm add "$CLI" "$INIT" "$PC"
+                          ;;
+                      yarn)
+                          yarn add "$CLI" "$INIT" "$PC"
+                          ;;
+                  esac
+                  echo "::endgroup::"
+
+            - name: Verify @learncard/init loads via ESM
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  cat > smoke-init.mjs <<'EOF'
+                  import { initLearnCard } from '@learncard/init';
+                  if (typeof initLearnCard !== 'function') {
+                      console.error('FAIL: initLearnCard is not exported from @learncard/init (ESM)');
+                      process.exit(1);
+                  }
+                  console.log('OK: @learncard/init loaded via ESM; initLearnCard is a function');
+                  EOF
+                  node smoke-init.mjs
+
+            - name: Verify @learncard/init loads via CJS
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  cat > smoke-init.cjs <<'EOF'
+                  const { initLearnCard } = require('@learncard/init');
+                  if (typeof initLearnCard !== 'function') {
+                      console.error('FAIL: initLearnCard is not exported from @learncard/init (CJS)');
+                      process.exit(1);
+                  }
+                  console.log('OK: @learncard/init loaded via CJS; initLearnCard is a function');
+                  EOF
+                  node smoke-init.cjs
+
+            - name: Verify @learncard/partner-connect loads via ESM
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  cat > smoke-pc.mjs <<'EOF'
+                  import { createPartnerConnect } from '@learncard/partner-connect';
+                  if (typeof createPartnerConnect !== 'function') {
+                      console.error('FAIL: createPartnerConnect is not exported from @learncard/partner-connect (ESM)');
+                      process.exit(1);
+                  }
+                  console.log('OK: @learncard/partner-connect loaded via ESM; createPartnerConnect is a function');
+                  EOF
+                  node smoke-pc.mjs
+
+            - name: Verify @learncard/partner-connect loads via CJS
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  cat > smoke-pc.cjs <<'EOF'
+                  const { createPartnerConnect } = require('@learncard/partner-connect');
+                  if (typeof createPartnerConnect !== 'function') {
+                      console.error('FAIL: createPartnerConnect is not exported from @learncard/partner-connect (CJS)');
+                      process.exit(1);
+                  }
+                  console.log('OK: @learncard/partner-connect loaded via CJS; createPartnerConnect is a function');
+                  EOF
+                  node smoke-pc.cjs
+
+            - name: Install every published @learncard/* plugin package
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  # The original incident wasn't just @learncard/init being
+                  # broken — it was that init's ESM bundle pulled in plugin
+                  # packages whose CJS shims were unanalyzable to Node's
+                  # cjs-module-lexer. Probing init transitively catches the
+                  # imports init's bundle happens to use; this step closes the
+                  # gap by exercising every plugin's published export contract
+                  # directly, the way any external consumer using a plugin
+                  # standalone would.
+                  PKGS=(
+                      @learncard/ceramic-plugin
+                      @learncard/chapi-plugin
+                      @learncard/claimable-boosts-plugin
+                      @learncard/crypto-plugin
+                      @learncard/did-web-plugin
+                      @learncard/didkey-plugin
+                      @learncard/didkit-plugin
+                      @learncard/dynamic-loader-plugin
+                      @learncard/encryption-plugin
+                      @learncard/ethereum-plugin
+                      @learncard/expiration-plugin
+                      @learncard/helpers
+                      @learncard/idx-plugin
+                      @learncard/lca-api-plugin
+                      @learncard/learn-card-plugin
+                      @learncard/learn-cloud-plugin
+                      @learncard/ler-rs-plugin
+                      @learncard/linked-claims-plugin
+                      @learncard/network-plugin
+                      @learncard/open-badge-v2-plugin
+                      @learncard/openid4vc-plugin
+                      @learncard/render-method-plugin
+                      @learncard/sd-jwt-vc-plugin
+                      @learncard/simple-signing-plugin
+                      @learncard/types
+                      @learncard/vc-api-plugin
+                      @learncard/vc-plugin
+                      @learncard/vc-templates-plugin
+                      @learncard/vpqr-plugin
+                  )
+                  case "${{ matrix.package-manager }}" in
+                      npm)  npm install --no-fund --no-audit "${PKGS[@]}" ;;
+                      pnpm) pnpm add "${PKGS[@]}" ;;
+                      yarn) yarn add "${PKGS[@]}" ;;
+                  esac
+
+            - name: Verify each plugin loads via ESM and CJS
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  # Probes every published @learncard/* plugin's actual ESM
+                  # + CJS export surface, the way an external consumer would.
+                  #
+                  # Two lists:
+                  #   GATING  — packages that must load cleanly in both ESM
+                  #             and CJS. Failure here fails CI. Currently the
+                  #             set of plugins whose published artifacts have
+                  #             been hardened with proper `exports` maps and
+                  #             ESM-safe bundles.
+                  #   KNOWN_BROKEN — packages with pre-existing publish-time
+                  #             bugs (transitive CJS-only deps imported via
+                  #             named ESM, dynamic `require()` in ESM bundles,
+                  #             etc.). Diagnostics are printed but they don't
+                  #             gate CI. Each fix moves a package from this
+                  #             list to GATING and locks the fix in as a
+                  #             regression gate.
+                  cat > smoke-all.mjs <<'EOF'
+                  import { createRequire } from 'node:module';
+                  const require = createRequire(import.meta.url);
+                  const { GATING, KNOWN_BROKEN } = JSON.parse(process.env.SMOKE_LISTS);
+                  const broken = new Set(KNOWN_BROKEN);
+                  const gatingFailures = [];
+                  const advisoryFailures = [];
+                  for (const name of [...GATING, ...KNOWN_BROKEN]) {
+                      const advisory = broken.has(name);
+                      let esm = null;
+                      let cjs = null;
+                      let probeErr = [];
+                      try { esm = await import(name); }
+                      catch (e) { probeErr.push(`ESM: ${e.message.split('\n')[0]}`); }
+                      try { cjs = require(name); }
+                      catch (e) { probeErr.push(`CJS: ${e.message.split('\n')[0]}`); }
+                      const esmKeys = esm ? Object.keys(esm).filter(k => k !== 'default') : [];
+                      const cjsKeys = cjs ? Object.keys(cjs).filter(k => k !== 'default') : [];
+                      if (esm && esmKeys.length === 0 && !esm.default) probeErr.push('ESM: zero exports');
+                      if (cjs && cjsKeys.length === 0 && !cjs.default && typeof cjs !== 'function') probeErr.push('CJS: zero exports');
+                      const tag = probeErr.length === 0 ? 'OK ' : (advisory ? 'ADV' : 'ERR');
+                      console.log(`${tag} ${name.padEnd(40)} ESM=${esmKeys.length} CJS=${cjsKeys.length}` + (probeErr.length ? `  [${probeErr.join('; ')}]` : ''));
+                      for (const e of probeErr) (advisory ? advisoryFailures : gatingFailures).push(`${name} ${e}`);
+                  }
+                  if (advisoryFailures.length > 0) {
+                      console.error('\nADVISORY (known pre-existing publish-time bugs, not gating):');
+                      for (const f of advisoryFailures) console.error(`  ${f}`);
+                  }
+                  if (gatingFailures.length > 0) {
+                      console.error('\nGATING FAILURES:');
+                      for (const f of gatingFailures) console.error(`  ${f}`);
+                      process.exit(1);
+                  }
+                  EOF
+                  SMOKE_LISTS='{"GATING":["@learncard/chapi-plugin","@learncard/claimable-boosts-plugin","@learncard/crypto-plugin","@learncard/did-web-plugin","@learncard/didkit-plugin","@learncard/dynamic-loader-plugin","@learncard/encryption-plugin","@learncard/ethereum-plugin","@learncard/expiration-plugin","@learncard/learn-card-plugin","@learncard/ler-rs-plugin","@learncard/linked-claims-plugin","@learncard/open-badge-v2-plugin","@learncard/openid4vc-plugin","@learncard/render-method-plugin","@learncard/sd-jwt-vc-plugin","@learncard/types","@learncard/vc-api-plugin","@learncard/vc-plugin","@learncard/vc-templates-plugin","@learncard/vpqr-plugin"],"KNOWN_BROKEN":["@learncard/ceramic-plugin","@learncard/didkey-plugin","@learncard/helpers","@learncard/idx-plugin","@learncard/lca-api-plugin","@learncard/learn-cloud-plugin","@learncard/network-plugin","@learncard/simple-signing-plugin"]}' \
+                      node smoke-all.mjs
+
+            - name: Verify @learncard/cli bin is wired
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  # @learncard/cli ships with bin: "dist/index.js" → "cli" executable.
+                  # We don't try to RUN it (the REPL is interactive + does network
+                  # calls during wallet bootstrap), but the bin entry must resolve.
+                  BIN="./node_modules/.bin/cli"
+                  if [ ! -e "$BIN" ]; then
+                      echo "FAIL: @learncard/cli bin not found at $BIN"
+                      echo "Contents of node_modules/.bin/:"
+                      ls -la node_modules/.bin/ 2>/dev/null | head -30 || true
+                      exit 1
+                  fi
+                  echo "OK: @learncard/cli bin present at $BIN"
+
+            - name: Report installed versions
+              if: always()
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  node <<'EOF'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  console.log('::group::Installed @learncard package versions');
+
+                  for (const pkg of ['@learncard/cli', '@learncard/init', '@learncard/partner-connect']) {
+                      const manifestPath = path.join(process.cwd(), 'node_modules', ...pkg.split('/'), 'package.json');
+
+                      try {
+                          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                          console.log(`  ${pkg}: ${manifest.version}`);
+                      } catch {
+                          console.log(`  ${pkg}: (not installed)`);
+                      }
+                  }
+
+                  console.log('::endgroup::');
+                  EOF
+
+            - name: Cleanup test workspace
+              if: always()
+              run: rm -rf "${TESTDIR:-/tmp/lc-smoketest-nonexistent}"
+
+    bundler-smoketest:
+        # Many consumers import @learncard/init via a bundler (Vite, webpack,
+        # esbuild, Next.js) rather than raw Node. Bundler resolution honors
+        # the `module` field as a fallback when `exports` is absent, which
+        # can hide bugs that affect pure-Node consumers — and conversely,
+        # certain `exports`-shape regressions only surface under bundler
+        # resolution. esbuild is the cheapest representative bundler to run
+        # in CI: single binary, no config file, ~1s build.
+        name: Bundler smoketest (esbuild)
+        runs-on: ubuntu-latest
+        timeout-minutes: 6
+        steps:
+            - name: Set up Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Wait for npm CDN propagation
+              env:
+                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
+              run: |
+                  if [ "${WAIT:-0}" -gt 0 ]; then
+                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
+                      sleep "${WAIT}"
+                  fi
+
+            - name: Create clean test workspace
+              run: |
+                  set -euo pipefail
+                  TESTDIR=$(mktemp -d -t lc-bundler-XXXXXX)
+                  echo "TESTDIR=$TESTDIR" >> "$GITHUB_ENV"
+                  cd "$TESTDIR"
+                  cat > package.json <<'EOF'
+                  { "name": "learncard-bundler-smoketest", "version": "0.0.0", "private": true }
+                  EOF
+
+            - name: Install @learncard/init + esbuild
+              working-directory: ${{ env.TESTDIR }}
+              env:
+                  INIT_VER: ${{ inputs.init-version || 'latest' }}
+              run: |
+                  npm install --no-fund --no-audit \
+                      "@learncard/init@${INIT_VER}" \
+                      esbuild
+
+            - name: Bundle a trivial consumer with esbuild
+              working-directory: ${{ env.TESTDIR }}
+              run: |
+                  cat > entry.mjs <<'EOF'
+                  import { initLearnCard } from '@learncard/init';
+                  globalThis.__lcSmoketest = initLearnCard;
+                  EOF
+                  ./node_modules/.bin/esbuild entry.mjs \
+                      --bundle \
+                      --platform=node \
+                      --target=node18 \
+                      --outfile=bundle.js \
+                      --log-level=warning
+                  if [ ! -s bundle.js ]; then
+                      echo "FAIL: esbuild produced no output"
+                      exit 1
+                  fi
+                  echo "OK: bundle.js size: $(wc -c < bundle.js) bytes"
+                  node -e "require('./bundle.js'); if (typeof globalThis.__lcSmoketest !== 'function') { console.error('FAIL: initLearnCard not a function after bundling'); process.exit(1); } console.log('OK: bundle executes; initLearnCard is a function');"
+
+            - name: Cleanup
+              if: always()
+              run: rm -rf "${TESTDIR:-/tmp/lc-bundler-nonexistent}"

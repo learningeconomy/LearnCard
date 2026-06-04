@@ -61,6 +61,13 @@ export enum SideMenuLinksEnum {
     experiences = CredentialCategoryEnum.workHistory,
     families = CredentialCategoryEnum.family,
     ids = CredentialCategoryEnum.id,
+
+    // Feature-flagged routes (not backed by a credential category).
+    // Pathways v2 \u2014 the new dynamic-pathways feature, gated by the
+    // `features.pathways` tenant config + the `enableJourneys`
+    // LaunchDarkly flag. Displays as "Journey" in the side menu while
+    // the legacy `aiPathways` link still owns the "Pathways" label.
+    pathways = 'pathways',
 }
 
 export type SideMenuLinks = {

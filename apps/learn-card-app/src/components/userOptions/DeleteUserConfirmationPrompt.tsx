@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../../firebase/firebase';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('delete-user-confirmation-prompt');
 
 import useFirebase from '../../hooks/useFirebase';
 import { useWallet } from 'learn-card-base';
@@ -51,7 +53,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     setLcNetworkProfile(profile);
                 }
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
             }
         };
 
@@ -65,7 +67,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
             const deletedProfile = await wallet.invoke.deleteProfile();
-            console.log('deletedProfile::res', deletedProfile);
+            log.info('deletedProfile::res', deletedProfile);
         }
     };
 

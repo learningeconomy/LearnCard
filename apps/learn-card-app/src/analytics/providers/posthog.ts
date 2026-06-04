@@ -1,5 +1,7 @@
 import type { AnalyticsProvider, PostHogConfig } from '../types';
 import type { AnalyticsEventName, EventPayload } from '../events';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('posthog');
 
 /**
  * PostHog analytics provider implementation.
@@ -18,7 +20,7 @@ export class PostHogProvider implements AnalyticsProvider {
 
     async init(): Promise<void> {
         if (!this.config.apiKey) {
-            console.warn('[Analytics:PostHog] No API key provided, skipping initialization');
+            log.warn('[Analytics:PostHog] No API key provided, skipping initialization');
             return;
         }
 
@@ -33,9 +35,9 @@ export class PostHogProvider implements AnalyticsProvider {
                 persistence: 'localStorage',
             });
 
-            console.debug('[Analytics:PostHog] Initialized');
+            log.debug('[Analytics:PostHog] Initialized');
         } catch (error) {
-            console.error('[Analytics:PostHog] Failed to initialize', error);
+            log.error('[Analytics:PostHog] Failed to initialize', error);
         }
     }
 
@@ -45,17 +47,20 @@ export class PostHogProvider implements AnalyticsProvider {
         try {
             this.posthog.identify(userId, traits);
         } catch (error) {
-            console.error('[Analytics:PostHog] identify error', error);
+            log.error('[Analytics:PostHog] identify error', error);
         }
     }
 
-    async track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<void> {
+    async track<E extends AnalyticsEventName>(
+        event: E,
+        properties: EventPayload<E>
+    ): Promise<void> {
         if (!this.posthog) return;
 
         try {
             this.posthog.capture(event, properties as Record<string, unknown>);
         } catch (error) {
-            console.error('[Analytics:PostHog] track error', error);
+            log.error('[Analytics:PostHog] track error', error);
         }
     }
 
@@ -69,7 +74,7 @@ export class PostHogProvider implements AnalyticsProvider {
                 ...properties,
             });
         } catch (error) {
-            console.error('[Analytics:PostHog] page error', error);
+            log.error('[Analytics:PostHog] page error', error);
         }
     }
 
@@ -79,7 +84,7 @@ export class PostHogProvider implements AnalyticsProvider {
         try {
             this.posthog.reset();
         } catch (error) {
-            console.error('[Analytics:PostHog] reset error', error);
+            log.error('[Analytics:PostHog] reset error', error);
         }
     }
 
@@ -93,7 +98,7 @@ export class PostHogProvider implements AnalyticsProvider {
                 this.posthog.opt_out_capturing();
             }
         } catch (error) {
-            console.error('[Analytics:PostHog] setEnabled error', error);
+            log.error('[Analytics:PostHog] setEnabled error', error);
         }
     }
 }

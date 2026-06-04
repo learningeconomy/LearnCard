@@ -13,6 +13,8 @@ import AddContactView, {
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('qr-code-scanner-listener');
 
 export const QRCodeScannerListener: React.FC = () => {
     const { initWallet } = useWallet();
@@ -98,7 +100,7 @@ export const QRCodeScannerListener: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.log('❌❌ scanner::error ❌❌', error);
+            log.debug('❌❌ scanner::error ❌❌', error);
             await handleCancelScanning();
         }
     };
@@ -119,11 +121,11 @@ export const QRCodeScannerListener: React.FC = () => {
             if (showScanner) {
                 handleStartScanning()
                     .then(async res => {
-                        console.log('scan::success', res);
+                        log.debug('scan::success', res);
                         await handleScan(res?.rawValue);
                     })
                     .catch(async error => {
-                        console.log('scan::error', error);
+                        log.debug('scan::error', error);
                         await handleCancelScanning();
                     });
             } else if (!showScanner) {

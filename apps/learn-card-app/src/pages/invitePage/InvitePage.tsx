@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('invite-page');
 
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -38,7 +40,7 @@ const InvitePage: React.FC = () => {
         }
 
         if (!profileId || !challenge) {
-            console.log('no handle or challenge detected');
+            log.info('no handle or challenge detected');
             setLoading(false);
             return;
         }
@@ -48,12 +50,12 @@ const InvitePage: React.FC = () => {
                 const profile = await wallet?.invoke?.getProfile(profileId);
                 if (profile) {
                     setLcNetworkProfile(profile);
-                    console.log('handle::profile', profile);
+                    log.info('handle::profile', profile);
                     setLoading(false);
                 }
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }

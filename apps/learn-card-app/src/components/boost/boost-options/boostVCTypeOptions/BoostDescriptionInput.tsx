@@ -14,7 +14,11 @@ import {
     IonRow,
     IonPage,
 } from '@ionic/react';
+
 import MiniGhost from 'learn-card-base/assets/images/ghostboost.png';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-description-input');
 
 interface BoostDescriptionInputProps {
     onSubmit: (description: string) => Promise<void>;
@@ -46,7 +50,7 @@ const BoostDescriptionInput: React.FC<BoostDescriptionInputProps> = ({
             try {
                 await onSubmit(description.trim());
             } catch (error) {
-                console.error('Error generating boost details:', error);
+                log.error('Error generating boost details:', error);
                 setErrorMessage('An unexpected error occurred. Please try again.');
                 setShowErrorToast(true);
             } finally {

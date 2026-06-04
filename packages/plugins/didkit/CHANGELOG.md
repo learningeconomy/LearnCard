@@ -1,5 +1,39 @@
 # learn-card-core
 
+## 1.9.0
+
+### Minor Changes
+
+-   [#1273](https://github.com/learningeconomy/LearnCard/pull/1273) [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add OBv3 Data Integrity proof issuance using `eddsa-rdfc-2022` by default, while allowing callers to select a Data Integrity `cryptosuite` through proof options.
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
+    -   @learncard/types@5.17.0
+    -   @learncard/core@9.4.20
+
+## 1.8.10
+
+### Patch Changes
+
+-   Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/types@5.16.0
+    -   @learncard/core@9.4.19
+
+## 1.8.9
+
+### Patch Changes
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/types@5.15.0
+    -   @learncard/core@9.4.18
+
+## 1.8.8
+
+### Patch Changes
+
+-   [#1216](https://github.com/learningeconomy/LearnCard/pull/1216) [`81482ce6a60c9c8c8218ee51016671488a2bfeae`](https://github.com/learningeconomy/LearnCard/commit/81482ce6a60c9c8c8218ee51016671488a2bfeae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for Array form `credentialStatus`
+
 ## 1.8.7
 
 ### Patch Changes

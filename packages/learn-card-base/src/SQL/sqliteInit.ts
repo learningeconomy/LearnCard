@@ -8,6 +8,8 @@ import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { sqliteStore } from '../stores/sqliteStore';
 import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { getLogger } from '../logging/logger';
+const log = getLogger('sqlite-init');
 // import { performSqliteMigrations } from './migrations';
 
 type StencilToReact<T> = {
@@ -72,23 +74,23 @@ export const initSQLiteStorageWeb = (initApp: () => void) => {
                     try {
                         markSQLiteReady();
                     } catch (e) {
-                        console.warn('markSQLiteReady (initSQLiteStorageWeb) failed', e);
+                        log.warn('markSQLiteReady (initSQLiteStorageWeb) failed', e);
                     }
                 } catch (e) {
-                    console.error('SQL Lite DB could not be initialized', e);
+                    log.error('SQL Lite DB could not be initialized', e);
                     try {
                         markSQLiteReady();
                     } catch (e2) {
-                        console.warn('markSQLiteReady (initSQLiteStorageWeb, on error) failed', e2);
+                        log.warn('markSQLiteReady (initSQLiteStorageWeb, on error) failed', e2);
                     }
                 }
             }
             initApp();
         } catch (err: any) {
             if (err.message?.includes('Sqlite could not init web store in')) {
-                console.warn(`Error: ${err.message}`);
+                log.warn(`Error: ${err.message}`);
             } else {
-                console.error(`Error: ${err}`);
+                log.error(`Error: ${err}`);
             }
             try {
                 markSQLiteReady();

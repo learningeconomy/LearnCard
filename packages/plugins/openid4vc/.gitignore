@@ -1,0 +1,14 @@
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+
+# try-offer --save output + try-verify --credentials / --holder input.
+# Real holder credentials + their private holder keys from live issuers
+# must never be checked in.
+my-vc.json
+my-vc*.json
+my-vc
+my-vc-*
+*.vc.json
+*.holder.json
+issued-credentials*.json

@@ -1,6 +1,10 @@
 // Function to determine if the URL is from YouTube
+import { getLogger } from '../logging/logger';
+const log = getLogger('youtube.helpers');
+
 export const isYoutubeUrl = (url: string) => {
     if (!url) return false;
+
     try {
         const { hostname } = new URL(url);
         return hostname.includes('youtube.com') || hostname === 'youtu.be';
@@ -46,7 +50,7 @@ export const getVideoSource = (url: string) => {
         // Return the adjusted hostname in lowercase, preserving the domain extension
         return hostname.toLowerCase();
     } catch (e) {
-        console.error('Invalid URL', e);
+        log.error('Invalid URL', e);
         return ''; // Handle the error or return a default value
     }
 };

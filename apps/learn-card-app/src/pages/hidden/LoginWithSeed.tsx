@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('login-with-seed');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { currentUserStore, getRandomBaseColor, getNotificationsEndpoint, useSQLiteStorage } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
 import { IonCol, IonInput } from '@ionic/react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { setPlatformPrivateKey } from 'learn-card-base/security/platformPrivateKeyStorage';
@@ -15,6 +18,7 @@ const LoginWithSeed: React.FC = () => {
     const location = useLocation();
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
+    const queryClient = useQueryClient();
     const [seed, setSeed] = useState('');
 
     const handleDemoLogin = async () => {
@@ -64,13 +68,17 @@ const LoginWithSeed: React.FC = () => {
                         notificationsWebhook: getNotificationsEndpoint(),
                     });
                 } catch (err) {
-                    console.log('createProfile::error (may already exist)', err);
+                    log.info('createProfile::error (may already exist)', err);
                 }
+                // Match production createProfile callers — drop cached
+                // getProfile so useIsCurrentUserLCNUser refetches and the LCN
+                // gate sees the new profile instead of a pre-create null.
+                await queryClient.resetQueries();
             }
 
             history.push('/wallet');
         } catch (e) {
-            console.log('///login error');
+            log.info('///login error');
         }
     };
 

@@ -26,6 +26,7 @@ import {
     CredentialCategoryEnum,
     useAiInsightCredentialMutation,
     useGetCredentialsForSkills,
+    aiInsightRefreshStore,
 } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
@@ -97,8 +98,13 @@ const AiInsights: React.FC = () => {
     }, [contractRequests]);
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
+    const aiInsightCredentialRegenerating = aiInsightRefreshStore.use.status() === 'pending';
 
-    useLoadingLine(credentialsBackgroundFetching || createAiInsightCredentialLoading);
+    useLoadingLine(
+        credentialsBackgroundFetching ||
+            createAiInsightCredentialLoading ||
+            aiInsightCredentialRegenerating
+    );
 
     const skillsMap = useMemo(() => {
         return mapBoostsToSkills(allResolvedCreds);

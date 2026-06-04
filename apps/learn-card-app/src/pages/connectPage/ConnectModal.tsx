@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('connect-modal');
 
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 
@@ -49,7 +51,7 @@ const ConnectModal: React.FC<{
         }
 
         if (!profileId && !userDid) {
-            console.log('no handle or userDid detected!');
+            log.info('no handle or userDid detected!');
             setLoading(false);
             return;
         }
@@ -58,11 +60,11 @@ const ConnectModal: React.FC<{
             try {
                 const profile = await wallet?.invoke?.getProfile(profileId);
                 handleFetchedProfile(profile);
-                console.log('handle::profile', profile);
+                log.info('handle::profile', profile);
                 setLoading(false);
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
@@ -81,11 +83,11 @@ const ConnectModal: React.FC<{
                 try {
                     const profile = await wallet?.invoke?.getProfile(profileId);
                     handleFetchedProfile(profile);
-                    console.log('userDid::profile', profile);
+                    log.info('userDid::profile', profile);
                     setLoading(false);
                     return;
                 } catch (err) {
-                    console.log('getLCNeworkProfile::err', err);
+                    log.info('getLCNeworkProfile::err', err);
                     setLoading(false);
                     return;
                 }

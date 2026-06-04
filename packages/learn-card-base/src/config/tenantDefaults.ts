@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('tenant-defaults');
 /**
  * Default TenantConfig for the LearnCard production deployment.
  *
@@ -125,7 +127,23 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'learncardapp.netlify.com',
             'lcw.app'
         ],
-        customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
+        // Two consumers — keep this list complete for BOTH:
+        //   (a) `prepare-native-config.ts` writes these to iOS Info.plist
+        //       CFBundleURLSchemes and Android intent-filter
+        //       `<data android:scheme=…>` so the OS routes deep links here.
+        //   (b) `resolveTenantParseConfig` passes these to `parseClaimInput`
+        //       for runtime dispatch.
+        // `openid-credential-offer` and `openid4vp` are short-circuited by
+        // the parser into dedicated `oid4vci` / `oid4vp` kinds; they only
+        // need to be listed here for (a). Removing them silently breaks
+        // OS-level deep linking on Android.
+        customSchemes: [
+            'dccrequest',
+            'msprequest',
+            'asuprequest',
+            'openid-credential-offer',
+            'openid4vp',
+        ]
     },
 };
 
@@ -138,7 +156,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 const _defaultsValidation = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
 if (!_defaultsValidation.success) {
-    console.error(
+    log.error(
         '[TenantConfig] DEFAULT_LEARNCARD_TENANT_CONFIG failed schema validation:',
         _defaultsValidation.error.issues
     );

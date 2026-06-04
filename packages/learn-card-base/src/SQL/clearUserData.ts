@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('clear-user-data');
 /**
  * Logout cleanup for SQLite — clears user data while preserving
  * the SSS device share so returning users can reconstruct their
@@ -46,16 +48,16 @@ export const clearUserData = async (db: SQLiteDBConnection): Promise<void> => {
                 }
             }
         } catch (tableErr) {
-            console.warn('clearUserData: dynamic table clear failed', tableErr);
+            log.warn('clearUserData: dynamic table clear failed', tableErr);
         }
     } catch (e) {
-        console.warn('😵 clearUserData', e);
+        log.warn('😵 clearUserData', e);
     } finally {
         if (db && (await db?.isDBOpen())?.result) {
             try {
                 await db?.close();
             } catch (closeErr) {
-                console.warn('😵 clearUserData close failed', closeErr);
+                log.warn('😵 clearUserData close failed', closeErr);
             }
         }
     }

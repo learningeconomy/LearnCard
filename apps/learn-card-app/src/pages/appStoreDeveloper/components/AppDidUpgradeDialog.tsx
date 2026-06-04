@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type React from 'react';
 import { X, Shield, Loader2, CheckCircle2, AlertCircle, ArrowUpCircle } from 'lucide-react';
 import type { AppStoreListing } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-did-upgrade-dialog');
 
 interface AppDidUpgradeDialogProps {
     isOpen: boolean;
@@ -38,7 +40,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                 setUpgradeError('Upgrade failed. Please try again.');
             }
         } catch (error) {
-            console.error('Upgrade failed:', error);
+            log.error('Upgrade failed:', error);
             setUpgradeError(
                 error instanceof Error ? error.message : 'An unexpected error occurred'
             );

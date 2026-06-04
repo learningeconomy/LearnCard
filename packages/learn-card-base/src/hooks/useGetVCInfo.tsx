@@ -22,7 +22,6 @@ import {
     getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { isAppDidWeb } from '@learncard/helpers';
-import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
 import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
@@ -133,11 +132,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     } else if (issuerProfileId) {
         // Issuer has LCN profile
         issuerName =
@@ -149,11 +144,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     } else if (isCurrentUserIssuer) {
         // Issuer is current user
         issuerName = currentUser?.name;
@@ -167,11 +158,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     }
 
     // ========================================================================
@@ -194,11 +181,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-4xl"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issueeDid)}
-            </div>
-        );
+        ) : undefined;
     } else if (isCurrentUserSubject) {
         // Subject is current user
         issueeName = currentUser?.name || issueeDid;
@@ -236,11 +219,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-4xl"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issueeDid || issueeName)}
-            </div>
-        );
+        ) : undefined;
     }
 
     // ========================================================================
