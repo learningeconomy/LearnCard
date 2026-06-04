@@ -11,10 +11,14 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
+      "node": {
+        "import": "./dist/partner-connect.mjs",
+        "require": "./dist/partner-connect.js"
+      },
       "import": "./dist/partner-connect.esm.js",
       "require": "./dist/partner-connect.js",
-      "default": "./dist/partner-connect.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/partner-connect.js"
     }
   },
   "sideEffects": false,
