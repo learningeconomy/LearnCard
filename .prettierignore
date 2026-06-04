@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+
+# Build artifacts
+dist
+build
+coverage
+.nx
+*.tsbuildinfo
+
+# Lockfiles
+pnpm-lock.yaml
+
+# Generated tenant config / native artifacts (see apps/learn-card-app/AGENTS.md)
+apps/learn-card-app/public/tenant-config.json
+apps/learn-card-app/environments/*/assets/
+apps/*/ios/
+apps/*/android/
+
+# Vendored / generated WASM bindings
+packages/plugins/didkit/src/didkit/pkg/
+**/*.wasm
+
+# Misc generated
+**/*.generated.*
+CHANGELOG.md
+**/CHANGELOG.md

@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('tenant-defaults');
 /**
  * Default TenantConfig for the LearnCard production deployment.
  *
@@ -155,7 +157,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 const _defaultsValidation = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
 if (!_defaultsValidation.success) {
-    console.error(
+    log.error(
         '[TenantConfig] DEFAULT_LEARNCARD_TENANT_CONFIG failed schema validation:',
         _defaultsValidation.error.issues
     );

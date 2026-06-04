@@ -4,6 +4,8 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('dev-cli');
 
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -531,7 +533,7 @@ const DevCli: React.FC = () => {
                     }, 150);
                 }
             } catch (e) {
-                console.error('Failed to initialize LearnCard:', e);
+                log.error('Failed to initialize LearnCard:', e);
 
                 const term = terminalInstanceRef.current;
 

@@ -96,6 +96,9 @@ export type BadgeDataRow = {
     [DataKeys.skills]: string[]; // e.g. [ "Durable - Adaptability - Flexibility", "Durable - Lifelong Learning - Critical Thinking"]
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('bulk-boost-import-page');
+
 const BulkBoostImportPage: React.FC = () => {
     const history = useHistory();
     const confirm = useConfirmation();
@@ -260,7 +263,7 @@ const BulkBoostImportPage: React.FC = () => {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error('Error extracting ZIP file:', error);
+            log.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
                 type: ToastTypeEnum.Error,
             });
@@ -321,7 +324,7 @@ const BulkBoostImportPage: React.FC = () => {
                                     50 + Math.floor((completedUploads / totalUploads) * 100 * 0.5)
                                 ); // Last 50% is Filestack upload
                             } catch (error) {
-                                console.error(`Failed to upload image ${filename}:`, error);
+                                log.error(`Failed to upload image ${filename}:`, error);
                                 newRowMap.set(key, {
                                     originalValue: info.originalValue,
                                     status: ImageStatus.missing,
@@ -493,7 +496,7 @@ const BulkBoostImportPage: React.FC = () => {
 
             history.push('/admin-tools');
         } catch (e) {
-            console.error('Failed to bulk import boosts: ', e.message);
+            log.error('Failed to bulk import boosts: ', e.message);
 
             presentToast(`Bulk boost import failed! ${e.message}`, {
                 duration: 5000,

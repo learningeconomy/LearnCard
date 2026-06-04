@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('short-boost-user-options');
 
 import { useIonAlert } from '@ionic/react';
 import ShortBoostSomeoneScreen from './ShortBoostSomeoneScreen';
@@ -202,7 +204,7 @@ const ShortBoostUserOptions: React.FC<{
         //             text: 'Cancel',
         //             role: 'cancel',
         //             handler: () => {
-        //                 console.log('Cancel clicked');
+        //                 log.info('Cancel clicked');
         //             },
         //         },
         //     ],

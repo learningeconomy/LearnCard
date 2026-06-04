@@ -5,6 +5,8 @@ import { useWallet, useIsLoggedIn } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { Gift, Shield, ChevronRight, X, Loader2, CheckCircle, Info } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('exchange-did-auth');
 
 interface ExchangeDidAuthProps {
     verifiablePresentationRequest?: {
@@ -53,7 +55,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                 onSubmit(didAuthVp);
             }
         } catch (err) {
-            console.error('Failed to create DID Auth VP:', err);
+            log.error('Failed to create DID Auth VP:', err);
             setError('Something went wrong. Please try again.');
             setIsLoading(false);
         }

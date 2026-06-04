@@ -8,6 +8,9 @@ import {
     LaunchPadAppListItem,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-consent-flow');
+
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import FullScreenConsentFlow from './FullScreenConsentFlow';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
@@ -81,7 +84,7 @@ export const useConsentFlow = (
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {
-            console.log('Failed to open ConsentFlow modal: contract not yet loaded');
+            log.info('Failed to open ConsentFlow modal: contract not yet loaded');
         }
     };
 

@@ -15,6 +15,8 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troop.helpers');
 
 type AllowedBackgroundStylesType = {
     backgroundSize?: string;
@@ -218,7 +220,7 @@ export const getScoutsRole = (credential: VC | Boost) => {
         case AchievementTypes.ScoutMember:
             return ScoutsRoleEnum.scout;
         default:
-            console.error(`Failed to map credential type (${type}) to role. Defaulting to scout`);
+            log.error(`Failed to map credential type (${type}) to role. Defaulting to scout`);
             return ScoutsRoleEnum.scout;
     }
 };

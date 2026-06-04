@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger('config-editor');
+
 /**
  * config-editor.ts
  *
@@ -14,7 +17,15 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync, rmSync } from 'fs';
+import {
+    readFileSync,
+    writeFileSync,
+    readdirSync,
+    existsSync,
+    statSync,
+    mkdirSync,
+    rmSync,
+} from 'fs';
 import { resolve, dirname, join, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec, spawn } from 'child_process';
@@ -50,13 +61,16 @@ const deepMerge = (
         const overrideVal = overrides[key];
 
         if (
-            baseVal && overrideVal &&
-            typeof baseVal === 'object' && !Array.isArray(baseVal) &&
-            typeof overrideVal === 'object' && !Array.isArray(overrideVal)
+            baseVal &&
+            overrideVal &&
+            typeof baseVal === 'object' &&
+            !Array.isArray(baseVal) &&
+            typeof overrideVal === 'object' &&
+            !Array.isArray(overrideVal)
         ) {
             result[key] = deepMerge(
                 baseVal as Record<string, unknown>,
-                overrideVal as Record<string, unknown>,
+                overrideVal as Record<string, unknown>
             );
         } else {
             result[key] = overrideVal;
@@ -85,13 +99,16 @@ const computeOverrides = (
         if (mergedVal === defaultVal) continue;
 
         if (
-            mergedVal && defaultVal &&
-            typeof mergedVal === 'object' && !Array.isArray(mergedVal) &&
-            typeof defaultVal === 'object' && !Array.isArray(defaultVal)
+            mergedVal &&
+            defaultVal &&
+            typeof mergedVal === 'object' &&
+            !Array.isArray(mergedVal) &&
+            typeof defaultVal === 'object' &&
+            !Array.isArray(defaultVal)
         ) {
             const nested = computeOverrides(
                 mergedVal as Record<string, unknown>,
-                defaultVal as Record<string, unknown>,
+                defaultVal as Record<string, unknown>
             );
 
             if (Object.keys(nested).length > 0) {
@@ -111,104 +128,155 @@ const computeOverrides = (
 
 // Category keys that appear in theme.json (camelCase enum keys from CredentialCategoryEnum)
 const VALID_CATEGORY_KEYS = new Set([
-    'socialBadge', 'achievement', 'accomplishment', 'accommodation',
-    'workHistory', 'experience', 'learningHistory', 'course',
-    'skill', 'events', 'family', 'relationship',
-    'meritBadge', 'troops', 'globalAdminId', 'nationalNetworkAdminId',
-    'troopLeaderId', 'scoutId', 'aiSummary', 'aiTopic', 'aiPathway',
-    'aiInsight', 'aiAssessment', 'membership', 'goals', 'id', 'currency',
+    'socialBadge',
+    'achievement',
+    'accomplishment',
+    'accommodation',
+    'workHistory',
+    'experience',
+    'learningHistory',
+    'course',
+    'skill',
+    'events',
+    'family',
+    'relationship',
+    'meritBadge',
+    'troops',
+    'globalAdminId',
+    'nationalNetworkAdminId',
+    'troopLeaderId',
+    'scoutId',
+    'aiSummary',
+    'aiTopic',
+    'aiPathway',
+    'aiInsight',
+    'aiAssessment',
+    'membership',
+    'goals',
+    'id',
+    'currency',
 ]);
 
-const CategoryColorFieldSchema = z.object({
-    primaryColor: z.string().optional(),
-    secondaryColor: z.string().optional(),
-    indicatorColor: z.string().optional(),
-    borderColor: z.string().optional(),
-    statusBarColor: z.string().optional(),
-    headerBrandingTextColor: z.string().optional(),
-    headerTextColor: z.string().optional(),
-    backgroundPrimaryColor: z.string().optional(),
-    backgroundSecondaryColor: z.string().optional(),
-    tabActiveColor: z.string().optional(),
-}).strict();
-
-const SpilledCupSchema = z.object({
-    backsplash: z.string(),
-    spill: z.string(),
-    cupOutline: z.string(),
-}).strict();
-
-const LaunchPadItemSchema = z.object({
-    color: z.string().optional(),
-    indicatorTextColor: z.string().optional(),
-    indicatorBgColor: z.string().optional(),
-}).strict();
-
-const RawThemeColorsSchema = z.object({
-    categoryBase: CategoryColorFieldSchema.optional(),
-    categories: z.record(z.string(), CategoryColorFieldSchema).optional(),
-
-    launchPad: z.object({
-        contacts: LaunchPadItemSchema.optional(),
-        aiSessions: LaunchPadItemSchema.optional(),
-        alerts: LaunchPadItemSchema.optional(),
-        buttons: z.object({
-            connected: z.string().optional(),
-            unconnected: z.string().optional(),
-        }).optional(),
-    }).optional(),
-
-    sideMenu: z.object({
-        linkActiveColor: z.string().optional(),
-        linkInactiveColor: z.string().optional(),
-        linkActiveBackgroundColor: z.string().optional(),
-        linkInactiveBackgroundColor: z.string().optional(),
-        primaryButtonColor: z.string().optional(),
-        secondaryButtonColor: z.string().optional(),
-        indicatorColor: z.string().optional(),
-        syncingColor: z.string().optional(),
-        completedColor: z.string().optional(),
-    }).optional(),
-
-    navbar: z.object({
-        activeColor: z.string().optional(),
-        inactiveColor: z.string().optional(),
-        syncingColor: z.string().optional(),
-        completedColor: z.string().optional(),
-    }).optional(),
-
-    introSlides: z.object({
-        firstSlideBackground: z.string().optional(),
-        secondSlideBackground: z.string().optional(),
-        thirdSlideBackground: z.string().optional(),
-        textColors: z.object({ primary: z.string(), secondary: z.string() }).optional(),
-        pagination: z.object({ primary: z.string(), secondary: z.string() }).optional(),
-    }).optional(),
-
-    placeholderBase: z.object({ spilledCup: SpilledCupSchema }).optional(),
-    placeholders: z.record(z.string(), z.object({ spilledCup: SpilledCupSchema }).optional()).optional(),
-
-    defaults: z.object({
+const CategoryColorFieldSchema = z
+    .object({
         primaryColor: z.string().optional(),
-        primaryColorShade: z.string().optional(),
-        loaders: z.array(z.string()).optional(),
-    }).optional(),
-}).strict();
+        secondaryColor: z.string().optional(),
+        indicatorColor: z.string().optional(),
+        borderColor: z.string().optional(),
+        statusBarColor: z.string().optional(),
+        headerBrandingTextColor: z.string().optional(),
+        headerTextColor: z.string().optional(),
+        backgroundPrimaryColor: z.string().optional(),
+        backgroundSecondaryColor: z.string().optional(),
+        tabActiveColor: z.string().optional(),
+    })
+    .strict();
 
-const RawThemeStylesSchema = z.object({
-    wallet: z.object({
-        cardStyles: z.string(),
-        iconStyles: z.string(),
-    }).optional(),
-    launchPad: z.object({
-        textStyles: z.string(),
-        iconStyles: z.string(),
-        indicatorStyles: z.string().optional(),
-    }).optional(),
-    defaults: z.object({
-        tabs: z.object({ borderRadius: z.string() }).optional(),
-    }).optional(),
-}).strict();
+const SpilledCupSchema = z
+    .object({
+        backsplash: z.string(),
+        spill: z.string(),
+        cupOutline: z.string(),
+    })
+    .strict();
+
+const LaunchPadItemSchema = z
+    .object({
+        color: z.string().optional(),
+        indicatorTextColor: z.string().optional(),
+        indicatorBgColor: z.string().optional(),
+    })
+    .strict();
+
+const RawThemeColorsSchema = z
+    .object({
+        categoryBase: CategoryColorFieldSchema.optional(),
+        categories: z.record(z.string(), CategoryColorFieldSchema).optional(),
+
+        launchPad: z
+            .object({
+                contacts: LaunchPadItemSchema.optional(),
+                aiSessions: LaunchPadItemSchema.optional(),
+                alerts: LaunchPadItemSchema.optional(),
+                buttons: z
+                    .object({
+                        connected: z.string().optional(),
+                        unconnected: z.string().optional(),
+                    })
+                    .optional(),
+            })
+            .optional(),
+
+        sideMenu: z
+            .object({
+                linkActiveColor: z.string().optional(),
+                linkInactiveColor: z.string().optional(),
+                linkActiveBackgroundColor: z.string().optional(),
+                linkInactiveBackgroundColor: z.string().optional(),
+                primaryButtonColor: z.string().optional(),
+                secondaryButtonColor: z.string().optional(),
+                indicatorColor: z.string().optional(),
+                syncingColor: z.string().optional(),
+                completedColor: z.string().optional(),
+            })
+            .optional(),
+
+        navbar: z
+            .object({
+                activeColor: z.string().optional(),
+                inactiveColor: z.string().optional(),
+                syncingColor: z.string().optional(),
+                completedColor: z.string().optional(),
+            })
+            .optional(),
+
+        introSlides: z
+            .object({
+                firstSlideBackground: z.string().optional(),
+                secondSlideBackground: z.string().optional(),
+                thirdSlideBackground: z.string().optional(),
+                textColors: z.object({ primary: z.string(), secondary: z.string() }).optional(),
+                pagination: z.object({ primary: z.string(), secondary: z.string() }).optional(),
+            })
+            .optional(),
+
+        placeholderBase: z.object({ spilledCup: SpilledCupSchema }).optional(),
+        placeholders: z
+            .record(z.string(), z.object({ spilledCup: SpilledCupSchema }).optional())
+            .optional(),
+
+        defaults: z
+            .object({
+                primaryColor: z.string().optional(),
+                primaryColorShade: z.string().optional(),
+                loaders: z.array(z.string()).optional(),
+            })
+            .optional(),
+    })
+    .strict();
+
+const RawThemeStylesSchema = z
+    .object({
+        wallet: z
+            .object({
+                cardStyles: z.string(),
+                iconStyles: z.string(),
+            })
+            .optional(),
+        launchPad: z
+            .object({
+                textStyles: z.string(),
+                iconStyles: z.string(),
+                indicatorStyles: z.string().optional(),
+            })
+            .optional(),
+        defaults: z
+            .object({
+                tabs: z.object({ borderRadius: z.string() }).optional(),
+            })
+            .optional(),
+    })
+    .strict();
 
 const IconPaletteOverrideSchema = z.object({
     primary: z.string().optional(),
@@ -217,18 +285,22 @@ const IconPaletteOverrideSchema = z.object({
     stroke: z.string().optional(),
 });
 
-const RawThemeConfigSchema = z.object({
-    id: z.string(),
-    displayName: z.string().min(1, 'displayName must not be empty'),
-    extends: z.string().optional(),
-    iconSet: z.string().optional(),
-    iconPalettes: z.record(z.string(), IconPaletteOverrideSchema).optional(),
-    defaults: z.object({
-        viewMode: z.enum(['grid', 'list']).optional(),
-    }).optional(),
-    colors: RawThemeColorsSchema.optional(),
-    styles: RawThemeStylesSchema.optional(),
-}).strict();
+const RawThemeConfigSchema = z
+    .object({
+        id: z.string(),
+        displayName: z.string().min(1, 'displayName must not be empty'),
+        extends: z.string().optional(),
+        iconSet: z.string().optional(),
+        iconPalettes: z.record(z.string(), IconPaletteOverrideSchema).optional(),
+        defaults: z
+            .object({
+                viewMode: z.enum(['grid', 'list']).optional(),
+            })
+            .optional(),
+        colors: RawThemeColorsSchema.optional(),
+        styles: RawThemeStylesSchema.optional(),
+    })
+    .strict();
 
 interface ThemeValidationResult {
     valid: boolean;
@@ -257,7 +329,9 @@ const validateThemeConfig = (config: unknown): ThemeValidationResult => {
         const obj = config as Record<string, unknown>;
 
         // Check category keys in colors.categories
-        const categories = (obj.colors as Record<string, unknown>)?.categories as Record<string, unknown> | undefined;
+        const categories = (obj.colors as Record<string, unknown>)?.categories as
+            | Record<string, unknown>
+            | undefined;
 
         if (categories && typeof categories === 'object') {
             for (const key of Object.keys(categories)) {
@@ -271,7 +345,9 @@ const validateThemeConfig = (config: unknown): ThemeValidationResult => {
         }
 
         // Check placeholders keys
-        const placeholders = (obj.colors as Record<string, unknown>)?.placeholders as Record<string, unknown> | undefined;
+        const placeholders = (obj.colors as Record<string, unknown>)?.placeholders as
+            | Record<string, unknown>
+            | undefined;
 
         if (placeholders && typeof placeholders === 'object') {
             for (const key of Object.keys(placeholders)) {
@@ -308,7 +384,12 @@ const validateThemeConfig = (config: unknown): ThemeValidationResult => {
 // API handlers
 // ---------------------------------------------------------------------------
 
-const listTenants = (): { name: string; hasConfig: boolean; hasAssets: boolean; stages: string[] }[] => {
+const listTenants = (): {
+    name: string;
+    hasConfig: boolean;
+    hasAssets: boolean;
+    stages: string[];
+}[] => {
     if (!existsSync(ENVIRONMENTS_DIR)) return [];
 
     return readdirSync(ENVIRONMENTS_DIR)
@@ -342,7 +423,7 @@ const listTenantStages = (tenant: string): string[] => {
 
 const readTenantConfig = (
     tenant: string,
-    stage?: string,
+    stage?: string
 ): {
     base: Record<string, unknown>;
     stageOverlay: Record<string, unknown>;
@@ -370,22 +451,20 @@ const readTenantConfig = (
     // Merge order: defaults → base config.json → stage overlay
     const mergedBase = deepMerge(
         DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-        base,
+        base
     );
 
-    const merged = stage
-        ? deepMerge(mergedBase, stageOverlay)
-        : mergedBase;
+    const merged = stage ? deepMerge(mergedBase, stageOverlay) : mergedBase;
 
     // "overrides" is the combined diff against defaults (for backward compat)
-    const overrides = stage
-        ? deepMerge(base, stageOverlay)
-        : base;
+    const overrides = stage ? deepMerge(base, stageOverlay) : base;
 
     return { base, stageOverlay, overrides, merged, activeStage: stage ?? null };
 };
 
-const validateConfig = (config: Record<string, unknown>): { valid: boolean; errors: string[]; data?: Record<string, unknown> } => {
+const validateConfig = (
+    config: Record<string, unknown>
+): { valid: boolean; errors: string[]; data?: Record<string, unknown> } => {
     const result = tenantConfigSchema.safeParse(config);
 
     if (result.success) {
@@ -398,7 +477,11 @@ const validateConfig = (config: Record<string, unknown>): { valid: boolean; erro
     };
 };
 
-const saveTenantConfig = (tenant: string, overrides: Record<string, unknown>, stage?: string): void => {
+const saveTenantConfig = (
+    tenant: string,
+    overrides: Record<string, unknown>,
+    stage?: string
+): void => {
     const tenantDir = join(ENVIRONMENTS_DIR, tenant);
 
     if (!existsSync(tenantDir)) {
@@ -407,11 +490,7 @@ const saveTenantConfig = (tenant: string, overrides: Record<string, unknown>, st
 
     const filename = stage ? `config.${stage}.json` : 'config.json';
 
-    writeFileSync(
-        join(tenantDir, filename),
-        JSON.stringify(overrides, null, 4) + '\n',
-        'utf-8',
-    );
+    writeFileSync(join(tenantDir, filename), JSON.stringify(overrides, null, 4) + '\n', 'utf-8');
 };
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp', '.ico']);
@@ -460,7 +539,9 @@ const readBody = (req: IncomingMessage): Promise<string> =>
     new Promise((resolve, reject) => {
         let body = '';
 
-        req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        req.on('data', (chunk: Buffer) => {
+            body += chunk.toString();
+        });
         req.on('end', () => resolve(body));
         req.on('error', reject);
     });
@@ -487,18 +568,22 @@ const readRawBody = (req: IncomingMessage, maxBytes = 20 * 1024 * 1024): Promise
     });
 
 const runScript = (cmd: string, args: string[]): Promise<{ exitCode: number; output: string }> =>
-    new Promise((resolve) => {
+    new Promise(resolve => {
         const child = spawn(cmd, args, { cwd: APP_ROOT, shell: true });
         let output = '';
 
-        child.stdout.on('data', (d: Buffer) => { output += d.toString(); });
-        child.stderr.on('data', (d: Buffer) => { output += d.toString(); });
+        child.stdout.on('data', (d: Buffer) => {
+            output += d.toString();
+        });
+        child.stderr.on('data', (d: Buffer) => {
+            output += d.toString();
+        });
 
-        child.on('close', (code) => {
+        child.on('close', code => {
             resolve({ exitCode: code ?? 1, output });
         });
 
-        child.on('error', (err) => {
+        child.on('error', err => {
             resolve({ exitCode: 1, output: output + '\n' + String(err) });
         });
     });
@@ -520,7 +605,10 @@ const THEME_SCHEMAS_DIR = resolve(THEME_DIR, 'schemas');
 // ---------------------------------------------------------------------------
 
 const ICON_SVG_DIR_COLORFUL = resolve(APP_ROOT, '../../packages/learn-card-base/src/svgs/wallet');
-const ICON_SVG_DIR_FORMAL = resolve(APP_ROOT, '../../packages/learn-card-base/src/svgs/walletsIconsFormal');
+const ICON_SVG_DIR_FORMAL = resolve(
+    APP_ROOT,
+    '../../packages/learn-card-base/src/svgs/walletsIconsFormal'
+);
 
 interface IconMeta {
     /** Colorful source file (in wallet/) */
@@ -543,7 +631,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'AiSessionsIconFormal.tsx',
         formalComponent: 'AiSessionsIconFormal',
         formalColor: '#6366F1',
-        defaults: { primary: '#22D3EE', primaryLight: '#A5F3FC', accent: '#6366F1', stroke: '#6366F1' },
+        defaults: {
+            primary: '#22D3EE',
+            primaryLight: '#A5F3FC',
+            accent: '#6366F1',
+            stroke: '#6366F1',
+        },
     },
     AiPathways: {
         file: 'AiPathwaysIcon.tsx',
@@ -551,7 +644,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'AiPathwaysIconFormal.tsx',
         formalComponent: 'AiPathwaysIconFormal',
         formalColor: '#14B8A6',
-        defaults: { primary: '#2DD4BF', primaryLight: '#2DD4BF', accent: '#6366F1', stroke: '#0F766E' },
+        defaults: {
+            primary: '#2DD4BF',
+            primaryLight: '#2DD4BF',
+            accent: '#6366F1',
+            stroke: '#0F766E',
+        },
     },
     AiInsights: {
         file: 'AiInsightsIcon.tsx',
@@ -559,7 +657,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'AiInsightsIconFormal.tsx',
         formalComponent: 'AiInsightsIconFormal',
         formalColor: '#84CC16',
-        defaults: { primary: '#A3E635', primaryLight: '#BEF264', accent: '#6366F1', stroke: '#4D7C0F' },
+        defaults: {
+            primary: '#A3E635',
+            primaryLight: '#BEF264',
+            accent: '#6366F1',
+            stroke: '#4D7C0F',
+        },
     },
     Skills: {
         file: 'SkillsIcon.tsx',
@@ -567,7 +670,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'SkillsIconFormal.tsx',
         formalComponent: 'SkillsIconFormal',
         formalColor: '#8B5CF6',
-        defaults: { primary: '#A78BFA', primaryLight: '#C4B5FD', accent: '#8e51ff', stroke: '#6D28D9' },
+        defaults: {
+            primary: '#A78BFA',
+            primaryLight: '#C4B5FD',
+            accent: '#8e51ff',
+            stroke: '#6D28D9',
+        },
     },
     Boosts: {
         file: 'BoostsIcon.tsx',
@@ -575,7 +683,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'BoostsIconFormal.tsx',
         formalComponent: 'BoostsIconFormal',
         formalColor: '#3B82F6',
-        defaults: { primary: '#60A5FA', primaryLight: '#93C5FD', accent: '#22D3EE', stroke: '#1D4ED8' },
+        defaults: {
+            primary: '#60A5FA',
+            primaryLight: '#93C5FD',
+            accent: '#22D3EE',
+            stroke: '#1D4ED8',
+        },
     },
     Achievements: {
         file: 'AchievementsIcon.tsx',
@@ -583,7 +696,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'AchievementsIconFormal.tsx',
         formalComponent: 'AchievementsIconFormal',
         formalColor: '#F43F5E',
-        defaults: { primary: '#F472B6', primaryLight: '#F9A8D4', accent: '#FDE047', stroke: '#BE185D' },
+        defaults: {
+            primary: '#F472B6',
+            primaryLight: '#F9A8D4',
+            accent: '#FDE047',
+            stroke: '#BE185D',
+        },
     },
     Studies: {
         file: 'StudiesIcon.tsx',
@@ -591,7 +709,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'StudiesIconFormal.tsx',
         formalComponent: 'StudiesIconFormal',
         formalColor: '#10B981',
-        defaults: { primary: '#34D399', primaryLight: '#34D399', accent: '#BEF264', stroke: '#047857' },
+        defaults: {
+            primary: '#34D399',
+            primaryLight: '#34D399',
+            accent: '#BEF264',
+            stroke: '#047857',
+        },
     },
     Portfolio: {
         file: 'PortfolioIcon.tsx',
@@ -599,7 +722,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'PortfolioIconFormal.tsx',
         formalComponent: 'PortfolioIconFormal',
         formalColor: '#EAB308',
-        defaults: { primary: '#FACC15', primaryLight: '#FDE047', accent: '#34D399', stroke: '#A16207' },
+        defaults: {
+            primary: '#FACC15',
+            primaryLight: '#FDE047',
+            accent: '#34D399',
+            stroke: '#A16207',
+        },
     },
     Assistance: {
         file: 'AssistanceIcon.tsx',
@@ -607,7 +735,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'AssistanceIconFormal.tsx',
         formalComponent: 'AssistanceIconFormal',
         formalColor: '#5B21B6',
-        defaults: { primary: '#A78BFA', primaryLight: '#C4B5FD', accent: '#EC4899', stroke: '#5B21B6' },
+        defaults: {
+            primary: '#A78BFA',
+            primaryLight: '#C4B5FD',
+            accent: '#EC4899',
+            stroke: '#5B21B6',
+        },
     },
     Experiences: {
         file: 'ExperiencesIcon.tsx',
@@ -615,7 +748,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'ExperiencesIconFormal.tsx',
         formalComponent: 'ExperiencesIconFormal',
         formalColor: '#06B6D4',
-        defaults: { primary: '#22D3EE', primaryLight: '#A5F3FC', accent: '#FEF08A', stroke: '#0E7490' },
+        defaults: {
+            primary: '#22D3EE',
+            primaryLight: '#A5F3FC',
+            accent: '#FEF08A',
+            stroke: '#0E7490',
+        },
     },
     Families: {
         file: 'FamiliesIcon.tsx',
@@ -623,7 +761,12 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'FamiliesIconFormal.tsx',
         formalComponent: 'FamiliesIconFormal',
         formalColor: '#D97706',
-        defaults: { primary: '#FBBF24', primaryLight: '#FDE047', accent: '#22D3EE', stroke: '#92400E' },
+        defaults: {
+            primary: '#FBBF24',
+            primaryLight: '#FDE047',
+            accent: '#22D3EE',
+            stroke: '#92400E',
+        },
     },
     IDs: {
         file: 'IDsIcon.tsx',
@@ -631,14 +774,24 @@ const ICON_META: Record<string, IconMeta> = {
         formalFile: 'IDsIconFormal.tsx',
         formalComponent: 'IDsIconFormal',
         formalColor: '#1E40AF',
-        defaults: { primary: '#60A5FA', primaryLight: '#93C5FD', accent: '#EC4899', stroke: '#1E40AF' },
+        defaults: {
+            primary: '#60A5FA',
+            primaryLight: '#93C5FD',
+            accent: '#EC4899',
+            stroke: '#1E40AF',
+        },
     },
     AllBoosts: {
         file: 'AllBoostsIcon.tsx',
         component: 'AllBoostsIcon',
         formalFile: 'AllBoostsIcon.tsx',
         formalComponent: 'AllBoostsIcon',
-        defaults: { primary: '#353E64', primaryLight: '#353E64', accent: '#18224E', stroke: '#353E64' },
+        defaults: {
+            primary: '#353E64',
+            primaryLight: '#353E64',
+            accent: '#18224E',
+            stroke: '#353E64',
+        },
     },
 };
 
@@ -650,7 +803,10 @@ const svgTemplateCache = new Map<string, string>();
  * Returns an SVG string with `{p.primary}` etc. as literal placeholders (colorful)
  * or hardcoded colors (formal).
  */
-const extractSvgTemplate = (iconKey: string, variant: 'colorful' | 'formal' = 'colorful'): string | null => {
+const extractSvgTemplate = (
+    iconKey: string,
+    variant: 'colorful' | 'formal' = 'colorful'
+): string | null => {
     const meta = ICON_META[iconKey];
 
     if (!meta) return null;
@@ -674,9 +830,7 @@ const extractSvgTemplate = (iconKey: string, variant: 'colorful' | 'formal' = 'c
     const source = readFileSync(filePath, 'utf-8');
 
     // Find the target component declaration
-    const componentPattern = new RegExp(
-        `export\\s+const\\s+${componentName}[^=]*=[^>]*>\\s*\\{`,
-    );
+    const componentPattern = new RegExp(`export\\s+const\\s+${componentName}[^=]*=[^>]*>\\s*\\{`);
     const componentMatch = componentPattern.exec(source);
 
     if (!componentMatch) return null;
@@ -721,7 +875,7 @@ const renderIconSvg = (
     iconKey: string,
     palette: { primary: string; primaryLight: string; accent: string; stroke: string },
     variant: 'colorful' | 'formal' = 'colorful',
-    hasPrimaryOverride = true,
+    hasPrimaryOverride = true
 ): string | null => {
     const template = extractSvgTemplate(iconKey, variant);
 
@@ -733,7 +887,7 @@ const renderIconSvg = (
 
     if (variant === 'formal') {
         // Formal icons use dynamic {fillColor} / {strokeColor} JSX expressions
-        const color = hasPrimaryOverride ? palette.primary : (meta?.formalColor ?? '#666');
+        const color = hasPrimaryOverride ? palette.primary : meta?.formalColor ?? '#666';
 
         svg = svg.replace(/=\{fillColor\}/g, `="${color}"`);
         svg = svg.replace(/=\{strokeColor\}/g, `="${color}"`);
@@ -839,7 +993,9 @@ interface ScaffoldOptions {
  *
  * No TS files are touched. The JSON loader auto-discovers the new folder.
  */
-const scaffoldTheme = (opts: ScaffoldOptions): { success: boolean; files: string[]; error?: string } => {
+const scaffoldTheme = (
+    opts: ScaffoldOptions
+): { success: boolean; files: string[]; error?: string } => {
     const { id, displayName, baseTheme, baseCategoryColor, viewMode } = opts;
     const files: string[] = [];
 
@@ -848,7 +1004,11 @@ const scaffoldTheme = (opts: ScaffoldOptions): { success: boolean; files: string
         const assetsDir = join(themeDir, 'assets');
 
         if (existsSync(join(themeDir, 'theme.json'))) {
-            return { success: false, files: [], error: `Theme '${id}' already exists at ${themeDir}` };
+            return {
+                success: false,
+                files: [],
+                error: `Theme '${id}' already exists at ${themeDir}`,
+            };
         }
 
         // Verify the base theme exists
@@ -958,7 +1118,11 @@ const killDevServer = (): void => {
         }
     } catch {
         // Fallback: kill just the process
-        try { proc.kill('SIGTERM'); } catch { /* already dead */ }
+        try {
+            proc.kill('SIGTERM');
+        } catch {
+            /* already dead */
+        }
     }
 
     devServer.process = null;
@@ -996,11 +1160,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
 
     if (stage) prepareArgs.push('--stage', stage);
 
-    const prepare = spawn(
-        'npx',
-        prepareArgs,
-        { cwd: APP_ROOT, shell: true, detached: true },
-    );
+    const prepare = spawn('npx', prepareArgs, { cwd: APP_ROOT, shell: true, detached: true });
 
     devServer.process = prepare;
     devServer.pid = prepare.pid ?? null;
@@ -1017,7 +1177,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
         }
     });
 
-    prepare.on('close', (code) => {
+    prepare.on('close', code => {
         if (!devServer || devServer.phase === 'stopped') return;
 
         if (code !== 0) {
@@ -1039,7 +1199,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
             const ndev = spawn(
                 `npx netlify dev --command="npx vite --port ${VITE_TARGET_PORT}" --target-port ${VITE_TARGET_PORT}`,
                 [],
-                { cwd: APP_ROOT, shell: true, detached: true },
+                { cwd: APP_ROOT, shell: true, detached: true }
             );
 
             devServer.process = ndev;
@@ -1053,15 +1213,17 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
                 }
 
                 // Netlify CLI prints "Server now ready on http://localhost:8888"
-                const netlifyReady = text.match(/ready on (https?:\/\/[^\s]+)/) ||
+                const netlifyReady =
+                    text.match(/ready on (https?:\/\/[^\s]+)/) ||
                     text.match(/Server now ready on (https?:\/\/[^\s]+)/) ||
                     text.match(new RegExp(`localhost:${NETLIFY_DEV_PORT}`));
 
                 if (netlifyReady && devServer && devServer.phase !== 'running') {
                     devServer.phase = 'running';
-                    devServer.url = typeof netlifyReady[1] === 'string'
-                        ? netlifyReady[1]
-                        : `http://localhost:${NETLIFY_DEV_PORT}`;
+                    devServer.url =
+                        typeof netlifyReady[1] === 'string'
+                            ? netlifyReady[1]
+                            : `http://localhost:${NETLIFY_DEV_PORT}`;
                 }
             });
 
@@ -1073,18 +1235,20 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
                 }
 
                 // Some Netlify CLI versions print ready message to stderr
-                const netlifyReady = text.match(/ready on (https?:\/\/[^\s]+)/) ||
+                const netlifyReady =
+                    text.match(/ready on (https?:\/\/[^\s]+)/) ||
                     text.match(/Server now ready on (https?:\/\/[^\s]+)/);
 
                 if (netlifyReady && devServer && devServer.phase !== 'running') {
                     devServer.phase = 'running';
-                    devServer.url = typeof netlifyReady[1] === 'string'
-                        ? netlifyReady[1]
-                        : `http://localhost:${NETLIFY_DEV_PORT}`;
+                    devServer.url =
+                        typeof netlifyReady[1] === 'string'
+                            ? netlifyReady[1]
+                            : `http://localhost:${NETLIFY_DEV_PORT}`;
                 }
             });
 
-            ndev.on('close', (nCode) => {
+            ndev.on('close', nCode => {
                 if (!devServer || devServer.phase === 'stopped') return;
 
                 devServer.phase = nCode === 0 ? 'stopped' : 'error';
@@ -1093,7 +1257,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
                 appendOutput(`\n--- Netlify dev exited (code ${nCode}) ---`);
             });
 
-            ndev.on('error', (err) => {
+            ndev.on('error', err => {
                 if (!devServer) return;
 
                 devServer.phase = 'error';
@@ -1135,7 +1299,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
                 }
             });
 
-            vite.on('close', (viteCode) => {
+            vite.on('close', viteCode => {
                 if (!devServer || devServer.phase === 'stopped') return;
 
                 devServer.phase = viteCode === 0 ? 'stopped' : 'error';
@@ -1144,7 +1308,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
                 appendOutput(`\n--- Vite exited (code ${viteCode}) ---`);
             });
 
-            vite.on('error', (err) => {
+            vite.on('error', err => {
                 if (!devServer) return;
 
                 devServer.phase = 'error';
@@ -1154,7 +1318,7 @@ const startDevServer = (tenant: string, stage?: string, netlify = false): void =
         }
     });
 
-    prepare.on('error', (err) => {
+    prepare.on('error', err => {
         if (!devServer) return;
 
         devServer.phase = 'error';
@@ -1195,7 +1359,10 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             }
 
             // Sanitize the id
-            const sanitizedId = body.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+            const sanitizedId = body.id
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '');
 
             if (!sanitizedId) {
                 json(res, 400, { error: 'Invalid theme id' });
@@ -1229,7 +1396,9 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
                 return;
             }
 
-            const variant = (url.searchParams.get('variant') === 'formal' ? 'formal' : 'colorful') as 'colorful' | 'formal';
+            const variant = (
+                url.searchParams.get('variant') === 'formal' ? 'formal' : 'colorful'
+            ) as 'colorful' | 'formal';
 
             const palette = {
                 primary: url.searchParams.get('primary') || meta.defaults.primary,
@@ -1259,7 +1428,10 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
 
         // List available icon keys and their defaults
         if (path === '/api/icon-defaults' && req.method === 'GET') {
-            const defaults: Record<string, { primary: string; primaryLight: string; accent: string; stroke: string }> = {};
+            const defaults: Record<
+                string,
+                { primary: string; primaryLight: string; accent: string; stroke: string }
+            > = {};
 
             for (const [key, meta] of Object.entries(ICON_META)) {
                 defaults[key] = meta.defaults;
@@ -1385,7 +1557,9 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             }
 
             if (!/^[a-zA-Z0-9_-]+$/.test(stage)) {
-                json(res, 400, { error: 'Stage name must be alphanumeric (dashes/underscores ok)' });
+                json(res, 400, {
+                    error: 'Stage name must be alphanumeric (dashes/underscores ok)',
+                });
                 return;
             }
 
@@ -1401,7 +1575,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
                 mkdirSync(tenantDir, { recursive: true });
             }
 
-            const initial = (overlay && typeof overlay === 'object') ? overlay : {};
+            const initial = overlay && typeof overlay === 'object' ? overlay : {};
 
             writeFileSync(stagePath, JSON.stringify(initial, null, 4) + '\n', 'utf-8');
             json(res, 200, { created: true, stage, stages: listTenantStages(tenant) });
@@ -1434,7 +1608,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
                     const { base } = readTenantConfig(tenant);
                     const mergedBase = deepMerge(
                         DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-                        base,
+                        base
                     );
                     const merged = deepMerge(mergedBase, body.stageOverlay ?? body.overrides ?? {});
                     const validation = validateConfig(merged);
@@ -1445,12 +1619,17 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
                     }
 
                     saveTenantConfig(tenant, body.stageOverlay ?? body.overrides ?? {}, stage);
-                    json(res, 200, { saved: true, stage, stageOverlay: body.stageOverlay ?? body.overrides, merged });
+                    json(res, 200, {
+                        saved: true,
+                        stage,
+                        stageOverlay: body.stageOverlay ?? body.overrides,
+                        merged,
+                    });
                 } else {
                     // Base mode: original behavior
                     const merged = deepMerge(
                         DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-                        body.overrides,
+                        body.overrides
                     );
                     const validation = validateConfig(merged);
 
@@ -1471,7 +1650,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             const body = JSON.parse(await readBody(req));
             const merged = deepMerge(
                 DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-                body,
+                body
             );
 
             json(res, 200, validateConfig(merged));
@@ -1523,7 +1702,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             const body = JSON.parse(await readBody(req));
             const overrides = computeOverrides(
                 body,
-                DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+                DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>
             );
 
             json(res, 200, overrides);
@@ -1601,7 +1780,10 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
         }
 
         if (path === '/api/actions/reset-config' && req.method === 'POST') {
-            const result = await runScript('npx tsx', ['scripts/prepare-native-config.ts', '--reset']);
+            const result = await runScript('npx tsx', [
+                'scripts/prepare-native-config.ts',
+                '--reset',
+            ]);
 
             json(res, result.exitCode === 0 ? 200 : 500, result);
             return;
@@ -1684,7 +1866,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');
     } catch (err) {
-        console.error('Server error:', err);
+        log.error('Server error:', err);
         json(res, 500, { error: String(err) });
     }
 };
@@ -1698,12 +1880,15 @@ const server = createServer(handler);
 server.listen(PORT, () => {
     const url = `http://localhost:${PORT}`;
 
-    console.log(`\n🎨 Tenant Config Editor running at: ${url}\n`);
+    log.info(`\n🎨 Tenant Config Editor running at: ${url}\n`);
 
     // Open browser
-    const cmd = process.platform === 'darwin' ? 'open'
-        : process.platform === 'win32' ? 'start'
-        : 'xdg-open';
+    const cmd =
+        process.platform === 'darwin'
+            ? 'open'
+            : process.platform === 'win32'
+            ? 'start'
+            : 'xdg-open';
 
     exec(`${cmd} ${url}`);
 });

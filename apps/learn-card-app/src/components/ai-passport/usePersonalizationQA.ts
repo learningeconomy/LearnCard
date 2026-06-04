@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-personalization-q-a');
 
 import { useWallet } from 'learn-card-base';
 
@@ -64,7 +66,7 @@ export const usePersonalizationQA = (): UsePersonalizationQAReturn => {
                 }
             }
         } catch (err) {
-            console.error('usePersonalizationQA::load error', err);
+            log.error('usePersonalizationQA::load error', err);
             setError('Failed to load personalization data.');
         } finally {
             setIsLoading(false);

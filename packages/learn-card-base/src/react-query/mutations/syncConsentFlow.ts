@@ -17,6 +17,9 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 
+import { getLogger } from '../../logging/logger';
+const log = getLogger('sync-consent-flow');
+
 export type ConsentRecord = {
     credentialUri: string;
     contractUri: string;
@@ -87,9 +90,9 @@ export const useSyncConsentContractsMutation = () => {
 
         try {
             if (data) {
-                console.log(`[ConsentSync] ${message}`, data);
+                log.debug(`[ConsentSync] ${message}`, data);
             } else {
-                console.log(`[ConsentSync] ${message}`);
+                log.debug(`[ConsentSync] ${message}`);
             }
         } catch {
             // logging should never break sync
@@ -100,7 +103,7 @@ export const useSyncConsentContractsMutation = () => {
         if (!ENABLE_CONSENT_SYNC_LOGS) return;
 
         try {
-            console.error(`[ConsentSync] ${message}`, data ?? {}, err);
+            log.error(`[ConsentSync] ${message}`, data ?? {}, err);
         } catch {
             // logging should never break sync
         }

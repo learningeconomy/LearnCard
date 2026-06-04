@@ -36,6 +36,8 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-update-form');
 
 const StateValidator = z.object({
     name: z
@@ -248,7 +250,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.debug('updateProfile::error', error);
                 }
             }
         }

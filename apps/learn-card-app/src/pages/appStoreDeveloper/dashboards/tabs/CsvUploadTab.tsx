@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('csv-upload-tab');
 /**
  * CsvUploadTab - Batch CSV Upload for Credential Issuance
  * 
@@ -150,7 +152,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                     const { dynamic } = extractVariablesByType(child.obv3Template as OBv3CredentialTemplate);
                     allVarSets.push(new Set(dynamic));
                 } catch (e) {
-                    console.warn('Failed to extract child template variables:', e);
+                    log.warn('Failed to extract child template variables:', e);
                 }
             }
         }
@@ -175,7 +177,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
             const { dynamic } = extractVariablesByType(selectedTemplate.obv3Template as OBv3CredentialTemplate);
             return dynamic;
         } catch (e) {
-            console.warn('Failed to extract dynamic variables:', e);
+            log.warn('Failed to extract dynamic variables:', e);
             return [];
         }
     }, [isMultiTemplateMode, sharedVariables, selectedTemplate]);
@@ -456,7 +458,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 hasDismissButton: true 
             });
         } catch (err) {
-            console.error('CSV processing error:', err);
+            log.error('CSV processing error:', err);
             presentToast('Failed to process CSV', { type: ToastTypeEnum.Error, hasDismissButton: true });
         } finally {
             setIsProcessing(false);

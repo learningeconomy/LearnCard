@@ -2,6 +2,8 @@ import localForage from 'localforage';
 import _ from 'lodash';
 
 import { ImageMetadata, DefaultMetadata, getUrlsFromSrcSet } from './images.helpers';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('filestack.helpers');
 
 /**
  * Creates an array of Filestack URL Parameters
@@ -76,7 +78,7 @@ export const getMetadata = async (url: string): Promise<ImageMetadata> => {
 
         return metadata;
     } catch (e) {
-        console.log('filestack::getMetadata::error', e);
+        log.debug('filestack::getMetadata::error', e);
         return DefaultMetadata;
     }
 };
@@ -91,7 +93,7 @@ export const getFileType = (url: string): Promise<string> => {
             });
         })
         .catch(error => {
-            console.log('filestack::getFileType::error', error);
+            log.debug('filestack::getFileType::error', error);
 
             return '';
         });

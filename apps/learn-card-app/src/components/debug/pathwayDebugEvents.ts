@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('pathway-debug-events');
 /**
  * Pathway Progress Debug Event Logger
  *
@@ -126,7 +128,7 @@ export const emitPathwayDebugEvent = (
             listener(event);
         } catch (err) {
             // eslint-disable-next-line no-console
-            console.error('[pathwayDebugEvents] listener error:', err);
+            log.error('[pathwayDebugEvents] listener error:', err);
         }
     }
 };
@@ -250,7 +252,7 @@ export const installPathwayDebugRecorder = (): (() => void) => {
                 listener(event);
             } catch (err) {
                 // eslint-disable-next-line no-console
-                console.error('[pathwayDebugEvents] listener error:', err);
+                log.error('[pathwayDebugEvents] listener error:', err);
             }
         }
     });

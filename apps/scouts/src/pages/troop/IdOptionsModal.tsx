@@ -22,6 +22,8 @@ import {
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import { PermissionsByRole } from '../../components/troopsCMS/troops.helpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('id-options-modal');
 
 type IdOptionsModalProps = {
     isPersonalId: boolean;
@@ -104,7 +106,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                     });
                     closeAllModals();
                 } catch (error) {
-                    console.error('Failed to revoke scout:', error);
+                    log.error('Failed to revoke scout:', error);
                     presentToast(`Failed to remove ${ownerName}. Please try again.`, {
                         type: ToastTypeEnum.Error,
                     });
@@ -124,7 +126,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             await confirm({
                 text: `Are you sure you want to leave ${credential?.name}?`,
                 onConfirm: () => {
-                    console.log('TODO revoke');
+                    log.debug('TODO revoke');
                     // closeAllModals();
                 },
                 cancelButtonClassName:
@@ -171,7 +173,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                             overrideSrc
                         />
                     }
-                    onClick={() => console.log('TODO profile')}
+                    onClick={() => log.debug('TODO profile')}
                 />
             )}
 

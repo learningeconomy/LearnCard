@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Badge } from '@capawesome/capacitor-badge';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notifications-page');
 
 import { IonContent, IonPage, IonCol } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -46,7 +48,7 @@ const NotificationNavTabsContainer: React.FC<{
                 });
             }
         } catch (e) {
-            console.warn('Error checking user notifications endpoint', e);
+            log.warn('Error checking user notifications endpoint', e);
         }
     };
 

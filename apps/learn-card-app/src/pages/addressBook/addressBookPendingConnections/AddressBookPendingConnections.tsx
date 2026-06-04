@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-pending-connections');
 
 import { IonSpinner } from '@ionic/react';
 
@@ -74,7 +76,7 @@ const AddressBookPendingConnections: React.FC<{
         );
         try {
         } catch (err) {
-            console.log('canceledConnectionReq::error', err);
+            log.info('canceledConnectionReq::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to cancel request',
@@ -113,7 +115,7 @@ const AddressBookPendingConnections: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.info('blockProfile::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',

@@ -435,8 +435,8 @@ importers:
         specifier: ^10.1.1
         version: 10.2.0
       ionicons:
-        specifier: ^5.5.4
-        version: 5.5.4
+        specifier: 8.0.13
+        version: 8.0.13
       json-stringify-deterministic:
         specifier: ^1.0.12
         version: 1.0.12
@@ -871,8 +871,8 @@ importers:
         specifier: ^10.1.1
         version: 10.2.0
       ionicons:
-        specifier: ^5.5.4
-        version: 5.5.4
+        specifier: 8.0.13
+        version: 8.0.13
       json-stringify-deterministic:
         specifier: ^1.0.12
         version: 1.0.12
@@ -12264,11 +12264,6 @@ packages:
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
 
-  '@stencil/core@2.10.0':
-    resolution: {integrity: sha512-15rWMTPQ/sp0lSV82HVCXkIya3QLN+uBl7pqK4JnTrp4HiLrzLmNbWjbvgCs55gw0lULbCIGbRIEsFz+Pe/Q+A==}
-    engines: {node: '>=12.10.0', npm: '>=6.0.0'}
-    hasBin: true
-
   '@stencil/core@4.36.2':
     resolution: {integrity: sha512-PRFSpxNzX9Oi0Wfh02asztN9Sgev/MacfZwmd+VVyE6ZxW+a/kEpAYZhzGAmE+/aKVOGYuug7R9SulanYGxiDQ==}
     engines: {node: '>=16.0.0', npm: '>=7.10.0'}
@@ -20182,9 +20177,6 @@ packages:
 
   iobuffer@5.4.0:
     resolution: {integrity: sha512-DRebOWuqDvxunfkNJAlc3IzWIPD5xVxwUNbHr7xKB8E6aLJxIPfNX3CoMJghcFjpv6RWQsrcJbghtEwSPoJqMA==}
-
-  ionicons@5.5.4:
-    resolution: {integrity: sha512-3ph8X9my3inhabWEZ7N0XRA0MnnNQ1v9a602mLNgWsIXnxE9G5BybIZ/pws/OZZ/hoNlvSjk801N03yL9/FNgQ==}
 
   ionicons@8.0.13:
     resolution: {integrity: sha512-2QQVyG2P4wszne79jemMjWYLp0DBbDhr4/yFroPCxvPP1wtMxgdIV3l5n+XZ5E9mgoXU79w7yTWpm2XzJsISxQ==}
@@ -41352,8 +41344,6 @@ snapshots:
 
   '@standard-schema/utils@0.3.0': {}
 
-  '@stencil/core@2.10.0': {}
-
   '@stencil/core@4.36.2':
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.34.9
@@ -52545,13 +52535,9 @@ snapshots:
 
   iobuffer@5.4.0: {}
 
-  ionicons@5.5.4:
-    dependencies:
-      '@stencil/core': 2.10.0
-
   ionicons@8.0.13:
     dependencies:
-      '@stencil/core': 4.38.0
+      '@stencil/core': 4.38.3
 
   ioredis-mock@8.13.1(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(ioredis@5.8.2):
     dependencies:

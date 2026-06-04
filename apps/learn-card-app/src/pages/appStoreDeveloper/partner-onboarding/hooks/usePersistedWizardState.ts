@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-persisted-wizard-state');
 
 const STORAGE_KEY_PREFIX = 'lc_wizard_';
 const STORAGE_VERSION = 1;
@@ -62,7 +64,7 @@ export function usePersistedWizardState<T>({
 
             // Check version compatibility
             if (parsed.version !== STORAGE_VERSION) {
-                console.log(`[usePersistedWizardState] Version mismatch, using initial state`);
+                log.info(`[usePersistedWizardState] Version mismatch, using initial state`);
                 return initialState;
             }
 
@@ -70,15 +72,15 @@ export function usePersistedWizardState<T>({
             const age = Date.now() - parsed.timestamp;
 
             if (age > maxAgeMs) {
-                console.log(`[usePersistedWizardState] State expired, using initial state`);
+                log.info(`[usePersistedWizardState] State expired, using initial state`);
                 localStorage.removeItem(storageKey);
                 return initialState;
             }
 
-            console.log(`[usePersistedWizardState] Restored state from ${new Date(parsed.timestamp).toLocaleString()}`);
+            log.info(`[usePersistedWizardState] Restored state from ${new Date(parsed.timestamp).toLocaleString()}`);
             return parsed.data;
         } catch (err) {
-            console.warn(`[usePersistedWizardState] Failed to load persisted state:`, err);
+            log.warn(`[usePersistedWizardState] Failed to load persisted state:`, err);
             return initialState;
         }
     });
@@ -106,7 +108,7 @@ export function usePersistedWizardState<T>({
 
                 localStorage.setItem(storageKey, JSON.stringify(wrapper));
             } catch (err) {
-                console.warn(`[usePersistedWizardState] Failed to save state:`, err);
+                log.warn(`[usePersistedWizardState] Failed to save state:`, err);
             }
         }, debounceMs);
     }, [storageKey, debounceMs]);
@@ -131,7 +133,7 @@ export function usePersistedWizardState<T>({
             localStorage.removeItem(storageKey);
             setStateInternal(initialState);
         } catch (err) {
-            console.warn(`[usePersistedWizardState] Failed to clear state:`, err);
+            log.warn(`[usePersistedWizardState] Failed to clear state:`, err);
         }
     }, [storageKey, initialState]);
 
@@ -152,7 +154,7 @@ export function usePersistedWizardState<T>({
 
             localStorage.setItem(storageKey, JSON.stringify(wrapper));
         } catch (err) {
-            console.warn(`[usePersistedWizardState] Failed to save state:`, err);
+            log.warn(`[usePersistedWizardState] Failed to save state:`, err);
         }
     }, [storageKey, state]);
 

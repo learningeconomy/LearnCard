@@ -23,6 +23,8 @@ import BoostShareableQRCode from './BoostShareableQRCode';
 import InfinityIcon from 'learn-card-base/svgs/Infinity';
 import useDebounce from '../../../../../hooks/useDebounce';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-shareable-code');
 
 export const BoostShareableCode: React.FC<{
     state: BoostCMSState;
@@ -196,7 +198,7 @@ export const BoostShareableCode: React.FC<{
             }
         } catch (error) {
             setIsLinkLoading(false);
-            console.log('error:generateBoostClaimLink', error);
+            log.debug('error:generateBoostClaimLink', error);
         }
     });
 

@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.95.14",
+    "version": "1.95.15",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "9.1.0",
@@ -82,7 +82,7 @@
         "history": "^5.3.0",
         "html2canvas": "^1.4.1",
         "immer": "^10.1.1",
-        "ionicons": "^5.5.4",
+        "ionicons": "8.0.13",
         "json-stringify-deterministic": "^1.0.12",
         "jspdf": "^3.0.4",
         "jszip": "^3.10.1",
