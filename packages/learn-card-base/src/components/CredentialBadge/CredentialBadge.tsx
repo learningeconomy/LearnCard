@@ -9,6 +9,7 @@ import ScoutsGlobe from 'learn-card-base/svgs/ScoutsGlobe';
 import CertRibbon from 'learn-card-base/svgs/CertRibbon';
 import MeritBadgeRibbon from 'learn-card-base/svgs/MeritBadgeRibbon';
 import CredentialCLRBadge from './CredentialCLRBadge';
+import CredentialCLRBadgePill, { type ClrBadgeKind } from './CredentialCLRBadgePill';
 
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { VC } from '@learncard/types';
@@ -40,6 +41,7 @@ type CredentialBadgeProps = {
     credential: VC;
     borderStyle?: string;
     hideMediaBadge?: boolean;
+    clrBadgeKind?: ClrBadgeKind;
 };
 
 export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
@@ -63,6 +65,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     credential,
     borderStyle,
     hideMediaBadge,
+    clrBadgeKind,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
     const metadata =
@@ -137,7 +140,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
             <div
                 className={`absolute z-10 w-full h-full ${displayTypeBackgroundStyles} rounded-br-[100%] rounded-bl-[100%] bg-${_colorOverride}`}
                 style={{
-                    backgroundColor: backgroundColor,
+                    backgroundColor: isCLR ? '#353E64' : backgroundColor,
                 }}
             />
         );
@@ -222,10 +225,13 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
         >
             {badgeBackground}
             {isCLR ? (
-                <CredentialCLRBadge
-                    credential={credential}
-                    badgeCircleCustomClass={badgeCircleCustomClass}
-                />
+                <>
+                    <CredentialCLRBadge
+                        credential={credential}
+                        badgeCircleCustomClass={badgeCircleCustomClass}
+                    />
+                    {clrBadgeKind && <CredentialCLRBadgePill kind={clrBadgeKind} />}
+                </>
             ) : (
                 <div
                     className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}

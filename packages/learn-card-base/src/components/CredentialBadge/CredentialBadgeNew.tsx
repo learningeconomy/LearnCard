@@ -5,15 +5,13 @@ import CertRibbon from 'learn-card-base/svgs/CertRibbon';
 import MeritBadgeRibbon from 'learn-card-base/svgs/MeritBadgeRibbon';
 import CredentialIDBadge from './CredentialIDBadge';
 import CredentialCLRBadge from './CredentialCLRBadge';
+import CredentialCLRBadgePill, { type ClrBadgeKind } from './CredentialCLRBadgePill';
 import CredentialMediaBadge from './CredentialMediaBadge';
 
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { VC } from '@learncard/types';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
-import {
-    getAchievementTypeDisplayText,
-    isClrCredential,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { getAchievementTypeDisplayText, isClrCredential } from 'learn-card-base';
 
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 
@@ -37,6 +35,7 @@ type CredentialBadgeProps = {
     branding?: BrandingEnum;
     credential: VC;
     borderStyle?: string;
+    clrBadgeKind?: ClrBadgeKind;
 };
 
 export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
@@ -59,6 +58,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     branding,
     credential,
     borderStyle,
+    clrBadgeKind,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
     const { subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
@@ -113,7 +113,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
             <div
                 className={`absolute z-10 w-full h-full ${displayTypeBackgroundStyles} rounded-br-[100%] rounded-bl-[100%] bg-${_colorOverride}`}
                 style={{
-                    backgroundColor: backgroundColor,
+                    backgroundColor: isCLR ? '#353E64' : backgroundColor,
                 }}
             />
         );
@@ -206,10 +206,13 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
         >
             {badgeBackground}
             {isCLR ? (
-                <CredentialCLRBadge
-                    credential={credential}
-                    badgeCircleCustomClass={badgeCircleCustomClass}
-                />
+                <>
+                    <CredentialCLRBadge
+                        credential={credential}
+                        badgeCircleCustomClass={badgeCircleCustomClass}
+                    />
+                    {clrBadgeKind && <CredentialCLRBadgePill kind={clrBadgeKind} />}
+                </>
             ) : (
                 <div
                     className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}
