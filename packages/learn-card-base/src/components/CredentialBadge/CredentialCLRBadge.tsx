@@ -36,16 +36,16 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
 
     const issuerImage = logoSrc ?? issuerProfile?.image ?? issuerAppListing?.icon_url;
     const hasExplicitIssuerData = logoSrc !== undefined || issuerName !== undefined;
-    let issuerUser = issuerProfile;
+    let issuerUser: React.ComponentProps<typeof UserProfilePicture>['user'] = issuerProfile;
 
     if (hasExplicitIssuerData) {
         issuerUser = issuerImage
-            ? { displayName: issuerLabel, name: issuerLabel, image: issuerImage }
-            : { displayName: issuerLabel, name: issuerLabel };
+            ? { displayName: issuerLabel, image: issuerImage }
+            : { displayName: issuerLabel };
     } else if (!issuerUser) {
         issuerUser = issuerImage
-            ? { displayName: issuerLabel, name: issuerLabel, image: issuerImage }
-            : { displayName: issuerLabel, name: issuerLabel };
+            ? { displayName: issuerLabel, image: issuerImage }
+            : { displayName: issuerLabel };
     }
 
     return (
@@ -67,8 +67,8 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
             >
                 <UserProfilePicture
                     user={issuerUser}
-                    customContainerClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden text-white font-medium text-lg"
-                    customImageClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden object-cover"
+                    customContainerClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden text-white !font-medium text-lg"
+                    customImageClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden object-cover !font-medium text-lg"
                 />
             </div>
 
