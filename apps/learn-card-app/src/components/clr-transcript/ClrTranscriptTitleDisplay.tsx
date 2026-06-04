@@ -11,7 +11,6 @@ import {
     type ClrTranscriptDisplayModel,
     type CourseDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
-import { inferProgramKind } from './clr.helpers';
 import { formatClrGpa } from './clr.helpers';
 import {
     inferClrKindWithTitleFallback,
@@ -64,8 +63,8 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (!model) {
         return (
-            <div className="flex flex-col items-center justify-start mt-[0px] w-full">
-                <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px]">
+            <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px]">
+                <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 break-words">
                     {fallbackTitle}
                 </span>
             </div>
@@ -79,8 +78,8 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (inferredKind === 'unknown') {
         return (
-            <div className="flex flex-col items-center justify-start mt-[0px] w-full">
-                <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px]">
+            <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px]">
+                <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 break-words">
                     {model.header.title?.value || fallbackTitle}
                 </span>
             </div>
@@ -89,7 +88,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (inferredKind === 'transcript') {
         return (
-            <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
+            <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
                 {model.summary.gpa && (
                     <p className="mt-2 text-[14px] font-semibold text-grayscale-900 text-center">
                         GPA: {formatClrGpa(model.summary.gpa.value)}
@@ -133,8 +132,8 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         const grade = getClrGrade(course);
 
         return (
-            <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
-                <p className="mt-2 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
+            <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
+                <p className="mt-2 w-full max-w-full break-words text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
                     {courseName}
                 </p>
                 {grade && (
@@ -150,8 +149,8 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     const degreeName = degree?.name?.value || model.header.title?.value || fallbackTitle;
 
     return (
-        <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
-            <p className="mt-2 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
+        <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
+            <p className="mt-2 w-full max-w-full break-words text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
                 {degreeName}
             </p>
             {model.summary.explicitCompetencyCount > 0 && (
