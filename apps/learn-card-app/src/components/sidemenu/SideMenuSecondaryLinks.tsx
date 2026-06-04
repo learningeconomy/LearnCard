@@ -21,7 +21,6 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
 import { ColorSetEnum } from '../../theme/colors/index';
 import { usePathwaysEnabled } from '../../pages/pathways/hooks/usePathwaysEnabled';
-import { useDashboardAsHome } from '../../pages/dashboard/hooks/useDashboardAsHome';
 
 const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
@@ -50,10 +49,6 @@ const SideMenuSecondaryLinks: React.FC<{
     // route mount in `Routes.tsx`, so we can never ship a nav entry
     // that points at an unmounted route.
     const pathwaysEnabled = usePathwaysEnabled();
-    // Dashboard-as-home gate \u2014 identical two-layer gate to the `/`
-    // redirect in `Routes.tsx`, so the nav entry and the landing route
-    // can never drift. When off, the Dashboard link is hidden entirely.
-    const dashboardAsHome = useDashboardAsHome();
 
     const activeTextStyles = colors.linkActiveColor; // text colors
     const inactiveTextStyles = colors.linkInactiveColor;
@@ -104,18 +99,7 @@ const SideMenuSecondaryLinks: React.FC<{
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
     if (isCompleted) walletTextStyles = `${colors.completedColor}`;
 
-    const baseLinks = theme?.sideMenuSecondaryLinks;
-
-    // When the Dashboard is the home, surface it as the first entry; otherwise
-    // leave the theme-defined order untouched. The link is still hidden below
-    // when the gate is off, so reordering an off-gate list is a no-op.
-    const sideMenuLinks =
-        dashboardAsHome && baseLinks
-            ? [
-                  ...baseLinks.filter(link => link?.path === '/dashboard'),
-                  ...baseLinks.filter(link => link?.path !== '/dashboard'),
-              ]
-            : baseLinks;
+    const sideMenuLinks = theme?.sideMenuSecondaryLinks;
 
     const secondaryLinks = sideMenuLinks?.map(link => {
         if (link?.path === '/families' && !canCreateFamilies)
@@ -132,10 +116,6 @@ const SideMenuSecondaryLinks: React.FC<{
         }
 
         if (link?.path === '/pathways' && !pathwaysEnabled) {
-            return <React.Fragment key={link.path}></React.Fragment>;
-        }
-
-        if (link?.path === '/dashboard' && !dashboardAsHome) {
             return <React.Fragment key={link.path}></React.Fragment>;
         }
 

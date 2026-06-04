@@ -164,9 +164,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                             </button>
 
                             <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
+                                {/* Disable New AI Session Button for now on Side Menu
                                 {flags?.enableLaunchPadUpdates && (
                                     <NewAiSessionButton type={NewAiSessionButtonEnum.sideMenu} />
-                                )}
+                                )} */}
 
                                 <IonMenuToggle
                                     role="button"
