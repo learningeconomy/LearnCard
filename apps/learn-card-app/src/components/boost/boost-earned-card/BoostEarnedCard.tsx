@@ -183,7 +183,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const { getThemedCategory } = useTheme();
     const colors = getThemedCategory(categoryType as CredentialCategoryEnum)?.colors;
     const indicatorColor = colors?.indicatorColor;
-    const clrBadgeKind = cred ? getClrTranscriptKind(cred) : 'unknown';
+    const clrBadgeKind = isClrCredential && cred ? getClrTranscriptKind(cred) : 'unknown';
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {

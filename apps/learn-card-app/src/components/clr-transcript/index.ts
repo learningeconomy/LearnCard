@@ -18,5 +18,5 @@ export { default as ClrTranscriptCard } from './surfaces/ClrTranscriptCard';
 export { default as ClrTranscriptFullPage } from './surfaces/ClrTranscriptFullPage';
 export { default as ClrTranscriptEmbedWidget } from './surfaces/ClrTranscriptEmbedWidget';
 export { default as ClrTranscriptTitleDisplay } from './ClrTranscriptTitleDisplay';
-export { getClrTranscriptKind } from './ClrTranscriptTitleDisplay';
+export { getClrTranscriptKind } from './clrKind.helpers';
 export { getClrTranscriptIssuerInfo } from './clrKind.helpers';

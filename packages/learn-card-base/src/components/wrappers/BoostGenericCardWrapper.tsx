@@ -138,7 +138,6 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             linkedCredentialsCount={linkedCredentialsCount ?? 0}
             linkedCredentialsClassName={linkedCredentialsClassName}
             displayType={displayType}
-            isCLR={isCLR}
         />
     );
 };

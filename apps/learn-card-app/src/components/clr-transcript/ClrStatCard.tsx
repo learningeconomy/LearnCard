@@ -1,6 +1,7 @@
 import React from 'react';
 
 import PaperClip from '../svgs/PaperClip';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
@@ -11,10 +12,6 @@ type StatCardConfig = {
     icon?: React.ReactNode;
     variant: 'highlight' | 'default';
 };
-
-export const FlatIcon = ({ children }: { children: React.ReactNode }) => (
-    <span className="[&_path]:!fill-current [&_path]:!stroke-none shrink-0">{children}</span>
-);
 
 const STAT_CARD_CONFIG: Record<StatCardType, StatCardConfig> = {
     gpa: {
@@ -53,9 +50,7 @@ export const StatCard: React.FC<{
 }> = ({ type, value, onClick }) => {
     const { label, icon, variant } = STAT_CARD_CONFIG[type];
     const cardClasses = `flex flex-col rounded-2xl px-4 py-3 min-w-[110px] text-left transition-colors ${
-        variant === 'highlight'
-            ? 'bg-white border border-grayscale-200'
-            : 'bg-grayscale-100/70'
+        variant === 'highlight' ? 'bg-white border border-grayscale-200' : 'bg-grayscale-100/70'
     } ${onClick ? 'cursor-pointer hover:bg-grayscale-100' : 'cursor-default'}`;
 
     if (onClick) {

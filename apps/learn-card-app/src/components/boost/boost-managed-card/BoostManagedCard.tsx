@@ -84,8 +84,8 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         presentManagedBoostModal,
         handlePresentShortBoostModal,
     } = useManagedBoost(boost, { boostVC: _boostVC, categoryType, loading, defaultImg });
-    const clrBadgeKind = boostVC ? getClrTranscriptKind(boostVC) : 'unknown';
     const isClrCredential = boostVC?.type?.includes('ClrCredential') ?? false;
+    const clrBadgeKind = isClrCredential && boostVC ? getClrTranscriptKind(boostVC) : 'unknown';
     const clrTranscriptIssuerInfo =
         isClrCredential && boostVC ? getClrTranscriptIssuerInfo(boostVC) : {};
 

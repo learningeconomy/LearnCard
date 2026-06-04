@@ -2,16 +2,13 @@ import React from 'react';
 
 import { CertificateDisplayIcon, CourseDisplayIcon } from 'learn-card-base';
 import Graduation from 'learn-card-base/svgs/Graduation';
+import { FlatIcon } from '../FlatIcon';
 
 export type ClrBadgeKind = 'transcript' | 'course' | 'degree';
 
 type CredentialCLRBadgePillProps = {
     kind: ClrBadgeKind;
 };
-
-export const FlatIcon = ({ children }: { children: React.ReactNode }) => (
-    <span className="[&_path]:!fill-current [&_path]:!stroke-none shrink-0">{children}</span>
-);
 
 const CredentialCLRBadgePill: React.FC<CredentialCLRBadgePillProps> = ({ kind }) => {
     const config = {
