@@ -2,7 +2,7 @@ import { chromium, firefox, FullConfig } from '@playwright/test';
 import { locatorExists } from './tests/test.helpers';
 import { mockDidKitWasmForContext } from './tests/route.helpers';
 
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('playwright-global-setup');
 
 export const globalSetup = async (config: FullConfig) => {
