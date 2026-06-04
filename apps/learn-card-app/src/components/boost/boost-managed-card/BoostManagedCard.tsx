@@ -18,7 +18,7 @@ import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody
 import CustomBoostTitleDisplay from '../boost-earned-card/helpers/CustomBoostTitleDisplay';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
-import { getClrTranscriptKind } from '../../clr-transcript';
+import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
 
 import {
     useModal,
@@ -85,6 +85,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         handlePresentShortBoostModal,
     } = useManagedBoost(boost, { boostVC: _boostVC, categoryType, loading, defaultImg });
     const clrBadgeKind = boostVC ? getClrTranscriptKind(boostVC) : 'unknown';
+    const isClrCredential = boostVC?.type?.includes('ClrCredential') ?? false;
+    const clrTranscriptIssuerInfo =
+        isClrCredential && boostVC ? getClrTranscriptIssuerInfo(boostVC) : {};
 
     const [issueLoading, setIssueLoading] = useState(false);
     const { handleSubmitExistingBoostOther } = useBoost(history);
@@ -280,12 +283,14 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
-                                    badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                                    displayType={cred?.display?.displayType}
-                                    credential={boostVC}
-                                    clrBadgeKind={
-                                        clrBadgeKind !== 'unknown' ? clrBadgeKind : undefined
-                                    }
+                                badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
+                                displayType={cred?.display?.displayType}
+                                credential={boostVC}
+                                clrIssuerName={clrTranscriptIssuerInfo.issuerName}
+                                clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
+                                clrBadgeKind={
+                                    clrBadgeKind !== 'unknown' ? clrBadgeKind : undefined
+                                }
                                 />
                             )
                         }

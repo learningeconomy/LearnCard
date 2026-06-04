@@ -9,22 +9,44 @@ import { useGetVCInfo } from 'learn-card-base/hooks/useGetVCInfo';
 
 type CredentialCLRBadgeProps = {
     credential: VC;
+    logoSrc?: string;
+    issuerName?: string;
     badgeCircleCustomClass?: string;
 };
 
 export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
     credential,
+    logoSrc,
+    issuerName,
     badgeCircleCustomClass = '',
 }) => {
-    const { issueeName, issuerName, issueeProfile, issuerProfile, issuerAppListing } =
-        useGetVCInfo(credential);
+    const { issueeName, issueeProfile, issuerProfile, issuerAppListing } = useGetVCInfo(credential);
 
     const subjectUser = issueeProfile ?? { displayName: issueeName, name: issueeName };
-    const issuerUser =
-        issuerProfile ??
-        (issuerAppListing
-            ? { displayName: issuerName, name: issuerName, image: issuerAppListing.icon_url }
-            : { displayName: issuerName, name: issuerName });
+    let issuerLabel = issuerName;
+    if (!issuerLabel) {
+        issuerLabel = issuerProfile?.displayName;
+    }
+    if (!issuerLabel) {
+        issuerLabel = issuerAppListing?.display_name;
+    }
+    if (!issuerLabel) {
+        issuerLabel = 'Issuer';
+    }
+
+    const issuerImage = logoSrc ?? issuerProfile?.image ?? issuerAppListing?.icon_url;
+    const hasExplicitIssuerData = logoSrc !== undefined || issuerName !== undefined;
+    let issuerUser = issuerProfile;
+
+    if (hasExplicitIssuerData) {
+        issuerUser = issuerImage
+            ? { displayName: issuerLabel, name: issuerLabel, image: issuerImage }
+            : { displayName: issuerLabel, name: issuerLabel };
+    } else if (!issuerUser) {
+        issuerUser = issuerImage
+            ? { displayName: issuerLabel, name: issuerLabel, image: issuerImage }
+            : { displayName: issuerLabel, name: issuerLabel };
+    }
 
     return (
         <div
@@ -45,7 +67,7 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
             >
                 <UserProfilePicture
                     user={issuerUser}
-                    customContainerClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden text-white font-medium text-2xl"
+                    customContainerClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden text-white font-medium text-lg"
                     customImageClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden object-cover"
                 />
             </div>

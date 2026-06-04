@@ -19,3 +19,4 @@ export { default as ClrTranscriptFullPage } from './surfaces/ClrTranscriptFullPa
 export { default as ClrTranscriptEmbedWidget } from './surfaces/ClrTranscriptEmbedWidget';
 export { default as ClrTranscriptTitleDisplay } from './ClrTranscriptTitleDisplay';
 export { getClrTranscriptKind } from './ClrTranscriptTitleDisplay';
+export { getClrTranscriptIssuerInfo } from './clrKind.helpers';

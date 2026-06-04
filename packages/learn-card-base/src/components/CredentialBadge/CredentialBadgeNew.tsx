@@ -11,7 +11,12 @@ import CredentialMediaBadge from './CredentialMediaBadge';
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { VC } from '@learncard/types';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
-import { getAchievementTypeDisplayText, isClrCredential } from 'learn-card-base';
+import {
+    getAchievementTypeDisplayText,
+    getIssuerImage,
+    getIssuerName,
+    isClrCredential,
+} from 'learn-card-base';
 
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 
@@ -36,6 +41,8 @@ type CredentialBadgeProps = {
     credential: VC;
     borderStyle?: string;
     clrBadgeKind?: ClrBadgeKind;
+    clrIssuerName?: string;
+    clrLogoSrc?: string;
 };
 
 export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
@@ -59,6 +66,8 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     credential,
     borderStyle,
     clrBadgeKind,
+    clrIssuerName,
+    clrLogoSrc,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
     const { subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
@@ -209,6 +218,8 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                 <>
                     <CredentialCLRBadge
                         credential={credential}
+                        logoSrc={clrLogoSrc ?? getIssuerImage(credential)}
+                        issuerName={clrIssuerName ?? getIssuerName(credential)}
                         badgeCircleCustomClass={badgeCircleCustomClass}
                     />
                     {clrBadgeKind && <CredentialCLRBadgePill kind={clrBadgeKind} />}

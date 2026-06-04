@@ -40,7 +40,7 @@ import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
-import { getClrTranscriptKind } from '../../clr-transcript';
+import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
@@ -176,6 +176,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
     const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
+    const clrTranscriptIssuerInfo = isClrCredential && cred ? getClrTranscriptIssuerInfo(cred) : {};
 
     const color = categoryMetadata[categoryType].color;
     const darkColor = categoryMetadata[categoryType].darkColor;
@@ -608,6 +609,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                                 displayType={displayType}
                                 credential={cred}
+                                clrIssuerName={clrTranscriptIssuerInfo.issuerName}
+                                clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
                                 clrBadgeKind={
                                     isClrCredential && clrBadgeKind !== 'unknown'
                                         ? clrBadgeKind

@@ -8,6 +8,11 @@ import { inferProgramKind } from './clr.helpers';
 
 export type InferredClrKind = 'transcript' | 'course' | 'degree' | 'unknown';
 
+export type ClrTranscriptIssuerInfo = {
+    issuerName?: string;
+    logoSrc?: string;
+};
+
 /** Lightweight title patterns used only when structured CLR signals are inconclusive. */
 const TITLE_HEURISTICS: Array<[InferredClrKind, RegExp[]]> = [
     [
@@ -99,5 +104,21 @@ export const getClrTranscriptKind = (credential: VC): InferredClrKind => {
         return inferClrKindWithTitleFallback(model, model.header.title?.value);
     } catch {
         return 'unknown';
+    }
+};
+
+/** Returns the normalized CLR issuer values used by transcript views and shared badge surfaces. */
+export const getClrTranscriptIssuerInfo = (credential: VC): ClrTranscriptIssuerInfo => {
+    try {
+        const model = normalizeClrTranscriptDisplayModel(
+            credential as unknown as Record<string, unknown>
+        );
+
+        return {
+            issuerName: model.header.issuerName?.value,
+            logoSrc: model.header.image?.value,
+        };
+    } catch {
+        return {};
     }
 };

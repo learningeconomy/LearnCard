@@ -16,6 +16,8 @@ import { VC } from '@learncard/types';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 import {
     getAchievementTypeDisplayText,
+    getIssuerImage,
+    getIssuerName,
     isClrCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
@@ -42,6 +44,8 @@ type CredentialBadgeProps = {
     borderStyle?: string;
     hideMediaBadge?: boolean;
     clrBadgeKind?: ClrBadgeKind;
+    clrIssuerName?: string;
+    clrLogoSrc?: string;
 };
 
 export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
@@ -66,6 +70,8 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     borderStyle,
     hideMediaBadge,
     clrBadgeKind,
+    clrIssuerName,
+    clrLogoSrc,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
     const metadata =
@@ -228,6 +234,8 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
                 <>
                     <CredentialCLRBadge
                         credential={credential}
+                        logoSrc={clrLogoSrc ?? getIssuerImage(credential)}
+                        issuerName={clrIssuerName ?? getIssuerName(credential)}
                         badgeCircleCustomClass={badgeCircleCustomClass}
                     />
                     {clrBadgeKind && <CredentialCLRBadgePill kind={clrBadgeKind} />}
