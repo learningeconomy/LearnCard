@@ -13,8 +13,10 @@ import {
 } from '../../helpers/clrRenderer.helpers';
 import { inferProgramKind } from './clr.helpers';
 import { formatClrGpa } from './clr.helpers';
-
-export type InferredClrKind = 'transcript' | 'course' | 'degree' | 'unknown';
+import {
+    inferClrKindWithTitleFallback,
+    type InferredClrKind,
+} from './clrKind.helpers';
 
 const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
     if (!course) return undefined;
@@ -36,26 +38,6 @@ const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
     return String(resolvedResult.value.value);
 };
 
-const inferClrKind = (model: ClrTranscriptDisplayModel): InferredClrKind => {
-    const hasTranscriptSignals =
-        model.summary.courseCount > 1 ||
-        !!model.summary.gpa ||
-        (model.summary.courseCount > 0 &&
-            (model.summary.explicitCompetencyCount > 0 || model.summary.evidenceCount > 0));
-
-    if (hasTranscriptSignals) return 'transcript';
-
-    if (model.courses.length === 1 && model.programs.length === 0) return 'course';
-
-    const primaryProgram = model?.programs?.[0];
-    if (primaryProgram) {
-        const kind = inferProgramKind(primaryProgram.achievementType.value).toLowerCase();
-        if (kind === 'degree') return 'degree';
-    }
-
-    return 'unknown';
-};
-
 const ClrMetricChip: React.FC<{
     icon: React.ReactNode;
     value: string | number;
@@ -65,17 +47,6 @@ const ClrMetricChip: React.FC<{
         <span className="text-[12px] font-semibold text-grayscale-700">{value}</span>
     </div>
 );
-
-export const getClrTranscriptKind = (credential: VC): InferredClrKind => {
-    try {
-        const model = normalizeClrTranscriptDisplayModel(
-            credential as unknown as Record<string, unknown>
-        );
-        return inferClrKind(model);
-    } catch {
-        return 'unknown';
-    }
-};
 
 const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: string }> = ({
     credential,
@@ -101,7 +72,10 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         );
     }
 
-    const inferredKind = inferClrKind(model);
+    const inferredKind = inferClrKindWithTitleFallback(
+        model,
+        fallbackTitle || model.header.title?.value
+    );
 
     if (inferredKind === 'unknown') {
         return (
@@ -195,3 +169,4 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 };
 
 export default ClrTranscriptTitleDisplay;
+export { getClrTranscriptKind } from './clrKind.helpers';
