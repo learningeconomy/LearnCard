@@ -1,5 +1,7 @@
 import './constants/sentry';
 import './i18n'; // side-effect init — must run before render for synchronous EN resources
+import { upgradeToNativeLocale } from './i18n';
+import { setTenantDefaultLocaleCache } from './i18n/detectLocale';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -24,6 +26,19 @@ import * as Sentry from '@sentry/browser';
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
+
+    // Seed the locale-detection cache so the sync chain in i18n init can fall
+    // through to the tenant default when neither localStorage nor
+    // navigator.language land on a supported locale. i18next already
+    // initialized synchronously above (side-effect import) using just
+    // localStorage + navigator; we add the tenant fallback + native-locale
+    // upgrade here, after bootstrap.
+    setTenantDefaultLocaleCache(tenantConfig?.i18n?.defaultLanguage);
+
+    // Async upgrade: on iOS/Android, Capacitor `Device.getLanguageCode()` is
+    // the most accurate signal. Run it now and switch i18next to that locale
+    // if the user hasn't manually picked anything yet.
+    void upgradeToNativeLocale();
 
     if (Capacitor.isNativePlatform()) {
         try {

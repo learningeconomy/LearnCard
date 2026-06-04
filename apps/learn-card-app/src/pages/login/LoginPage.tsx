@@ -42,6 +42,7 @@ import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
+import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
 import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
@@ -536,6 +537,12 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                 className="flex flex-col flex-grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
+                {/* Pre-auth language switcher. Positioned over the login background
+                    in the safe-area top-right; the side-menu LanguagePicker isn't
+                    reachable until after sign-in. */}
+                <div className="absolute top-0 end-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
+                    <LanguagePickerCompact />
+                </div>
                 <IonGrid
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loginBgColor }}
