@@ -67,8 +67,8 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
             >
                 <UserProfilePicture
                     user={issuerUser}
-                    customContainerClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden text-white !font-medium text-lg"
-                    customImageClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden object-cover !font-medium text-lg"
+                    customContainerClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden text-white font-bold text-lg"
+                    customImageClass="flex justify-center items-center w-[30px] h-[30px] min-w-[30px] min-h-[30px] rounded-full overflow-hidden object-cover font-bold text-lg"
                 />
             </div>
 
