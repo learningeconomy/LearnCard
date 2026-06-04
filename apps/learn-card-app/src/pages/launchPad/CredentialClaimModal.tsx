@@ -8,6 +8,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, VP } from '@learncard/types';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import * as m from '../../paraglide/messages.js';
 import {
     markModalMounted,
     markCredentialResolved,
@@ -216,7 +217,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             setClaimed(true);
             void markClaimCompleted();
 
-            presentToast('Successfully claimed Credential!', {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -227,7 +228,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 message: err instanceof Error ? err.message : String(err),
             });
 
-            presentToast('Unable to claim Credential', {
+            presentToast(m['toasts.credentialClaimFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

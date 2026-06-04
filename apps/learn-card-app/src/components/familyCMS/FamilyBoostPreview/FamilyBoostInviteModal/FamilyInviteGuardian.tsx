@@ -30,6 +30,7 @@ import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { BoostCMSIssueTo, ShortBoostState } from '../../../boost/boost';
+import * as m from '../../../../paraglide/messages.js';
 
 type FamilyInviteGuardianProps = {
     boostUri: string;
@@ -188,12 +189,12 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
             await Clipboard.write({
                 string: boostClaimLink,
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(m['toasts.family.boostLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(m['toasts.family.boostLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

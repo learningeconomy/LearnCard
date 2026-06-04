@@ -23,6 +23,7 @@ import {
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 const schema = zod.object({
     email: zod.string().email(),
@@ -84,7 +85,7 @@ export const EndorsementRequestOptions: React.FC<{
     const copyItem = async () => {
         await Clipboard.write({ string: shareLink });
 
-        presentToast(`Link copied to clipboard`, {
+        presentToast(m['toasts.boost.endorsementLinkCopied'](), {
             hasDismissButton: true,
         });
     };
@@ -152,7 +153,7 @@ export const EndorsementRequestOptions: React.FC<{
             setIsSendingEmail(false);
         } catch (error) {
             setIsSendingEmail(false);
-            presentToast(`Failed to send endorsement request`, {
+            presentToast(m['toasts.boost.endorsementRequestFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

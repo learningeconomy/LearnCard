@@ -38,6 +38,7 @@ import {
     type LerVerificationResultLike,
 } from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
+import * as m from '../../paraglide/messages.js';
 
 const getQueryParam = (value: string | string[] | null): string => {
     if (Array.isArray(value)) return value[0] ?? '';
@@ -81,7 +82,7 @@ const VerifySharedResume: React.FC = () => {
                 throw new Error('Resume preview is not ready yet.');
             }
             await resumePreviewRef.current.generatePDF();
-            presentToast('Resume downloaded successfully.', {
+            presentToast(m['toasts.resume.downloadSuccess'](), {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });

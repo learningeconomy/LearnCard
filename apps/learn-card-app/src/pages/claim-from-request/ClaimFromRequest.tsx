@@ -70,6 +70,7 @@ import {
 import { AlertCircle, RefreshCw, Home, HelpCircle, MessageCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import * as m from '../../paraglide/messages.js';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -581,7 +582,7 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -590,14 +591,14 @@ const ClaimFromRequest: React.FC = () => {
             console.error('Error claiming credential', e);
 
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(`You have already claimed this credential.`, {
+                presentToast(m['toasts.alreadyClaimed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
 
                 handleAfterCredentialClaim();
             } else {
-                presentToast(`Oops, we couldn't claim the credential.`, {
+                presentToast(m['toasts.claimOops'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });

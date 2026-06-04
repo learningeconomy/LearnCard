@@ -39,6 +39,7 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;
@@ -194,12 +195,12 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['toasts.boost.contactLinkCopied'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['toasts.boost.contactLinkCopyFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });

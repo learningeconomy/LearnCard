@@ -36,6 +36,7 @@ import {
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -184,11 +185,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast('Share link copied to clipboard', {
+            presentToast(m['toasts.boost.shareLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy share link to clipboard', {
+            presentToast(m['toasts.boost.shareLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

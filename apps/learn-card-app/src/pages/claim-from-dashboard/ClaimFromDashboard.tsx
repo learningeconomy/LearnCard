@@ -51,6 +51,7 @@ import {
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export type FromDashboardMetadata = {
     credentialName: string;
@@ -312,7 +313,7 @@ const ClaimFromDashboard: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -326,7 +327,7 @@ const ClaimFromDashboard: React.FC = () => {
              * So, it's more of a warning and we can warn them that it already exists, and proceed.
              **/
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(`You have already claimed this credential.`, {
+                presentToast(m['toasts.alreadyClaimed'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -334,7 +335,7 @@ const ClaimFromDashboard: React.FC = () => {
                 // We are assuming it is a success since user already has this credential.
                 handleAfterCredentialClaim();
             } else {
-                presentToast(`Oops, we couldn't claim the credential.`, {
+                presentToast(m['toasts.claimOops'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });

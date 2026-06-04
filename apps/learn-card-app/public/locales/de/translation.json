@@ -1283,7 +1283,9 @@
             "connected": "Erfolgreich mit {{name}} verbunden",
             "acceptFailed": "Vertragsannahme fehlgeschlagen: {{error}}",
             "permissionsUpdated": "Berechtigungen aktualisiert",
-            "permissionsUpdateFailed": "Berechtigungen konnten nicht aktualisiert werden"
+            "permissionsUpdateFailed": "Berechtigungen konnten nicht aktualisiert werden",
+            "deletedCredentials": "{{count}} Berechtigungen aus Vertrag {{name}} gelöscht",
+            "deleteError": "Fehler beim Löschen von Berechtigungen aus Vertrag {{name}}: {{error}}"
         },
         "dataSource": {
             "syncedSuccess": "Datenquelle erfolgreich synchronisiert!"

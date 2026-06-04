@@ -58,6 +58,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../paraglide/messages.js';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
@@ -264,14 +265,14 @@ const ClaimBoost: React.FC<{
                 history?.push('/');
             }
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(m['toasts.credentialClaimFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -312,14 +313,14 @@ const ClaimBoost: React.FC<{
 
             history?.push('/');
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(m['toasts.credentialClaimFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

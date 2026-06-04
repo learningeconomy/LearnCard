@@ -28,6 +28,7 @@ import { LearnCardIDCMSTabsEnum } from '../../../learncardID-CMS/LearnCardIDCMST
 import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-cms.helpers';
 
 import { useCreateChildAccount } from '../../../../hooks/useCreateChildAccount';
+import * as m from '../../../../paraglide/messages.js';
 
 type ChildInviteModalSimpleProps = {
     selectedFamily:

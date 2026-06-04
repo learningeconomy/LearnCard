@@ -25,6 +25,7 @@ import { IonPage, IonContent, IonRow, IonCol, IonGrid, IonLoading } from '@ionic
 import CredentialStorageFooter from './CredentialStorageFooter';
 import LoadingPage from '../loadingPage/LoadingPage';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import * as m from '../../paraglide/messages.js';
 
 export const getCredentialFromVp = (vp: VP): VC => {
     const vcField = vp.verifiableCredential;
@@ -231,7 +232,7 @@ const CredentialStorage: React.FC = () => {
             setClaimCount(totalToClaim);
         } catch (e) {
             console.error(e);
-            presentToast(`Oops, we were unable accept the credentials. Please try again.`, {
+            presentToast(m['toasts.acceptFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -246,7 +247,7 @@ const CredentialStorage: React.FC = () => {
             redirectStore.set.authRedirect(null);
         } catch (e) {
             console.error(e);
-            presentToast(`Oops, we were unable reject the credentials. Please try again.`, {
+            presentToast(m['toasts.rejectFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

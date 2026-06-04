@@ -207,7 +207,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }
 
                             setIsClaimed(true);
-                            presentToast(`Successfully claimed Credential!`, {
+                            presentToast(m['toasts.credentialClaimed'](), {
                                 duration: 3000,
                                 type: ToastTypeEnum.Success,
                             });

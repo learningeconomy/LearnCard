@@ -36,6 +36,7 @@ import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import BoostShareableQRCode from './BoostShareableQRCode';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostShareableCodeProps = {
     state: BoostCMSState;
@@ -259,11 +260,11 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             await Clipboard.write({
                 string: getCurrentClaimLink(),
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(m['toasts.boost.boostLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(m['toasts.boost.boostLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -365,12 +366,12 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
             setTemplateDefaultPermissions(prev => ({ ...prev, canView: true }));
             setCanViewEnabled(true);
-            presentToast('Viewing enabled. You can now generate claim links.', {
+            presentToast(m['toasts.boost.viewingEnabled'](), {
                 hasDismissButton: true,
             });
         } catch (error) {
             console.error('Failed to update boost canView permission', error);
-            presentToast('Unable to update permissions. Please try again.', {
+            presentToast(m['toasts.boost.permissionsUpdateFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

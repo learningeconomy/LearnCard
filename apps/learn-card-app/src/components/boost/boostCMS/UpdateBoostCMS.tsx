@@ -79,6 +79,7 @@ import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/Boos
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
 import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
+import * as m from '../../../paraglide/messages.js';
 
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
@@ -476,7 +477,7 @@ const UpdateBoostCMS: React.FC = () => {
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast(`Boost saved successfully`, {
+                presentToast(m['toasts.boost.boostSavedSuccess'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Success,
                 });
@@ -499,7 +500,7 @@ const UpdateBoostCMS: React.FC = () => {
         } catch (e) {
             setIsSaveLoading(false);
             console.log('error::savingBoost', e);
-            presentToast(`Unable to save boost`, {
+            presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -535,7 +536,7 @@ const UpdateBoostCMS: React.FC = () => {
             } catch (e) {
                 setIsPublishLoading(false);
                 console.log('error::boosting::someone', e);
-                presentToast(`Error issuing boost`, {
+                presentToast(m['toasts.boost.boostIssuedError'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Error,
                 });
@@ -586,7 +587,7 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -597,7 +598,7 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast(`Boost saved successfully`, {
+                    presentToast(m['toasts.boost.boostSavedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -607,7 +608,7 @@ const UpdateBoostCMS: React.FC = () => {
         } catch (e) {
             setIsLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });

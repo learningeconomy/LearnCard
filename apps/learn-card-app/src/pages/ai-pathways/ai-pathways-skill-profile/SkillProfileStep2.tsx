@@ -38,6 +38,7 @@ import X from 'src/components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
+import * as m from '../../../paraglide/messages.js';
 
 type SkillProfileStep2Props = {
     handleNext: () => void;
@@ -116,7 +117,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
     const handleAddExperience = async () => {
         const experience = experiences[0];
         if (!experience.jobTitle || !experience.employer) {
-            presentToast('Please fill in job title and employer', {
+            presentToast(m['toasts.skills.fillJobTitle'](), {
                 type: ToastTypeEnum.Error,
                 title: 'Missing required fields',
             });
@@ -230,7 +231,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 title: `${experience.jobTitle} at ${experience.employer}`,
             });
 
-            presentToast('Your work history credential has been created', {
+            presentToast(m['toasts.skills.workHistoryCreated'](), {
                 type: ToastTypeEnum.Success,
                 title: 'Work experience added',
             });

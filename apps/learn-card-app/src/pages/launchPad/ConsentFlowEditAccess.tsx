@@ -19,6 +19,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../paraglide/messages.js';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',

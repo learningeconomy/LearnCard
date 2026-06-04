@@ -17,6 +17,7 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { getContractTermsInfo, getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 enum SyncStateEnum {
     notSynced = 'Accept & Sync',

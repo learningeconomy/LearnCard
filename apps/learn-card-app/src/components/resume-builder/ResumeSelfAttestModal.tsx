@@ -21,6 +21,7 @@ import { useAddCredentialToWallet } from '../boost/mutations';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from './resume-builder.helpers';
 import { switchedProfileStore } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type ResumeSelfAttestModalProps = {
     category: ResumeSectionKey;
@@ -47,7 +48,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
     const handleSelfIssue = async () => {
         if (!profile?.profileId) {
-            presentToast('Unable to self issue without a profile.', {
+            presentToast(m['toasts.resume.selfIssueNoProfile'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -110,7 +111,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             closeModal();
         } catch (error) {
             console.error('resume self issue error', error);
-            presentToast('Unable to self issue credential', {
+            presentToast(m['toasts.resume.selfIssueFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });

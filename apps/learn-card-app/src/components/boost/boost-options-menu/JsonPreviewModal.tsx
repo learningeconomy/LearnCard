@@ -6,6 +6,7 @@ import CopyStack from '../../svgs/CopyStack';
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { ModalTypes, useModal, ToastTypeEnum, useToast } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
     const { closeModal } = useModal({
@@ -27,12 +28,12 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
                     string: jsonPrettyPrint,
                 });
             }
-            presentToast('JSON copied to clipboard', {
+            presentToast(m['toasts.jsonCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
-            presentToast('Unable to copy JSON to clipboard', {
+            presentToast(m['toasts.jsonCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -44,11 +45,11 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
             await Clipboard.write({
                 string: templateId,
             });
-            presentToast('Template ID copied to clipboard', {
+            presentToast(m['toasts.boost.templateIdCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy template ID to clipboard', {
+            presentToast(m['toasts.boost.templateIdCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

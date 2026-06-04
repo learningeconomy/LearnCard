@@ -1256,7 +1256,9 @@
             "connected": "Successfully connected to {{name}}",
             "acceptFailed": "Failed to accept contract: {{error}}",
             "permissionsUpdated": "Permissions updated",
-            "permissionsUpdateFailed": "Unable to update permissions"
+            "permissionsUpdateFailed": "Unable to update permissions",
+            "deletedCredentials": "Deleted {{count}} credentials from contract {{name}}",
+            "deleteError": "Error while deleting credentials from contract {{name}}: {{error}}"
         },
         "dataSource": {
             "syncedSuccess": "Successfully synced Data Source!"

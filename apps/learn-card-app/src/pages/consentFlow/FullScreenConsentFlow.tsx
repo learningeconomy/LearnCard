@@ -24,6 +24,7 @@ import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 enum ConsentFlowStep {
     getAnAdult = 'landing',

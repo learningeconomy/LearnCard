@@ -36,6 +36,7 @@ import type { ExistingResume } from '../../hooks/useExistingResumes';
 import { buildResumeHydrationState } from './resume-builder-history.helpers';
 
 import { VC } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -212,7 +213,7 @@ export const ResumeBuilder: React.FC = () => {
                 });
             }
 
-            presentToast('LER-RS resume credential published successfully.', {
+            presentToast(m['toasts.resume.publishedSuccess'](), {
                 title: successToastTitle,
                 details: lerVc?.id || undefined,
                 type: ToastTypeEnum.Success,
@@ -276,7 +277,7 @@ export const ResumeBuilder: React.FC = () => {
             if (savedResumeForShare) {
                 openResumeShareModal(savedResumeForShare.lerVc, savedResumeForShare.lerUri);
             }
-            presentToast('Resume downloaded successfully.', {
+            presentToast(m['toasts.resume.downloadSuccess'](), {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });
@@ -381,7 +382,7 @@ export const ResumeBuilder: React.FC = () => {
                 });
                 closeInlinePreview();
                 setResumeQrCodeLink('');
-                presentToast('Loaded resume into edit mode.', {
+                presentToast(m['toasts.resume.loadedEditMode'](), {
                     type: ToastTypeEnum.Success,
                 });
             } catch (error: any) {
@@ -400,14 +401,14 @@ export const ResumeBuilder: React.FC = () => {
         closeInlinePreview();
         setResumeQrCodeLink('');
         setBaselineSnapshotByResume(null);
-        presentToast('Started a new resume draft.', {
+        presentToast(m['toasts.resume.newDraft'](), {
             type: ToastTypeEnum.Success,
         });
     }, [closeInlinePreview, presentToast]);
 
     const handleShareCurrentResume = useCallback(() => {
         if (!activeResumeVc || !activeResume?.uri) {
-            presentToast('This resume is not available to share yet.', {
+            presentToast(m['toasts.resume.notAvailableToShare'](), {
                 type: ToastTypeEnum.Error,
             });
             return;

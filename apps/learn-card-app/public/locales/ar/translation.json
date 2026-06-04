@@ -1283,7 +1283,9 @@
             "connected": "تم الاتصال بنجاح بـ {{name}}",
             "acceptFailed": "فشل قبول العقد: {{error}}",
             "permissionsUpdated": "تم تحديث الأذونات",
-            "permissionsUpdateFailed": "تعذر تحديث الأذونات"
+            "permissionsUpdateFailed": "تعذر تحديث الأذونات",
+            "deletedCredentials": "تم حذف {{count}} بيانات اعتماد من العقد {{name}}",
+            "deleteError": "خطأ أثناء حذف بيانات الاعتماد من العقد {{name}}: {{error}}"
         },
         "dataSource": {
             "syncedSuccess": "تم مزامنة مصدر البيانات بنجاح!"

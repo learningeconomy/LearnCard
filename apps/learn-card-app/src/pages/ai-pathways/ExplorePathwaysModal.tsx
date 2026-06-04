@@ -36,6 +36,7 @@ import GrowSkillsModal from './GrowSkillsModal';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard.types';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 import ExploreRoles from './ExploreRoles';
+import * as m from '../../paraglide/messages.js';
 import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,

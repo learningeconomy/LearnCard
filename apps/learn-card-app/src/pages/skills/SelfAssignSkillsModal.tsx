@@ -15,6 +15,7 @@ import { IonFooter, IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
+import * as m from '../../paraglide/messages.js';
 
 type SelfAssignSkillsModalProps = {};
 
@@ -89,7 +90,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            presentToast(m['toasts.skills.savedSuccess'](), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error: any) {

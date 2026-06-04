@@ -21,6 +21,7 @@ import {
     SESSION_START_KEY,
 } from '@analytics';
 import { useSkillProfileStepFunnel, trackSkillProfileCompleted } from './useSkillProfileStepFunnel';
+import * as m from '../../../paraglide/messages.js';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -95,7 +96,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            presentToast(m['toasts.skills.savedSuccess'](), {
                 type: ToastTypeEnum.Success,
             });
 

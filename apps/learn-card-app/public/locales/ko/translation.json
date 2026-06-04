@@ -1283,7 +1283,9 @@
             "connected": "{{name}}에 성공적으로 연결됨",
             "acceptFailed": "계약 수락 실패: {{error}}",
             "permissionsUpdated": "권한이 업데이트됨",
-            "permissionsUpdateFailed": "권한을 업데이트할 수 없습니다"
+            "permissionsUpdateFailed": "권한을 업데이트할 수 없습니다",
+            "deletedCredentials": "계약 {{name}}에서 {{count}}개 자격 증명이 삭제됨",
+            "deleteError": "계약 {{name}}에서 자격 증명 삭제 중 오류: {{error}}"
         },
         "dataSource": {
             "syncedSuccess": "데이터 소스가 성공적으로 동기화되었습니다!"

@@ -12,6 +12,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../paraglide/messages.js';
 
 type ResumeShareLinkProps = {
     handleClose?: () => void;
@@ -37,7 +38,7 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
             {
                 onSuccess: data => setShareLink(data?.link ?? ''),
                 onError: () => {
-                    presentToast('Unable to generate resume share link.', {
+                    presentToast(m['toasts.resume.shareLinkGenerated'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -51,11 +52,11 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
 
         try {
             await Clipboard.write({ string: shareLink });
-            presentToast('Resume link copied to clipboard', {
+            presentToast(m['toasts.resume.linkCopied'](), {
                 hasDismissButton: true,
             });
         } catch {
-            presentToast('Unable to copy resume link to clipboard', {
+            presentToast(m['toasts.resume.linkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
