@@ -86,7 +86,94 @@
             "checkBackSoon": "Schau bald wieder vorbei oder durchsuche alle Apps."
         },
         "aiDisabledMinor": "KI-Funktionen sind für Nutzer unter 18 Jahren nicht verfügbar.",
-        "aiDisabledPrivacy": "KI-Funktionen sind derzeit deaktiviert. Du kannst sie unter Datenschutz in deinem Profil aktivieren."
+        "aiDisabledPrivacy": "KI-Funktionen sind derzeit deaktiviert. Du kannst sie unter Datenschutz in deinem Profil aktivieren.",
+        "actions": {
+            "addToLearnCard": "Zu LearnCard hinzufügen",
+            "buildMyLearnCard": "Mein LearnCard aufbauen",
+            "newAiTutoringSession": "Neue KI-Tutoring-Sitzung",
+            "understandMySkills": "Meine Fähigkeiten verstehen",
+            "customizeAiSessions": "KI-Sitzungen anpassen",
+            "shareInsightsWithTeacher": "Einblicke mit Lehrer teilen",
+            "viewLearnerInsights": "Lernereinblicke anzeigen",
+            "requestLearnerInsights": "Lernereinblicke anfordern",
+            "issueCredential": "Berechtigung ausstellen",
+            "createCredential": "Berechtigung erstellen",
+            "editSkillsFrameworks": "Fähigkeitsrahmen bearbeiten",
+            "manageSkillsFrameworks": "Fähigkeitsrahmen verwalten",
+            "createFamily": "Familie erstellen",
+            "viewFamily": "Familie anzeigen",
+            "boostChild": "Kind fördern",
+            "addChild": "Kind hinzufügen",
+            "switchChild": "Kind wechseln",
+            "viewChildInsights": "Kindeinblicke anzeigen",
+            "createApiToken": "API-Token erstellen",
+            "createSigningAuthority": "Signierautorität erstellen",
+            "createConsentFlow": "ConsentFlow erstellen",
+            "switchNetwork": "Netzwerk wechseln",
+            "readDocs": "Dokumentation lesen",
+            "importCredentials": "Berechtigungen importieren",
+            "createOrganization": "Organisation erstellen",
+            "switchAccount": "Konto wechseln",
+            "claimCredential": "Berechtigung beanspruchen"
+        },
+        "modal": {
+            "whatWouldYouLikeToDo": "Was möchtest du tun?",
+            "roleUpdated": "Rolle aktualisiert",
+            "nowRole": "Du bist jetzt {{role}}.",
+            "unableToUpdateRole": "Rolle konnte nicht aktualisiert werden",
+            "unableToOpenRequestInsights": "Einblicke anfordern konnte nicht geöffnet werden"
+        },
+        "passport": "Pass",
+        "launchpad": "Launchpad",
+        "appCard": {
+            "open": "Öffnen",
+            "get": "Laden",
+            "launch": "Starten",
+            "soon": "Bald",
+            "connect": "Verbinden",
+            "loading": "Laden...",
+            "age": "Alter {{rating}}"
+        },
+        "carousel": {
+            "open": "Öffnen",
+            "getApp": "App laden",
+            "goToSlide": "Gehe zu Folie {{number}}"
+        },
+        "becomeAnApp": {
+            "developerProgram": "Entwicklerprogramm",
+            "buildYourOwnApp": "Erstelle deine eigene App",
+            "joinDeveloperCommunity": "Trete heute unserer Entwickler-Community bei"
+        },
+        "detail": {
+            "shareApp": "App teilen",
+            "editPermissions": "Berechtigungen bearbeiten",
+            "uninstall": "Deinstallieren",
+            "about": "Über",
+            "preview": "Vorschau",
+            "watch": "Ansehen",
+            "links": "Links",
+            "promoVideo": "Promo-Video",
+            "readMore": "Mehr lesen",
+            "readLess": "Weniger lesen",
+            "install": "Installieren",
+            "moreOptions": "Weitere Optionen",
+            "linkCopied": "Link in die Zwischenablage kopiert!",
+            "installFailed": "App-Installation fehlgeschlagen: {{error}}",
+            "dateOfBirth": "Geburtsdatum",
+            "back": "Zurück",
+            "whyUseThisApp": "Warum diese App nutzen?",
+            "privacyPolicy": "Datenschutzrichtlinie",
+            "termsOfService": "Nutzungsbedingungen",
+            "category": "Kategorie"
+        },
+        "ageRestriction": {
+            "title": "Altersbeschränkung",
+            "requiresAge": "Diese App erfordert, dass Benutzer <strong>{{age}}+</strong> Jahre alt sind.",
+            "notMeetRequirement": "Basierend auf dem Geburtsdatum deines Profils erfüllst du die Mindestaltersanforderung für diese App nicht.",
+            "ok": "OK",
+            "requiresAgeBefore": "Diese App erfordert, dass Benutzer ",
+            "requiresAgeAfter": " Jahre alt sind."
+        }
     },
     "wallet": {
         "categories": {
@@ -1107,5 +1194,132 @@
         "nationalNetwork": "Nationale Netzwerk",
         "globalNetworkAdmin": "Globaler Netzwerk-Admin",
         "nationalNetworkAdmin": "Nationaler Netzwerk-Admin"
+    },
+    "toasts": {
+        "copied": "In die Zwischenablage kopiert",
+        "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+        "linkCopied": "Link in die Zwischenablage kopiert",
+        "linkCopyFailed": "Link konnte nicht in die Zwischenablage kopiert werden",
+        "jsonCopied": "JSON in die Zwischenablage kopiert",
+        "jsonCopyFailed": "JSON konnte nicht in die Zwischenablage kopiert werden",
+        "credentialClaimed": "Berechtigung erfolgreich beansprucht!",
+        "credentialClaimFailed": "Berechtigung konnte nicht beansprucht werden",
+        "alreadyClaimed": "Du hast diese Berechtigung bereits beansprucht.",
+        "claimOops": "Hoppla, wir konnten die Berechtigung nicht beanspruchen.",
+        "claimOopsPlural": "Hoppla, wir konnten die Berechtigungen nicht beanspruchen.",
+        "selectCredential": "Wähle mindestens eine Berechtigung zum Beanspruchen aus.",
+        "credentialsClaimedCount": "{{count}} Berechtigung(en) erfolgreich beansprucht!",
+        "acceptFailed": "Hoppla, wir konnten die Berechtigungen nicht akzeptieren. Bitte versuche es erneut.",
+        "rejectFailed": "Hoppla, wir konnten die Berechtigungen nicht ablehnen. Bitte versuche es erneut.",
+        "boost": {
+            "boostIssuedSuccess": "Boost erfolgreich ausgestellt",
+            "boostIssuedError": "Fehler beim Ausstellen des Boosts",
+            "boostSavedSuccess": "Boost erfolgreich gespeichert",
+            "boostSaveFailed": "Boost konnte nicht gespeichert werden",
+            "walletNotInitialized": "Wallet ist nicht initialisiert",
+            "deleteCredentialError": "Fehler beim Löschen der Berechtigung: Datensatz-ID nicht gefunden.",
+            "shareLinkCopied": "Freigabelink in die Zwischenablage kopiert",
+            "shareLinkCopyFailed": "Freigabelink konnte nicht kopiert werden",
+            "templateIdCopied": "Vorlagen-ID in die Zwischenablage kopiert",
+            "templateIdCopyFailed": "Vorlagen-ID konnte nicht kopiert werden",
+            "boostLinkCopied": "Boost-Link in die Zwischenablage kopiert",
+            "boostLinkCopyFailed": "Boost-Link konnte nicht kopiert werden",
+            "viewingEnabled": "Ansicht aktiviert. Du kannst jetzt Beanspruchungslinks generieren.",
+            "permissionsUpdateFailed": "Berechtigungen konnten nicht aktualisiert werden. Bitte versuche es erneut.",
+            "contactLinkCopied": "Kontaktlink in die Zwischenablage kopiert",
+            "contactLinkCopyFailed": "Kontaktlink konnte nicht kopiert werden",
+            "endorsementLinkCopied": "Link in die Zwischenablage kopiert",
+            "endorsementRequestFailed": "Endorsement-Anfrage konnte nicht gesendet werden"
+        },
+        "resume": {
+            "publishedSuccess": "LER-RS-Lebenslauf-Berechtigung erfolgreich veröffentlicht.",
+            "downloadSuccess": "Lebenslauf erfolgreich heruntergeladen.",
+            "downloadFailed": "Speichern und Herunterladen des Lebenslaufs fehlgeschlagen.",
+            "publishFailed": "Veröffentlichung der LER-RS-Lebenslauf-Berechtigung fehlgeschlagen.",
+            "loadedEditMode": "Lebenslauf in den Bearbeitungsmodus geladen.",
+            "loadFailed": "Ausgewählter Lebenslauf konnte nicht geladen werden.",
+            "newDraft": "Neuer Lebenslauf-Entwurf gestartet.",
+            "notAvailableToShare": "Dieser Lebenslauf ist noch nicht zum Teilen verfügbar.",
+            "shareLinkGenerated": "Freigabelink für den Lebenslauf konnte nicht generiert werden.",
+            "linkCopied": "Lebenslauf-Link in die Zwischenablage kopiert",
+            "linkCopyFailed": "Lebenslauf-Link konnte nicht kopiert werden",
+            "selfIssueNoProfile": "Selbstausstellung ohne Profil nicht möglich.",
+            "selfIssueFailed": "Selbstausstellung der Berechtigung fehlgeschlagen",
+            "verifiedResumeLinkCopied": "Verifizierter Lebenslauf-Link in die Zwischenablage kopiert",
+            "verifiedResumeLinkCopyFailed": "Verifizierter Lebenslauf-Link konnte nicht kopiert werden"
+        },
+        "credential": {
+            "addedToLearnCard": "Berechtigung zu LearnCard hinzugefügt"
+        },
+        "family": {
+            "profileCreated": "Profil \"{{name}}\" erfolgreich erstellt!",
+            "profileCreateFailed": "Fehler beim Erstellen von \"{{name}}\": {{error}}",
+            "boostLinkCopied": "Boost-Link in die Zwischenablage kopiert",
+            "boostLinkCopyFailed": "Boost-Link konnte nicht kopiert werden",
+            "boostIssuedError": "Fehler beim Ausstellen des Boosts",
+            "boostUpdateError": "Fehler beim Aktualisieren des Boosts"
+        },
+        "skills": {
+            "savedSuccess": "Fähigkeiten erfolgreich gespeichert!",
+            "saveError": "Fehler beim Speichern der Fähigkeiten!{{error}}",
+            "suggestionThanks": "Danke für deinen Vorschlag!",
+            "fillJobTitle": "Bitte gib die Position und den Arbeitgeber an",
+            "workHistoryCreated": "Deine Berufslaufbahn-Berechtigung wurde erstellt",
+            "frameworkSynced": "Rahmen erfolgreich synchronisiert.",
+            "frameworkSyncFailed": "Rahmen konnte nicht synchronisiert werden.",
+            "pasteValidLink": "Bitte fügen Sie einen gültigen OpenSALT-Rahmen-Link ein.",
+            "frameworkImported": "OpenSALT-Rahmen importiert und synchronisiert.",
+            "frameworkImportFailed": "Rahmen konnte nicht importiert werden.",
+            "updateError": "Fehler beim Aktualisieren der Fähigkeiten: {{error}}"
+        },
+        "goals": {
+            "saveError": "Fehler beim Speichern der Ziele!{{error}}"
+        },
+        "general": {
+            "somethingWentWrong": "Etwas ist schiefgelaufen: {{error}}",
+            "failedToUpdateTerms": "Bedingungen konnten nicht aktualisiert werden: {{error}}"
+        },
+        "consentFlow": {
+            "connected": "Erfolgreich mit {{name}} verbunden",
+            "acceptFailed": "Vertragsannahme fehlgeschlagen: {{error}}",
+            "permissionsUpdated": "Berechtigungen aktualisiert",
+            "permissionsUpdateFailed": "Berechtigungen konnten nicht aktualisiert werden"
+        },
+        "dataSource": {
+            "syncedSuccess": "Datenquelle erfolgreich synchronisiert!"
+        },
+        "launchpad": {
+            "installFailed": "App-Installation fehlgeschlagen: {{error}}",
+            "roleUpdated": "Rolle aktualisiert",
+            "nowRole": "Du bist jetzt {{role}}.",
+            "unableToUpdateRole": "Rolle konnte nicht aktualisiert werden",
+            "unableToOpenRequestInsights": "Einblicke anfordern konnte nicht geöffnet werden"
+        },
+        "onboarding": {
+            "errorCreatingProfile": "Fehler beim Erstellen des Profils",
+            "unableToJoinNetwork": "Netzwerk konnte nicht beigetreten werden"
+        },
+        "qr": {
+            "scanningFailed": "QR-Code konnte nicht gescannt werden"
+        },
+        "contacts": {
+            "connectionSent": "Verbindungsanfrage gesendet!",
+            "connectionSendFailed": "Ein Fehler ist aufgetreten, Verbindungsanfrage konnte nicht gesendet werden.",
+            "connectedSuccessfully": "Erfolgreich verbunden!",
+            "connectFailed": "Ein Fehler ist aufgetreten, Verbindung fehlgeschlagen!",
+            "acceptFailed": "Ein Fehler ist aufgetreten, Anfrage konnte nicht akzeptiert werden",
+            "blockFailed": "Ein Fehler ist aufgetreten, Benutzer konnte nicht blockiert werden",
+            "blocked": "Benutzer blockiert",
+            "unblocked": "Benutzer entblockiert",
+            "removeFailed": "Kontakt konnte nicht entfernt werden",
+            "removed": "Kontakt entfernt",
+            "disconnectFailed": "Trennung fehlgeschlagen",
+            "disconnected": "Getrennt",
+            "didCopied": "DID in die Zwischenablage kopiert",
+            "requestSent": "Anfrage gesendet",
+            "requestFailed": "Anfrage konnte nicht gesendet werden",
+            "inviteAlreadySent": "Du hast bereits eine Verbindungsanfrage an diesen Benutzer gesendet.",
+            "alreadyConnected": "Du bist bereits mit diesem Benutzer verbunden."
+        }
     }
 }

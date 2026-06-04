@@ -86,7 +86,94 @@
             "checkBackSoon": "Vuelve pronto o explora todas las aplicaciones."
         },
         "aiDisabledMinor": "Las funciones de IA no están disponibles para usuarios menores de 18 años.",
-        "aiDisabledPrivacy": "Las funciones de IA están deshabilitadas. Puedes habilitarlas en Privacidad y Datos desde tu perfil."
+        "aiDisabledPrivacy": "Las funciones de IA están deshabilitadas. Puedes habilitarlas en Privacidad y Datos desde tu perfil.",
+        "actions": {
+            "addToLearnCard": "Agregar a LearnCard",
+            "buildMyLearnCard": "Construir Mi LearnCard",
+            "newAiTutoringSession": "Nueva sesión de tutoría IA",
+            "understandMySkills": "Entender mis habilidades",
+            "customizeAiSessions": "Personalizar sesiones de IA",
+            "shareInsightsWithTeacher": "Compartir información con el profesor",
+            "viewLearnerInsights": "Ver información del estudiante",
+            "requestLearnerInsights": "Solicitar información del estudiante",
+            "issueCredential": "Emitir credencial",
+            "createCredential": "Crear credencial",
+            "editSkillsFrameworks": "Editar marcos de habilidades",
+            "manageSkillsFrameworks": "Gestionar marcos de habilidades",
+            "createFamily": "Crear familia",
+            "viewFamily": "Ver familia",
+            "boostChild": "Impulsar a niño",
+            "addChild": "Agregar niño",
+            "switchChild": "Cambiar niño",
+            "viewChildInsights": "Ver información del niño",
+            "createApiToken": "Crear token de API",
+            "createSigningAuthority": "Crear autoridad de firma",
+            "createConsentFlow": "Crear ConsentFlow",
+            "switchNetwork": "Cambiar red",
+            "readDocs": "Leer documentación",
+            "importCredentials": "Importar credenciales",
+            "createOrganization": "Crear organización",
+            "switchAccount": "Cambiar cuenta",
+            "claimCredential": "Reclamar credencial"
+        },
+        "modal": {
+            "whatWouldYouLikeToDo": "¿Qué te gustaría hacer?",
+            "roleUpdated": "Rol actualizado",
+            "nowRole": "Ahora eres {{role}}.",
+            "unableToUpdateRole": "No se pudo actualizar el rol",
+            "unableToOpenRequestInsights": "No se pudo abrir Solicitar Información"
+        },
+        "passport": "Pasaporte",
+        "launchpad": "Launchpad",
+        "appCard": {
+            "open": "Abrir",
+            "get": "Obtener",
+            "launch": "Iniciar",
+            "soon": "Próximamente",
+            "connect": "Conectar",
+            "loading": "Cargando...",
+            "age": "Edad {{rating}}"
+        },
+        "carousel": {
+            "open": "Abrir",
+            "getApp": "Obtener app",
+            "goToSlide": "Ir a la diapositiva {{number}}"
+        },
+        "becomeAnApp": {
+            "developerProgram": "Programa de desarrolladores",
+            "buildYourOwnApp": "Crea tu propia app",
+            "joinDeveloperCommunity": "Únete a nuestra comunidad de desarrolladores hoy"
+        },
+        "detail": {
+            "shareApp": "Compartir app",
+            "editPermissions": "Editar permisos",
+            "uninstall": "Desinstalar",
+            "about": "Acerca de",
+            "preview": "Vista previa",
+            "watch": "Ver",
+            "links": "Enlaces",
+            "promoVideo": "Video promocional",
+            "readMore": "Leer más",
+            "readLess": "Leer menos",
+            "install": "Instalar",
+            "moreOptions": "Más opciones",
+            "linkCopied": "¡Enlace copiado al portapapeles!",
+            "installFailed": "Error al instalar la app: {{error}}",
+            "dateOfBirth": "Fecha de nacimiento",
+            "back": "Volver",
+            "whyUseThisApp": "¿Por qué usar esta app?",
+            "privacyPolicy": "Política de privacidad",
+            "termsOfService": "Términos de servicio",
+            "category": "Categoría"
+        },
+        "ageRestriction": {
+            "title": "Restricción de edad",
+            "requiresAge": "Esta app requiere que los usuarios tengan <strong>{{age}}+</strong> años.",
+            "notMeetRequirement": "Según la fecha de nacimiento de tu perfil, no cumples con el requisito de edad mínima para esta app.",
+            "ok": "OK",
+            "requiresAgeBefore": "Esta app requiere que los usuarios tengan ",
+            "requiresAgeAfter": " años."
+        }
     },
     "wallet": {
         "categories": {
@@ -1107,5 +1194,132 @@
         "nationalNetwork": "Red nacional",
         "globalNetworkAdmin": "Administrador de red global",
         "nationalNetworkAdmin": "Administrador de red nacional"
+    },
+    "toasts": {
+        "copied": "Copiado al portapapeles",
+        "copyFailed": "No se pudo copiar al portapapeles",
+        "linkCopied": "Enlace copiado al portapapeles",
+        "linkCopyFailed": "No se pudo copiar el enlace al portapapeles",
+        "jsonCopied": "JSON copiado al portapapeles",
+        "jsonCopyFailed": "No se pudo copiar JSON al portapapeles",
+        "credentialClaimed": "¡Credencial reclamada exitosamente!",
+        "credentialClaimFailed": "No se pudo reclamar la credencial",
+        "alreadyClaimed": "Ya has reclamado esta credencial.",
+        "claimOops": "Ups, no pudimos reclamar la credencial.",
+        "claimOopsPlural": "Ups, no pudimos reclamar las credenciales.",
+        "selectCredential": "Selecciona al menos una credencial para reclamar.",
+        "credentialsClaimedCount": "¡Se reclamaron {{count}} credencial(es) exitosamente!",
+        "acceptFailed": "Ups, no pudimos aceptar las credenciales. Por favor, intenta de nuevo.",
+        "rejectFailed": "Ups, no pudimos rechazar las credenciales. Por favor, intenta de nuevo.",
+        "boost": {
+            "boostIssuedSuccess": "Boost emitido exitosamente",
+            "boostIssuedError": "Error al emitir boost",
+            "boostSavedSuccess": "Boost guardado exitosamente",
+            "boostSaveFailed": "No se pudo guardar el boost",
+            "walletNotInitialized": "La billetera no está inicializada",
+            "deleteCredentialError": "Error al eliminar credencial: no se pudo ubicar el ID del registro.",
+            "shareLinkCopied": "Enlace para compartir copiado al portapapeles",
+            "shareLinkCopyFailed": "No se pudo copiar el enlace para compartir",
+            "templateIdCopied": "ID de plantilla copiado al portapapeles",
+            "templateIdCopyFailed": "No se pudo copiar el ID de plantilla",
+            "boostLinkCopied": "Enlace del boost copiado al portapapeles",
+            "boostLinkCopyFailed": "No se pudo copiar el enlace del boost",
+            "viewingEnabled": "Visualización habilitada. Ahora puedes generar enlaces de reclamación.",
+            "permissionsUpdateFailed": "No se pudieron actualizar los permisos. Por favor, intenta de nuevo.",
+            "contactLinkCopied": "Enlace de contacto copiado al portapapeles",
+            "contactLinkCopyFailed": "No se pudo copiar el enlace de contacto",
+            "endorsementLinkCopied": "Enlace copiado al portapapeles",
+            "endorsementRequestFailed": "Error al enviar la solicitud de respaldo"
+        },
+        "resume": {
+            "publishedSuccess": "Credencial de currículum LER-RS publicada exitosamente.",
+            "downloadSuccess": "Currículum descargado exitosamente.",
+            "downloadFailed": "Error al guardar y descargar el currículum.",
+            "publishFailed": "Error al publicar la credencial de currículum LER-RS.",
+            "loadedEditMode": "Currículum cargado en modo de edición.",
+            "loadFailed": "Error al cargar el currículum seleccionado.",
+            "newDraft": "Se inició un nuevo borrador de currículum.",
+            "notAvailableToShare": "Este currículum aún no está disponible para compartir.",
+            "shareLinkGenerated": "No se pudo generar el enlace para compartir el currículum.",
+            "linkCopied": "Enlace del currículum copiado al portapapeles",
+            "linkCopyFailed": "No se pudo copiar el enlace del currículum",
+            "selfIssueNoProfile": "No se puede emitir sin un perfil.",
+            "selfIssueFailed": "No se pudo emitir la credencial",
+            "verifiedResumeLinkCopied": "Enlace de currículum verificado copiado al portapapeles",
+            "verifiedResumeLinkCopyFailed": "No se pudo copiar el enlace de currículum verificado"
+        },
+        "credential": {
+            "addedToLearnCard": "Credencial agregada a LearnCard"
+        },
+        "family": {
+            "profileCreated": "¡Perfil \"{{name}}\" creado exitosamente!",
+            "profileCreateFailed": "Error al crear \"{{name}}\": {{error}}",
+            "boostLinkCopied": "Enlace del boost copiado al portapapeles",
+            "boostLinkCopyFailed": "No se pudo copiar el enlace del boost",
+            "boostIssuedError": "Error al emitir boost",
+            "boostUpdateError": "Error al actualizar boost"
+        },
+        "skills": {
+            "savedSuccess": "¡Habilidades guardadas exitosamente!",
+            "saveError": "¡Error al guardar habilidades!{{error}}",
+            "suggestionThanks": "¡Gracias por tu sugerencia!",
+            "fillJobTitle": "Por favor, completa el puesto y el empleador",
+            "workHistoryCreated": "Se ha creado tu credencial de historial laboral",
+            "frameworkSynced": "Marco sincronizado exitosamente.",
+            "frameworkSyncFailed": "No se pudo sincronizar el marco.",
+            "pasteValidLink": "Por favor, pega un enlace válido de marco OpenSALT.",
+            "frameworkImported": "Marco OpenSALT importado y sincronizado.",
+            "frameworkImportFailed": "No se pudo importar el marco.",
+            "updateError": "Error al actualizar habilidades: {{error}}"
+        },
+        "goals": {
+            "saveError": "¡Error al guardar metas!{{error}}"
+        },
+        "general": {
+            "somethingWentWrong": "Algo salió mal: {{error}}",
+            "failedToUpdateTerms": "Error al actualizar los términos: {{error}}"
+        },
+        "consentFlow": {
+            "connected": "Conectado exitosamente a {{name}}",
+            "acceptFailed": "Error al aceptar el contrato: {{error}}",
+            "permissionsUpdated": "Permisos actualizados",
+            "permissionsUpdateFailed": "No se pudieron actualizar los permisos"
+        },
+        "dataSource": {
+            "syncedSuccess": "¡Fuente de datos sincronizada exitosamente!"
+        },
+        "launchpad": {
+            "installFailed": "Error al instalar la app: {{error}}",
+            "roleUpdated": "Rol actualizado",
+            "nowRole": "Ahora eres {{role}}.",
+            "unableToUpdateRole": "No se pudo actualizar el rol",
+            "unableToOpenRequestInsights": "No se pudo abrir Solicitar Información"
+        },
+        "onboarding": {
+            "errorCreatingProfile": "Error al crear perfil",
+            "unableToJoinNetwork": "No se pudo unir a la red"
+        },
+        "qr": {
+            "scanningFailed": "No se pudo escanear el código QR"
+        },
+        "contacts": {
+            "connectionSent": "¡Solicitud de conexión enviada!",
+            "connectionSendFailed": "Ocurrió un error, no se pudo enviar la solicitud de conexión.",
+            "connectedSuccessfully": "¡Conectado exitosamente!",
+            "connectFailed": "¡Ocurrió un error, no se pudo conectar!",
+            "acceptFailed": "Ocurrió un error, no se pudo aceptar la solicitud",
+            "blockFailed": "Ocurrió un error, no se pudo bloquear al usuario",
+            "blocked": "Usuario bloqueado",
+            "unblocked": "Usuario desbloqueado",
+            "removeFailed": "Error al eliminar contacto",
+            "removed": "Contacto eliminado",
+            "disconnectFailed": "Error al desconectar",
+            "disconnected": "Desconectado",
+            "didCopied": "DID copiado al portapapeles",
+            "requestSent": "Solicitud enviada",
+            "requestFailed": "Error al enviar solicitud",
+            "inviteAlreadySent": "Ya has enviado una solicitud de conexión a este usuario.",
+            "alreadyConnected": "Ya estás conectado con este usuario."
+        }
     }
 }

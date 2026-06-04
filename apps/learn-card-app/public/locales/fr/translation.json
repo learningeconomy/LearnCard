@@ -86,7 +86,94 @@
             "checkBackSoon": "Revenez bientôt ou parcourez toutes les applications."
         },
         "aiDisabledMinor": "Les fonctionnalités IA ne sont pas disponibles pour les utilisateurs de moins de 18 ans.",
-        "aiDisabledPrivacy": "Les fonctionnalités IA sont actuellement désactivées. Vous pouvez les activer dans Confidentialité et données depuis votre profil."
+        "aiDisabledPrivacy": "Les fonctionnalités IA sont actuellement désactivées. Vous pouvez les activer dans Confidentialité et données depuis votre profil.",
+        "actions": {
+            "addToLearnCard": "Ajouter à LearnCard",
+            "buildMyLearnCard": "Construire Mon LearnCard",
+            "newAiTutoringSession": "Nouvelle session de tutorat IA",
+            "understandMySkills": "Comprendre mes compétences",
+            "customizeAiSessions": "Personnaliser les sessions IA",
+            "shareInsightsWithTeacher": "Partager les analyses avec l'enseignant",
+            "viewLearnerInsights": "Voir les analyses de l'apprenant",
+            "requestLearnerInsights": "Demander les analyses de l'apprenant",
+            "issueCredential": "Émettre une accréditation",
+            "createCredential": "Créer une accréditation",
+            "editSkillsFrameworks": "Modifier les cadres de compétences",
+            "manageSkillsFrameworks": "Gérer les cadres de compétences",
+            "createFamily": "Créer une famille",
+            "viewFamily": "Voir la famille",
+            "boostChild": "Valoriser l'enfant",
+            "addChild": "Ajouter un enfant",
+            "switchChild": "Changer d'enfant",
+            "viewChildInsights": "Voir les analyses de l'enfant",
+            "createApiToken": "Créer un jeton API",
+            "createSigningAuthority": "Créer une autorité de signature",
+            "createConsentFlow": "Créer un ConsentFlow",
+            "switchNetwork": "Changer de réseau",
+            "readDocs": "Lire la documentation",
+            "importCredentials": "Importer des accréditations",
+            "createOrganization": "Créer une organisation",
+            "switchAccount": "Changer de compte",
+            "claimCredential": "Réclamer une accréditation"
+        },
+        "modal": {
+            "whatWouldYouLikeToDo": "Que souhaitez-vous faire ?",
+            "roleUpdated": "Rôle mis à jour",
+            "nowRole": "Vous êtes maintenant {{role}}.",
+            "unableToUpdateRole": "Impossible de mettre à jour le rôle",
+            "unableToOpenRequestInsights": "Impossible d'ouvrir Demander des analyses"
+        },
+        "passport": "Passeport",
+        "launchpad": "Launchpad",
+        "appCard": {
+            "open": "Ouvrir",
+            "get": "Obtenir",
+            "launch": "Lancer",
+            "soon": "Bientôt",
+            "connect": "Connecter",
+            "loading": "Chargement...",
+            "age": "Âge {{rating}}"
+        },
+        "carousel": {
+            "open": "Ouvrir",
+            "getApp": "Obtenir l'app",
+            "goToSlide": "Aller à la diapositive {{number}}"
+        },
+        "becomeAnApp": {
+            "developerProgram": "Programme développeur",
+            "buildYourOwnApp": "Créez votre propre application",
+            "joinDeveloperCommunity": "Rejoignez notre communauté de développeurs aujourd'hui"
+        },
+        "detail": {
+            "shareApp": "Partager l'app",
+            "editPermissions": "Modifier les autorisations",
+            "uninstall": "Désinstaller",
+            "about": "À propos",
+            "preview": "Aperçu",
+            "watch": "Regarder",
+            "links": "Liens",
+            "promoVideo": "Vidéo promotionnelle",
+            "readMore": "Lire la suite",
+            "readLess": "Lire moins",
+            "install": "Installer",
+            "moreOptions": "Plus d'options",
+            "linkCopied": "Lien copié dans le presse-papiers !",
+            "installFailed": "Échec de l'installation de l'app : {{error}}",
+            "dateOfBirth": "Date de naissance",
+            "back": "Retour",
+            "whyUseThisApp": "Pourquoi utiliser cette application ?",
+            "privacyPolicy": "Politique de confidentialité",
+            "termsOfService": "Conditions d'utilisation",
+            "category": "Catégorie"
+        },
+        "ageRestriction": {
+            "title": "Restriction d'âge",
+            "requiresAge": "Cette application exige que les utilisateurs aient <strong>{{age}}+</strong> ans.",
+            "notMeetRequirement": "D'après la date de naissance de votre profil, vous ne répondez pas à l'exigence d'âge minimum pour cette application.",
+            "ok": "OK",
+            "requiresAgeBefore": "Cette application exige que les utilisateurs aient ",
+            "requiresAgeAfter": " ans."
+        }
     },
     "wallet": {
         "categories": {
@@ -1107,5 +1194,132 @@
         "nationalNetwork": "Réseau national",
         "globalNetworkAdmin": "Administrateur réseau mondial",
         "nationalNetworkAdmin": "Administrateur réseau national"
+    },
+    "toasts": {
+        "copied": "Copié dans le presse-papiers",
+        "copyFailed": "Impossible de copier dans le presse-papiers",
+        "linkCopied": "Lien copié dans le presse-papiers",
+        "linkCopyFailed": "Impossible de copier le lien dans le presse-papiers",
+        "jsonCopied": "JSON copié dans le presse-papiers",
+        "jsonCopyFailed": "Impossible de copier le JSON dans le presse-papiers",
+        "credentialClaimed": "Accréditation réclamée avec succès !",
+        "credentialClaimFailed": "Impossible de réclamer l'accréditation",
+        "alreadyClaimed": "Vous avez déjà réclamé cette accréditation.",
+        "claimOops": "Oups, nous n'avons pas pu réclamer l'accréditation.",
+        "claimOopsPlural": "Oups, nous n'avons pas pu réclamer les accréditations.",
+        "selectCredential": "Veuillez sélectionner au moins une accréditation à réclamer.",
+        "credentialsClaimedCount": "{{count}} accréditation(s) réclamée(s) avec succès !",
+        "acceptFailed": "Oups, nous n'avons pas pu accepter les accréditations. Veuillez réessayer.",
+        "rejectFailed": "Oups, nous n'avons pas pu rejeter les accréditations. Veuillez réessayer.",
+        "boost": {
+            "boostIssuedSuccess": "Boost émis avec succès",
+            "boostIssuedError": "Erreur lors de l'émission du boost",
+            "boostSavedSuccess": "Boost enregistré avec succès",
+            "boostSaveFailed": "Impossible d'enregistrer le boost",
+            "walletNotInitialized": "Le portefeuille n'est pas initialisé",
+            "deleteCredentialError": "Erreur lors de la suppression de l'accréditation : impossible de localiser l'ID d'enregistrement.",
+            "shareLinkCopied": "Lien de partage copié dans le presse-papiers",
+            "shareLinkCopyFailed": "Impossible de copier le lien de partage",
+            "templateIdCopied": "ID de modèle copié dans le presse-papiers",
+            "templateIdCopyFailed": "Impossible de copier l'ID de modèle",
+            "boostLinkCopied": "Lien du boost copié dans le presse-papiers",
+            "boostLinkCopyFailed": "Impossible de copier le lien du boost",
+            "viewingEnabled": "Consultation activée. Vous pouvez maintenant générer des liens de réclamation.",
+            "permissionsUpdateFailed": "Impossible de mettre à jour les autorisations. Veuillez réessayer.",
+            "contactLinkCopied": "Lien de contact copié dans le presse-papiers",
+            "contactLinkCopyFailed": "Impossible de copier le lien de contact",
+            "endorsementLinkCopied": "Lien copié dans le presse-papiers",
+            "endorsementRequestFailed": "Échec de l'envoi de la demande d'approbation"
+        },
+        "resume": {
+            "publishedSuccess": "Accréditation de cv LER-RS publiée avec succès.",
+            "downloadSuccess": "CV téléchargé avec succès.",
+            "downloadFailed": "Échec de l'enregistrement et du téléchargement du CV.",
+            "publishFailed": "Échec de la publication de l'accréditation de cv LER-RS.",
+            "loadedEditMode": "CV chargé en mode édition.",
+            "loadFailed": "Échec du chargement du CV sélectionné.",
+            "newDraft": "Nouveau brouillon de CV commencé.",
+            "notAvailableToShare": "Ce CV n'est pas encore disponible pour le partage.",
+            "shareLinkGenerated": "Impossible de générer le lien de partage du CV.",
+            "linkCopied": "Lien du CV copié dans le presse-papiers",
+            "linkCopyFailed": "Impossible de copier le lien du CV",
+            "selfIssueNoProfile": "Impossible d'auto-émettre sans profil.",
+            "selfIssueFailed": "Impossible d'auto-émettre l'accréditation",
+            "verifiedResumeLinkCopied": "Lien de CV vérifié copié dans le presse-papiers",
+            "verifiedResumeLinkCopyFailed": "Impossible de copier le lien de CV vérifié"
+        },
+        "credential": {
+            "addedToLearnCard": "Accréditation ajoutée à LearnCard"
+        },
+        "family": {
+            "profileCreated": "Profil \"{{name}}\" créé avec succès !",
+            "profileCreateFailed": "Échec de la création de \"{{name}}\" : {{error}}",
+            "boostLinkCopied": "Lien du boost copié dans le presse-papiers",
+            "boostLinkCopyFailed": "Impossible de copier le lien du boost",
+            "boostIssuedError": "Erreur lors de l'émission du boost",
+            "boostUpdateError": "Erreur lors de la mise à jour du boost"
+        },
+        "skills": {
+            "savedSuccess": "Compétences enregistrées avec succès !",
+            "saveError": "Erreur lors de l'enregistrement des compétences !{{error}}",
+            "suggestionThanks": "Merci pour votre suggestion !",
+            "fillJobTitle": "Veuillez remplir le poste et l'employeur",
+            "workHistoryCreated": "Votre accréditation d'historique professionnel a été créée",
+            "frameworkSynced": "Cadre synchronisé avec succès.",
+            "frameworkSyncFailed": "Impossible de synchroniser le cadre.",
+            "pasteValidLink": "Veuillez coller un lien de cadre OpenSALT valide.",
+            "frameworkImported": "Cadre OpenSALT importé et synchronisé.",
+            "frameworkImportFailed": "Impossible d'importer le cadre.",
+            "updateError": "Erreur lors de la mise à jour des compétences : {{error}}"
+        },
+        "goals": {
+            "saveError": "Erreur lors de l'enregistrement des objectifs !{{error}}"
+        },
+        "general": {
+            "somethingWentWrong": "Quelque chose s'est mal passé : {{error}}",
+            "failedToUpdateTerms": "Échec de la mise à jour des conditions : {{error}}"
+        },
+        "consentFlow": {
+            "connected": "Connecté avec succès à {{name}}",
+            "acceptFailed": "Échec de l'acceptation du contrat : {{error}}",
+            "permissionsUpdated": "Autorisations mises à jour",
+            "permissionsUpdateFailed": "Impossible de mettre à jour les autorisations"
+        },
+        "dataSource": {
+            "syncedSuccess": "Source de données synchronisée avec succès !"
+        },
+        "launchpad": {
+            "installFailed": "Échec de l'installation de l'app : {{error}}",
+            "roleUpdated": "Rôle mis à jour",
+            "nowRole": "Vous êtes maintenant {{role}}.",
+            "unableToUpdateRole": "Impossible de mettre à jour le rôle",
+            "unableToOpenRequestInsights": "Impossible d'ouvrir Demander des analyses"
+        },
+        "onboarding": {
+            "errorCreatingProfile": "Erreur lors de la création du profil",
+            "unableToJoinNetwork": "Impossible de rejoindre le réseau"
+        },
+        "qr": {
+            "scanningFailed": "Impossible de scanner le code QR"
+        },
+        "contacts": {
+            "connectionSent": "Demande de connexion envoyée !",
+            "connectionSendFailed": "Une erreur s'est produite, impossible d'envoyer la demande de connexion.",
+            "connectedSuccessfully": "Connecté avec succès !",
+            "connectFailed": "Une erreur s'est produite, impossible de se connecter !",
+            "acceptFailed": "Une erreur s'est produite, impossible d'accepter la demande",
+            "blockFailed": "Une erreur s'est produite, impossible de bloquer l'utilisateur",
+            "blocked": "Utilisateur bloqué",
+            "unblocked": "Utilisateur débloqué",
+            "removeFailed": "Échec de la suppression du contact",
+            "removed": "Contact supprimé",
+            "disconnectFailed": "Échec de la déconnexion",
+            "disconnected": "Déconnecté",
+            "didCopied": "DID copié dans le presse-papiers",
+            "requestSent": "Demande envoyée",
+            "requestFailed": "Échec de l'envoi de la demande",
+            "inviteAlreadySent": "Vous avez déjà envoyé une demande de connexion à cet utilisateur.",
+            "alreadyConnected": "Vous êtes déjà connecté avec cet utilisateur."
+        }
     }
 }

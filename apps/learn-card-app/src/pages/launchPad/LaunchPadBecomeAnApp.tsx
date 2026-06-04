@@ -2,6 +2,7 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Sparkles, ArrowRight, Code2, Rocket } from 'lucide-react';
+import * as m from '../../paraglide/messages.js';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
     const history = useHistory();
@@ -46,13 +47,13 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                         {/* Text content */}
                         <div className="flex-1 text-left">
                             <p className="text-white/70 text-xs font-medium uppercase tracking-wider mb-0.5">
-                                Developer Program
+                                {m['launchpad.becomeAnApp.developerProgram']()}
                             </p>
                             <h3 className="text-white text-lg font-bold leading-tight">
-                                Build Your Own App
+                                {m['launchpad.becomeAnApp.buildYourOwnApp']()}
                             </h3>
                             <p className="text-white/80 text-sm mt-0.5">
-                                Join our developer community today
+                                {m['launchpad.becomeAnApp.joinDeveloperCommunity']()}
                             </p>
                         </div>
 

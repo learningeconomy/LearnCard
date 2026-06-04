@@ -15,6 +15,7 @@ import useConsentFlow from '../consentFlow/useConsentFlow';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
+import * as m from '../../paraglide/messages.js';
 
 type LaunchPadContractListItemProps = {
     contract?: ConsentFlowContractDetails;
@@ -89,7 +90,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                             className={hasConsented ? connectedButtonClass : buttonClass}
                             disabled={isPending}
                         >
-                            {hasConsented ? 'Open' : 'Connect'}
+                            {hasConsented ? m['launchpad.appCard.open']() : m['launchpad.appCard.connect']()}
                         </button>
                     </div>
                 </div>

@@ -11,6 +11,7 @@ import { IonItem } from '@ionic/react';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
+import * as m from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -102,7 +103,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                                 }
                                 className={buttonClass}
                             >
-                                Launch
+                                {m['launchpad.appCard.launch']()}
                             </button>
                         </div>
                     )}
@@ -110,20 +111,20 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                     {!app?.embedUrl && app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
                             <button disabled className={connectedButtonClass}>
-                                Soon
+                                {m['launchpad.appCard.soon']()}
                             </button>
                         </div>
                     )}
 
                     {!app?.embedUrl && !app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
-                            {isLoading && <button className={buttonClass}>Loading...</button>}
+                            {isLoading && <button className={buttonClass}>{m['launchpad.appCard.loading']()}</button>}
                             {!isLoading && (
                                 <button
                                     onClick={handleButtonClick}
                                     className={isConnected ? connectedButtonClass : buttonClass}
                                 >
-                                    {isConnected ? 'Open' : 'Connect'}
+                                    {isConnected ? m['launchpad.appCard.open']() : m['launchpad.appCard.connect']()}
                                 </button>
                             )}
                         </div>

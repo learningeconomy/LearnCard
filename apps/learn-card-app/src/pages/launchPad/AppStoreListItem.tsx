@@ -16,6 +16,7 @@ import AiTutorConnectedView from './AiTutorConnectedView';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { checkAppInstallEligibility } from '@learncard/helpers';
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
+import * as m from '../../paraglide/messages.js';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -87,7 +88,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                     style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
                 >
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
-                        Age Restricted
+                        {m['launchpad.ageRestriction.title']()}
                     </h2>
                 </div>
 
@@ -115,14 +116,13 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             </p>
 
                             <p className="text-sm text-grayscale-600">
-                                This app requires users to be <strong>{minAge}+</strong> years old.
+                                {m['launchpad.ageRestriction.requiresAgeBefore']()}<strong>{minAge}+</strong>{m['launchpad.ageRestriction.requiresAgeAfter']()}
                             </p>
                         </div>
 
                         <div className="bg-red-50 border border-red-100 rounded-lg p-4 w-full text-left">
                             <p className="text-sm text-red-800">
-                                Based on your profile's date of birth, you do not meet the minimum
-                                age requirement for this app.
+                                {m['launchpad.ageRestriction.notMeetRequirement']()}
                             </p>
                         </div>
                     </div>
@@ -138,7 +138,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                         onClick={closeModal}
                         className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
                     >
-                        OK
+                        {m['launchpad.ageRestriction.ok']()}
                     </button>
                 </div>
             </div>,
@@ -299,7 +299,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             </p>
                             {listing.age_rating && (
                                 <span className="hidden sm:inline-block px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 text-[10px] font-medium rounded-full shrink-0">
-                                    Age {listing.age_rating}
+                                    {m['launchpad.appCard.age']({ rating: listing.age_rating })}
                                 </span>
                             )}
                         </div>
@@ -317,7 +317,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
-                                    Open
+                                    {m['launchpad.appCard.open']()}
                                 </button>
 
                                 <button
@@ -340,7 +340,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                                 }}
                                 className={buttonClass}
                             >
-                                Get
+                                {m['launchpad.appCard.get']()}
                             </button>
                         )}
                     </div>
