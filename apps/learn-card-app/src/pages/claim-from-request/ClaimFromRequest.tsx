@@ -70,6 +70,7 @@ import {
 import { AlertCircle, RefreshCw, Home, HelpCircle, MessageCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import { useTranslation } from 'react-i18next';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -115,6 +116,7 @@ export enum VCAPIRequestStrategy {
 const normalizeRequestResponseData = (
     data = {} as any
 ): { type: RequestResponseDataType; data: any; strategy: VCAPIRequestStrategy } => {
+    const { t } = useTranslation();
     if (data?.verifiablePresentationRequest) {
         return {
             type: RequestResponseDataType.VerifiablePresentationRequest,
@@ -581,7 +583,7 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(t('toasts.credentialClaimed', 'Successfully claimed Credential!'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -590,14 +592,14 @@ const ClaimFromRequest: React.FC = () => {
             console.error('Error claiming credential', e);
 
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(`You have already claimed this credential.`, {
+                presentToast(t('toasts.alreadyClaimed', 'You have already claimed this credential.'), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
 
                 handleAfterCredentialClaim();
             } else {
-                presentToast(`Oops, we couldn't claim the credential.`, {
+                presentToast(t('toasts.claimOops', 'Oops, we couldn\'t claim the credential.'), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });

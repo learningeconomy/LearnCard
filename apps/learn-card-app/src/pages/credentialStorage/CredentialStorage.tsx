@@ -25,8 +25,10 @@ import { IonPage, IonContent, IonRow, IonCol, IonGrid, IonLoading } from '@ionic
 import CredentialStorageFooter from './CredentialStorageFooter';
 import LoadingPage from '../loadingPage/LoadingPage';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import { useTranslation } from 'react-i18next';
 
 export const getCredentialFromVp = (vp: VP): VC => {
+    const { t } = useTranslation();
     const vcField = vp.verifiableCredential;
 
     return (Array.isArray(vcField) ? vcField[0] : vcField) as VC;
@@ -231,7 +233,7 @@ const CredentialStorage: React.FC = () => {
             setClaimCount(totalToClaim);
         } catch (e) {
             console.error(e);
-            presentToast(`Oops, we were unable accept the credentials. Please try again.`, {
+            presentToast(t('toasts.acceptFailed', 'Oops, we were unable accept the credentials. Please try again.'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -246,7 +248,7 @@ const CredentialStorage: React.FC = () => {
             redirectStore.set.authRedirect(null);
         } catch (e) {
             console.error(e);
-            presentToast(`Oops, we were unable reject the credentials. Please try again.`, {
+            presentToast(t('toasts.rejectFailed', 'Oops, we were unable reject the credentials. Please try again.'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

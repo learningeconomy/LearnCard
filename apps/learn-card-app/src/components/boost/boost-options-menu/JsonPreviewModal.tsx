@@ -6,8 +6,10 @@ import CopyStack from '../../svgs/CopyStack';
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { ModalTypes, useModal, ToastTypeEnum, useToast } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
@@ -27,12 +29,12 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
                     string: jsonPrettyPrint,
                 });
             }
-            presentToast('JSON copied to clipboard', {
+            presentToast(t('toasts.jsonCopied', 'JSON copied to clipboard'), {
                 hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
-            presentToast('Unable to copy JSON to clipboard', {
+            presentToast(t('toasts.jsonCopyFailed', 'Unable to copy JSON to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -44,11 +46,11 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
             await Clipboard.write({
                 string: templateId,
             });
-            presentToast('Template ID copied to clipboard', {
+            presentToast(t('toasts.boost.templateIdCopied', 'Template ID copied to clipboard'), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy template ID to clipboard', {
+            presentToast(t('toasts.boost.templateIdCopyFailed', 'Unable to copy template ID to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

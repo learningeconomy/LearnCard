@@ -118,6 +118,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
+import { useTranslation } from 'react-i18next';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -151,6 +152,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // oxlint-disable-next-line no-unused-vars
     profileId: propProfileId,
 }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -713,7 +715,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(t('toasts.boost.walletNotInitialized', 'Wallet is not initialized'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -757,7 +759,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 clearLocalSave();
 
                 setIsSaveLoading(false);
-                presentToast(`Boost saved successfully`, {
+                presentToast(t('toasts.boost.boostSavedSuccess', 'Boost saved successfully'), {
                     duration: 3000,
                     type: ToastTypeEnum.Success,
                 });
@@ -778,7 +780,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             console.log('error::savingBoost', e);
-            presentToast(`Unable to save boost`, {
+            presentToast(t('toasts.boost.boostSaveFailed', 'Unable to save boost'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -787,7 +789,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handlePublishBoost = async () => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(t('toasts.boost.walletNotInitialized', 'Wallet is not initialized'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -845,7 +847,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(t('toasts.boost.boostIssuedError', 'Error issuing boost'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -854,7 +856,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handleSaveAndIssue = async (boostUri?: string | null) => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(t('toasts.boost.walletNotInitialized', 'Wallet is not initialized'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -929,7 +931,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 if (uris.length > 0) {
                     setIsLoading(false);
                     clearLocalSave();
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(t('toasts.boost.boostIssuedSuccess', 'Boost issued successfully'), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -941,7 +943,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 if (finalBoostUri) {
                     setIsSaveLoading(false);
                     clearLocalSave();
-                    presentToast(`Boost saved successfully`, {
+                    presentToast(t('toasts.boost.boostSavedSuccess', 'Boost saved successfully'), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -951,7 +953,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(t('toasts.boost.boostIssuedError', 'Error issuing boost'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });

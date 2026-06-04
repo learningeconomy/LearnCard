@@ -51,11 +51,13 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { useTranslation } from 'react-i18next';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
     vc?: VC;
 }> = ({ boostVC, vc }) => {
+    const { t } = useTranslation();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
@@ -240,14 +242,14 @@ const ClaimBoost: React.FC<{
                 history?.push('/');
             }
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(t('toasts.credentialClaimed', t('toasts.credentialClaimed', 'Successfully claimed Credential!')), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(t('toasts.credentialClaimFailed', t('toasts.credentialClaimFailed', 'Unable to claim Credential')), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

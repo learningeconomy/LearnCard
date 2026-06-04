@@ -21,12 +21,14 @@ import { useAddCredentialToWallet } from '../boost/mutations';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from './resume-builder.helpers';
 import { switchedProfileStore } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 type ResumeSelfAttestModalProps = {
     category: ResumeSectionKey;
 };
 
 export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ category }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -47,7 +49,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
     const handleSelfIssue = async () => {
         if (!profile?.profileId) {
-            presentToast('Unable to self issue without a profile.', {
+            presentToast(t('toasts.resume.selfIssueNoProfile', 'Unable to self issue without a profile.'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -110,7 +112,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             closeModal();
         } catch (error) {
             console.error('resume self issue error', error);
-            presentToast('Unable to self issue credential', {
+            presentToast(t('toasts.resume.selfIssueFailed', 'Unable to self issue credential'), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });

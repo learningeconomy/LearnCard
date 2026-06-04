@@ -15,10 +15,12 @@ import { IonFooter, IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
+import { useTranslation } from 'react-i18next';
 
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
+    const { t } = useTranslation();
     const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
 
@@ -89,7 +91,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            presentToast(t('toasts.skills.savedSuccess', 'Skills saved successfully!'), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error: any) {

@@ -8,6 +8,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, VP } from '@learncard/types';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import { useTranslation } from 'react-i18next';
 import {
     markModalMounted,
     markCredentialResolved,
@@ -30,6 +31,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     credential: preResolvedCredential,
     onDismiss,
 }) => {
+    const { t } = useTranslation();
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -216,7 +218,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             setClaimed(true);
             void markClaimCompleted();
 
-            presentToast('Successfully claimed Credential!', {
+            presentToast(t('toasts.credentialClaimed', 'Successfully claimed Credential!'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -227,7 +229,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 message: err instanceof Error ? err.message : String(err),
             });
 
-            presentToast('Unable to claim Credential', {
+            presentToast(t('toasts.credentialClaimFailed', 'Unable to claim Credential'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

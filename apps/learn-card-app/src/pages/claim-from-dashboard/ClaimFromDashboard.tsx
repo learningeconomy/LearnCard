@@ -44,6 +44,7 @@ import {
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 export type FromDashboardMetadata = {
     credentialName: string;
@@ -53,6 +54,7 @@ export type FromDashboardMetadata = {
 };
 
 export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {
+    const { t } = useTranslation();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
@@ -288,7 +290,7 @@ const ClaimFromDashboard: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(t('toasts.credentialClaimed', 'Successfully claimed Credential!'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -302,7 +304,7 @@ const ClaimFromDashboard: React.FC = () => {
              * So, it's more of a warning and we can warn them that it already exists, and proceed.
              **/
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(`You have already claimed this credential.`, {
+                presentToast(t('toasts.alreadyClaimed', 'You have already claimed this credential.'), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -310,7 +312,7 @@ const ClaimFromDashboard: React.FC = () => {
                 // We are assuming it is a success since user already has this credential.
                 handleAfterCredentialClaim();
             } else {
-                presentToast(`Oops, we couldn't claim the credential.`, {
+                presentToast(t('toasts.claimOops', 'Oops, we couldn\'t claim the credential.'), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });

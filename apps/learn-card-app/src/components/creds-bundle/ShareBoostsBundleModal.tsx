@@ -21,6 +21,7 @@ import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'lea
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { useTranslation } from 'react-i18next';
 
 export const baseUrl = getAppBaseUrl().replace(/^https?:\/\//, '');
 
@@ -29,6 +30,7 @@ const ShareBoostsBundleModal = ({
 }: {
     onDismiss: (data?: string | null | undefined | number, role?: string) => void;
 }) => {
+    const { t } = useTranslation();
     const [page, setPage] = useState('application');
     const { presentToast } = useToast();
     const [vpUri, setVpUri] = useState<string>();
@@ -216,11 +218,11 @@ const ShareBoostsBundleModal = ({
             await Clipboard.write({
                 string: link,
             });
-            presentToast('Verified resume link copied to clipboard', {
+            presentToast(t('toasts.resume.verifiedResumeLinkCopied', 'Verified resume link copied to clipboard'), {
                 type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast('Unable to copy verified resume link to clipboard', {
+            presentToast(t('toasts.resume.verifiedResumeLinkCopyFailed', 'Unable to copy verified resume link to clipboard'), {
                 type: ToastTypeEnum.Error,
             });
         }

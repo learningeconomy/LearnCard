@@ -38,8 +38,10 @@ import {
     type LerVerificationResultLike,
 } from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
+import { useTranslation } from 'react-i18next';
 
 const getQueryParam = (value: string | string[] | null): string => {
+    const { t } = useTranslation();
     if (Array.isArray(value)) return value[0] ?? '';
     return value ?? '';
 };
@@ -81,7 +83,7 @@ const VerifySharedResume: React.FC = () => {
                 throw new Error('Resume preview is not ready yet.');
             }
             await resumePreviewRef.current.generatePDF();
-            presentToast('Resume downloaded successfully.', {
+            presentToast(t('toasts.resume.downloadSuccess', 'Resume downloaded successfully.'), {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });

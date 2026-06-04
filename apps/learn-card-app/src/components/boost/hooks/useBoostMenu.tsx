@@ -13,6 +13,7 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import BoostOptionsMenu from '../boost-options-menu/BoostOptionsMenu';
 
 import { UnsignedVC, VC } from '@learncard/types';
+import { useTranslation } from 'react-i18next';
 
 export enum BoostMenuType {
     managed = 'MANAGED',
@@ -49,6 +50,7 @@ const useBoostMenu = ({
           credential?: never;
           record?: never;
       }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -74,7 +76,7 @@ const useBoostMenu = ({
             await deleteCredentialRecord(record as LCR);
             onDelete?.();
         } else {
-            presentToast("Error deleting credential: unable to locate record ID.", {
+            presentToast(t('toasts.boost.deleteCredentialError', 'Error deleting credential: unable to locate record ID.'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

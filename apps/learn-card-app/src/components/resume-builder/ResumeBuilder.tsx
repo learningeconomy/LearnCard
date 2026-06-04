@@ -36,8 +36,10 @@ import type { ExistingResume } from '../../hooks/useExistingResumes';
 import { buildResumeHydrationState } from './resume-builder-history.helpers';
 
 import { VC } from '@learncard/types';
+import { useTranslation } from 'react-i18next';
 
 export const ResumeBuilder: React.FC = () => {
+    const { t } = useTranslation();
     useResumePreselection();
 
     const { newModal, closeModal } = useModal({ mobile: ModalTypes.FullScreen });
@@ -212,7 +214,7 @@ export const ResumeBuilder: React.FC = () => {
                 });
             }
 
-            presentToast('LER-RS resume credential published successfully.', {
+            presentToast(t('toasts.resume.publishedSuccess', 'LER-RS resume credential published successfully.'), {
                 title: successToastTitle,
                 details: lerVc?.id || undefined,
                 type: ToastTypeEnum.Success,
@@ -276,7 +278,7 @@ export const ResumeBuilder: React.FC = () => {
             if (savedResumeForShare) {
                 openResumeShareModal(savedResumeForShare.lerVc, savedResumeForShare.lerUri);
             }
-            presentToast('Resume downloaded successfully.', {
+            presentToast(t('toasts.resume.downloadSuccess', 'Resume downloaded successfully.'), {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });
@@ -381,7 +383,7 @@ export const ResumeBuilder: React.FC = () => {
                 });
                 closeInlinePreview();
                 setResumeQrCodeLink('');
-                presentToast('Loaded resume into edit mode.', {
+                presentToast(t('toasts.resume.loadedEditMode', 'Loaded resume into edit mode.'), {
                     type: ToastTypeEnum.Success,
                 });
             } catch (error: any) {
@@ -400,14 +402,14 @@ export const ResumeBuilder: React.FC = () => {
         closeInlinePreview();
         setResumeQrCodeLink('');
         setBaselineSnapshotByResume(null);
-        presentToast('Started a new resume draft.', {
+        presentToast(t('toasts.resume.newDraft', 'Started a new resume draft.'), {
             type: ToastTypeEnum.Success,
         });
     }, [closeInlinePreview, presentToast]);
 
     const handleShareCurrentResume = useCallback(() => {
         if (!activeResumeVc || !activeResume?.uri) {
-            presentToast('This resume is not available to share yet.', {
+            presentToast(t('toasts.resume.notAvailableToShare', 'This resume is not available to share yet.'), {
                 type: ToastTypeEnum.Error,
             });
             return;

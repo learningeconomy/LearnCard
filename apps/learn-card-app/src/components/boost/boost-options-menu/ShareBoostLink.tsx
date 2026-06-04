@@ -36,6 +36,7 @@ import {
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
+import { useTranslation } from 'react-i18next';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -58,6 +59,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     hideLinkedIn = false,
     isEndorsementRequest = false,
 }) => {
+    const { t } = useTranslation();
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
@@ -184,11 +186,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast('Share link copied to clipboard', {
+            presentToast(t('toasts.boost.shareLinkCopied', 'Share link copied to clipboard'), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy share link to clipboard', {
+            presentToast(t('toasts.boost.shareLinkCopyFailed', 'Unable to copy share link to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

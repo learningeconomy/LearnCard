@@ -36,6 +36,7 @@ import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import BoostShareableQRCode from './BoostShareableQRCode';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 type BoostShareableCodeProps = {
     state: BoostCMSState;
@@ -66,6 +67,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     handleBackForModal,
     handleSuccess,
 }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
@@ -259,11 +261,11 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             await Clipboard.write({
                 string: getCurrentClaimLink(),
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(t('toasts.boost.boostLinkCopied', 'Boost link copied to clipboard'), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(t('toasts.boost.boostLinkCopyFailed', 'Unable to copy boost link to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -365,12 +367,12 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
             setTemplateDefaultPermissions(prev => ({ ...prev, canView: true }));
             setCanViewEnabled(true);
-            presentToast('Viewing enabled. You can now generate claim links.', {
+            presentToast(t('toasts.boost.viewingEnabled', 'Viewing enabled. You can now generate claim links.'), {
                 hasDismissButton: true,
             });
         } catch (error) {
             console.error('Failed to update boost canView permission', error);
-            presentToast('Unable to update permissions. Please try again.', {
+            presentToast(t('toasts.boost.permissionsUpdateFailed', 'Unable to update permissions. Please try again.'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

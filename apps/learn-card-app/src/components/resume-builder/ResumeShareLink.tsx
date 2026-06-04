@@ -12,6 +12,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import X from 'learn-card-base/svgs/X';
+import { useTranslation } from 'react-i18next';
 
 type ResumeShareLinkProps = {
     handleClose?: () => void;
@@ -20,6 +21,7 @@ type ResumeShareLinkProps = {
 };
 
 const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, resumeUri }) => {
+    const { t } = useTranslation();
     const brandingConfig = useBrandingConfig();
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string>('');
@@ -37,7 +39,7 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
             {
                 onSuccess: data => setShareLink(data?.link ?? ''),
                 onError: () => {
-                    presentToast('Unable to generate resume share link.', {
+                    presentToast(t('toasts.resume.shareLinkGenerated', 'Unable to generate resume share link.'), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -51,11 +53,11 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
 
         try {
             await Clipboard.write({ string: shareLink });
-            presentToast('Resume link copied to clipboard', {
+            presentToast(t('toasts.resume.linkCopied', 'Resume link copied to clipboard'), {
                 hasDismissButton: true,
             });
         } catch {
-            presentToast('Unable to copy resume link to clipboard', {
+            presentToast(t('toasts.resume.linkCopyFailed', 'Unable to copy resume link to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

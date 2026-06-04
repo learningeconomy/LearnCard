@@ -70,6 +70,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     notification,
     hideEndorsementRequestCard,
 }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal } = useModal();
@@ -183,7 +184,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }
 
                             setIsClaimed(true);
-                            presentToast(`Successfully claimed Credential!`, {
+                            presentToast(t('toasts.credentialClaimed', 'Successfully claimed Credential!'), {
                                 duration: 3000,
                                 type: ToastTypeEnum.Success,
                             });

@@ -36,6 +36,7 @@ import X from 'src/components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
+import { useTranslation } from 'react-i18next';
 
 type SkillProfileStep2Props = {
     handleNext: () => void;
@@ -65,6 +66,7 @@ const emptyExperience: WorkExperience = {
 };
 
 const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handleBack }) => {
+    const { t } = useTranslation();
     const { isMobile } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -108,7 +110,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
     const handleAddExperience = async () => {
         const experience = experiences[0];
         if (!experience.jobTitle || !experience.employer) {
-            presentToast('Please fill in job title and employer', {
+            presentToast(t('toasts.skills.fillJobTitle', 'Please fill in job title and employer'), {
                 type: ToastTypeEnum.Error,
                 title: 'Missing required fields',
             });
@@ -222,7 +224,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 title: `${experience.jobTitle} at ${experience.employer}`,
             });
 
-            presentToast('Your work history credential has been created', {
+            presentToast(t('toasts.skills.workHistoryCreated', 'Your work history credential has been created'), {
                 type: ToastTypeEnum.Success,
                 title: 'Work experience added',
             });

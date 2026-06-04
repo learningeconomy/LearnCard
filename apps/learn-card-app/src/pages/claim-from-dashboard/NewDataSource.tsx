@@ -13,6 +13,7 @@ import useRegistry from 'learn-card-base/hooks/useRegistry';
 import { useRegistryEntryState } from '../../hooks/useRegistryEntryState';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 export type NewDataSourceProps = {
     handleCloseModal: () => void;
@@ -20,6 +21,7 @@ export type NewDataSourceProps = {
 };
 
 const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId }) => {
+    const { t } = useTranslation();
     const location = useLocation();
     const currentUser = useCurrentUser();
     const { data: registry } = useRegistry();
@@ -33,7 +35,7 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
     useEffect(() => {
         if (state === 'Synced') {
             handleCloseModal();
-            presentToast(`Successfully synced Data Source!`, {
+            presentToast(t('toasts.dataSource.syncedSuccess', 'Successfully synced Data Source!'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });

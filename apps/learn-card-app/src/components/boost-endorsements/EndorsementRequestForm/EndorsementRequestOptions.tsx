@@ -23,6 +23,7 @@ import {
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
+import { useTranslation } from 'react-i18next';
 
 const schema = zod.object({
     email: zod.string().email(),
@@ -34,6 +35,7 @@ export const EndorsementRequestOptions: React.FC<{
     endorsementRequest: EndorsementRequestState;
     setEndorsementRequest: React.Dispatch<React.SetStateAction<EndorsementRequestState>>;
 }> = ({ credential, categoryType, endorsementRequest, setEndorsementRequest }) => {
+    const { t } = useTranslation();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { initWallet } = useWallet();
@@ -84,7 +86,7 @@ export const EndorsementRequestOptions: React.FC<{
     const copyItem = async () => {
         await Clipboard.write({ string: shareLink });
 
-        presentToast(`Link copied to clipboard`, {
+        presentToast(t('toasts.boost.endorsementLinkCopied', 'Link copied to clipboard'), {
             hasDismissButton: true,
         });
     };
@@ -152,7 +154,7 @@ export const EndorsementRequestOptions: React.FC<{
             setIsSendingEmail(false);
         } catch (error) {
             setIsSendingEmail(false);
-            presentToast(`Failed to send endorsement request`, {
+            presentToast(t('toasts.boost.endorsementRequestFailed', 'Failed to send endorsement request'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

@@ -60,6 +60,7 @@ import { LCNBoostStatusEnum } from '../boost/boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { VC } from '@learncard/types';
 import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
+import { useTranslation } from 'react-i18next';
 
 const StateValidator = z.object({
     name: z.string().min(1, 'Name is required!'),
@@ -77,7 +78,8 @@ type FamilyCMSProps = {
 export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     credential,
     editorMode = FamilyCMSEditorModeEnum.create,
-    handleCloseModal = () => {},
+    handleCloseModal = () => {
+    const { t } = useTranslation();},
     onFamilyCreationSuccess,
     editBoostUri,
 }) => {
@@ -475,7 +477,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.error('handlePublishBoost::error', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(t('toasts.family.boostIssuedError', 'Error issuing boost'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -502,7 +504,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.error('handlePublishBoost::error', e);
-            presentToast(`Error updating boost`, {
+            presentToast(t('toasts.family.boostUpdateError', 'Error updating boost'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

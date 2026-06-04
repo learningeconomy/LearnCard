@@ -11,6 +11,7 @@ import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
 import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
+import { useTranslation } from 'react-i18next';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -18,6 +19,7 @@ type SkillProfileStep5Props = {
 };
 
 const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handleBack }) => {
+    const { t } = useTranslation();
     const { presentToast } = useToast();
 
     const [isUpdating, setIsUpdating] = useState(false);
@@ -64,7 +66,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            presentToast(t('toasts.skills.savedSuccess', 'Skills saved successfully!'), {
                 type: ToastTypeEnum.Success,
             });
 

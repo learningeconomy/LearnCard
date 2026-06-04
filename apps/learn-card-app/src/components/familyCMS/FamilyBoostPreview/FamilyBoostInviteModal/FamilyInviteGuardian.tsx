@@ -30,6 +30,7 @@ import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { BoostCMSIssueTo, ShortBoostState } from '../../../boost/boost';
+import { useTranslation } from 'react-i18next';
 
 type FamilyInviteGuardianProps = {
     boostUri: string;
@@ -42,6 +43,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     boostUri,
     handleCloseModal,
 }) => {
+    const { t } = useTranslation();
     const { initWallet } = useWallet();
 
     const [expirationDate, setExpirationDate] = useState<undefined | string>(undefined);
@@ -188,12 +190,12 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
             await Clipboard.write({
                 string: boostClaimLink,
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(t('toasts.family.boostLinkCopied', 'Boost link copied to clipboard'), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(t('toasts.family.boostLinkCopyFailed', 'Unable to copy boost link to clipboard'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
