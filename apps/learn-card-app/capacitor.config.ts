@@ -52,6 +52,10 @@ const config: CapacitorConfig = {
         },
         CapacitorUpdater: {
             appId: 'com.learncard.app',
+            // TEMPORARY (LC-1831): disabled OTA live updates so TestFlight/native test
+            // builds keep their own bundled JS (incl. paraglide translations) instead of
+            // being clobbered by the channel's non-translated bundle. Do NOT merge to main —
+            // revert to `true` before release.
             autoUpdate: false,
             // SINGLE SOURCE OF TRUTH for the Capgo channel.
             // - CI reads this value via `tools/capgo/getCapgoChannel.js` (regex match) to pick
