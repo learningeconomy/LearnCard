@@ -18,6 +18,8 @@ import {
     getLocale,
 } from '../paraglide/runtime.js';
 
+import { detectInitialLocale, detectInitialLocaleSync } from './detectLocale';
+
 // MessagePart is a JSDoc typedef in runtime.js, not a TS export.
 // Define it here so our renderParts() helper is type-safe.
 export type MessagePart =
@@ -46,28 +48,44 @@ type LocaleContextValue = {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 /**
- * Reads the current locale from the Paraglide runtime and localStorage.
- * Used to initialise the React state so the first render matches.
+ * Synchronously resolves the initial locale. Used as the `useState` initializer
+ * so first render already matches the detected locale (no flash of EN).
+ *
+ * Priority chain (highest first):
+ *   1. localStorage `i18n.language` — manual user choice persists
+ *   2. `navigator.language` — browser/system locale on web
+ *   3. tenant `i18n.defaultLanguage` — set via `setTenantDefaultLocaleCache()`
+ *      from `TenantConfigProvider` before React mounts
+ *   4. `'en'` — hard fallback
+ *
+ * Native device locale (Capacitor `Device.getLanguageCode()`) is async and
+ * handled in the effect below — it takes priority over (2)/(3) but slots in
+ * after first render when running on iOS/Android.
  */
 function resolveInitialLocale(): SupportedLanguage {
-    // 1. Check localStorage (our own key, independent of Paraglide's strategy)
-    if (typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem('i18n.language');
-        if (stored && (SUPPORTED_LANGUAGES as readonly string[]).includes(stored)) {
-            return stored as SupportedLanguage;
+    const detected = detectInitialLocaleSync(SUPPORTED_LANGUAGES, 'en');
+    // Paraglide's getLocale() is the runtime baseLocale (typically 'en'). If the
+    // sync chain returned that and it's a no-op, prefer Paraglide's own value
+    // so any future server-side strategy stays consistent.
+    if (detected === 'en') {
+        const gl = getLocale();
+        if ((SUPPORTED_LANGUAGES as readonly string[]).includes(gl)) {
+            return gl as SupportedLanguage;
         }
     }
-    // 2. Fall back to Paraglide's getLocale() (baseLocale = 'en')
-    const gl = getLocale();
-    if ((SUPPORTED_LANGUAGES as readonly string[]).includes(gl)) {
-        return gl as SupportedLanguage;
-    }
-    return 'en';
+    return detected as SupportedLanguage;
 }
 
 /**
  * Wraps the app to provide locale state. Must sit above any component
  * that calls useLocale() or imports Paraglide messages.
+ *
+ * Native locale upgrade: on Capacitor platforms we run an async
+ * `detectInitialLocale()` once after mount, which reads
+ * `Device.getLanguageCode()`. If the result differs from the sync-detected
+ * locale AND the user hasn't manually picked anything yet (no localStorage
+ * entry), we upgrade to the native choice. Manual picks always win on
+ * subsequent launches.
  */
 export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [locale, setLocaleState] = useState<SupportedLanguage>(resolveInitialLocale);
@@ -81,6 +99,31 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         paraglideSetLocale(lang, { reload: false });
         // 3. Trigger React re-render
         setLocaleState(lang);
+    }, []);
+
+    // First-launch native-locale upgrade. Only runs if the user hasn't yet
+    // manually picked a locale (i.e. no localStorage entry) — once a choice is
+    // persisted, we never override it from autodetection on later launches.
+    useEffect(() => {
+        const hasManualChoice =
+            typeof localStorage !== 'undefined' &&
+            !!localStorage.getItem('i18n.language');
+        if (hasManualChoice) return;
+        void detectInitialLocale(SUPPORTED_LANGUAGES, 'en').then(detected => {
+            if (
+                detected !== locale &&
+                (SUPPORTED_LANGUAGES as readonly string[]).includes(detected)
+            ) {
+                // Don't persist (we don't want to record an auto choice as a
+                // manual one — that would block future re-detection if the user
+                // moves device locales).
+                paraglideSetLocale(detected as SupportedLanguage, { reload: false });
+                setLocaleState(detected as SupportedLanguage);
+            }
+        });
+        // Intentionally only runs once on mount; `locale` is captured at first
+        // render and that's the comparison we want.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Sync <html dir> and <html lang> on locale change

@@ -3,6 +3,7 @@ import { useModal, ModalTypes } from 'learn-card-base';
 
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import GlobeStand from 'learn-card-base/svgs/GlobeStand';
 
 import * as m from '../../paraglide/messages.js';
 import { SUPPORTED_LANGUAGES, useLocale, useChangeLocale, type SupportedLanguage } from '../../i18n';
@@ -113,3 +114,49 @@ const LanguagePicker: React.FC = () => {
 };
 
 export default LanguagePicker;
+
+/**
+ * Compact icon-button variant for surfaces where the side menu isn't yet
+ * available (notably the login screen, which is rendered before authentication).
+ *
+ * Shows a small globe icon next to the uppercased 2-letter code (`EN`, `KO`,
+ * `AR`, …). Tapping opens the same modal `LanguagePicker` uses. The component
+ * is unstyled w.r.t. positioning — drop it inside an absolutely-positioned
+ * container where you want it (top-right of the page is the established
+ * convention).
+ *
+ * Defaults to white text on transparent background (matches the login screen's
+ * green theme). Override via `className` if your surface needs a different
+ * palette.
+ */
+export const LanguagePickerCompact: React.FC<{ className?: string }> = ({
+    className = '',
+}) => {
+    const currentLang = useLocale();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
+
+    const currentLabel = LANGUAGE_NATIVE_NAMES[currentLang] ?? LANGUAGE_NATIVE_NAMES.en;
+
+    const openLanguageModal = () => {
+        newModal(
+            <LanguageSelectorModal currentLang={currentLang} />,
+            { sectionClassName: '!max-w-[420px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={openLanguageModal}
+            aria-label={currentLabel}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-[13px] font-medium hover:bg-white/25 transition-colors ${className}`}
+        >
+            <GlobeStand className="w-4 h-4" />
+            <span className="uppercase">{currentLang}</span>
+        </button>
+    );
+};

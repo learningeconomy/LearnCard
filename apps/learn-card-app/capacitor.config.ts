@@ -52,7 +52,7 @@ const config: CapacitorConfig = {
         },
         CapacitorUpdater: {
             appId: 'com.learncard.app',
-            autoUpdate: true,
+            autoUpdate: false,
             // SINGLE SOURCE OF TRUTH for the Capgo channel.
             // - CI reads this value via `tools/capgo/getCapgoChannel.js` (regex match) to pick
             //   the channel that OTA bundles are uploaded to in the deploy workflow.
