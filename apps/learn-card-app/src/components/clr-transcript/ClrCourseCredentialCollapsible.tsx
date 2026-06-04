@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { FlatIcon } from './ClrStatCard';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';

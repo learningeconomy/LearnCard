@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import ClrIssuerBadge from './ClrIssuerBadge';
-import { FlatIcon } from './ClrStatCard';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import { formatAchievementType } from './clr.helpers';

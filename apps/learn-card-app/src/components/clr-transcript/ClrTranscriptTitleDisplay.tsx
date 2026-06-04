@@ -5,17 +5,14 @@ import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
 import PaperClip from '../svgs/PaperClip';
-import { FlatIcon } from './ClrStatCard';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import {
     normalizeClrTranscriptDisplayModel,
     type ClrTranscriptDisplayModel,
     type CourseDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
 import { formatClrGpa } from './clr.helpers';
-import {
-    inferClrKindWithTitleFallback,
-    type InferredClrKind,
-} from './clrKind.helpers';
+import { inferClrKindWithTitleFallback, type InferredClrKind } from './clrKind.helpers';
 
 const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
     if (!course) return undefined;
