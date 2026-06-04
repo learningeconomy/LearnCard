@@ -3,6 +3,7 @@ import type { AppStoreListing } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 import AppStoreDetailModal from './AppStoreDetailModal';
+import { useTranslation } from 'react-i18next';
 
 // Vibrant color palette for carousel cards
 const CAROUSEL_COLORS = [
@@ -30,6 +31,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     hideScrollDots = false
 }) => {
     const { newModal } = useModal();
+    const { t } = useTranslation();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -133,7 +135,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                     <div className="mt-2">
                                         {appIsInstalled ? (
                                             <span className="inline-flex items-center px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
-                                                Open
+                                                {t('launchpad.carousel.open', 'Open')}
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
@@ -150,7 +152,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                                         d="M13 7l5 5m0 0l-5 5m5-5H6"
                                                     />
                                                 </svg>
-                                                Get App
+                                                {t('launchpad.carousel.getApp', 'Get App')}
                                             </span>
                                         )}
                                     </div>
@@ -175,7 +177,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                     : 'bg-grayscale-300 hover:bg-grayscale-400'
                                 }
                             `}
-                            aria-label={`Go to slide ${index + 1}`}
+                            aria-label={t('launchpad.carousel.goToSlide', 'Go to slide {{number}}', { number: index + 1 })}
                         />
                     ))}
                 </div>

@@ -2,10 +2,12 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Sparkles, ArrowRight, Code2, Rocket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
     const history = useHistory();
     const flags = useFlags();
+    const { t } = useTranslation();
 
     const handleClick = () => {
         history.push('/app-store/developer');
@@ -46,13 +48,13 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                         {/* Text content */}
                         <div className="flex-1 text-left">
                             <p className="text-white/70 text-xs font-medium uppercase tracking-wider mb-0.5">
-                                Developer Program
+                                {t('launchpad.becomeAnApp.developerProgram', 'Developer Program')}
                             </p>
                             <h3 className="text-white text-lg font-bold leading-tight">
-                                Build Your Own App
+                                {t('launchpad.becomeAnApp.buildYourOwnApp', 'Build Your Own App')}
                             </h3>
                             <p className="text-white/80 text-sm mt-0.5">
-                                Join our developer community today
+                                {t('launchpad.becomeAnApp.joinDeveloperCommunity', 'Join our developer community today')}
                             </p>
                         </div>
 

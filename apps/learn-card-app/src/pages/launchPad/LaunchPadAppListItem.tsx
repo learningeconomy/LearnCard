@@ -11,6 +11,7 @@ import { IonItem } from '@ionic/react';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
+import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -24,6 +25,7 @@ type LaunchPadAppListItemProps = {
 
 const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filterBy }) => {
     const { getColorSet } = useTheme();
+    const { t } = useTranslation();
     const colors = getColorSet(ColorSetEnum.launchPad);
 
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
@@ -102,7 +104,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                                 }
                                 className={buttonClass}
                             >
-                                Launch
+                                {t('launchpad.appCard.launch', 'Launch')}
                             </button>
                         </div>
                     )}
@@ -110,20 +112,20 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                     {!app?.embedUrl && app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
                             <button disabled className={connectedButtonClass}>
-                                Soon
+                                {t('launchpad.appCard.soon', 'Soon')}
                             </button>
                         </div>
                     )}
 
                     {!app?.embedUrl && !app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
-                            {isLoading && <button className={buttonClass}>Loading...</button>}
+                            {isLoading && <button className={buttonClass}>{t('launchpad.appCard.loading', 'Loading...')}</button>}
                             {!isLoading && (
                                 <button
                                     onClick={handleButtonClick}
                                     className={isConnected ? connectedButtonClass : buttonClass}
                                 >
-                                    {isConnected ? 'Open' : 'Connect'}
+                                    {isConnected ? t('launchpad.appCard.open', 'Open') : t('launchpad.appCard.connect', 'Connect')}
                                 </button>
                             )}
                         </div>

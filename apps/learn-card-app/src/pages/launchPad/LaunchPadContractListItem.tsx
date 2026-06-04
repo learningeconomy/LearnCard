@@ -15,6 +15,7 @@ import useConsentFlow from '../consentFlow/useConsentFlow';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
+import { useTranslation } from 'react-i18next';
 
 type LaunchPadContractListItemProps = {
     contract?: ConsentFlowContractDetails;
@@ -28,6 +29,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
     filterBy,
 }) => {
     const { getColorSet } = useTheme();
+    const { t } = useTranslation();
     const colors = getColorSet(ColorSetEnum.launchPad);
 
     const { openConsentFlowModal, hasConsented } = useConsentFlow(contract);
@@ -89,7 +91,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                             className={hasConsented ? connectedButtonClass : buttonClass}
                             disabled={isPending}
                         >
-                            {hasConsented ? 'Open' : 'Connect'}
+                            {hasConsented ? t('launchpad.appCard.open', 'Open') : t('launchpad.appCard.connect', 'Connect')}
                         </button>
                     </div>
                 </div>

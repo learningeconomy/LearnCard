@@ -86,7 +86,94 @@
             "checkBackSoon": "곧 다시 확인하거나 모든 앱을 탐색하세요."
         },
         "aiDisabledMinor": "만 18세 미만 사용자는 AI 기능을 사용할 수 없습니다.",
-        "aiDisabledPrivacy": "AI 기능이 현재 비활성화되어 있습니다. 프로필의 개인정보 및 데이터에서 활성화할 수 있습니다."
+        "aiDisabledPrivacy": "AI 기능이 현재 비활성화되어 있습니다. 프로필의 개인정보 및 데이터에서 활성화할 수 있습니다.",
+        "actions": {
+            "addToLearnCard": "LearnCard에 추가",
+            "buildMyLearnCard": "나의 LearnCard 만들기",
+            "newAiTutoringSession": "새 AI 튜터링 세션",
+            "understandMySkills": "내 기술 이해하기",
+            "customizeAiSessions": "AI 세션 맞춤 설정",
+            "shareInsightsWithTeacher": "교사와 인사이트 공유",
+            "viewLearnerInsights": "학습자 인사이트 보기",
+            "requestLearnerInsights": "학습자 인사이트 요청",
+            "issueCredential": "자격 증명 발급",
+            "createCredential": "자격 증명 만들기",
+            "editSkillsFrameworks": "기술 프레임워크 편집",
+            "manageSkillsFrameworks": "기술 프레임워크 관리",
+            "createFamily": "가족 만들기",
+            "viewFamily": "가족 보기",
+            "boostChild": "자녀 부스트",
+            "addChild": "자녀 추가",
+            "switchChild": "자녀 전환",
+            "viewChildInsights": "자녀 인사이트 보기",
+            "createApiToken": "API 토큰 만들기",
+            "createSigningAuthority": "서명 기관 만들기",
+            "createConsentFlow": "ConsentFlow 만들기",
+            "switchNetwork": "네트워크 전환",
+            "readDocs": "문서 읽기",
+            "importCredentials": "자격 증명 가져오기",
+            "createOrganization": "조직 만들기",
+            "switchAccount": "계정 전환",
+            "claimCredential": "자격 증명 수령"
+        },
+        "modal": {
+            "whatWouldYouLikeToDo": "무엇을 하시겠습니까?",
+            "roleUpdated": "역할 업데이트됨",
+            "nowRole": "이제 {{role}}입니다.",
+            "unableToUpdateRole": "역할을 업데이트할 수 없습니다",
+            "unableToOpenRequestInsights": "인사이트 요청을 열 수 없습니다"
+        },
+        "passport": "패스포트",
+        "launchpad": "런치패드",
+        "appCard": {
+            "open": "열기",
+            "get": "설치",
+            "launch": "실행",
+            "soon": "곧",
+            "connect": "연결",
+            "loading": "로딩 중...",
+            "age": "연령 {{rating}}"
+        },
+        "carousel": {
+            "open": "열기",
+            "getApp": "앱 설치",
+            "goToSlide": "슬라이드 {{number}}(으)로 이동"
+        },
+        "becomeAnApp": {
+            "developerProgram": "개발자 프로그램",
+            "buildYourOwnApp": "나만의 앱 만들기",
+            "joinDeveloperCommunity": "오늘 개발자 커뮤니티에 가입하세요"
+        },
+        "detail": {
+            "shareApp": "앱 공유",
+            "editPermissions": "권한 편집",
+            "uninstall": "제거",
+            "about": "정보",
+            "preview": "미리보기",
+            "watch": "시청",
+            "links": "링크",
+            "promoVideo": "홍보 영상",
+            "readMore": "더 읽기",
+            "readLess": "접기",
+            "install": "설치",
+            "moreOptions": "추가 옵션",
+            "linkCopied": "링크가 클립보드에 복사되었습니다!",
+            "installFailed": "앱 설치 실패: {{error}}",
+            "dateOfBirth": "생년월일",
+            "back": "뒤로",
+            "whyUseThisApp": "이 앱을 사용하는 이유",
+            "privacyPolicy": "개인정보 처리방침",
+            "termsOfService": "서비스 약관",
+            "category": "카테고리"
+        },
+        "ageRestriction": {
+            "title": "연령 제한",
+            "requiresAge": "이 앱은 사용자가 <strong>{{age}}+</strong>세 이상이어야 합니다.",
+            "notMeetRequirement": "프로필의 생년월일을 기반으로 이 앱의 최소 연령 요건을 충족하지 않습니다.",
+            "ok": "확인",
+            "requiresAgeBefore": "이 앱은 사용자가 ",
+            "requiresAgeAfter": "세 이상이어야 합니다."
+        }
     },
     "wallet": {
         "categories": {
@@ -1107,5 +1194,132 @@
         "nationalNetwork": "국가 네트워크",
         "globalNetworkAdmin": "글로벌 네트워크 관리자",
         "nationalNetworkAdmin": "국가 네트워크 관리자"
+    },
+    "toasts": {
+        "copied": "클립보드에 복사됨",
+        "copyFailed": "클립보드에 복사할 수 없습니다",
+        "linkCopied": "링크가 클립보드에 복사됨",
+        "linkCopyFailed": "링크를 클립보드에 복사할 수 없습니다",
+        "jsonCopied": "JSON이 클립보드에 복사됨",
+        "jsonCopyFailed": "JSON을 클립보드에 복사할 수 없습니다",
+        "credentialClaimed": "자격 증명이 성공적으로 수령되었습니다!",
+        "credentialClaimFailed": "자격 증명을 수령할 수 없습니다",
+        "alreadyClaimed": "이 자격 증명은 이미 수령하셨습니다.",
+        "claimOops": "죄송합니다, 자격 증명을 수령하지 못했습니다.",
+        "claimOopsPlural": "죄송합니다, 자격 증명들을 수령하지 못했습니다.",
+        "selectCredential": "수령할 자격 증명을 하나 이상 선택하세요.",
+        "credentialsClaimedCount": "{{count}}개 자격 증명이 성공적으로 수령되었습니다!",
+        "acceptFailed": "죄송합니다, 자격 증명을 수락하지 못했습니다. 다시 시도해 주세요.",
+        "rejectFailed": "죄송합니다, 자격 증명을 거절하지 못했습니다. 다시 시도해 주세요.",
+        "boost": {
+            "boostIssuedSuccess": "부스트가 성공적으로 발급됨",
+            "boostIssuedError": "부스트 발급 오류",
+            "boostSavedSuccess": "부스트가 성공적으로 저장됨",
+            "boostSaveFailed": "부스트를 저장할 수 없습니다",
+            "walletNotInitialized": "지갑이 초기화되지 않았습니다",
+            "deleteCredentialError": "자격 증명 삭제 오류: 레코드 ID를 찾을 수 없습니다.",
+            "shareLinkCopied": "공유 링크가 클립보드에 복사됨",
+            "shareLinkCopyFailed": "공유 링크를 복사할 수 없습니다",
+            "templateIdCopied": "템플릿 ID가 클립보드에 복사됨",
+            "templateIdCopyFailed": "템플릿 ID를 복사할 수 없습니다",
+            "boostLinkCopied": "부스트 링크가 클립보드에 복사됨",
+            "boostLinkCopyFailed": "부스트 링크를 복사할 수 없습니다",
+            "viewingEnabled": "보기가 활성화되었습니다. 이제 수령 링크를 생성할 수 있습니다.",
+            "permissionsUpdateFailed": "권한을 업데이트할 수 없습니다. 다시 시도해 주세요.",
+            "contactLinkCopied": "연락처 링크가 클립보드에 복사됨",
+            "contactLinkCopyFailed": "연락처 링크를 복사할 수 없습니다",
+            "endorsementLinkCopied": "링크가 클립보드에 복사됨",
+            "endorsementRequestFailed": "보증 요청 전송 실패"
+        },
+        "resume": {
+            "publishedSuccess": "LER-RS 이력서 자격 증명이 성공적으로 게시되었습니다.",
+            "downloadSuccess": "이력서가 성공적으로 다운로드되었습니다.",
+            "downloadFailed": "이력서를 저장하고 다운로드하지 못했습니다.",
+            "publishFailed": "LER-RS 이력서 자격 증명 게시에 실패했습니다.",
+            "loadedEditMode": "편집 모드로 이력서가 로드되었습니다.",
+            "loadFailed": "선택한 이력서를 로드하지 못했습니다.",
+            "newDraft": "새 이력서 초안이 시작되었습니다.",
+            "notAvailableToShare": "이 이력서는 아직 공유할 수 없습니다.",
+            "shareLinkGenerated": "이력서 공유 링크를 생성할 수 없습니다.",
+            "linkCopied": "이력서 링크가 클립보드에 복사됨",
+            "linkCopyFailed": "이력서 링크를 복사할 수 없습니다",
+            "selfIssueNoProfile": "프로필 없이 자체 발행할 수 없습니다.",
+            "selfIssueFailed": "자격 증명 자체 발행 실패",
+            "verifiedResumeLinkCopied": "검증된 이력서 링크가 클립보드에 복사됨",
+            "verifiedResumeLinkCopyFailed": "검증된 이력서 링크를 복사할 수 없습니다"
+        },
+        "credential": {
+            "addedToLearnCard": "자격 증명이 LearnCard에 추가됨"
+        },
+        "family": {
+            "profileCreated": "프로필 \"{{name}}\"이(가) 성공적으로 생성되었습니다!",
+            "profileCreateFailed": "\"{{name}}\" 생성 실패: {{error}}",
+            "boostLinkCopied": "부스트 링크가 클립보드에 복사됨",
+            "boostLinkCopyFailed": "부스트 링크를 복사할 수 없습니다",
+            "boostIssuedError": "부스트 발급 오류",
+            "boostUpdateError": "부스트 업데이트 오류"
+        },
+        "skills": {
+            "savedSuccess": "기술이 성공적으로 저장되었습니다!",
+            "saveError": "기술 저장 오류!{{error}}",
+            "suggestionThanks": "제안해 주셔서 감사합니다!",
+            "fillJobTitle": "직책 및 고용주를 입력해 주세요",
+            "workHistoryCreated": "직무 이력 자격 증명이 생성되었습니다",
+            "frameworkSynced": "프레임워크가 동기화되었습니다.",
+            "frameworkSyncFailed": "프레임워크를 동기화할 수 없습니다.",
+            "pasteValidLink": "유효한 OpenSALT 프레임워크 링크를 붙여넣으세요.",
+            "frameworkImported": "OpenSALT 프레임워크가 가져오기 및 동기화되었습니다.",
+            "frameworkImportFailed": "프레임워크를 가져올 수 없습니다.",
+            "updateError": "기술 업데이트 오류: {{error}}"
+        },
+        "goals": {
+            "saveError": "목표 저장 오류!{{error}}"
+        },
+        "general": {
+            "somethingWentWrong": "문제가 발생했습니다: {{error}}",
+            "failedToUpdateTerms": "약관 업데이트 실패: {{error}}"
+        },
+        "consentFlow": {
+            "connected": "{{name}}에 성공적으로 연결됨",
+            "acceptFailed": "계약 수락 실패: {{error}}",
+            "permissionsUpdated": "권한이 업데이트됨",
+            "permissionsUpdateFailed": "권한을 업데이트할 수 없습니다"
+        },
+        "dataSource": {
+            "syncedSuccess": "데이터 소스가 성공적으로 동기화되었습니다!"
+        },
+        "launchpad": {
+            "installFailed": "앱 설치 실패: {{error}}",
+            "roleUpdated": "역할 업데이트됨",
+            "nowRole": "이제 {{role}}입니다.",
+            "unableToUpdateRole": "역할을 업데이트할 수 없습니다",
+            "unableToOpenRequestInsights": "인사이트 요청을 열 수 없습니다"
+        },
+        "onboarding": {
+            "errorCreatingProfile": "프로필 생성 오류",
+            "unableToJoinNetwork": "네트워크에 가입할 수 없습니다"
+        },
+        "qr": {
+            "scanningFailed": "QR 코드를 스캔할 수 없습니다"
+        },
+        "contacts": {
+            "connectionSent": "연결 요청이 전송되었습니다!",
+            "connectionSendFailed": "오류가 발생하여 연결 요청을 보낼 수 없습니다.",
+            "connectedSuccessfully": "성공적으로 연결되었습니다!",
+            "connectFailed": "오류가 발생하여 연결할 수 없습니다!",
+            "acceptFailed": "오류가 발생하여 요청을 수락할 수 없습니다",
+            "blockFailed": "오류가 발생하여 사용자를 차단할 수 없습니다",
+            "blocked": "사용자 차단됨",
+            "unblocked": "사용자 차단 해제됨",
+            "removeFailed": "연락처 제거 실패",
+            "removed": "연락처 제거됨",
+            "disconnectFailed": "연결 해제 실패",
+            "disconnected": "연결 해제됨",
+            "didCopied": "DID가 클립보드에 복사됨",
+            "requestSent": "요청 전송됨",
+            "requestFailed": "요청 전송 실패",
+            "inviteAlreadySent": "이미 이 사용자에게 연결 요청을 보냈습니다.",
+            "alreadyConnected": "이미 이 사용자와 연결되어 있습니다."
+        }
     }
 }

@@ -87,6 +87,7 @@ import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
 import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
+import { useTranslation } from 'react-i18next';
 
 const getIconForActionButton = (
     label: string,
@@ -184,11 +185,43 @@ const ActionButton: React.FC<{
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
     const { theme, getIconSet } = useTheme();
+    const { t } = useTranslation();
     const brandingConfig = useBrandingConfig();
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
     const { track } = useAnalytics();
+
+    // Translation map: internal ID → translated display label
+    const ACTION_LABELS: Record<string, string> = {
+        'Add to LearnCard': t('launchpad.actions.addToLearnCard', 'Add to LearnCard'),
+        'Build My LearnCard': t('launchpad.actions.buildMyLearnCard', 'Build My LearnCard'),
+        'New AI Tutoring Session': t('launchpad.actions.newAiTutoringSession', 'New AI Tutoring Session'),
+        'Understand My Skills': t('launchpad.actions.understandMySkills', 'Understand My Skills'),
+        'Customize AI Sessions': t('launchpad.actions.customizeAiSessions', 'Customize AI Sessions'),
+        'Share Insights with Teacher': t('launchpad.actions.shareInsightsWithTeacher', 'Share Insights with Teacher'),
+        'View Learner Insights': t('launchpad.actions.viewLearnerInsights', 'View Learner Insights'),
+        'Request Learner Insights': t('launchpad.actions.requestLearnerInsights', 'Request Learner Insights'),
+        'Issue Credential': t('launchpad.actions.issueCredential', 'Issue Credential'),
+        'Create Credential': t('launchpad.actions.createCredential', 'Create Credential'),
+        'Edit Skills Frameworks': t('launchpad.actions.editSkillsFrameworks', 'Edit Skills Frameworks'),
+        'Manage Skills Frameworks': t('launchpad.actions.manageSkillsFrameworks', 'Manage Skills Frameworks'),
+        'Create Family': t('launchpad.actions.createFamily', 'Create Family'),
+        'View Family': t('launchpad.actions.viewFamily', 'View Family'),
+        'Boost Child': t('launchpad.actions.boostChild', 'Boost Child'),
+        'Add Child': t('launchpad.actions.addChild', 'Add Child'),
+        'Switch Child': t('launchpad.actions.switchChild', 'Switch Child'),
+        'View Child Insights': t('launchpad.actions.viewChildInsights', 'View Child Insights'),
+        'Create API Token': t('launchpad.actions.createApiToken', 'Create API Token'),
+        'Create Signing Authority': t('launchpad.actions.createSigningAuthority', 'Create Signing Authority'),
+        'Create ConsentFlow': t('launchpad.actions.createConsentFlow', 'Create ConsentFlow'),
+        'Switch Network': t('launchpad.actions.switchNetwork', 'Switch Network'),
+        'Read Docs': t('launchpad.actions.readDocs', 'Read Docs'),
+        'Import Credentials': t('launchpad.actions.importCredentials', 'Import Credentials'),
+        'Create Organization': t('launchpad.actions.createOrganization', 'Create Organization'),
+        'Switch Account': t('launchpad.actions.switchAccount', 'Switch Account'),
+        'Claim Credential': t('launchpad.actions.claimCredential', 'Claim Credential'),
+    };
 
     const handleClick = () => {
         track(AnalyticsEvents.LAUNCHPAD_QUICKNAV_ACTION_CLICKED, {
@@ -419,7 +452,7 @@ const ActionButton: React.FC<{
                 <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
-                {label === 'Build My LearnCard' ? `Build My ${brandingConfig.name}` : label}
+                {label === 'Build My LearnCard' ? `Build My ${brandingConfig.name}` : (ACTION_LABELS[label] ?? label)}
             </div>
         </button>
     );
@@ -475,7 +508,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         } catch (e) {
             setOptimisticRole(null);
             setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
-            presentToast('Unable to update role', {
+            presentToast(t('launchpad.modal.unableToUpdateRole', 'Unable to update role'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -496,8 +529,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         }
 
         const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
-        presentToast(`You're now a ${newRoleTitle}.`, {
-            title: 'Role updated',
+        presentToast(t('launchpad.modal.nowRole', "You're now a {{role}}.", { role: newRoleTitle }), {
+            title: t('launchpad.modal.roleUpdated', 'Role updated'),
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
             hasCheckmark: true,
@@ -701,7 +734,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             const wallet = await initWallet();
 
             if (!wallet || !currentLCNUser) {
-                presentToast('Unable to open Request Insights', {
+                presentToast(t('launchpad.modal.unableToOpenRequestInsights', 'Unable to open Request Insights'), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -738,7 +771,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 }
             );
         } catch (e) {
-            presentToast('Unable to open Request Insights', {
+            presentToast(t('launchpad.modal.unableToOpenRequestInsights', 'Unable to open Request Insights'), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -878,7 +911,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined
                     }
                 >
-                    What would you like to do?
+                    {t('launchpad.modal.whatWouldYouLikeToDo', 'What would you like to do?')}
                 </h3>
             </div>
 
@@ -950,7 +983,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Passport</span>
+                        <span className="text-base font-poppins font-semibold">{t('launchpad.passport', 'Passport')}</span>
                     </button>
                     <button
                         type="button"
@@ -968,7 +1001,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Launchpad</span>
+                        <span className="text-base font-poppins font-semibold">{t('launchpad.launchpad', 'Launchpad')}</span>
                     </button>
                 </div>
             )}

@@ -86,7 +86,94 @@
             "checkBackSoon": "تحقق قريباً أو تصفح جميع التطبيقات."
         },
         "aiDisabledMinor": "ميزات الذكاء الاصطناعي غير متاحة للمستخدمين دون 18 عاماً.",
-        "aiDisabledPrivacy": "ميزات الذكاء الاصطناعي معطلة حالياً. يمكنك تفعيلها من الخصوصية والبيانات في ملفك الشخصي."
+        "aiDisabledPrivacy": "ميزات الذكاء الاصطناعي معطلة حالياً. يمكنك تفعيلها من الخصوصية والبيانات في ملفك الشخصي.",
+        "actions": {
+            "addToLearnCard": "إضافة إلى LearnCard",
+            "buildMyLearnCard": "بناء LearnCard الخاص بي",
+            "newAiTutoringSession": "جلسة تعليم ذكاء اصطناعي جديدة",
+            "understandMySkills": "فهم مهاراتي",
+            "customizeAiSessions": "تخصيص جلسات الذكاء الاصطناعي",
+            "shareInsightsWithTeacher": "مشاركة الرؤى مع المعلم",
+            "viewLearnerInsights": "عرض رؤى المتعلم",
+            "requestLearnerInsights": "طلب رؤى المتعلم",
+            "issueCredential": "إصدار بيانات اعتماد",
+            "createCredential": "إنشاء بيانات اعتماد",
+            "editSkillsFrameworks": "تعديل أطر المهارات",
+            "manageSkillsFrameworks": "إدارة أطر المهارات",
+            "createFamily": "إنشاء عائلة",
+            "viewFamily": "عرض العائلة",
+            "boostChild": "تعزيز الطفل",
+            "addChild": "إضافة طفل",
+            "switchChild": "تبديل الطفل",
+            "viewChildInsights": "عرض رؤى الطفل",
+            "createApiToken": "إنشاء رمز API",
+            "createSigningAuthority": "إنشاء سلطة التوقيع",
+            "createConsentFlow": "إنشاء ConsentFlow",
+            "switchNetwork": "تبديل الشبكة",
+            "readDocs": "قراءة المستندات",
+            "importCredentials": "استيراد بيانات الاعتماد",
+            "createOrganization": "إنشاء مؤسسة",
+            "switchAccount": "تبديل الحساب",
+            "claimCredential": "المطالبة ببيانات الاعتماد"
+        },
+        "modal": {
+            "whatWouldYouLikeToDo": "ماذا تريد أن تفعل؟",
+            "roleUpdated": "تم تحديث الدور",
+            "nowRole": "أنت الآن {{role}}.",
+            "unableToUpdateRole": "تعذر تحديث الدور",
+            "unableToOpenRequestInsights": "تعذر فتح طلب الرؤى"
+        },
+        "passport": "جواز السفر",
+        "launchpad": "منصة الإطلاق",
+        "appCard": {
+            "open": "فتح",
+            "get": "الحصول",
+            "launch": "تشغيل",
+            "soon": "قريباً",
+            "connect": "اتصال",
+            "loading": "جارٍ التحميل...",
+            "age": "العمر {{rating}}"
+        },
+        "carousel": {
+            "open": "فتح",
+            "getApp": "الحصول على التطبيق",
+            "goToSlide": "الانتقال إلى الشريحة {{number}}"
+        },
+        "becomeAnApp": {
+            "developerProgram": "برنامج المطورين",
+            "buildYourOwnApp": "أنشئ تطبيقك الخاص",
+            "joinDeveloperCommunity": "انضم إلى مجتمع المطورين لدينا اليوم"
+        },
+        "detail": {
+            "shareApp": "مشاركة التطبيق",
+            "editPermissions": "تعديل الأذونات",
+            "uninstall": "إلغاء التثبيت",
+            "about": "حول",
+            "preview": "معاينة",
+            "watch": "مشاهدة",
+            "links": "روابط",
+            "promoVideo": "فيديو ترويجي",
+            "readMore": "اقرأ المزيد",
+            "readLess": "اقرأ أقل",
+            "install": "تثبيت",
+            "moreOptions": "المزيد من الخيارات",
+            "linkCopied": "تم نسخ الرابط إلى الحافظة!",
+            "installFailed": "فشل تثبيت التطبيق: {{error}}",
+            "dateOfBirth": "تاريخ الميلاد",
+            "back": "رجوع",
+            "whyUseThisApp": "لماذا استخدام هذا التطبيق؟",
+            "privacyPolicy": "سياسة الخصوصية",
+            "termsOfService": "شروط الخدمة",
+            "category": "الفئة"
+        },
+        "ageRestriction": {
+            "title": "مقيد بالعمر",
+            "requiresAge": "يتطلب هذا التطبيق أن يكون المستخدمون <strong>{{age}}+</strong> سنوات.",
+            "notMeetRequirement": "بناءً على تاريخ ميلاد ملفك الشخصي، لا تستوفي الحد الأدنى لمتطلبات العمر لهذا التطبيق.",
+            "ok": "حسناً",
+            "requiresAgeBefore": "يتطلب هذا التطبيق أن يكون المستخدمون ",
+            "requiresAgeAfter": " سنة."
+        }
     },
     "wallet": {
         "categories": {
@@ -1107,5 +1194,132 @@
         "nationalNetwork": "الشبكة الوطنية",
         "globalNetworkAdmin": "مسؤول الشبكة العالمية",
         "nationalNetworkAdmin": "مسؤول الشبكة الوطنية"
+    },
+    "toasts": {
+        "copied": "تم النسخ إلى الحافظة",
+        "copyFailed": "تعذر النسخ إلى الحافظة",
+        "linkCopied": "تم نسخ الرابط إلى الحافظة",
+        "linkCopyFailed": "تعذر نسخ الرابط إلى الحافظة",
+        "jsonCopied": "تم نسخ JSON إلى الحافظة",
+        "jsonCopyFailed": "تعذر نسخ JSON إلى الحافظة",
+        "credentialClaimed": "تم المطالبة ببيانات الاعتماد بنجاح!",
+        "credentialClaimFailed": "تعذر المطالبة ببيانات الاعتماد",
+        "alreadyClaimed": "لقد طالبت بالفعل ببيانات الاعتماد هذه.",
+        "claimOops": "عذراً، لم نتمكن من المطالبة ببيانات الاعتماد.",
+        "claimOopsPlural": "عذراً، لم نتمكن من المطالبة ببيانات الاعتماد.",
+        "selectCredential": "يرجى اختيار بيانات اعتماد واحدة على الأقل للمطالبة بها.",
+        "credentialsClaimedCount": "تم المطالبة بـ {{count}} بيانات اعتماد بنجاح!",
+        "acceptFailed": "عذراً، لم نتمكن من قبول بيانات الاعتماد. يرجى المحاولة مرة أخرى.",
+        "rejectFailed": "عذراً، لم نتمكن من رفض بيانات الاعتماد. يرجى المحاولة مرة أخرى.",
+        "boost": {
+            "boostIssuedSuccess": "تم إصدار Boost بنجاح",
+            "boostIssuedError": "خطأ في إصدار Boost",
+            "boostSavedSuccess": "تم حفظ Boost بنجاح",
+            "boostSaveFailed": "تعذر حفظ Boost",
+            "walletNotInitialized": "المحفظة غير مهيأة",
+            "deleteCredentialError": "خطأ في حذف بيانات الاعتماد: تعذر تحديد موقع معرف السجل.",
+            "shareLinkCopied": "تم نسخ رابط المشاركة إلى الحافظة",
+            "shareLinkCopyFailed": "تعذر نسخ رابط المشاركة",
+            "templateIdCopied": "تم نسخ معرف القالب إلى الحافظة",
+            "templateIdCopyFailed": "تعذر نسخ معرف القالب",
+            "boostLinkCopied": "تم نسخ رابط Boost إلى الحافظة",
+            "boostLinkCopyFailed": "تعذر نسخ رابط Boost",
+            "viewingEnabled": "تم تمكين العرض. يمكنك الآن إنشاء روابط المطالبة.",
+            "permissionsUpdateFailed": "تعذر تحديث الأذونات. يرجى المحاولة مرة أخرى.",
+            "contactLinkCopied": "تم نسخ رابط جهة الاتصال إلى الحافظة",
+            "contactLinkCopyFailed": "تعذر نسخ رابط جهة الاتصال",
+            "endorsementLinkCopied": "تم نسخ الرابط إلى الحافظة",
+            "endorsementRequestFailed": "فشل إرسال طلب التأييد"
+        },
+        "resume": {
+            "publishedSuccess": "تم نشر بيانات اعتماد السيرة الذاتية LER-RS بنجاح.",
+            "downloadSuccess": "تم تنزيل السيرة الذاتية بنجاح.",
+            "downloadFailed": "فشل حفظ وتنزيل السيرة الذاتية.",
+            "publishFailed": "فشل نشر بيانات اعتماد السيرة الذاتية LER-RS.",
+            "loadedEditMode": "تم تحميل السيرة الذاتية في وضع التعديل.",
+            "loadFailed": "فشل تحميل السيرة الذاتية المحددة.",
+            "newDraft": "تم بدء مسودة سيرة ذاتية جديدة.",
+            "notAvailableToShare": "هذه السيرة الذاتية غير متاحة للمشاركة بعد.",
+            "shareLinkGenerated": "تعذر إنشاء رابط مشاركة السيرة الذاتية.",
+            "linkCopied": "تم نسخ رابط السيرة الذاتية إلى الحافظة",
+            "linkCopyFailed": "تعذر نسخ رابط السيرة الذاتية",
+            "selfIssueNoProfile": "تعذر الإصدار الذاتي بدون ملف شخصي.",
+            "selfIssueFailed": "تعذر الإصدار الذاتي لبيانات الاعتماد",
+            "verifiedResumeLinkCopied": "تم نسخ رابط السيرة الذاتية المعتمدة إلى الحافظة",
+            "verifiedResumeLinkCopyFailed": "تعذر نسخ رابط السيرة الذاتية المعتمدة"
+        },
+        "credential": {
+            "addedToLearnCard": "تمت إضافة بيانات الاعتماد إلى LearnCard"
+        },
+        "family": {
+            "profileCreated": "تم إنشاء الملف الشخصي \"{{name}}\" بنجاح!",
+            "profileCreateFailed": "فشل إنشاء \"{{name}}\": {{error}}",
+            "boostLinkCopied": "تم نسخ رابط Boost إلى الحافظة",
+            "boostLinkCopyFailed": "تعذر نسخ رابط Boost",
+            "boostIssuedError": "خطأ في إصدار Boost",
+            "boostUpdateError": "خطأ في تحديث Boost"
+        },
+        "skills": {
+            "savedSuccess": "تم حفظ المهارات بنجاح!",
+            "saveError": "خطأ في حفظ المهارات!{{error}}",
+            "suggestionThanks": "شكراً على اقتراحك!",
+            "fillJobTitle": "يرجى ملء المسمى الوظيفي واسم صاحب العمل",
+            "workHistoryCreated": "تم إنشاء بيانات اعتماد سجل العمل الخاص بك",
+            "frameworkSynced": "تم مزامنة الإطار بنجاح.",
+            "frameworkSyncFailed": "تعذر مزامنة الإطار.",
+            "pasteValidLink": "يرجى لصق رابط إطار OpenSALT صالح.",
+            "frameworkImported": "تم استيراد ومزامنة إطار OpenSALT.",
+            "frameworkImportFailed": "تعذر استيراد الإطار.",
+            "updateError": "خطأ في تحديث المهارات: {{error}}"
+        },
+        "goals": {
+            "saveError": "خطأ في حفظ الأهداف!{{error}}"
+        },
+        "general": {
+            "somethingWentWrong": "حدث خطأ ما: {{error}}",
+            "failedToUpdateTerms": "فشل تحديث الشروط: {{error}}"
+        },
+        "consentFlow": {
+            "connected": "تم الاتصال بنجاح بـ {{name}}",
+            "acceptFailed": "فشل قبول العقد: {{error}}",
+            "permissionsUpdated": "تم تحديث الأذونات",
+            "permissionsUpdateFailed": "تعذر تحديث الأذونات"
+        },
+        "dataSource": {
+            "syncedSuccess": "تم مزامنة مصدر البيانات بنجاح!"
+        },
+        "launchpad": {
+            "installFailed": "فشل تثبيت التطبيق: {{error}}",
+            "roleUpdated": "تم تحديث الدور",
+            "nowRole": "أنت الآن {{role}}.",
+            "unableToUpdateRole": "تعذر تحديث الدور",
+            "unableToOpenRequestInsights": "تعذر فتح طلب الرؤى"
+        },
+        "onboarding": {
+            "errorCreatingProfile": "خطأ في إنشاء الملف الشخصي",
+            "unableToJoinNetwork": "تعذر الانضمام إلى الشبكة"
+        },
+        "qr": {
+            "scanningFailed": "تعذر مسح رمز QR"
+        },
+        "contacts": {
+            "connectionSent": "تم إرسال طلب الاتصال!",
+            "connectionSendFailed": "حدث خطأ، تعذر إرسال طلب الاتصال.",
+            "connectedSuccessfully": "تم الاتصال بنجاح!",
+            "connectFailed": "حدث خطأ، تعذر الاتصال!",
+            "acceptFailed": "حدث خطأ، تعذر قبول الطلب",
+            "blockFailed": "حدث خطأ، تعذر حظر المستخدم",
+            "blocked": "تم حظر المستخدم",
+            "unblocked": "تم إلغاء حظر المستخدم",
+            "removeFailed": "فشل إزالة جهة الاتصال",
+            "removed": "تمت إزالة جهة الاتصال",
+            "disconnectFailed": "فشل قطع الاتصال",
+            "disconnected": "تم قطع الاتصال",
+            "didCopied": "تم نسخ DID إلى الحافظة",
+            "requestSent": "تم إرسال الطلب",
+            "requestFailed": "فشل إرسال الطلب",
+            "inviteAlreadySent": "لقد أرسلت بالفعل طلب اتصال إلى هذا المستخدم.",
+            "alreadyConnected": "أنت متصل بالفعل بهذا المستخدم."
+        }
     }
 }
