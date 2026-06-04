@@ -251,8 +251,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.3.1)
       '@capgo/capacitor-updater':
-        specifier: 8.45.10
-        version: 8.45.10(@capacitor/core@8.3.1)
+        specifier: 8.47.7
+        version: 8.47.7(@capacitor/core@8.3.1)
       '@digitalcredentials/jsonld':
         specifier: ^9.0.0
         version: 9.0.0
@@ -720,8 +720,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.3.1)
       '@capgo/capacitor-updater':
-        specifier: 8.45.10
-        version: 8.45.10(@capacitor/core@8.3.1)
+        specifier: 8.47.7
+        version: 8.47.7(@capacitor/core@8.3.1)
       '@datadog/browser-logs':
         specifier: ^4.50.1
         version: 4.50.1
@@ -6277,8 +6277,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capgo/capacitor-updater@8.45.10':
-    resolution: {integrity: sha512-C7BG65RRJuEms/48uZ5IIUWT1+Sewi8mfistuTAiWs4ZHyd7P5OUmeZPikztysfgWfMEZCNRJHjfRUcdwFBWrg==}
+  '@capgo/capacitor-updater@8.47.7':
+    resolution: {integrity: sha512-Gi9onxH1ysaS40jirR9q69oS1qRidw13oAFzc7rvION+Omc/OLNkC2tqgEw55oVQloIokJKevRNQl4vjcmTliA==}
     peerDependencies:
       '@capacitor/core': ^8.0.0
 
@@ -33606,7 +33606,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.3.1
 
-  '@capgo/capacitor-updater@8.45.10(@capacitor/core@8.3.1)':
+  '@capgo/capacitor-updater@8.47.7(@capacitor/core@8.3.1)':
     dependencies:
       '@capacitor/core': 8.3.1
 
