@@ -1,5 +1,19 @@
 # learn-card-base
 
+## 0.1.37
+
+### Patch Changes
+
+-   [#1280](https://github.com/learningeconomy/LearnCard/pull/1280) [`2f11639b463aedd57a783f9b57df50d67762b16d`](https://github.com/learningeconomy/LearnCard/commit/2f11639b463aedd57a783f9b57df50d67762b16d) Thanks [@Custard7](https://github.com/Custard7)! - Fix use logged in reactivity
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/lca-api-plugin@1.2.12
+    -   @learncard/ler-rs-plugin@0.1.12
+    -   @learncard/types@5.17.1
+    -   @learncard/render-method-plugin@3.0.1
+    -   @learncard/sss-key-manager@0.1.11
+
 ## 0.1.36
 
 ### Patch Changes
