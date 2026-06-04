@@ -13,6 +13,7 @@ import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 import type { VC } from '@learncard/types';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { formatClrGpa } from './clr.helpers';
 
 const ClrTranscriptSummaryHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -93,7 +94,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
             {/* Stats */}
             <div className="flex flex-wrap gap-3">
                 {model.summary.gpa && (
-                    <StatCard type="gpa" value={String(model.summary.gpa.value)} />
+                    <StatCard type="gpa" value={formatClrGpa(model.summary.gpa.value)} />
                 )}
                 {model.summary.courseCount > 0 && (
                     <StatCard

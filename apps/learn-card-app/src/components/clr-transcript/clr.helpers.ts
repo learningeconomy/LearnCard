@@ -70,6 +70,30 @@ export const achievementTypeLabel = (type: string, count: number): string => {
     return count === 1 ? `1 ${singular}` : `${count} ${singular}s`;
 };
 
+export const formatClrGpa = (value: string | number | boolean | undefined): string => {
+    if (value === undefined) return '';
+
+    if (typeof value === 'number') {
+        return Number.isFinite(value)
+            ? new Intl.NumberFormat('en-US', {
+                  maximumFractionDigits: 4,
+              }).format(value)
+            : String(value);
+    }
+
+    if (typeof value === 'boolean') return String(value);
+
+    const trimmed = value.trim();
+    if (trimmed === '') return trimmed;
+
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) return trimmed;
+
+    return new Intl.NumberFormat('en-US', {
+        maximumFractionDigits: 4,
+    }).format(parsed);
+};
+
 export const gradeColor = (grade: string): string => {
     if (/^A/.test(grade)) return 'text-emerald-700';
     if (/^B/.test(grade)) return 'text-sky-700';

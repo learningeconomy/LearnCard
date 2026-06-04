@@ -449,6 +449,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             ? getDefaultDisplayType(categoryType as string)
                             : displayType
                     }
+                    isCLR={isClrCredential}
                 />
             </ErrorBoundary>
         );
@@ -513,6 +514,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 ? getDefaultDisplayType(categoryType as string)
                                 : displayType
                         }
+                        isCLR={isClrCredential}
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -616,6 +618,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }
                     uri={record?.uri}
                     indicatorColor={indicatorColor}
+                    isCLR={isClrCredential}
                 />
             </IonCol>
         </ErrorBoundary>

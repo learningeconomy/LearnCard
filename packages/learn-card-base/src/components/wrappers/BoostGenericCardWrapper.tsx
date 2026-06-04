@@ -45,6 +45,7 @@ type BoostGenericCardWrapperProps = {
     uri?: string;
     indicatorColor?: string;
     unknownVerifierTitle?: string;
+    isCLR?: boolean;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -78,6 +79,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     uri,
     indicatorColor,
     unknownVerifierTitle,
+    isCLR,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -136,6 +138,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             linkedCredentialsCount={linkedCredentialsCount ?? 0}
             linkedCredentialsClassName={linkedCredentialsClassName}
             displayType={displayType}
+            isCLR={isCLR}
         />
     );
 };

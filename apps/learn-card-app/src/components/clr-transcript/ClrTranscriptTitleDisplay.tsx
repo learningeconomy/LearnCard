@@ -12,6 +12,7 @@ import {
     type CourseDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
 import { inferProgramKind } from './clr.helpers';
+import { formatClrGpa } from './clr.helpers';
 
 export type InferredClrKind = 'transcript' | 'course' | 'degree' | 'unknown';
 
@@ -27,8 +28,8 @@ const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
 
     const resolvedResult =
         gradeLikeResult ??
-        course.results.find(result => result.resultType?.value !== 'GradePointAverage') ??
-        course.results[0];
+        course?.results?.find(result => result.resultType?.value !== 'GradePointAverage') ??
+        course?.results?.[0];
 
     if (!resolvedResult?.value?.value && resolvedResult?.value?.value !== 0) return undefined;
 
@@ -46,7 +47,7 @@ const inferClrKind = (model: ClrTranscriptDisplayModel): InferredClrKind => {
 
     if (model.courses.length === 1 && model.programs.length === 0) return 'course';
 
-    const primaryProgram = model.programs[0];
+    const primaryProgram = model?.programs?.[0];
     if (primaryProgram) {
         const kind = inferProgramKind(primaryProgram.achievementType.value).toLowerCase();
         if (kind === 'degree') return 'degree';
@@ -92,7 +93,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (!model) {
         return (
-            <div className="flex flex-col items-center justify-center mt-[4px] w-full">
+            <div className="flex flex-col items-center justify-start mt-[0px] w-full">
                 <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px]">
                     {fallbackTitle}
                 </span>
@@ -104,7 +105,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (inferredKind === 'unknown') {
         return (
-            <div className="flex flex-col items-center justify-center mt-[4px] w-full">
+            <div className="flex flex-col items-center justify-start mt-[0px] w-full">
                 <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px]">
                     {model.header.title?.value || fallbackTitle}
                 </span>
@@ -114,10 +115,10 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (inferredKind === 'transcript') {
         return (
-            <div className="flex flex-col items-center justify-center mt-[2px] w-full px-2">
+            <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
                 {model.summary.gpa && (
                     <p className="mt-3 text-[14px] font-semibold text-grayscale-900 text-center">
-                        GPA: {String(model.summary.gpa.value)}
+                        GPA: {formatClrGpa(model.summary.gpa.value)}
                     </p>
                 )}
                 <div className="mt-2 flex items-center justify-center gap-3 flex-wrap">
@@ -153,12 +154,12 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     }
 
     if (inferredKind === 'course') {
-        const course = model.courses[0];
+        const course = model?.courses?.[0];
         const courseName = course?.name?.value || model.header.title?.value || fallbackTitle;
         const grade = getClrGrade(course);
 
         return (
-            <div className="flex flex-col items-center justify-center mt-[2px] w-full px-2">
+            <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
                 <p className="mt-3 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
                     {courseName}
                 </p>
@@ -171,11 +172,11 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         );
     }
 
-    const degree = model.programs[0];
+    const degree = model?.programs?.[0];
     const degreeName = degree?.name?.value || model.header.title?.value || fallbackTitle;
 
     return (
-        <div className="flex flex-col items-center justify-center mt-[2px] w-full px-2">
+        <div className="flex flex-col items-center justify-start mt-[0px] w-full px-2">
             <p className="mt-3 text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2">
                 {degreeName}
             </p>
