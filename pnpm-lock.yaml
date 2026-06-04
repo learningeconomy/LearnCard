@@ -142,6 +142,9 @@ importers:
       eslint-plugin-react:
         specifier: ^7.32.2
         version: 7.37.5(eslint@8.57.1)
+      husky:
+        specifier: 8.0.3
+        version: 8.0.3
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@18.19.130)(ts-node@10.9.2(@swc/core@1.15.2(@swc/helpers@0.5.17))(@types/node@18.19.130)(typescript@5.6.2))
@@ -151,6 +154,9 @@ importers:
       jest-silent-reporter:
         specifier: ^0.5.0
         version: 0.5.0
+      lint-staged:
+        specifier: 13.3.0
+        version: 13.3.0(enquirer@2.4.1)
       node-gyp:
         specifier: ^12.2.0
         version: 12.2.0
@@ -4140,7 +4146,7 @@ importers:
         version: 1.4.0
       openai:
         specifier: ^4.55.7
-        version: 4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
+        version: 4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
@@ -59556,7 +59562,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
+  openai@4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -59566,7 +59572,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
     transitivePeerDependencies:
       - encoding

@@ -209,7 +209,7 @@ const compareSemverDesc = (a: string, b: string): number => {
  */
 const groupChannels = (
     channels: { name: string }[],
-    productionChannel: string | undefined,
+    productionChannel: string | undefined
 ): GroupedChannels => {
     const productionOlder: ChannelOption[] = [];
     const prPreviews: ChannelOption[] = [];
@@ -265,8 +265,8 @@ const groupChannels = (
         if (prMatch) {
             prPreviews.push({
                 value: name,
-                label: `PR #${prMatch[1]}`,
-                description: 'Open PR preview build',
+                label: `Beta #${prMatch[1]}`,
+                description: 'Open beta preview',
                 kind: 'pr',
             });
         }
@@ -325,7 +325,7 @@ const formatRelative = (iso: string | undefined): string | undefined => {
 };
 
 const formatNetwork = (
-    status: { connected: boolean; connectionType: string } | null,
+    status: { connected: boolean; connectionType: string } | null
 ): NetworkSummary | undefined => {
     if (!status) return undefined;
 
@@ -443,7 +443,7 @@ const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo>
     const displayVersion =
         bundleVersion && bundleVersion !== 'builtin' && bundleVersion.trim() !== ''
             ? bundleVersion
-            : (appInfo?.version ?? fallbackVersion);
+            : appInfo?.version ?? fallbackVersion;
 
     // The current bundle's `downloaded` field is the timestamp the OTA bundle
     // was applied to this device. Capgo returns one of several "unset" values
@@ -497,7 +497,8 @@ const buildCopyPayload = (info: VersionInfo, ctx: CopyPayloadContext): string =>
         `App version: ${info.displayVersion}`,
     ];
 
-    if (info.nativeVersion) lines.push(`Native version: ${info.nativeVersion} (${info.nativeBuild ?? '—'})`);
+    if (info.nativeVersion)
+        lines.push(`Native version: ${info.nativeVersion} (${info.nativeBuild ?? '—'})`);
     if (info.bundleVersion) lines.push(`Content version: ${info.bundleVersion}`);
     if (info.channel) lines.push(`Update channel: ${info.channel}`);
     if (info.lastUpdateApplied) lines.push(`Last updated: ${info.lastUpdateApplied}`);
@@ -506,7 +507,7 @@ const buildCopyPayload = (info: VersionInfo, ctx: CopyPayloadContext): string =>
     if (ctx.tenantId) lines.push(`Tenant: ${ctx.tenantId}`);
     if (info.device?.manufacturer || info.device?.model) {
         lines.push(
-            `Device: ${[info.device?.manufacturer, info.device?.model].filter(Boolean).join(' ')}`,
+            `Device: ${[info.device?.manufacturer, info.device?.model].filter(Boolean).join(' ')}`
         );
     }
     if (info.device?.osLabel) lines.push(`OS: ${info.device.osLabel}`);
@@ -677,7 +678,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             : undefined;
     const grouped = useMemo(
         () => groupChannels(channels ?? [], productionChannel),
-        [channels, productionChannel],
+        [channels, productionChannel]
     );
 
     const refreshInfo = async (): Promise<void> => {
@@ -711,7 +712,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                       buildDate: buildDateRaw,
                   })
                 : '',
-        [info, appName, profileId, tenantId, buildSha, buildDateRaw],
+        [info, appName, profileId, tenantId, buildSha, buildDateRaw]
     );
 
     const copyString = async (value: string, label: string): Promise<void> => {
@@ -770,7 +771,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 version
                     ? `Update available: v${version}. It will install next time you reopen the app.`
                     : `An update is available. It will install next time you reopen the app.`,
-                { type: ToastTypeEnum.Success, hasDismissButton: true },
+                { type: ToastTypeEnum.Success, hasDismissButton: true }
             );
         } catch (err) {
             const msg = (err as { message?: string } | null)?.message ?? '';
@@ -846,8 +847,8 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 <span className="text-sm text-grayscale-700 leading-relaxed">
                     This will switch your device to channel{' '}
                     <strong className="text-grayscale-900">{target}</strong>. The app will start
-                    receiving updates from that channel and may download a different version of
-                    the content. Only do this if support has asked you to.
+                    receiving updates from that channel and may download a different version of the
+                    content. Only do this if support has asked you to.
                 </span>
             ),
             confirmText: `Switch to ${target}`,
@@ -909,12 +910,11 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 className="h-[56px] w-[56px] rounded-[14px] shadow-sm"
             />
 
-            <h2 className="mt-4 text-lg font-semibold text-grayscale-900 text-center">
-                {appName}
-            </h2>
+            <h2 className="mt-4 text-lg font-semibold text-grayscale-900 text-center">{appName}</h2>
 
             <p className="mt-1 text-sm text-grayscale-500 text-center">
-                Version <span className="font-medium text-grayscale-700">{info.displayVersion}</span>
+                Version{' '}
+                <span className="font-medium text-grayscale-700">{info.displayVersion}</span>
                 <span className="mx-1.5 text-grayscale-300">·</span>
                 {platformLabel}
             </p>
@@ -926,8 +926,8 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                     className="text-emerald-500 text-base mt-0.5 shrink-0"
                 />
                 <p className="text-xs text-emerald-900 leading-relaxed">
-                    These details help support identify exactly which build you&rsquo;re running
-                    if you ever need to report an issue.
+                    These details help support identify exactly which build you&rsquo;re running if
+                    you ever need to report an issue.
                 </p>
             </div>
 
@@ -999,9 +999,9 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             </button>
 
             {/* ---- Advanced (collapsible) ----------------------------------------
-              * Always rendered (even on web): some fields like `network`, `tenant`,
-              * `account`, and the build commit make sense in every environment.
-              */}
+             * Always rendered (even on web): some fields like `network`, `tenant`,
+             * `account`, and the build commit make sense in every environment.
+             */}
             <div className="mt-4 w-full">
                 <button
                     type="button"
@@ -1076,10 +1076,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                 />
                             ) : null}
                             {info.network ? (
-                                <VersionInfoRow
-                                    label="Network"
-                                    value={info.network.label}
-                                />
+                                <VersionInfoRow label="Network" value={info.network.label} />
                             ) : null}
                             {buildSha ? (
                                 <VersionInfoRow
@@ -1103,10 +1100,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                 />
                             ) : null}
                             {info.bundleInternalId ? (
-                                <VersionInfoRow
-                                    label="Bundle ref"
-                                    value={info.bundleInternalId}
-                                />
+                                <VersionInfoRow label="Bundle ref" value={info.bundleInternalId} />
                             ) : null}
                             {info.bundleChecksum ? (
                                 <VersionInfoRow
@@ -1139,7 +1133,10 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                     </>
                                 ) : (
                                     <>
-                                        <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                                        <IonIcon
+                                            icon={cloudDownloadOutline}
+                                            className="text-base"
+                                        />
                                         Check for updates
                                     </>
                                 )}
@@ -1165,8 +1162,8 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                         />
                                         <p className="text-xs text-amber-900 leading-relaxed">
                                             Switching channels can download content that&rsquo;s
-                                            incompatible with your installed app. Only continue
-                                            if you know what you&rsquo;re doing.
+                                            incompatible with your installed app. Only continue if
+                                            you know what you&rsquo;re doing.
                                         </p>
                                     </div>
 
@@ -1251,7 +1248,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                                         disabled={switchingChannel !== null}
                                                         onClick={() =>
                                                             handleSwitchChannel(
-                                                                grouped.productionLatest!.value,
+                                                                grouped.productionLatest!.value
                                                             )
                                                         }
                                                     />
@@ -1287,17 +1284,18 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                                         disabled={switchingChannel !== null}
                                                         onClick={() =>
                                                             handleSwitchChannel(
-                                                                grouped.staging!.value,
+                                                                grouped.staging!.value
                                                             )
                                                         }
                                                     />
                                                 </ChannelPickerSection>
                                             ) : null}
 
-                                            <ChannelPickerSection title="PR previews">
+                                            <ChannelPickerSection title="Beta Releases">
                                                 {grouped.prPreviews.length === 0 ? (
                                                     <div className="text-xs text-grayscale-500 py-2 px-1">
-                                                        No open PRs have a Capgo preview right now.
+                                                        No open beta releases have a preview right
+                                                        now.
                                                     </div>
                                                 ) : (
                                                     grouped.prPreviews.map(opt => (
