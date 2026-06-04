@@ -8,6 +8,7 @@ type ChecklistItem = {
 };
 
 type GetStartedChecklistProps = {
+    brandName: string;
     items: ChecklistItem[];
     onDismiss: () => void;
     variant?: 'default' | 'hero';
@@ -17,6 +18,7 @@ type GetStartedChecklistProps = {
 const DEFAULT_PRIMARY_BUTTON = 'bg-grayscale-900 text-white';
 
 const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
+    brandName,
     items,
     onDismiss,
     variant = 'default',
@@ -46,7 +48,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                             Get started
                         </p>
                         <h2 className="mt-1 text-2xl desktop:text-3xl font-semibold leading-tight">
-                            Make LearnCard yours
+                            Make {brandName} yours
                         </h2>
                         <p className="mt-1 text-sm text-white/75 leading-relaxed">
                             Three quick steps to set up your passport.
@@ -104,9 +106,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                                     {item.label}
                                 </span>
                                 {!item.done && (
-                                    <span className="text-white/70 text-lg leading-none">
-                                        ›
-                                    </span>
+                                    <span className="text-white/70 text-lg leading-none">›</span>
                                 )}
                             </button>
                         </li>
@@ -134,7 +134,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                         Get started
                     </p>
                     <h2 className="mt-1 text-lg font-semibold text-grayscale-900 leading-tight">
-                        Make LearnCard yours in 3 steps
+                        Make {brandName} yours in 3 steps
                     </h2>
                 </div>
                 <button

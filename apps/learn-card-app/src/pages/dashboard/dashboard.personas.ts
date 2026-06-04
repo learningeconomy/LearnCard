@@ -21,7 +21,8 @@ const PORTRAIT = {
 } as const;
 
 const ISSUER_LOGO = {
-    university: 'https://api.dicebear.com/7.x/initials/svg?seed=State%20University&backgroundColor=0B6E4F',
+    university:
+        'https://api.dicebear.com/7.x/initials/svg?seed=State%20University&backgroundColor=0B6E4F',
     pmi: 'https://api.dicebear.com/7.x/initials/svg?seed=PMI&backgroundColor=1F6FEB',
     redCross: 'https://api.dicebear.com/7.x/initials/svg?seed=Red%20Cross&backgroundColor=C81E1E',
 } as const;
@@ -48,7 +49,11 @@ const makeCredentialVC = (opts: {
         ],
         id: opts.uri,
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
-        issuer: { id: 'did:web:network.learncard.com:users:demo-issuer', name: opts.issuerName, image: opts.issuerImage },
+        issuer: {
+            id: 'did:web:network.learncard.com:users:demo-issuer',
+            name: opts.issuerName,
+            image: opts.issuerImage,
+        },
         issuanceDate: opts.issuedAt,
         name: opts.title,
         credentialSubject: {
@@ -64,7 +69,7 @@ const makeCredentialVC = (opts: {
                 criteria: { narrative: `Awarded for completing ${opts.title}.` },
             },
         },
-    }) as unknown as VC;
+    } as unknown as VC);
 
 const DotIcon: React.FC<{ className?: string }> = ({ className }) =>
     React.createElement(
@@ -73,14 +78,14 @@ const DotIcon: React.FC<{ className?: string }> = ({ className }) =>
             className: `inline-block rounded-full bg-grayscale-400 ${className ?? ''}`,
             style: { width: '1em', height: '1em' },
         },
-        null,
+        null
     );
 
 const makeAction = (
     slot: SlotName,
     id: string,
     label: string,
-    caption: string,
+    caption: string
 ): ResolvedAction => ({
     id,
     slot,
@@ -102,10 +107,10 @@ const makeApp = (id: string, name: string, tagline: string): AppStoreListing =>
         app_listing_status: 'PUBLISHED',
         launch_type: 'EMBED',
         launch_config_json: '{}',
-    }) as unknown as AppStoreListing;
+    } as unknown as AppStoreListing);
 
 const makeInstalledApp = (id: string, name: string, tagline: string): InstalledApp =>
-    ({ ...makeApp(id, name, tagline), installed_at: new Date().toISOString() }) as InstalledApp;
+    ({ ...makeApp(id, name, tagline), installed_at: new Date().toISOString() } as InstalledApp);
 
 const makeNotification = (id: string, type: string, title: string): NotificationType =>
     ({
@@ -115,7 +120,7 @@ const makeNotification = (id: string, type: string, title: string): Notification
         archived: false,
         message: { title },
         sent: new Date().toISOString(),
-    }) as unknown as NotificationType;
+    } as unknown as NotificationType);
 
 const daysAgo = (n: number): string => new Date(Date.now() - n * 86_400_000).toISOString();
 
@@ -227,12 +232,23 @@ const baseHandlers = {
 };
 
 const checklist = (done: { credential: boolean; goal: boolean; skills: boolean }) => [
-    { key: 'add-credential', label: 'Add your first credential', done: done.credential, onClick: noop },
+    {
+        key: 'add-credential',
+        label: 'Add your first credential',
+        done: done.credential,
+        onClick: noop,
+    },
     { key: 'set-goal', label: 'Set a goal', done: done.goal, onClick: noop },
-    { key: 'skill-profile', label: 'Fill out your skills profile', done: done.skills, onClick: noop },
+    {
+        key: 'skill-profile',
+        label: 'Fill out your skills profile',
+        done: done.skills,
+        onClick: noop,
+    },
 ];
 
 export const brandNewUser: DashboardViewModel = {
+    brandName: 'LearnCard',
     header: {
         ...baseHeader,
         affiliation: null,
@@ -249,9 +265,24 @@ export const brandNewUser: DashboardViewModel = {
     onReviewGoal: baseHandlers.onReviewGoal,
     primaryButtonClass: 'bg-indigo-500 text-white',
     slots: {
-        collect: makeAction('collect', 'find-credential-apps', 'Find credential apps', 'Discover places that issue credentials'),
-        understand: makeAction('understand', 'see-skills', 'See your skills', 'Skills you\u2019ve collected'),
-        navigate: makeAction('navigate', 'browse-pathways', 'Explore journeys', 'Browse other pathways'),
+        collect: makeAction(
+            'collect',
+            'find-credential-apps',
+            'Find credential apps',
+            'Discover places that issue credentials'
+        ),
+        understand: makeAction(
+            'understand',
+            'see-skills',
+            'See your skills',
+            'Skills you\u2019ve collected'
+        ),
+        navigate: makeAction(
+            'navigate',
+            'browse-pathways',
+            'Explore journeys',
+            'Browse other pathways'
+        ),
     },
     activity: {
         notifications: [],
@@ -270,11 +301,16 @@ export const brandNewUser: DashboardViewModel = {
 };
 
 export const activeLearner: DashboardViewModel = {
+    brandName: 'LearnCard',
     header: {
         ...baseHeader,
         professionalTitle: 'Professional QA Engineer',
         experience: { years: 10, months: 0 },
-        affiliation: { role: 'Member', from: 'State University', issuedAt: new Date().toISOString() },
+        affiliation: {
+            role: 'Member',
+            from: 'State University',
+            issuedAt: new Date().toISOString(),
+        },
         stats: { credentials: 12, skills: 8, contacts: 5 },
         skills: [
             { id: 's1', label: 'Attention to detail' },
@@ -304,8 +340,18 @@ export const activeLearner: DashboardViewModel = {
     primaryButtonClass: 'bg-indigo-500 text-white',
     slots: {
         collect: makeAction('collect', 'view-passport', 'View passport', '12 credentials'),
-        understand: makeAction('understand', 'see-insights', 'See insights', 'AI summary of your record'),
-        navigate: makeAction('navigate', 'browse-pathways', 'Explore journeys', 'Browse other pathways'),
+        understand: makeAction(
+            'understand',
+            'see-insights',
+            'See insights',
+            'AI summary of your record'
+        ),
+        navigate: makeAction(
+            'navigate',
+            'browse-pathways',
+            'Explore journeys',
+            'Browse other pathways'
+        ),
     },
     activity: {
         notifications: [
@@ -337,7 +383,12 @@ export const returningNoActivity: DashboardViewModel = {
     checklistItems: checklist({ credential: true, goal: false, skills: true }),
     slots: {
         collect: makeAction('collect', 'view-passport', 'View passport', '12 credentials'),
-        understand: makeAction('understand', 'see-insights', 'See insights', 'AI summary of your record'),
+        understand: makeAction(
+            'understand',
+            'see-insights',
+            'See insights',
+            'AI summary of your record'
+        ),
         navigate: makeAction('navigate', 'set-goal', 'Set a goal', 'Get a personal path'),
     },
     activity: {
@@ -373,7 +424,13 @@ export const pendingOnly: DashboardViewModel = {
 
 export const loadingState: DashboardViewModel = {
     ...activeLearner,
-    activity: { ...activeLearner.activity, records: [], notifications: [], pendingConnections: [], isLoading: true },
+    activity: {
+        ...activeLearner.activity,
+        records: [],
+        notifications: [],
+        pendingConnections: [],
+        isLoading: true,
+    },
 };
 
 export const DASHBOARD_PERSONAS: Record<string, DashboardViewModel> = {

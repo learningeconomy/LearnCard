@@ -26,6 +26,7 @@ type SkillPill = {
 };
 
 type DashboardHeaderCardProps = {
+    brandName: string;
     displayName: string;
     profileImage: string;
     heroImage?: string;
@@ -69,10 +70,11 @@ type SubtitleParts = {
 };
 
 const resolveSubtitle = (
+    brandName: string,
     affiliation: Affiliation,
     profileRole?: string,
     shortBio?: string,
-    professionalTitle?: string,
+    professionalTitle?: string
 ): SubtitleParts => {
     const title = professionalTitle?.trim();
     if (title) return { primary: title, primaryStyle: 'professionalTitle' };
@@ -88,7 +90,7 @@ const resolveSubtitle = (
     if (role && bio) return { primary: capitalize(role), secondary: bio, primaryStyle: 'pill' };
     if (role) return { primary: capitalize(role), primaryStyle: 'pill' };
     if (bio) return { primary: bio, primaryStyle: 'text' };
-    return { primary: 'New to LearnCard', primaryStyle: 'text' };
+    return { primary: `New to ${brandName}`, primaryStyle: 'text' };
 };
 
 const formatExperience = (experience?: ExperienceDuration): string | null => {
@@ -108,9 +110,10 @@ const buildStatsLine = (stats?: HeaderStats): string | null => {
     if (!stats) return null;
     const parts: string[] = [];
     if (stats.credentials > 0)
-        parts.push(`${stats.credentials} ${stats.credentials === 1 ? 'credential' : 'credentials'}`);
-    if (stats.skills > 0)
-        parts.push(`${stats.skills} ${stats.skills === 1 ? 'skill' : 'skills'}`);
+        parts.push(
+            `${stats.credentials} ${stats.credentials === 1 ? 'credential' : 'credentials'}`
+        );
+    if (stats.skills > 0) parts.push(`${stats.skills} ${stats.skills === 1 ? 'skill' : 'skills'}`);
     if (stats.contacts > 0)
         parts.push(`${stats.contacts} ${stats.contacts === 1 ? 'contact' : 'contacts'}`);
     if (parts.length === 0) return null;
@@ -120,6 +123,7 @@ const buildStatsLine = (stats?: HeaderStats): string | null => {
 const MAX_SKILL_PILLS = 3;
 
 const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
+    brandName,
     displayName,
     profileImage,
     heroImage,
@@ -138,7 +142,13 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     const firstName = getFirstName(displayName);
     const greeting = getTimeOfDayGreeting();
     const issuedAtLabel = formatIssuedAt(affiliation?.issuedAt);
-    const subtitle = resolveSubtitle(affiliation, profileRole, shortBio, professionalTitle);
+    const subtitle = resolveSubtitle(
+        brandName,
+        affiliation,
+        profileRole,
+        shortBio,
+        professionalTitle
+    );
     const experienceLine = formatExperience(experience);
     const isProfessionalSubtitle = subtitle.primaryStyle === 'professionalTitle';
     const statsLine =
@@ -172,7 +182,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             <button
                                 type="button"
                                 onClick={onAvatarClick}
-                                aria-label="Open your LearnCard"
+                                aria-label={`Open your ${brandName}`}
                                 className="rounded-full active:scale-[0.97] transition-transform"
                             >
                                 {profileImage ? (

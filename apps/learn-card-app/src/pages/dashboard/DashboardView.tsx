@@ -18,6 +18,7 @@ type DashboardViewProps = {
 
 const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
     const {
+        brandName,
         header,
         heroSlot,
         checklistItems,
@@ -38,6 +39,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
             <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6">
                 <GenericErrorBoundary>
                     <DashboardHeaderCard
+                        brandName={brandName}
                         displayName={header.displayName}
                         profileImage={header.profileImage}
                         heroImage={header.heroImage}
@@ -68,6 +70,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         {heroSlot === 'getStarted' ? (
                             <GenericErrorBoundary>
                                 <GetStartedChecklist
+                                    brandName={brandName}
                                     items={checklistItems}
                                     onDismiss={onDismissGetStarted}
                                     variant="hero"

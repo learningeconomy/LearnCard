@@ -109,6 +109,7 @@ export type DashboardAppsViewModel = {
 export type DashboardHeroSlot = 'getStarted' | 'goal';
 
 export type DashboardViewModel = {
+    brandName: string;
     header: DashboardHeaderViewModel;
     heroSlot: DashboardHeroSlot;
     checklistItems: DashboardChecklistItem[];

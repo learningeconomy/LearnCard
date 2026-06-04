@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import { useBrandingConfig } from 'learn-card-base';
+
 import X from 'src/components/svgs/X';
 
 import SkillProfileStep1 from '../../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
@@ -16,6 +18,7 @@ type SkillProfileModalProps = {
 const TOTAL_STEPS = 5;
 
 const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
+    const { name: brandName } = useBrandingConfig();
     const [currentStep, setCurrentStep] = useState(1);
 
     const handleNext = () => {
@@ -43,7 +46,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
             <div className="flex items-center justify-between mb-4">
                 <div className="flex flex-col">
                     <p className="text-[11px] font-medium tracking-[0.14em] text-grayscale-500 uppercase">
-                        Make LearnCard yours
+                        Make {brandName} yours
                     </p>
                     <h2 className="mt-0.5 text-lg desktop:text-xl font-semibold text-grayscale-900 leading-tight">
                         Fill out your skills profile

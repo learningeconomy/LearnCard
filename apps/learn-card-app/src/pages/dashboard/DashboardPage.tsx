@@ -29,7 +29,7 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -63,13 +63,17 @@ const DashboardPage: React.FC = () => {
     const history = useHistory();
     const flags = useFlags();
     const { theme, getIconSet, getColorSet } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
     const pathwaysEnabled = usePathwaysEnabled();
     const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
-    const { openClaimLink, openIssueCredential, openScanQr: openScanQrCredential } =
-        useAddToLearnCardActions();
+    const {
+        openClaimLink,
+        openIssueCredential,
+        openScanQr: openScanQrCredential,
+    } = useAddToLearnCardActions();
     const { openSkillProfile } = useSkillProfileModal();
     const { percentage: skillProfilePercentage } = useSkillProfileCompletion();
     const { newModal: openHeaderModal } = useModal({
@@ -84,25 +88,21 @@ const DashboardPage: React.FC = () => {
         useGetCredentialList(undefined);
 
     const { data: idCredentials } = useGetCredentialList(CredentialCategoryEnum.id);
-    const primaryId = useMemo(
-        () => idCredentials?.pages?.[0]?.records?.[0],
-        [idCredentials]
-    );
+    const primaryId = useMemo(() => idCredentials?.pages?.[0]?.records?.[0], [idCredentials]);
     const { data: primaryIdVc } = useGetResolvedCredential(primaryId?.uri);
     const unwrappedPrimaryIdVc = useMemo(
         () => (primaryIdVc ? unwrapBoostCredential(primaryIdVc) : undefined),
-        [primaryIdVc],
+        [primaryIdVc]
     );
 
     const { data: skillCredentials } = useGetCredentialList(CredentialCategoryEnum.skill);
     const skillsCount = useMemo(
         () => skillCredentials?.pages?.flatMap(p => p?.records ?? []).length ?? 0,
-        [skillCredentials],
+        [skillCredentials]
     );
 
-    const { data: skillProfileData } = useVerifiableData<SkillProfileProfileData>(
-        SKILL_PROFILE_PROFILE_KEY,
-    );
+    const { data: skillProfileData } =
+        useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
     const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
     const { data: selfAssignedSkills } = useGetBoostSkills(selfAssignedSkillsBoost?.uri);
     const headerSkillPills = useMemo(
@@ -110,7 +110,7 @@ const DashboardPage: React.FC = () => {
             (selfAssignedSkills ?? [])
                 .filter(s => s?.statement?.trim())
                 .map(s => ({ id: s.id, label: s.statement.trim() })),
-        [selfAssignedSkills],
+        [selfAssignedSkills]
     );
 
     const selfAssignedSkillsUri = selfAssignedSkillsBoost?.uri;
@@ -122,7 +122,7 @@ const DashboardPage: React.FC = () => {
                 if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
                 return true;
             }),
-        [allCredentials, selfAssignedSkillsUri],
+        [allCredentials, selfAssignedSkillsUri]
     );
     const totalCredentialCount = allCredentialRecords.length;
 
@@ -154,11 +154,11 @@ const DashboardPage: React.FC = () => {
     }, [featuredCarouselApps, curatedListApps]);
 
     const { data: pendingContracts = [] } = useAllContractRequestsForProfile(
-        currentLCNUser?.profileId ?? '',
+        currentLCNUser?.profileId ?? ''
     );
     const pendingContractRequests = useMemo(
         () => (pendingContracts ?? []).filter(r => r?.status === 'pending'),
-        [pendingContracts],
+        [pendingContracts]
     );
 
     const { data: receivedConnectionRequests = [] } = useGetConnectionsRequests();
@@ -174,7 +174,7 @@ const DashboardPage: React.FC = () => {
                 history={history}
                 connections={connections ?? []}
                 qrOnly
-            />,
+            />
         );
     };
 
@@ -184,7 +184,7 @@ const DashboardPage: React.FC = () => {
 
     const reviewSummary = useMemo(
         () => countReviewsDueToday(pathways, activePathwayId),
-        [pathways, activePathwayId],
+        [pathways, activePathwayId]
     );
 
     const getStartedDismissed = firstStartupStore.useTracked.dashboardGetStartedDismissed();
@@ -356,7 +356,7 @@ const DashboardPage: React.FC = () => {
         dashboardState,
         { handlers: actionHandlers, icons: slotIcons },
         heroActionId,
-        DEFAULT_REGISTRY,
+        DEFAULT_REGISTRY
     );
 
     const emptyTips: DashboardEmptyTip[] = [
@@ -388,6 +388,7 @@ const DashboardPage: React.FC = () => {
     ];
 
     const viewModel: DashboardViewModel = {
+        brandName: brandingConfig.name,
         header: {
             displayName,
             profileImage,
