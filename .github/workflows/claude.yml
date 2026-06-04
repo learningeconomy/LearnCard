@@ -33,11 +33,10 @@ jobs:
       actions: read
     steps:
       # Mint a GitHub App installation token scoped to pull-requests:write.
-      # This is what actually lets Claude APPROVE PRs: claude-code-action@v1's
-      # built-in GitHub tooling deliberately cannot submit/approve reviews, so
-      # approval must go through `gh pr review --approve` (Bash) — and the
-      # default GITHUB_TOKEN / github-actions[bot] is NOT permitted to approve
-      # PRs. The app identity is allowed to approve.
+      # The "Maybe approve PR" step uses this to cast the approval — the default
+      # GITHUB_TOKEN / github-actions[bot] is NOT permitted to approve PRs, but
+      # the app identity is. Claude itself never approves (its prompt forbids
+      # it); it only emits a verdict marker that the approve step acts on.
       #
       # Requires repo configuration:
       #   - Variable  CLAUDE_APP_CLIENT_ID   (GitHub App Client ID)
@@ -78,23 +77,47 @@ jobs:
               echo "Mode: standard (action default)"
           fi
 
+      # Resolve the PR number across all trigger types. issue_comment fires on
+      # PRs with github.event.issue.number; the review/review_comment events use
+      # github.event.pull_request.number. Empty for non-PR issues.
+      - name: Resolve PR number
+        id: pr
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IS_PR: ${{ github.event.issue.pull_request != null || github.event_name == 'pull_request_review' || github.event_name == 'pull_request_review_comment' }}
+        run: |
+          NUM="${PR_NUMBER:-$ISSUE_NUMBER}"
+          if [ "$IS_PR" = "true" ] && [ -n "$NUM" ]; then
+            echo "number=$NUM" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=" >> "$GITHUB_OUTPUT"
+          fi
+
       # custom_instructions was removed in claude-code-action@v1; review
       # instructions now live in .github/claude-review-instructions.md and are
       # passed via the `appendSystemPrompt` Claude setting. `jq -Rs` safely
       # JSON-encodes the markdown (which contains quotes/backticks), so no
       # manual escaping is needed.
+      #
+      # The deterministic auto-approval step (below) reads a hidden verdict
+      # marker from Claude's comment. Claude needs the live PR number and run id
+      # to emit a marker the workflow will trust, so we append them to the
+      # prompt as authoritative context. The action also auto-injects
+      # <pr_number>, but we pin both values here to bind the marker to THIS run.
       - name: Build Claude settings
+        env:
+          RESOLVED_PR: ${{ steps.pr.outputs.number }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          jq -Rs '{ appendSystemPrompt: . }' \
-            .github/claude-review-instructions.md \
-            > "${RUNNER_TEMP}/claude-settings.json"
+          CONTEXT=$(printf '\n\n---\n\nAUTHORITATIVE MARKER CONTEXT (use these exact values in the CLAUDE_AUTO_APPROVE marker):\n- <PR_NUMBER> = %s\n- <RUN_ID> = %s\n' "$RESOLVED_PR" "$RUN_ID")
+          cat .github/claude-review-instructions.md - <<EOF | jq -Rs '{ appendSystemPrompt: . }' > "${RUNNER_TEMP}/claude-settings.json"
+          ${CONTEXT}
+          EOF
 
       - name: Run Claude PR Action
+        id: claude
         uses: anthropics/claude-code-action@v1
-        env:
-          # Exposed to the Bash tool so `gh` authenticates as the GitHub App
-          # (which CAN approve PRs) instead of github-actions[bot] (which cannot).
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ steps.app-token.outputs.token }}
@@ -107,3 +130,57 @@ jobs:
           claude_args: |
             ${{ steps.model.outputs.model_flag }}
             --allowedTools "Bash"
+
+      # Deterministic auto-approval. Claude cannot approve PRs itself (the
+      # action's prompt forbids it), so it records its verdict as a hidden
+      # CLAUDE_AUTO_APPROVE marker in its comment. This step reads the FINAL
+      # comment body (never logs), validates the marker is bound to this PR and
+      # run, confirms the PR is open and not a draft, then casts the approval
+      # with the App token. Fails closed on any ambiguity.
+      - name: Maybe approve PR
+        if: ${{ steps.claude.outcome == 'success' && steps.pr.outputs.number != '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          comment="$(
+            gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate |
+            jq -sc --arg run "$RUN_ID" '
+              add
+              | map(select((.user.type == "Bot") and (.body | contains("/actions/runs/" + $run))))
+              | last
+            '
+          )"
+          if [ "$comment" = "null" ] || [ -z "$comment" ]; then
+            echo "No Claude comment bound to run ${RUN_ID} found; skipping approval."
+            exit 0
+          fi
+
+          verdict="$(
+            jq -r --arg pr "$PR_NUMBER" --arg run "$RUN_ID" '
+              .body
+              | [ scan("CLAUDE_AUTO_APPROVE v1 pr=([0-9]+) run=([0-9]+) verdict=(approve|reject)") ]
+              | if length == 1
+                then .[0] | if .[0] == $pr and .[1] == $run then .[2] else "mismatch" end
+                else "ambiguous" end
+            ' <<<"$comment"
+          )"
+          echo "Parsed verdict: ${verdict}"
+          if [ "$verdict" != "approve" ]; then
+            echo "Verdict is not a clean approve; skipping."
+            exit 0
+          fi
+
+          state="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.state + ":" + (.draft|tostring)')"
+          if [ "$state" != "open:false" ]; then
+            echo "PR not in approvable state (${state}); skipping."
+            exit 0
+          fi
+
+          url="$(jq -r '.html_url' <<<"$comment")"
+          gh pr review "$PR_NUMBER" --approve \
+            --body "Auto-approved by workflow based on Claude's verdict: ${url}"
