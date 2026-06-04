@@ -10,6 +10,7 @@ import {
 } from 'learn-card-base';
 
 import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
+import { useDashboardAsHome } from './pages/dashboard/hooks/useDashboardAsHome';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -199,6 +200,11 @@ export const Routes: React.FC = () => {
     // tenant + LaunchDarkly layering. Same hook is used by the side
     // menu so the route and the nav link can't drift.
     const pathwaysEnabled = usePathwaysEnabled();
+    // Dashboard-as-home gate — see `useDashboardAsHome`. When off, the `/`
+    // post-login redirect lands on `/wallet` (legacy home) exactly as before;
+    // the `/dashboard` route stays mounted regardless so existing deep links
+    // (e.g. consent-flow `?connected=true` returns) never 404.
+    const dashboardAsHome = useDashboardAsHome();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -415,7 +421,7 @@ export const Routes: React.FC = () => {
                             path="/"
                             render={() =>
                                 isLoggedIn ? (
-                                    <Redirect to="/dashboard" />
+                                    <Redirect to={dashboardAsHome ? '/dashboard' : '/wallet'} />
                                 ) : (
                                     <Redirect to="/login" />
                                 )

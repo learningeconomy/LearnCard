@@ -142,6 +142,14 @@ export const tenantFeatureConfigSchema = z.object({
      * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.
      */
     pathways: z.boolean().default(false),
+
+    /**
+     * Dashboard home — makes `/dashboard` the post-login landing route and the
+     * first side-menu entry instead of the Passport (`/wallet`) home. Default
+     * off. Paired with the `enableDashboardHome` LaunchDarkly flag; both must
+     * be on. See `apps/learn-card-app/src/pages/dashboard/hooks/useDashboardAsHome.ts`.
+     */
+    dashboardHome: z.boolean().default(false),
 }).passthrough();
 
 export const tenantObservabilityConfigSchema = z.object({
