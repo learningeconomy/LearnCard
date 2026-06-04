@@ -1283,7 +1283,9 @@
             "connected": "Conectado exitosamente a {{name}}",
             "acceptFailed": "Error al aceptar el contrato: {{error}}",
             "permissionsUpdated": "Permisos actualizados",
-            "permissionsUpdateFailed": "No se pudieron actualizar los permisos"
+            "permissionsUpdateFailed": "No se pudieron actualizar los permisos",
+            "deletedCredentials": "Se eliminaron {{count}} credenciales del contrato {{name}}",
+            "deleteError": "Error al eliminar credenciales del contrato {{name}}: {{error}}"
         },
         "dataSource": {
             "syncedSuccess": "¡Fuente de datos sincronizada exitosamente!"

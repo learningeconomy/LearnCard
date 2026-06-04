@@ -1283,7 +1283,9 @@
             "connected": "Connecté avec succès à {{name}}",
             "acceptFailed": "Échec de l'acceptation du contrat : {{error}}",
             "permissionsUpdated": "Autorisations mises à jour",
-            "permissionsUpdateFailed": "Impossible de mettre à jour les autorisations"
+            "permissionsUpdateFailed": "Impossible de mettre à jour les autorisations",
+            "deletedCredentials": "{{count}} accréditations supprimées du contrat {{name}}",
+            "deleteError": "Erreur lors de la suppression des accréditations du contrat {{name}} : {{error}}"
         },
         "dataSource": {
             "syncedSuccess": "Source de données synchronisée avec succès !"
