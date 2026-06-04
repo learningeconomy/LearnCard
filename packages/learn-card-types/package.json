@@ -57,13 +57,5 @@
             "path": "dist/types.esm.js",
             "limit": "10 KB"
         }
-    ],
-    "husky": {
-        "hooks": {
-            "pre-commit": "lint-staged"
-        }
-    },
-    "lint-staged": {
-        "**/*.{js,jsx,ts,tsx,json}": "npm run lint:fix"
-    }
+    ]
 }
