@@ -106,6 +106,8 @@ const normalizeProfileId = (profileId: string): string =>
     profileId.toLowerCase().replace(':', '%3A');
 
 const ensureStageMessage = (stage: Stage, usedDefaultStage: boolean): void => {
+    console.log('');
+
     if (usedDefaultStage) {
         console.log('No environment specified. Defaulting to local.');
     }

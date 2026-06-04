@@ -291,7 +291,7 @@ const describeEmbeddingBackfillFailure = (error: unknown): string => {
         return 'Google embedding requests were rate-limited. The frameworks were seeded, but some semantic search embeddings were skipped for now.';
     }
 
-    return message;
+    return `${message}\nUse \`pnpm skill-frameworks add-admin\` to add admins.`;
 };
 
 const normalizeProfileId = (profileId: string): string =>
@@ -473,7 +473,7 @@ export const seedSkillFrameworkFixtures = async (
             `Embedding backfill was skipped after the first framework because Google rejected the request: ${embeddingBackfillFailureSummary}`
         );
         options.log?.warn?.(
-            'The frameworks were still seeded and admin access was granted. Semantic search will keep using whichever embeddings already exist.'
+            'The frameworks were still seeded. Use `pnpm skill-frameworks add-admin` to add admins. Semantic search will keep using whichever embeddings already exist.'
         );
     }
 
