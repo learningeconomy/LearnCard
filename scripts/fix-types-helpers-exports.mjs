@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// STATUS: ALREADY APPLIED. One-shot migration codemod kept in-tree as
+// documentation / reusable template. Idempotent (skips packages already
+// migrated) and not wired into any build or CI step.
+//
 // Generic migration: apply the dual-format exports fix to any package using
 // the mixedEntrypoint pattern that isn't a workspace plugin (those are
 // handled by fix-plugin-exports.mjs and fix-plugin-types-cts.mjs).

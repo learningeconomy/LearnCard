@@ -135,6 +135,23 @@ const ATTW_IGNORE_RULES = [
 //
 // Removing a name from this set after migrating the package locks in the
 // fix as a regression gate.
+//
+// NOTE: this set is intentionally DIFFERENT from the `KNOWN_BROKEN` list in
+// .github/workflows/smoketest-npm-packages.yml. The two surfaces check
+// different things and therefore fail on different packages:
+//   - This script (publint + attw) checks the *publish-time type/manifest
+//     contract* — e.g. FalseESM, missing types, exports-condition ordering.
+//     The packages that fail here are ones with TYPE-side issues (cli has no
+//     published types module; init is FalseESM under node16-from-CJS;
+//     didkit-plugin-node is a tsc-compiled N-API package with no dual format).
+//   - The smoketest workflow checks *runtime ESM/CJS loadability* by actually
+//     installing + importing each published plugin from npm. The packages that
+//     fail there (ceramic, didkey, helpers, idx, lca-api, learn-cloud,
+//     network, simple-signing) have runtime resolution bugs (transitive
+//     CJS-only deps imported via named ESM, dynamic require() in ESM bundles)
+//     that are invisible to static type analysis.
+// A package can pass one surface and fail the other. Keep both lists scoped to
+// the failures their own tool actually reports; don't try to unify them.
 const ADVISORY_ONLY = new Set([
     '@learncard/cli',                // CLI binary, no published types module
     '@learncard/init',               // FalseESM (bundler + node16-ESM green)

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// STATUS: ALREADY APPLIED. One-shot migration codemod kept in-tree as
+// documentation / reusable template. Idempotent (skips packages already on the
+// nested-condition shape) and not wired into any build or CI step.
+//
 // Second-pass migration: harden the dual-format exports map so TypeScript
 // consumers under `moduleResolution: "node16"` / `"NodeNext"` get the correct
 // types for the CJS resolution they actually use.

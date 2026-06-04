@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+// STATUS: ALREADY APPLIED. This is a one-shot migration codemod, kept in-tree
+// as documentation of how the dual-format exports migration was performed and
+// as a reusable template for migrating the remaining advisory packages (see
+// the ADVISORY_ONLY / KNOWN_BROKEN lists). It is idempotent — re-running it
+// skips any plugin that already has an `exports` field — and is NOT wired into
+// any build or CI step. Safe to delete once all packages are migrated.
+//
 // One-shot migration: align all mixedEntrypoint-style plugins with the
 // claimable-boosts/ethereum/render-method/simple-signing pattern so Node ESM
 // consumers (e.g. @learncard/init's published ESM bundle) can find named
