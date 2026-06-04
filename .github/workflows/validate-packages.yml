@@ -1,0 +1,47 @@
+name: Validate Published Package Contracts
+
+# Runs publint + @arethetypeswrong/cli against every published @learncard/*
+# package's actual built `dist/`. Designed to catch the kind of packaging
+# regressions that internal CI misses but that break external consumers the
+# moment a release hits npm — the same class of bug as the `workspace:*`
+# leakage incident and the @learncard/init ESM-named-export regression.
+#
+# Two layers:
+#   1. publint  — static manifest + dist validation (missing exports map,
+#                 file paths that don't resolve, type condition ordering,
+#                 ESM file with CJS extension, etc.)
+#   2. attw     — `npm pack` + resolve through every TypeScript module
+#                 resolution mode (node10, node16, bundler) and consumer
+#                 style (ESM import, CJS require).
+#
+# Failure modes:
+#   - Gating packages (default set) → CI fails
+#   - Advisory packages (see ADVISORY_ONLY in scripts/validate-packages.mjs)
+#     → diagnostics printed, exit zero
+#
+# Runs on every PR + push to main. Cheap (~1-2 min total).
+
+on:
+    pull_request:
+        types: [opened, synchronize]
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    validate-packages:
+        name: publint + attw
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Build all publishable packages
+              run: pnpm build
+
+            - name: Validate package contracts
+              run: pnpm validate-packages
