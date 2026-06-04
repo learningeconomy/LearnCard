@@ -119,6 +119,13 @@ const ATTW_IGNORE_RULES = [
     // Node's named-export interop can miss. Treated as advisory until the
     // affected packages migrate to dual-format.
     'named-exports',
+    // didkit-plugin deliberately exposes its raw `.wasm` binaries as subpath
+    // exports (e.g. `./dist/didkit_wasm_bg.wasm`) so consumers can locate the
+    // wasm asset. attw applies JS/TS module resolution to these subpaths and
+    // reports `no-resolution` because a `.wasm` binary has no type
+    // declarations — but the files exist and load fine at runtime, and the
+    // package's `.` entry resolves green in every mode (ESM, CJS, bundler).
+    'no-resolution',
 ];
 
 // Packages where validation failures should NOT fail CI yet. Each entry needs
