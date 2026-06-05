@@ -104,6 +104,7 @@ export const LoginContent: React.FC = () => {
 
     const openOnboardingModal = useCallback(
         (initialStep?: OnboardingStepsEnum) => {
+            // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
             redirectStore.set.isOnboardingOpen(true);
 
             newModal(

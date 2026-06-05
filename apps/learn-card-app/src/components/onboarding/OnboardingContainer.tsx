@@ -114,7 +114,8 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     }, [coordinatorState.status, currentLCNUserCountry, currentLCNUserDob, currentLCNUserLoading]);
 
     useEffect(() => {
-        // Set flag so AppListingPage's auto-trigger waits until onboarding closes
+        // Set the open flag eagerly; this container's unmount cleanup owns the reset.
+        // This also keeps AppListingPage's auto-trigger from firing while onboarding is active.
         redirectStore.set.isOnboardingOpen(true);
 
         // LC-1853 (review #8): stamp the onboarding-entry timestamp at the very

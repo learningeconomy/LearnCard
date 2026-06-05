@@ -26,6 +26,7 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
     });
 
     const presentNetworkModal = (onSuccess?: () => void) => {
+        // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
         redirectStore.set.isOnboardingOpen(true);
 
         newModal(
