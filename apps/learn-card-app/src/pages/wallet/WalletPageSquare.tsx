@@ -9,6 +9,29 @@ import { IonSkeletonText, IonSpinner } from '@ionic/react';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { StyleSetEnum } from '../../theme/styles';
+
+/**
+ * Maps each CredentialCategoryEnum value to the wallet.categories.* translation
+ * key + EN fallback string for use with t(). Mirrors the Paraglide branch's
+ * CATEGORY_TITLE map. Lets us render the Passport tile title in the active
+ * locale instead of the hardcoded EN string in DEFAULT_CATEGORIES'
+ * `labels.plural`. Falls back to walletPageItem.labels.plural for any
+ * category not in this map (custom-theme categories, etc.).
+ */
+const CATEGORY_TITLE_KEY: Partial<Record<CredentialCategoryEnum, [string, string]>> = {
+    [CredentialCategoryEnum.aiTopic]: ['wallet.categories.aiSessions', 'AI Sessions'],
+    [CredentialCategoryEnum.aiPathway]: ['wallet.categories.aiPathways', 'AI Pathways'],
+    [CredentialCategoryEnum.aiInsight]: ['wallet.categories.aiInsights', 'AI Insights'],
+    [CredentialCategoryEnum.skill]: ['wallet.categories.skills', 'Skills'],
+    [CredentialCategoryEnum.socialBadge]: ['wallet.categories.socialBadges', 'Boosts'],
+    [CredentialCategoryEnum.achievement]: ['wallet.categories.achievements', 'Achievements'],
+    [CredentialCategoryEnum.learningHistory]: ['wallet.categories.studies', 'Studies'],
+    [CredentialCategoryEnum.accomplishment]: ['wallet.categories.portfolio', 'Portfolio'],
+    [CredentialCategoryEnum.accommodation]: ['wallet.categories.assistance', 'Assistance'],
+    [CredentialCategoryEnum.workHistory]: ['wallet.categories.experiences', 'Experiences'],
+    [CredentialCategoryEnum.family]: ['wallet.categories.families', 'Families'],
+    [CredentialCategoryEnum.id]: ['wallet.categories.ids', 'IDs'],
+};
 interface WalletPageSquareProps {
     handleClickSquare: (subtype: CredentialCategoryEnum) => void;
     walletPageItem: {
@@ -86,7 +109,9 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
 
                 <div className="w-full flex items-center justify-center flex-col relative">
                     <p className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${passportCardTextColor ?? 'text-grayscale-900'}`}>
-                        {walletPageItem.labels.plural}
+                        {CATEGORY_TITLE_KEY[categoryType]
+                            ? t(...CATEGORY_TITLE_KEY[categoryType]!)
+                            : walletPageItem.labels.plural}
                     </p>
                     {/* TODO: ADD SKELETON LOADER HERE ... i want the skeleton loader to retain the same width and height as the div + color but with a skeleton loader */}
                     <div

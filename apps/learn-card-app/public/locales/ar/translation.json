@@ -114,7 +114,11 @@
             "importCredentials": "استيراد بيانات الاعتماد",
             "createOrganization": "إنشاء مؤسسة",
             "switchAccount": "تبديل الحساب",
-            "claimCredential": "المطالبة ببيانات الاعتماد"
+            "claimCredential": "المطالبة ببيانات الاعتماد",
+            "boostSomeone": "تعزيز شخص",
+            "uploadCredential": "رفع بيانات اعتماد",
+            "useClaimLink": "استخدم رابط مطالبة",
+            "scanQrCode": "مسح رمز QR"
         },
         "modal": {
             "whatWouldYouLikeToDo": "ماذا تريد أن تفعل؟",
@@ -684,7 +688,21 @@
             "hide": "إخفاء بذرتي",
             "howToStore": "كيف تخزن عبارة البذرة بأمان؟"
         },
-        "setupTitle": "إعداد ملفك الشخصي"
+        "setupTitle": "إعداد ملفك الشخصي",
+        "menu": {
+            "myContacts": "جهات اتصالي",
+            "myAccount": "حسابي",
+            "personalizeAiSessions": "تخصيص جلسات الذكاء الاصطناعي",
+            "emailAddresses": "عناوين البريد الإلكتروني",
+            "editContactCard": "تعديل بطاقة الاتصال",
+            "manageDataSharing": "إدارة مشاركة البيانات",
+            "adminTools": "أدوات المسؤول",
+            "accountRecovery": "استرداد الحساب",
+            "linkADevice": "ربط جهاز",
+            "switchAccount": "تبديل الحساب",
+            "buildMyLearnCard": "ابنِ {{brand}} الخاص بي",
+            "stepsCompleted": "{{completed}} من {{total}}"
+        }
     },
     "settings": {
         "privacyTitle": "الخصوصية والبيانات",

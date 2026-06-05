@@ -114,7 +114,11 @@
             "importCredentials": "Berechtigungen importieren",
             "createOrganization": "Organisation erstellen",
             "switchAccount": "Konto wechseln",
-            "claimCredential": "Berechtigung beanspruchen"
+            "claimCredential": "Berechtigung beanspruchen",
+            "boostSomeone": "Jemanden boosten",
+            "uploadCredential": "Nachweis hochladen",
+            "useClaimLink": "Anspruchs-Link verwenden",
+            "scanQrCode": "QR-Code scannen"
         },
         "modal": {
             "whatWouldYouLikeToDo": "Was möchtest du tun?",
@@ -684,7 +688,21 @@
             "hide": "Meine Seed verbergen",
             "howToStore": "Wie speicherst du deine Seed-Phrase sicher?"
         },
-        "setupTitle": "Richte dein Profil ein"
+        "setupTitle": "Richte dein Profil ein",
+        "menu": {
+            "myContacts": "Meine Kontakte",
+            "myAccount": "Mein Konto",
+            "personalizeAiSessions": "KI-Sitzungen personalisieren",
+            "emailAddresses": "E-Mail-Adressen",
+            "editContactCard": "Kontaktkarte bearbeiten",
+            "manageDataSharing": "Datenfreigabe verwalten",
+            "adminTools": "Admin-Werkzeuge",
+            "accountRecovery": "Kontowiederherstellung",
+            "linkADevice": "Gerät verknüpfen",
+            "switchAccount": "Konto wechseln",
+            "buildMyLearnCard": "Mein {{brand}} erstellen",
+            "stepsCompleted": "{{completed}} von {{total}}"
+        }
     },
     "settings": {
         "privacyTitle": "Datenschutz und Daten",

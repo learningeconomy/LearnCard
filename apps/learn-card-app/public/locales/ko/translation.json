@@ -114,7 +114,11 @@
             "importCredentials": "자격 증명 가져오기",
             "createOrganization": "조직 만들기",
             "switchAccount": "계정 전환",
-            "claimCredential": "자격 증명 수령"
+            "claimCredential": "자격 증명 수령",
+            "boostSomeone": "다른 사람 부스트하기",
+            "uploadCredential": "자격 증명 업로드",
+            "useClaimLink": "수령 링크 사용",
+            "scanQrCode": "QR 코드 스캔"
         },
         "modal": {
             "whatWouldYouLikeToDo": "무엇을 하시겠습니까?",
@@ -684,7 +688,21 @@
             "hide": "내 시드 숨기기",
             "howToStore": "시드 구문을 안전하게 보관하는 방법?"
         },
-        "setupTitle": "프로필 설정"
+        "setupTitle": "프로필 설정",
+        "menu": {
+            "myContacts": "내 연락처",
+            "myAccount": "내 계정",
+            "personalizeAiSessions": "AI 세션 맞춤 설정",
+            "emailAddresses": "이메일 주소",
+            "editContactCard": "연락처 카드 편집",
+            "manageDataSharing": "데이터 공유 관리",
+            "adminTools": "관리자 도구",
+            "accountRecovery": "계정 복구",
+            "linkADevice": "기기 연결",
+            "switchAccount": "계정 전환",
+            "buildMyLearnCard": "내 {{brand}} 만들기",
+            "stepsCompleted": "{{total}}개 중 {{completed}}개"
+        }
     },
     "settings": {
         "privacyTitle": "개인정보 보호 및 데이터",

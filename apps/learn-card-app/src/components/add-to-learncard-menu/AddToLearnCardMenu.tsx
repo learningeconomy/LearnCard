@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 
@@ -64,6 +65,7 @@ export type AddToLearnCardMenuItem = {
 };
 
 export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className }) => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const { isDesktop } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
@@ -158,7 +160,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.boostSomeone,
         Icon: BoostsTwoTonedIcon,
-        label: 'Boost Someone',
+        label: t('launchpad.actions.boostSomeone', 'Boost Someone'),
         onClick: () => {
             closeModal();
             checkAndPromptRecovery(() => {
@@ -181,7 +183,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.newAiSession,
             Icon: AiWandIcon,
-            label: 'New AI Session',
+            label: t('sidemenu.newAiSession', 'New AI Session'),
             onClick: () => handleNewSession(),
         });
     }
@@ -190,13 +192,13 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         {
             type: AddToLearnCardMenuEnum.issueCredential,
             Icon: AddCredentialIcon,
-            label: 'Issue Credential',
+            label: t('launchpad.actions.issueCredential', 'Issue Credential'),
             onClick: () => handleIssueManagedBoost(),
         },
         {
             type: AddToLearnCardMenuEnum.createCredential,
             Icon: AddCredentialIcon,
-            label: 'Create Credential',
+            label: t('launchpad.actions.createCredential', 'Create Credential'),
             onClick: () => {
                 closeModal();
                 checkAndPromptRecovery(() => {
@@ -207,7 +209,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         {
             type: AddToLearnCardMenuEnum.uploadCredential,
             Icon: UploadIcon,
-            label: 'Upload Credential',
+            label: t('launchpad.actions.uploadCredential', 'Upload Credential'),
             onClick: () => handleCheckListButton(),
         }
     );
@@ -216,7 +218,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.claimCredential,
             Icon: ScanIcon,
-            label: 'Scan a QR Code',
+            label: t('launchpad.actions.scanQrCode', 'Scan a QR Code'),
             onClick: () => handleClaimCredentialButton(),
         });
     }
@@ -224,7 +226,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.useClaimLink,
         Icon: LinkOutlinedIcon,
-        label: 'Use a Claim Link',
+        label: t('launchpad.actions.useClaimLink', 'Use a Claim Link'),
         onClick: () => handleUseClaimLinkButton(),
     });
 

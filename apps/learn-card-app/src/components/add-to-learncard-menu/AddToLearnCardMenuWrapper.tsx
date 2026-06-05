@@ -1,10 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import AddToLearnCardMenu from './AddToLearnCardMenu';
 import { useModal } from 'learn-card-base';
 import CaretLeft from '../svgs/CaretLeft';
 import { X } from 'lucide-react';
 
 const AddToLearnCardMenuWrapper = () => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
 
     return (
@@ -22,18 +24,18 @@ const AddToLearnCardMenuWrapper = () => {
                         type="button"
                         onClick={closeModal}
                         className="flex items-center justify-center h-[32px] w-[32px] rounded-full"
-                        aria-label="Close"
+                        aria-label={t('sidemenu.footer.close', 'Close')}
                     >
                         <CaretLeft className="h-[18px] w-[18px] text-grayscale-900" />
                     </button>
                     <h2 className="text-[18px] font-poppins font-semibold text-grayscale-900">
-                        What would you like to do?
+                        {t('launchpad.modal.whatWouldYouLikeToDo', 'What would you like to do?')}
                     </h2>
                     <button
                         type="button"
                         onClick={closeModal}
                         className="flex items-center justify-center absolute right-2 h-[32px] w-[32px] rounded-full"
-                        aria-label="Close"
+                        aria-label={t('sidemenu.footer.close', 'Close')}
                     >
                         <X className="h-[32px] w-[32px] text-grayscale-600" />
                     </button>

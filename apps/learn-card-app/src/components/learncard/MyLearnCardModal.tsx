@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -86,12 +87,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     hideEdit = false,
     hideShare = false,
 }) => {
+    const { t } = useTranslation();
     const flags = useFlags();
     const [user, setUser] = useState(_user);
     const { theme } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
     const brandingConfig = useBrandingConfig();
-    const buildMyLCTitle = `Build My ${brandingConfig.name}`;
+    const buildMyLCTitle = t('profile.menu.buildMyLearnCard', 'Build My {{brand}}', {
+        brand: brandingConfig.name,
+    });
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -117,7 +121,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
-    const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
+    const checkListItemText = t('profile.menu.stepsCompleted', '{{completed}} of {{total}}', {
+        completed: completedItems,
+        total: checklistItems?.length,
+    });
     const numConnectedApps = connections?.filter(c => c.isServiceProfile)?.length;
 
     const description = user?.bio ?? user?.shortBio;
@@ -193,7 +200,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'My Contacts',
+                title: t('profile.menu.myContacts', 'My Contacts'),
                 Icon: GreenGlobeStand,
                 caretText: connections?.length.toString() ?? '...',
                 onClick: () => {
@@ -203,13 +210,13 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 hide: notInNetwork,
             },
             {
-                title: 'My Account',
+                title: t('profile.menu.myAccount', 'My Account'),
                 Icon: OrangeProfileIcon,
                 caretText: '',
                 onClick: async () => {
                     newModal(
                         <UserProfileSetup
-                            title="My Account"
+                            title={t('profile.menu.myAccount', 'My Account')}
                             handleCloseModal={closeModal}
                             handleLogout={() => handleLogout()}
                             showNetworkSettings={true}
@@ -226,7 +233,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Personalize AI Sessions',
+                title: t('profile.menu.personalizeAiSessions', 'Personalize AI Sessions'),
                 Icon: BlueMagicWand,
                 caretText: '',
                 onClick: async () => {
@@ -238,7 +245,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Email Addresses',
+                title: t('profile.menu.emailAddresses', 'Email Addresses'),
                 Icon: EmailIcon,
                 caretText: '',
                 onClick: async () => {
@@ -278,7 +285,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     if (!hideEdit) {
         rows.push({
-            title: 'Edit Contact Card',
+            title: t('profile.menu.editContactCard', 'Edit Contact Card'),
             Icon: BluePaintBrush,
             caretText: '',
             onClick: () => {
@@ -333,7 +340,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'Manage Data Sharing',
+                title: t('profile.menu.manageDataSharing', 'Manage Data Sharing'),
                 Icon: DataSharingIcon,
                 caretText: '',
                 onClick: async () => {
@@ -359,7 +366,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Admin Tools',
+                title: t('profile.menu.adminTools', 'Admin Tools'),
                 Icon: WrenchColorFillIcon,
                 caretText: '',
                 onClick: async () => {
@@ -376,7 +383,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
-                title: 'Account Recovery',
+                title: t('profile.menu.accountRecovery', 'Account Recovery'),
                 Icon: ShieldCheck,
                 caretText: '',
                 onClick: async () => {
@@ -618,7 +625,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.deviceLinking) {
             rows.push({
-                title: 'Link a Device',
+                title: t('profile.menu.linkADevice', 'Link a Device'),
                 Icon: QRCodeScanner,
                 caretText: '',
                 onClick: () => {
@@ -767,7 +774,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                 if (hide) return undefined;
 
-                                const version = title === 'Email Addresses' ? '2' : '1';
+                                const version = title === t('profile.menu.emailAddresses', 'Email Addresses') ? '2' : '1';
 
                                 let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
 

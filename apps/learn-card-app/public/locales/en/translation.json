@@ -114,7 +114,11 @@
             "importCredentials": "Import Credentials",
             "createOrganization": "Create Organization",
             "switchAccount": "Switch Account",
-            "claimCredential": "Claim Credential"
+            "claimCredential": "Claim Credential",
+            "boostSomeone": "Boost Someone",
+            "uploadCredential": "Upload Credential",
+            "useClaimLink": "Use a Claim Link",
+            "scanQrCode": "Scan a QR Code"
         },
         "modal": {
             "whatWouldYouLikeToDo": "What would you like to do?",
@@ -684,7 +688,21 @@
             "hide": "Hide My Seed",
             "howToStore": "How to store your seed phrase safely?"
         },
-        "setupTitle": "Setup Your Profile"
+        "setupTitle": "Setup Your Profile",
+        "menu": {
+            "myContacts": "My Contacts",
+            "myAccount": "My Account",
+            "personalizeAiSessions": "Personalize AI Sessions",
+            "emailAddresses": "Email Addresses",
+            "editContactCard": "Edit Contact Card",
+            "manageDataSharing": "Manage Data Sharing",
+            "adminTools": "Admin Tools",
+            "accountRecovery": "Account Recovery",
+            "linkADevice": "Link a Device",
+            "switchAccount": "Switch Account",
+            "buildMyLearnCard": "Build My {{brand}}",
+            "stepsCompleted": "{{completed}} of {{total}}"
+        }
     },
     "settings": {
         "privacyTitle": "Privacy & Data",
