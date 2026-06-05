@@ -52,10 +52,8 @@ export const StatCard: React.FC<{
     onClick?: () => void;
 }> = ({ type, value, onClick }) => {
     const { label, icon, variant } = STAT_CARD_CONFIG[type];
-    const cardClasses = `flex flex-col rounded-2xl px-4 py-3 min-w-[110px] text-left transition-colors ${
-        variant === 'highlight'
-            ? 'bg-white border border-grayscale-200'
-            : 'bg-grayscale-100/70'
+    const cardClasses = `flex flex-col rounded-2xl px-4 py-3 min-w-[110px] w-full max-w-[48%] sm:w-auto sm:max-w-none text-left transition-colors ${
+        variant === 'highlight' ? 'bg-white border border-grayscale-200' : 'bg-grayscale-100/70'
     } ${onClick ? 'cursor-pointer hover:bg-grayscale-100' : 'cursor-default'}`;
 
     if (onClick) {
