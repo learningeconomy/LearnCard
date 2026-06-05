@@ -114,7 +114,11 @@
             "importCredentials": "Importer des accréditations",
             "createOrganization": "Créer une organisation",
             "switchAccount": "Changer de compte",
-            "claimCredential": "Réclamer une accréditation"
+            "claimCredential": "Réclamer une accréditation",
+            "boostSomeone": "Booster quelqu'un",
+            "uploadCredential": "Téléverser un justificatif",
+            "useClaimLink": "Utiliser un lien de réclamation",
+            "scanQrCode": "Scanner un code QR"
         },
         "modal": {
             "whatWouldYouLikeToDo": "Que souhaitez-vous faire ?",
@@ -684,7 +688,21 @@
             "hide": "Masquer ma seed",
             "howToStore": "Comment stocker votre phrase seed en toute sécurité ?"
         },
-        "setupTitle": "Configurez votre profil"
+        "setupTitle": "Configurez votre profil",
+        "menu": {
+            "myContacts": "Mes contacts",
+            "myAccount": "Mon compte",
+            "personalizeAiSessions": "Personnaliser les sessions IA",
+            "emailAddresses": "Adresses e-mail",
+            "editContactCard": "Modifier la carte de contact",
+            "manageDataSharing": "Gérer le partage des données",
+            "adminTools": "Outils d'administration",
+            "accountRecovery": "Récupération du compte",
+            "linkADevice": "Associer un appareil",
+            "switchAccount": "Changer de compte",
+            "buildMyLearnCard": "Construire mon {{brand}}",
+            "stepsCompleted": "{{completed}} sur {{total}}"
+        }
     },
     "settings": {
         "privacyTitle": "Confidentialité et données",

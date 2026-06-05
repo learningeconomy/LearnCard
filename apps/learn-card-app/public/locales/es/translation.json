@@ -114,7 +114,11 @@
             "importCredentials": "Importar credenciales",
             "createOrganization": "Crear organización",
             "switchAccount": "Cambiar cuenta",
-            "claimCredential": "Reclamar credencial"
+            "claimCredential": "Reclamar credencial",
+            "boostSomeone": "Impulsar a alguien",
+            "uploadCredential": "Subir credencial",
+            "useClaimLink": "Usar un enlace de reclamación",
+            "scanQrCode": "Escanear un código QR"
         },
         "modal": {
             "whatWouldYouLikeToDo": "¿Qué te gustaría hacer?",
@@ -684,7 +688,21 @@
             "hide": "Ocultar mi semilla",
             "howToStore": "¿Cómo guardar tu frase semilla de forma segura?"
         },
-        "setupTitle": "Configura tu perfil"
+        "setupTitle": "Configura tu perfil",
+        "menu": {
+            "myContacts": "Mis contactos",
+            "myAccount": "Mi cuenta",
+            "personalizeAiSessions": "Personalizar sesiones IA",
+            "emailAddresses": "Direcciones de correo",
+            "editContactCard": "Editar tarjeta de contacto",
+            "manageDataSharing": "Gestionar uso compartido de datos",
+            "adminTools": "Herramientas de administración",
+            "accountRecovery": "Recuperación de cuenta",
+            "linkADevice": "Vincular un dispositivo",
+            "switchAccount": "Cambiar de cuenta",
+            "buildMyLearnCard": "Construye mi {{brand}}",
+            "stepsCompleted": "{{completed}} de {{total}}"
+        }
     },
     "settings": {
         "privacyTitle": "Privacidad y datos",
