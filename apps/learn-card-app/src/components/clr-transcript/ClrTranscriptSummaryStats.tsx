@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 const ClrTranscriptSummaryStats: React.FC<{

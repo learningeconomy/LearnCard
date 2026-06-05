@@ -16,11 +16,11 @@ const ClrCompetencyDetailPanel: React.FC<{
     const { closeModal } = useModal();
     const [open, setOpen] = useState(true);
     const [selectedCompetencyId, setSelectedCompetencyId] = useState(
-        competencies[0]?.sourceCredentialId
+        competencies.length > 0 ? competencies[0].sourceCredentialId : undefined
     );
     const selectedCompetency =
         competencies.find(competency => competency.sourceCredentialId === selectedCompetencyId) ??
-        competencies[0];
+        (competencies.length > 0 ? competencies[0] : undefined);
 
     const getScaleLabel = (
         result: CompetencyDisplayModel['results'][number]

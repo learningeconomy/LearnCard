@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FlatIcon } from './ClrStatCard';
 import ClrGradeScale from './ClrGradeScale';
 import ClrProvenanceTable from './ClrProvenanceTable';
@@ -24,7 +25,7 @@ const ClrCourseDetailPanel: React.FC<{
     associations?: AssociationDisplayModel[];
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-}> = ({ course, adminMode = false, associations = [], competencies = [], issuerName }: Props) => {
+}> = ({ course, adminMode = false, associations = [], competencies = [], issuerName }) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 
@@ -233,7 +234,11 @@ const ClrCourseDetailPanel: React.FC<{
                                 {courseCompetencies.length === 1 ? 'y' : 'ies'}
                             </p>
                             <span className="text-grayscale-400 text-xs">
-                                {competenciesOpen ? '∧' : '∨'}
+                                {competenciesOpen ? (
+                                    <ChevronUp size={16} />
+                                ) : (
+                                    <ChevronDown size={16} />
+                                )}
                             </span>
                         </button>
                         {competenciesOpen && (

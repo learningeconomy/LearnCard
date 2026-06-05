@@ -1,3 +1,4 @@
+import React from 'react';
 import type { VerificationSummary } from '../../helpers/clrRenderer.helpers';
 
 const ClrTranscriptTrustBadge: React.FC<{
