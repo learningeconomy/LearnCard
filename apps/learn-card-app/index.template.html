@@ -39,41 +39,52 @@
             src="https://cdn.jsdelivr.net/npm/jeep-sqlite@2.5.8/dist/jeep-sqlite/jeep-sqlite.esm.js"
         ></script>
 
+        <!-- Accessibility widget: a non-essential UI add-on. Inject only after
+             the window 'load' event so it never competes with the app bundle
+             during cold start. -->
         <script>
             (function () {
-                var s = document.createElement('script');
-                var h = document.querySelector('head') || document.body;
-                s.src = 'https://acsbapp.com/apps/app/dist/js/app.js';
-                s.async = true;
-                s.onload = function () {
-                    acsbJS.init({
-                        statementLink: '',
-                        footerHtml: '',
-                        hideMobile: false,
-                        hideTrigger: false,
-                        disableBgProcess: false,
-                        language: 'en',
-                        position: 'left',
-                        leadColor: '#146ff8',
-                        triggerColor: '#146ff8',
-                        triggerRadius: '50%',
-                        triggerPositionX: 'right',
-                        triggerPositionY: 'bottom',
-                        triggerIcon: 'people',
-                        triggerSize: 'medium',
-                        triggerOffsetX: 20,
-                        triggerOffsetY: 90,
-                        mobile: {
-                            triggerSize: 'small',
+                function loadAccessibilityWidget() {
+                    var s = document.createElement('script');
+                    var h = document.querySelector('head') || document.body;
+                    s.src = 'https://acsbapp.com/apps/app/dist/js/app.js';
+                    s.async = true;
+                    s.onload = function () {
+                        acsbJS.init({
+                            statementLink: '',
+                            footerHtml: '',
+                            hideMobile: false,
+                            hideTrigger: false,
+                            disableBgProcess: false,
+                            language: 'en',
+                            position: 'left',
+                            leadColor: '#146ff8',
+                            triggerColor: '#146ff8',
+                            triggerRadius: '50%',
                             triggerPositionX: 'right',
                             triggerPositionY: 'bottom',
-                            triggerOffsetX: 10,
-                            triggerOffsetY: 10,
-                            triggerRadius: '50%',
-                        },
-                    });
-                };
-                h.appendChild(s);
+                            triggerIcon: 'people',
+                            triggerSize: 'medium',
+                            triggerOffsetX: 20,
+                            triggerOffsetY: 90,
+                            mobile: {
+                                triggerSize: 'small',
+                                triggerPositionX: 'right',
+                                triggerPositionY: 'bottom',
+                                triggerOffsetX: 10,
+                                triggerOffsetY: 10,
+                                triggerRadius: '50%',
+                            },
+                        });
+                    };
+                    h.appendChild(s);
+                }
+
+                if (document.readyState === 'complete') {
+                    loadAccessibilityWidget();
+                } else {
+                    window.addEventListener('load', loadAccessibilityWidget);
+                }
             })();
         </script>
     </head>

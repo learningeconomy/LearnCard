@@ -87,10 +87,10 @@ const AppRouter: React.FC = () => {
     );
 
     // Native splash bridge. The Capacitor splash is configured with
-    // launchAutoHide=false so it stays visible during the entire JS bootstrap
-    // (chunk loading, LaunchDarkly init, AuthCoordinator init, wallet derive).
-    // We hide it manually once we know what to render so the user sees a single
-    // smooth fade from native splash → final screen, not a stack of JS loaders.
+    // launchAutoHide=false so it stays visible during the JS bootstrap
+    // (chunk loading, AuthCoordinator init, wallet derive). We hide it manually
+    // once we know what to render so the user sees a single smooth fade from
+    // native splash → final screen, not a stack of JS loaders.
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
         const ready =
@@ -103,14 +103,14 @@ const AppRouter: React.FC = () => {
         }
     }, [walletReady, coordinatorState.status]);
 
-    // Safety net: never let the native splash stay up longer than 8s even if
-    // auth initialization hangs. After this, the user sees whatever the app
-    // is currently rendering (likely the in-app loader or login).
+    // Safety net: never let the native splash stay up longer than 4.5s even if
+    // auth initialization hangs. Kept below the 6s outer fallback in index.tsx
+    // so the auth-aware hide above remains the primary path.
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
         const t = setTimeout(() => {
             SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
-        }, 8000);
+        }, 4500);
         return () => clearTimeout(t);
     }, []);
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();

@@ -14,7 +14,11 @@ const log = getLogger('resolve-tenant-config');
  */
 
 import type { TenantConfig } from './tenantConfig';
-import { parseTenantConfig, parsePartialTenantConfig, TENANT_CONFIG_SCHEMA_VERSION } from './tenantConfigSchema';
+import {
+    parseTenantConfig,
+    parsePartialTenantConfig,
+    TENANT_CONFIG_SCHEMA_VERSION,
+} from './tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
 import { deepMerge } from './deepMerge';
 
@@ -74,9 +78,7 @@ const cacheKeyFor = (tenantId: string): string => `${CACHE_KEY_PREFIX}:${tenantI
 const readCache = (tenantHint?: string, onEvent?: OnConfigEvent): TenantConfig | null => {
     try {
         // Try tenant-scoped key first, then fall back to legacy unscoped key
-        const keys = tenantHint
-            ? [cacheKeyFor(tenantHint), CACHE_KEY_PREFIX]
-            : [CACHE_KEY_PREFIX];
+        const keys = tenantHint ? [cacheKeyFor(tenantHint), CACHE_KEY_PREFIX] : [CACHE_KEY_PREFIX];
 
         for (const key of keys) {
             const raw = localStorage.getItem(key);
@@ -88,18 +90,34 @@ const readCache = (tenantHint?: string, onEvent?: OnConfigEvent): TenantConfig |
 
             if (age > CACHE_TTL_MS) {
                 localStorage.removeItem(key);
-                onEvent?.('config:cache_expired', `Cache expired (age ${Math.round(age / 1000)}s, TTL ${CACHE_TTL_MS / 1000}s)`, { key, ageMs: age, ttlMs: CACHE_TTL_MS });
+                onEvent?.(
+                    'config:cache_expired',
+                    `Cache expired (age ${Math.round(age / 1000)}s, TTL ${CACHE_TTL_MS / 1000}s)`,
+                    { key, ageMs: age, ttlMs: CACHE_TTL_MS }
+                );
                 continue;
             }
 
             // Invalidate cache if the schema version has changed
             if (parsed.schemaVersion !== TENANT_CONFIG_SCHEMA_VERSION) {
                 localStorage.removeItem(key);
-                onEvent?.('config:cache_schema_mismatch', `Cache schema v${parsed.schemaVersion} ≠ current v${TENANT_CONFIG_SCHEMA_VERSION}`, { key, cachedVersion: parsed.schemaVersion, currentVersion: TENANT_CONFIG_SCHEMA_VERSION });
+                onEvent?.(
+                    'config:cache_schema_mismatch',
+                    `Cache schema v${parsed.schemaVersion} ≠ current v${TENANT_CONFIG_SCHEMA_VERSION}`,
+                    {
+                        key,
+                        cachedVersion: parsed.schemaVersion,
+                        currentVersion: TENANT_CONFIG_SCHEMA_VERSION,
+                    }
+                );
                 continue;
             }
 
-            onEvent?.('config:cache_hit', `Cache hit from ${key}`, { key, ageMs: age, tenantId: parsed.config?.tenantId });
+            onEvent?.('config:cache_hit', `Cache hit from ${key}`, {
+                key,
+                ageMs: age,
+                tenantId: parsed.config?.tenantId,
+            });
 
             return parseTenantConfig(parsed.config, `localStorage cache (${key})`);
         }
@@ -108,15 +126,57 @@ const readCache = (tenantHint?: string, onEvent?: OnConfigEvent): TenantConfig |
 
         return null;
     } catch {
-        onEvent?.('config:cache_miss', 'Cache read failed (parse error or unavailable)', { tenantHint });
+        onEvent?.('config:cache_miss', 'Cache read failed (parse error or unavailable)', {
+            tenantHint,
+        });
 
+        return null;
+    }
+};
+
+/**
+ * Instant-boot reader: returns the newest cached config synchronously, ignoring
+ * TTL (a slightly stale config is a better first render than the generic
+ * default; the fresh value is reconciled in the background). Schema version is
+ * still enforced so incompatible shapes are never returned.
+ */
+const readCacheSyncIgnoringTtl = (): TenantConfig | null => {
+    try {
+        let newest: { config: unknown; cachedAt: number } | null = null;
+
+        for (let i = 0; i < localStorage.length; i += 1) {
+            const key = localStorage.key(i);
+
+            if (!key || !key.startsWith(CACHE_KEY_PREFIX)) continue;
+
+            const raw = localStorage.getItem(key);
+
+            if (!raw) continue;
+
+            const parsed: CachedTenantConfig = JSON.parse(raw);
+
+            if (parsed.schemaVersion !== TENANT_CONFIG_SCHEMA_VERSION) continue;
+
+            if (!newest || parsed.cachedAt > newest.cachedAt) {
+                newest = { config: parsed.config, cachedAt: parsed.cachedAt };
+            }
+        }
+
+        if (!newest) return null;
+
+        return parseTenantConfig(newest.config, 'localStorage cache (sync instant-boot)');
+    } catch {
         return null;
     }
 };
 
 const writeCache = (config: TenantConfig, onEvent?: OnConfigEvent): void => {
     try {
-        const entry: CachedTenantConfig = { config, cachedAt: Date.now(), schemaVersion: TENANT_CONFIG_SCHEMA_VERSION };
+        const entry: CachedTenantConfig = {
+            config,
+            cachedAt: Date.now(),
+            schemaVersion: TENANT_CONFIG_SCHEMA_VERSION,
+        };
         const key = cacheKeyFor(config.tenantId);
 
         localStorage.setItem(key, JSON.stringify(entry));
@@ -124,7 +184,10 @@ const writeCache = (config: TenantConfig, onEvent?: OnConfigEvent): void => {
         // Clean up legacy unscoped key if it exists
         localStorage.removeItem(CACHE_KEY_PREFIX);
 
-        onEvent?.('config:cache_write', `Cached config for ${config.tenantId}`, { key, tenantId: config.tenantId });
+        onEvent?.('config:cache_write', `Cached config for ${config.tenantId}`, {
+            key,
+            tenantId: config.tenantId,
+        });
     } catch {
         // localStorage may not be available (SSR, private mode quota, etc.)
     }
@@ -143,7 +206,9 @@ const loadBakedConfig = async (onEvent?: OnConfigEvent): Promise<TenantConfig | 
         const response = await fetch('/tenant-config.json');
 
         if (!response.ok) {
-            onEvent?.('config:baked_missing', `Baked config not found (HTTP ${response.status})`, { status: response.status });
+            onEvent?.('config:baked_missing', `Baked config not found (HTTP ${response.status})`, {
+                status: response.status,
+            });
 
             return null;
         }
@@ -152,7 +217,10 @@ const loadBakedConfig = async (onEvent?: OnConfigEvent): Promise<TenantConfig | 
         const config = parseTenantConfig(raw, 'baked tenant-config.json');
 
         if (config) {
-            onEvent?.('config:baked_loaded', `Baked config loaded: ${config.tenantId}`, { tenantId: config.tenantId, domain: config.domain });
+            onEvent?.('config:baked_loaded', `Baked config loaded: ${config.tenantId}`, {
+                tenantId: config.tenantId,
+                domain: config.domain,
+            });
         } else {
             onEvent?.('config:baked_missing', 'Baked config found but failed schema validation');
         }
@@ -172,7 +240,11 @@ const loadBakedConfig = async (onEvent?: OnConfigEvent): Promise<TenantConfig | 
  *   For web CNAME, the edge function serves this at the app's own domain.
  *   For native, this would be the central config service URL with a `?domain=` param.
  */
-const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, mergeBase?: TenantConfig): Promise<TenantConfig | null> => {
+const fetchFreshConfig = async (
+    endpoint?: string,
+    onEvent?: OnConfigEvent,
+    mergeBase?: TenantConfig
+): Promise<TenantConfig | null> => {
     try {
         const url = endpoint ?? '/__tenant-config';
 
@@ -188,7 +260,11 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
         const durationMs = Date.now() - t0;
 
         if (!response.ok) {
-            onEvent?.('config:fetch_error', `Fetch returned HTTP ${response.status}`, { url, status: response.status, durationMs });
+            onEvent?.('config:fetch_error', `Fetch returned HTTP ${response.status}`, {
+                url,
+                status: response.status,
+                durationMs,
+            });
 
             return null;
         }
@@ -205,23 +281,45 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
             const partial = parsePartialTenantConfig(raw, `fetch ${url} (overlay)`);
 
             if (partial && typeof partial === 'object') {
-                onEvent?.('config:fetch_partial_merge', `Fetched config overlay, merging onto baked config (${mergeBase.tenantId}) (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>), mergeBase: `baked (${mergeBase.tenantId})` });
+                onEvent?.(
+                    'config:fetch_partial_merge',
+                    `Fetched config overlay, merging onto baked config (${mergeBase.tenantId}) (${durationMs}ms)`,
+                    {
+                        url,
+                        durationMs,
+                        overrideKeys: Object.keys(partial as Record<string, unknown>),
+                        mergeBase: `baked (${mergeBase.tenantId})`,
+                    }
+                );
 
                 const merged = deepMerge(
                     mergeBase as unknown as Record<string, unknown>,
-                    partial as Record<string, unknown>,
+                    partial as Record<string, unknown>
                 );
 
                 const result = parseTenantConfig(merged, `fetch ${url} (merged onto baked)`);
 
                 if (result) {
-                    onEvent?.('config:fetch_success', `Merged config resolved: ${result.tenantId} (${durationMs}ms)`, { url, tenantId: result.tenantId, durationMs, parseMode: 'overlay_on_baked' });
+                    onEvent?.(
+                        'config:fetch_success',
+                        `Merged config resolved: ${result.tenantId} (${durationMs}ms)`,
+                        {
+                            url,
+                            tenantId: result.tenantId,
+                            durationMs,
+                            parseMode: 'overlay_on_baked',
+                        }
+                    );
                 }
 
                 return result;
             }
 
-            onEvent?.('config:fetch_error', `Fetch succeeded but partial parse failed — using baked config as-is`, { url, durationMs });
+            onEvent?.(
+                'config:fetch_error',
+                `Fetch succeeded but partial parse failed — using baked config as-is`,
+                { url, durationMs }
+            );
 
             return null;
         }
@@ -230,7 +328,11 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
         const full = parseTenantConfig(raw, `fetch ${url}`);
 
         if (full) {
-            onEvent?.('config:fetch_success', `Full config fetched: ${full.tenantId} (${durationMs}ms)`, { url, tenantId: full.tenantId, durationMs, parseMode: 'full' });
+            onEvent?.(
+                'config:fetch_success',
+                `Full config fetched: ${full.tenantId} (${durationMs}ms)`,
+                { url, tenantId: full.tenantId, durationMs, parseMode: 'full' }
+            );
 
             return full;
         }
@@ -239,23 +341,39 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
         const partial = parsePartialTenantConfig(raw, `fetch ${url} (partial)`);
 
         if (partial && typeof partial === 'object') {
-            onEvent?.('config:fetch_partial_merge', `Partial config fetched, merging onto defaults (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>), mergeBase: 'defaults' });
+            onEvent?.(
+                'config:fetch_partial_merge',
+                `Partial config fetched, merging onto defaults (${durationMs}ms)`,
+                {
+                    url,
+                    durationMs,
+                    overrideKeys: Object.keys(partial as Record<string, unknown>),
+                    mergeBase: 'defaults',
+                }
+            );
 
             const merged = deepMerge(
                 DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-                partial as Record<string, unknown>,
+                partial as Record<string, unknown>
             );
 
             const result = parseTenantConfig(merged, `fetch ${url} (merged)`);
 
             if (result) {
-                onEvent?.('config:fetch_success', `Merged config resolved: ${result.tenantId} (${durationMs}ms)`, { url, tenantId: result.tenantId, durationMs, parseMode: 'partial_merge' });
+                onEvent?.(
+                    'config:fetch_success',
+                    `Merged config resolved: ${result.tenantId} (${durationMs}ms)`,
+                    { url, tenantId: result.tenantId, durationMs, parseMode: 'partial_merge' }
+                );
             }
 
             return result;
         }
 
-        onEvent?.('config:fetch_error', `Fetch succeeded but config parsing failed`, { url, durationMs });
+        onEvent?.('config:fetch_error', `Fetch succeeded but config parsing failed`, {
+            url,
+            durationMs,
+        });
 
         return null;
     } catch (err) {
@@ -323,12 +441,24 @@ export const resolveTenantConfig = async (
 ): Promise<TenantConfig> => {
     const { onEvent } = options;
 
-    onEvent?.('config:resolve_start', 'Starting tenant config resolution', { offlineOnly: !!options.offlineOnly, hasStaticConfig: !!options.staticConfig, hasEndpoint: !!options.configEndpoint });
+    onEvent?.('config:resolve_start', 'Starting tenant config resolution', {
+        offlineOnly: !!options.offlineOnly,
+        hasStaticConfig: !!options.staticConfig,
+        hasEndpoint: !!options.configEndpoint,
+    });
 
     // Static override — for tests or explicit config injection
     if (options.staticConfig) {
-        onEvent?.('config:static_override', `Using static config: ${options.staticConfig.tenantId}`, { tenantId: options.staticConfig.tenantId });
-        onEvent?.('config:resolved', `Resolved via static override: ${options.staticConfig.tenantId}`, { source: 'static', tenantId: options.staticConfig.tenantId });
+        onEvent?.(
+            'config:static_override',
+            `Using static config: ${options.staticConfig.tenantId}`,
+            { tenantId: options.staticConfig.tenantId }
+        );
+        onEvent?.(
+            'config:resolved',
+            `Resolved via static override: ${options.staticConfig.tenantId}`,
+            { source: 'static', tenantId: options.staticConfig.tenantId }
+        );
 
         return options.staticConfig;
     }
@@ -352,14 +482,20 @@ export const resolveTenantConfig = async (
 
     // 3. If fresh fetch succeeded, use it
     if (fresh) {
-        onEvent?.('config:resolved', `Resolved via fresh fetch: ${fresh.tenantId}`, { source: 'fresh', tenantId: fresh.tenantId });
+        onEvent?.('config:resolved', `Resolved via fresh fetch: ${fresh.tenantId}`, {
+            source: 'fresh',
+            tenantId: fresh.tenantId,
+        });
 
         return fresh;
     }
 
     // 4. If baked config exists, use it (and try to refresh in background)
     if (baked) {
-        onEvent?.('config:resolved', `Resolved via baked config: ${baked.tenantId}`, { source: 'baked', tenantId: baked.tenantId });
+        onEvent?.('config:resolved', `Resolved via baked config: ${baked.tenantId}`, {
+            source: 'baked',
+            tenantId: baked.tenantId,
+        });
 
         return baked;
     }
@@ -368,14 +504,25 @@ export const resolveTenantConfig = async (
     const cached = readCache(bakedTenantId, onEvent);
 
     if (cached) {
-        onEvent?.('config:resolved', `Resolved via cache: ${cached.tenantId}`, { source: 'cache', tenantId: cached.tenantId });
+        onEvent?.('config:resolved', `Resolved via cache: ${cached.tenantId}`, {
+            source: 'cache',
+            tenantId: cached.tenantId,
+        });
 
         return cached;
     }
 
     // 6. Final fallback — default LearnCard config
-    onEvent?.('config:fallback_default', 'All sources failed — using DEFAULT_LEARNCARD_TENANT_CONFIG', { tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId });
-    onEvent?.('config:resolved', `Resolved via default fallback: ${DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId}`, { source: 'default', tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId });
+    onEvent?.(
+        'config:fallback_default',
+        'All sources failed — using DEFAULT_LEARNCARD_TENANT_CONFIG',
+        { tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId }
+    );
+    onEvent?.(
+        'config:resolved',
+        `Resolved via default fallback: ${DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId}`,
+        { source: 'default', tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId }
+    );
 
     return DEFAULT_LEARNCARD_TENANT_CONFIG;
 };
@@ -385,11 +532,66 @@ export const resolveTenantConfig = async (
  * Does not block the UI — just updates the cache for next boot.
  */
 export const refreshTenantConfigInBackground = (endpoint?: string): void => {
-    fetchFreshConfig(endpoint).then(config => {
-        if (config) {
-            writeCache(config);
-        }
-    }).catch(() => {
-        // Silent failure — cache will be used on next boot
-    });
+    fetchFreshConfig(endpoint)
+        .then(config => {
+            if (config) {
+                writeCache(config);
+            }
+        })
+        .catch(() => {
+            // Silent failure — cache will be used on next boot
+        });
 };
+
+/**
+ * Resolve a TenantConfig synchronously for an instant first render.
+ *
+ * Order: static override → newest valid cache (TTL ignored) → default. No
+ * network, no baked-JSON fetch — both are async and must not block boot.
+ * Pair with `resolveTenantConfigFresh` to reconcile the authoritative config in
+ * the background.
+ */
+export const resolveTenantConfigSync = (
+    options: Pick<ResolveTenantConfigOptions, 'staticConfig' | 'onEvent'> = {}
+): TenantConfig => {
+    const { onEvent } = options;
+
+    if (options.staticConfig) {
+        onEvent?.(
+            'config:static_override',
+            `Using static config: ${options.staticConfig.tenantId}`,
+            { tenantId: options.staticConfig.tenantId }
+        );
+
+        return options.staticConfig;
+    }
+
+    const cached = readCacheSyncIgnoringTtl();
+
+    if (cached) {
+        onEvent?.('config:resolved', `Instant boot via cache: ${cached.tenantId}`, {
+            source: 'cache-sync',
+            tenantId: cached.tenantId,
+        });
+
+        return cached;
+    }
+
+    onEvent?.(
+        'config:resolved',
+        `Instant boot via default: ${DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId}`,
+        { source: 'default-sync', tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId }
+    );
+
+    return DEFAULT_LEARNCARD_TENANT_CONFIG;
+};
+
+/**
+ * Resolve the authoritative TenantConfig (baked → fresh fetch → cache → default)
+ * and return it. Intended to run after the synchronous first render to
+ * reconcile any stale instant-boot config. This is just `resolveTenantConfig`
+ * under a name that documents intent at the call site.
+ */
+export const resolveTenantConfigFresh = (
+    options: ResolveTenantConfigOptions = {}
+): Promise<TenantConfig> => resolveTenantConfig(options);

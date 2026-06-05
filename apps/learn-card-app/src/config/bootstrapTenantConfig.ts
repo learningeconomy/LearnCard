@@ -8,9 +8,13 @@
 import * as Sentry from '@sentry/browser';
 
 import type { TenantConfig } from 'learn-card-base';
-import { resolveTenantConfig, setAuthConfigFromTenant, getTenantBaseUrl } from 'learn-card-base';
+import { setAuthConfigFromTenant, getTenantBaseUrl } from 'learn-card-base';
 import { initNetworkStoreFromTenant } from 'learn-card-base';
-import { setOnFetchFailure } from 'learn-card-base/config/resolveTenantConfig';
+import {
+    resolveTenantConfigSync,
+    resolveTenantConfigFresh,
+    setOnFetchFailure,
+} from 'learn-card-base/config/resolveTenantConfig';
 
 import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { initSentryFromTenant } from '../constants/sentry';
@@ -71,7 +75,10 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
 
     // 3. Populate network store with tenant API endpoints + tenant ID
     initNetworkStoreFromTenant(config.apis, config.tenantId);
-    emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
+    emitConfigDebugEvent(
+        'bootstrap:network_store_init',
+        'Network store populated with tenant API endpoints'
+    );
 
     // 4. Initialize Sentry from tenant observability config
     initSentryFromTenant();
@@ -197,6 +204,80 @@ export const getLCNApiUrl = (): string => {
     return config.apis?.brainServiceApi ?? 'https://network.learncard.com/api';
 };
 
+const wireFetchFailureBreadcrumb = (): void => {
+    setOnFetchFailure(({ endpoint, error }) => {
+        Sentry.addBreadcrumb({
+            category: 'tenant-config',
+            message: `fetchFreshConfig failed: ${error}`,
+            level: 'warning',
+            data: { endpoint },
+        });
+    });
+};
+
+/**
+ * Synchronous bootstrap for an instant first render.
+ *
+ * Resolves config from cache/default WITHOUT any network or baked-JSON fetch,
+ * initializes all subsystems against it, and kicks off a background fetch of the
+ * authoritative config. The fresh config is written to the cache and applied to
+ * `getResolvedTenantConfig()` for the next boot; if it differs from the
+ * instant-boot config, subsystems are re-initialized so the current session
+ * picks up the authoritative values.
+ *
+ * Call this once before ReactDOM.createRoot().render() — it does NOT block.
+ */
+export const bootstrapTenantConfigSync = (): TenantConfig => {
+    const bootstrapState = getTenantBootstrapState();
+
+    if (bootstrapState.resolvedConfig) return bootstrapState.resolvedConfig;
+
+    const onEvent = createConfigResolutionListener();
+
+    emitConfigDebugEvent('bootstrap:start', 'Starting synchronous tenant config bootstrap');
+
+    wireFetchFailureBreadcrumb();
+
+    const t0 = Date.now();
+
+    const config = resolveTenantConfigSync({ onEvent });
+
+    setResolvedTenantConfig(config);
+    initializeTenantSubsystems(config);
+
+    emitConfigSuccess(
+        'bootstrap:complete',
+        `Synchronous bootstrap complete in ${Date.now() - t0}ms — tenant: ${config.tenantId}`,
+        { tenantId: config.tenantId, totalMs: Date.now() - t0 }
+    );
+
+    reconcileTenantConfigInBackground(config, onEvent);
+
+    return config;
+};
+
+const reconcileTenantConfigInBackground = (
+    instantConfig: TenantConfig,
+    onEvent: ReturnType<typeof createConfigResolutionListener>
+): void => {
+    resolveTenantConfigFresh({ onEvent })
+        .then(fresh => {
+            setResolvedTenantConfig(fresh);
+
+            const changed = JSON.stringify(fresh) !== JSON.stringify(instantConfig);
+
+            if (changed) {
+                initializeTenantSubsystems(fresh);
+                emitConfigDebugEvent(
+                    'bootstrap:reconciled',
+                    `Fresh config differed from instant-boot config — subsystems re-initialized (tenant: ${fresh.tenantId})`,
+                    { tenantId: fresh.tenantId }
+                );
+            }
+        })
+        .catch(() => undefined);
+};
+
 /**
  * Resolve the TenantConfig and initialize all subsystems.
  *
@@ -233,7 +314,8 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
     bootstrapState.bootstrapPromise = (async () => {
         const t0 = Date.now();
 
-        const config = bootstrapState.resolvedConfig ?? (await resolveTenantConfig({ onEvent }));
+        const config =
+            bootstrapState.resolvedConfig ?? (await resolveTenantConfigFresh({ onEvent }));
 
         setResolvedTenantConfig(config);
         initializeTenantSubsystems(config);

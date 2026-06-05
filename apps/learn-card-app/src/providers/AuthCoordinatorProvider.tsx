@@ -596,10 +596,14 @@ const AuthSessionManager: React.FC<{
                     const version = parseInt(qrVersionStr, 10);
 
                     if (!isNaN(version)) {
-                        log.debug('[QR Login Pickup] storing shareVersion', { shareVersion: version });
+                        log.debug('[QR Login Pickup] storing shareVersion', {
+                            shareVersion: version,
+                        });
                         await keyDerivation.storeLocalShareVersion?.(version);
                     } else {
-                        log.warn('[QR Login Pickup] shareVersion is not a valid number', { qrVersionStr });
+                        log.warn('[QR Login Pickup] shareVersion is not a valid number', {
+                            qrVersionStr,
+                        });
                     }
                 } else {
                     log.warn('[QR Login Pickup] no shareVersion received from approver device');
@@ -679,7 +683,9 @@ const AuthSessionManager: React.FC<{
             const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
             if (!vpJwt || typeof vpJwt !== 'string') {
-                log.error('[signDidAuthVp] getDidAuthVp returned non-string', { type: typeof vpJwt });
+                log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
+                    type: typeof vpJwt,
+                });
                 throw new Error('Failed to sign DID-Auth VP JWT');
             }
 
@@ -892,17 +898,6 @@ const AuthSessionManager: React.FC<{
                 // Bridge to legacy stores for backward compatibility
                 walletStore.set.wallet(newWallet);
 
-                // Persist the private key in secure storage (skip in public
-                // computer mode — key stays in memory only so nothing
-                // survives tab close).
-                if (!isPublicComputerMode()) {
-                    try {
-                        await setPlatformPrivateKey(privateKey);
-                    } catch (e) {
-                        log.warn('Failed to persist private key to secure storage', e);
-                    }
-                }
-
                 // Set currentUserStore for backward compatibility
                 const authUser =
                     coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
@@ -917,13 +912,10 @@ const AuthSessionManager: React.FC<{
                     baseColor: getRandomBaseColor(),
                 });
 
-                // Sync push tokens
-                try {
-                    await pushUtilities.syncPushToken();
-                } catch (e) {
-                    log.warn('Push token sync failed', e);
-                }
-
+                // Mark the wallet ready BEFORE any network work so walletReady
+                // (which gates the splash screen) flips immediately. Persisting
+                // the key, push-token sync, and recovery-method checks are all
+                // non-critical and run after first paint without blocking it.
                 setWallet(newWallet);
 
                 emitAuthSuccess(
@@ -931,44 +923,63 @@ const AuthSessionManager: React.FC<{
                     `Wallet initialized — DID: ${did.slice(0, 30)}...`
                 );
 
-                // Check recovery methods for all users
-                // (only relevant for strategies that support recovery)
-                if (
-                    keyDerivation.capabilities.recovery &&
-                    authProvider &&
-                    keyDerivation.getAvailableRecoveryMethods
-                ) {
-                    wasNewUserRef.current = false;
-
-                    try {
-                        const token = await authProvider.getIdToken();
-                        const providerType = authProvider.getProviderType();
-                        const methods = await keyDerivation.getAvailableRecoveryMethods(
-                            token,
-                            providerType
-                        );
-
-                        // Only count user-configured methods (password, passkey, phrase, backup).
-                        // The silently-sent email share is injected by the strategy and isn't
-                        // something the user explicitly set up, so exclude it from the count.
-                        const userConfiguredCount = methods.filter(m => m.type !== 'email').length;
-
-                        setRecoveryMethodCount(userConfiguredCount);
-
-                        // Show recovery setup modal only on public computers
-                        // where no recovery methods exist. For new users on
-                        // personal devices, the RecoveryBanner on the LaunchPad
-                        // provides a non-blocking nudge instead.
-                        if (userConfiguredCount === 0 && isPublicComputerMode()) {
-                            setShowRecoverySetup(true);
-                        }
-                    } catch {
-                        // Non-critical — don't block the user
-                    }
-                }
+                void persistKeyAndSyncSideEffects(privateKey);
             } catch (e) {
                 log.error('Wallet initialization failed', e);
                 walletInitRef.current = false;
+            }
+        };
+
+        const persistKeyAndSyncSideEffects = async (privateKey: string) => {
+            // Persist the private key in secure storage (skip in public computer
+            // mode — key stays in memory only so nothing survives tab close).
+            if (!isPublicComputerMode()) {
+                try {
+                    await setPlatformPrivateKey(privateKey);
+                } catch (e) {
+                    log.warn('Failed to persist private key to secure storage', e);
+                }
+            }
+
+            try {
+                await pushUtilities.syncPushToken();
+            } catch (e) {
+                log.warn('Push token sync failed', e);
+            }
+
+            // Recovery-method check (only for strategies that support recovery)
+            if (
+                keyDerivation.capabilities.recovery &&
+                authProvider &&
+                keyDerivation.getAvailableRecoveryMethods
+            ) {
+                wasNewUserRef.current = false;
+
+                try {
+                    const token = await authProvider.getIdToken();
+                    const providerType = authProvider.getProviderType();
+                    const methods = await keyDerivation.getAvailableRecoveryMethods(
+                        token,
+                        providerType
+                    );
+
+                    // Only count user-configured methods (password, passkey, phrase, backup).
+                    // The silently-sent email share is injected by the strategy and isn't
+                    // something the user explicitly set up, so exclude it from the count.
+                    const userConfiguredCount = methods.filter(m => m.type !== 'email').length;
+
+                    setRecoveryMethodCount(userConfiguredCount);
+
+                    // Show recovery setup modal only on public computers where no
+                    // recovery methods exist. For new users on personal devices,
+                    // the RecoveryBanner on the LaunchPad provides a non-blocking
+                    // nudge instead.
+                    if (userConfiguredCount === 0 && isPublicComputerMode()) {
+                        setShowRecoverySetup(true);
+                    }
+                } catch {
+                    // Non-critical — don't block the user
+                }
             }
         };
 
@@ -1179,10 +1190,14 @@ const AuthSessionManager: React.FC<{
                             await keyDerivation.storeLocalKey(deviceShare);
 
                             if (shareVersion != null) {
-                                log.debug('[Recovery via Device] storing shareVersion', { shareVersion });
+                                log.debug('[Recovery via Device] storing shareVersion', {
+                                    shareVersion,
+                                });
                                 await keyDerivation.storeLocalShareVersion?.(shareVersion);
                             } else {
-                                log.warn('[Recovery via Device] no shareVersion received from approver device');
+                                log.warn(
+                                    '[Recovery via Device] no shareVersion received from approver device'
+                                );
                             }
 
                             await coordinator.initialize();
@@ -1429,7 +1444,9 @@ const AuthSessionManager: React.FC<{
 
                         const providerType = authProvider.getProviderType();
 
-                        log.debug('[setupMethod] got token, calling setupRecoveryMethod', { providerType });
+                        log.debug('[setupMethod] got token, calling setupRecoveryMethod', {
+                            providerType,
+                        });
 
                         return keyDerivation.setupRecoveryMethod!({
                             token,

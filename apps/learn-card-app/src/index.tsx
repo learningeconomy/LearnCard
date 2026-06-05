@@ -4,10 +4,10 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
-import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
+import { LDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
-import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { bootstrapTenantConfigSync } from './config/bootstrapTenantConfig';
 import App from './App';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -17,51 +17,48 @@ import * as Sentry from '@sentry/browser';
 
 (window as any).Buffer = Buffer;
 
-(async () => {
-    // Resolve and bootstrap TenantConfig before anything else.
-    // This sets up Firebase, auth config, network store, Sentry, and Userflow.
-    const tenantConfig = await bootstrapTenantConfig();
-
-    if (Capacitor.isNativePlatform()) {
-        try {
-            // notifyAppReady
-            const capGoApp = await CapacitorUpdater.notifyAppReady();
+const notifyCapGoAppReady = (): void => {
+    CapacitorUpdater.notifyAppReady()
+        .then(capGoApp => {
             const capGoBundle = capGoApp.bundle;
             if (capGoBundle.version !== 'builtin' && capGoBundle?.version?.trim?.() !== '') {
                 firstStartupStore.set.version(capGoBundle.version);
                 Sentry.setTag('packageVersion', capGoBundle.version);
             }
-        } catch {
-            // non-blocking
-        }
-    }
-    
-    // Disable LaunchDarkly logging
-    const ldOptions = {
-        options: {
-            logger: basicLogger({ level: 'none' }),
-        },
-    };
+        })
+        .catch(() => undefined);
+};
 
-    // Splash screen is now hidden by AppRouter once auth state is settled
-    // (capacitor.config.ts has launchAutoHide=false). This bridges the native
-    // splash → final screen with no JS-side loader flashes for authenticated
-    // users on cold start. A 10s fallback below ensures the splash is never
-    // stuck if React fails to mount or auth init hangs unrecoverably.
+(() => {
+    // Resolve TenantConfig synchronously (cache/default) so React mounts
+    // immediately; the authoritative config is fetched and reconciled in the
+    // background. Sets up Firebase, auth config, network store, Sentry, Userflow.
+    const tenantConfig = bootstrapTenantConfigSync();
+
+    // AppRouter hides the native splash once auth state settles
+    // (capacitor.config.ts has launchAutoHide=false). This outer fallback only
+    // fires if React fails to mount or auth init hangs unrecoverably.
     if (Capacitor.isNativePlatform()) {
+        notifyCapGoAppReady();
         setTimeout(() => {
             SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
-        }, 10_000);
+        }, 6_000);
     }
 
-    const LDProvider = await asyncWithLDProvider({ ...LAUNCH_DARKLY_CONFIG, ...ldOptions });
+    // Synchronous <LDProvider> (not awaited asyncWithLDProvider) keeps the LD
+    // network round-trip off the render-blocking path: the app mounts
+    // immediately and useFlags() returns defaults until LD streams real flags.
+    const ldConfig = {
+        ...LAUNCH_DARKLY_CONFIG,
+        options: { logger: basicLogger({ level: 'none' }) },
+    };
 
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
+                <LDProvider {...ldConfig}>
                     <App />
                 </LDProvider>
             </TenantConfigProvider>
